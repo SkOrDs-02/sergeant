@@ -20,10 +20,7 @@ import {
 } from "../lib/nutritionStorage";
 import { deleteMealThumbnail, gcMealThumbnails } from "../lib/mealPhotoStorage";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
-import {
-  useNutritionSqliteReadFlag,
-  useNutritionSqliteReadTick,
-} from "../lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 /**
  * Collect all meal IDs present in a log.
@@ -60,7 +57,6 @@ export function useNutritionLog() {
     Map<string, ReturnType<typeof setTimeout>>
   >(new Map());
   const didMountRef = useRef(false);
-  const sqliteReadEnabled = useNutritionSqliteReadFlag();
   const sqliteCacheTick = useNutritionSqliteReadTick();
 
   useEffect(() => {
@@ -72,16 +68,15 @@ export function useNutritionLog() {
     );
   }, [nutritionLog]);
 
-  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
-  // overlay the meal log from the local SQLite cache once it's warm.
-  // The LS read above stays as a synchronous fallback so the first
-  // paint never blocks on SQLite.
+  // Stage 4 PR #033 + Stage 8 PR #057n: overlay the meal log from
+  // the local SQLite cache once it's warm. The LS read above stays
+  // as a synchronous fallback so the first paint never blocks on
+  // SQLite.
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;
     setNutritionLog(cache.log);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   // Flush scheduled thumbnail deletes on unmount. The 6 s grace window
   // exists to allow `handleRestoreMeal` to cancel the delete, but that

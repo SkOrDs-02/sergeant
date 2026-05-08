@@ -14,7 +14,7 @@ import { _getMMKVInstance } from "@/lib/storage";
 
 import { loadNutritionPrefs, saveNutritionPrefs } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
-import { useNutritionSqliteReadGate } from "../lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface UseNutritionPrefsResult {
   prefs: NutritionPrefs;
@@ -42,18 +42,16 @@ export function useNutritionPrefs(): UseNutritionPrefsResult {
     return () => sub.remove();
   }, []);
 
-  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
-  // overlay nutrition prefs from the local SQLite cache once it's
-  // warm. The MMKV first-paint read above stays as a synchronous
-  // fallback so the first paint never blocks on SQLite.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useNutritionSqliteReadGate();
+  // Stage 4 PR #033 + Stage 8 PR #057n: overlay nutrition prefs from
+  // the local SQLite cache once it's warm. The MMKV first-paint read
+  // above stays as a synchronous fallback so the first paint never
+  // blocks on SQLite.
+  const sqliteCacheTick = useNutritionSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;
     if (cache.prefs) setPrefsState(cache.prefs);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const commit = useCallback((next: NutritionPrefs) => {
     setPrefsState(next);

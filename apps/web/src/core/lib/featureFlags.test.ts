@@ -100,14 +100,17 @@ describe("featureFlags", () => {
     expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(false);
   });
 
-  it("flips Nutrition read_sqlite default-on for Stage 8 PR #055n2 re-rollout", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.nutrition.sqlite_v2.read_sqlite", false)).toBe(
-      true,
-    );
+  it("Stage 8 PR #057n drop: feature.nutrition.sqlite_v2.read_sqlite більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find(
+        (f) => f.id === "feature.nutrition.sqlite_v2.read_sqlite",
+      ),
+    ).toBeUndefined();
     expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(false);
+    expect(setFlag("feature.nutrition.sqlite_v2.read_sqlite", true)).toBe(
+      false,
+    );
   });
 
   it("flips Finyk read_sqlite default-on for Stage 8 PR #055k2 re-rollout", async () => {

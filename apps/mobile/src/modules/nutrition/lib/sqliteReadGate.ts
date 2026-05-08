@@ -6,26 +6,20 @@
  * `apps/web/src/modules/nutrition/lib/sqliteReadGate.ts`. The mobile
  * Nutrition module spreads its persisted state across multiple hooks
  * (`useNutritionLog`, `useNutritionPantries`, etc.), each reading
- * directly from MMKV on mount. To overlay SQLite reads under the
- * `feature.nutrition.sqlite_v2.read_sqlite` flag we need a tiny
+ * directly from MMKV on mount. The SQLite-overlay path uses a tiny
  * in-process pub-sub so:
  *
- *  - the boot wiring file (`sqliteReadBoot.ts`) flips the gate after
+ *  - the boot wiring file (`sqliteReadBoot.ts`) bumps the tick after
  *    a successful migration + cache refresh,
  *  - and every hook re-reads on the next render.
  *
- * Same shape as `useNutritionSqliteReadTick` /
- * `useNutritionSqliteReadFlag` on the web side, but also exposes a
- * combined `useNutritionSqliteReadGate` hook returning
- * `{ enabled, tick }` so consumer hooks can key a single `useEffect`
- * on both values.
+ * Stage 8 PR #057n graduated `feature.nutrition.sqlite_v2.read_sqlite`
+ * out of the registry — the SQLite overlay is now unconditional once
+ * the boot completes (the MMKV first-paint read still acts as the
+ * synchronous fallback until the MMKV-reader drop in the follow-up PR).
  */
 
 import { useSyncExternalStore } from "react";
-
-import { useFlag } from "@/core/lib/featureFlags";
-
-const READ_FLAG_ID = "feature.nutrition.sqlite_v2.read_sqlite";
 
 let cacheTick = 0;
 const listeners = new Set<() => void>();
@@ -43,37 +37,11 @@ function getSnapshot(): number {
 
 /**
  * Tick counter that bumps every time
- * {@link notifyNutritionSqliteCacheRefresh} fires.
+ * {@link notifyNutritionSqliteCacheRefresh} fires. Consumers use this
+ * as a `useEffect` dep so they re-overlay when the SQLite cache warms.
  */
 export function useNutritionSqliteReadTick(): number {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
-
-/** Flag-gated read-overlay enable for the nutrition hooks. */
-export function useNutritionSqliteReadFlag(): boolean {
-  return useFlag(READ_FLAG_ID);
-}
-
-export interface NutritionSqliteReadGate {
-  /** Current value of `feature.nutrition.sqlite_v2.read_sqlite`. */
-  readonly enabled: boolean;
-  /**
-   * Tick counter that bumps after every successful cache refresh —
-   * use it as a `useEffect` dep so consumers re-overlay when the
-   * SQLite cache warms.
-   */
-  readonly tick: number;
-}
-
-/**
- * Combined hook for consumer overlays: returns the flag value AND the
- * cache tick so a single `useEffect([enabled, tick], …)` is enough to
- * keep MMKV first-paint state in sync with the SQLite cache.
- */
-export function useNutritionSqliteReadGate(): NutritionSqliteReadGate {
-  const enabled = useNutritionSqliteReadFlag();
-  const tick = useNutritionSqliteReadTick();
-  return { enabled, tick };
 }
 
 /**

@@ -3019,6 +3019,13 @@ via SqliteReader`).
 NUTRITION_*`. Зняти стару migration `storageManager #002`
   (legacy single pantry → multi pantry), бо residual-import
   bootstrap покриє цей переїзд.
+  - **PR #057n-flag** ✅ LANDED — drop the now-redundant
+    `feature.nutrition.sqlite_v2.read_sqlite` flag-check from
+    web + mobile (registry entry, hooks, boot, reader gate).
+    SQLite read-overlay тепер unconditional once boot completes;
+    LS first-paint read залишається synchronous fallback. Pre-step
+    для `#057n-tombstone` (LS-reader drop + `STORAGE_KEYS`
+    tombstone + residual-import bootstrap).
 
 #### **Finyk (4 PR-и)** — структура ідентична
 

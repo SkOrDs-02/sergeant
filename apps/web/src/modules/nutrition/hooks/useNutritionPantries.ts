@@ -20,10 +20,7 @@ import {
   NUTRITION_ACTIVE_PANTRY_KEY,
 } from "../lib/nutritionStorage";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
-import {
-  useNutritionSqliteReadFlag,
-  useNutritionSqliteReadTick,
-} from "../lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import {
   normalizeFoodName,
   parseLoosePantryText,
@@ -57,20 +54,18 @@ export function useNutritionPantries({
     loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY),
   );
 
-  const sqliteReadEnabled = useNutritionSqliteReadFlag();
   const sqliteCacheTick = useNutritionSqliteReadTick();
 
-  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
-  // overlay pantries / active pantry from the SQLite cache once it's
-  // warm. LS reads above stay as a synchronous fallback so the first
-  // paint never blocks on SQLite.
+  // Stage 4 PR #033 + Stage 8 PR #057n: overlay pantries / active
+  // pantry from the SQLite cache once it's warm. LS reads above stay
+  // as a synchronous fallback so the first paint never blocks on
+  // SQLite.
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;
     setPantries(cache.pantries);
     if (cache.activePantryId) setActivePantryId(cache.activePantryId);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const activePantry = useMemo(() => {
     const arr = Array.isArray(pantries) ? pantries : [];

@@ -4,29 +4,27 @@
  * Mirrors `apps/web/src/modules/fizruk/lib/sqliteReadBoot.ts`. Called
  * once from the Nutrition app shell (via `useNutritionSqliteReadBoot`)
  * after the React-Query `me` cache and the sqlite-wasm singleton are
- * available. Evaluates the `feature.nutrition.sqlite_v2.read_sqlite`
- * flag and, when enabled:
+ * available:
  *
  *  1. Runs the nutrition SQLite migrations so the tables exist.
  *  2. Performs the initial `refreshNutritionSqliteState()` so the cache
  *     is warm before the first overlay read.
  *
- * The function is idempotent — calling it twice with the same flag
- * value is a no-op on the second call.
+ * Stage 8 PR #057n dropped `feature.nutrition.sqlite_v2.read_sqlite` —
+ * the boot is unconditional once a `userId` is available. The function
+ * latches via the module-level `booted` flag so the second call is a
+ * no-op.
  */
 
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
-import { getFlag } from "../../../core/lib/featureFlags.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateNutrition } from "./clientMigrate.js";
 import { refreshNutritionSqliteState } from "./sqliteReader.js";
 
-const FLAG_ID = "feature.nutrition.sqlite_v2.read_sqlite";
-
 let booted = false;
 
 /**
- * Initialise the SQLite read path if the feature flag is on.
+ * Initialise the SQLite read path.
  *
  * @param userId - The authenticated user's id (from the `me` query).
  *   When `null` the boot is skipped (pre-auth window).
@@ -36,9 +34,7 @@ export async function bootNutritionSqliteReadPath(
   userId: string | null,
 ): Promise<boolean> {
   if (booted) return false;
-
-  const enabled = getFlag(FLAG_ID);
-  if (!enabled || !userId) return false;
+  if (!userId) return false;
 
   try {
     const handle = await getSqliteDb();

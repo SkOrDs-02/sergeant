@@ -76,14 +76,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.nutrition.sqlite_v2.read_sqlite",
-    label: "Nutrition — read from SQLite",
-    description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як source-of-truth. Stage 8 PR #055n2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056n. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.read_sqlite",
     label: "Finyk — read from SQLite",
     description:
