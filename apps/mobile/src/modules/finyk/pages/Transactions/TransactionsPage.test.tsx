@@ -5,11 +5,15 @@
  * pull-to-refresh re-reading MMKV.
  */
 import {
+  act,
   fireEvent,
   render,
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
+import { createApiClient } from "@sergeant/api-client";
 import type { Transaction } from "@sergeant/finyk-domain/domain";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
@@ -87,8 +91,43 @@ import { TransactionsPage } from "./TransactionsPage";
 // через RTL рендерять сторінку в ізоляції, тому загортаємо в ToastProvider.
 import type { ReactElement } from "react";
 
-const renderTransactionsPage = (ui: ReactElement) =>
-  render(<ToastProvider>{ui}</ToastProvider>);
+const testApiClient = createApiClient({
+  baseUrl: "http://127.0.0.1",
+  fetchImpl: async () =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(testUser),
+    }) as Response,
+});
+
+const testUser = {
+  user: {
+    id: "test-user",
+    email: "test@example.com",
+    name: "Test User",
+    image: null,
+    emailVerified: true,
+    createdAt: "2026-04-21T00:00:00.000Z",
+  },
+};
+
+const renderTransactionsPage = (ui: ReactElement) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity, gcTime: Infinity },
+    },
+  });
+  queryClient.setQueryData(apiQueryKeys.me.current(), testUser);
+  return render(
+    <ApiClientProvider client={testApiClient}>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>{ui}</ToastProvider>
+      </QueryClientProvider>
+    </ApiClientProvider>,
+  );
+};
 
 const FIXED_NOW = new Date("2026-04-21T12:00:00.000Z");
 
@@ -481,7 +520,9 @@ describe("TransactionsPage — swipe actions", () => {
     const list = screen.getByTestId("finyk-transactions-list");
     const refreshControl = list.props.refreshControl;
     expect(refreshControl).toBeTruthy();
-    refreshControl.props.onRefresh();
+    await act(async () => {
+      await refreshControl.props.onRefresh();
+    });
 
     await waitFor(() => {
       expect(screen.getByText("нова витрата")).toBeTruthy();

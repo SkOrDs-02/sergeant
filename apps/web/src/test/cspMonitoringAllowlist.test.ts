@@ -121,7 +121,13 @@ describe("L11: CSP monitoring allowlist", () => {
       // Allow the documented WebSocket schemes (see audit-exceptions.md
       // "CSP wildcards"), every other source must be either `'self'` or
       // an `https://<vendor>.<host>` URL with at least one literal label.
-      const allowedNonHttps = new Set(["'self'", "wss:", "ws:"]);
+      const allowedNonHttps = new Set([
+        "'self'",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "wss:",
+        "ws:",
+      ]);
       for (const src of csp["connect-src"] ?? []) {
         if (allowedNonHttps.has(src)) continue;
         expect(src).toMatch(/^https:\/\/[^*\s]*\*?\.[a-z0-9.-]+$/i);

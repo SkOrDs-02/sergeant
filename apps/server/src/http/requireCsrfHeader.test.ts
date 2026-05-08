@@ -47,6 +47,9 @@ function makeApp(handler: express.RequestHandler) {
   app.all("/api/metrics/web-vitals", (_req, res) => {
     res.status(200).json({ ok: true });
   });
+  app.all("/api/v1/metrics/web-vitals", (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
   app.all("/api/internal/billing/charge", (_req, res) => {
     res.status(200).json({ ok: true });
   });
@@ -126,6 +129,7 @@ describe("requireCsrfHeader — exempt paths", () => {
     "/api/mono/webhook/legacy",
     "/api/csp-report",
     "/api/metrics/web-vitals",
+    "/api/v1/metrics/web-vitals",
     "/api/internal/billing/charge",
   ])("POST %s БЕЗ XRW → пропускається (200)", async (path) => {
     const app = makeApp(requireCsrfHeader());

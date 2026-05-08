@@ -44,8 +44,7 @@ export default defineConfig({
     : {
         // Keep `@sergeant/server dev` in background and
         // leave `web preview` in foreground for Playwright to manage.
-        command:
-          "sh -lc 'pnpm --dir ../.. db:up && pnpm --dir ../.. --filter @sergeant/server db:migrate:dev && (pnpm --dir ../.. --filter @sergeant/server dev &) && pnpm --dir ../.. --filter @sergeant/web build && pnpm --dir ../.. --filter @sergeant/web preview -- --port 4173 --host 127.0.0.1'",
+        command: "node ./tests/smoke/start-smoke-webserver.mjs",
         url: "http://127.0.0.1:4173",
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,

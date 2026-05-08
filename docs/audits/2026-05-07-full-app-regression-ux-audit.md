@@ -3,9 +3,11 @@
 > **Last validated:** 2026-05-08 by Codex. **Next review:** 2026-08-06.
 > **Status:** Active
 
-Audit-only прохід виконано проти `origin/main @ 316ef626` на гілці `codex/full-app-regression-ux-audit`. Мета — не виправляти код, а відтворити поточний стан регресій, тестових воріт, PWA/UX coverage і скласти чергу наступних PR. Єдина tracked-зміна цього проходу — цей документ.
+Audit-only прохід виконано проти `origin/main @ 316ef626` на гілці `codex/full-app-regression-ux-audit`. Початкова мета — не виправляти код, а відтворити поточний стан регресій, тестових воріт, PWA/UX coverage і скласти чергу наступних PR. Після окремої команди на implementation mode цей самий документ став живим журналом виконаних fix-pass змін.
 
 **Update 2026-05-08:** після встановлення Docker/Playwright Chromium виконано додатковий authenticated UX pass. Тестовий акаунт створено в локальній smoke-БД через Better Auth endpoint із потрібним CSRF header; пароль не комітиться у репо, повні локальні credentials лишаються тільки в `.codex-run-logs/test-user-api-create.json`. Browser UI sign-up через форму **не зміг створити акаунт** через `403 CSRF_HEADER_REQUIRED`; це новий P1 auth-flow finding нижче.
+
+**Fix pass 2026-05-08:** implementation mode увімкнено після audit-only проходу. Закрито першу партію P1/P2: browser auth-client тепер додає `X-Requested-With`, CORS дозволяє `traceparent`/`tracestate`/`X-Requested-With` і `127.0.0.1` dev origins, versioned `/api/v1/metrics/web-vitals` bypass-ить CSRF, локальний CSP дозволяє dev API `:3000`, Vercel Analytics не інжектиться на localhost, Playwright smoke webServer переведено з POSIX `sh -lc` на Windows-safe Node wrapper, web Vitest storage setup відновлює повний Storage API між suites, а mobile `TransactionsPage` тест отримав runtime-like `ApiClientProvider` + `QueryClientProvider`. Targeted verification: server CORS/CSRF `31 passed`, web CSP/storage/sqlite `59 passed`, mobile TransactionsPage `21 passed`, `@sergeant/web|server|mobile typecheck` green, `@sergeant/web build` green. Повний web Vitest під Node 25/локальним timeout дійшов далі первинної storage-регресії, але був перерваний timeout-ом і завершився reporter `EPIPE`; повторити під Node 20/CI без timebox.
 
 ## Environment snapshot
 

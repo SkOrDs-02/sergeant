@@ -16,8 +16,11 @@ import { logger } from "../obs/logger.js";
  */
 const DEFAULT_ORIGINS = [
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "http://localhost:4173",
+  "http://127.0.0.1:4173",
   "http://localhost:5000",
+  "http://127.0.0.1:5000",
   // Expo web dev (Metro bundler) за замовчуванням слухає 8081. Нативні
   // клієнти CORS не перевіряють (Origin не шлють), але Expo-web симулятор
   // і браузерна прев'юшка у dev-режимі — шлють, тому явно дозволяємо.
@@ -26,6 +29,15 @@ const DEFAULT_ORIGINS = [
   "https://sergeant.vercel.app",
   "https://sergeant.2dmanager.com.ua",
 ];
+
+const DEFAULT_ALLOW_HEADERS = [
+  "Content-Type",
+  "Authorization",
+  "X-Requested-With",
+  "X-Api-Secret",
+  "traceparent",
+  "tracestate",
+].join(", ");
 
 function getReplitOrigins() {
   const domains = process.env["REPLIT_DOMAINS"] || "";
@@ -99,7 +111,7 @@ export function setCorsHeaders(
   opts: CorsHeaderOptions = {},
 ): void {
   const {
-    allowHeaders = "Content-Type",
+    allowHeaders = DEFAULT_ALLOW_HEADERS,
     methods = "GET, POST, OPTIONS",
     exposeHeaders,
   } = opts;

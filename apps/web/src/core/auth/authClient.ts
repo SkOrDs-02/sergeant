@@ -33,6 +33,9 @@ function getAuthBaseURL(): string {
  * виходять, cookie-флов лишається недоторканим.
  */
 const fetchOptions = {
+  headers: {
+    "X-Requested-With": "XMLHttpRequest",
+  },
   // `auth` у better-fetch — стандартизований шлях ставити Authorization.
   // `token` може бути sync або async; ми даємо async щоб попадати у
   // той самий dynamic-import chunk, що й API-клієнт (`shared/api`).

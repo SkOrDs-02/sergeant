@@ -61,6 +61,7 @@ const EXEMPT_PATH_PREFIXES: readonly string[] = [
   "/api/billing/stripe-webhook",
   "/api/csp-report",
   "/api/metrics/web-vitals",
+  "/api/v1/metrics/web-vitals",
   "/api/internal/",
   "/api/internal", // exact match
 ];

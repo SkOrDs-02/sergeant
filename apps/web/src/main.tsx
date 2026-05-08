@@ -97,6 +97,13 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   );
 }
 
+function shouldRenderVercelAnalytics(): boolean {
+  if (typeof window === "undefined") return false;
+  return !["localhost", "127.0.0.1", "0.0.0.0"].includes(
+    window.location.hostname,
+  );
+}
+
 // PR #063–#064 boot wiring: kick off SQLite warm-cache, then run the
 // storage-dependent boot steps (demo seed, `storageManager` migrations,
 // demo cleanup, sync-engine writer boot) and finally mount React. We
@@ -161,7 +168,7 @@ void (async () => {
         persistOptions={persistOptions}
       >
         <RouterProvider router={router} />
-        <Analytics />
+        {shouldRenderVercelAnalytics() ? <Analytics /> : null}
         {ReactQueryDevtools ? (
           <Suspense fallback={null}>
             <ReactQueryDevtools

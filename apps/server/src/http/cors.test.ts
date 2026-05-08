@@ -20,6 +20,7 @@ describe("getAllowedOrigins", () => {
     delete process.env["ALLOWED_ORIGINS"];
     const origins = getAllowedOrigins();
     expect(origins).toContain("http://localhost:5173");
+    expect(origins).toContain("http://127.0.0.1:5173");
   });
 });
 
@@ -36,6 +37,21 @@ describe("setCorsHeaders", () => {
     expect(headers["Access-Control-Allow-Origin"]).toBe(
       "http://localhost:5173",
     );
+  });
+
+  it("allows browser auth and tracing headers by default", () => {
+    const headers: Record<string, string> = {};
+    const res = {
+      setHeader(name: string, value: string) {
+        headers[name] = value;
+      },
+    };
+    const req = { headers: { origin: "http://127.0.0.1:5173" } };
+    setCorsHeaders(res as never, req as never);
+    expect(headers["Access-Control-Allow-Headers"]).toContain(
+      "X-Requested-With",
+    );
+    expect(headers["Access-Control-Allow-Headers"]).toContain("traceparent");
   });
 
   it("does not set ACAO when origin is unknown", () => {
