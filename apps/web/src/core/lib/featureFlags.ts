@@ -103,8 +103,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.nutrition.sqlite_v2.read_sqlite",
     label: "Nutrition — read from SQLite",
     description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
-    defaultValue: false,
+      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+    defaultValue: true,
     experimental: true,
   },
   {
