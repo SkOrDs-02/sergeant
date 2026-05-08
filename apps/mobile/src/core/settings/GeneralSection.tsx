@@ -162,7 +162,7 @@ function ModuleReorderList() {
   if (visibleOrder.length === 0) {
     return (
       <DeferredNotice>
-        Поки що жоден модуль не відображається на дашборді.
+        Поки що жоден розділ не відображається на головній.
       </DeferredNotice>
     );
   }
@@ -379,8 +379,8 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Активні модулі">
         <Text className="text-xs text-fg-muted leading-snug">
-          Неактивні модулі відображаються на дашборді приглушено — без кнопки
-          швидкого додавання. Чонайменше один модуль має залишатися активним.
+          Неактивні розділи виглядають приглушено на головній — без кнопки
+          швидкого додавання. Принаймні один має залишатися активним.
         </Text>
         <View className="overflow-hidden rounded-xl border border-cream-300">
           {ALL_MODULES.map((id, index) => {
@@ -415,8 +415,8 @@ export function GeneralSection() {
           })}
         </View>
         <ToggleRow
-          label="Приховати неактивні модулі"
-          description="Повністю ховає неактивні плитки з дашборду."
+          label="Приховати неактивні розділи"
+          description="Повністю ховає неактивні плитки з головної."
           checked={hideInactive}
           onChange={toggleHideInactive}
           testID="general-hide-inactive-toggle"

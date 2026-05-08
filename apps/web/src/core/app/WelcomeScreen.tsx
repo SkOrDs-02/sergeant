@@ -95,7 +95,7 @@ function PeekBackdrop() {
         )}
       >
         <span className="text-style-caption text-muted/80">
-          Це приклад. Твій дашборд буде твоїм.
+          Це приклад. Твоя головна буде твоєю.
         </span>
       </div>
       {/* Animated floating shapes for visual interest */}

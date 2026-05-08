@@ -15,7 +15,7 @@ interface RouterTodaySession {
 }
 
 const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
-  dashboard: "Не вдалось показати «Дашборд»",
+  dashboard: "Не вдалось показати головну",
   plan: "Не вдалось показати «Планування»",
   atlas: "Не вдалось показати «Атлас»",
   workouts: "Не вдалось показати «Тренування»",

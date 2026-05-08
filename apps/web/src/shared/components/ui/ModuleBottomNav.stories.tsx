@@ -32,7 +32,7 @@ const meta: Meta<typeof ModuleBottomNav> = {
     items: [
       {
         id: "home",
-        label: "Дашборд",
+        label: "Головна",
         icon: <Icon name="home" size="lg" />,
       },
       {
@@ -57,7 +57,7 @@ export default meta;
 
 type Story = StoryObj<typeof ModuleBottomNav>;
 
-/** Фінік — зелений accent, активна вкладка «Дашборд». */
+/** Фінік — зелений accent, активна вкладка «Головна». */
 export const Finyk: Story = {};
 
 /** Фізрук — teal accent, активна вкладка «Бюджети» (як приклад). */
@@ -66,7 +66,7 @@ export const Fizruk: Story = {
     module: "fizruk",
     activeId: "budgets",
     items: [
-      { id: "home", label: "Дашборд", icon: <Icon name="home" size="lg" /> },
+      { id: "home", label: "Головна", icon: <Icon name="home" size="lg" /> },
       {
         id: "workouts",
         label: "Тренування",
@@ -134,7 +134,7 @@ export const WithBadge: Story = {
     items: [
       {
         id: "home",
-        label: "Дашборд",
+        label: "Головна",
         icon: <Icon name="home" size="lg" />,
         badge: true,
       },

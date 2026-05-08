@@ -35,7 +35,7 @@ const GROUPS = [
   },
   {
     id: "modules",
-    label: "Модулі",
+    label: "Розділи",
     sections: ["routine", "fizruk", "finyk", "nutrition"],
   },
   {

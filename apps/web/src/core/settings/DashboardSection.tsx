@@ -120,7 +120,7 @@ export function DashboardSection() {
           </div>
         </div>
       </SettingsSubGroup>
-      <SettingsSubGroup title="Модулі дашборду">
+      <SettingsSubGroup title="Розділи на головній">
         {/* UX-feedback 2026-05-08: removed the manual «Порядок модулів»
          * reorder list (chevron-up / chevron-down + reset button). The
          * dashboard already exposes a drag-to-reorder bento via the
@@ -129,10 +129,10 @@ export function DashboardSection() {
          * inactive checkboxes stay here because that toggle has no
          * dashboard-side equivalent. */}
         <p className="text-xs text-subtle leading-snug">
-          Які модулі показувати на дашборді. Неактивні модулі відображаються
-          приглушено — без кнопки швидкого додавання. Щонайменше один модуль має
-          залишатися активним. Порядок модулів змінюється на дашборді — через
-          кнопку «Налаштувати» біля заголовка «Модулі».
+          Які розділи показувати на головній. Неактивні розділи виглядають
+          приглушено — без кнопки швидкого додавання. Принаймні один має
+          залишатися активним. Порядок змінюється на головній через кнопку
+          «Налаштувати» поруч із заголовком «Розділи».
         </p>
         <ul className="rounded-xl border border-line divide-y divide-line/60 overflow-hidden">
           {ALL_MODULES.map((id) => {

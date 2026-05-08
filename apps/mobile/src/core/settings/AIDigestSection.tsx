@@ -66,7 +66,7 @@ export function AIDigestSection() {
     <SettingsGroup title="AI Звіт тижня" emoji="📋">
       <Text className="text-xs text-fg-muted leading-snug">
         Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
-        харчування та звички. Звіт доступний на дашборді щопонеділка або за
+        харчування та звички. Звіт доступний на головній щопонеділка або за
         запитом.
       </Text>
       <Card variant="flat" radius="md" padding="md">

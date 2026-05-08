@@ -391,7 +391,7 @@ function WelcomeOneScreen({
           size={12}
           aria-hidden
         />
-        {expanded ? "Згорнути" : "Що це за модулі?"}
+        {expanded ? "Згорнути" : "Що це за розділи?"}
       </button>
     </div>
   );
@@ -627,7 +627,7 @@ export function OnboardingWizard({
         copy={heroCopy}
         ctaLabelOverride={isTour ? "Закрити" : undefined}
         ctaDisabled={ctaDisabled}
-        emptyPicksHint="Обери хоч один модуль"
+        emptyPicksHint="Обери хоч один розділ"
         onSecondaryAction={secondaryAction}
       />
     ),

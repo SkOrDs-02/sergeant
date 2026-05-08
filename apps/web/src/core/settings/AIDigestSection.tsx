@@ -34,7 +34,7 @@ export function AIDigestSection() {
       <div className="space-y-3">
         <p className="text-xs text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
-          харчування та звички. Згенерувати звіт можна на дашборді — у блоці
+          харчування та звички. Згенерувати звіт можна на головній — у блоці
           «Звіт тижня».
         </p>
         <div className="p-3 rounded-xl bg-bg border border-line">

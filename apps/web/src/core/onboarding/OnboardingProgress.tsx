@@ -37,7 +37,7 @@ export function OnboardingProgress({
       aria-valuenow={count}
       aria-valuemin={0}
       aria-valuemax={totalModules}
-      aria-label={`Активовано ${count} з ${totalModules} модулів`}
+      aria-label={`Активовано ${count} з ${totalModules} розділів`}
     >
       <div className="flex-1 h-1.5 rounded-full bg-line/60 overflow-hidden">
         <div
@@ -46,7 +46,7 @@ export function OnboardingProgress({
         />
       </div>
       <span className="text-style-caption text-muted whitespace-nowrap">
-        {count}/{totalModules} модулів
+        {count}/{totalModules} розділів
       </span>
     </div>
   );

@@ -25,9 +25,9 @@ const TIERS: ReadonlyArray<Tier> = [
     name: "Free",
     price: "₴0",
     cadence: "назавжди",
-    tagline: "Усі 4 модулі базово. Local-first, без cloud.",
+    tagline: "Усі 4 розділи базово. Local-first, без cloud.",
     features: [
-      "Усі модулі: Фінік / Фізрук / Харчування / Рутина",
+      "Усі розділи: Фінік / Фізрук / Харчування / Рутина",
       "AI-чат: 5 повідомлень на день",
       "Manual Mono-імпорт (без webhook)",
     ],
