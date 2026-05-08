@@ -655,16 +655,36 @@ export function OnboardingWizard({
     );
   }
 
+  // Виделена структура: окремий fixed-backdrop + окремий scroll-контейнер.
+  // До 2026-05-08 dialog-обгортка була `fixed inset-0 ... flex items-end
+  // sm:items-center` без `overflow-y-auto`, а внутрішня картка — без
+  // `max-h`. Коли користувач у Settings → «Подивитись tour» розгортав
+  // модулі через «Що це за розділи?», картка ставала вищою за viewport
+  // і обрізалась і зверху (логотип), і знизу — без можливості прокрутки
+  // дістатись до тогл-кнопки «Згорнути» (issue 2026-05-08).
+  //
+  // Backdrop тепер `fixed inset-0` (живе у viewport, не скролиться),
+  // а scroll-шар — окремий wrapper з `min-h-full flex ...` усередині
+  // зовнішнього `overflow-y-auto`, тож:
+  //   - коли контент вміщується — картка центрується як раніше;
+  //   - коли overflow — зовнішній шар прокручується, відкриваючи і
+  //     верх (логотип), і низ (CTA + «Згорнути»). `overscroll-contain`
+  //     гасить body-bounce на iOS.
   return (
     <div
-      className="fixed inset-0 z-500 flex items-end sm:items-center justify-center p-4 pb-safe"
+      className="fixed inset-0 z-500 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-label="Вітальний екран"
     >
-      <div className="absolute inset-0 bg-bg/80 backdrop-blur-md" />
-      <div className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter">
-        {content}
+      <div
+        className="fixed inset-0 bg-bg/80 backdrop-blur-md"
+        aria-hidden="true"
+      />
+      <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
+        <div className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter">
+          {content}
+        </div>
       </div>
     </div>
   );

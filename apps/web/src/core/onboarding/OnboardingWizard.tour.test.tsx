@@ -70,6 +70,29 @@ describe("OnboardingWizard — tour mode (read-only replay)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("modal dialog is vertically scrollable with a fixed (non-scrolling) backdrop", () => {
+    // Audit-guard for the 2026-05-08 fix. Раніше модалка була
+    // `fixed inset-0 ... flex items-end sm:items-center` без
+    // `overflow-y-auto`, а backdrop сидів у тому ж flex-контейнері
+    // через `absolute inset-0`. Коли користувач у Settings →
+    // «Подивитись tour» розгортав модулі через «Що це за розділи?»,
+    // картка ставала вищою за viewport і обрізалась і зверху
+    // (логотип), і знизу — без можливості прокрутки дістатись до
+    // CTA / тогл-кнопки «Згорнути». Регресія легко повертається
+    // зворотнім рефакторингом, тож структуру фіксуємо тестом, а не
+    // коментарем.
+    render(<OnboardingWizard mode="tour" onDone={() => {}} />);
+    const dialog = screen.getByRole("dialog", { name: /Вітальний екран/i });
+    expect(dialog.className).toMatch(/\boverflow-y-auto\b/);
+    // The backdrop is a sibling rendered first, with `aria-hidden`,
+    // and it must be `fixed` (not `absolute`) so it stays anchored to
+    // the viewport while the dialog scroll-layer slides under it.
+    const backdrop = dialog.querySelector('[aria-hidden="true"]');
+    expect(backdrop).not.toBeNull();
+    expect(backdrop?.className).toMatch(/\bfixed\b/);
+    expect(backdrop?.className).toMatch(/\binset-0\b/);
+  });
+
   it("default mode renders the outcome-variant CTA (mainline post-S1.1)", () => {
     // PR-04 bumped the experiment to v2 (4-way split, weights [0.4, 0.2,
     // 0.2, 0.2]) so a fresh fingerprint can land on any arm. Pin the
