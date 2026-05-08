@@ -1,4 +1,4 @@
-import { useMemo, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
@@ -65,6 +65,12 @@ export function AddExerciseSheet({
   addExercise,
 }: AddExerciseSheetProps) {
   const kbInsetPx = useVisualKeyboardInset(open);
+  // Inline validation message shown below «Назва (укр)» when the user
+  // taps «Зберегти» with the field empty. Without it the click was
+  // silently swallowed (just `if (!nameUk) return;`) and the user was
+  // left wondering whether the button was broken — see screenshot in
+  // dmytro.s.stakhov's PR feedback.
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const suggestedMuscles = useMemo(() => {
     const g = form.primaryGroup;
@@ -72,10 +78,15 @@ export function AddExerciseSheet({
     return ids.filter((id) => musclesUk?.[id]);
   }, [form.primaryGroup, musclesByPrimaryGroup, musclesUk]);
 
+  const handleClose = () => {
+    setNameError(null);
+    onClose();
+  };
+
   return (
     <Sheet
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title="Додати вправу"
       description="Збережеться локально на цьому пристрої"
       closeLabel="Закрити форму"
@@ -84,19 +95,38 @@ export function AddExerciseSheet({
       zIndex={100}
     >
       <div className="space-y-3">
-        <Input
-          placeholder="Назва (укр) *"
-          value={form.nameUk}
-          onChange={(e) => setForm((f) => ({ ...f, nameUk: e.target.value }))}
-          aria-label="Назва вправи українською"
-        />
+        <div>
+          <Input
+            placeholder="Назва (укр) *"
+            value={form.nameUk}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, nameUk: e.target.value }));
+              if (nameError) setNameError(null);
+            }}
+            aria-label="Назва вправи українською"
+            aria-invalid={nameError ? "true" : undefined}
+            aria-describedby={nameError ? "add-exercise-name-error" : undefined}
+            className={cn(
+              nameError && "border-danger/70 focus-visible:border-danger/70",
+            )}
+          />
+          {nameError && (
+            <p
+              id="add-exercise-name-error"
+              role="alert"
+              className="text-style-caption mt-1.5 text-danger"
+            >
+              {nameError}
+            </p>
+          )}
+        </div>
 
-        <div className="rounded-2xl border border-line bg-panelHi px-3">
-          <SectionHeading as="div" size="xs" className="pt-2">
+        <label className="block">
+          <SectionHeading as="div" size="xs" className="mb-1.5">
             Основна група
           </SectionHeading>
           <select
-            className="input-focus-fizruk w-full min-h-[44px] bg-transparent text-sm text-text py-2 rounded-xl"
+            className="input-focus-fizruk w-full min-h-[44px] rounded-2xl border border-line bg-panelHi px-3 py-2 text-sm text-text"
             value={form.primaryGroup}
             onChange={(e) =>
               setForm((f) => ({
@@ -114,7 +144,7 @@ export function AddExerciseSheet({
               </option>
             ))}
           </select>
-        </div>
+        </label>
 
         <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs">
@@ -218,7 +248,12 @@ export function AddExerciseSheet({
           className="h-12 min-h-[44px]"
           onClick={() => {
             const nameUk = (form.nameUk || "").trim();
-            if (!nameUk) return;
+            if (!nameUk) {
+              setNameError(
+                "Вкажи назву українською — без неї вправу не збережемо.",
+              );
+              return;
+            }
             const id = `custom_${slugify(nameUk) || Date.now()}`;
             addExercise({
               id,
@@ -238,6 +273,7 @@ export function AddExerciseSheet({
               description: (form.description || "").trim(),
               source: "manual",
             });
+            setNameError(null);
             onClose();
             setForm({
               nameUk: "",
@@ -251,7 +287,11 @@ export function AddExerciseSheet({
         >
           Зберегти
         </Button>
-        <Button variant="ghost" className="h-12 min-h-[44px]" onClick={onClose}>
+        <Button
+          variant="ghost"
+          className="h-12 min-h-[44px]"
+          onClick={handleClose}
+        >
           Скасувати
         </Button>
       </div>

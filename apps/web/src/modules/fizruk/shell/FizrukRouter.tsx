@@ -94,6 +94,7 @@ function renderPage(props: FizrukRouterProps) {
               ? () => onOpenModule("routine", { hash: "calendar" })
               : undefined
           }
+          onOpenPrograms={() => onNavigate("programs")}
         />
       );
     case "progress":

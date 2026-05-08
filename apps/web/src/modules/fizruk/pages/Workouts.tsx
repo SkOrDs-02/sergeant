@@ -64,9 +64,20 @@ interface WorkoutsProps {
    * tab that the user asked us to dissolve.
    */
   onOpenRoutine?: () => void;
+  /**
+   * Deep-link to the Fizruk «Програми» page. Wired by
+   * `FizrukRouter.tsx` from the parent `onNavigate` so the Workouts
+   * home can surface a tile in «Довідники» that takes users into the
+   * built-in program catalogue without forcing them back to the
+   * dashboard hero just to find it.
+   */
+  onOpenPrograms?: () => void;
 }
 
-export function Workouts({ onOpenRoutine }: WorkoutsProps = {}) {
+export function Workouts({
+  onOpenRoutine,
+  onOpenPrograms,
+}: WorkoutsProps = {}) {
   const toast = useToast();
   const {
     exercises,
@@ -398,6 +409,7 @@ export function Workouts({ onOpenRoutine }: WorkoutsProps = {}) {
               setView("log");
             }}
             onOpenSchedule={onOpenRoutine}
+            onOpenPrograms={onOpenPrograms}
           />
         ) : null}
 
