@@ -3,9 +3,15 @@
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Mirrors the
- * fizruk dual-write diff layer (PR #028) — same shape, same semantics,
- * separate types because the entity surface is different.
+ * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. The
+ * orchestrator in `./index.ts` calls this on every successful
+ * localStorage write. Stage 8 PR #056n dropped the
+ * `feature.nutrition.sqlite_v2.dual_write` gate — the SQLite mirror is
+ * now unconditional whenever a dual-write context is registered.
+ *
+ * Mirrors the fizruk dual-write diff layer (PR #028) — same shape,
+ * same semantics, separate types because the entity surface is
+ * different.
  *
  * Five entity classes are tracked:
  *

@@ -72,12 +72,15 @@ describe("featureFlags", () => {
     expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(false);
   });
 
-  it("Nutrition dual-write увімкнений за замовчуванням для Stage 8 PR #055n1", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.nutrition.sqlite_v2.dual_write")).toBe(true);
-
-    expect(setFlag("feature.nutrition.sqlite_v2.dual_write", false)).toBe(true);
+  it("Stage 8 PR #056n drop: feature.nutrition.sqlite_v2.dual_write більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find(
+        (f) => f.id === "feature.nutrition.sqlite_v2.dual_write",
+      ),
+    ).toBeUndefined();
     expect(getFlag("feature.nutrition.sqlite_v2.dual_write")).toBe(false);
+    expect(setFlag("feature.nutrition.sqlite_v2.dual_write", true)).toBe(false);
   });
 
   it("Stage 8 PR #056k drop: feature.finyk.sqlite_v2.dual_write більше не існує у реєстрі", async () => {

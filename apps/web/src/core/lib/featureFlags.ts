@@ -76,18 +76,10 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.nutrition.sqlite_v2.dual_write",
-    label: "Nutrition — dual-write LS↔SQLite",
-    description:
-      "Кожен write у localStorage Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з LS/IDB. Stage 8 PR #055n1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.nutrition.sqlite_v2.read_sqlite",
     label: "Nutrition — read from SQLite",
     description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як source-of-truth. Stage 8 PR #055n2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056n. Default: on.",
     defaultValue: true,
     experimental: true,
   },

@@ -69,17 +69,10 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     defaultValue: true,
   },
   {
-    id: "feature.nutrition.sqlite_v2.dual_write",
-    label: "Nutrition — dual-write MMKV↔SQLite",
-    description:
-      "Кожен write у MMKV Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з MMKV. Stage 8 PR #055n1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
-    defaultValue: true,
-  },
-  {
     id: "feature.nutrition.sqlite_v2.read_sqlite",
     label: "Nutrition — read state from SQLite",
     description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*` таблиці) замість MMKV blob. MMKV-write залишається як source-of-truth. Stage 8 PR #055n2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056n. Default: on.",
     defaultValue: true,
   },
   {

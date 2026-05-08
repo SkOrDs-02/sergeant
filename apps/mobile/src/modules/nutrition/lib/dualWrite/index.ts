@@ -19,12 +19,15 @@ import {
  * successful MMKV write; this module decides whether to mirror to the
  * local expo-sqlite database based on the registered context.
  *
+ * Stage 8 PR #056n dropped the
+ * `feature.nutrition.sqlite_v2.dual_write` gate — the SQLite mirror is
+ * now unconditional whenever a dual-write context is registered.
+ *
  * Decoupling: see the web copy for the rationale (avoids cycles
  * between MMKV layer ↔ auth ↔ sqlite singleton, keeps tests independent).
  */
 
 export interface NutritionDualWriteContext {
-  isEnabled(): boolean;
   getUserId(): string | null;
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   getNow(): string;
@@ -56,7 +59,6 @@ export async function dualWriteNutritionState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffNutritionDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -105,7 +107,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";

@@ -17,13 +17,12 @@ describe("mobile featureFlags", () => {
     expect(flag).toBeUndefined();
   });
 
-  it("keeps Nutrition dual-write default-on for Stage 8 PR #055n1", () => {
+  it("Stage 8 PR #056n drop: feature.nutrition.sqlite_v2.dual_write більше не існує у реєстрі", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.nutrition.sqlite_v2.dual_write",
     );
 
-    expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag).toBeUndefined();
   });
 
   it("Stage 8 PR #056k drop: feature.finyk.sqlite_v2.dual_write більше не існує у реєстрі", () => {

@@ -27,7 +27,6 @@ function makeCtx(
   overrides: Partial<NutritionDualWriteContext> = {},
 ): NutritionDualWriteContext {
   return {
-    isEnabled: () => true,
     getUserId: () => UID,
     getMigrationClient: async () => handle.client,
     getNow: () => TS1,
@@ -55,12 +54,6 @@ describe("nutrition dualWrite orchestrator", () => {
   it("returns context-unset when no context registered", async () => {
     const result = await dualWriteNutritionState(EMPTY, EMPTY);
     expect(result).toEqual({ status: "skipped", reason: "context-unset" });
-  });
-
-  it("returns flag-off when isEnabled returns false", async () => {
-    registerNutritionDualWriteContext(makeCtx({ isEnabled: () => false }));
-    const result = await dualWriteNutritionState(EMPTY, EMPTY);
-    expect(result).toEqual({ status: "skipped", reason: "flag-off" });
   });
 
   it("returns no-ops when prev === next", async () => {

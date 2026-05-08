@@ -20,7 +20,6 @@ import {
 
 export interface BootNutritionDualWriteInput {
   getUserId(): string | null;
-  isFlagEnabled(): boolean;
 }
 
 let migrationsApplied = false;
@@ -29,7 +28,6 @@ export function bootNutritionDualWrite(
   input: BootNutritionDualWriteInput,
 ): () => void {
   const ctx: NutritionDualWriteContext = {
-    isEnabled: () => input.isFlagEnabled(),
     getUserId: () => input.getUserId(),
     getMigrationClient: async (): Promise<SqliteMigrationClient | null> => {
       const client = await getSqliteMigrationClient();
