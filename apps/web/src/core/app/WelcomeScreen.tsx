@@ -57,10 +57,17 @@ const PEEK_CARDS = [
 ];
 
 function PeekBackdrop() {
+  // 2026-05-08 — `fixed inset-0` (not `absolute inset-0`).
+  // Раніше backdrop сидів у тому самому потоці page-wrapper'а, тож
+  // коли scroll-шар розширювався (через «Що це за розділи?»),
+  // floating-shapes / blurred bento теж тягнулися вниз разом із
+  // вмістом. `fixed` пришпилює backdrop до viewport — він залишається
+  // на місці, а splash-картка прокручується над ним. Дзеркало того
+  // ж патерну, що й у `OnboardingWizard` modal-варіанті.
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none fixed inset-0 overflow-hidden"
     >
       <div
         className={cn(
@@ -210,10 +217,29 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     }
   }, []);
 
+  // 2026-05-08 — окремий scroll-шар на page-wrapper'і.
+  // `html, body, #root` усі зафіксовані на `height: 100dvh`
+  // (`apps/web/src/styles/base.css`), тож натуральний body-scroll
+  // вимкнений. До цього фіксу page-wrapper був
+  // `min-h-dvh ... overflow-hidden`: коли користувач розгортав
+  // модулі через «Що це за розділи?», splash-картка ставала вищою
+  // за viewport, але body не міг прокрутитись (#root зафіксований),
+  // а `overflow-hidden` обрізав картку зверху (логотип) і знизу
+  // (CTA / «Згорнути») — без можливості скрола взагалі.
+  //
+  // Тепер page-wrapper — справжній scroll-контейнер: `h-dvh`
+  // (рівно viewport), `overflow-y-auto` (внутрішній скрол),
+  // `overscroll-contain` (гасить body-bounce на iOS). `PeekBackdrop`
+  // переведено на `fixed inset-0`, тож floating-shapes / blurred
+  // bento залишаються в viewport, а splash-блок ковзає над ними.
+  // Внутрішній шар — `min-h-full flex items-end sm:items-center`:
+  // коли вміст вміщується — картка центрується як раніше; коли
+  // overflow — зовнішній скролить і вертикально розкриває і верх
+  // (логотип), і низ (auth-кнопка + «Згорнути»).
   return (
-    <div className="relative min-h-dvh bg-bg text-text overflow-hidden page-enter">
+    <div className="relative h-dvh overflow-y-auto overscroll-contain bg-bg text-text page-enter">
       <PeekBackdrop />
-      <div className="relative min-h-dvh flex items-end sm:items-center justify-center p-4 pb-safe">
+      <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
         <div className="w-full max-w-sm space-y-3">
           <OnboardingWizard
             onDone={onDone}

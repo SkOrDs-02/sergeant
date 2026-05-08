@@ -65,7 +65,8 @@ export async function openInvocation(
   // використання у app-коді. Hard-rule #1 (BIGINT serialization safety):
   // у Phase 1 у нас точно <2^53 invocations.
   const row = result.rows[0];
-  if (!row) throw new Error("openInvocation: INSERT RETURNING returned no rows");
+  if (!row)
+    throw new Error("openInvocation: INSERT RETURNING returned no rows");
   return Number(row.id);
 }
 

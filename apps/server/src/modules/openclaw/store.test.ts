@@ -60,10 +60,17 @@ describe("recordWriteAudit", () => {
     expect(calls[0]?.text).toMatch(/INSERT INTO openclaw_write_audit/);
   });
 
-  it("returns 0 if INSERT…RETURNING produced no rows (defensive default)", async () => {
+  it("throws if INSERT…RETURNING produced no rows (no silent defensive default)", async () => {
+    // 2026-05-08 — раніше тест очікував defensive `return 0`, але
+    // implementation давно кидає (як і sibling-и `openInvocation` /
+    // `insertDecision` з тим самим `INSERT … RETURNING id` патерном).
+    // Контракт єдиний на весь модуль: відсутня row-а з RETURNING — це
+    // інваріант-вайолейшен бази, його треба підняти, а не маскувати
+    // нулем (нуль-id потім ламає FK у downstream-аудитах).
     const { pool } = makeFakePool([]);
-    const id = await recordWriteAudit(pool, baseInput());
-    expect(id).toBe(0);
+    await expect(recordWriteAudit(pool, baseInput())).rejects.toThrow(
+      /INSERT RETURNING returned no rows/,
+    );
   });
 
   it("passes core columns in fixed positional order", async () => {
