@@ -12,8 +12,9 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 
 // Mock the posthog transport so tests don't need a real PostHog key.
+const capturePostHogEvent = vi.fn();
 vi.mock("../observability/posthog", () => ({
-  capturePostHogEvent: vi.fn(),
+  capturePostHogEvent,
 }));
 
 // Mock featureFlags — start with the flag disabled; individual tests override.
@@ -83,6 +84,26 @@ describe("useAppLock", () => {
     act(() => result.current.startSetup());
     act(() => result.current.finishSetup());
     expect(result.current.state).toBe("idle");
+  });
+
+  it("finishSetup() after startSetup emits mode:'setup'", () => {
+    const { result } = renderHook(() => useAppLock());
+    act(() => result.current.startSetup());
+    act(() => result.current.finishSetup());
+    const completedCall = capturePostHogEvent.mock.calls.find(
+      ([name]: [string]) => name === "app_lock_setup_completed",
+    );
+    expect(completedCall?.[1]).toEqual({ mode: "setup" });
+  });
+
+  it("finishSetup() after startChange emits mode:'change'", () => {
+    const { result } = renderHook(() => useAppLock());
+    act(() => result.current.startChange());
+    act(() => result.current.finishSetup());
+    const completedCall = capturePostHogEvent.mock.calls.find(
+      ([name]: [string]) => name === "app_lock_setup_completed",
+    );
+    expect(completedCall?.[1]).toEqual({ mode: "change" });
   });
 
   it("unlock() with correct PIN transitions to 'idle' and returns true", async () => {

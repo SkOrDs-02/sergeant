@@ -27,6 +27,7 @@ export function useAppLock(): UseAppLockReturn {
   const enabled = useFlag("app-lock-enabled");
   const [state, setState] = useState<LockState>("idle");
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setupModeRef = useRef<"setup" | "change">("setup");
 
   // On mount (and whenever the flag is toggled on) check if a PIN is already
   // configured — if yes, lock immediately (cold-start protection).
@@ -92,6 +93,7 @@ export function useAppLock(): UseAppLockReturn {
   }, []);
 
   const startSetup = useCallback(() => {
+    setupModeRef.current = "setup";
     setState("setup");
     capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {
       mode: "setup",
@@ -99,6 +101,7 @@ export function useAppLock(): UseAppLockReturn {
   }, []);
 
   const startChange = useCallback(() => {
+    setupModeRef.current = "change";
     setState("change");
     capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {
       mode: "change",
@@ -106,8 +109,9 @@ export function useAppLock(): UseAppLockReturn {
   }, []);
 
   const finishSetup = useCallback(() => {
+    const mode = setupModeRef.current;
     setState("idle");
-    capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_COMPLETED, {});
+    capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_COMPLETED, { mode });
   }, []);
 
   const unlock = useCallback(
