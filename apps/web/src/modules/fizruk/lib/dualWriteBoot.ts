@@ -6,6 +6,11 @@
  * context from the platform bootstrap — so the dual-write pipeline
  * stayed dormant in production. This module closes that gap. Mirror of
  * `apps/web/src/modules/routine/lib/dualWriteBoot.ts`.
+ *
+ * Stage 8 PR #056f dropped the `isFlagEnabled` callback — the
+ * `feature.fizruk.sqlite_v2.dual_write` flag was removed from the
+ * registry once it had been default-on with no toggle path remaining.
+ * Registration is now `userId`-gated only.
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -17,21 +22,18 @@ import {
 
 export interface BootFizrukDualWriteInput {
   getUserId(): string | null;
-  isFlagEnabled(): boolean;
 }
 
 /**
  * Install the Fizruk dual-write context. Returns a teardown function.
  *
  * The resolvers are intentionally simple — see the routine variant
- * for the rationale on lazy sqlite resolution and live flag/userId
- * reads.
+ * for the rationale on lazy sqlite resolution and live userId reads.
  */
 export function bootFizrukDualWrite(
   input: BootFizrukDualWriteInput,
 ): () => void {
   const ctx: FizrukDualWriteContext = {
-    isEnabled: () => input.isFlagEnabled(),
     getUserId: () => input.getUserId(),
     getMigrationClient: async (): Promise<SqliteMigrationClient | null> => {
       const handle = await getSqliteDb();

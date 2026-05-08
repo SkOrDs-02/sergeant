@@ -31,7 +31,6 @@ function makeCtx(
   overrides: Partial<FizrukDualWriteContext> = {},
 ): FizrukDualWriteContext {
   return {
-    isEnabled: () => true,
     getUserId: () => UID,
     getMigrationClient: async () => handle.client,
     getNow: () => TS,
@@ -44,15 +43,6 @@ describe("dualWriteFizrukState integration", () => {
   it("skips when context is not registered", async () => {
     const result = await dualWriteFizrukState(EMPTY, EMPTY);
     expect(result).toEqual({ status: "skipped", reason: "context-unset" });
-  });
-
-  it("skips when flag is off", async () => {
-    const teardown = registerFizrukDualWriteContext(
-      makeCtx({ isEnabled: () => false }),
-    );
-    const result = await dualWriteFizrukState(EMPTY, EMPTY);
-    expect(result).toEqual({ status: "skipped", reason: "flag-off" });
-    teardown();
   });
 
   it("skips when no ops (same state)", async () => {

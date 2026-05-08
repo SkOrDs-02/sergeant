@@ -68,18 +68,10 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.fizruk.sqlite_v2.dual_write",
-    label: "Fizruk — dual-write LS↔SQLite",
-    description:
-      "Кожен write у localStorage Фізрука додатково мирорить у локальну SQLite (`fizruk_workouts`, `fizruk_custom_exercises`, `fizruk_measurements`). Reads ще беруться з LS. Stage 8 PR #055f1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.fizruk.sqlite_v2.read_sqlite",
     label: "Fizruk — read from SQLite",
     description:
-      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як source-of-truth. Stage 8 PR #055f2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056f. Default: on.",
     defaultValue: true,
     experimental: true,
   },

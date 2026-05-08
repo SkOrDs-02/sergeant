@@ -47,12 +47,13 @@ describe("featureFlags", () => {
     expect(setFlag("feature.routine.sqlite_v2.dual_write", true)).toBe(false);
   });
 
-  it("Fizruk dual-write увімкнений за замовчуванням і може бути вимкнений користувачем", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(true);
-
-    expect(setFlag("feature.fizruk.sqlite_v2.dual_write", false)).toBe(true);
+  it("Stage 8 PR #056f drop: feature.fizruk.sqlite_v2.dual_write більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find((f) => f.id === "feature.fizruk.sqlite_v2.dual_write"),
+    ).toBeUndefined();
     expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(false);
+    expect(setFlag("feature.fizruk.sqlite_v2.dual_write", true)).toBe(false);
   });
 
   it("flips Routine read_sqlite default-on for Stage 8 PR #055r2 re-rollout", async () => {

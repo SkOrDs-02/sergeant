@@ -21,11 +21,14 @@ import { probeFizrukParity } from "./parity.js";
  *
  * Glues together:
  *
- *  - the **gating** check (`feature.fizruk.sqlite_v2.dual_write`
- *    flag, default off);
  *  - the **identity** resolver (`getUserId()`);
  *  - the **SQLite** resolver (`getMigrationClient()`);
  *  - and the **adapter** (`applyFizrukDualWriteOps`).
+ *
+ * Stage 8 PR #056f removed `isEnabled()` from the context — the
+ * legacy `feature.fizruk.sqlite_v2.dual_write` flag was default-on
+ * with no toggle path remaining. SQLite mirror is now unconditional
+ * whenever a dual-write context is registered.
  *
  * Registration pattern: the hooks that write to localStorage sit below
  * the auth + sqlite singletons in the dependency graph. Pulling those
@@ -35,14 +38,11 @@ import { probeFizrukParity } from "./parity.js";
  * Best-effort guarantees:
  *
  *  - The orchestrator's promise NEVER rejects.
- *  - When the flag is off, no resolver is called and no diff is
- *    computed (zero per-write overhead).
  *  - When `getUserId()` or `getMigrationClient()` return null the
  *    call is a no-op.
  */
 
 export interface FizrukDualWriteContext {
-  isEnabled(): boolean;
   getUserId(): string | null;
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   getNow(): string;
@@ -105,7 +105,6 @@ async function runDualWriteFizrukState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffFizrukDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -177,7 +176,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";

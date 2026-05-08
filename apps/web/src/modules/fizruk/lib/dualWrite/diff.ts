@@ -5,8 +5,9 @@
  *
  * Stage 4 PR #028 of `docs/planning/storage-roadmap.md`. The
  * orchestrator in `./index.ts` calls this on every successful
- * localStorage write when the user has opted in via the
- * `feature.fizruk.sqlite_v2.dual_write` flag.
+ * localStorage write. Stage 8 PR #056f dropped the
+ * `feature.fizruk.sqlite_v2.dual_write` gate — the SQLite mirror is
+ * now unconditional whenever a dual-write context is registered.
  *
  * Three entity classes are tracked:
  *

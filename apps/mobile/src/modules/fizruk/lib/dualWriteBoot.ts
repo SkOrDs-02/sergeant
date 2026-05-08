@@ -4,6 +4,11 @@
  * Stage 4 of `docs/planning/storage-roadmap.md`. Mirror of
  * `apps/mobile/src/modules/routine/lib/dualWriteBoot.ts`. See that file
  * for the rationale.
+ *
+ * Stage 8 PR #056f dropped the `isFlagEnabled` callback — the
+ * `feature.fizruk.sqlite_v2.dual_write` flag was removed from the
+ * registry once it had been default-on with no toggle path remaining.
+ * Registration is now `userId`-gated only.
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -16,14 +21,12 @@ import {
 
 export interface BootFizrukDualWriteInput {
   getUserId(): string | null;
-  isFlagEnabled(): boolean;
 }
 
 export function bootFizrukDualWrite(
   input: BootFizrukDualWriteInput,
 ): () => void {
   const ctx: FizrukDualWriteContext = {
-    isEnabled: () => input.isFlagEnabled(),
     getUserId: () => input.getUserId(),
     getMigrationClient: async (): Promise<SqliteMigrationClient | null> => {
       return getSqliteMigrationClient();

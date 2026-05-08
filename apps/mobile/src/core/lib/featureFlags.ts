@@ -62,17 +62,10 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     defaultValue: true,
   },
   {
-    id: "feature.fizruk.sqlite_v2.dual_write",
-    label: "Fizruk — dual-write MMKV↔SQLite",
-    description:
-      "Кожен write у MMKV Фізрука додатково мирорить у локальну SQLite (`fizruk_workouts`, `fizruk_custom_exercises`, `fizruk_measurements`). Reads ще беруться з MMKV. Stage 8 PR #055f1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
-    defaultValue: true,
-  },
-  {
     id: "feature.fizruk.sqlite_v2.read_sqlite",
     label: "Fizruk — read state from SQLite",
     description:
-      "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як source-of-truth. Stage 8 PR #055f2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056f. Default: on.",
     defaultValue: true,
   },
   {

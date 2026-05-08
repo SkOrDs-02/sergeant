@@ -21,7 +21,6 @@ import { diffFizrukDualWriteOps, type FizrukDualWriteState } from "./diff";
  */
 
 export interface FizrukDualWriteContext {
-  isEnabled(): boolean;
   getUserId(): string | null;
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   getNow(): string;
@@ -53,7 +52,6 @@ export async function dualWriteFizrukState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffFizrukDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -102,7 +100,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";
