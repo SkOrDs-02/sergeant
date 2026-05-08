@@ -3,6 +3,7 @@ import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
+import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import { createHabit, updateHabit } from "../lib/routineStorage";
 import {
   emptyHabitDraft,
@@ -34,6 +35,15 @@ export interface HabitQuickCreateDialogProps {
    * reopens the dialog after closing it.
    */
   focusTick?: number;
+  /**
+   * When true, render a `<FirstRunHintBanner />` at the top of the
+   * dialog framing this first habit as preliminary — used by the
+   * per-module first-run flow that auto-opens the dialog on the user's
+   * first Routine entry. See `core/onboarding/useModuleFirstRun.ts`.
+   */
+  firstRunHint?: boolean;
+  /** Dismiss callback for the first-run hint banner. */
+  onDismissFirstRunHint?: () => void;
 }
 
 function habitToDraft(habit: Habit): HabitDraft {
@@ -68,6 +78,8 @@ export function HabitQuickCreateDialog({
   onClose,
   editingId,
   focusTick,
+  firstRunHint,
+  onDismissFirstRunHint,
 }: HabitQuickCreateDialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   useDialogFocusTrap(open, ref, { onEscape: onClose });
@@ -195,6 +207,15 @@ export function HabitQuickCreateDialog({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 pb-5">
+          {firstRunHint && !editingId && (
+            <FirstRunHintBanner
+              variant="routine"
+              title={messages.routine.firstRun.title}
+              description={messages.routine.firstRun.description}
+              onDismiss={onDismissFirstRunHint ?? (() => {})}
+              className="mb-3"
+            />
+          )}
           <HabitForm
             routine={routine}
             habitDraft={draft}

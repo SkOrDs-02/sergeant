@@ -48,6 +48,7 @@ import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
+import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 
 const PRIVAT_ENABLED = false;
 
@@ -81,6 +82,24 @@ export default function App({
   // Передається у Budgets, щоб одразу підсвітити та проскролити
   // потрібну картку.
   const focusLimitCategoryId = useFinykQueryParam("cat");
+
+  // Per-module first-run handoff. On the user's very first Finyk
+  // entry route them straight to «Планування» so the canonical
+  // monthly-plan editor (`MonthlyPlanCard`) is what they see — see
+  // `core/onboarding/useModuleFirstRun.ts` for the rationale and
+  // legacy storage-key contract.
+  const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
+    useModuleFirstRun("finyk");
+  // Latch the initial `firstRun` so `markSeen()` (or any cross-tab
+  // edit to the seen flag) doesn't yank `Budgets` back to its
+  // default closed state mid-session — `MonthlyPlanCard`'s lazy
+  // `useState` initializer reads the prop on first mount only.
+  const [firstRunFinykSurface, setFirstRunFinykSurface] =
+    useState(firstRunFinyk);
+  useEffect(() => {
+    if (firstRunFinyk) setFirstRunFinykSurface(true);
+  }, [firstRunFinyk]);
+  const firstRunFinykActive = firstRunFinykSurface && page === "budgets";
   const [tokenInput, setTokenInput] = useState("");
   const [showToken, setShowToken] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -125,6 +144,18 @@ export default function App({
     }
     // Одноразово при монтуванні: ?sync= у URL
     // eslint-disable-next-line react-hooks/exhaustive-deps -- storage/toast не повинні перезапускати імпорт з URL
+  }, []);
+
+  // First-run jump to the canonical goal surface. Runs once after
+  // mount so a user mid-session who happens to clear the seen flag
+  // does not get re-routed away from whatever page they were on.
+  // Skipped when a `pwaAction` is already routing the user (e.g.
+  // `add_expense` deep-link) so the action target wins.
+  useEffect(() => {
+    if (!firstRunFinyk) return;
+    if (pwaAction === "add_expense") return;
+    if (page !== "budgets") navigate("budgets");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount; subsequent edits to firstRun must not retrigger
   }, []);
 
   useEffect(() => {
@@ -435,6 +466,11 @@ export default function App({
                   storage={storage}
                   showBalance={showBalance}
                   focusLimitCategoryId={focusLimitCategoryId}
+                  monthlyPlanFirstRunHint={firstRunFinykActive}
+                  onDismissMonthlyPlanFirstRunHint={() => {
+                    markFinykSeen();
+                    setFirstRunFinykSurface(false);
+                  }}
                 />
               </SectionErrorBoundary>
             )}

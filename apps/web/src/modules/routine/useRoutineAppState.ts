@@ -30,6 +30,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { useFinykHubPreview } from "../../core/hub/useFinykHubPreview";
+import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
   loadRoutineState,
   toggleHabitCompletion,
@@ -86,6 +87,10 @@ export interface RoutineAppStateBundle {
   setMainTab: Dispatch<SetStateAction<RoutineMainTab>>;
   quickAddHabitOpen: boolean;
   quickAddFocusTick: number;
+  /** True only on the very first quick-add open of a fresh user. */
+  quickAddFirstRunHint: boolean;
+  /** Acknowledge the first-run hint banner inside the quick-add dialog. */
+  dismissQuickAddFirstRunHint: () => void;
   openQuickAddHabit: () => void;
   closeQuickAddHabit: () => void;
   streakMax: number;
@@ -198,11 +203,33 @@ export function useRoutineAppState({
   // suppress `react-hooks/set-state-in-effect` rather than restructure.
   useEffect(() => {
     if (pwaAction !== "add_habit") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuickAddHabitOpen(true);
     setQuickAddFocusTick((t) => t + 1);
     onPwaActionConsumed?.();
   }, [pwaAction, onPwaActionConsumed]);
+
+  // Per-module first-run: pop the quick-create dialog the first time
+  // the user enters Routine. Habits do not have a small «previous
+  // goal» scalar to seed (recurrence/reminders/weekdays all need
+  // explicit input) so the canonical «domivka» is the same
+  // `HabitQuickCreateDialog` every returning user uses; the dialog
+  // itself renders a `<FirstRunHintBanner />` framing this first habit
+  // as preliminary. We mark the seen flag immediately so closing the
+  // dialog without saving still retires the prompt for next time.
+  const routineFirstRun = useModuleFirstRun("routine");
+  const [quickAddFirstRunHint, setQuickAddFirstRunHint] =
+    useState<boolean>(false);
+  useEffect(() => {
+    if (!routineFirstRun.firstRun) return;
+    if (pwaAction === "add_habit") return;
+    setQuickAddHabitOpen(true);
+    setQuickAddFocusTick((t) => t + 1);
+    setQuickAddFirstRunHint(true);
+    routineFirstRun.markSeen();
+  }, [routineFirstRun, pwaAction]);
+  const dismissQuickAddFirstRunHint = useCallback(() => {
+    setQuickAddFirstRunHint(false);
+  }, []);
 
   useEffect(() => {
     try {
@@ -339,6 +366,8 @@ export function useRoutineAppState({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
+    quickAddFirstRunHint,
+    dismissQuickAddFirstRunHint,
     openQuickAddHabit,
     closeQuickAddHabit,
     streakMax: derived.streakMax,

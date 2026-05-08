@@ -20,6 +20,10 @@ export interface RoutineActionsProps {
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
   quickAddHabitOpen: boolean;
   quickAddFocusTick: number;
+  /** True only when the dialog was auto-opened on the user's first Routine entry. */
+  quickAddFirstRunHint: boolean;
+  /** Acknowledge the first-run hint banner inside the dialog. */
+  onDismissQuickAddFirstRunHint: () => void;
   onOpenQuickAddHabit: () => void;
   onCloseQuickAddHabit: () => void;
 }
@@ -31,6 +35,8 @@ export function RoutineActions({
   setRoutine,
   quickAddHabitOpen,
   quickAddFocusTick,
+  quickAddFirstRunHint,
+  onDismissQuickAddFirstRunHint,
   onOpenQuickAddHabit,
   onCloseQuickAddHabit,
 }: RoutineActionsProps) {
@@ -47,6 +53,8 @@ export function RoutineActions({
         setRoutine={setRoutine}
         onClose={onCloseQuickAddHabit}
         focusTick={quickAddFocusTick}
+        firstRunHint={quickAddFirstRunHint}
+        onDismissFirstRunHint={onDismissQuickAddFirstRunHint}
       />
     </>
   );

@@ -62,6 +62,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { fmtMacro, todayISODate } from "./lib/nutritionFormat";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
+import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 
 interface NutritionAppProps {
   onBackToHub?: () => void;
@@ -101,6 +102,24 @@ export default function NutritionApp({
     setMenuSubTab,
   } = useNutritionRoute();
 
+  // Per-module first-run handoff. On the user's very first Nutrition
+  // entry route them to «Меню → План на день» so the canonical macro
+  // editor (`DailyPlanCard`) is what they see — see
+  // `core/onboarding/useModuleFirstRun.ts` for the rationale and
+  // legacy storage-key contract.
+  const { firstRun: firstRunNutrition, markSeen: markNutritionSeen } =
+    useModuleFirstRun("nutrition");
+  // Latch the initial `firstRun` so `markSeen()` (or any cross-tab
+  // edit to the seen flag) doesn't yank the banner away mid-session.
+  // The banner itself dismounts on dismiss via `onDismiss`.
+  const [firstRunNutritionSurface, setFirstRunNutritionSurface] =
+    useState(firstRunNutrition);
+  useEffect(() => {
+    if (firstRunNutrition) setFirstRunNutritionSurface(true);
+  }, [firstRunNutrition]);
+  const firstRunNutritionActive =
+    firstRunNutritionSurface && activePage === "menu" && menuSubTab === "plan";
+
   const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
   const log = useNutritionLog();
   const ui = useNutritionUiState();
@@ -136,6 +155,19 @@ export default function NutritionApp({
       for (const id of timers) clearTimeout(id);
       timers.clear();
     };
+  }, []);
+
+  // First-run jump to the canonical goal surface. Runs once after
+  // mount so a user mid-session who clears the seen flag does not
+  // get re-routed away from whatever page they were on. Skipped when
+  // a `pwaAction` is already routing the user (e.g. `add_meal`,
+  // `add_meal_photo`) so the action target wins.
+  useEffect(() => {
+    if (!firstRunNutrition) return;
+    if (pwaAction === "add_meal" || pwaAction === "add_meal_photo") return;
+    if (activePage !== "menu") setActivePageAndHash("menu");
+    if (menuSubTab !== "plan") setMenuSubTab("plan");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount; subsequent edits to firstRun must not retrigger
   }, []);
 
   useEffect(() => {
@@ -677,6 +709,11 @@ export default function NutritionApp({
                           weekPlanRaw={weekPlanRaw}
                           weekPlanBusy={weekPlanBusy}
                           fetchWeekPlan={fetchWeekPlan}
+                          firstRunHint={firstRunNutritionActive}
+                          onDismissFirstRunHint={() => {
+                            markNutritionSeen();
+                            setFirstRunNutritionSurface(false);
+                          }}
                         />
                       )}
                     </DataState>

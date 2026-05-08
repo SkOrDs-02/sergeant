@@ -35,12 +35,12 @@ const SEEDED_LS: Record<string, string> = {
     firstRealEntryAt: Date.now(),
     updatedAt: Date.now(),
   }),
-  // Mark every module's first-run goal sheet as already seen — otherwise
-  // `<ModuleFirstRunGoalSheet />` (mounted in `ActiveModuleView`) auto-opens
-  // on the first visit per module and its `<Sheet />` overlay (`fixed
-  // inset-0 ... bg-black/40 backdrop-blur-sm`) intercepts the back-to-hub
-  // click. Keys mirror `FIRST_SEEN_KEY_PREFIX/SUFFIX` in
-  // `apps/web/src/core/onboarding/ModuleFirstRunGoalSheet.tsx`.
+  // Mark every module's first-run flag as already seen — otherwise
+  // each module's app shell auto-routes to its canonical goal surface
+  // (nutrition Menu / finyk Budgets / routine HabitQuickCreate) and
+  // pops a `<FirstRunHintBanner />` that intercepts focus before the
+  // back-to-hub click can land. Keys mirror `FIRST_SEEN_KEY_PREFIX/
+  // SUFFIX` in `apps/web/src/core/onboarding/useModuleFirstRun.ts`.
   "sergeant.onboarding.module_first_seen.finyk.v1": "1",
   "sergeant.onboarding.module_first_seen.fizruk.v1": "1",
   "sergeant.onboarding.module_first_seen.routine.v1": "1",

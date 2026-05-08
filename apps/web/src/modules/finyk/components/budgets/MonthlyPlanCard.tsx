@@ -4,6 +4,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { formatMoney } from "@sergeant/shared";
+import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
 // each persisted as the raw `<input type="number">` value (string while
@@ -30,6 +31,15 @@ interface MonthlyPlanCardProps {
   pctExpense: number;
   isOver: boolean;
   daysLeft: number;
+  /**
+   * When true, the card auto-opens and auto-enters the edit form on
+   * mount and renders a `<FirstRunHintBanner />` framing the inputs as
+   * the canonical «домівка» for the user's monthly plan. Set on the
+   * user's first Finyk entry by `FinykApp` via `useModuleFirstRun`.
+   */
+  firstRunHint?: boolean;
+  /** Dismiss callback for the first-run hint banner. */
+  onDismissFirstRunHint?: () => void;
 }
 
 // Unified monthly-plan block: Plan/Fact/Δ table for income, expense and
@@ -52,9 +62,16 @@ function MonthlyPlanCardComponent({
   pctExpense,
   isOver,
   daysLeft,
+  firstRunHint,
+  onDismissFirstRunHint,
 }: MonthlyPlanCardProps) {
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  // First-run path force-opens both the card body and the inline
+  // editor so the user lands directly on the inputs they need to fill
+  // in. Defaults are read once via the `useState` lazy initializer so
+  // re-renders after the parent's `firstRunHint` prop flips back to
+  // false do not yank the editor closed mid-edit.
+  const [open, setOpen] = useState<boolean>(() => firstRunHint === true);
+  const [editing, setEditing] = useState<boolean>(() => firstRunHint === true);
   const hasPlan = planIncome > 0 || planExpense > 0 || planSavings > 0;
 
   const incomeDelta = factIncome - planIncome;
@@ -245,6 +262,14 @@ function MonthlyPlanCardComponent({
 
           {editing && (
             <div className="space-y-2 border-t border-line pt-3">
+              {firstRunHint && (
+                <FirstRunHintBanner
+                  variant="finyk"
+                  title="Це попередній фінплан — потім сам поправиш"
+                  description="Вкажи орієнтовний дохід, витрати і накопичення на місяць. Цей план живе отут — повертайся, коли захочеш перерахувати."
+                  onDismiss={onDismissFirstRunHint ?? (() => {})}
+                />
+              )}
               <Input
                 type="number"
                 placeholder="План доходу ₴"

@@ -83,6 +83,16 @@ export interface BudgetsProps {
   storage: BudgetsStorageSlice;
   showBalance?: boolean;
   focusLimitCategoryId?: string | null;
+  /**
+   * When true, the embedded `MonthlyPlanCard` auto-opens its inline
+   * editor and renders a `<FirstRunHintBanner />` framing the
+   * income/expense/savings inputs as the canonical home of the user's
+   * monthly plan. Set on the user's first Finyk entry by `FinykApp`
+   * via `useModuleFirstRun`.
+   */
+  monthlyPlanFirstRunHint?: boolean;
+  /** Dismiss callback for the first-run hint banner. */
+  onDismissMonthlyPlanFirstRunHint?: () => void;
 }
 
 /**
@@ -103,6 +113,8 @@ export function Budgets({
   storage,
   showBalance = true,
   focusLimitCategoryId = null,
+  monthlyPlanFirstRunHint = false,
+  onDismissMonthlyPlanFirstRunHint,
 }: BudgetsProps) {
   const toast = useToast();
   const { realTx, loadingTx, transactions } = mono;
@@ -353,6 +365,8 @@ export function Budgets({
               pctExpense={pctExpense}
               isOver={isOver}
               daysLeft={daysLeft2}
+              firstRunHint={monthlyPlanFirstRunHint}
+              onDismissFirstRunHint={onDismissMonthlyPlanFirstRunHint}
             />
 
             <BudgetsLimitsSection

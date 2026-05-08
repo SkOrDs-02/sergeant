@@ -14,10 +14,17 @@
  *      entry" card on the Hub dashboard. Gated by
  *      `hub_first_action_pending_v1` (set by the wizard, cleared by
  *      `dismissFirstAction` / `markFirstRealEntryDone`).
- *   3. `<ModuleFirstRunGoalSheet />` — the per-module bottom sheet
- *      («Налаштуй Фінік», «Налаштуй Харчування», «Налаштуй Рутину»,
- *      «Налаштуй Фізрук»). Gated by
- *      `sergeant.onboarding.module_first_seen.<moduleId>.v1`.
+ *   3. Per-module first-run hint banner / auto-route — when a module
+ *      is entered for the first time, its app shell calls
+ *      `useModuleFirstRun(moduleId)` and routes the user to the
+ *      canonical goal-setting surface (nutrition Menu / finyk
+ *      Budgets / routine HabitQuickCreate) with a one-time
+ *      `<FirstRunHintBanner />`. Gated by
+ *      `sergeant.onboarding.module_first_seen.<moduleId>.v1`. The
+ *      legacy `<ModuleFirstRunGoalSheet />` was retired in PR-3 of
+ *      the FTUX rework — the storage key is preserved verbatim so
+ *      sessions that already saw the sheet do not get a fresh
+ *      banner.
  *
  * Plus `<WhatsNewModal />` which auto-shows ~2.5 s after dashboard mount
  * unless `sergeant.whatsNew.lastSeenId.v1` already matches `RELEASES[0]`.
@@ -56,10 +63,12 @@
  *                          marked, what's-new dismissed. Use for the
  *                          steady-state Hub + module shells.
  *   - "module-first-run" — like `post-ftux` but the named module's
- *                          first-seen flag is left absent so
- *                          `<ModuleFirstRunGoalSheet />` auto-opens.
+ *                          first-seen flag is left absent so the
+ *                          per-module first-run banner + auto-route
+ *                          fires (nutrition → Menu / finyk →
+ *                          Budgets / routine → HabitQuickCreate).
  *                          Used by visual baselines that specifically
- *                          want the «Налаштуй …» sheet on screen.
+ *                          want the first-run hint surface on screen.
  */
 
 import type { Page } from "@playwright/test";
@@ -85,9 +94,9 @@ const FIRST_ACTION_DONE_LEGACY_KEY = "hub_first_action_done_v1";
 
 /**
  * Mirrors `FIRST_SEEN_KEY_PREFIX/SUFFIX` in
- * `apps/web/src/core/onboarding/ModuleFirstRunGoalSheet.tsx`. Marking
- * this flag suppresses the «Налаштуй <module>» bottom sheet that auto-
- * opens on first module mount.
+ * `apps/web/src/core/onboarding/useModuleFirstRun.ts`. Marking this
+ * flag suppresses the per-module first-run banner + auto-route that
+ * fires on first module mount.
  */
 const MODULE_FIRST_SEEN_KEY_PREFIX = "sergeant.onboarding.module_first_seen.";
 const MODULE_FIRST_SEEN_KEY_SUFFIX = ".v1";
@@ -225,9 +234,9 @@ function buildPayload(
     set[WHATS_NEW_LAST_SEEN_KEY] = latestRelease.id;
   }
 
-  // Mark every module's first-run sheet as already seen — except the
+  // Mark every module's first-run flag as already seen — except the
   // single module the caller wants to capture. `module-first-run`
-  // therefore gives a deterministic single-sheet screenshot.
+  // therefore gives a deterministic single-banner screenshot.
   const skip = mode === "module-first-run" ? options.moduleId : null;
   for (const id of ALL_FTUX_MODULES) {
     if (id === skip) {

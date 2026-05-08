@@ -6,6 +6,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
+import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import type {
   MealTypeId,
   NutritionPrefs,
@@ -488,6 +489,15 @@ interface DailyPlanCardProps {
   weekPlanRaw?: string;
   weekPlanBusy?: boolean;
   fetchWeekPlan: () => void | Promise<void>;
+  /**
+   * When true, render a `<FirstRunHintBanner />` above the goal
+   * inputs framing the kcal/Б/Ж/В row as the canonical «домівка»
+   * for nutrition goals. Set on the user's first Nutrition entry by
+   * `NutritionApp` via `useModuleFirstRun`.
+   */
+  firstRunHint?: boolean;
+  /** Dismiss callback for the first-run hint banner. */
+  onDismissFirstRunHint?: () => void;
 }
 
 export function DailyPlanCard({
@@ -504,6 +514,8 @@ export function DailyPlanCard({
   weekPlanRaw,
   weekPlanBusy,
   fetchWeekPlan,
+  firstRunHint,
+  onDismissFirstRunHint,
 }: DailyPlanCardProps) {
   // UX-roast 2026-05 §3.3: користувач хотів, аби пресети «Схуднення /
   // Підтримка / Набір» не були первинним фокусом, а виглядали як
@@ -570,6 +582,14 @@ export function DailyPlanCard({
       </div>
 
       <div className="mt-4 space-y-4">
+        {firstRunHint && (
+          <FirstRunHintBanner
+            variant="nutrition"
+            title="Це попередня ціль — потім сам поправиш"
+            description="Постав ккал/Б/Ж/В нижче або обери пресет як підказку. Цілі живуть отут ж — повертайся на цю сторінку, коли захочеш змінити."
+            onDismiss={onDismissFirstRunHint ?? (() => {})}
+          />
+        )}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="text-xs text-subtle">Цілі на день</div>

@@ -26,11 +26,12 @@ import {
  *   - hub                  → `/`, post-FTUX dashboard
  *   - finyk / fizruk /
  *     routine / nutrition  → module shells, post-FTUX
- *   - finyk-first-run /    → `<ModuleFirstRunGoalSheet />` («Налаштуй
- *     nutrition-first-run    Фінік / Харчування») surfaces specifically
- *                            seeded by audit #7 — these are the most
- *                            common bottom-sheet collisions in the
- *                            manual UX pass.
+ *   - finyk-first-run /    → per-module first-run banner +
+ *     nutrition-first-run    auto-route surfaces (finyk Budgets +
+ *                            nutrition Menu) seeded by audit #7 —
+ *                            these replaced the retired
+ *                            `<ModuleFirstRunGoalSheet />` after
+ *                            PR-3 of the FTUX rework.
  *   - hub-chat             → `/chat`, `<HubChatPage />`
  *
  * All seeding goes through `tests/utils/seedFTUX.ts` so the welcome /
@@ -133,9 +134,10 @@ for (const theme of THEMES) {
           .locator("main, #root > *")
           .first()
           .waitFor({ state: "visible", timeout: 10_000 });
-        // Module-first-run sheets fade in — give the Sheet animation
-        // enough time to settle before snapshotting. 800 ms keeps
-        // parity with the previous baseline timing.
+        // Module-first-run banners + auto-routes can include a one-
+        // frame `MonthlyPlanCard` editor expansion. 800 ms keeps
+        // parity with the previous baseline timing — see
+        // `core/onboarding/useModuleFirstRun.ts` for the contract.
         await page.waitForTimeout(800);
 
         await argosScreenshot(

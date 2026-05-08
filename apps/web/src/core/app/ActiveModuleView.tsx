@@ -5,7 +5,6 @@ import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay
 import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { lazyDefault } from "../lib/lazyImport";
 import ModuleErrorBoundary from "../ModuleErrorBoundary";
-import { ModuleFirstRunGoalSheet } from "../onboarding/ModuleFirstRunGoalSheet";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
@@ -42,8 +41,14 @@ export interface ActiveModuleViewProps {
 // «Active module» surface — renders one of FinykApp / FizrukApp /
 // RoutineApp / NutritionApp behind a `<main>` (or `<div>` for Routine,
 // which renders its own `<main id="routine-main">` internally) plus
-// the persistent in-progress-workout shortcut, hub modals, and module
-// first-run goal sheet.
+// the persistent in-progress-workout shortcut and hub modals.
+//
+// Per-module first-run guidance lives inside each module now (see
+// `core/onboarding/useModuleFirstRun.ts`), so each module can route
+// the user to its canonical goal-setting surface and show a
+// `<FirstRunHintBanner />` next to the actual editor — replacing the
+// retired `<ModuleFirstRunGoalSheet />` that wrote answers to a
+// disconnected `OnboardingGoals` store.
 export function ActiveModuleView(props: ActiveModuleViewProps) {
   const {
     activeModule,
@@ -132,7 +137,6 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
         onOpenModule={openModule}
       />
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={onCloseShortcuts} />
-      <ModuleFirstRunGoalSheet moduleId={activeModule} />
     </div>
   );
 }

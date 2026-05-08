@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
 import { useHashRoute } from "@shared/hooks/useHashRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
@@ -82,6 +84,19 @@ export default function FizrukApp({
   usePwaAction(pwaAction, onPwaActionConsumed, {
     start_workout: () => navigate("workouts"),
   });
+
+  // First-run flag bookkeeping. Fizruk's Dashboard already surfaces an
+  // empty-state hero with «Програми» / «Створити шаблон» CTAs and a
+  // KpiRow that promotes «Запланувати тренування» when the user has no
+  // workouts yet — there is no separate weekly-target field that we
+  // could route to. So the per-module first-run treatment here is to
+  // simply mark the flag seen on first mount, retiring the old
+  // `<ModuleFirstRunGoalSheet />` prompt without replacing it. See
+  // `core/onboarding/useModuleFirstRun.ts` for the broader rework.
+  const fizrukFirstRun = useModuleFirstRun("fizruk");
+  useEffect(() => {
+    if (fizrukFirstRun.firstRun) fizrukFirstRun.markSeen();
+  }, [fizrukFirstRun]);
 
   const showBottomNav = page !== "atlas" && page !== "exercise";
 
