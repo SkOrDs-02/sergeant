@@ -6,11 +6,15 @@
 
 import { render } from "@testing-library/react-native";
 
-const useUserMock = jest.fn();
+// Variables referenced inside `jest.mock()` factories must be prefixed
+// with `mock` (case-insensitive) — the babel-jest plugin allows that
+// prefix through the out-of-scope guard. See
+// https://jestjs.io/docs/es6-class-mocks#calling-jestmock-with-the-module-factory-parameter
+const mockUseUser = jest.fn();
 
 jest.mock("@sergeant/api-client/react", () => ({
   __esModule: true,
-  useUser: () => useUserMock(),
+  useUser: () => mockUseUser(),
 }));
 
 jest.mock("@/lib/observability/posthog", () => ({
@@ -46,14 +50,14 @@ const SAMPLE_USER = {
 
 describe("AnalyticsIdentityBridge", () => {
   beforeEach(() => {
-    useUserMock.mockReset();
+    mockUseUser.mockReset();
     identifyMock.mockReset();
     resetMock.mockReset();
     buildTraitsMock.mockClear();
   });
 
   it("не викликає identify/reset поки isPending=true", () => {
-    useUserMock.mockReturnValue({ data: undefined, isPending: true });
+    mockUseUser.mockReturnValue({ data: undefined, isPending: true });
 
     render(<AnalyticsIdentityBridge />);
 
@@ -62,7 +66,7 @@ describe("AnalyticsIdentityBridge", () => {
   });
 
   it("викликає identify коли зʼявляється userId", () => {
-    useUserMock.mockReturnValue({
+    mockUseUser.mockReturnValue({
       data: { user: SAMPLE_USER },
       isPending: false,
     });
@@ -78,7 +82,7 @@ describe("AnalyticsIdentityBridge", () => {
   });
 
   it("re-render із тим самим userId не дублює identify", () => {
-    useUserMock.mockReturnValue({
+    mockUseUser.mockReturnValue({
       data: { user: SAMPLE_USER },
       isPending: false,
     });
@@ -90,14 +94,14 @@ describe("AnalyticsIdentityBridge", () => {
   });
 
   it("викликає reset на переході authenticated → unauthenticated", () => {
-    useUserMock.mockReturnValue({
+    mockUseUser.mockReturnValue({
       data: { user: SAMPLE_USER },
       isPending: false,
     });
     const { rerender } = render(<AnalyticsIdentityBridge />);
     expect(identifyMock).toHaveBeenCalledTimes(1);
 
-    useUserMock.mockReturnValue({
+    mockUseUser.mockReturnValue({
       data: { user: null },
       isPending: false,
     });
@@ -107,7 +111,7 @@ describe("AnalyticsIdentityBridge", () => {
   });
 
   it("при cold-start без сесії (user=null від першого fetch) не викликає reset", () => {
-    useUserMock.mockReturnValue({
+    mockUseUser.mockReturnValue({
       data: { user: null },
       isPending: false,
     });

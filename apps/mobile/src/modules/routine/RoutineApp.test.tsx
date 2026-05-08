@@ -12,6 +12,9 @@
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
+import { createApiClient } from "@sergeant/api-client";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
@@ -20,11 +23,52 @@ import { ToastProvider } from "@/components/ui/Toast";
 
 import { RoutineApp } from "./RoutineApp";
 
+// `RoutineApp` mounts `useRoutineDualWriteBoot` which calls
+// `useUser()` from `@sergeant/api-client/react`. That hook needs both
+// an `<ApiClientProvider>` (for the underlying ApiClient) and a
+// `<QueryClientProvider>` (for the React Query store). Without them
+// the boot hook throws and the surrounding `ModuleErrorBoundary`
+// catches the error and renders the "module crashed" fallback,
+// hiding the surfaces we want to assert on. Mirror the runtime
+// provider tree from `app/_layout.tsx` and pre-seed the user cache so
+// dual-write boot has a stable user id without hitting the network.
+const testUser = {
+  user: {
+    id: "test-user",
+    email: "test@example.com",
+    name: "Test User",
+    image: null,
+    emailVerified: true,
+    createdAt: "2026-04-21T00:00:00.000Z",
+  },
+};
+
+const testApiClient = createApiClient({
+  baseUrl: "http://127.0.0.1",
+  fetchImpl: async () =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(testUser),
+    }) as Response,
+});
+
 function renderApp() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity, gcTime: Infinity },
+    },
+  });
+  queryClient.setQueryData(apiQueryKeys.me.current(), testUser);
   return render(
-    <ToastProvider>
-      <RoutineApp />
-    </ToastProvider>,
+    <ApiClientProvider client={testApiClient}>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <RoutineApp />
+        </ToastProvider>
+      </QueryClientProvider>
+    </ApiClientProvider>,
   );
 }
 

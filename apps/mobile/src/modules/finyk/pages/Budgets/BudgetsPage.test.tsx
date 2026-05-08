@@ -13,6 +13,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
+import { createApiClient } from "@sergeant/api-client";
+import type { ReactElement } from "react";
 
 import { _getMMKVInstance } from "@/lib/storage";
 
@@ -34,6 +38,49 @@ jest.mock("victory-native", () => {
 
 import { BudgetsPage } from "./BudgetsPage";
 
+// `BudgetsPage` indirectly mounts `useFinykTransactionsStore`, which
+// reads the current user via `useUser()` from `@sergeant/api-client/
+// react`. That hook needs an `<ApiClientProvider>` and a
+// `<QueryClientProvider>` mounted higher in the tree, otherwise the
+// component throws and the surrounding ErrorBoundary swallows the
+// surfaces under test. Mirror the runtime provider tree from
+// `app/_layout.tsx`. Same shape as the TransactionsPage helper above.
+const testUser = {
+  user: {
+    id: "test-user",
+    email: "test@example.com",
+    name: "Test User",
+    image: null,
+    emailVerified: true,
+    createdAt: "2026-04-21T00:00:00.000Z",
+  },
+};
+
+const testApiClient = createApiClient({
+  baseUrl: "http://127.0.0.1",
+  fetchImpl: async () =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(testUser),
+    }) as Response,
+});
+
+function renderBudgets(ui: ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity, gcTime: Infinity },
+    },
+  });
+  queryClient.setQueryData(apiQueryKeys.me.current(), testUser);
+  return render(
+    <ApiClientProvider client={testApiClient}>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </ApiClientProvider>,
+  );
+}
+
 const FIXED_NOW = new Date("2026-04-21T12:00:00.000Z");
 
 beforeEach(() => {
@@ -42,7 +89,7 @@ beforeEach(() => {
 
 describe("BudgetsPage — empty state", () => {
   it("renders empty placeholders for limits and goals", () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{ budgets: [], subscriptions: [], monthlyPlan: {} }}
@@ -56,7 +103,7 @@ describe("BudgetsPage — empty state", () => {
 
 describe("BudgetsPage — monthly plan", () => {
   it("renders fact and remaining when a plan + manual tx exists", () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{
@@ -95,7 +142,7 @@ describe("BudgetsPage — monthly plan", () => {
   });
 
   it("opens the plan sheet on tap and persists edits", async () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{ budgets: [], subscriptions: [], monthlyPlan: {} }}
@@ -118,7 +165,7 @@ describe("BudgetsPage — monthly plan", () => {
 
 describe("BudgetsPage — limits", () => {
   it("renders a limit budget row with computed amount", () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{
@@ -145,7 +192,7 @@ describe("BudgetsPage — limits", () => {
   });
 
   it("adds a new limit budget through the AddBudgetSheet", async () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{ budgets: [], subscriptions: [], monthlyPlan: {} }}
@@ -169,7 +216,7 @@ describe("BudgetsPage — limits", () => {
 
 describe("BudgetsPage — subscriptions", () => {
   it("renders seeded subscriptions with a billing badge", () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{
@@ -195,7 +242,7 @@ describe("BudgetsPage — subscriptions", () => {
 
   it("rolls billing day forward to next month when it has already passed", () => {
     // FIXED_NOW = 2026-04-21 → billing day 5 has passed → next charge = May 5
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{
@@ -228,7 +275,7 @@ describe("BudgetsPage — subscriptions", () => {
 describe("BudgetsPage — same-day billing", () => {
   it("shows 'сьогодні' badge when billing day equals today", () => {
     // FIXED_NOW = 2026-04-21 → billingDay 21 should read as today
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{
@@ -254,7 +301,7 @@ describe("BudgetsPage — same-day billing", () => {
 
 describe("BudgetsPage — limit sparkline", () => {
   it("renders a per-row sparkline for limit budgets", () => {
-    render(
+    renderBudgets(
       <BudgetsPage
         now={FIXED_NOW}
         seed={{

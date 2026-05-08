@@ -11,22 +11,61 @@
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
-import { ApiClientProvider } from "@sergeant/api-client/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
+import { createApiClient } from "@sergeant/api-client";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { apiClient } from "@/api/apiClient";
 import { _getMMKVInstance } from "@/lib/storage";
 import { ToastProvider } from "@/components/ui/Toast";
 
 import { NutritionApp } from "./NutritionApp";
 
+// `NutritionApp` mounts `useNutritionDualWriteBoot` (and the Dashboard
+// page mounts more `useUser`-backed hooks). All of them go through
+// `@tanstack/react-query`'s `useQuery`, which throws when there is no
+// `<QueryClientProvider>` higher in the tree. Without a provider the
+// surrounding `ModuleErrorBoundary` swallows the render and the test
+// asserts on hidden surfaces (animated opacity:0). Mirror the runtime
+// provider tree from `app/_layout.tsx` and pre-seed the user cache so
+// dual-write boot has a stable user id without hitting the network.
+const testUser = {
+  user: {
+    id: "test-user",
+    email: "test@example.com",
+    name: "Test User",
+    image: null,
+    emailVerified: true,
+    createdAt: "2026-04-21T00:00:00.000Z",
+  },
+};
+
+const testApiClient = createApiClient({
+  baseUrl: "http://127.0.0.1",
+  fetchImpl: async () =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(testUser),
+    }) as Response,
+});
+
 function renderNutrition() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity, gcTime: Infinity },
+    },
+  });
+  queryClient.setQueryData(apiQueryKeys.me.current(), testUser);
   return render(
-    <ApiClientProvider client={apiClient}>
-      <ToastProvider>
-        <NutritionApp />
-      </ToastProvider>
+    <ApiClientProvider client={testApiClient}>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <NutritionApp />
+        </ToastProvider>
+      </QueryClientProvider>
     </ApiClientProvider>,
   );
 }
