@@ -64,7 +64,9 @@ export async function openInvocation(
   // BIGINT → string у pg-driver default; coerce-ять до number для зручного
   // використання у app-коді. Hard-rule #1 (BIGINT serialization safety):
   // у Phase 1 у нас точно <2^53 invocations.
-  return Number(result.rows[0]?.id ?? 0);
+  const row = result.rows[0];
+  if (!row) throw new Error("openInvocation: INSERT RETURNING returned no rows");
+  return Number(row.id);
 }
 
 export interface FinalizeInvocationInput {
@@ -190,7 +192,10 @@ export async function insertDecision(
       JSON.stringify(input.metadata ?? {}),
     ],
   );
-  return Number(result.rows[0]?.id ?? 0);
+  const decisionRow = result.rows[0];
+  if (!decisionRow)
+    throw new Error("insertDecision: INSERT RETURNING returned no rows");
+  return Number(decisionRow.id);
 }
 
 /**
@@ -369,7 +374,10 @@ export async function recordWriteAudit(
       JSON.stringify(input.metadata ?? {}),
     ],
   );
-  return Number(result.rows[0]?.id ?? 0);
+  const auditRow = result.rows[0];
+  if (!auditRow)
+    throw new Error("recordWriteAudit: INSERT RETURNING returned no rows");
+  return Number(auditRow.id);
 }
 
 export interface ListWriteAuditFilters {

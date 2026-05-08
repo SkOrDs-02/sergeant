@@ -19,7 +19,10 @@ export function dateKeyFromDate(d: Date): string {
 
 export function parseDateKey(key: string): Date {
   const [y, m, day] = key.split("-").map(Number);
-  return new Date(y || 1970, (m || 1) - 1, day || 1);
+  if (!y || !m || !day || isNaN(y) || isNaN(m) || isNaN(day)) {
+    throw new Error(`parseDateKey: invalid date key "${key}"`);
+  }
+  return new Date(y, m - 1, day);
 }
 
 export function enumerateDateKeys(startKey: string, endKey: string): string[] {
