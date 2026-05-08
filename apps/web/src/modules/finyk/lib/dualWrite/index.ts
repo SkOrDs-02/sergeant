@@ -1,5 +1,6 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { recordDualWriteOutcome } from "../../../../core/observability/dualWriteTelemetry.js";
 import {
   applyFinykDualWriteOps,
   type ApplyDualWriteResult,
@@ -82,8 +83,22 @@ export function isFinykDualWriteRegistered(): boolean {
  *
  * The function is `async` but the LS-write call site fires it
  * fire-and-forget through {@link triggerFinykDualWrite}.
+ *
+ * Every call records its terminal outcome through
+ * `recordDualWriteOutcome("finyk", …)` so the Stage 8 decision-gate
+ * tags stay current on the global Sentry scope — see
+ * `apps/web/src/core/observability/dualWriteTelemetry.ts`.
  */
 export async function dualWriteFinykState(
+  prev: FinykDualWriteState,
+  next: FinykDualWriteState,
+): Promise<DualWriteOutcome> {
+  const outcome = await runDualWriteFinykState(prev, next);
+  recordDualWriteOutcome("finyk", outcome);
+  return outcome;
+}
+
+async function runDualWriteFinykState(
   prev: FinykDualWriteState,
   next: FinykDualWriteState,
 ): Promise<DualWriteOutcome> {

@@ -15,6 +15,7 @@
  * value is a no-op on the second call.
  */
 
+import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getFlag } from "../../../core/lib/featureFlags.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFizruk } from "./clientMigrate.js";
@@ -51,6 +52,10 @@ export async function bootFizrukSqliteReadPath(
     console.warn(
       "[fizruk.sqliteRead] boot failed, falling back to LS",
       err instanceof Error ? err.message : err,
+    );
+    recordReadFallback(
+      "fizruk",
+      err instanceof Error ? `boot-failed: ${err.message}` : "boot-failed",
     );
     return false;
   }

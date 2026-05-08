@@ -1,5 +1,6 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { recordDualWriteOutcome } from "../../../../core/observability/dualWriteTelemetry.js";
 import {
   applyNutritionDualWriteOps,
   type ApplyDualWriteResult,
@@ -81,8 +82,22 @@ export function isNutritionDualWriteRegistered(): boolean {
  *
  * The function is `async` but the LS-write call site fires it
  * fire-and-forget through {@link triggerNutritionDualWrite}.
+ *
+ * Every call records its terminal outcome through
+ * `recordDualWriteOutcome("nutrition", …)` so the Stage 8
+ * decision-gate tags stay current on the global Sentry scope — see
+ * `apps/web/src/core/observability/dualWriteTelemetry.ts`.
  */
 export async function dualWriteNutritionState(
+  prev: NutritionDualWriteState,
+  next: NutritionDualWriteState,
+): Promise<DualWriteOutcome> {
+  const outcome = await runDualWriteNutritionState(prev, next);
+  recordDualWriteOutcome("nutrition", outcome);
+  return outcome;
+}
+
+async function runDualWriteNutritionState(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
 ): Promise<DualWriteOutcome> {

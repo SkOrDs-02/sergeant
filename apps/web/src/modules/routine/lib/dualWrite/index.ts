@@ -1,6 +1,7 @@
 import type { RoutineState } from "@sergeant/routine-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { recordDualWriteOutcome } from "../../../../core/observability/dualWriteTelemetry.js";
 import {
   applyRoutineDualWriteOps,
   type ApplyDualWriteResult,
@@ -105,8 +106,23 @@ export function isRoutineDualWriteRegistered(): boolean {
  * fire-and-forget through {@link triggerRoutineDualWrite} — callers
  * should not await it, since SQLite latency must never block a
  * `setState` round-trip.
+ *
+ * Every call records its terminal outcome through
+ * `recordDualWriteOutcome("routine", …)` so the Stage 8 decision-gate
+ * tags (`dualwrite.routine.error_rate`, `dualwrite.routine.applied`,
+ * etc.) stay current on the global Sentry scope — see
+ * `apps/web/src/core/observability/dualWriteTelemetry.ts`.
  */
 export async function dualWriteRoutineState(
+  prev: RoutineState,
+  next: RoutineState,
+): Promise<DualWriteOutcome> {
+  const outcome = await runDualWriteRoutineState(prev, next);
+  recordDualWriteOutcome("routine", outcome);
+  return outcome;
+}
+
+async function runDualWriteRoutineState(
   prev: RoutineState,
   next: RoutineState,
 ): Promise<DualWriteOutcome> {

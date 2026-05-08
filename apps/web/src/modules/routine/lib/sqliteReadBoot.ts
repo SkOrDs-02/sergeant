@@ -15,8 +15,10 @@
  * value is a no-op on the second call.
  */
 
+import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getFlag } from "../../../core/lib/featureFlags.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
+
 import { migrateRoutine } from "./clientMigrate.js";
 import { setSqliteReadEnabled } from "./routineStorage.js";
 import { refreshSqliteCompletions } from "./sqliteReader.js";
@@ -58,6 +60,10 @@ export async function bootSqliteReadPath(
       err instanceof Error ? err.message : err,
     );
     setSqliteReadEnabled(false);
+    recordReadFallback(
+      "routine",
+      err instanceof Error ? `boot-failed: ${err.message}` : "boot-failed",
+    );
     return false;
   }
 }
