@@ -5,6 +5,7 @@ import {
   type ReactNode,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
@@ -108,6 +109,7 @@ export function Modal({
   }, [open, useSheet]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   if (useSheet) {
     return (
@@ -134,7 +136,17 @@ export function Modal({
     }
   };
 
-  return (
+  // Portal the centered dialog to <body> so the modal escapes every
+  // ancestor stacking / containing-block context. Several routes wrap
+  // their root in a `.page-enter` element whose entry animation keeps
+  // `transform: translateY(0)` via `animation-fill-mode: both`. Per the
+  // CSS spec, any non-`none` `transform` on an ancestor establishes a
+  // new containing block — which means our `position: fixed` overlay is
+  // anchored to that ancestor's box (often the entire scroll height of
+  // the route) instead of the viewport, and the dialog renders far
+  // below the visible area. Mirrors `WeeklyDigestStories` which solves
+  // the same problem for the same reason.
+  const dialog = (
     <div
       className="fixed inset-0 flex items-center justify-center p-4 motion-safe:animate-fade-in"
       style={{ zIndex }}
@@ -229,4 +241,6 @@ export function Modal({
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

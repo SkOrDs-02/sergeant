@@ -100,4 +100,22 @@ describe("Modal", () => {
     unmount();
     expect(document.body.style.overflow).toBe(prev);
   });
+
+  it("portals the dialog to document.body so it escapes a transformed ancestor", () => {
+    // Mirrors the real-world `.page-enter` containing-block bug: the
+    // ancestor below has a non-`none` `transform`, which would anchor a
+    // non-portaled `position: fixed` overlay to its box (rendering the
+    // dialog far below the viewport). Portaling to <body> bypasses
+    // every such ancestor; the dialog must live outside the host node.
+    const { container, getByRole } = render(
+      <div style={{ transform: "translateY(0)" }}>
+        <Modal open onClose={() => {}} title="Portaled">
+          body
+        </Modal>
+      </div>,
+    );
+    const dialog = getByRole("dialog");
+    expect(container.contains(dialog)).toBe(false);
+    expect(document.body.contains(dialog)).toBe(true);
+  });
 });
