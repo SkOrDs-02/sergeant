@@ -54,7 +54,19 @@ import {
   todayLocalDateString,
 } from "./Workouts.helpers";
 
-export function Workouts() {
+interface WorkoutsProps {
+  /**
+   * Deep-link to the Routine module's calendar tab. Wired by
+   * `FizrukRouter.tsx` from the optional `onOpenModule` prop on the
+   * Fizruk shell. When present, the workouts home shows a third
+   * action — «Запланувати тренування» — next to the «Почати» /
+   * «Внести проведене» CTAs. This used to live on a separate «План»
+   * tab that the user asked us to dissolve.
+   */
+  onOpenRoutine?: () => void;
+}
+
+export function Workouts({ onOpenRoutine }: WorkoutsProps = {}) {
   const toast = useToast();
   const {
     exercises,
@@ -385,6 +397,7 @@ export function Workouts() {
               setRetroOpen(true);
               setView("log");
             }}
+            onOpenSchedule={onOpenRoutine}
           />
         ) : null}
 

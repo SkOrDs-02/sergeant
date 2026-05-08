@@ -1,6 +1,5 @@
 export const FIZRUK_PAGES = [
   "dashboard",
-  "plan",
   "atlas",
   "workouts",
   "progress",

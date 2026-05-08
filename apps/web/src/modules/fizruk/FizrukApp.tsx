@@ -100,6 +100,27 @@ export default function FizrukApp({
 
   const showBottomNav = page !== "atlas" && page !== "exercise";
 
+  // Contextual back-button targets for the three sub-pages that show
+  // a `← <label>` arrow instead of the module's "back to hub" arrow.
+  // The header's `backLabelFor()` mirrors these destinations so what
+  // the label promises matches where the user actually lands. Until
+  // round-12 the header always navigated to "dashboard" no matter
+  // what label it advertised — that's the disconnect the user
+  // flagged on the Measurements screen ("← Прогрес і заміри" but
+  // landing on Огляд).
+  const contextualBackTarget: FizrukPage = (() => {
+    switch (page) {
+      case "atlas":
+        return "body";
+      case "exercise":
+        return "workouts";
+      case "measurements":
+        return "body";
+      default:
+        return "dashboard";
+    }
+  })();
+
   return (
     <ModuleShell
       module="fizruk"
@@ -108,7 +129,7 @@ export default function FizrukApp({
           page={page}
           activeProgram={activeProgram}
           onBackToHub={onBackToHub}
-          onBackToDashboard={() => navigate("dashboard")}
+          onContextualBack={() => navigate(contextualBackTarget)}
           onOpenSettings={onOpenSettings}
         />
       }

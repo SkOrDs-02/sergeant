@@ -15,6 +15,7 @@ import { CollapsibleTrendCard } from "./Body/CollapsibleTrendCard";
 import { JournalSection } from "./Body/JournalSection";
 import { ENERGY_LABELS, MOOD_LABELS, ScoreButton } from "./Body/ScoreButton";
 import { firstValidValue, lastValidValue } from "./Body/trendUtils";
+import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 
 /**
  * Trend cards on this page used to be always-expanded, which meant four
@@ -38,6 +39,13 @@ import { firstValidValue, lastValidValue } from "./Body/trendUtils";
  */
 interface BodyProps {
   onOpenMeasurements?: () => void;
+  /**
+   * Wired by `FizrukRouter` to navigate the shell to the Atlas page.
+   * Used by the embedded «Відновлення й фокус» preview card so the
+   * user can deep-dive into the silhouette view without us reaching
+   * into `window.location.hash` (initiative 0006 lint rule).
+   */
+  onOpenAtlas?: () => void;
 }
 
 /**
@@ -80,7 +88,7 @@ const DEFAULT_VALUES: BodyFormValues = {
   note: "",
 };
 
-export function Body({ onOpenMeasurements }: BodyProps) {
+export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
   const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
     useDailyLog();
   const toast = useToast();
@@ -414,6 +422,8 @@ export function Body({ onOpenMeasurements }: BodyProps) {
             </button>
           </form>
         </Card>
+
+        {onOpenAtlas && <RecoveryFocusCard onOpenAtlas={onOpenAtlas} />}
 
         {(
           [

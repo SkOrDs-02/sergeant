@@ -1,8 +1,4 @@
 import { useMemo, useState } from "react";
-import { safeRemoveLS } from "@shared/lib/storage/storage";
-import { downloadJson } from "@sergeant/shared";
-import { Button } from "@shared/components/ui/Button";
-import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
@@ -12,10 +8,6 @@ import { useWorkouts } from "../hooks/useWorkouts";
 import { MiniLineChart } from "../components/MiniLineChart";
 import { WellbeingChart } from "../components/WellbeingChart";
 import { WeeklyVolumeChart } from "../components/WeeklyVolumeChart";
-import {
-  buildFizrukFullBackupPayload,
-  FIZRUK_RESET_KEYS,
-} from "../lib/fizrukStorage";
 import { epley1rm, weeklyVolumeSeriesNow } from "@sergeant/fizruk-domain";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -215,73 +207,12 @@ export function Progress() {
       }));
   }, [workouts]);
 
-  const exportJson = async () => {
-    const payload = buildFizrukFullBackupPayload();
-    await downloadJson(
-      `fizruk-backup-${new Date().toISOString().slice(0, 10)}.json`,
-      payload,
-    );
-  };
-
-  const [resetConfirm, setResetConfirm] = useState(false);
+  // Backup / CSV / "Скинути всі дані" controls used to live in this
+  // page's "Дані" card. They were duplicated by the hub-wide Settings
+  // screen (single source of truth for cross-module backup), so the
+  // page now focuses on analytics only — the user explicitly flagged
+  // the duplicated buttons as confusing on round-12.
   const [prFilter, setPrFilter] = useState("all");
-
-  const resetAll = () => {
-    for (const k of FIZRUK_RESET_KEYS) {
-      safeRemoveLS(k);
-    }
-    window.location.reload();
-  };
-
-  const exportCsv = () => {
-    const rows = [
-      [
-        "startedAt",
-        "endedAt",
-        "workout_id",
-        "exercise",
-        "type",
-        "detail",
-        "energy_1_5",
-        "mood_1_5",
-      ],
-    ];
-    for (const w of workouts || []) {
-      // CSV cells are stringified downstream — coerce here so the typed
-      // `rows: string[][]` doesn't accept a `string | number` union.
-      const we = w.wellbeing?.energy != null ? String(w.wellbeing.energy) : "";
-      const wm = w.wellbeing?.mood != null ? String(w.wellbeing.mood) : "";
-      for (const it of w.items || []) {
-        let detail = "";
-        if (it.type === "strength")
-          detail = (it.sets || [])
-            .map((s) => `${s.weightKg ?? 0}x${s.reps ?? 0}`)
-            .join(";");
-        else if (it.type === "distance")
-          detail = `${it.distanceM ?? 0}m/${it.durationSec ?? 0}s`;
-        else detail = String(it.durationSec ?? "");
-        rows.push([
-          w.startedAt || "",
-          w.endedAt || "",
-          w.id,
-          (it.nameUk || "").replace(/"/g, "'"),
-          it.type || "",
-          detail,
-          we,
-          wm,
-        ]);
-      }
-    }
-    const csv = rows
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `fizruk-workouts-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
 
   const hasAny = (workouts?.length || 0) > 0 || (entries?.length || 0) > 0;
 
@@ -596,6 +527,7 @@ export function Progress() {
                         type="button"
                         className="w-full text-left border border-line rounded-2xl p-3 bg-bg hover:bg-panelHi transition-colors"
                         onClick={() => {
+                          // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing exercise deep-link; whole module migrates to react-router under initiative 0006
                           window.location.hash = `#exercise/${p.id}`;
                         }}
                       >
@@ -641,52 +573,7 @@ export function Progress() {
             </Card>
           );
         })()}
-
-        {/* Data management */}
-        <Card radius="lg" padding="lg">
-          <SectionHeading as="div" size="sm" className="mb-3">
-            Дані
-          </SectionHeading>
-          <button
-            type="button"
-            className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white mb-2 transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98]"
-            onClick={exportJson}
-          >
-            Експорт (backup)
-          </button>
-          <Button
-            className="w-full h-12 min-h-[44px] rounded-full"
-            variant="ghost"
-            onClick={exportCsv}
-          >
-            CSV
-          </Button>
-          <div className="mt-3">
-            <Button
-              variant="danger"
-              className="w-full h-12"
-              onClick={() => setResetConfirm(true)}
-            >
-              Скинути всі дані
-            </Button>
-          </div>
-          <div className="text-xs text-subtle/70 mt-2">
-            Порада: роби експорт перед великими змінами/оновленнями.
-          </div>
-        </Card>
       </div>
-
-      <ConfirmDialog
-        open={resetConfirm}
-        title="Скинути всі дані Фізрука?"
-        description="Усі тренування, вправи, шаблони та вимірювання будуть безповоротно видалені з цього пристрою. Рекомендуємо зробити експорт перед скиданням."
-        confirmLabel="Скинути все"
-        onConfirm={() => {
-          setResetConfirm(false);
-          resetAll();
-        }}
-        onCancel={() => setResetConfirm(false)}
-      />
     </div>
   );
 }

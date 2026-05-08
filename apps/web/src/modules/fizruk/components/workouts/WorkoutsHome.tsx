@@ -28,6 +28,15 @@ export interface WorkoutsHomeProps {
    */
   onRequestStart: () => void;
   onOpenRetro: () => void;
+  /**
+   * Deep-link into the Routine module's calendar so the user can
+   * schedule a future training session. Surfaced as a third stacked
+   * CTA next to «Почати тренування» / «Внести проведене заняття»
+   * when the host (`Workouts.tsx`) wires it through. The button is
+   * hidden when `onOpenSchedule` is not provided so we don't show a
+   * dead control on hosts where deep-linking isn't available.
+   */
+  onOpenSchedule?: () => void;
 }
 
 export function WorkoutsHome({
@@ -40,6 +49,7 @@ export function WorkoutsHome({
   onOpenJournal,
   onRequestStart,
   onOpenRetro,
+  onOpenSchedule,
 }: WorkoutsHomeProps) {
   const hasActive = !!activeWorkout && !activeWorkout.endedAt;
 
@@ -82,6 +92,15 @@ export function WorkoutsHome({
             >
               ✏️ Внести проведене заняття
             </Button>
+            {onOpenSchedule && (
+              <Button
+                variant="ghost"
+                className="h-12 text-base"
+                onClick={onOpenSchedule}
+              >
+                🗓️ Запланувати тренування
+              </Button>
+            )}
           </div>
         </div>
       )}

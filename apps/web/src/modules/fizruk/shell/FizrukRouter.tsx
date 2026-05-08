@@ -16,7 +16,6 @@ interface RouterTodaySession {
 
 const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   dashboard: "Не вдалось показати головну",
-  plan: "Не вдалось показати «Планування»",
   atlas: "Не вдалось показати «Атлас»",
   workouts: "Не вдалось показати «Тренування»",
   progress: "Не вдалось показати «Прогрес»",
@@ -45,10 +44,6 @@ const Measurements = lazyImport(
 );
 const Body = lazyImport(() => import("../pages/Body"), "Body");
 const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
-const PlanCalendar = lazyImport(
-  () => import("../pages/PlanCalendar"),
-  "PlanCalendar",
-);
 
 export interface FizrukRouterProps {
   page: FizrukPage;
@@ -89,9 +84,11 @@ function renderPage(props: FizrukRouterProps) {
           onStartProgramWorkout={onStartProgramWorkout}
         />
       );
-    case "plan":
+    case "atlas":
+      return <Atlas />;
+    case "workouts":
       return (
-        <PlanCalendar
+        <Workouts
           onOpenRoutine={
             onOpenModule
               ? () => onOpenModule("routine", { hash: "calendar" })
@@ -99,10 +96,6 @@ function renderPage(props: FizrukRouterProps) {
           }
         />
       );
-    case "atlas":
-      return <Atlas />;
-    case "workouts":
-      return <Workouts />;
     case "progress":
       return <Progress />;
     case "measurements":
@@ -118,7 +111,12 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "body":
-      return <Body onOpenMeasurements={() => onNavigate("measurements")} />;
+      return (
+        <Body
+          onOpenMeasurements={() => onNavigate("measurements")}
+          onOpenAtlas={() => onNavigate("atlas")}
+        />
+      );
     case "exercise":
       return <Exercise exerciseId={exerciseId ?? ""} />;
     default:

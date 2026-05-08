@@ -16,7 +16,13 @@ export interface FizrukHeaderProps {
   page: FizrukPage;
   activeProgram?: ActiveProgramHeaderView | null;
   onBackToHub?: () => void;
-  onBackToDashboard: () => void;
+  /**
+   * Called when the user taps the contextual back arrow on a sub-page
+   * (atlas / exercise / measurements). The parent decides where each
+   * sub-page should go back to so the label and the destination stay
+   * in sync — see `FizrukApp.contextualBackTarget`.
+   */
+  onContextualBack: () => void;
   onOpenSettings?: () => void;
 }
 
@@ -26,8 +32,6 @@ function titleFor(page: FizrukPage): string {
       return "Атлас тіла";
     case "exercise":
       return "Вправа";
-    case "plan":
-      return "План";
     case "programs":
       return "Програми";
     case "body":
@@ -49,7 +53,12 @@ function backLabelFor(page: FizrukPage): string {
     case "exercise":
       return "Тренування";
     case "measurements":
-      return "Прогрес і заміри";
+      // Measurements is now entered from the «Моє тіло» page (the only
+      // surface that exposes the «Виміри» button), so the back arrow
+      // must lead the user back there. Previously it advertised
+      // «Прогрес і заміри» but redirected to the dashboard, which the
+      // user flagged as confusing.
+      return "Моє тіло";
     default:
       return "ФІЗРУК";
   }
@@ -97,8 +106,6 @@ function subtitleFor(
   activeProgram?: ActiveProgramHeaderView | null,
 ): string {
   switch (page) {
-    case "plan":
-      return "Календар · нагадування · відновлення";
     case "programs":
       return activeProgram
         ? `Активна: ${activeProgram.name}`
@@ -143,7 +150,7 @@ export function FizrukHeader({
   page,
   activeProgram,
   onBackToHub,
-  onBackToDashboard,
+  onContextualBack,
   onOpenSettings,
 }: FizrukHeaderProps) {
   const isAtlas = page === "atlas";
@@ -160,7 +167,7 @@ export function FizrukHeader({
     left = (
       <ContextualBackButton
         label={backLabelFor(page)}
-        onClick={onBackToDashboard}
+        onClick={onContextualBack}
       />
     );
   } else if (typeof onBackToHub === "function") {

@@ -9,11 +9,10 @@ describe("FIZRUK_NAV", () => {
     expect(first?.label).toBe("Огляд");
   });
 
-  it("preserves remaining tab order: workouts → plan → progress → body", () => {
+  it("preserves remaining tab order: workouts → progress → body (Plan tab dissolved)", () => {
     expect(FIZRUK_NAV.map((item) => item.id)).toEqual([
       "dashboard",
       "workouts",
-      "plan",
       "progress",
       "body",
     ]);
