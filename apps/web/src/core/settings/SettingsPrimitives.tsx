@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
@@ -28,6 +28,20 @@ export interface SettingsGroupProps {
   emoji?: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  /**
+   * Optional id for hash-aware auto-open. When the URL hash matches
+   * `#<anchorId>` (mounted or via `hashchange`), the group expands so
+   * a deep-link from elsewhere (наприклад тап на неактивну Bento-картку,
+   * що веде на `#settings-dashboard`) одразу показує користувачу
+   * вкладений контент, а не просто згорнутий заголовок під sticky-хедером.
+   */
+  anchorId?: string;
+}
+
+function matchesHash(anchorId: string | undefined): boolean {
+  if (!anchorId) return false;
+  if (typeof window === "undefined") return false;
+  return window.location.hash === `#${anchorId}`;
 }
 
 export function SettingsGroup({
@@ -35,13 +49,25 @@ export function SettingsGroup({
   emoji,
   children,
   defaultOpen = false,
+  anchorId,
 }: SettingsGroupProps) {
-  const [open, setOpen] = useState<boolean>(defaultOpen);
+  const [open, setOpen] = useState<boolean>(
+    () => defaultOpen || matchesHash(anchorId),
+  );
+  useEffect(() => {
+    if (!anchorId) return;
+    const onHashChange = () => {
+      if (matchesHash(anchorId)) setOpen(true);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [anchorId]);
   return (
     <Card radius="lg" padding="none" className="overflow-hidden shadow-soft">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className={cn(
           "w-full px-4 py-4 flex items-center justify-between gap-3",
           "hover:bg-panelHi/60 active:bg-panelHi transition-colors",

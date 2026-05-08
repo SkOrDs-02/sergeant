@@ -73,7 +73,7 @@ export function DashboardSection() {
   );
 
   return (
-    <SettingsGroup title="Дашборд" emoji="🧭">
+    <SettingsGroup title="Дашборд" emoji="🧭" anchorId="settings-dashboard">
       <SettingsSubGroup title="Вигляд">
         <ToggleRow
           label="Показувати підказки"

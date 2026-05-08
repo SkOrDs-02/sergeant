@@ -104,4 +104,36 @@ describe("HubSettingsPage", () => {
       behavior: "smooth",
     });
   });
+
+  it("auto-expands the Дашборд section when navigated via #settings-dashboard", () => {
+    // Tap on an inactive Bento card on the Hub dashboard dispatches
+    // `HUB_OPEN_SETTINGS_EVENT` which navigates to
+    // `/?tab=settings#settings-dashboard`. Без auto-open секція просто
+    // ховалась за sticky-хедером і користувач бачив «налаштування взагалі»,
+    // а не конкретно тогл-лист модулів дашборда (issue 2026-05-08).
+    window.history.replaceState(null, "", "/?tab=settings#settings-dashboard");
+
+    renderWithToast(
+      <HubSettingsPage
+        user={{
+          id: "u1",
+          email: null,
+          name: null,
+          image: null,
+          emailVerified: true,
+          createdAt: null,
+        }}
+      />,
+    );
+
+    const dashboardToggle = screen.getByRole("button", { name: /Дашборд/ });
+    expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");
+
+    const dashboard = document.getElementById("settings-dashboard");
+    expect(dashboard).toBeInTheDocument();
+    expect(dashboard?.scrollIntoView).toHaveBeenCalledWith({
+      block: "start",
+      behavior: "smooth",
+    });
+  });
 });

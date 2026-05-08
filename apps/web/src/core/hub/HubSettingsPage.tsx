@@ -278,7 +278,15 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
               ref={(el) => {
                 refs.current[s.id] = el;
               }}
-              className="scroll-mt-4"
+              // The Search + Tabs row above is `sticky top-0` (≈120-140px on
+              // mobile/desktop). With `scroll-mt-4` (16px) the section title
+              // landed *behind* that sticky chrome after `scrollIntoView`,
+              // so deep-links like `#settings-dashboard` from the inactive
+              // Bento card felt like they "just opened the Settings tab"
+              // (issue 2026-05-08). 8rem clears the sticky header on every
+              // viewport while still leaving a small visual gap above the
+              // landed section.
+              className="scroll-mt-32"
             >
               {s.render()}
             </div>
