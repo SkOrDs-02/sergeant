@@ -69,13 +69,6 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     defaultValue: true,
   },
   {
-    id: "feature.nutrition.sqlite_v2.read_sqlite",
-    label: "Nutrition — read state from SQLite",
-    description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*` таблиці) замість MMKV blob. MMKV-write залишається як source-of-truth. Stage 8 PR #055n2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056n. Default: on.",
-    defaultValue: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.read_sqlite",
     label: "Finyk — read state from SQLite",
     description:

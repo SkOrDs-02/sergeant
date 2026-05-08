@@ -24,10 +24,7 @@ import {
   type SavedRecipe,
 } from "../lib/recipeBook";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
-import {
-  useNutritionSqliteReadFlag,
-  useNutritionSqliteReadTick,
-} from "../lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
 import { MEAL_TYPES } from "../lib/mealTypes";
 
@@ -105,7 +102,6 @@ export function RecipesCard({
   const [openSavedId, setOpenSavedId] = useState<string | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
   const prevSavedLen = useRef(0);
-  const sqliteReadEnabled = useNutritionSqliteReadFlag();
   const sqliteCacheTick = useNutritionSqliteReadTick();
 
   useEffect(() => {
@@ -124,15 +120,14 @@ export function RecipesCard({
     };
   }, []);
 
-  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
-  // overlay saved recipes from the SQLite cache once it's warm. The
-  // IDB read above stays as the synchronous fallback.
+  // Stage 4 PR #033 + Stage 8 PR #057n: overlay saved recipes from
+  // the SQLite cache once it's warm. The IDB read above stays as the
+  // synchronous fallback.
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;
     setSaved(cache.recipes);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   // Auto-open when first recipe is saved during this session
   useEffect(() => {

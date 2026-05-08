@@ -38,10 +38,7 @@ import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
 import { getCachedNutritionSqliteState } from "./lib/sqliteReader";
-import {
-  useNutritionSqliteReadFlag,
-  useNutritionSqliteReadTick,
-} from "./lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "./lib/sqliteReadGate";
 import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
@@ -211,7 +208,6 @@ export default function NutritionApp({
 
   const [prefs, setPrefs] = useState(() => loadNutritionPrefs());
   const [prefsStorageErr, setPrefsStorageErr] = useState("");
-  const sqliteReadEnabled = useNutritionSqliteReadFlag();
   const sqliteCacheTick = useNutritionSqliteReadTick();
 
   useEffect(() => {
@@ -220,15 +216,14 @@ export default function NutritionApp({
     );
   }, [prefs]);
 
-  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
-  // overlay nutrition prefs from the SQLite cache once it's warm. The
-  // LS read above stays as a synchronous fallback.
+  // Stage 4 PR #033 + Stage 8 PR #057n: overlay nutrition prefs from
+  // the SQLite cache once it's warm. The LS read above stays as a
+  // synchronous fallback.
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;
     if (cache.prefs) setPrefs(cache.prefs);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const {
     editingMeal,

@@ -27,7 +27,7 @@ import { _getMMKVInstance } from "@/lib/storage";
 
 import { loadNutritionLog, saveNutritionLog } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
-import { useNutritionSqliteReadGate } from "../lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface UseNutritionLogResult {
   nutritionLog: NutritionLog;
@@ -67,17 +67,15 @@ export function useNutritionLog(): UseNutritionLogResult {
     return () => sub.remove();
   }, [refresh]);
 
-  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
-  // overlay the meal log from the local SQLite cache once it's warm.
-  // MMKV first-paint read above stays as a synchronous fallback.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useNutritionSqliteReadGate();
+  // Stage 4 PR #033 + Stage 8 PR #057n: overlay the meal log from
+  // the local SQLite cache once it's warm. MMKV first-paint read
+  // above stays as a synchronous fallback.
+  const sqliteCacheTick = useNutritionSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;
     setNutritionLog(cache.log);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const commit = useCallback((next: NutritionLog) => {
     const normalized = normalizeNutritionLog(next);
