@@ -96,7 +96,7 @@ export const MODULE_CHECKLISTS: Record<DashboardModuleId, ChecklistDefinition> =
           action: "create_habit",
         },
         { id: "complete_habit", label: "Відмітити виконання" },
-        { id: "three_day_streak", label: "Стрік 3 дні" },
+        { id: "three_day_streak", label: "Серія 3 дні" },
       ],
     },
     nutrition: {

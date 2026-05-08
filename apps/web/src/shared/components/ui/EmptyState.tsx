@@ -232,7 +232,7 @@ const MODULE_EMPTY_CONFIG: Record<
     actionLabel: "Створити звичку",
     accent: "text-routine bg-routine-surface dark:bg-routine/10",
     exampleLine1: "Пити воду",
-    exampleLine2: "Щодня · Стрік: 0 днів",
+    exampleLine2: "Щодня · Серія: 0 днів",
   },
   nutrition: {
     icon: "utensils",

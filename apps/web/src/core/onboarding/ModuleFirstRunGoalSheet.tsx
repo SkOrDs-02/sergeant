@@ -158,7 +158,7 @@ const MODULE_TITLES: Record<string, { title: string; desc: string }> = {
   },
   routine: {
     title: "Налаштуй Рутину",
-    desc: "Перша звичка — старт стріку. Інші додаси з модуля.",
+    desc: "Перша звичка — і пішла серія днів. Інші додаси з модуля.",
   },
   nutrition: {
     title: "Налаштуй Харчування",

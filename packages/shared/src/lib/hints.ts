@@ -196,7 +196,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     },
     retention_day_3: {
       id: "retention_day_3",
-      title: "3 дні поспіль — стрік почався",
+      title: "3 дні поспіль — серія пішла",
       body: "Ще кілька днів і мозок зафіксує нову звичку.",
       maxShowsTotal: 1,
       cooldownHours: 9999,

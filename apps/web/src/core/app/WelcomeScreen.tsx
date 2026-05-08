@@ -42,7 +42,7 @@ const PEEK_CARDS = [
       "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
     icon: "check",
     metric: "7 днів",
-    sub: "стрік",
+    sub: "серія",
   },
   {
     id: "nutrition",

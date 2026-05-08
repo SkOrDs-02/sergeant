@@ -43,7 +43,7 @@ const ACTIONS: Record<ModuleId, FirstActionEntry> = {
   routine: {
     icon: "check",
     title: "Створи першу звичку",
-    desc: "~5 секунд. Стрік почнеться сьогодні.",
+    desc: "~5 секунд. І серія днів стартує одразу.",
     accent: "text-routine-strong dark:text-routine bg-routine-surface",
     chipLabel: "Рутина",
   },
@@ -119,7 +119,7 @@ function getGoalAwareDesc(moduleId: string, fallback: string): string {
       reading: "«Читання»",
     };
     const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Створи ${label} — стрік почнеться сьогодні.`;
+    return `Створи ${label} — і починається серія днів.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = {

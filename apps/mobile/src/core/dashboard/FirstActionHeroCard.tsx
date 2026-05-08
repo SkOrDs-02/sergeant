@@ -55,7 +55,7 @@ interface ActionSpec {
 const ACTIONS: Record<DashboardModuleId, ActionSpec> = {
   routine: {
     title: "Створи першу звичку",
-    desc: "~5 секунд. Стрік почнеться сьогодні.",
+    desc: "~5 секунд. І серія днів стартує одразу.",
     accentChip: "bg-coral-50 border border-coral-300/60",
     accentText: "text-coral-700",
     shortLabel: "Звичка",

@@ -46,7 +46,7 @@ export const ONBOARDING_MODULE_DESCRIPTIONS: Record<DashboardModuleId, string> =
   {
     finyk: "Контроль витрат, Monobank-синхронізація, бюджети та тренди",
     fizruk: "Тренування з таймером, програми, прогрес і виміри тіла",
-    routine: "Звички зі стріками, хітмеп, статистика та нагадування",
+    routine: "Звички, серії днів, хітмеп, статистика та нагадування",
     nutrition: "Фото → AI-аналіз калорій, сканер штрихкодів, денний план",
   };
 
@@ -88,7 +88,7 @@ export const ONBOARDING_VIBE_ICONS: Record<DashboardModuleId, string> = {
 export const ONBOARDING_VIBE_TEASERS: Record<DashboardModuleId, string> = {
   finyk: "−320₴ / тиждень",
   fizruk: "5 трен. за 14 днів",
-  routine: "стрік «вода» 7 днів",
+  routine: "серія «вода» 7 днів",
   nutrition: "сніданок · 420 ккал",
 };
 
