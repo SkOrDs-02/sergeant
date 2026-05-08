@@ -53,8 +53,8 @@ function DevPushTestButton() {
       </Pressable>
       <View>
         <Text className="text-[11px] leading-snug text-fg-subtle">
-          Видно лише у dev-збірках. Використовується для швидкої перевірки
-          push-пайплайна без виходу з дашборду.
+          Видно лише у dev-збірках. Швидко перевірити, чи приходять сповіщення —
+          не виходячи з головної.
         </Text>
       </View>
     </SettingsSubGroup>

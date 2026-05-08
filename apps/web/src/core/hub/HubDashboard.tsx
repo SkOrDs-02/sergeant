@@ -187,7 +187,7 @@ function FtuxModulesHint() {
         className="mt-0.5 shrink-0 text-brand-strong"
       />
       <p className="flex-1 min-w-0">
-        Це твій хаб. Тут усі модулі поруч — обери будь-який, щоб почати.
+        Тут усі твої розділи поруч — обери будь-який, щоб почати.
       </p>
       <button
         type="button"
