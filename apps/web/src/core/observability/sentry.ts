@@ -140,3 +140,26 @@ export function addSentryBreadcrumb(
     /* noop */
   }
 }
+
+/**
+ * Lazy-forward `Sentry.setTag`. No-op until the SDK is loaded so the
+ * sync-engine boot path can record `outbox.boot.outcome` (and similar
+ * Stage 8 triage tags) unconditionally — the call costs nothing on
+ * cold-start and the actual tag is attached the moment the SDK
+ * finishes lazy-loading via `requestIdleCallback`.
+ *
+ * Using global tags (rather than `withScope`) is intentional: every
+ * subsequent event in the session inherits the tag so a saved search
+ * like `outbox.boot.outcome:failed` finds the boot failure *and* any
+ * downstream errors caused by it (e.g. the periodic drain surfacing
+ * `no such table: sync_op_outbox`). That is the SERGEANT-WEB-A
+ * shape we want to remain queryable if the regression ever recurs.
+ */
+export function setSentryTag(key: string, value: string): void {
+  if (!sentryModule) return;
+  try {
+    sentryModule.setTag(key, value);
+  } catch {
+    /* noop */
+  }
+}
