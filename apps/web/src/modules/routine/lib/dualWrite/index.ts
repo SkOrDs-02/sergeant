@@ -1,13 +1,18 @@
 import type { RoutineState } from "@sergeant/routine-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import { recordDualWriteOutcome } from "../../../../core/observability/dualWriteTelemetry.js";
+import {
+  recordDualWriteOutcome,
+  recordParityCheck,
+  recordReadFallback,
+} from "../../../../core/observability/dualWriteTelemetry.js";
 import {
   applyRoutineDualWriteOps,
   type ApplyDualWriteResult,
   type DualWriteLogger,
 } from "./adapter.js";
 import { diffRoutineDualWriteOps } from "./diff.js";
+import { probeRoutineParity } from "./parity.js";
 
 /**
  * Orchestrator for the routine dual-write layer.
@@ -160,6 +165,24 @@ async function runDualWriteRoutineState(
     clientTs: ctx.getNow(),
     logger: ctx.logger,
   });
+
+  // Stage 8 parity probe — best-effort: never throws, never disturbs
+  // the dual-write outcome. A failed probe-read is tagged distinctly
+  // (`recordReadFallback`) so triage can tell `SELECT failing` apart
+  // from a real LS↔SQLite divergence (`recordParityCheck("…",
+  // "mismatch", …)`).
+  try {
+    const parity = await probeRoutineParity(client, userId, next);
+    recordParityCheck("routine", parity.result, parity.details);
+  } catch (err) {
+    recordReadFallback(
+      "routine",
+      err instanceof Error
+        ? `parity-probe-failed: ${err.message}`
+        : "parity-probe-failed",
+    );
+  }
+
   return { status: "applied", result };
 }
 
