@@ -1,7 +1,5 @@
 import { useCallback, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
-import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
 import {
   safeReadStringLS,
@@ -24,74 +22,13 @@ import {
   type DashboardModuleId,
 } from "@sergeant/shared";
 import {
-  DASHBOARD_MODULE_LABELS,
-  loadDashboardOrder,
-  resetDashboardOrder,
-  saveDashboardOrder,
-} from "../hub/HubDashboard";
-import {
   SettingsGroup,
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
 import { useHubPref } from "./hubPrefs";
 
-type ModuleId = keyof typeof DASHBOARD_MODULE_LABELS;
-
-interface ModuleReorderListProps {
-  order: ModuleId[];
-  onMove: (index: number, direction: -1 | 1) => void;
-}
-
-function ModuleReorderList({ order, onMove }: ModuleReorderListProps) {
-  return (
-    <ul className="rounded-xl border border-line divide-y divide-line/60 overflow-hidden">
-      {order.map((id, index) => {
-        const isFirst = index === 0;
-        const isLast = index === order.length - 1;
-        return (
-          <li key={id} className="flex items-center gap-2 px-3 py-2 bg-panel">
-            <span className="text-xs font-semibold text-muted tabular-nums w-4">
-              {index + 1}
-            </span>
-            <span className="flex-1 text-sm text-text truncate">
-              {DASHBOARD_MODULE_LABELS[id]}
-            </span>
-            <button
-              type="button"
-              onClick={() => onMove(index, -1)}
-              disabled={isFirst}
-              aria-label={`Підняти ${DASHBOARD_MODULE_LABELS[id]} вище`}
-              className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center",
-                "text-muted hover:text-text hover:bg-panelHi transition-colors",
-                "disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed",
-              )}
-            >
-              <Icon name="chevron-up" size={16} strokeWidth={2.5} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onMove(index, 1)}
-              disabled={isLast}
-              aria-label={`Опустити ${DASHBOARD_MODULE_LABELS[id]} нижче`}
-              className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center",
-                "text-muted hover:text-text hover:bg-panelHi transition-colors",
-                "disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed",
-              )}
-            >
-              <Icon name="chevron-down" size={16} strokeWidth={2.5} />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 export function DashboardSection() {
-  const [orderReset, setOrderReset] = useState(false);
   const [showHints, setShowHints] = useHubPref<boolean>("showHints", true);
   const [adaptiveBento, setAdaptiveBento] = useHubPref<boolean>(
     "adaptiveBento",
@@ -112,9 +49,6 @@ export function DashboardSection() {
       );
     }
   }, []);
-  const [order, setOrder] = useState<ModuleId[]>(
-    () => loadDashboardOrder() as ModuleId[],
-  );
   const toast = useToast();
 
   const [activeModules, setActiveModulesState] = useState<DashboardModuleId[]>(
@@ -137,24 +71,6 @@ export function DashboardSection() {
     },
     [toast],
   );
-
-  const handleMove = useCallback((index: number, direction: -1 | 1) => {
-    setOrder((prev) => {
-      const next = prev.slice();
-      const target = index + direction;
-      if (target < 0 || target >= next.length) return prev;
-      [next[index], next[target]] = [next[target]!, next[index]!];
-      saveDashboardOrder(next);
-      return next;
-    });
-  }, []);
-
-  const handleResetOrder = () => {
-    resetDashboardOrder();
-    setOrder(loadDashboardOrder() as ModuleId[]);
-    setOrderReset(true);
-    setTimeout(() => setOrderReset(false), 2000);
-  };
 
   return (
     <SettingsGroup title="Дашборд" emoji="🧭">
@@ -205,10 +121,18 @@ export function DashboardSection() {
         </div>
       </SettingsSubGroup>
       <SettingsSubGroup title="Модулі дашборду">
+        {/* UX-feedback 2026-05-08: removed the manual «Порядок модулів»
+         * reorder list (chevron-up / chevron-down + reset button). The
+         * dashboard already exposes a drag-to-reorder bento via the
+         * «Налаштувати» button next to the «Модулі» heading, so a second
+         * settings-side reorder UI was a confusing duplicate. Active /
+         * inactive checkboxes stay here because that toggle has no
+         * dashboard-side equivalent. */}
         <p className="text-xs text-subtle leading-snug">
-          Які модулі показувати на дашборді й у якому порядку. Неактивні модулі
-          відображаються приглушено — без кнопки швидкого додавання. Щонайменше
-          один модуль має залишатися активним.
+          Які модулі показувати на дашборді. Неактивні модулі відображаються
+          приглушено — без кнопки швидкого додавання. Щонайменше один модуль має
+          залишатися активним. Порядок модулів змінюється на дашборді — через
+          кнопку «Налаштувати» біля заголовка «Модулі».
         </p>
         <ul className="rounded-xl border border-line divide-y divide-line/60 overflow-hidden">
           {ALL_MODULES.map((id) => {
@@ -230,22 +154,6 @@ export function DashboardSection() {
             );
           })}
         </ul>
-        <div className="space-y-2 pt-2 border-t border-line/40">
-          <p className="text-xs text-subtle leading-snug">
-            Порядок модулів у списку «Сьогодні» на дашборді.
-          </p>
-          <ModuleReorderList order={order} onMove={handleMove} />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-10 w-full"
-            onClick={handleResetOrder}
-            disabled={orderReset}
-          >
-            {orderReset ? "✓ Порядок скинуто" : "Скинути до за промовчання"}
-          </Button>
-        </div>
       </SettingsSubGroup>
     </SettingsGroup>
   );

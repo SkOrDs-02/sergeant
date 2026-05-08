@@ -122,11 +122,12 @@ export function HubHomeView(props: HubHomeViewProps) {
       <HubBottomNav
         hubView={ui.hubView}
         onChange={ui.setHubView}
-        // «Звіти» — пустий екран без даних, тому ховаємо tab до
-        // першого реального запису. Якщо юзер уже обрав «Звіти» і
-        // потім стер дані — повертаємо його на дашборд, щоб не
-        // лишався на неіснуючому табі.
-        showReports={hasAnyRealEntry()}
+        // UX-feedback 2026-05-08: «Звіти» була прихована до першого
+        // реального запису (щоб не показувати порожній екран). Юзери
+        // не розуміли, куди зник tab («куди зникла сторінка звіти?»),
+        // тому показуємо tab завжди — `HubReports` сам рендерить
+        // «Немає даних» empty-state до першого запису.
+        showReports
         showProfile={!!user}
         onShowAuth={!user ? onOpenAuth : undefined}
       />

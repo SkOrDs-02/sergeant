@@ -39,9 +39,14 @@ export function HintsOrchestrator({
 
   const candidates = useMemo<readonly HintId[]>(() => {
     if (inFtuxSession) {
+      // UX-feedback 2026-05-08: `ftux_switch_modules` was a top-of-screen
+      // toast («Перемикай модулі зверху — це один хаб»), but the user
+      // had nothing to "switch" at the top — it pointed at the modules
+      // section further down and only confused. The hint is now an
+      // inline banner rendered next to the «Модулі» heading in
+      // `HubDashboard`, so it's no longer in this candidate list.
       return [
         "ftux_quick_add",
-        "ftux_switch_modules",
         "ftux_open_search",
         "ftux_open_chat",
         "ftux_reports_unlock",

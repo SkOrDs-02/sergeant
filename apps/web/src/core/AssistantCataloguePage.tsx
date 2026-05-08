@@ -108,19 +108,22 @@ export function AssistantCataloguePage({
     }
   }, [allCollapsed, setCollapsedModules]);
 
+  // UX-feedback 2026-05-08: previously a tap on a `requiresInput=false`
+  // capability immediately closed the catalogue and dispatched the
+  // prompt — the user only saw a blur (chat overlay opening) with no
+  // explanation, examples, or "Спробувати" button. Now every capability
+  // opens the same detail modal first; `requiresInput` only changes
+  // whether the chat auto-sends the prompt or prefills it for editing.
   const handleActivate = (cap: AssistantCapability) => {
-    if (cap.requiresInput) {
-      setDetail(cap);
-      return;
-    }
-    onClose();
-    dispatchOpenChat(cap.prompt, true);
+    setDetail(cap);
   };
 
   const handleTryFromDetail = (cap: AssistantCapability) => {
     setDetail(null);
     onClose();
-    dispatchOpenChat(cap.prompt, false);
+    // requiresInput=false ⇒ auto-send (no further details expected);
+    // requiresInput=true ⇒ prefill so the user can finish the prompt.
+    dispatchOpenChat(cap.prompt, !cap.requiresInput);
   };
 
   const totalCount = ASSISTANT_CAPABILITIES.length;
@@ -418,15 +421,15 @@ function CapabilityLegend() {
     >
       <span className="text-xs font-semibold text-muted">Позначки:</span>
       <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
-        <BadgeChip tone="brand" icon="zap" label="ЧІП" />
+        <BadgeChip tone="brand" icon="zap" label="Чіп" />
         швидкий сценарій
       </span>
       <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
-        <BadgeChip tone="warning" icon="alert-triangle" label="РИЗИК" />
+        <BadgeChip tone="warning" icon="alert-triangle" label="Ризик" />
         критична дія
       </span>
       <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
-        <BadgeChip tone="success" icon="sparkles" label="НОВИНКА" />
+        <BadgeChip tone="success" icon="sparkles" label="Новинка" />
         нещодавно додано
       </span>
     </div>
@@ -443,21 +446,27 @@ interface BadgeChipProps {
 function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
   const cls =
     tone === "brand"
-      ? "text-brand-600 bg-brand-500/10 border-brand-500/40"
+      ? "text-brand-600 bg-brand-500/8 border-brand-500/25"
       : tone === "warning"
-        ? "text-warning bg-warning/10 border-warning/40"
-        : "text-success bg-success/10 border-success/40";
+        ? "text-warning bg-warning/8 border-warning/25"
+        : "text-success bg-success/8 border-success/25";
+  // UX-feedback 2026-05-08: previously rendered uppercase + bold + 10px
+  // tracking-wide which made the chips visually compete with the
+  // capability label («оці чіпсинки про новинка чип і тд якісь
+  // непропорційні до інших елементів»). Now: lowercase capitalised
+  // label, 11px text, regular medium weight, softened border / fill.
+  // The chips still scan as status-badges (icon + pill shape) but no
+  // longer outshout the text they sit next to.
   return (
     <span
       title={title}
       className={cn(
-        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- BadgeChip is an intentional pill-overlay typography (status badge with border + icon)
-        "inline-flex items-center gap-1 text-micro uppercase tracking-wide font-bold",
-        "border rounded-full px-1.5 py-0.5",
+        "inline-flex items-center gap-1 text-2xs font-medium leading-none",
+        "border rounded-full px-1.5 py-[3px]",
         cls,
       )}
     >
-      <Icon name={icon} size={10} aria-hidden />
+      <Icon name={icon} size={9} aria-hidden />
       {label}
     </span>
   );

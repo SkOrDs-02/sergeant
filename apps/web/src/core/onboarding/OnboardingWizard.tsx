@@ -30,7 +30,6 @@ import {
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
   assignVariant,
   getOnboardingHeroCopy,
-  isOnboardingDefaultPicksVariant,
   type OnboardingDefaultPicksVariant,
   type OnboardingHeroCopy,
   type OnboardingHeroCopyVariant,
@@ -451,10 +450,20 @@ export function OnboardingWizard({
   // "empty" between paints. Tour replay short-circuits to the legacy
   // `all` arm so the read-only replay always shows every module
   // pre-checked, matching the screenshot we ship in marketing.
+  // UX-feedback 2026-05-08: kill the A/B test and force `none` for every
+  // real wizard mount. Users were confused by the pre-selected modules
+  // ("we planned that on start everything would be off and the user
+  // picks themselves, right?") — pre-checking everything was reading as
+  // "we already chose for you" rather than as a friendly default. Tour
+  // replay still pins to `all` so the marketing screenshot stays
+  // consistent.
   const defaultPicksVariant = useMemo<OnboardingDefaultPicksVariant>(() => {
     if (isTour) return "all";
-    const raw = assignVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT);
-    return isOnboardingDefaultPicksVariant(raw) ? raw : "all";
+    // Touch the experiment for analytics continuity, but ignore the
+    // result. Variant is hardcoded to `none` until / unless we run a
+    // new experiment that explicitly opts into pre-selection.
+    assignVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT);
+    return "none";
   }, [isTour]);
 
   const [picks, setPicks] = useState<string[]>(() =>
