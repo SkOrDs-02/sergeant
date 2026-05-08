@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -6,7 +6,15 @@ import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
+import { useBiometrics } from "../../../core/profile/useBiometrics";
+import {
+  NUTRITION_GOALS,
+  computeNutritionTargetsFromBiometrics,
+  type NutritionGoalId,
+  type NutritionTargets,
+} from "../lib/tdee";
 import type {
   MealTypeId,
   NutritionPrefs,
@@ -16,6 +24,14 @@ import type {
   NutritionDayPlan,
   NutritionWeekPlan,
 } from "../hooks/useNutritionUiState";
+
+const TDEE_COPY = messages.nutritionTdee;
+
+const TDEE_GOAL_LABELS: Record<NutritionGoalId, string> = {
+  cutting: TDEE_COPY.goalCutting,
+  maintenance: TDEE_COPY.goalMaintenance,
+  bulking: TDEE_COPY.goalBulking,
+};
 
 interface PlanMeal {
   type?: MealTypeId | string;
@@ -524,6 +540,26 @@ export function DailyPlanCard({
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
 
+  // «Розрахувати з профілю» — випадайка поруч з пресетами. Читає
+  // hub-level біометрію (PR #1) і обраховує TDEE через Mifflin-St
+  // Jeor (apps/web/src/modules/nutrition/lib/tdee.ts).
+  const [tdeeMenuOpen, setTdeeMenuOpen] = useState(false);
+  const tdeeMenuRef = useRef<HTMLDivElement | null>(null);
+  const { biometrics } = useBiometrics();
+
+  const tdeeTargets = useMemo<Record<
+    NutritionGoalId,
+    NutritionTargets
+  > | null>(() => {
+    const result: Partial<Record<NutritionGoalId, NutritionTargets>> = {};
+    for (const goal of NUTRITION_GOALS) {
+      const t = computeNutritionTargetsFromBiometrics(biometrics, goal);
+      if (!t) return null;
+      result[goal] = t;
+    }
+    return result as Record<NutritionGoalId, NutritionTargets>;
+  }, [biometrics]);
+
   const activePreset = PRESETS.find(
     (p) =>
       p.kcal === prefs.dailyTargetKcal &&
@@ -541,6 +577,17 @@ export function DailyPlanCard({
       dailyTargetCarbs_g: preset.carbs_g,
     }));
     setPresetMenuOpen(false);
+  };
+
+  const applyTdeeTargets = (targets: NutritionTargets) => {
+    setPrefs((p) => ({
+      ...p,
+      dailyTargetKcal: targets.kcal,
+      dailyTargetProtein_g: targets.protein_g,
+      dailyTargetFat_g: targets.fat_g,
+      dailyTargetCarbs_g: targets.carbs_g,
+    }));
+    setTdeeMenuOpen(false);
   };
 
   // Закривати випадайку пресетів по тапу/кліку поза нею. Користуємось
@@ -562,6 +609,25 @@ export function DailyPlanCard({
       document.removeEventListener("touchstart", onPointer);
     };
   }, [presetMenuOpen]);
+
+  // Аналогічний outside-click для «Розрахувати з профілю» — окремий
+  // ref/state, щоб дві випадайки не «билися» одна з одною при відкриванні.
+  useEffect(() => {
+    if (!tdeeMenuOpen) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const root = tdeeMenuRef.current;
+      if (!root) return;
+      const target = e.target as Node | null;
+      if (target && root.contains(target)) return;
+      setTdeeMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("touchstart", onPointer);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("touchstart", onPointer);
+    };
+  }, [tdeeMenuOpen]);
 
   const hasTargets = prefs.dailyTargetKcal != null;
 
@@ -591,59 +657,129 @@ export function DailyPlanCard({
           />
         )}
         <div>
-          <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
             <div className="text-xs text-subtle">Цілі на день</div>
-            <div ref={presetMenuRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setPresetMenuOpen((v) => !v)}
-                disabled={busy || dayPlanBusy}
-                aria-haspopup="menu"
-                aria-expanded={presetMenuOpen}
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
-                  "border-line/70 text-subtle hover:text-text hover:border-nutrition/50",
-                  "disabled:opacity-50 transition-colors",
-                )}
-              >
-                {activePreset
-                  ? `Пресет: ${activePreset.label}`
-                  : "Підказати з пресету"}
-                <span aria-hidden className="text-2xs">
-                  ▾
-                </span>
-              </button>
-              {presetMenuOpen && (
-                <div
-                  role="menu"
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <div ref={tdeeMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setTdeeMenuOpen((v) => !v)}
+                  disabled={busy || dayPlanBusy}
+                  aria-haspopup="menu"
+                  aria-expanded={tdeeMenuOpen}
+                  title={tdeeTargets ? undefined : TDEE_COPY.triggerHint}
                   className={cn(
-                    "absolute right-0 top-full mt-1 z-10 min-w-[200px]",
-                    "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
+                    "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
+                    "border-nutrition/50 text-nutrition-strong dark:text-nutrition",
+                    "hover:border-nutrition hover:bg-nutrition/10",
+                    "disabled:opacity-50 transition-colors",
                   )}
                 >
-                  {PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => applyPreset(preset)}
-                      disabled={busy || dayPlanBusy}
-                      className={cn(
-                        "w-full text-left px-3 py-2 border-b border-line last:border-0",
-                        "hover:bg-panelHi disabled:opacity-50 transition-colors",
-                        activePreset?.id === preset.id &&
-                          "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
-                      )}
-                    >
-                      <div className="text-style-label">{preset.label}</div>
-                      <div className="text-2xs text-subtle mt-0.5">
-                        {preset.kcal} ккал · Б{preset.protein_g} · Ж
-                        {preset.fat_g} · В{preset.carbs_g}
+                  {TDEE_COPY.triggerLabel}
+                  <span aria-hidden className="text-2xs">
+                    ▾
+                  </span>
+                </button>
+                {tdeeMenuOpen && (
+                  <div
+                    role="menu"
+                    className={cn(
+                      "absolute right-0 top-full mt-1 z-10 min-w-[240px]",
+                      "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
+                    )}
+                  >
+                    {tdeeTargets ? (
+                      NUTRITION_GOALS.map((goal) => {
+                        const targets = tdeeTargets[goal];
+                        return (
+                          <button
+                            key={goal}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => applyTdeeTargets(targets)}
+                            disabled={busy || dayPlanBusy}
+                            className={cn(
+                              "w-full text-left px-3 py-2 border-b border-line last:border-0",
+                              "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                            )}
+                          >
+                            <div className="text-style-label">
+                              {TDEE_GOAL_LABELS[goal]}
+                            </div>
+                            <div className="text-2xs text-subtle mt-0.5">
+                              {targets.kcal} ккал · Б{targets.protein_g} · Ж
+                              {targets.fat_g} · В{targets.carbs_g}
+                            </div>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-3 py-2 text-xs text-subtle">
+                        <div className="text-text">{TDEE_COPY.triggerHint}</div>
+                        <a
+                          href="#/profile"
+                          className="mt-1 inline-block text-nutrition-strong dark:text-nutrition underline"
+                          onClick={() => setTdeeMenuOpen(false)}
+                        >
+                          {TDEE_COPY.profileLink}
+                        </a>
                       </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
+              <div ref={presetMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPresetMenuOpen((v) => !v)}
+                  disabled={busy || dayPlanBusy}
+                  aria-haspopup="menu"
+                  aria-expanded={presetMenuOpen}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
+                    "border-line/70 text-subtle hover:text-text hover:border-nutrition/50",
+                    "disabled:opacity-50 transition-colors",
+                  )}
+                >
+                  {activePreset
+                    ? `Пресет: ${activePreset.label}`
+                    : "Підказати з пресету"}
+                  <span aria-hidden className="text-2xs">
+                    ▾
+                  </span>
+                </button>
+                {presetMenuOpen && (
+                  <div
+                    role="menu"
+                    className={cn(
+                      "absolute right-0 top-full mt-1 z-10 min-w-[200px]",
+                      "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
+                    )}
+                  >
+                    {PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => applyPreset(preset)}
+                        disabled={busy || dayPlanBusy}
+                        className={cn(
+                          "w-full text-left px-3 py-2 border-b border-line last:border-0",
+                          "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                          activePreset?.id === preset.id &&
+                            "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
+                        )}
+                      >
+                        <div className="text-style-label">{preset.label}</div>
+                        <div className="text-2xs text-subtle mt-0.5">
+                          {preset.kcal} ккал · Б{preset.protein_g} · Ж
+                          {preset.fat_g} · В{preset.carbs_g}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

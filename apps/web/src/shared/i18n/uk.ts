@@ -485,6 +485,23 @@ export const messages = {
     ageYearsSuffix: "років",
   },
 
+  // Nutrition → DailyPlanCard «Розрахувати з профілю» CTA. Computes
+  // kcal/Б/Ж/В from `hub_biometrics_v1` via Mifflin-St Jeor + activity
+  // ladder + goal adjustment. Lives next to the static preset menu;
+  // copy here covers the trigger button, the goal-picker dropdown, and
+  // the inline hint that fires when biometrics is incomplete and steers
+  // the user back to Profile → Біометрія.
+  nutritionTdee: {
+    triggerLabel: "Розрахувати з профілю",
+    triggerHint:
+      "Заповни біометрію в профілі — Mifflin-St Jeor розрахує ккал автоматично.",
+    profileLink: "Заповнити в профілі",
+    goalCutting: "Схуднення (-500 ккал)",
+    goalMaintenance: "Підтримка",
+    goalBulking: "Набір (+300 ккал)",
+    appliedToast: "Цілі підставлено з профілю",
+  },
+
   // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/
