@@ -209,7 +209,7 @@ export function TodayFocusCard({
             "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           )}
         >
-          <Icon name="x" size={14} strokeWidth={2.5} />
+          <Icon name="close" size={14} strokeWidth={2.5} />
         </button>
       )}
 
