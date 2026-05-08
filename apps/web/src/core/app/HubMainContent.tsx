@@ -1,4 +1,4 @@
-import { memo, useCallback, type ReactNode } from "react";
+import { memo, Suspense, useCallback, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
@@ -6,14 +6,33 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
-import { HubReports } from "../hub/HubReports";
-import { HubSettingsPage } from "../hub/HubSettingsPage";
-import { ProfilePage } from "../profile";
+import { lazyImport } from "../lib/lazyImport";
 import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 import type { HubView } from "../hooks/useHubUIState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { IOSInstallBanner } from "./IOSInstallBanner";
+
+// Profile/Reports/Settings code-split out of the main hub bundle. Static
+// imports defeat `useRoutePrefetch.prefetchPage("profile")` (Vite warns
+// `INEFFECTIVE_DYNAMIC_IMPORT` and bakes the page into the eager chunk
+// anyway) and inflate the synchronous shell — see
+// `docs/audits/2026-05-07-full-app-regression-ux-audit.md` item 9.
+// `HubDashboard` stays eager because it's the default view shown on
+// first paint; the other three are only mounted after a tab change
+// inside the same hub route. Profile's import path matches
+// `useRoutePrefetch.ts:52` verbatim so Rollup dedupes onto a single
+// chunk.
+const ProfilePage = lazyImport(
+  () => import("../profile/ProfilePage"),
+  "ProfilePage",
+);
+const HubReports = lazyImport(() => import("../hub/HubReports"), "HubReports");
+const HubSettingsPage = lazyImport(
+  () => import("../hub/HubSettingsPage"),
+  "HubSettingsPage",
+);
 
 interface HubSectionFallbackProps {
   resetError: () => void;
@@ -206,7 +225,9 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-reports"
               className="pt-2"
             >
-              <HubReports />
+              <Suspense fallback={<PageLoader />}>
+                <HubReports />
+              </Suspense>
             </div>
           </ErrorBoundary>
         )}
@@ -219,7 +240,9 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-profile"
               className="pt-2"
             >
-              <ProfilePage />
+              <Suspense fallback={<PageLoader />}>
+                <ProfilePage />
+              </Suspense>
             </div>
           </ErrorBoundary>
         )}
@@ -231,7 +254,9 @@ export const HubMainContent = memo(function HubMainContent({
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
             >
-              <HubSettingsPage user={user} />
+              <Suspense fallback={<PageLoader />}>
+                <HubSettingsPage user={user} />
+              </Suspense>
             </div>
           </ErrorBoundary>
         )}

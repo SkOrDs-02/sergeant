@@ -26,7 +26,7 @@ vi.mock("../hub/HubSettingsPage", () => ({
   HubSettingsPage: () => <section data-testid="hub-settings" />,
 }));
 
-vi.mock("../profile", () => ({
+vi.mock("../profile/ProfilePage", () => ({
   ProfilePage: () => <section data-testid="profile-page" />,
 }));
 
