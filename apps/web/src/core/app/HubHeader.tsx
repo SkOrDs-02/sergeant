@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
-import { useScrollHeader } from "@shared/hooks/useScrollHeader";
 import { BrandLogo } from "./BrandLogo";
 import { DarkModeToggle } from "./DarkModeToggle";
 import type { User } from "@sergeant/shared";
@@ -63,12 +62,6 @@ export function HubHeader({
   onToggleDark,
   hideAuthButton = false,
 }: HubHeaderProps) {
-  const { isHidden, isShrunk, hasBlur } = useScrollHeader({
-    shrinkThreshold: 40,
-    hideThreshold: 120,
-    minDelta: 8,
-  });
-
   const greetingText = useMemo(() => {
     const tod = getTimeOfDay();
     const base = GREETINGS[tod];
@@ -82,22 +75,11 @@ export function HubHeader({
     <header
       className={cn(
         "px-5 max-w-lg mx-auto w-full",
-        "sticky top-0 z-40",
-        "transition-all duration-300 ease-out",
-        // Progressive header states
-        isHidden && "-translate-y-full",
-        isShrunk ? "pt-2 pb-2" : "pt-6 pb-2.5",
-        hasBlur && "bg-bg/80 backdrop-blur-md border-b border-line/50",
+        "shrink-0 z-40",
+        "pt-6 pb-2.5",
       )}
       style={{
-        // Prefer the OS-reported safe-area inset on devices that have one
-        // (notched/dynamic-island phones, PWA standalone with status-bar);
-        // fall back to a tighter 1.5rem (24px) baseline on the web instead
-        // of the previous 2.5rem (40px), which ate ~16px of dashboard
-        // real estate on every cold start without serving any system chrome.
-        paddingTop: isShrunk
-          ? undefined
-          : "max(1.5rem, env(safe-area-inset-top))",
+        paddingTop: "max(1.5rem, env(safe-area-inset-top))",
       }}
     >
       {/* ── Row 1: Mark + Wordmark + Action icons ─────────────── */}
@@ -163,13 +145,7 @@ export function HubHeader({
       {/* greeting+date, бо це справжній сигнальний шар (час доби, */}
       {/* персональне звернення), а тег «оперативний центр» — */}
       {/* брендовий шум, який забирав вертикальний простір. */}
-      <p
-        className={cn(
-          "mt-1.5 ml-[3px] text-sm leading-snug text-muted truncate",
-          "transition-all duration-300",
-          isShrunk && "opacity-0 h-0 mt-0 overflow-hidden",
-        )}
-      >
+      <p className="mt-1.5 ml-[3px] text-sm leading-snug text-muted truncate">
         {greetingText}
         {dateStr && (
           <>
