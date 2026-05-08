@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-08 by @Skords-01. **Next review:** 2026-08-06.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -136,9 +136,9 @@ DB-level safety:
 
 ## 4. Слабкі місця та ризики
 
-### 4.1. v2 sync ще не загальний для Finyk/Nutrition web reads
+### 4.1. SQLite cut-over — LS-write залишається source-of-truth
 
-`sync_op_log` і normalized per-domain tables є для всіх доменів. Але web **read path** для Finyk та Nutrition ще повністю не cutover: частина read-логіки в hooks може ще читати з MMKV-web / localStorage fallback поки SQLite-WASM не став повноцінним source-of-truth для всіх полів. Дивитись `feature.finyk.sqlite_v2.read_sqlite` і `feature.nutrition.sqlite_v2.read_sqlite` фічфлаги.
+`sync_op_log` і normalized per-domain tables є для всіх доменів, і read-default-on квартет (Stage 8 PR #055r2/#055f2/#055n2/#055k2) лендив: всі 4 `feature.<m>.sqlite_v2.read_sqlite` флаги зараз `defaultValue: true` у `apps/{web,mobile}/src/core/lib/featureFlags.ts`. Stage 8 dual-write feature-flag drop квартет (#056r/#056f/#056n/#056k) також лендив — SQLite mirror фірить unconditionally whenever a dual-write context is registered. Але **LS/MMKV-write залишається source-of-truth** практично для всіх 4 модулів доки не видаляться LS readers + tombstone для `STORAGE_KEYS.*` (PR #057\* quartet — outstanding). Routine додатково блокований SQLite-схемою: 7 з 8 полів `RoutineState` (habits, tags, categories, prefs, pushupsByDate, habitOrder, completionNotes) — LS-only, питання повного LS-write drop-у винесено в Stage 10 candidate (розширення Routine SQLite-схеми). Деталі — [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md#stage-8--sqlite-cut-over-rollout) Stage 8.
 
 ### 4.2. `sync_op_log` append-only retention
 
@@ -173,9 +173,10 @@ PostgreSQL `BIGINT` приходить з `pg` як string. Repo має hard rul
 
 ### P0 / короткий горизонт
 
-1. **Завершити Finyk/Nutrition read cutover.**
-   - Включити `feature.finyk.sqlite_v2.read_sqlite` / `feature.nutrition.sqlite_v2.read_sqlite` на prod.
-   - Прибрати legacy localStorage read fallback після валідації.
+1. **Завершити SQLite cut-over** (Stage 8 PR #057\* quartet).
+   - Read-default-on квартет уже лендив (PR #055r2/#055f2/#055n2/#055k2) — всі 4 `feature.<m>.sqlite_v2.read_sqlite` флаги `defaultValue: true`.
+   - Дропнути LS reader оверлеї + tombstone `STORAGE_KEYS.{ROUTINE,FIZRUK_*,NUTRITION_*,FINYK_*}` (PR #057\* quartet, 14d canary gate на #056\*).
+   - Розширити Routine SQLite-схему до повного покриття LS стану (Stage 10 candidate — `routine_habits`, `routine_tags`, `routine_categories`, `routine_prefs`, `routine_pushups`, `routine_habit_order`, `routine_completion_notes`) перед Routine LS-write drop.
 
 2. **Додати retention/partition для `sync_op_log`.**
    - Визначити retention window (active + archive).
