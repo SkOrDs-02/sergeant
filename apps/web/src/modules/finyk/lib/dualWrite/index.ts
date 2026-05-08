@@ -1,6 +1,10 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import { recordDualWriteOutcome } from "../../../../core/observability/dualWriteTelemetry.js";
+import {
+  recordDualWriteOutcome,
+  recordParityCheck,
+  recordReadFallback,
+} from "../../../../core/observability/dualWriteTelemetry.js";
 import {
   applyFinykDualWriteOps,
   type ApplyDualWriteResult,
@@ -11,6 +15,7 @@ import {
   EMPTY_FINYK_STATE,
   type FinykDualWriteState,
 } from "./diff.js";
+import { probeFinykParity } from "./parity.js";
 
 /**
  * Orchestrator for the Finyk dual-write layer.
@@ -136,6 +141,24 @@ async function runDualWriteFinykState(
     clientTs: ctx.getNow(),
     logger: ctx.logger,
   });
+
+  // Stage 8 parity probe — best-effort: never throws, never disturbs
+  // the dual-write outcome. A failed probe-read is tagged distinctly
+  // (`recordReadFallback`) so triage can tell `SELECT failing` apart
+  // from a real LS↔SQLite divergence (`recordParityCheck("…",
+  // "mismatch", …)`).
+  try {
+    const parity = await probeFinykParity(client, userId, next);
+    recordParityCheck("finyk", parity.result, parity.details);
+  } catch (err) {
+    recordReadFallback(
+      "finyk",
+      err instanceof Error
+        ? `parity-probe-failed: ${err.message}`
+        : "parity-probe-failed",
+    );
+  }
+
   return { status: "applied", result };
 }
 
