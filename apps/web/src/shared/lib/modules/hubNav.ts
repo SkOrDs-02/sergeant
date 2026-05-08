@@ -79,3 +79,54 @@ export function openHubModuleWithAction(
     /* noop */
   }
 }
+
+export const HUB_OPEN_SETTINGS_EVENT = "hub:open-settings";
+
+export interface HubOpenSettingsDetail {
+  /**
+   * Settings section id to scroll to (matches the `#settings-<id>` anchor
+   * emitted by `HubSettingsPage`). Empty string opens the Settings tab
+   * without scrolling to any specific section.
+   */
+  section: string;
+}
+
+// Mirrors the section list in `HubSettingsPage.tsx`. Kept defensive at
+// runtime so a typo in a caller can't navigate the user to an
+// unscrollable hash, but the source of truth is HubSettingsPage.
+const VALID_SETTINGS_SECTIONS = new Set<string>([
+  "",
+  "dashboard",
+  "general",
+  "notifications",
+  "ai",
+  "assistant",
+  "routine",
+  "fizruk",
+  "finyk",
+  "nutrition",
+  "privacy",
+  "pwa",
+  "dataExport",
+  "experimental",
+]);
+
+/**
+ * Перемкнути Hub на вкладку «Налаштування» з опційним скролом до секції.
+ *
+ * Використовується, напр., у Bento-картці неактивного модуля: тап по
+ * сірій картці має вести користувача в Hub Settings → Дашборд →
+ * "Модулі дашборду", а не відкривати сам неактивний модуль.
+ */
+export function openHubSettingsSection(section: string = ""): void {
+  if (!VALID_SETTINGS_SECTIONS.has(section)) return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent<HubOpenSettingsDetail>(HUB_OPEN_SETTINGS_EVENT, {
+        detail: { section },
+      }),
+    );
+  } catch {
+    /* noop — SSR / disabled CustomEvent */
+  }
+}
