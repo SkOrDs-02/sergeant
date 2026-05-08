@@ -10,8 +10,8 @@ import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
 import { HeroCard, type HeroCardState } from "../components/dashboard/HeroCard";
-import { KpiRow } from "../components/dashboard/KpiRow";
 import { RecentWorkoutsSection } from "../components/dashboard/RecentWorkoutsSection";
+import { StatusStrip } from "../components/dashboard/StatusStrip";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import { workoutDurationSec } from "@sergeant/fizruk-domain";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
@@ -310,6 +310,14 @@ export function Dashboard({
     // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
     window.location.hash = "#plan";
   };
+  const openProgress = () => {
+    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
+    window.location.hash = "#progress";
+  };
+  const openBody = () => {
+    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
+    window.location.hash = "#body";
+  };
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -325,7 +333,13 @@ export function Dashboard({
           onOpenPrograms={() => onOpenPrograms?.()}
         />
 
-        <KpiRow kpis={dashboardKpis} />
+        <StatusStrip
+          kpis={dashboardKpis}
+          recovery={{ avoid: rec.avoid }}
+          onOpenBody={openBody}
+          onOpenProgress={openProgress}
+          onOpenWorkouts={openWorkoutsTab}
+        />
 
         {templates.length > 0 &&
           (() => {
@@ -387,50 +401,12 @@ export function Dashboard({
             );
           })()}
 
-        {activeProgram && (
-          <Card as="section" radius="lg" aria-label="Програма сьогодні">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div>
-                <SectionHeading as="h2" size="sm">
-                  Програма: {activeProgram.name}
-                </SectionHeading>
-                {todaySession ? (
-                  <p className="text-style-label text-text mt-0.5">
-                    {todaySession.name}
-                  </p>
-                ) : (
-                  <p className="text-sm text-subtle mt-0.5">
-                    Сьогодні відпочинок 💤
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                className="text-style-caption text-success hover:underline shrink-0"
-                onClick={() => onOpenPrograms?.()}
-              >
-                Програми →
-              </button>
-            </div>
-            {todaySession && (
-              <button
-                type="button"
-                className="w-full py-3 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98]"
-                onClick={() => {
-                  const session =
-                    activeProgram.sessions?.[todaySession.sessionKey];
-                  if (session && onStartProgramWorkout) {
-                    onStartProgramWorkout(session, activeProgram);
-                  }
-                }}
-              >
-                Розпочати тренування за програмою
-              </button>
-            )}
-          </Card>
-        )}
-
         {/*
+          The «Програма сьогодні» card used to live here, but it duplicated
+          what the Hero already shows in the `today` state and is now
+          surfaced from the `Тренування` tab where programs live. Removed
+          to keep the overview an index instead of a wall of CTAs.
+          —
           Hide the «Останні тренування» card on first-run (no completed
           workouts) — the empty-state copy duplicates what the hero CTA
           already nudges toward and added noise to an otherwise empty
