@@ -1,5 +1,6 @@
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
 
+import { classifyOutboxBootOutcome } from "./outboxBoot";
 import {
   createSyncEngineWriterRuntime,
   type SyncEngineWriterRuntime,
@@ -95,40 +96,81 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   // (`sync_op_outbox_legacy` лишився, `sync_op_outbox` зник). Звичайний
   // re-run runner-а на такому DB вилітає на першому ALTER 002-ї.
   // Helper — idempotent: на здоровій або свіжій БД — no-op.
-  const repaired = await dbSchema.repairPartialOutboxMigration(client, {
-    ledgerTable: dbSchema.ROUTINE_MIGRATIONS_TABLE,
-  });
-  if (repaired.recovered) {
-    sentry.addSentryBreadcrumb({
-      category: "storage",
-      level: "warning",
-      message: "sqlite: recovered sync_op_outbox from partial 002 migration",
-    });
-  }
+  //
+  // Кожен boot тегує `outbox.boot.outcome` у Sentry
+  // (`fresh|already_present|repaired|failed`) + `outbox.boot.legacy_seen`
+  // — це робить регресію SERGEANT-WEB-A прямо filter-able у saved
+  // search-і навіть якщо помилка прилітає не у самому boot-у, а
+  // через 30 секунд у періодичному drain-і (тег глобальний, тож
+  // успадковується усіма наступними events у сесії).
 
-  await runMigrations({
-    adapter: createSqliteAdapter(client),
-    files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
-    tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
-  });
-
-  // Post-migration smoke check: if `sync_op_outbox` is still missing
-  // after the runner returned, something deeper than the
-  // post-002 corruption is wrong (e.g. a brand-new failure mode in
-  // sqlite-wasm). Throw a typed error here so the
-  // `bootSyncEngineWriter`-owy catch-all routes it to Sentry with a
-  // breadcrumb instead of letting the periodic drain surface a raw
-  // `SQLITE_ERROR: no such table` 30s later (the original WEB-A
-  // shape).
-  const presentTables = await client.all<{ name: string }>(
-    `SELECT name FROM sqlite_master
-       WHERE type = 'table' AND name = 'sync_op_outbox'`,
-  );
-  if (presentTables.length === 0) {
-    throw new Error(
-      "sync_op_outbox missing after running ROUTINE_CLIENT_MIGRATIONS — " +
-        "client SQLite did not converge on the expected schema",
+  // Pre-state snapshot: перед першим write-ом у схему фіксуємо що
+  // саме було на диску. Розрізняємо "вже-мігрована БД" vs "свіжий
+  // user" vs "post-002 corruption" — інакше всі три зливаються
+  // в один тег і diagnostic value губиться.
+  let hadLegacy = false;
+  try {
+    const initialTables = await client.all<{ name: string }>(
+      `SELECT name FROM sqlite_master
+         WHERE type = 'table'
+           AND name IN ('sync_op_outbox', 'sync_op_outbox_legacy')`,
     );
+    const hadOutbox = initialTables.some((r) => r.name === "sync_op_outbox");
+    hadLegacy = initialTables.some((r) => r.name === "sync_op_outbox_legacy");
+
+    const repaired = await dbSchema.repairPartialOutboxMigration(client, {
+      ledgerTable: dbSchema.ROUTINE_MIGRATIONS_TABLE,
+    });
+    if (repaired.recovered) {
+      sentry.addSentryBreadcrumb({
+        category: "storage",
+        level: "warning",
+        message: "sqlite: recovered sync_op_outbox from partial 002 migration",
+      });
+    }
+
+    await runMigrations({
+      adapter: createSqliteAdapter(client),
+      files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
+      tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
+    });
+
+    // Post-migration smoke check: if `sync_op_outbox` is still missing
+    // after the runner returned, something deeper than the
+    // post-002 corruption is wrong (e.g. a brand-new failure mode in
+    // sqlite-wasm). Throw a typed error here so the
+    // `bootSyncEngineWriter`-owy catch-all routes it to Sentry with a
+    // breadcrumb instead of letting the periodic drain surface a raw
+    // `SQLITE_ERROR: no such table` 30s later (the original WEB-A
+    // shape).
+    const presentTables = await client.all<{ name: string }>(
+      `SELECT name FROM sqlite_master
+         WHERE type = 'table' AND name = 'sync_op_outbox'`,
+    );
+    if (presentTables.length === 0) {
+      throw new Error(
+        "sync_op_outbox missing after running ROUTINE_CLIENT_MIGRATIONS — " +
+          "client SQLite did not converge on the expected schema",
+      );
+    }
+
+    sentry.setSentryTag(
+      "outbox.boot.outcome",
+      classifyOutboxBootOutcome({ hadOutbox, recovered: repaired.recovered }),
+    );
+    sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
+  } catch (err) {
+    // Tagging *before* re-throwing is intentional: the
+    // `bootSyncEngineWriter` catch arm forwards to
+    // `captureException`, and the global tag we set here ends up on
+    // that event (and any later events in the same session). Saved
+    // search `outbox.boot.outcome:failed` therefore catches both the
+    // direct boot exception and any downstream
+    // `no such table: sync_op_outbox` surfaced by callers that ran
+    // before this boot resolved.
+    sentry.setSentryTag("outbox.boot.outcome", "failed");
+    sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
+    throw err;
   }
 
   return createSyncEngineWriterRuntime({

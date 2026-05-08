@@ -18,6 +18,7 @@ const setTag = vi.fn();
 const browserTracingIntegration = vi.fn(() => ({ name: "tracing" }));
 const replayIntegration = vi.fn(() => ({ name: "replay" }));
 const captureException = vi.fn();
+const addBreadcrumb = vi.fn();
 
 vi.mock("@sentry/react", () => ({
   init: sentryInit,
@@ -25,6 +26,7 @@ vi.mock("@sentry/react", () => ({
   browserTracingIntegration,
   replayIntegration,
   captureException,
+  addBreadcrumb,
 }));
 
 const isCapacitorMock = vi.fn<() => boolean>();
@@ -49,6 +51,7 @@ beforeEach(() => {
   browserTracingIntegration.mockClear();
   replayIntegration.mockClear();
   captureException.mockReset();
+  addBreadcrumb.mockReset();
   isCapacitorMock.mockReset().mockReturnValue(false);
   getPlatformMock.mockReset().mockReturnValue("web");
   vi.stubEnv("VITE_SENTRY_DSN", "https://public@sentry.example/1");
@@ -98,6 +101,47 @@ describe("initSentry", () => {
     // Старе поле має бути відсутнє — інакше Sentry приоритезує статичний
     // rate і ігнорує sampler.
     expect(cfg.tracesSampleRate).toBeUndefined();
+  });
+});
+
+describe("setSentryTag", () => {
+  it("forwards to Sentry.setTag once the SDK is initialised", async () => {
+    const sentry = await import("./sentry");
+    await sentry.initSentry();
+
+    setTag.mockClear();
+    sentry.setSentryTag("outbox.boot.outcome", "repaired");
+
+    expect(setTag).toHaveBeenCalledWith("outbox.boot.outcome", "repaired");
+  });
+
+  it("is a silent no-op before init (no DSN, SDK never loaded)", async () => {
+    vi.stubEnv("VITE_SENTRY_DSN", "");
+
+    const sentry = await import("./sentry");
+    await sentry.initSentry();
+
+    sentry.setSentryTag("outbox.boot.outcome", "failed");
+
+    expect(setTag).not.toHaveBeenCalled();
+  });
+
+  it("swallows underlying SDK exceptions so callers stay unconditional", async () => {
+    const sentry = await import("./sentry");
+    // `initSentry` itself calls `setTag` for `platform` / `is_capacitor`,
+    // so install the throwing mock *after* init succeeds — otherwise we
+    // assert the wrong code path. The interesting contract is that
+    // `setSentryTag` (the public, lazy-forward wrapper) never re-throws
+    // its caller, even when the SDK is faulty.
+    await sentry.initSentry();
+
+    setTag.mockImplementation(() => {
+      throw new Error("sentry exploded");
+    });
+
+    expect(() =>
+      sentry.setSentryTag("outbox.boot.outcome", "fresh"),
+    ).not.toThrow();
   });
 });
 
