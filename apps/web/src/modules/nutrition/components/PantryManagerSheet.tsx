@@ -51,6 +51,15 @@ export function PantryManagerSheet({
   onBeginRename,
   onBeginDelete,
 }: PantryManagerSheetProps) {
+  const safePantries = Array.isArray(pantries) ? pantries : [];
+  const activePantry =
+    safePantries.find((p) => p.id === activePantryId) ?? null;
+  const activeName = activePantry?.name?.trim() || "Склад";
+  // Гарантуємо хоча б один склад: останній не показуємо в «Небезпечній зоні»,
+  // бо `onConfirmDeletePantry` для нього no-op (щоб не залишити користувача
+  // зовсім без сховища).
+  const canDeleteActive = safePantries.length > 1 && activePantry !== null;
+
   return (
     <Sheet
       open={open}
@@ -129,6 +138,13 @@ export function PantryManagerSheet({
             <div className="text-xs text-danger mt-2">{pantryForm.err}</div>
           ) : null}
         </div>
+        {/*
+         * PR-37 ux-roast 2026-Q3 / §3.2: «Видалити активний» поряд із «Зберегти»
+         * читалося як парна destructive-дія до збереження назви — користувачі
+         * хибно очікували, що це скасує редагування. Тепер тут пара
+         * Зберегти / Скасувати, а видалення складу винесено в окремий
+         * блок «Небезпечна зона» нижче.
+         */}
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Button
             type="button"
@@ -146,14 +162,39 @@ export function PantryManagerSheet({
           </Button>
           <Button
             type="button"
-            variant="danger"
+            variant="ghost"
             className="h-12 min-h-[44px]"
-            onClick={onBeginDelete}
+            onClick={onClose}
+            disabled={busy}
           >
-            Видалити активний
+            Скасувати
           </Button>
         </div>
       </div>
+
+      {canDeleteActive && (
+        <div className="mt-4 rounded-2xl border border-line/60 bg-bg/40 p-4">
+          <SectionHeading as="div" size="xs">
+            Небезпечна зона
+          </SectionHeading>
+          <p className="text-xs text-subtle leading-relaxed mt-1">
+            Видалить активний склад «{activeName}» разом з усіма продуктами в
+            ньому. Дію не можна відмінити.
+          </p>
+          <button
+            type="button"
+            onClick={onBeginDelete}
+            disabled={busy}
+            className={cn(
+              "mt-3 inline-flex items-center gap-1.5 text-xs font-semibold",
+              "text-danger hover:text-danger/80 disabled:opacity-50",
+              "transition-colors",
+            )}
+          >
+            🗑 Видалити активний склад
+          </button>
+        </div>
+      )}
     </Sheet>
   );
 }

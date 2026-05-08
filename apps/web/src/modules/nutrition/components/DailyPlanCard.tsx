@@ -90,6 +90,127 @@ const MEAL_TYPE_ICONS: Record<string, string> = {
   snack: "🍎",
 };
 
+/**
+ * PR-37 ux-roast 2026-Q3 / §3.3.
+ *
+ * Перевіряє, чи цільові макро вкладаються в цільові ккал. Якщо
+ * ні — повертає {kind: "over"} з різницею; якщо вкладаються, але
+ * істотно недотягують — {kind: "under"}; інакше null.
+ *
+ * Допуск ±5% покриває звичайне округлення macro-grams (1г білка ≠
+ * рівно 4 ккал у живій їжі), щоб не сипати warnings на пресети.
+ */
+export function calcMacroKcalMismatch(prefs: NutritionPrefs): {
+  kind: "over" | "under";
+  target: number;
+  calc: number;
+  diff: number;
+} | null {
+  const target = prefs.dailyTargetKcal ?? 0;
+  if (target <= 0) return null;
+  const prot = prefs.dailyTargetProtein_g ?? 0;
+  const fat = prefs.dailyTargetFat_g ?? 0;
+  const carb = prefs.dailyTargetCarbs_g ?? 0;
+  if (prot <= 0 && fat <= 0 && carb <= 0) return null;
+  const calc = Math.round(prot * 4 + fat * 9 + carb * 4);
+  const tolerance = Math.round(target * 0.05);
+  const diff = calc - target;
+  if (diff > tolerance) {
+    return { kind: "over", target, calc, diff };
+  }
+  if (diff < -tolerance) {
+    return { kind: "under", target, calc, diff };
+  }
+  return null;
+}
+
+interface MacroKcalWarningProps {
+  prefs: NutritionPrefs;
+  setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
+  busy?: boolean;
+}
+
+function MacroKcalWarning({ prefs, setPrefs, busy }: MacroKcalWarningProps) {
+  const mismatch = calcMacroKcalMismatch(prefs);
+  if (!mismatch) return null;
+
+  const { kind, target, calc, diff } = mismatch;
+  const absDiff = Math.abs(diff);
+  const overshoot = kind === "over";
+
+  const tone = overshoot
+    ? "border-danger/40 bg-danger/10"
+    : "border-warn/40 bg-warn/10";
+  const iconTone = overshoot ? "text-danger" : "text-warn";
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "mt-3 rounded-xl border px-3 py-2.5 text-xs space-y-2",
+        tone,
+      )}
+      data-testid="macro-kcal-warning"
+    >
+      <div className="flex items-start gap-2">
+        <span className={cn("shrink-0 font-bold", iconTone)} aria-hidden>
+          {overshoot ? "⚠" : "ℹ"}
+        </span>
+        <p className="text-text leading-snug">
+          {overshoot ? (
+            <>
+              Сума макро виходить на <strong>{calc} ккал</strong> — це на{" "}
+              <strong>{absDiff} ккал</strong> більше за ціль{" "}
+              <strong>{target} ккал</strong>. 1 г білка = 4 ккал, 1 г жиру = 9
+              ккал, 1 г вуглеводів = 4 ккал.
+            </>
+          ) : (
+            <>
+              Сума макро дає лише <strong>{calc} ккал</strong> — це на{" "}
+              <strong>{absDiff} ккал</strong> менше за ціль{" "}
+              <strong>{target} ккал</strong>.
+            </>
+          )}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 pl-5">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setPrefs((p) => ({ ...p, dailyTargetKcal: calc }))}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
+            "border-line/60 bg-bg/60 text-text hover:bg-panelHi",
+            "disabled:opacity-50 transition-colors",
+          )}
+        >
+          Перерахувати ккал → {calc}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            setPrefs((p) => ({
+              ...p,
+              dailyTargetProtein_g: null,
+              dailyTargetFat_g: null,
+              dailyTargetCarbs_g: null,
+            }))
+          }
+          className={cn(
+            "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
+            "border-line/60 bg-bg/40 text-subtle hover:text-text hover:bg-panelHi",
+            "disabled:opacity-50 transition-colors",
+          )}
+        >
+          Скинути макро
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
   const prot = prefs.dailyTargetProtein_g ?? 0;
   const fat = prefs.dailyTargetFat_g ?? 0;
@@ -478,6 +599,8 @@ export function DailyPlanCard({
           )}
 
           <MacroRatioBar prefs={prefs} />
+
+          <MacroKcalWarning prefs={prefs} setPrefs={setPrefs} busy={busy} />
 
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">

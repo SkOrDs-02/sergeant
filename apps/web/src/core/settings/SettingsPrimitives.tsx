@@ -134,9 +134,15 @@ export function ToggleRow({
 }: ToggleRowProps) {
   return (
     <label
+      // PR-37 ux-roast 2026-Q3 / §3.1: row reads as plain copy on the
+      // section background — користувачі скаржаться, що тумблери губляться
+      // на тлі. Тепер це явна tappable картка з бордером і фоном, явним
+      // hover/active-стейтом, по всій ширині.
       className={cn(
         "flex items-start justify-between gap-4 cursor-pointer group",
-        "p-3 -mx-3 rounded-xl hover:bg-panelHi/40 transition-colors",
+        "p-3 rounded-2xl border border-line/60 bg-panel/60 shadow-soft",
+        "hover:border-brand/40 hover:bg-panelHi/60 active:bg-panelHi",
+        "transition-[background-color,border-color]",
       )}
     >
       <div className="flex-1 min-w-0">
