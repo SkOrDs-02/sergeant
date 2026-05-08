@@ -25,8 +25,6 @@ import { probeFinykParity } from "./parity.js";
  *
  * Glues together:
  *
- *  - the **gating** check (`feature.finyk.sqlite_v2.dual_write` flag,
- *    default off);
  *  - the **identity** resolver (`getUserId()`);
  *  - the **SQLite** resolver (`getMigrationClient()`);
  *  - and the **adapter** (`applyFinykDualWriteOps`).
@@ -36,17 +34,19 @@ import { probeFinykParity } from "./parity.js";
  * in directly creates a cycle. The registration pattern lets the boot
  * wiring file install the dependencies once.
  *
+ * Stage 8 PR #056k dropped the `feature.finyk.sqlite_v2.dual_write`
+ * gate — the SQLite mirror now fires unconditionally whenever a
+ * context is registered. LS/MMKV-write remains source-of-truth until
+ * PR #057k.
+ *
  * Best-effort guarantees:
  *
  *  - The orchestrator's promise NEVER rejects.
- *  - When the flag is off, no resolver is called and no diff is
- *    computed (zero per-write overhead).
  *  - When `getUserId()` or `getMigrationClient()` return null the
  *    call is a no-op.
  */
 
 export interface FinykDualWriteContext {
-  isEnabled(): boolean;
   getUserId(): string | null;
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   getNow(): string;
@@ -109,7 +109,6 @@ async function runDualWriteFinykState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffFinykDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -181,7 +180,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";

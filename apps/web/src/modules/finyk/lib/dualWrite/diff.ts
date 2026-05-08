@@ -7,6 +7,10 @@
  * nutrition dual-write diff layer (PR #032) — same shape, same
  * semantics, separate types because the entity surface is different.
  *
+ * Stage 8 PR #056k dropped the `feature.finyk.sqlite_v2.dual_write`
+ * gate — the SQLite mirror now fires unconditionally whenever a
+ * dual-write context is registered.
+ *
  * Five entity classes are tracked across 14 LS keys. The mapping to
  * SQLite tables (created by PR #035 migration `039_finyk_tables.sql`):
  *

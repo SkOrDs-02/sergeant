@@ -55,9 +55,10 @@ export function useStorage({
   const mutations = useFinykStorageMutations(slots);
   const backupSync = useFinykBackupSync(slots, toast);
 
-  // Stage 4 PR #036 — install dual-write context once auth + flag are
-  // available, then mirror every slot mutation into SQLite (best-effort,
-  // gated by `feature.finyk.sqlite_v2.dual_write`).
+  // Stage 4 PR #036 — install dual-write context once auth is
+  // available, then mirror every slot mutation into SQLite
+  // (best-effort). Stage 8 PR #056k dropped the gate; mirror is
+  // unconditional whenever a userId-scoped context is registered.
   useFinykDualWriteBoot();
   useFinykDualWriteSync(slots);
 

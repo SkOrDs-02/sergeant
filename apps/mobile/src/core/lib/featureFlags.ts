@@ -83,17 +83,10 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     defaultValue: true,
   },
   {
-    id: "feature.finyk.sqlite_v2.dual_write",
-    label: "Finyk — dual-write MMKV↔SQLite",
-    description:
-      "Кожен write у MMKV Finyk-у додатково мирорить у локальну SQLite (`finyk_*` таблиці: hidden_accounts, hidden_transactions, budgets, subscriptions, assets, debts, receivables, custom_categories, manual_expenses, tx_categories, tx_splits, mono_debt_links, networth_history, prefs). Reads ще беруться з MMKV. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
-    defaultValue: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.read_sqlite",
     label: "Finyk — read state from SQLite",
     description:
-      "Hidden / budgets / subscriptions / assets / debts / receivables / custom_categories / manual_expenses / tx_categories / tx_splits / mono_debt_links / networth_history / prefs читаються з локальної SQLite (`finyk_*`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Hidden / budgets / subscriptions / assets / debts / receivables / custom_categories / manual_expenses / tx_categories / tx_splits / mono_debt_links / networth_history / prefs читаються з локальної SQLite (`finyk_*`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056k. Default: on.",
     defaultValue: true,
   },
   {

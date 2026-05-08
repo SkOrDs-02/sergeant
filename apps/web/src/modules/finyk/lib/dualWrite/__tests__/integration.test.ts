@@ -33,7 +33,6 @@ function makeCtx(
   overrides: Partial<FinykDualWriteContext> = {},
 ): FinykDualWriteContext {
   return {
-    isEnabled: () => true,
     getUserId: () => USER_ID,
     getMigrationClient: async () => handle.client,
     getNow: () => NOW,
@@ -218,7 +217,7 @@ describe("Finyk dual-write — applyFinykDualWriteOps", () => {
 });
 
 describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", () => {
-  it("dualWriteFinykState applies ops when context is registered + flag on", async () => {
+  it("dualWriteFinykState applies ops when context is registered", async () => {
     registerFinykDualWriteContext(makeCtx());
     expect(isFinykDualWriteRegistered()).toBe(true);
 
@@ -233,15 +232,6 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
       "SELECT * FROM finyk_hidden_accounts",
     );
     expect(rows).toHaveLength(1);
-  });
-
-  it("dualWriteFinykState skips when flag is off", async () => {
-    registerFinykDualWriteContext(makeCtx({ isEnabled: () => false }));
-    const out = await dualWriteFinykState(EMPTY_FINYK_STATE, {
-      ...EMPTY_FINYK_STATE,
-      hiddenAccounts: [{ id: "acc-1" }],
-    });
-    expect(out).toEqual({ status: "skipped", reason: "flag-off" });
   });
 
   it("dualWriteFinykState skips when no ops are diffed", async () => {

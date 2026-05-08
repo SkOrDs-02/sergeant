@@ -17,10 +17,14 @@ import {
  * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`. Mirror of
  * `apps/web/src/modules/finyk/lib/dualWrite/index.ts` and of the
  * mobile nutrition orchestrator (PR #032).
+ *
+ * Stage 8 PR #056k dropped the `feature.finyk.sqlite_v2.dual_write`
+ * gate — the SQLite mirror now fires unconditionally whenever a
+ * context is registered. MMKV-write remains source-of-truth until
+ * PR #057k.
  */
 
 export interface FinykDualWriteContext {
-  isEnabled(): boolean;
   getUserId(): string | null;
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   getNow(): string;
@@ -52,7 +56,6 @@ export async function dualWriteFinykState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffFinykDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -101,7 +104,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";

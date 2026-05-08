@@ -92,18 +92,10 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.finyk.sqlite_v2.dual_write",
-    label: "Finyk — dual-write LS↔SQLite",
-    description:
-      "Кожен write у localStorage Finyk-у додатково мирорить у локальну SQLite (`finyk_hidden_accounts`, `finyk_hidden_transactions`, `finyk_budgets`, `finyk_subscriptions`, `finyk_assets`, `finyk_debts`, `finyk_receivables`, `finyk_custom_categories`, `finyk_manual_expenses`, `finyk_tx_categories`, `finyk_tx_splits`, `finyk_mono_debt_links`, `finyk_networth_history`, `finyk_prefs`). Reads ще беруться з LS. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.read_sqlite",
     label: "Finyk — read from SQLite",
     description:
-      "Hidden / budgets / subscriptions / assets / debts / receivables / custom categories / manual expenses / tx categories / tx splits / mono debt links / networth history / prefs читаються з локальної SQLite (`finyk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Hidden / budgets / subscriptions / assets / debts / receivables / custom categories / manual expenses / tx categories / tx splits / mono debt links / networth history / prefs читаються з локальної SQLite (`finyk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056k. Default: on.",
     defaultValue: true,
     experimental: true,
   },

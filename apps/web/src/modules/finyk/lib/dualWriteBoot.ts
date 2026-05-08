@@ -3,6 +3,9 @@
  *
  * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`. Mirror of
  * `apps/web/src/modules/nutrition/lib/dualWriteBoot.ts`.
+ *
+ * Stage 8 PR #056k dropped the `feature.finyk.sqlite_v2.dual_write`
+ * flag — registration is now `userId`-gated only.
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -15,7 +18,6 @@ import { migrateFinyk } from "./clientMigrate.js";
 
 export interface BootFinykDualWriteInput {
   getUserId(): string | null;
-  isFlagEnabled(): boolean;
 }
 
 let migrationsApplied = false;
@@ -25,7 +27,6 @@ let migrationsApplied = false;
  */
 export function bootFinykDualWrite(input: BootFinykDualWriteInput): () => void {
   const ctx: FinykDualWriteContext = {
-    isEnabled: () => input.isFlagEnabled(),
     getUserId: () => input.getUserId(),
     getMigrationClient: async (): Promise<SqliteMigrationClient | null> => {
       const handle = await getSqliteDb();
