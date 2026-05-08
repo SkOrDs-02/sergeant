@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-08 by @claude. **Next review:** 2026-08-06.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -80,6 +80,13 @@ Google OAuth (Better Auth `socialProviders.google`). Активує кнопку
 
 - `MIN_PASSWORD_LENGTH=10` (default).
 - `MAX_PASSWORD_LENGTH=256` — **hard-capped at 256** як DoS-захист (bound per-request scrypt work). Better Auth хешить паролі через **scrypt** (`@better-auth/utils`, `N=16384, r=16, p=1, dkLen=64`), у якого нема 72-byte input-ліміту, тому cap — операційний, не криптографічний. Setting >256 is rejected at startup (fail-fast). Дивись [ADR-0042](../adr/0042-password-hashing-strategy.md).
+
+### `BETTER_AUTH_TOKEN_ENC_KEY` _(optional, recommended for prod)_
+
+32-байтний hex-ключ для шифрування OAuth-токенів (access/refresh) у БД. Без ключа токени зберігаються **відкритим текстом** — дозволено тільки в dev/test, у production `assertStartupEnv()` логне env_warning. Згенерувати: `openssl rand -hex 32`.
+
+- Нова multi-key ротація: `BETTER_AUTH_TOKEN_ENC_KEYS` (CSV `<ver>:<hex>`) + `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` (активна версія). Legacy single-key варіант (`BETTER_AUTH_TOKEN_ENC_KEY`) залишається підтримуватися для зворотньої сумісності.
+- У production рекомендується використовувати `BETTER_AUTH_TOKEN_ENC_KEYS` + `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` для безшовної ротації ключів без downtime.
 
 ---
 
