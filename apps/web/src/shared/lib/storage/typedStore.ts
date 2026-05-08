@@ -25,7 +25,6 @@
 
 import type { ZodType } from "zod";
 import { webKVStore } from "./storage";
-import { safeJsonSet } from "./storageQuota";
 
 type Listener<T> = (value: T) => void;
 
@@ -212,9 +211,17 @@ export function createTypedStore<T>(
       return true;
     }
     const envelope: Envelope<T> = { __v: version, data: result.data };
-    const res = safeJsonSet(key, envelope);
-    if (!res || !res.ok) {
-      report("write", res?.reason || res?.error || "unknown");
+    let serialized: string;
+    try {
+      serialized = JSON.stringify(envelope);
+    } catch (err) {
+      report("write", err);
+      return false;
+    }
+    try {
+      webKVStore.setString(key, serialized);
+    } catch (err) {
+      report("write", err);
       return false;
     }
     notify(result.data);
