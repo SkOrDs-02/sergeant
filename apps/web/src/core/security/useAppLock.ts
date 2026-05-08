@@ -93,12 +93,16 @@ export function useAppLock(): UseAppLockReturn {
 
   const startSetup = useCallback(() => {
     setState("setup");
-    capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {});
+    capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {
+      mode: "setup",
+    });
   }, []);
 
   const startChange = useCallback(() => {
     setState("change");
-    capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {});
+    capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {
+      mode: "change",
+    });
   }, []);
 
   const finishSetup = useCallback(() => {

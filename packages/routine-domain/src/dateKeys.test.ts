@@ -52,4 +52,10 @@ describe("routine-domain/dateKeys", () => {
     expect(isoWeekdayFromDateKey("2026-01-05")).toBe(0); // Mon
     expect(isoWeekdayFromDateKey("2026-01-11")).toBe(6); // Sun
   });
+
+  it("parseDateKey throws on malformed key", () => {
+    expect(() => parseDateKey("")).toThrow(/invalid date key/);
+    expect(() => parseDateKey("not-a-date")).toThrow(/invalid date key/);
+    expect(() => parseDateKey("2026-13-01")).not.toThrow(); // JS Date handles overflow
+  });
 });
