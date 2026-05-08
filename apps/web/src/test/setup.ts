@@ -49,9 +49,22 @@ function ensureTestLocalStorage(): void {
     );
     if (hasStorageShape(globalThis.localStorage)) return;
   }
+  // `writable: true` потрібен, бо багато тестових файлів
+  // (`featureFlags.test.ts`, `insightsEngine.test.ts`,
+  // `nutritionStorage.test.ts`, `shoppingListStorage.test.ts`,
+  // `waterStorage.test.ts`, `nutritionBackup.test.ts`,
+  // `typedStore.test.ts` тощо) у `beforeEach` роблять прямий
+  // `globalThis.localStorage = …` зі своїм mock-ом. Без `writable`
+  // `Object.defineProperty` створює read-only слот і присвоєння
+  // падає з `TypeError: Cannot assign to read only property
+  // 'localStorage'` — це і ламало `Test coverage (vitest)` job на
+  // PR-ах #2217/#2218 та й не лише. Тримаємо `configurable: true`
+  // щоб наступний `ensureTestLocalStorage()` міг переописати слот
+  // якщо тест видалить шим.
   Object.defineProperty(globalThis, "localStorage", {
     value: createMemoryStorage(),
     configurable: true,
+    writable: true,
   });
 }
 
