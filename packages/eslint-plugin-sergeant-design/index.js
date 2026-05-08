@@ -205,7 +205,13 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   // profile (web-only payload — `USER_PROFILE` does not exist in MMKV,
   // but listing it here keeps the cross-platform registry symmetric so
   // mobile sync no longer null-overwrites the server blob).
+  // `HUB_BIOMETRICS` (added alongside `USER_PROFILE` in PR #2245 — the
+  // hub-level biometric parameters store, height/birth-date/sex/
+  // activity-level/current-weight, used by the nutrition Mifflin-St
+  // Jeor TDEE calculator). Synced via `SYNC_MODULES.profile` (LWW),
+  // same path as the user-profile blob.
   "USER_PROFILE",
+  "HUB_BIOMETRICS",
 ]);
 
 const TRACKED_STORAGE_KEY_VALUES = new Set([
@@ -218,8 +224,9 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   // PR #026).
   // nutrition — see TRACKED_STORAGE_KEY_NAMES comment above (retired
   // in PR #034).
-  // profile (see USER_PROFILE comment above).
+  // profile (see USER_PROFILE / HUB_BIOMETRICS comments above).
   "hub_user_profile_v1",
+  "hub_biometrics_v1",
 ]);
 
 const RAW_TRACKED_STORAGE_MESSAGE =
