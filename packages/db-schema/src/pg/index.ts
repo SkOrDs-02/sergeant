@@ -21,6 +21,12 @@ export {
   fizrukWorkoutSets,
   fizrukCustomExercises,
   fizrukMeasurements,
+  fizrukDailyLog,
+  fizrukMonthlyPlan,
+  fizrukPlanTemplates,
+  fizrukPrograms,
+  fizrukWellbeing,
+  fizrukWorkoutTemplates,
 } from "./fizruk.js";
 export {
   nutritionMeals,

@@ -3,6 +3,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -180,5 +181,158 @@ export const fizrukMeasurements = pgTable(
       table.userId,
       sql`${table.measuredAt} DESC`,
     ),
+  ],
+);
+
+/**
+ * Postgres schema for `fizruk_daily_log`.
+ *
+ * Mirrors `apps/server/src/migrations/052_fizruk_full_state.sql` and
+ * the SQLite client schema in `packages/db-schema/src/sqlite/fizruk.ts`.
+ *
+ * Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`.
+ * Per-row diary entries (weight, sleep, energy, mood, note); the
+ * SQLite mirror omits the FK to `"user"(id)` because the client has
+ * no auth schema.
+ */
+export const fizrukDailyLog = pgTable(
+  "fizruk_daily_log",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    entryAt: timestamp("entry_at", { withTimezone: true }).notNull(),
+    weightKg: real("weight_kg"),
+    sleepHours: real("sleep_hours"),
+    energyLevel: integer("energy_level"),
+    mood: integer(),
+    note: text().notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("fizruk_daily_log_user_entry_idx").on(
+      table.userId,
+      sql`${table.entryAt} DESC`,
+    ),
+    index("fizruk_daily_log_user_active_idx")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * Postgres schema for `fizruk_monthly_plan`.
+ *
+ * Singleton-per-user JSONB blob backing
+ * `STORAGE_KEYS.FIZRUK_MONTHLY_PLAN`. Stage 12 / PR #070f-schema.
+ */
+export const fizrukMonthlyPlan = pgTable("fizruk_monthly_plan", {
+  userId: text("user_id").primaryKey(),
+  data: jsonb().notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Postgres schema for `fizruk_plan_templates`.
+ *
+ * Singleton-per-user "Plan template" slot backing
+ * `STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE`. Stage 12 / PR #070f-schema.
+ *
+ * The slot can be empty (`null` JSON literal) so the column is
+ * nullable rather than carrying a `'null'` string default — JSONB
+ * supports a real null value, unlike the SQLite TEXT mirror.
+ */
+export const fizrukPlanTemplates = pgTable("fizruk_plan_templates", {
+  userId: text("user_id").primaryKey(),
+  data: jsonb(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Postgres schema for `fizruk_programs`.
+ *
+ * Singleton-per-user active-program selection. The catalogue itself
+ * is shipped with the bundle (`PROGRAM_CATALOGUE`) and is **not**
+ * user state — only the active id needs to round-trip.
+ *
+ * Stage 12 / PR #070f-schema.
+ */
+export const fizrukPrograms = pgTable("fizruk_programs", {
+  userId: text("user_id").primaryKey(),
+  activeProgramId: text("active_program_id"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Postgres schema for `fizruk_wellbeing`.
+ *
+ * Per-(user, date) wellbeing entries. Composite PK keyed on
+ * `(user_id, date_key)` — one row per local-day. Stage 12 / PR
+ * #070f-schema.
+ */
+export const fizrukWellbeing = pgTable(
+  "fizruk_wellbeing",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    mood: integer(),
+    energy: integer(),
+    sleepQuality: integer("sleep_quality"),
+    sleepHours: real("sleep_hours"),
+    notes: text().notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.dateKey] }),
+    index("fizruk_wellbeing_user_active_idx")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * Postgres schema for `fizruk_workout_templates`.
+ *
+ * Per-row workout templates backing `STORAGE_KEYS.FIZRUK_TEMPLATES`.
+ * Stage 12 / PR #070f-schema.
+ */
+export const fizrukWorkoutTemplates = pgTable(
+  "fizruk_workout_templates",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    name: text().notNull(),
+    exerciseIds: jsonb("exercise_ids").notNull().default([]),
+    groups: jsonb().notNull().default([]),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("fizruk_workout_templates_user_idx")
+      .on(table.userId, sql`${table.updatedAt} DESC`)
+      .where(sql`${table.deletedAt} IS NULL`),
   ],
 );

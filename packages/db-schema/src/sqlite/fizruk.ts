@@ -1,4 +1,11 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 /**
@@ -179,5 +186,189 @@ export const fizrukMeasurements = sqliteTable(
       table.userId,
       sql`${table.measuredAt} DESC`,
     ),
+  ],
+);
+
+/**
+ * SQLite schema for `fizruk_daily_log`.
+ *
+ * Per-row daily wellbeing/weight log entries (one entry per
+ * `{ id, user_id }` pair) — the slice currently persisted via
+ * `safeWriteLS(STORAGE_KEYS.FIZRUK_DAILY_LOG, ...)` in
+ * `apps/{web,mobile}/src/modules/fizruk/hooks/useDailyLog.ts`.
+ *
+ * Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`.
+ *
+ * Differences from `fizruk_measurements` (the closest existing slot):
+ *  - `daily_log` rows are user-edited diary entries with the full
+ *    mood / sleep / energy / weight quartet, while `measurements` is
+ *    body-circumference focused. Both share `user_id` + ISO-8601
+ *    timestamps; mood is normalised to a single integer column
+ *    (web's `moodScore` and mobile's `mood` map onto this slot in
+ *    the dual-write adapter).
+ *  - `weight_kg` and `sleep_hours` are REAL — the input form accepts
+ *    half-hour sleep ticks (`7.5`) and decimal weights (`72.4 kg`).
+ */
+export const fizrukDailyLog = sqliteTable(
+  "fizruk_daily_log",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    entryAt: text("entry_at").notNull(),
+    weightKg: real("weight_kg"),
+    sleepHours: real("sleep_hours"),
+    energyLevel: integer("energy_level"),
+    mood: integer(),
+    note: text().notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("fizruk_daily_log_user_entry_idx_lite").on(
+      table.userId,
+      sql`${table.entryAt} DESC`,
+    ),
+    index("fizruk_daily_log_user_active_idx_lite")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for `fizruk_monthly_plan`.
+ *
+ * Singleton-per-user JSON blob backing the
+ * `STORAGE_KEYS.FIZRUK_MONTHLY_PLAN` slot (`fizruk_monthly_plan_v1`)
+ * — `{ reminderEnabled, reminderHour, reminderMinute, days:
+ * Record<dateKey, { templateId }> }`.
+ *
+ * Stage 12 / PR #070f-schema. Pattern matches `routine_prefs` /
+ * `nutrition_prefs` (one row per user, full state in `*_json`).
+ */
+export const fizrukMonthlyPlan = sqliteTable("fizruk_monthly_plan", {
+  userId: text("user_id").primaryKey(),
+  dataJson: text("data_json").notNull().default("{}"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/**
+ * SQLite schema for `fizruk_plan_templates`.
+ *
+ * Singleton-per-user "Plan template" slot backing
+ * `STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE` (`fizruk_plan_template_v1`).
+ * The hook (`apps/mobile/src/modules/fizruk/hooks/usePlanTemplate.ts`)
+ * persists either a single object `{ id, name, weekday, notes,
+ * updatedAt }` or `null`. We store the JSON literal `'null'` for the
+ * empty slot to keep the row present (and the LWW timestamp valid)
+ * without a separate "is empty" column.
+ *
+ * Stage 12 / PR #070f-schema.
+ */
+export const fizrukPlanTemplates = sqliteTable("fizruk_plan_templates", {
+  userId: text("user_id").primaryKey(),
+  dataJson: text("data_json").notNull().default("null"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/**
+ * SQLite schema for `fizruk_programs`.
+ *
+ * Singleton-per-user active-program selection backing
+ * `STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM`
+ * (`fizruk_active_program_id_v1`). The catalogue itself
+ * (`PROGRAM_CATALOGUE` from `@sergeant/fizruk-domain`) is shipped
+ * with the bundle and is **not** user state — only the active id
+ * needs to round-trip through SQLite.
+ *
+ * Stage 12 / PR #070f-schema.
+ */
+export const fizrukPrograms = sqliteTable("fizruk_programs", {
+  userId: text("user_id").primaryKey(),
+  activeProgramId: text("active_program_id"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/**
+ * SQLite schema for `fizruk_wellbeing`.
+ *
+ * Per-(user, date) wellbeing entries backing
+ * `STORAGE_KEYS.FIZRUK_WELLBEING` (`fizruk_wellbeing_v1`). The hook
+ * `apps/mobile/src/modules/fizruk/hooks/useWellbeing.ts` upserts a
+ * single entry per local-day `YYYY-MM-DD`, which makes the natural
+ * primary key `(user_id, date_key)` rather than a synthetic id.
+ *
+ * Stage 12 / PR #070f-schema. Same composite-PK shape as
+ * `nutrition_water_log` (PR #070n-schema).
+ */
+export const fizrukWellbeing = sqliteTable(
+  "fizruk_wellbeing",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    mood: integer(),
+    energy: integer(),
+    sleepQuality: integer("sleep_quality"),
+    sleepHours: real("sleep_hours"),
+    notes: text().notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.dateKey] }),
+    index("fizruk_wellbeing_user_active_idx_lite")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for `fizruk_workout_templates`.
+ *
+ * Per-row workout-template entries backing
+ * `STORAGE_KEYS.FIZRUK_TEMPLATES` (`fizruk_workout_templates_v1`).
+ * Used by both `apps/web` and `apps/mobile`
+ * `useWorkoutTemplates.ts`. Catalogue-style stable rows with their
+ * own ids — same per-row shape as `fizruk_workouts` so the
+ * dual-write adapter can reuse the row-by-row diff machinery.
+ *
+ * Stage 12 / PR #070f-schema.
+ */
+export const fizrukWorkoutTemplates = sqliteTable(
+  "fizruk_workout_templates",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    name: text().notNull(),
+    exerciseIdsJson: text("exercise_ids_json").notNull().default("[]"),
+    groupsJson: text("groups_json").notNull().default("[]"),
+    lastUsedAt: text("last_used_at"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("fizruk_workout_templates_user_idx_lite")
+      .on(table.userId, sql`${table.updatedAt} DESC`)
+      .where(sql`${table.deletedAt} IS NULL`),
   ],
 );

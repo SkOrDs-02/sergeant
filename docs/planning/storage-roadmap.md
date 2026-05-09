@@ -3101,7 +3101,7 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
 
 [#2274]: https://github.com/Skords-01/Sergeant/pull/2274
 
-##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 📋 PROPOSED (0/4)
+##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 🚧 IN PROGRESS (1/4)
 
 > **Why this is its own stage:** найбільший залишковий schema gap у tail.
 > Поточний Fizruk dual-write covers лише workouts / custom-exercises /
@@ -3123,13 +3123,23 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
 
 **Scope (4 PRs, mirror of Stage 10 pattern):**
 
-- **PR #070f-schema** 📋 PROPOSED — ~5–6 нових SQLite/Pg таблиць
+- **PR #070f-schema** ✅ LANDED — 6 нових SQLite/Pg таблиць
   (`fizruk_daily_log`, `fizruk_monthly_plan`, `fizruk_plan_templates`,
   `fizruk_programs`, `fizruk_wellbeing`, `fizruk_workout_templates`) +
-  KV-store entry для active workout id (single string, не варта окремої
-  таблиці) + Drizzle schemas + sequential client migration
-  `006_fizruk_full_state.sql` + server migration `052_fizruk_full_state.sql`
-  (+ companion down + 052 round-trip testcontainer harness).
+  Drizzle schemas (`packages/db-schema/src/{sqlite,pg}/fizruk.ts`) +
+  sequential client migration `002_fizruk_full_state.sql` (bundled
+  inline in `packages/db-schema/src/sqlite/migrations/index.ts`,
+  appended to `FIZRUK_CLIENT_MIGRATIONS`) + server migration
+  `apps/server/src/migrations/052_fizruk_full_state.sql` (+ companion
+  `.down.sql` + `__tests__/052-fizruk-full-state.test.ts` round-trip
+  testcontainer harness covering forward/down/idempotency/re-up
+  fingerprint). Snapshot tests `sqlite-fizruk-snapshot.test.ts` +
+  `pg-fizruk-snapshot.test.ts` extended з ~95 нових assertions для
+  кожної з 6 нових таблиць (column ordering, types, nullability,
+  defaults, indexes, composite PK для `fizruk_wellbeing`). The
+  seventh hook — `useActiveFizrukWorkout` — riding on the existing
+  Stage 9 `kv_store` table (single string slot) without its own
+  Fizruk-module table.
 - **PR #070f-dualwrite** 📋 PROPOSED — extend `apps/web/src/modules/fizruk/lib/dualWrite/diff.ts`
   щоб emit-ити ops для daily-log-set / monthly-plan-set / plan-template-upsert /
   plan-template-delete / program-upsert / program-delete / wellbeing-set /
