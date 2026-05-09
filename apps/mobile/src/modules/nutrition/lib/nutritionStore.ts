@@ -7,17 +7,18 @@
  * `NutritionLog` / `Pantry` / `WaterLog` / `ShoppingList` / `Prefs`
  * semantics — one domain change, both platforms updated.
  *
- * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`): the
- * `load*` / `save*` helpers for nutrition log / prefs / pantries no
- * longer touch MMKV. Reads come from the SQLite warm cache populated
- * at boot by `useNutritionSqliteReadBoot`, and writes go through the
- * dual-write pipeline (`triggerNutritionDualWrite`) which mirrors to
- * SQLite and bumps the cache. The MMKV-resident water and shopping
- * stores are unchanged — they still live in MMKV.
+ * Stage 8 PR #057n-tombstone-mobile (`docs/planning/storage-roadmap.md`):
+ * the `load*` / `save*` helpers no longer touch MMKV. The SQLite
+ * `nutrition_*` tables (including `nutrition_water_log` and
+ * `nutrition_shopping_list` from Stage 11) are the source of truth —
+ * reads come from the warm cache populated at boot by
+ * `useNutritionSqliteReadBoot`, and writes go through the dual-write
+ * pipeline (`triggerNutritionDualWrite`) which mirrors to SQLite and
+ * bumps the cache. The boot-time `residualImport.ts` drains any
+ * leftover MMKV payload (water log + shopping list included) into
+ * SQLite once and deletes the MMKV keys.
  */
 import {
-  SHOPPING_LIST_KEY,
-  WATER_LOG_KEY,
   defaultNutritionPrefs,
   makeDefaultPantry,
   normalizeNutritionLog,
@@ -32,8 +33,6 @@ import {
   type WaterLog,
 } from "@sergeant/nutrition-domain";
 
-import { safeReadLS, safeWriteLS } from "@/lib/storage";
-
 import {
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
@@ -42,11 +41,7 @@ import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
 } from "./dualWrite/diff";
-import {
-  peekNutritionDualWriteState,
-  persistNutritionShoppingList,
-  persistNutritionWaterLog,
-} from "./dualWriteState";
+import { peekNutritionDualWriteState } from "./dualWriteState";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 
 // ── Log ─────────────────────────────────────────────────────────────
@@ -203,29 +198,42 @@ function extractPantrySnapshots(
 // ── Water ───────────────────────────────────────────────────────────
 
 export function loadWaterLog(): WaterLog {
-  return normalizeWaterLog(safeReadLS<unknown>(WATER_LOG_KEY, null));
+  // Stage 8 PR #057n-tombstone-mobile: read from the SQLite warm cache.
+  const cache = getCachedNutritionSqliteState();
+  return normalizeWaterLog(cache.waterLog);
 }
 
 export function saveWaterLog(log: unknown): boolean {
+  // Stage 8 PR #057n-tombstone-mobile: dual-write only — no MMKV write.
+  // Pre-boot / pre-auth (no dual-write registered) is a silent no-op so
+  // the first paint stays on the in-memory hook state.
   const normalized = normalizeWaterLog(log);
-  const ok = safeWriteLS(WATER_LOG_KEY, normalized);
-  // Stage 11 / PR #070n-mobile-dualwrite — mirror to SQLite via the
-  // dual-write pipeline. Pre-boot / pre-auth is a no-op inside
-  // `persistNutritionWaterLog`, so this is safe to call unconditionally.
-  persistNutritionWaterLog(normalized);
-  return ok;
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = { ...prev, waterLog: normalized };
+  triggerNutritionDualWrite(prev, next);
+  return true;
 }
 
 // ── Shopping list ───────────────────────────────────────────────────
 
 export function loadShoppingList(): ShoppingList {
-  return normalizeShoppingList(safeReadLS<unknown>(SHOPPING_LIST_KEY, null));
+  // Stage 8 PR #057n-tombstone-mobile: read from the SQLite warm cache.
+  // `normalizeShoppingList(null)` returns the canonical empty document
+  // `{ categories: [] }` so a cold cache renders without crashing.
+  const cache = getCachedNutritionSqliteState();
+  return normalizeShoppingList(cache.shoppingList);
 }
 
 export function saveShoppingList(list: unknown): boolean {
+  // Stage 8 PR #057n-tombstone-mobile: dual-write only — no MMKV write.
   const normalized = normalizeShoppingList(list);
-  const ok = safeWriteLS(SHOPPING_LIST_KEY, normalized);
-  // Stage 11 / PR #070n-mobile-dualwrite — mirror to SQLite.
-  persistNutritionShoppingList(normalized);
-  return ok;
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    shoppingList: { dataJson: JSON.stringify(normalized) },
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
 }

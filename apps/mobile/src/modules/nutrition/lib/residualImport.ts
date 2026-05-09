@@ -5,7 +5,8 @@
  * (mobile parity for `apps/web/src/modules/nutrition/lib/residualImport.ts`).
  * Reads any leftover values from the now-deprecated MMKV keys
  * (`nutrition_log_v1`, `nutrition_pantries_v1`,
- * `nutrition_active_pantry_v1`, `nutrition_prefs_v1`), imports them
+ * `nutrition_active_pantry_v1`, `nutrition_prefs_v1`,
+ * `nutrition_water_v1`, `nutrition_shopping_list_v1`), imports them
  * into the local `nutrition_*` SQLite tables (idempotent + LWW-safe),
  * and then deletes the MMKV entries. Subsequent boots no-op because
  * the MMKV keys are gone.
@@ -21,10 +22,14 @@ import {
   NUTRITION_LOG_KEY,
   NUTRITION_PANTRIES_KEY,
   NUTRITION_PREFS_KEY,
+  SHOPPING_LIST_KEY,
+  WATER_LOG_KEY,
   defaultNutritionPrefs,
   normalizeNutritionLog,
   normalizeNutritionPrefs,
   normalizePantries,
+  normalizeShoppingList,
+  normalizeWaterLog,
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
@@ -71,17 +76,24 @@ export async function importNutritionResidualFromMmkv(
   const pantries = readPantriesFromMmkv();
   const activePantryId = readActivePantryFromMmkv();
   const prefs = readPrefsFromMmkv();
+  const waterLog = readWaterLogFromMmkv();
+  const shoppingList = readShoppingListFromMmkv();
 
   const hasAny =
     log !== null ||
     pantries !== null ||
     activePantryId !== null ||
-    prefs !== null;
+    prefs !== null ||
+    waterLog !== null ||
+    shoppingList !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   // Build a NutritionDualWriteState from whatever was found in MMKV.
   // Slots that are missing fall back to the empty / default value so
   // the diff against `EMPTY_STATE` only emits ops for slots we have.
+  const normalizedShopping = shoppingList
+    ? normalizeShoppingList(shoppingList)
+    : null;
   const next: NutritionDualWriteState = {
     meals: log ? extractMealSnapshots(normalizeNutritionLog(log)) : [],
     pantries: pantries
@@ -97,8 +109,14 @@ export async function importNutritionResidualFromMmkv(
           }
         : null,
     recipes: [],
-    waterLog: {},
-    shoppingList: null,
+    // Stage 11 / PR #057n-tombstone-mobile — also drain the water-log
+    // and shopping-list slices. Empty MMKV maps yield empty SQLite rows
+    // (the diff emits no ops for `{} → {}`), so this is a free no-op
+    // for users who never logged water / shopping items on the old build.
+    waterLog: waterLog ? normalizeWaterLog(waterLog) : {},
+    shoppingList: normalizedShopping
+      ? { dataJson: JSON.stringify(normalizedShopping) }
+      : null,
   };
 
   const ops = diffNutritionDualWriteOps(EMPTY_STATE, next);
@@ -126,6 +144,8 @@ export async function importNutritionResidualFromMmkv(
   safeRemoveLS(NUTRITION_PANTRIES_KEY);
   safeRemoveLS(NUTRITION_ACTIVE_PANTRY_KEY);
   safeRemoveLS(NUTRITION_PREFS_KEY);
+  safeRemoveLS(WATER_LOG_KEY);
+  safeRemoveLS(SHOPPING_LIST_KEY);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -163,6 +183,22 @@ function readActivePantryFromMmkv(): string | null {
 function readPrefsFromMmkv(): unknown | null {
   try {
     return safeReadLS<unknown>(NUTRITION_PREFS_KEY, null);
+  } catch {
+    return null;
+  }
+}
+
+function readWaterLogFromMmkv(): unknown | null {
+  try {
+    return safeReadLS<unknown>(WATER_LOG_KEY, null);
+  } catch {
+    return null;
+  }
+}
+
+function readShoppingListFromMmkv(): unknown | null {
+  try {
+    return safeReadLS<unknown>(SHOPPING_LIST_KEY, null);
   } catch {
     return null;
   }
