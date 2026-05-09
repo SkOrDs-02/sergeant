@@ -8,19 +8,26 @@
  *  1. Resolves a `SqliteMigrationClient` from the singleton expo-sqlite
  *     handle.
  *  2. Runs the nutrition SQLite migrations so the tables exist.
- *  3. Performs the initial `refreshNutritionSqliteState()` so the cache
+ *  3. Stage 8 PR #057n-tombstone: imports any residual MMKV values
+ *     (`nutrition_log_v1`, `nutrition_pantries_v1`,
+ *     `nutrition_active_pantry_v1`, `nutrition_prefs_v1`) into the
+ *     SQLite tables and deletes the MMKV keys. Idempotent; subsequent
+ *     boots no-op once the MMKV keys are gone.
+ *  4. Performs the initial `refreshNutritionSqliteState()` so the cache
  *     is warm before the first overlay read.
  *
  * Stage 8 PR #057n dropped `feature.nutrition.sqlite_v2.read_sqlite` —
  * the boot is unconditional once a `userId` is available.
  *
  * Fail-soft: any thrown error is caught, logged via `console.warn` and
- * surfaces as `false` so consumers can keep reading from MMKV.
+ * surfaces as `false` so consumers can keep reading from the empty
+ * cache (and MMKV residue, until residual-import lands).
  */
 
 import { getSqliteMigrationClient } from "@/core/db/sqlite";
 
 import { migrateNutrition } from "./clientMigrate";
+import { importNutritionResidualFromMmkv } from "./residualImport";
 import { refreshNutritionSqliteState } from "./sqliteReader";
 
 /**
@@ -40,6 +47,10 @@ export async function bootNutritionSqliteReadPath(
   try {
     const client = await getSqliteMigrationClient();
     await migrateNutrition(client);
+    // Stage 8 PR #057n-tombstone: opportunistic, fail-soft. The
+    // helper itself catches and logs any apply error so a hostile
+    // MMKV blob can't block the rest of the boot.
+    await importNutritionResidualFromMmkv(client, userId);
     await refreshNutritionSqliteState(client, userId);
     return true;
   } catch (err) {

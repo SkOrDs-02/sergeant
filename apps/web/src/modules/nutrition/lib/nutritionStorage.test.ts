@@ -1,4 +1,28 @@
-import { beforeEach, describe, expect, it } from "vitest";
+/**
+ * Stage 8 PR #057n-tombstone — `load*` / `persist*` no longer read from
+ * (or write to) `localStorage`. Reads come from the SQLite warm cache
+ * (`apps/web/src/modules/nutrition/lib/sqliteReader.ts`) and writes go
+ * through `triggerNutritionDualWrite`. These tests exercise the new
+ * surface using `__setNutritionSqliteCacheForTests` and a
+ * `vi.mock` of the dual-write trigger.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const triggerSpy = vi.fn();
+let dualWriteRegistered = true;
+
+vi.mock("./dualWrite/index", async () => {
+  const actual =
+    await vi.importActual<typeof import("./dualWrite/index")>(
+      "./dualWrite/index",
+    );
+  return {
+    ...actual,
+    triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),
+    isNutritionDualWriteRegistered: () => dualWriteRegistered,
+  };
+});
+
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_LOG_KEY,
@@ -11,9 +35,15 @@ import {
   loadPantries,
   normalizeNutritionLog,
   normalizePantries,
+  persistNutritionLog,
+  persistNutritionPrefs,
   persistPantries,
+  type Pantry,
 } from "./nutritionStorage";
-import { storageManager } from "@shared/lib/storage/storageManager";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "./sqliteReader";
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -30,64 +60,218 @@ function createLocalStorageMock() {
 
 beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
+  clearNutritionSqliteCache();
+  triggerSpy.mockReset();
+  dualWriteRegistered = true;
 });
 
-describe("loadActivePantryId", () => {
-  it("returns home by default", () => {
+afterEach(() => {
+  clearNutritionSqliteCache();
+});
+
+// -------------------------------------------------------------------------
+// Reads — backed by SQLite warm cache.
+// -------------------------------------------------------------------------
+
+describe("loadActivePantryId — cache-backed", () => {
+  it("returns home when cache has no active pantry", () => {
     expect(loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY)).toBe("home");
   });
+
+  it("returns the cache value once set", () => {
+    __setNutritionSqliteCacheForTests({ activePantryId: "kitchen" });
+    expect(loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY)).toBe("kitchen");
+  });
 });
 
-describe("loadPantries", () => {
-  it("loads stored pantries when present", () => {
-    globalThis.localStorage.setItem(
-      NUTRITION_PANTRIES_KEY,
-      JSON.stringify([{ id: "home", name: "Дім", items: [], text: "x" }]),
-    );
+describe("loadPantries — cache-backed", () => {
+  it("returns the default pantry when cache is empty", () => {
     const pantries = loadPantries(
       NUTRITION_PANTRIES_KEY,
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0]!.text).toBe("x");
+    expect(pantries[0]!.id).toBe("home");
   });
 
-  it("migrates from legacy keys when new key missing", () => {
-    globalThis.localStorage.setItem(
-      "nutrition_pantry_items_v0",
-      JSON.stringify([{ name: "яйця", qty: 2, unit: "шт", notes: null }]),
-    );
-    globalThis.localStorage.setItem("nutrition_pantry_text_v0", "яйця");
-    storageManager.resetMigration("nutrition_001_migrate_legacy_pantry");
-    storageManager.runAll();
-    const pantries = loadPantries(
+  it("returns cached pantries when present", () => {
+    const pantries: Pantry[] = [
+      { id: "home", name: "Дім", items: [], text: "x" },
+      { id: "work", name: "Робота", items: [], text: "" },
+    ];
+    __setNutritionSqliteCacheForTests({ pantries });
+    const out = loadPantries(
       NUTRITION_PANTRIES_KEY,
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
-    expect(pantries).toHaveLength(1);
-    expect(pantries[0]!.items).toHaveLength(1);
-    expect(pantries[0]!.text).toBe("яйця");
-    expect(globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY)).toBe(
-      "home",
-    );
+    expect(out).toHaveLength(2);
+    expect(out[0]!.text).toBe("x");
   });
 });
 
-describe("persistPantries", () => {
-  it("persists pantries and active id", () => {
+describe("loadNutritionLog — cache-backed", () => {
+  it("returns empty object when cache is empty", () => {
+    expect(loadNutritionLog(NUTRITION_LOG_KEY)).toEqual({});
+  });
+
+  it("normalizes the cached log", () => {
+    __setNutritionSqliteCacheForTests({
+      log: {
+        "2026-03-03": {
+          meals: [
+            {
+              id: "m1",
+              name: "Тест",
+              label: "Сніданок",
+              macros: { kcal: 1, protein_g: null, fat_g: null, carbs_g: null },
+              time: "08:00",
+              mealType: "breakfast",
+              source: "manual",
+              macroSource: "manual",
+              amount_g: null,
+              foodId: null,
+            },
+          ],
+        },
+      },
+    });
+    const log = loadNutritionLog(NUTRITION_LOG_KEY);
+    expect(log["2026-03-03"]!.meals[0]!.mealType).toBe("breakfast");
+  });
+});
+
+describe("loadNutritionPrefs — cache-backed defaults", () => {
+  it("returns defaults when cache has no prefs", () => {
+    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY)).toEqual(
+      defaultNutritionPrefs(),
+    );
+  });
+
+  it("returns the cached prefs when set", () => {
+    __setNutritionSqliteCacheForTests({
+      prefs: { ...defaultNutritionPrefs(), goal: "lean", servings: 3 },
+    });
+    const prefs = loadNutritionPrefs(NUTRITION_PREFS_KEY);
+    expect(prefs.goal).toBe("lean");
+    expect(prefs.servings).toBe(3);
+    // default fields preserved by normalize
+    expect(prefs.timeMinutes).toBe(25);
+    expect(prefs.waterGoalMl).toBe(2000);
+  });
+
+  it("clamps reminderHour into [0,23]", () => {
+    __setNutritionSqliteCacheForTests({
+      prefs: {
+        ...defaultNutritionPrefs(),
+        reminderHour: 99 as unknown as number,
+      },
+    });
+    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(23);
+
+    __setNutritionSqliteCacheForTests({
+      prefs: {
+        ...defaultNutritionPrefs(),
+        reminderHour: -5 as unknown as number,
+      },
+    });
+    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------------
+// Writes — fire dual-write only, never touch localStorage.
+// -------------------------------------------------------------------------
+
+describe("persistPantries — dual-write only (no LS write)", () => {
+  it("does not touch localStorage", () => {
     persistPantries(
       NUTRITION_PANTRIES_KEY,
       NUTRITION_ACTIVE_PANTRY_KEY,
       [{ id: "a", name: "A", items: [], text: "" }],
       "a",
     );
-    const raw = globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY);
-    expect(JSON.parse(raw!)).toHaveLength(1);
-    expect(globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY)).toBe(
+    expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toBeNull();
+    expect(
+      globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY),
+    ).toBeNull();
+  });
+
+  it("triggers dual-write when context is registered", () => {
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [{ id: "a", name: "A", items: [], text: "" }],
       "a",
     );
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("no-ops silently when dual-write context is not registered", () => {
+    dualWriteRegistered = false;
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [{ id: "a", name: "A", items: [], text: "" }],
+      "a",
+    );
+    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toBeNull();
   });
 });
+
+describe("persistNutritionLog — dual-write only", () => {
+  it("does not touch localStorage", () => {
+    persistNutritionLog({}, NUTRITION_LOG_KEY);
+    expect(globalThis.localStorage.getItem(NUTRITION_LOG_KEY)).toBeNull();
+  });
+
+  it("triggers dual-write when context is registered and a log is provided", () => {
+    persistNutritionLog(
+      {
+        "2026-04-04": {
+          meals: [
+            {
+              id: "m1",
+              name: "Хліб",
+              time: "10:00",
+              mealType: "snack",
+              label: "",
+              macros: { kcal: 10, protein_g: 0, fat_g: 0, carbs_g: 2 },
+              source: "manual",
+              macroSource: "manual",
+              amount_g: null,
+              foodId: null,
+            },
+          ],
+        },
+      },
+      NUTRITION_LOG_KEY,
+    );
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("persistNutritionPrefs — dual-write only", () => {
+  it("does not write to localStorage", () => {
+    persistNutritionPrefs(
+      { ...defaultNutritionPrefs(), reminderHour: 8 },
+      NUTRITION_PREFS_KEY,
+    );
+    expect(globalThis.localStorage.getItem(NUTRITION_PREFS_KEY)).toBeNull();
+  });
+
+  it("triggers dual-write when context is registered", () => {
+    persistNutritionPrefs(
+      { ...defaultNutritionPrefs(), reminderHour: 8 },
+      NUTRITION_PREFS_KEY,
+    );
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+// -------------------------------------------------------------------------
+// Pure helpers (unchanged by tombstone — kept for regression coverage).
+// -------------------------------------------------------------------------
 
 describe("normalizeNutritionLog", () => {
   it("infers mealType from Ukrainian label", () => {
@@ -119,72 +303,6 @@ describe("normalizeNutritionLog", () => {
   });
 });
 
-describe("loadNutritionLog", () => {
-  it("normalizes stored log", () => {
-    globalThis.localStorage.setItem(
-      NUTRITION_LOG_KEY,
-      JSON.stringify({
-        "2026-03-03": {
-          meals: [{ name: "Тест", label: "Сніданок", macros: { kcal: 1 } }],
-        },
-      }),
-    );
-    const log = loadNutritionLog(NUTRITION_LOG_KEY);
-    expect(log["2026-03-03"]!.meals[0]!.mealType).toBe("breakfast");
-    expect(log["2026-03-03"]!.meals[0]!.id).toMatch(/^meal_/);
-  });
-
-  it("returns empty log when JSON is corrupted (does not crash UI)", () => {
-    globalThis.localStorage.setItem(NUTRITION_LOG_KEY, "{not json");
-    expect(loadNutritionLog(NUTRITION_LOG_KEY)).toEqual({});
-  });
-});
-
-describe("loadPantries — reload & edge cases", () => {
-  it("survives a reload — same data comes back", () => {
-    persistPantries(
-      NUTRITION_PANTRIES_KEY,
-      NUTRITION_ACTIVE_PANTRY_KEY,
-      [
-        {
-          id: "home",
-          name: "Дім",
-          items: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
-          text: "",
-        },
-      ],
-      "home",
-    );
-    const pantries = loadPantries(
-      NUTRITION_PANTRIES_KEY,
-      NUTRITION_ACTIVE_PANTRY_KEY,
-    );
-    expect(pantries).toHaveLength(1);
-    expect(pantries[0]!.items[0]!.name).toBe("Молоко");
-    expect(loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY)).toBe("home");
-  });
-
-  it("falls back to default pantry when storage holds empty array", () => {
-    globalThis.localStorage.setItem(NUTRITION_PANTRIES_KEY, JSON.stringify([]));
-    const pantries = loadPantries(
-      NUTRITION_PANTRIES_KEY,
-      NUTRITION_ACTIVE_PANTRY_KEY,
-    );
-    expect(pantries).toHaveLength(1);
-    expect(pantries[0]!.id).toBe("home");
-  });
-
-  it("falls back to default pantry when JSON is corrupted", () => {
-    globalThis.localStorage.setItem(NUTRITION_PANTRIES_KEY, "{not json");
-    const pantries = loadPantries(
-      NUTRITION_PANTRIES_KEY,
-      NUTRITION_ACTIVE_PANTRY_KEY,
-    );
-    expect(pantries).toHaveLength(1);
-    expect(pantries[0]!.id).toBe("home");
-  });
-});
-
 describe("normalizePantries", () => {
   it("filters non-object entries and invalid items", () => {
     const out = normalizePantries([
@@ -212,88 +330,5 @@ describe("normalizePantries", () => {
     expect(normalizePantries(null)).toEqual([]);
     expect(normalizePantries({})).toEqual([]);
     expect(normalizePantries("x")).toEqual([]);
-  });
-});
-
-describe("loadNutritionPrefs — prefs survive corrupted / partial data", () => {
-  it("returns defaults when nothing is stored", () => {
-    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY)).toEqual(
-      defaultNutritionPrefs(),
-    );
-  });
-
-  it("returns defaults when JSON is corrupted", () => {
-    globalThis.localStorage.setItem(NUTRITION_PREFS_KEY, "{not json");
-    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY)).toEqual(
-      defaultNutritionPrefs(),
-    );
-  });
-
-  it("returns defaults when stored value is an array (type mismatch)", () => {
-    globalThis.localStorage.setItem(NUTRITION_PREFS_KEY, JSON.stringify([1]));
-    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY)).toEqual(
-      defaultNutritionPrefs(),
-    );
-  });
-
-  it("merges partial prefs with defaults (prefs are not lost)", () => {
-    globalThis.localStorage.setItem(
-      NUTRITION_PREFS_KEY,
-      JSON.stringify({ goal: "lean", servings: 3 }),
-    );
-    const prefs = loadNutritionPrefs(NUTRITION_PREFS_KEY);
-    expect(prefs.goal).toBe("lean");
-    expect(prefs.servings).toBe(3);
-    // default fields preserved
-    expect(prefs.timeMinutes).toBe(25);
-    expect(prefs.waterGoalMl).toBe(2000);
-    expect(prefs.mealTemplates).toEqual([]);
-  });
-
-  it("falls back to default waterGoalMl on invalid / non-positive values", () => {
-    for (const bad of [null, "abc", -100, 0, undefined]) {
-      globalThis.localStorage.setItem(
-        NUTRITION_PREFS_KEY,
-        JSON.stringify({ waterGoalMl: bad }),
-      );
-      expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).waterGoalMl).toBe(2000);
-    }
-  });
-
-  it("clamps reminderHour into [0,23]", () => {
-    globalThis.localStorage.setItem(
-      NUTRITION_PREFS_KEY,
-      JSON.stringify({ reminderHour: 99 }),
-    );
-    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(23);
-
-    globalThis.localStorage.setItem(
-      NUTRITION_PREFS_KEY,
-      JSON.stringify({ reminderHour: -5 }),
-    );
-    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(0);
-
-    globalThis.localStorage.setItem(
-      NUTRITION_PREFS_KEY,
-      JSON.stringify({ reminderHour: "nope" }),
-    );
-    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(12);
-  });
-
-  it("filters invalid mealTemplates entries", () => {
-    globalThis.localStorage.setItem(
-      NUTRITION_PREFS_KEY,
-      JSON.stringify({
-        mealTemplates: [
-          null,
-          { id: "1", name: "", mealType: "snack" },
-          { id: "2", name: "Омлет", mealType: "breakfast" },
-          "oops",
-        ],
-      }),
-    );
-    const prefs = loadNutritionPrefs(NUTRITION_PREFS_KEY);
-    expect(prefs.mealTemplates).toHaveLength(1);
-    expect(prefs.mealTemplates[0]!.name).toBe("Омлет");
   });
 });

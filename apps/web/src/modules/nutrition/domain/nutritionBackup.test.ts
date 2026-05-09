@@ -1,14 +1,29 @@
-import { beforeEach, describe, expect, it } from "vitest";
+/**
+ * Stage 8 PR #057n-tombstone — backup apply no longer writes to LS;
+ * `persist*` from `../lib/nutritionStorage` now fires
+ * `triggerNutritionDualWrite`. The test mocks the dual-write trigger
+ * and verifies it receives the restored payload.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const triggerSpy = vi.fn();
+
+vi.mock("../lib/dualWrite/index", async () => {
+  const actual = await vi.importActual<typeof import("../lib/dualWrite/index")>(
+    "../lib/dualWrite/index",
+  );
+  return {
+    ...actual,
+    triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),
+    isNutritionDualWriteRegistered: () => true,
+  };
+});
+
 import {
   applyNutritionBackupPayload,
   buildNutritionBackupPayload,
   NUTRITION_BACKUP_KIND,
 } from "./nutritionBackup";
-import {
-  NUTRITION_ACTIVE_PANTRY_KEY,
-  NUTRITION_PANTRIES_KEY,
-  NUTRITION_PREFS_KEY,
-} from "../lib/nutritionStorage";
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -24,6 +39,7 @@ function createLocalStorageMock() {
 
 beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as Storage;
+  triggerSpy.mockReset();
 });
 
 describe("nutrition backup", () => {
@@ -34,7 +50,7 @@ describe("nutrition backup", () => {
     expect(p.data.prefs).toBeTruthy();
   });
 
-  it("apply persists keys", () => {
+  it("apply dispatches dual-write ops for pantries + prefs", () => {
     applyNutritionBackupPayload({
       kind: NUTRITION_BACKUP_KIND,
       schemaVersion: 1,
@@ -48,14 +64,8 @@ describe("nutrition backup", () => {
         prefs: { goal: "balanced", servings: 2, timeMinutes: 10, exclude: "" },
       },
     });
-    expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toContain(
-      "яйця",
-    );
-    expect(globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY)).toBe(
-      "home",
-    );
-    expect(globalThis.localStorage.getItem(NUTRITION_PREFS_KEY)).toContain(
-      '"servings":2',
-    );
+    // persistPantries → 1 trigger, persistNutritionPrefs → 1 trigger
+    // (no log payload supplied → no third trigger)
+    expect(triggerSpy).toHaveBeenCalledTimes(2);
   });
 });

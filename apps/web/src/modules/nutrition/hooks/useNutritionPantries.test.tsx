@@ -20,11 +20,12 @@ import { nutritionApi } from "@shared/api";
 const apiParsePantry = nutritionApi.parsePantry as unknown as ReturnType<
   typeof vi.fn
 >;
+import { type Pantry } from "../lib/nutritionStorage";
 import {
-  NUTRITION_PANTRIES_KEY,
-  NUTRITION_ACTIVE_PANTRY_KEY,
-  type Pantry,
-} from "../lib/nutritionStorage";
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "../lib/sqliteReader";
+import { notifyNutritionSqliteCacheRefresh } from "../lib/sqliteReadGate";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -37,10 +38,18 @@ function makeWrapper() {
   };
 }
 
+// Stage 8 PR #057n-tombstone: seed the SQLite warm cache directly
+// instead of LS, since `useNutritionPantries` initial state now reads
+// from `getCachedNutritionSqliteState`. The hook's overlay effect
+// re-runs on `notifyNutritionSqliteCacheRefresh()` so we bump the tick
+// after each seed.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function seedPantries(pantries: any[], activeId: string) {
-  localStorage.setItem(NUTRITION_PANTRIES_KEY, JSON.stringify(pantries));
-  localStorage.setItem(NUTRITION_ACTIVE_PANTRY_KEY, String(activeId));
+  __setNutritionSqliteCacheForTests({
+    pantries,
+    activePantryId: String(activeId),
+  });
+  notifyNutritionSqliteCacheRefresh();
 }
 
 function renderHarness() {
@@ -57,6 +66,7 @@ function renderHarness() {
 describe("useNutritionPantries", () => {
   beforeEach(() => {
     localStorage.clear();
+    clearNutritionSqliteCache();
     vi.clearAllMocks();
   });
 

@@ -31,6 +31,8 @@ import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions } from "./hooks/usePwaActions";
 import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
 import { PageviewTracker } from "./observability/PageviewTracker";
+import { useNutritionDualWriteBoot } from "../modules/nutrition/hooks/useNutritionDualWriteBoot";
+import { useNutritionSqliteReadBoot } from "../modules/nutrition/hooks/useNutritionSqliteReadBoot";
 
 export default function App() {
   return (
@@ -146,6 +148,17 @@ function AppInner() {
   const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
+
+  // Stage 8 PR #057n-tombstone: hoist the Nutrition dual-write +
+  // SQLite-read boots from `NutritionApp` into the app shell so cross-
+  // module callers (`core/settings/NotificationsSection`,
+  // `core/settings/NutritionSection`, `nutritionBackup`) read the
+  // SQLite warm cache and dual-write to the SQLite tables even when
+  // the user has never opened the Nutrition module in this session.
+  // Both hooks are idempotent — they latch on `userId` and the
+  // module-level `booted` flag in `bootNutritionSqliteReadPath`.
+  useNutritionDualWriteBoot();
+  useNutritionSqliteReadBoot();
 
   useAppEffects({
     user,

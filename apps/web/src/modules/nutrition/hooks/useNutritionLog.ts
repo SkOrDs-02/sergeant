@@ -39,11 +39,17 @@ function collectMealIds(log: NutritionLog): Set<string> {
 
 /**
  * Hook for managing the nutrition log and selected date.
- * Automatically persists the log to localStorage on each change.
+ *
+ * Stage 8 PR #057n-tombstone: state is initialised from the SQLite
+ * warm cache (empty `{}` until `useNutritionSqliteReadBoot` finishes)
+ * and re-overlaid whenever the cache ticks. Mutations call
+ * `persistNutritionLog`, which now triggers the dual-write
+ * orchestrator instead of writing to LS.
  */
 export function useNutritionLog() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const sqliteCacheTick = useNutritionSqliteReadTick();
   const [nutritionLog, setNutritionLog] = useState<NutritionLog>(() =>
     loadNutritionLog(NUTRITION_LOG_KEY),
   );
@@ -57,7 +63,6 @@ export function useNutritionLog() {
     Map<string, ReturnType<typeof setTimeout>>
   >(new Map());
   const didMountRef = useRef(false);
-  const sqliteCacheTick = useNutritionSqliteReadTick();
 
   useEffect(() => {
     const ok = persistNutritionLog(nutritionLog, NUTRITION_LOG_KEY);
@@ -68,10 +73,11 @@ export function useNutritionLog() {
     );
   }, [nutritionLog]);
 
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay the meal log from
-  // the local SQLite cache once it's warm. The LS read above stays
-  // as a synchronous fallback so the first paint never blocks on
-  // SQLite.
+  // Stage 4 PR #033 + Stage 8 PR #057n-tombstone: overlay the meal
+  // log from the local SQLite cache once it's warm. The next persist
+  // effect that fires with this cache snapshot diffs the SQLite cache
+  // against itself and emits zero ops, so the warm-cache hydration is
+  // a no-op for the dual-write orchestrator.
   useEffect(() => {
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt === null) return;

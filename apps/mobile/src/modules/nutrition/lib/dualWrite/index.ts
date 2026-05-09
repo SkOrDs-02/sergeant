@@ -1,5 +1,7 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { refreshNutritionSqliteState } from "../sqliteReader";
+import { notifyNutritionSqliteCacheRefresh } from "../sqliteReadGate";
 import {
   applyNutritionDualWriteOps,
   type ApplyDualWriteResult,
@@ -90,6 +92,21 @@ export async function dualWriteNutritionState(
     clientTs: ctx.getNow(),
     logger: ctx.logger,
   });
+
+  // Stage 8 PR #057n-tombstone: refresh the SQLite warm cache so
+  // subsequent reads (overlay effects in hooks, `peek` in
+  // `dualWriteState`) reflect what we just wrote. Best-effort —
+  // a failed refresh is logged but does not disturb the dual-write
+  // outcome.
+  try {
+    await refreshNutritionSqliteState(client, userId);
+    notifyNutritionSqliteCacheRefresh();
+  } catch (err) {
+    logSafe(ctx, "warn", "dual-write cache-refresh failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   return { status: "applied", result };
 }
 

@@ -1,11 +1,19 @@
 /**
  * Web I/O-адаптер для модуля Харчування: prefs, pantries, log.
  *
+ * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`): the
+ * `load*` / `persist*` helpers below no longer touch `localStorage`.
+ * The SQLite-WASM `nutrition_*` tables are the source of truth — reads
+ * pull from the in-process cache populated by
+ * `refreshNutritionSqliteState` (warmed at boot), and writes go through
+ * the dual-write pipeline (`triggerNutritionDualWrite`) which mirrors
+ * to SQLite and bumps the cache so subsequent reads see the change.
+ *
  * Pure-логіка (normalize/default/mutation-хелпери + типи + LS-ключі) живе
- * у `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Тут лишаються
- * лише `load*`/`persist*` поверх `createModuleStorage` і реекспорти
- * старої поверхні цього модуля, щоб існуючі `../lib/nutritionStorage.js`
- * імпорти всередині `apps/web` не довелось переписувати.
+ * у `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Реекспорти
+ * старої поверхні цього модуля лишаються тут, щоб існуючі
+ * `../lib/nutritionStorage.js` імпорти всередині `apps/web` не довелось
+ * переписувати.
  */
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
@@ -22,7 +30,6 @@ import {
   type Pantry,
 } from "@sergeant/nutrition-domain";
 
-import { nutritionStorage } from "./nutritionStorageInstance";
 import {
   isNutritionDualWriteRegistered,
   triggerNutritionDualWrite,
@@ -32,6 +39,7 @@ import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
 } from "./dualWrite/diff.js";
+import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
 export {
   NUTRITION_ACTIVE_PANTRY_KEY,
@@ -75,98 +83,111 @@ export type {
 } from "@sergeant/nutrition-domain";
 
 // ─────────────────────────────────────────────
-// I/O wrappers (createModuleStorage / localStorage)
+// Reads — backed by the SQLite warm cache (Stage 8 PR #057n-tombstone).
+//
+// Before the boot completes the cache returns its `EMPTY_CACHE`
+// defaults; the hooks pair these synchronous reads with an overlay
+// effect that re-renders once the cache warms (see `sqliteReadGate`).
 // ─────────────────────────────────────────────
 
 export function loadNutritionPrefs(
-  key: string = NUTRITION_PREFS_KEY,
+  _key: string = NUTRITION_PREFS_KEY,
 ): NutritionPrefs {
-  return normalizeNutritionPrefs(nutritionStorage.readJSON(key, null));
+  const cache = getCachedNutritionSqliteState();
+  return cache.prefs
+    ? normalizeNutritionPrefs(cache.prefs)
+    : defaultNutritionPrefs();
 }
 
 export function persistNutritionPrefs(
   prefs: NutritionPrefs | null | undefined,
-  key: string = NUTRITION_PREFS_KEY,
+  _key: string = NUTRITION_PREFS_KEY,
 ): boolean {
   const prev = peekNutritionDualWriteState();
-  const ok = nutritionStorage.writeJSON(key, prefs || defaultNutritionPrefs());
-  if (ok && prev !== null) {
-    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
-  }
-  return ok;
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    prefs: {
+      prefsJson: JSON.stringify(prefs || defaultNutritionPrefs()),
+      activePantryId: prev.prefs?.activePantryId ?? null,
+    },
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
 }
 
 export function loadActivePantryId(
-  activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
+  _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
 ): string {
-  const v = nutritionStorage.readRaw(activeKey, null);
-  return v ? String(v) : "home";
+  const cache = getCachedNutritionSqliteState();
+  return cache.activePantryId ?? "home";
 }
 
 export function loadPantries(
-  key: string = NUTRITION_PANTRIES_KEY,
-  activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
+  _key: string = NUTRITION_PANTRIES_KEY,
+  _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
 ): Pantry[] {
-  const parsed = nutritionStorage.readJSON(key, null);
-  const normalized = normalizePantries(parsed);
-  if (normalized.length > 0) return normalized;
+  const cache = getCachedNutritionSqliteState();
+  if (cache.pantries.length > 0) return cache.pantries;
 
-  // Legacy v0 pantry migration is handled by storageManager
-  // (nutrition_001_migrate_legacy_pantry). By the time this code runs after
-  // app boot, the v1 key already has data if any v0 data existed.
-  const fallback = makeDefaultPantry();
-  nutritionStorage.writeRaw(activeKey, fallback.id);
-  return [fallback];
+  // No SQLite-side pantries (fresh user, or boot not yet complete).
+  // The hook's first paint gets a single default `home` pantry — the
+  // first user mutation will dual-write the row to SQLite via
+  // `persistPantries` below.
+  return [makeDefaultPantry()];
 }
 
 export function persistPantries(
-  key: string = NUTRITION_PANTRIES_KEY,
-  activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
+  _key: string = NUTRITION_PANTRIES_KEY,
+  _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
   pantries?: Pantry[] | null,
   activeId?: string | null,
 ): boolean {
   const prev = peekNutritionDualWriteState();
-  const a = nutritionStorage.writeJSON(
-    key,
-    Array.isArray(pantries) ? pantries : [],
-  );
-  const b = activeId
-    ? nutritionStorage.writeRaw(activeKey, String(activeId))
-    : true;
-  const ok = a && b;
-  if (ok && prev !== null) {
-    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
-  }
-  return ok;
+  if (prev === null) return true;
+  const nextPantries: Pantry[] = Array.isArray(pantries) ? pantries : [];
+  const nextActive: string | null = activeId ? String(activeId) : null;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    pantries: extractPantrySnapshots(nextPantries),
+    prefs: {
+      prefsJson:
+        prev.prefs?.prefsJson ?? JSON.stringify(defaultNutritionPrefs()),
+      activePantryId: nextActive ?? prev.prefs?.activePantryId ?? null,
+    },
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
 }
 
 export function loadNutritionLog(
-  key: string = NUTRITION_LOG_KEY,
+  _key: string = NUTRITION_LOG_KEY,
 ): NutritionLog {
-  const parsed = nutritionStorage.readJSON(key, null);
-  return normalizeNutritionLog(parsed);
+  const cache = getCachedNutritionSqliteState();
+  return normalizeNutritionLog(cache.log);
 }
 
 export function persistNutritionLog(
   log: NutritionLog | null | undefined,
-  key: string = NUTRITION_LOG_KEY,
+  _key: string = NUTRITION_LOG_KEY,
 ): boolean {
   const prev = peekNutritionDualWriteState();
-  const ok = nutritionStorage.writeJSON(key, log || {});
-  if (ok && prev !== null) {
-    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
-  }
-  return ok;
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    meals: extractMealSnapshots(normalizeNutritionLog(log ?? {})),
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
 }
 
 // ─────────────────────────────────────────────
-// Dual-write state extraction (Stage 4 PR #032)
+// Dual-write state extraction (Stage 4 PR #032; rewired by
+// PR #057n-tombstone to peek the SQLite warm cache instead of LS).
 //
-// Reads the parts of LS that map to `nutrition_*` SQLite tables and
-// returns a `NutritionDualWriteState`. Returns `null` when no dual-write
-// context is registered — the LS-write call sites use this as a fast-path
-// gate so the extraction cost (a couple of LS reads) is only paid when
-// the dual-write feature is actually on.
+// Returns `null` when no dual-write context is registered — the
+// write call sites use this as a fast-path gate so we never enqueue
+// SQLite ops pre-auth.
 //
 // Recipes are intentionally excluded on web: they live in IndexedDB
 // (`recipeBook.ts`) rather than LS, so they are not yet wired into the
@@ -177,23 +198,14 @@ export function persistNutritionLog(
 function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   if (!isNutritionDualWriteRegistered()) return null;
   try {
-    const log = loadNutritionLog();
-    const pantries = nutritionStorage.readJSON(NUTRITION_PANTRIES_KEY, null);
-    const normalizedPantries = normalizePantries(pantries);
-    const activePantryRaw = nutritionStorage.readRaw(
-      NUTRITION_ACTIVE_PANTRY_KEY,
-      null,
-    );
-    const activePantryId = activePantryRaw ? String(activePantryRaw) : null;
-    const prefsParsed = nutritionStorage.readJSON(NUTRITION_PREFS_KEY, null);
-    const prefs = normalizeNutritionPrefs(prefsParsed);
-
+    const cache = getCachedNutritionSqliteState();
+    const prefs = cache.prefs ?? defaultNutritionPrefs();
     return {
-      meals: extractMealSnapshots(log),
-      pantries: extractPantrySnapshots(normalizedPantries),
+      meals: extractMealSnapshots(normalizeNutritionLog(cache.log)),
+      pantries: extractPantrySnapshots(normalizePantries(cache.pantries)),
       prefs: {
         prefsJson: JSON.stringify(prefs),
-        activePantryId,
+        activePantryId: cache.activePantryId ?? null,
       },
       recipes: [],
     };
