@@ -56,12 +56,15 @@ describe("featureFlags", () => {
     expect(setFlag("feature.fizruk.sqlite_v2.dual_write", true)).toBe(false);
   });
 
-  it("flips Routine read_sqlite default-on for Stage 8 PR #055r2 re-rollout", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.routine.sqlite_v2.read_sqlite", false)).toBe(true);
+  it("Stage 8 PR #057r drop: feature.routine.sqlite_v2.read_sqlite більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find(
+        (f) => f.id === "feature.routine.sqlite_v2.read_sqlite",
+      ),
+    ).toBeUndefined();
     expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(false);
+    expect(setFlag("feature.routine.sqlite_v2.read_sqlite", true)).toBe(false);
   });
 
   it("Stage 8 PR #057f drop: feature.fizruk.sqlite_v2.read_sqlite більше не існує у реєстрі", async () => {

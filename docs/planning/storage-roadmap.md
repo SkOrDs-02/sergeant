@@ -2939,6 +2939,15 @@ value JSON)`)». Та редакція об'єднувала **дві** орто
 
 ##### **PR #057r — `chore(routine): drop LS reader paths + tombstone STORAGE_KEYS.ROUTINE`** 📋 ROADMAP
 
+- **PR #057r-flag** ✅ LANDED — drop the now-redundant
+  `feature.routine.sqlite_v2.read_sqlite` flag-check from web +
+  mobile (registry entry, boot wiring, `loadRoutineState` overlay
+  gate). SQLite completions overlay тепер unconditional once boot
+  has populated `getCachedSqliteCompletions().refreshedAt`; LS/MMKV
+  first-paint read залишається synchronous fallback. Pre-step для
+  `#057r-tombstone` (LS-reader drop + `STORAGE_KEYS.ROUTINE`
+  tombstone + residual-import bootstrap) — full tombstone gated on
+  Stage 10 candidate, schema gap blocks LS-write removal.
 - Drop `loadRoutineState()` LS-read overlay у `routineStorage.ts`.
 - Tombstone `STORAGE_KEYS.ROUTINE` (`@deprecated tombstone — read
 via SqliteReader`).

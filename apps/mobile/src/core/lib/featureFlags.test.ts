@@ -42,13 +42,12 @@ describe("mobile featureFlags", () => {
     expect(flag?.defaultValue).toBe(true);
   });
 
-  it("flips Routine sqlite reads default-on for Stage 8 PR #055r2 re-rollout", () => {
+  it("Stage 8 PR #057r drop: feature.routine.sqlite_v2.read_sqlite більше не існує у реєстрі", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.routine.sqlite_v2.read_sqlite",
     );
 
-    expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag).toBeUndefined();
   });
 
   it("Stage 8 PR #057f drop: feature.fizruk.sqlite_v2.read_sqlite більше не існує у реєстрі", () => {
