@@ -6,6 +6,7 @@ import type {
   NutritionPantrySnapshot,
   NutritionPrefsSnapshot,
   NutritionRecipeSnapshot,
+  NutritionShoppingListSnapshot,
 } from "./diff";
 
 /**
@@ -110,6 +111,15 @@ async function applyOne(
 
     case "recipe-delete":
       await softDeleteRecipe(client, op.recipeId, userId, clientTs);
+      return "applied";
+
+    // Stage 11 / PR #070n-mobile-dualwrite ops -----------------------
+    case "water-log-set":
+      await setWaterLog(client, op.dateKey, op.volumeMl, userId, clientTs);
+      return "applied";
+
+    case "shopping-list-set":
+      await setShoppingList(client, op.shoppingList, userId, clientTs);
       return "applied";
 
     default: {
@@ -349,6 +359,50 @@ async function softDeleteRecipe(
         SET deleted_at = ?, updated_at = ?
       WHERE id = ? AND user_id = ? AND updated_at < ?`,
     [clientTs, clientTs, recipeId, userId, clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 11 — water log (one row per (user, dateKey))
+// -----------------------------------------------------------------------
+
+async function setWaterLog(
+  client: SqliteMigrationClient,
+  dateKey: string,
+  volumeMl: number,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  const safeVolume = toIntOrNull(volumeMl);
+  await client.run(
+    `INSERT INTO nutrition_water_log (user_id, date_key, volume_ml, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id, date_key) DO UPDATE SET
+       volume_ml  = excluded.volume_ml,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > nutrition_water_log.updated_at`,
+    [userId, dateKey, safeVolume ?? 0, clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 11 — shopping list (singleton row per user)
+// -----------------------------------------------------------------------
+
+async function setShoppingList(
+  client: SqliteMigrationClient,
+  shoppingList: NutritionShoppingListSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO nutrition_shopping_list (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json  = excluded.data_json,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > nutrition_shopping_list.updated_at`,
+    [userId, shoppingList.dataJson ?? '{"categories":[]}', clientTs],
   );
 }
 

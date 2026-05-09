@@ -239,6 +239,23 @@ describe("mobile nutritionStore — water", () => {
       "2024-01-15": 1500,
     });
   });
+
+  // Stage 11 / PR #070n-mobile-dualwrite -----------------------------
+  it("saveWaterLog mirrors the normalised log to the dual-write pipeline", () => {
+    saveWaterLog({ "2024-01-15": 1500, "bad-key": 999 });
+    expect(mockTriggerDualWrite).toHaveBeenCalledTimes(1);
+    const [, next] = mockTriggerDualWrite.mock.calls[0]!;
+    expect(next.waterLog).toEqual({ "2024-01-15": 1500 });
+  });
+
+  it("saveWaterLog skips dual-write when no context is registered", () => {
+    mockIsRegistered.mockReturnValue(false);
+    saveWaterLog({ "2024-01-15": 1500 });
+    // MMKV write still happens — the LS path is the source of truth
+    // until #057n-tombstone-mobile lands.
+    expect(mockSafeWriteLS).toHaveBeenCalled();
+    expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+  });
 });
 
 describe("mobile nutritionStore — shopping list", () => {
@@ -270,5 +287,25 @@ describe("mobile nutritionStore — shopping list", () => {
     expect(mockSafeWriteLS).toHaveBeenCalledWith(SHOPPING_LIST_KEY, {
       categories: [],
     });
+  });
+
+  // Stage 11 / PR #070n-mobile-dualwrite -----------------------------
+  it("saveShoppingList mirrors the singleton blob to the dual-write pipeline", () => {
+    saveShoppingList({
+      categories: [{ name: "Овочі", items: [{ id: "a", name: "Морква" }] }],
+    });
+    expect(mockTriggerDualWrite).toHaveBeenCalledTimes(1);
+    const [, next] = mockTriggerDualWrite.mock.calls[0]!;
+    expect(next.shoppingList).toBeTruthy();
+    const parsed = JSON.parse(next.shoppingList!.dataJson);
+    expect(parsed.categories).toHaveLength(1);
+    expect(parsed.categories[0].name).toBe("Овочі");
+  });
+
+  it("saveShoppingList skips dual-write when no context is registered", () => {
+    mockIsRegistered.mockReturnValue(false);
+    saveShoppingList({ categories: [] });
+    expect(mockSafeWriteLS).toHaveBeenCalled();
+    expect(mockTriggerDualWrite).not.toHaveBeenCalled();
   });
 });

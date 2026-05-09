@@ -47,6 +47,8 @@ const EMPTY_STATE: NutritionDualWriteState = {
   pantries: [],
   prefs: null,
   recipes: [],
+  waterLog: {},
+  shoppingList: null,
 };
 
 export interface ResidualImportResult {
@@ -95,6 +97,8 @@ export async function importNutritionResidualFromMmkv(
           }
         : null,
     recipes: [],
+    waterLog: {},
+    shoppingList: null,
   };
 
   const ops = diffNutritionDualWriteOps(EMPTY_STATE, next);

@@ -42,7 +42,11 @@ import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
 } from "./dualWrite/diff";
-import { peekNutritionDualWriteState } from "./dualWriteState";
+import {
+  peekNutritionDualWriteState,
+  persistNutritionShoppingList,
+  persistNutritionWaterLog,
+} from "./dualWriteState";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 
 // ── Log ─────────────────────────────────────────────────────────────
@@ -203,7 +207,13 @@ export function loadWaterLog(): WaterLog {
 }
 
 export function saveWaterLog(log: unknown): boolean {
-  return safeWriteLS(WATER_LOG_KEY, normalizeWaterLog(log));
+  const normalized = normalizeWaterLog(log);
+  const ok = safeWriteLS(WATER_LOG_KEY, normalized);
+  // Stage 11 / PR #070n-mobile-dualwrite — mirror to SQLite via the
+  // dual-write pipeline. Pre-boot / pre-auth is a no-op inside
+  // `persistNutritionWaterLog`, so this is safe to call unconditionally.
+  persistNutritionWaterLog(normalized);
+  return ok;
 }
 
 // ── Shopping list ───────────────────────────────────────────────────
@@ -213,5 +223,9 @@ export function loadShoppingList(): ShoppingList {
 }
 
 export function saveShoppingList(list: unknown): boolean {
-  return safeWriteLS(SHOPPING_LIST_KEY, normalizeShoppingList(list));
+  const normalized = normalizeShoppingList(list);
+  const ok = safeWriteLS(SHOPPING_LIST_KEY, normalized);
+  // Stage 11 / PR #070n-mobile-dualwrite — mirror to SQLite.
+  persistNutritionShoppingList(normalized);
+  return ok;
 }
