@@ -346,4 +346,274 @@ describe("applyRoutineDualWriteOps", () => {
       expect.objectContaining({ error: "boom" }),
     );
   });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: habit-upsert / habit-delete
+  // -----------------------------------------------------------------------
+
+  it("upserts a routine_habits row for habit-upsert", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [
+        {
+          kind: "habit-upsert",
+          habit: {
+            id: "h1",
+            name: "Drink water",
+            emoji: "💧",
+            tagIds: ["t1"],
+            categoryId: "c1",
+            archived: false,
+            paused: false,
+            recurrence: "daily",
+          },
+        },
+      ],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT id, user_id, name, emoji, tag_ids_json, category_id,
+              archived, paused, recurrence, deleted_at
+         FROM routine_habits WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: "h1",
+      name: "Drink water",
+      emoji: "💧",
+      tag_ids_json: '["t1"]',
+      category_id: "c1",
+      archived: 0,
+      paused: 0,
+      recurrence: "daily",
+      deleted_at: null,
+    });
+  });
+
+  it("soft-deletes a routine_habits row for habit-delete", async () => {
+    await applyRoutineDualWriteOps(
+      client,
+      [
+        {
+          kind: "habit-upsert",
+          habit: { id: "h1", name: "Drink water" },
+        },
+      ],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "habit-delete", habitId: "h1" }],
+      { userId: USER_ID, clientTs: T2, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT deleted_at FROM routine_habits WHERE id = ?`,
+      ["h1"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.deleted_at).toBe(T2);
+  });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: tag-upsert / tag-delete
+  // -----------------------------------------------------------------------
+
+  it("upserts a routine_tags row for tag-upsert", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "tag-upsert", tag: { id: "t1", name: "morning" } }],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT id, name, scope, deleted_at FROM routine_tags WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: "t1",
+      name: "morning",
+      scope: "",
+      deleted_at: null,
+    });
+  });
+
+  it("soft-deletes a routine_tags row for tag-delete", async () => {
+    await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "tag-upsert", tag: { id: "t1", name: "morning" } }],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "tag-delete", tagId: "t1" }],
+      { userId: USER_ID, clientTs: T2, logger },
+    );
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT deleted_at FROM routine_tags WHERE id = ?`,
+      ["t1"],
+    );
+    expect(rows[0]!.deleted_at).toBe(T2);
+  });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: category-upsert / category-delete
+  // -----------------------------------------------------------------------
+
+  it("upserts a routine_categories row for category-upsert", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [
+        {
+          kind: "category-upsert",
+          category: { id: "c1", name: "Health", emoji: "🏥" },
+        },
+      ],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT id, name, emoji, deleted_at FROM routine_categories WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: "c1",
+      name: "Health",
+      emoji: "🏥",
+      deleted_at: null,
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: prefs-set
+  // -----------------------------------------------------------------------
+
+  it("upserts routine_prefs for prefs-set", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [
+        {
+          kind: "prefs-set",
+          prefs: { showFizrukInCalendar: true },
+        },
+      ],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT data_json FROM routine_prefs WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0]!.data_json as string)).toEqual({
+      showFizrukInCalendar: true,
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: pushup-upsert
+  // -----------------------------------------------------------------------
+
+  it("upserts routine_pushups for pushup-upsert", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "pushup-upsert", dateKey: "2026-05-01", reps: 30 }],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT date_key, reps FROM routine_pushups WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ date_key: "2026-05-01", reps: 30 });
+  });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: habit-order-set
+  // -----------------------------------------------------------------------
+
+  it("upserts routine_habit_order for habit-order-set", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "habit-order-set", orderedIds: ["h2", "h1"] }],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT order_json FROM routine_habit_order WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0]!.order_json as string)).toEqual(["h2", "h1"]);
+  });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: completion-note-upsert / completion-note-delete
+  // -----------------------------------------------------------------------
+
+  it("upserts routine_completion_notes for completion-note-upsert", async () => {
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [
+        {
+          kind: "completion-note-upsert",
+          noteKey: "h1__2026-05-01",
+          note: "did well",
+        },
+      ],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT note_key, note, deleted_at FROM routine_completion_notes WHERE user_id = ?`,
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      note_key: "h1__2026-05-01",
+      note: "did well",
+      deleted_at: null,
+    });
+  });
+
+  it("soft-deletes a routine_completion_notes row for completion-note-delete", async () => {
+    await applyRoutineDualWriteOps(
+      client,
+      [
+        {
+          kind: "completion-note-upsert",
+          noteKey: "h1__2026-05-01",
+          note: "did well",
+        },
+      ],
+      { userId: USER_ID, clientTs: T1, logger },
+    );
+    const result = await applyRoutineDualWriteOps(
+      client,
+      [{ kind: "completion-note-delete", noteKey: "h1__2026-05-01" }],
+      { userId: USER_ID, clientTs: T2, logger },
+    );
+    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+
+    const rows = await client.all<Record<string, unknown>>(
+      `SELECT deleted_at FROM routine_completion_notes
+       WHERE user_id = ? AND note_key = ?`,
+      [USER_ID, "h1__2026-05-01"],
+    );
+    expect(rows[0]!.deleted_at).toBe(T2);
+  });
 });

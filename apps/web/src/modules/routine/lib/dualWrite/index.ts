@@ -32,12 +32,11 @@ import { probeRoutineParity } from "./parity.js";
  *
  * Stage 8 PR #056r removed `isEnabled()` from the context — the
  * legacy `feature.routine.sqlite_v2.dual_write` flag was default-on
- * with no toggle path remaining, and the routine SQLite schema is
- * still narrower than the LS-side `RoutineState` (only `routine_entries`
- * + `routine_streaks` exist; habits / tags / categories / prefs /
- * pushups / habitOrder / completionNotes remain LS-only). The LS
- * write therefore stays as the source-of-truth for non-completion
- * fields and SQLite is mirrored unconditionally for completion ops.
+ * with no toggle path remaining. Stage 10 / PR #070r-dualwrite
+ * extended the schema and dual-write pipeline to cover all 7 new
+ * tables (habits / tags / categories / prefs / pushups /
+ * habitOrder / completionNotes), so SQLite is now mirrored
+ * unconditionally for the full `RoutineState`.
  *
  * Why a registration shape: `routineStorage.ts` (the LS write layer)
  * sits below the auth + sqlite singletons in the dependency graph.

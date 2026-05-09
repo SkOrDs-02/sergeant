@@ -19,7 +19,10 @@ import { recordReadFallback } from "../../../core/observability/dualWriteTelemet
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 
 import { migrateRoutine } from "./clientMigrate.js";
-import { refreshSqliteCompletions } from "./sqliteReader.js";
+import {
+  refreshSqliteCompletions,
+  refreshSqliteRoutineState,
+} from "./sqliteReader.js";
 
 let booted = false;
 
@@ -41,6 +44,9 @@ export async function bootSqliteReadPath(
     const client = handle.migrationClient();
     await migrateRoutine(client);
     await refreshSqliteCompletions(client, userId);
+    // Stage 10: also warm the full-state cache (habits, tags,
+    // categories, prefs, pushups, habitOrder, completionNotes).
+    await refreshSqliteRoutineState(client, userId);
 
     booted = true;
     return true;

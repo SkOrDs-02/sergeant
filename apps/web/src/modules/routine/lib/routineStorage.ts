@@ -37,7 +37,10 @@ import {
   isRoutineDualWriteRegistered,
   triggerRoutineDualWrite,
 } from "./dualWrite/index.js";
-import { getCachedSqliteCompletions } from "./sqliteReader.js";
+import {
+  getCachedSqliteCompletions,
+  getCachedSqliteRoutineState,
+} from "./sqliteReader.js";
 
 const storage = createModuleStorage({ name: "routine" });
 
@@ -84,7 +87,22 @@ export function loadRoutineState(): RoutineState {
 
   const sqliteCache = getCachedSqliteCompletions();
   if (sqliteCache.refreshedAt !== null) {
-    return { ...finalized, completions: sqliteCache.completions };
+    const merged = { ...finalized, completions: sqliteCache.completions };
+    // Stage 10: overlay full-state fields when the cache is warm.
+    const fullState = getCachedSqliteRoutineState();
+    if (fullState.refreshedAt !== null) {
+      return {
+        ...merged,
+        habits: fullState.habits,
+        tags: fullState.tags,
+        categories: fullState.categories,
+        prefs: fullState.prefs,
+        pushupsByDate: fullState.pushupsByDate,
+        habitOrder: fullState.habitOrder,
+        completionNotes: fullState.completionNotes,
+      };
+    }
+    return merged;
   }
 
   return finalized;
