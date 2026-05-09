@@ -1,29 +1,24 @@
 /**
- * Read-path gate + subscription for the Fizruk SQLite cutover (PR #029a — mobile).
+ * Read-path subscription for mobile Fizruk SQLite cutover.
  *
- * Mirrors the web file at
- * `apps/web/src/modules/fizruk/lib/sqliteReadGate.ts`. The mobile Фізрук
- * module spreads its persisted state across multiple hooks
- * (`useFizrukWorkouts`, `useExerciseCatalog`, `useMeasurements`), each
- * reading directly from MMKV on mount. To overlay SQLite reads under
- * the `feature.fizruk.sqlite_v2.read_sqlite` flag we need a tiny
- * in-process pub-sub so:
+ * Stage 8 PR #057f-flag: the `feature.fizruk.sqlite_v2.read_sqlite`
+ * flag has graduated — overlay читання тепер unconditional once the
+ * boot wiring (`sqliteReadBoot.ts`) reports activation. This file
+ * keeps only the pub-sub pieces:
  *
- *  - the boot wiring file (`sqliteReadBoot.ts`) flips the gate after
- *    a successful migration + cache refresh,
- *  - and every hook re-reads on the next render.
+ *  - `useFizrukSqliteReadTick()` — re-renders subscribers whenever
+ *    {@link notifyFizrukSqliteCacheRefresh} fires, so consumer hooks
+ *    pick up the freshly warmed cache.
+ *  - `notifyFizrukSqliteCacheRefresh()` — bumps the tick + fans out
+ *    to listeners; called from `useFizrukSqliteReadBoot` after a
+ *    successful migration + cache refresh.
  *
- * Same shape as `useFizrukSqliteReadTick` / `useFizrukSqliteReadFlag`
- * on the web side, but exposed as a single combined hook
- * (`useFizrukSqliteReadGate`) returning `{ enabled, tick }` so consumer
- * hooks can key a single `useEffect` on both values.
+ * The flag-gated `useFizrukSqliteReadFlag()` / `useFizrukSqliteReadGate()`
+ * exports were dropped together with the registry entry as part of
+ * Stage 8 PR #057f-flag — see `apps/mobile/src/core/lib/featureFlags.ts`.
  */
 
 import { useSyncExternalStore } from "react";
-
-import { useFlag } from "@/core/lib/featureFlags";
-
-const READ_FLAG_ID = "feature.fizruk.sqlite_v2.read_sqlite";
 
 let cacheTick = 0;
 const listeners = new Set<() => void>();
@@ -41,38 +36,10 @@ function getSnapshot(): number {
 
 /**
  * Tick counter that bumps every time
- * {@link notifyFizrukSqliteCacheRefresh} fires. Exposed primarily for
- * tests and for {@link useFizrukSqliteReadGate} below.
+ * {@link notifyFizrukSqliteCacheRefresh} fires.
  */
 export function useFizrukSqliteReadTick(): number {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
-
-/** Flag-gated read-overlay enable for the fizruk hooks. */
-export function useFizrukSqliteReadFlag(): boolean {
-  return useFlag(READ_FLAG_ID);
-}
-
-export interface FizrukSqliteReadGate {
-  /** Current value of `feature.fizruk.sqlite_v2.read_sqlite`. */
-  readonly enabled: boolean;
-  /**
-   * Tick counter that bumps after every successful cache refresh —
-   * use it as a `useEffect` dep so consumers re-overlay when the
-   * SQLite cache warms.
-   */
-  readonly tick: number;
-}
-
-/**
- * Combined hook for consumer overlays: returns the flag value AND the
- * cache tick so a single `useEffect([enabled, tick], …)` is enough to
- * keep MMKV first-paint state in sync with the SQLite cache.
- */
-export function useFizrukSqliteReadGate(): FizrukSqliteReadGate {
-  const enabled = useFizrukSqliteReadFlag();
-  const tick = useFizrukSqliteReadTick();
-  return { enabled, tick };
 }
 
 /**

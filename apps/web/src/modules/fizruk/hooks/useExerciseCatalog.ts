@@ -7,10 +7,7 @@ import {
 } from "@sergeant/fizruk-domain";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
-import {
-  useFizrukSqliteReadFlag,
-  useFizrukSqliteReadTick,
-} from "../lib/sqliteReadGate";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
@@ -26,7 +23,6 @@ function norm(s: unknown) {
 export function useExerciseCatalog() {
   const catalogData = FizrukData.EXERCISE_CATALOG;
   const [customExercises, setCustomExercises] = useState<RawExerciseDef[]>([]);
-  const sqliteReadEnabled = useFizrukSqliteReadFlag();
   const sqliteCacheTick = useFizrukSqliteReadTick();
 
   const primaryGroupsUk = FizrukData.PRIMARY_GROUPS_UK;
@@ -40,15 +36,14 @@ export function useExerciseCatalog() {
     if (Array.isArray(parsed)) setCustomExercises(parsed as RawExerciseDef[]);
   }, []);
 
-  // Stage 4 PR #029: under `feature.fizruk.sqlite_v2.read_sqlite`,
-  // overlay the user-added custom exercises from the SQLite cache.
-  // Built-in catalogue entries always come from the static JSON.
+  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
+  // dropped). Overlay the user-added custom exercises from the SQLite
+  // cache. Built-in catalogue entries always come from the static JSON.
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
     setCustomExercises(cache.customExercises);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const persistCustom = useCallback((next: RawExerciseDef[]) => {
     setCustomExercises(next);
