@@ -1,12 +1,13 @@
 /**
  * Phase 7 / PR 3 — mobile nutrition storage foundation, rewired for
- * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`).
+ * Stage 8 PR #057n-tombstone-mobile (`docs/planning/storage-roadmap.md`).
  *
- * The Nutrition `load*` / `save*` helpers no longer touch MMKV. The
- * suite now seeds the SQLite warm cache via
- * `__setNutritionSqliteCacheForTests` and verifies that `save*` calls
- * fan out through `triggerNutritionDualWrite(prev, next)` instead of
- * `safeWriteLS`. Water and shopping helpers keep their MMKV path.
+ * The Nutrition `load*` / `save*` helpers no longer touch MMKV — every
+ * slot (log / prefs / pantries / water / shopping list) now reads from
+ * the SQLite warm cache and dual-writes through
+ * `triggerNutritionDualWrite(prev, next)`. The suite seeds the cache
+ * via `__setNutritionSqliteCacheForTests` and asserts that `save*`
+ * never calls `safeWriteLS`.
  */
 const mockSafeReadLS = jest.fn();
 const mockSafeReadStringLS = jest.fn();
@@ -28,10 +29,10 @@ jest.mock("../dualWrite", () => ({
 }));
 
 import {
-  SHOPPING_LIST_KEY,
-  WATER_LOG_KEY,
   defaultNutritionPrefs,
   type NutritionLog,
+  type ShoppingList,
+  type WaterLog,
 } from "@sergeant/nutrition-domain";
 
 import {
@@ -219,81 +220,74 @@ describe("mobile nutritionStore — pantries", () => {
 });
 
 describe("mobile nutritionStore — water", () => {
-  it("loadWaterLog returns an empty object on missing data", () => {
+  it("loadWaterLog returns an empty object when the cache is cold", () => {
     expect(loadWaterLog()).toEqual({});
-    expect(mockSafeReadLS).toHaveBeenCalledWith(WATER_LOG_KEY, null);
+    // No MMKV read — the cache is the only source.
+    expect(mockSafeReadLS).not.toHaveBeenCalled();
   });
 
-  it("loadWaterLog keeps only positive ISO-date entries", () => {
-    mockSafeReadLS.mockReturnValueOnce({
+  it("loadWaterLog reads from the SQLite warm cache and drops stale entries", () => {
+    const seeded: WaterLog = {
       "2024-01-15": 1500,
       "not-a-date": 999,
       "2024-01-16": -5,
-    });
+    } as unknown as WaterLog;
+    __setNutritionSqliteCacheForTests({ waterLog: seeded });
     expect(loadWaterLog()).toEqual({ "2024-01-15": 1500 });
   });
 
-  it("saveWaterLog normalises before persisting", () => {
-    saveWaterLog({ "2024-01-15": 1500, "bad-key": 1 });
-    expect(mockSafeWriteLS).toHaveBeenCalledWith(WATER_LOG_KEY, {
-      "2024-01-15": 1500,
-    });
-  });
-
-  // Stage 11 / PR #070n-mobile-dualwrite -----------------------------
-  it("saveWaterLog mirrors the normalised log to the dual-write pipeline", () => {
+  it("saveWaterLog dispatches a dual-write op and never touches MMKV", () => {
     saveWaterLog({ "2024-01-15": 1500, "bad-key": 999 });
+    expect(mockSafeWriteLS).not.toHaveBeenCalled();
     expect(mockTriggerDualWrite).toHaveBeenCalledTimes(1);
     const [, next] = mockTriggerDualWrite.mock.calls[0]!;
     expect(next.waterLog).toEqual({ "2024-01-15": 1500 });
   });
 
-  it("saveWaterLog skips dual-write when no context is registered", () => {
+  it("saveWaterLog is a no-op when dual-write is not registered", () => {
     mockIsRegistered.mockReturnValue(false);
-    saveWaterLog({ "2024-01-15": 1500 });
-    // MMKV write still happens — the LS path is the source of truth
-    // until #057n-tombstone-mobile lands.
-    expect(mockSafeWriteLS).toHaveBeenCalled();
+    expect(saveWaterLog({ "2024-01-15": 1500 })).toBe(true);
     expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+    expect(mockSafeWriteLS).not.toHaveBeenCalled();
   });
 });
 
 describe("mobile nutritionStore — shopping list", () => {
-  it("loadShoppingList returns empty categories on missing data", () => {
+  it("loadShoppingList returns empty categories when the cache is cold", () => {
     expect(loadShoppingList()).toEqual({ categories: [] });
-    expect(mockSafeReadLS).toHaveBeenCalledWith(SHOPPING_LIST_KEY, null);
+    expect(mockSafeReadLS).not.toHaveBeenCalled();
   });
 
-  it("loadShoppingList normalises categories + items", () => {
-    mockSafeReadLS.mockReturnValueOnce({
+  it("loadShoppingList reads + normalises from the SQLite warm cache", () => {
+    const seeded: ShoppingList = {
       categories: [
         {
           name: "Овочі",
           items: [
-            { id: "a", name: "Морква" },
-            { id: "b", name: "" },
+            {
+              id: "a",
+              name: "Морква",
+            } as unknown as ShoppingList["categories"][number]["items"][number],
+            {
+              id: "b",
+              name: "",
+            } as unknown as ShoppingList["categories"][number]["items"][number],
           ],
         },
       ],
-    });
+    };
+    __setNutritionSqliteCacheForTests({ shoppingList: seeded });
     const out = loadShoppingList();
     expect(out.categories).toHaveLength(1);
     expect(out.categories[0]!.items).toHaveLength(1);
     expect(out.categories[0]!.items[0]!.name).toBe("Морква");
   });
 
-  it("saveShoppingList normalises before persisting", () => {
-    saveShoppingList({ categories: [] });
-    expect(mockSafeWriteLS).toHaveBeenCalledWith(SHOPPING_LIST_KEY, {
-      categories: [],
-    });
-  });
-
-  // Stage 11 / PR #070n-mobile-dualwrite -----------------------------
-  it("saveShoppingList mirrors the singleton blob to the dual-write pipeline", () => {
+  it("saveShoppingList dispatches a dual-write op and never touches MMKV", () => {
     saveShoppingList({
       categories: [{ name: "Овочі", items: [{ id: "a", name: "Морква" }] }],
     });
+    expect(mockSafeWriteLS).not.toHaveBeenCalled();
     expect(mockTriggerDualWrite).toHaveBeenCalledTimes(1);
     const [, next] = mockTriggerDualWrite.mock.calls[0]!;
     expect(next.shoppingList).toBeTruthy();
@@ -302,10 +296,10 @@ describe("mobile nutritionStore — shopping list", () => {
     expect(parsed.categories[0].name).toBe("Овочі");
   });
 
-  it("saveShoppingList skips dual-write when no context is registered", () => {
+  it("saveShoppingList is a no-op when dual-write is not registered", () => {
     mockIsRegistered.mockReturnValue(false);
-    saveShoppingList({ categories: [] });
-    expect(mockSafeWriteLS).toHaveBeenCalled();
+    expect(saveShoppingList({ categories: [] })).toBe(true);
     expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+    expect(mockSafeWriteLS).not.toHaveBeenCalled();
   });
 });

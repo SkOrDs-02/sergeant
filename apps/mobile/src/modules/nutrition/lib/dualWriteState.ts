@@ -17,12 +17,10 @@ import {
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
-  type ShoppingList,
 } from "@sergeant/nutrition-domain";
 
 import {
   isNutritionDualWriteRegistered,
-  triggerNutritionDualWrite,
   type NutritionDualWriteState,
 } from "./dualWrite";
 import type {
@@ -49,10 +47,9 @@ export function peekNutritionDualWriteState(): NutritionDualWriteState | null {
       },
       recipes: extractRecipeSnapshots(recipes),
       // Stage 11 / PR #070n-mobile-dualwrite — peek water-log + shopping-list
-      // from the warm cache. Pre-tombstone these slices may be empty
-      // until the call site below dual-writes them on first save —
-      // that's fine: the diff treats `0 → N` as a write op and the
-      // subsequent reads re-warm them.
+      // from the warm cache. After Stage 8 PR #057n-tombstone-mobile the
+      // SQLite slices are the only source; a cold cache yields empty
+      // defaults so the diff treats first save as `0 → N`.
       waterLog: cache.waterLog ?? {},
       shoppingList: cache.shoppingList
         ? { dataJson: JSON.stringify(cache.shoppingList) }
@@ -61,53 +58,6 @@ export function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   } catch {
     return null;
   }
-}
-
-/**
- * Persist the entire water-log map. Mirrors `persistNutritionLog` — the
- * caller passes the full `Record<dateKey, volumeMl>` and the diff
- * layer emits one `water-log-set` op per changed date. Pre-boot or
- * pre-auth (`peekNutritionDualWriteState() === null`) is a no-op so
- * first-paint stays on the in-memory hook state.
- *
- * Stage 11 / PR #070n-mobile-dualwrite.
- */
-export function persistNutritionWaterLog(
-  waterLog: Record<string, number> | null | undefined,
-): boolean {
-  const prev = peekNutritionDualWriteState();
-  if (prev === null) return true;
-  const safe: Record<string, number> = {};
-  if (waterLog && typeof waterLog === "object") {
-    for (const [k, v] of Object.entries(waterLog)) {
-      const n = Number(v);
-      if (Number.isFinite(n) && n >= 0) safe[k] = Math.round(n);
-    }
-  }
-  const next: NutritionDualWriteState = { ...prev, waterLog: safe };
-  triggerNutritionDualWrite(prev, next);
-  return true;
-}
-
-/**
- * Persist the shopping-list singleton. The whole document is sent as
- * one `shopping-list-set` op carrying `dataJson` for `data_json`.
- *
- * Stage 11 / PR #070n-mobile-dualwrite.
- */
-export function persistNutritionShoppingList(
-  shoppingList: ShoppingList | null | undefined,
-): boolean {
-  const prev = peekNutritionDualWriteState();
-  if (prev === null) return true;
-  const next: NutritionDualWriteState = {
-    ...prev,
-    shoppingList: shoppingList
-      ? { dataJson: JSON.stringify(shoppingList) }
-      : null,
-  };
-  triggerNutritionDualWrite(prev, next);
-  return true;
 }
 
 function extractMealSnapshots(log: NutritionLog): NutritionMealSnapshot[] {
