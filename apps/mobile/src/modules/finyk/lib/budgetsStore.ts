@@ -1,18 +1,14 @@
 /**
- * MMKV-backed Budgets store for Finyk (mobile).
+ * Budgets store for Finyk (mobile).
  *
  * Owns three slices that the `BudgetsPage` reads / writes:
  *   - budgets        → finyk_budgets         (FINYK_BUDGETS)
  *   - monthlyPlan    → finyk_monthly_plan    (FINYK_MONTHLY_PLAN)
  *   - subscriptions  → finyk_subs            (FINYK_SUBS)
  *
- * Each setter persists to MMKV via `safeWriteLS` and then triggers the
- * Finyk SQLite dual-write adapter so the op-log v2 writer picks the
- * change up — same pattern as `assetsStore.ts` / `transactionsStore.ts`.
- *
- * Read-only deps the page also needs (real bank tx, txCategories,
- * txSplits, customCategories) live in `transactionsStore`; the page
- * composes both hooks rather than duplicating their state here.
+ * Stage 8 PR #057k-tombstone: MMKV writes removed. Init reads MMKV as
+ * a synchronous first-paint fallback; the SQLite overlay snaps in once
+ * warm. Mutations flow solely through the dual-write pipeline.
  */
 import { useCallback, useEffect, useState } from "react";
 
@@ -20,9 +16,9 @@ import { DEFAULT_SUBSCRIPTIONS } from "@sergeant/finyk-domain";
 import type { Budget, MonthlyPlan } from "@sergeant/finyk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { safeReadLS } from "@/lib/storage";
 
-import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./dualWrite";
 import { EMPTY_FINYK_STATE, type FinykPrefsSnapshot } from "./dualWrite/diff";
 import { blobsFromArray, stateWithSlice } from "./dualWrite/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
@@ -125,50 +121,9 @@ export function useFinykBudgetsStore(
       read<Subscription[]>(KEY_SUBS, DEFAULT_SUBSCRIPTIONS as Subscription[]),
   );
 
-  // Flush seed values through MMKV on first mount so re-renders read
-  // through the same code path as production.
-  useEffect(() => {
-    if (!seed) return;
-    if (seed.budgets) safeWriteLS(KEY_BUDGETS, seed.budgets);
-    if (seed.monthlyPlan) safeWriteLS(KEY_MONTHLY_PLAN, seed.monthlyPlan);
-    if (seed.subscriptions) safeWriteLS(KEY_SUBS, seed.subscriptions);
-    // Mount-only: `seed` is expected to be stable (from parent context).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Pick up writes from other consumers of these keys (e.g. CloudSync).
-  useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      switch (changedKey) {
-        case KEY_BUDGETS:
-          setBudgetsState(read<Budget[]>(KEY_BUDGETS, []));
-          break;
-        case KEY_MONTHLY_PLAN:
-          setMonthlyPlanState(
-            read<MonthlyPlanInput>(KEY_MONTHLY_PLAN, DEFAULT_PLAN),
-          );
-          break;
-        case KEY_SUBS:
-          setSubscriptionsState(
-            read<Subscription[]>(
-              KEY_SUBS,
-              DEFAULT_SUBSCRIPTIONS as Subscription[],
-            ),
-          );
-          break;
-        default:
-          break;
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
-  // Stage 4 PR #037 — overlay each persisted slice from the local
-  // SQLite cache once it's warm. MMKV first-paint reads above stay
-  // as a fallback. Stage 8 PR #057k-flag dropped the
-  // `feature.finyk.sqlite_v2.read_sqlite` gate; the overlay is now
-  // unconditional.
+  // Stage 8 PR #057k-tombstone — overlay each persisted slice from
+  // the local SQLite cache once it's warm. MMKV reads above stay as
+  // a synchronous first-paint fallback; MMKV writes are gone.
   const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
     const cache = getCachedFinykSqliteState();
@@ -191,13 +146,10 @@ export function useFinykBudgetsStore(
           typeof next === "function"
             ? (next as (p: Budget[]) => Budget[])(prev)
             : next;
-        safeWriteLS(KEY_BUDGETS, value);
-        if (isFinykDualWriteRegistered()) {
-          triggerFinykDualWrite(
-            stateWithSlice("budgets", blobsFromArray(prev)),
-            stateWithSlice("budgets", blobsFromArray(value)),
-          );
-        }
+        triggerFinykDualWrite(
+          stateWithSlice("budgets", blobsFromArray(prev)),
+          stateWithSlice("budgets", blobsFromArray(value)),
+        );
         return value;
       });
     },
@@ -212,13 +164,10 @@ export function useFinykBudgetsStore(
         typeof next === "function"
           ? (next as (p: MonthlyPlanInput) => MonthlyPlanInput)(prev)
           : next;
-      safeWriteLS(KEY_MONTHLY_PLAN, value);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          { ...EMPTY_FINYK_STATE, prefs: prefsFrom(prev) },
-          { ...EMPTY_FINYK_STATE, prefs: prefsFrom(value) },
-        );
-      }
+      triggerFinykDualWrite(
+        { ...EMPTY_FINYK_STATE, prefs: prefsFrom(prev) },
+        { ...EMPTY_FINYK_STATE, prefs: prefsFrom(value) },
+      );
       return value;
     });
   }, []);
@@ -231,13 +180,10 @@ export function useFinykBudgetsStore(
         typeof next === "function"
           ? (next as (p: Subscription[]) => Subscription[])(prev)
           : next;
-      safeWriteLS(KEY_SUBS, value);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          stateWithSlice("subscriptions", blobsFromArray(prev)),
-          stateWithSlice("subscriptions", blobsFromArray(value)),
-        );
-      }
+      triggerFinykDualWrite(
+        stateWithSlice("subscriptions", blobsFromArray(prev)),
+        stateWithSlice("subscriptions", blobsFromArray(value)),
+      );
       return value;
     });
   }, []);

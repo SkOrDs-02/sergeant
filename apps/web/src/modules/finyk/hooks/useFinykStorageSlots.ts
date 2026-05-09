@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { DEFAULT_SUBSCRIPTIONS } from "../constants";
 import { readJSON, finykStorageManager } from "../lib/finykStorage";
-import { usePersist, reportSilentError } from "./useStorage.persist";
+import {
+  usePersist,
+  useReadonlyPersist,
+  reportSilentError,
+} from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
 import type {
@@ -70,60 +74,67 @@ export interface FinykStorageSlots {
 }
 
 /**
- * Reader hook: registers всі persisted slots Finyk-у через `usePersist`
- * (localStorage + debounced write) і повертає bundle із значеннями та
- * сетерами. Mutation/backup helpers поверх цього використовують slots,
- * не торкаючись React state самостійно.
+ * Reader hook: registers all Finyk persisted slots.
+ *
+ * Stage 8 PR #057k-tombstone: the 14 dual-write-covered keys use
+ * `useReadonlyPersist` (LS read for first-paint, no LS write). The
+ * SQLite overlay snaps in canonical values once the cache is warm.
+ * Mutations persist solely through `useFinykDualWriteSync`.
+ * `excludedStatTxIds` and `dismissedRecurring` remain LS-backed via
+ * the original `usePersist` until their SQLite columns land.
  */
 export function useFinykStorageSlots(): FinykStorageSlots {
-  const [hiddenAccounts, setHiddenAccounts] = usePersist<string[]>(
+  const [hiddenAccounts, setHiddenAccounts] = useReadonlyPersist<string[]>(
     "finyk_hidden",
     [],
   );
-  const [budgets, setBudgets] = usePersist<Budget[]>("finyk_budgets", []);
-  const [subscriptions, setSubscriptions] = usePersist<Subscription[]>(
+  const [budgets, setBudgets] = useReadonlyPersist<Budget[]>(
+    "finyk_budgets",
+    [],
+  );
+  const [subscriptions, setSubscriptions] = useReadonlyPersist<Subscription[]>(
     "finyk_subs",
     DEFAULT_SUBSCRIPTIONS as Subscription[],
   );
-  const [manualAssets, setManualAssets] = usePersist<ManualAsset[]>(
+  const [manualAssets, setManualAssets] = useReadonlyPersist<ManualAsset[]>(
     "finyk_assets",
     [],
   );
-  const [manualDebts, setManualDebts] = usePersist<Debt[]>("finyk_debts", []);
-  const [receivables, setReceivables] = usePersist<Receivable[]>(
+  const [manualDebts, setManualDebts] = useReadonlyPersist<Debt[]>(
+    "finyk_debts",
+    [],
+  );
+  const [receivables, setReceivables] = useReadonlyPersist<Receivable[]>(
     "finyk_recv",
     [],
   );
-  const [hiddenTxIds, setHiddenTxIds] = usePersist<string[]>(
+  const [hiddenTxIds, setHiddenTxIds] = useReadonlyPersist<string[]>(
     "finyk_hidden_txs",
     [],
   );
-  const [monthlyPlan, setMonthlyPlan] = usePersist<MonthlyPlan>(
+  const [monthlyPlan, setMonthlyPlan] = useReadonlyPersist<MonthlyPlan>(
     "finyk_monthly_plan",
     defaultMonthlyPlan,
   );
-  const [txCategories, setTxCategories] = usePersist<TxCategoriesMap>(
+  const [txCategories, setTxCategories] = useReadonlyPersist<TxCategoriesMap>(
     "finyk_tx_cats",
     {},
   );
   const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
-    usePersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
-  const [networthHistory, setNetworthHistory] = usePersist<NetworthEntry[]>(
-    "finyk_networth_history",
-    [],
-  );
-  const [txSplits, setTxSplits] = usePersist<TxSplitsMap>(
+    useReadonlyPersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
+  const [networthHistory, setNetworthHistory] = useReadonlyPersist<
+    NetworthEntry[]
+  >("finyk_networth_history", []);
+  const [txSplits, setTxSplits] = useReadonlyPersist<TxSplitsMap>(
     "finyk_tx_splits",
     {},
   );
-  const [customCategories, setCustomCategories] = usePersist<CustomCategory[]>(
-    "finyk_custom_cats_v1",
-    [],
-  );
-  const [manualExpenses, setManualExpenses] = usePersist<ManualExpense[]>(
-    "finyk_manual_expenses_v1",
-    [],
-  );
+  const [customCategories, setCustomCategories] = useReadonlyPersist<
+    CustomCategory[]
+  >("finyk_custom_cats_v1", []);
+  const [manualExpenses, setManualExpenses] = useReadonlyPersist<
+    ManualExpense[]
+  >("finyk_manual_expenses_v1", []);
   const [excludedStatTxIds, setExcludedStatTxIds] = usePersist<string[]>(
     "finyk_excluded_stat_txs",
     [],
@@ -139,18 +150,12 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     }) ?? { date: null, value: null },
   );
 
-  // Stage 4 PR #037 — overlay every slot value from the local SQLite
-  // cache once it's warm. The LS-backed `usePersist` reads above stay
-  // as a synchronous first-paint fallback, so a cold start renders
-  // identically to the dual-write era; the SQLite cache snaps in on
-  // the next render once `useFinykSqliteReadBoot` warms it. Stage 8
-  // PR #057k-flag dropped the `feature.finyk.sqlite_v2.read_sqlite`
-  // gate; the overlay is now unconditional.
-  //
-  // We deliberately call each setter (rather than swap the slot bundle
-  // out wholesale) so the subsequent `usePersist` debounced LS write
-  // keeps LS in sync with the cache during cutover. PR #057k-tombstone
-  // drops the LS-write path once 100% of users are on the SQLite read.
+  // Stage 8 PR #057k-tombstone — overlay every slot value from the
+  // local SQLite cache once it's warm. The `useReadonlyPersist` reads
+  // above stay as a synchronous first-paint fallback (LS may still
+  // contain residual data for the current boot), but LS writes are
+  // gone: the dual-write pipeline (`useFinykDualWriteSync`) is the
+  // sole persistence sink.
   const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
     const cache = getCachedFinykSqliteState();

@@ -1,5 +1,5 @@
 /**
- * Boot wiring for the mobile Finyk SQLite read path (PR #037).
+ * Boot wiring for the mobile Finyk SQLite read path.
  *
  * Mirrors `apps/web/src/modules/finyk/lib/sqliteReadBoot.ts`. Called
  * once from the mobile Finyk app shell (via `useFinykSqliteReadBoot`)
@@ -8,7 +8,11 @@
  *  1. Resolves a `SqliteMigrationClient` from the singleton expo-sqlite
  *     handle.
  *  2. Runs the finyk SQLite migrations so the tables exist.
- *  3. Performs the initial `refreshFinykSqliteState()` so the cache
+ *  3. Stage 8 PR #057k-tombstone: imports any residual MMKV values
+ *     (14 `finyk_*` domain keys + `finyk_show_balance_v1`) into the
+ *     SQLite tables and deletes the MMKV keys. Idempotent; subsequent
+ *     boots no-op once the MMKV keys are gone.
+ *  4. Performs the initial `refreshFinykSqliteState()` so the cache
  *     is warm before the first overlay read.
  *
  * Stage 8 PR #057k-flag — `feature.finyk.sqlite_v2.read_sqlite` was
@@ -22,6 +26,7 @@
 import { getSqliteMigrationClient } from "@/core/db/sqlite";
 
 import { migrateFinyk } from "./clientMigrate";
+import { importFinykResidualFromMmkv } from "./residualImport";
 import { refreshFinykSqliteState } from "./sqliteReader";
 
 /**
@@ -41,6 +46,12 @@ export async function bootFinykSqliteReadPath(
   try {
     const client = await getSqliteMigrationClient();
     await migrateFinyk(client);
+
+    // Stage 8 PR #057k-tombstone: drain MMKV into SQLite before the
+    // first cache refresh so warm-up sees any leftover values that
+    // older builds wrote.
+    await importFinykResidualFromMmkv(client, userId);
+
     await refreshFinykSqliteState(client, userId);
     return true;
   } catch (err) {

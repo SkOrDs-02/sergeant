@@ -18,6 +18,16 @@ export function matchesShape(value: unknown, defaultVal: unknown): boolean {
   return true;
 }
 
+/**
+ * LS-backed persisted slot. Reads from localStorage on init, writes
+ * back via debounced `writeJSONDebounced` on every state change.
+ *
+ * Stage 8 PR #057k-tombstone: only used for the 3 keys that are NOT
+ * yet mirrored to SQLite (`excludedStatTxIds`, `dismissedRecurring`,
+ * `networthSnapshotRef`). The 14 dual-write-covered keys have moved
+ * to {@link useReadonlyPersist} — LS read for first-paint fallback,
+ * no LS write (dual-write pipeline handles persistence).
+ */
 export function usePersist<T>(
   key: string,
   defaultVal: T,
@@ -33,5 +43,30 @@ export function usePersist<T>(
   useEffect(() => {
     writeJSONDebounced(key, val);
   }, [key, val]);
+  return [val, setVal];
+}
+
+/**
+ * Read-only persisted slot — reads from localStorage on init as a
+ * synchronous first-paint fallback, but does NOT write back to LS.
+ *
+ * Stage 8 PR #057k-tombstone: replaces `usePersist` for the 14 Finyk
+ * keys that are covered by the SQLite dual-write pipeline. The SQLite
+ * overlay (`useFinykStorageSlots` → `useEffect` on `sqliteCacheTick`)
+ * snaps in the canonical values once the cache is warm; mutations flow
+ * through `useFinykDualWriteSync` → `triggerFinykDualWrite` only.
+ */
+export function useReadonlyPersist<T>(
+  key: string,
+  defaultVal: T,
+): [T, Dispatch<SetStateAction<T>>] {
+  const [val, setVal] = useState<T>(() => {
+    const stored = readJSON(key, defaultVal);
+    if (!matchesShape(stored, defaultVal)) {
+      reportSilentError(`useReadonlyPersist shape mismatch ("${key}")`, stored);
+      return defaultVal;
+    }
+    return stored as T;
+  });
   return [val, setVal];
 }

@@ -1,17 +1,13 @@
 /**
- * MMKV-backed Assets store for Finyk (mobile).
+ * Assets store for Finyk (mobile).
  *
  * Mirrors the shape used on web by the root `Finyk` container —
  * `manualAssets` (`finyk_assets`), `manualDebts` (`finyk_debts`),
- * `receivables` (`finyk_recv`), `hiddenAccounts` (`finyk_hidden`). All
- * four are persisted independently under the canonical keys declared
- * in `@sergeant/finyk-domain/storage-keys` so the mobile port can
- * consume a JSON backup exported from the web build unchanged.
+ * `receivables` (`finyk_recv`), `hiddenAccounts` (`finyk_hidden`).
  *
- * This hook is deliberately local to `modules/finyk/lib/` — the top
- * Finyk store is scheduled for a later PR (#453's siblings). We only
- * need the four slices the Assets page owns here, plus a seam for
- * tests to inject a pre-populated state.
+ * Stage 8 PR #057k-tombstone: MMKV writes removed. Init reads MMKV
+ * as a synchronous first-paint fallback; the SQLite overlay snaps in
+ * once warm. Mutations flow solely through the dual-write pipeline.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -25,8 +21,8 @@ import type {
   Transaction,
 } from "@sergeant/finyk-domain/domain";
 
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
+import { safeReadLS } from "@/lib/storage";
+import { triggerFinykDualWrite } from "./dualWrite";
 import {
   blobsFromArray,
   idsFromArray,
@@ -95,47 +91,9 @@ export function useFinykAssetsStore(
     () => seed?.hiddenAccounts ?? read<string[]>(KEY_HIDDEN, []),
   );
 
-  // On first mount, flush any seed values through MMKV so both consumers
-  // of this hook (and the change-listener below) see the same state.
-  useEffect(() => {
-    if (!seed) return;
-    if (seed.manualAssets) safeWriteLS(KEY_ASSETS, seed.manualAssets);
-    if (seed.manualDebts) safeWriteLS(KEY_DEBTS, seed.manualDebts);
-    if (seed.receivables) safeWriteLS(KEY_RECV, seed.receivables);
-    if (seed.hiddenAccounts) safeWriteLS(KEY_HIDDEN, seed.hiddenAccounts);
-    // Intentionally only runs once — `seed` is expected to be stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Pick up writes from other consumers of these keys.
-  useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      switch (changedKey) {
-        case KEY_ASSETS:
-          setAssetsState(read<ManualAsset[]>(KEY_ASSETS, []));
-          break;
-        case KEY_DEBTS:
-          setDebtsState(read<AssetsDebt[]>(KEY_DEBTS, []));
-          break;
-        case KEY_RECV:
-          setRecvState(read<AssetsReceivable[]>(KEY_RECV, []));
-          break;
-        case KEY_HIDDEN:
-          setHiddenState(read<string[]>(KEY_HIDDEN, []));
-          break;
-        default:
-          break;
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
-  // Stage 4 PR #037 — overlay each persisted slice from the local
-  // SQLite cache once it's warm. MMKV first-paint reads above stay
-  // as a fallback. Stage 8 PR #057k-flag dropped the
-  // `feature.finyk.sqlite_v2.read_sqlite` gate; the overlay is now
-  // unconditional.
+  // Stage 8 PR #057k-tombstone — overlay each persisted slice from
+  // the local SQLite cache once it's warm. MMKV reads above stay as
+  // a synchronous first-paint fallback; MMKV writes are gone.
   const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
     const cache = getCachedFinykSqliteState();
@@ -155,13 +113,10 @@ export function useFinykAssetsStore(
     (next: ManualAsset[]) => {
       const prev = manualAssets;
       setAssetsState(next);
-      safeWriteLS(KEY_ASSETS, next);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          stateWithSlice("assets", blobsFromArray(prev)),
-          stateWithSlice("assets", blobsFromArray(next)),
-        );
-      }
+      triggerFinykDualWrite(
+        stateWithSlice("assets", blobsFromArray(prev)),
+        stateWithSlice("assets", blobsFromArray(next)),
+      );
     },
     [manualAssets],
   );
@@ -169,13 +124,10 @@ export function useFinykAssetsStore(
     (next: AssetsDebt[]) => {
       const prev = manualDebts;
       setDebtsState(next);
-      safeWriteLS(KEY_DEBTS, next);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          stateWithSlice("debts", blobsFromArray(prev)),
-          stateWithSlice("debts", blobsFromArray(next)),
-        );
-      }
+      triggerFinykDualWrite(
+        stateWithSlice("debts", blobsFromArray(prev)),
+        stateWithSlice("debts", blobsFromArray(next)),
+      );
     },
     [manualDebts],
   );
@@ -183,13 +135,10 @@ export function useFinykAssetsStore(
     (next: AssetsReceivable[]) => {
       const prev = receivables;
       setRecvState(next);
-      safeWriteLS(KEY_RECV, next);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          stateWithSlice("receivables", blobsFromArray(prev)),
-          stateWithSlice("receivables", blobsFromArray(next)),
-        );
-      }
+      triggerFinykDualWrite(
+        stateWithSlice("receivables", blobsFromArray(prev)),
+        stateWithSlice("receivables", blobsFromArray(next)),
+      );
     },
     [receivables],
   );
@@ -197,13 +146,10 @@ export function useFinykAssetsStore(
     (next: string[]) => {
       const prev = hiddenAccounts;
       setHiddenState(next);
-      safeWriteLS(KEY_HIDDEN, next);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          stateWithSlice("hiddenAccounts", idsFromArray(prev)),
-          stateWithSlice("hiddenAccounts", idsFromArray(next)),
-        );
-      }
+      triggerFinykDualWrite(
+        stateWithSlice("hiddenAccounts", idsFromArray(prev)),
+        stateWithSlice("hiddenAccounts", idsFromArray(next)),
+      );
     },
     [hiddenAccounts],
   );

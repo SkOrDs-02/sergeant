@@ -46,26 +46,43 @@ export const STORAGE_KEYS = {
   SYNC_MIGRATION_DONE: "hub_sync_migrated_users",
 
   // ─── Finyk ────────────────────────────────────────────────────────────
+  // Mono API cache keys — NOT dual-write-covered, kept as-is.
   FINYK_TX_CACHE: "finyk_tx_cache",
   FINYK_TX_CACHE_LAST_GOOD: "finyk_tx_cache_last_good",
   FINYK_INFO_CACHE: "finyk_info_cache",
   FINYK_TOKEN: "finyk_token",
   FINYK_STORAGE: "finyk_storage_v2",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_prefs.show_balance`. */
   FINYK_SHOW_BALANCE: "finyk_show_balance_v1",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_accounts`. */
   FINYK_HIDDEN: "finyk_hidden",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_transactions`. */
   FINYK_HIDDEN_TXS: "finyk_hidden_txs",
+  // Not yet mirrored to SQLite — stays LS-backed.
   FINYK_EXCLUDED_STAT_TXS: "finyk_excluded_stat_txs",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_budgets`. */
   FINYK_BUDGETS: "finyk_budgets",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_subscriptions`. */
   FINYK_SUBS: "finyk_subs",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_assets`. */
   FINYK_ASSETS: "finyk_assets",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_debts`. */
   FINYK_DEBTS: "finyk_debts",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_receivables`. */
   FINYK_RECV: "finyk_recv",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_prefs.monthly_plan_json`. */
   FINYK_MONTHLY_PLAN: "finyk_monthly_plan",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_tx_categories`. */
   FINYK_TX_CATS: "finyk_tx_cats",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_tx_splits`. */
   FINYK_TX_SPLITS: "finyk_tx_splits",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_mono_debt_links`. */
   FINYK_MONO_DEBT_LINKED: "finyk_mono_debt_linked",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_networth_history`. */
   FINYK_NETWORTH_HISTORY: "finyk_networth_history",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_custom_categories`. */
   FINYK_CUSTOM_CATS: "finyk_custom_cats_v1",
+  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_manual_expenses`. */
   FINYK_MANUAL_EXPENSES: "finyk_manual_expenses_v1",
   FINYK_TX_FILTERS: "finyk_tx_filters_v1",
   // Per-day collapse state for the Transactions screen. Map of

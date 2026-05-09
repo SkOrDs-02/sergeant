@@ -1,22 +1,20 @@
 /**
- * MMKV-backed Transactions store for Finyk (mobile).
+ * Transactions store for Finyk (mobile).
  *
  * Owns the slices the `TransactionsPage` reads / writes:
- *   - manualExpenses     → finyk_manual_expenses_v1  (FINYK_STORAGE_KEYS.transactions)
- *   - txCategories       → finyk_tx_cats             (FINYK_BACKUP_STORAGE_KEYS.txCategories)
- *   - txSplits           → finyk_tx_splits           (FINYK_BACKUP_STORAGE_KEYS.txSplits)
- *   - hiddenTxIds        → finyk_hidden_txs          (FINYK_BACKUP_STORAGE_KEYS.hiddenTxIds)
+ *   - manualExpenses     → finyk_manual_expenses_v1
+ *   - txCategories       → finyk_tx_cats
+ *   - txSplits           → finyk_tx_splits
+ *   - hiddenTxIds        → finyk_hidden_txs
  *
- * Each setter persists to MMKV via `safeWriteLS` and then triggers the
- * Finyk SQLite dual-write adapter so the op-log v2 writer picks the
- * change up — same pattern as `assetsStore.ts`.
+ * Stage 8 PR #057k-tombstone: MMKV writes removed for the 4 dual-write
+ * keys. Init reads MMKV as a synchronous first-paint fallback; the
+ * SQLite overlay snaps in once warm. Mutations flow solely through the
+ * dual-write pipeline.
  *
- * Real Monobank-sourced transactions (`realTx`) are written to MMKV by
- * the network layer (web `useMonobank` snapshot, mirrored across devices
- * by cloud sync) under `FINYK_TX_CACHE` (current snapshot) and
- * `FINYK_TX_CACHE_LAST_GOOD` (last non-empty fallback). We hydrate
- * `realTx` from those keys on mount and on `refresh()`. Tests / storybook
- * can still pass a `seed.realTx` to bypass MMKV entirely.
+ * Real Monobank-sourced transactions (`realTx`) are still hydrated from
+ * MMKV (`FINYK_TX_CACHE` / `FINYK_TX_CACHE_LAST_GOOD`) and the Mono
+ * mirror SQLite path.
  */
 import { useCallback, useEffect, useState } from "react";
 
@@ -28,7 +26,7 @@ import type { MonoAccount, Transaction } from "@sergeant/finyk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./dualWrite";
 import {
   blobsFromArray,
   idsFromArray,
@@ -251,14 +249,10 @@ export function useFinykTransactionsStore(
     () => seed?.realTx ?? readBankTxCache(),
   );
 
-  // Flush seed values through MMKV on first mount so re-renders read
-  // through the same code path as production.
+  // Flush seed realTx through MMKV (Mono cache keys are still
+  // MMKV-backed). Dual-write keys are no longer flushed here.
   useEffect(() => {
     if (!seed) return;
-    if (seed.manualExpenses) safeWriteLS(KEY_MANUAL, seed.manualExpenses);
-    if (seed.txCategories) safeWriteLS(KEY_TX_CATS, seed.txCategories);
-    if (seed.txSplits) safeWriteLS(KEY_TX_SPLITS, seed.txSplits);
-    if (seed.hiddenTxIds) safeWriteLS(KEY_HIDDEN_TXS, seed.hiddenTxIds);
     if (seed.realTx) {
       const snapshot: TxCacheSnapshot = {
         txs: seed.realTx,
@@ -266,30 +260,16 @@ export function useFinykTransactionsStore(
       };
       safeWriteLS(KEY_TX_CACHE, snapshot);
     }
-    // Mount-only: `seed` is expected to be stable (from parent context).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Pick up writes from other consumers of the same keys (e.g.
-  // CloudSync pulling a fresh server payload).
+  // Pick up writes from Mono cache keys (CloudSync pushing a fresh
+  // bank snapshot). Dual-write keys removed — those slots are now
+  // overlaid from the SQLite cache below.
   useEffect(() => {
     const mmkv = _getMMKVInstance();
     const sub = mmkv.addOnValueChangedListener((changedKey) => {
       switch (changedKey) {
-        case KEY_MANUAL:
-          setManualState(read<ManualExpenseRecord[]>(KEY_MANUAL, []));
-          break;
-        case KEY_TX_CATS:
-          setTxCatsState(read<Record<string, string>>(KEY_TX_CATS, {}));
-          break;
-        case KEY_TX_SPLITS:
-          setTxSplitsState(
-            read<Record<string, TxSplitEntry[]>>(KEY_TX_SPLITS, {}),
-          );
-          break;
-        case KEY_HIDDEN_TXS:
-          setHiddenState(read<string[]>(KEY_HIDDEN_TXS, []));
-          break;
         case KEY_TX_CACHE:
         case KEY_TX_CACHE_LAST_GOOD:
           setRealTxState(readBankTxCache());
@@ -301,12 +281,9 @@ export function useFinykTransactionsStore(
     return () => sub.remove();
   }, []);
 
-  // Stage 4 PR #037 — overlay every persisted slice from the local
-  // SQLite cache once it's warm. The MMKV first-paint reads above
-  // stay as a synchronous fallback; this effect only fires after
-  // `useFinykSqliteReadBoot` has refreshed the cache. Stage 8
-  // PR #057k-flag dropped the `feature.finyk.sqlite_v2.read_sqlite`
-  // gate; the overlay is now unconditional.
+  // Stage 8 PR #057k-tombstone — overlay every persisted slice from
+  // the local SQLite cache once it's warm. MMKV reads above stay as
+  // a synchronous first-paint fallback; MMKV writes are gone.
   const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
     const cache = getCachedFinykSqliteState();
@@ -386,13 +363,10 @@ export function useFinykTransactionsStore(
   const writeManual = useCallback((next: ManualExpenseRecord[]) => {
     const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);
     setManualState(next);
-    safeWriteLS(KEY_MANUAL, next);
-    if (isFinykDualWriteRegistered()) {
-      triggerFinykDualWrite(
-        stateWithSlice("manualExpenses", blobsFromArray(prev)),
-        stateWithSlice("manualExpenses", blobsFromArray(next)),
-      );
-    }
+    triggerFinykDualWrite(
+      stateWithSlice("manualExpenses", blobsFromArray(prev)),
+      stateWithSlice("manualExpenses", blobsFromArray(next)),
+    );
   }, []);
 
   const addManualExpense = useCallback(
@@ -446,13 +420,10 @@ export function useFinykTransactionsStore(
     if (current.includes(id)) return;
     const next = [...current, id];
     setHiddenState(next);
-    safeWriteLS(KEY_HIDDEN_TXS, next);
-    if (isFinykDualWriteRegistered()) {
-      triggerFinykDualWrite(
-        stateWithSlice("hiddenTransactions", idsFromArray(current)),
-        stateWithSlice("hiddenTransactions", idsFromArray(next)),
-      );
-    }
+    triggerFinykDualWrite(
+      stateWithSlice("hiddenTransactions", idsFromArray(current)),
+      stateWithSlice("hiddenTransactions", idsFromArray(next)),
+    );
   }, []);
 
   const unhideTx = useCallback((id: string) => {
@@ -460,13 +431,10 @@ export function useFinykTransactionsStore(
     if (!current.includes(id)) return;
     const next = current.filter((x) => x !== id);
     setHiddenState(next);
-    safeWriteLS(KEY_HIDDEN_TXS, next);
-    if (isFinykDualWriteRegistered()) {
-      triggerFinykDualWrite(
-        stateWithSlice("hiddenTransactions", idsFromArray(current)),
-        stateWithSlice("hiddenTransactions", idsFromArray(next)),
-      );
-    }
+    triggerFinykDualWrite(
+      stateWithSlice("hiddenTransactions", idsFromArray(current)),
+      stateWithSlice("hiddenTransactions", idsFromArray(next)),
+    );
   }, []);
 
   const overrideCategory = useCallback(
@@ -479,13 +447,10 @@ export function useFinykTransactionsStore(
         next[txId] = categoryId;
       }
       setTxCatsState(next);
-      safeWriteLS(KEY_TX_CATS, next);
-      if (isFinykDualWriteRegistered()) {
-        triggerFinykDualWrite(
-          stateWithSlice("txCategories", txCatsFromMap(current)),
-          stateWithSlice("txCategories", txCatsFromMap(next)),
-        );
-      }
+      triggerFinykDualWrite(
+        stateWithSlice("txCategories", txCatsFromMap(current)),
+        stateWithSlice("txCategories", txCatsFromMap(next)),
+      );
     },
     [],
   );
@@ -499,13 +464,10 @@ export function useFinykTransactionsStore(
       next[txId] = splits;
     }
     setTxSplitsState(next);
-    safeWriteLS(KEY_TX_SPLITS, next);
-    if (isFinykDualWriteRegistered()) {
-      triggerFinykDualWrite(
-        stateWithSlice("txSplits", txSplitsFromMap(current)),
-        stateWithSlice("txSplits", txSplitsFromMap(next)),
-      );
-    }
+    triggerFinykDualWrite(
+      stateWithSlice("txSplits", txSplitsFromMap(current)),
+      stateWithSlice("txSplits", txSplitsFromMap(next)),
+    );
   }, []);
 
   const refresh = useCallback(() => {
