@@ -9,15 +9,26 @@
  *  set_daily_plan, log_weight, add_recipe).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
+import {
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "../../modules/routine/lib/sqliteReader";
 import { executeAction } from "./hubChatActions";
 
 beforeEach(() => {
+  // Stage 8 PR #057r-tombstone — routine state lives in the SQLite
+  // warm cache, not localStorage. Reset both so each spec starts clean.
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useRealTimers();
 });
 
@@ -542,18 +553,14 @@ describe("create_reminder", () => {
       name: "create_habit",
       input: { name: "Ранкова розминка" },
     });
-    const state0 = readLS<{
-      habits: Array<{ id: string }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state0 = loadRoutineState();
     const habitId = state0.habits[0]!.id;
     const msg = executeAction({
       name: "create_reminder",
       input: { habit_id: habitId, time: "8:00" },
     });
     expect(msg).toContain("08:00");
-    const state = readLS<{
-      habits: Array<{ id: string; reminderTimes: string[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.reminderTimes).toEqual(["08:00"]);
   });
 
@@ -562,9 +569,7 @@ describe("create_reminder", () => {
       name: "create_habit",
       input: { name: "Ранкова розминка" },
     });
-    const state0 = readLS<{
-      habits: Array<{ id: string }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state0 = loadRoutineState();
     const habitId = state0.habits[0]!.id;
     executeAction({
       name: "create_reminder",
@@ -575,9 +580,7 @@ describe("create_reminder", () => {
       input: { habit_id: habitId, time: "08:00" },
     });
     expect(msg).toContain("вже існує");
-    const state = readLS<{
-      habits: Array<{ reminderTimes: string[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.reminderTimes).toHaveLength(1);
   });
 });
@@ -585,47 +588,32 @@ describe("create_reminder", () => {
 describe("complete_habit_for_date + archive_habit", () => {
   it("позначає/знімає виконання на вказану дату", () => {
     executeAction({ name: "create_habit", input: { name: "Тестова" } });
-    const state0 = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
-      habits: [],
-    });
+    const state0 = loadRoutineState();
     const id = state0.habits[0]!.id;
     executeAction({
       name: "complete_habit_for_date",
       input: { habit_id: id, date: "2024-06-10" },
     });
-    let state = readLS<{ completions: Record<string, string[]> }>(
-      "hub_routine_v1",
-      { completions: {} },
-    );
+    let state = loadRoutineState();
     expect(state.completions[id]).toEqual(["2024-06-10"]);
     executeAction({
       name: "complete_habit_for_date",
       input: { habit_id: id, date: "2024-06-10", completed: false },
     });
-    state = readLS<{ completions: Record<string, string[]> }>(
-      "hub_routine_v1",
-      {
-        completions: {},
-      },
-    );
+    state = loadRoutineState();
     expect(state.completions[id]).toEqual([]);
   });
 
   it("archive_habit архівує і повертає з архіву", () => {
     executeAction({ name: "create_habit", input: { name: "Архів" } });
-    const state0 = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
-      habits: [],
-    });
+    const state0 = loadRoutineState();
     const id = state0.habits[0]!.id;
     const msg = executeAction({
       name: "archive_habit",
       input: { habit_id: id },
     });
     expect(msg).toContain("заархівовано");
-    const state = readLS<{ habits: Array<{ id: string; archived: boolean }> }>(
-      "hub_routine_v1",
-      { habits: [] },
-    );
+    const state = loadRoutineState();
     expect(state.habits[0]!.archived).toBe(true);
     const msg2 = executeAction({
       name: "archive_habit",
@@ -638,9 +626,7 @@ describe("complete_habit_for_date + archive_habit", () => {
 describe("set_habit_schedule", () => {
   function createHabitAndId(name = "Тренування"): string {
     executeAction({ name: "create_habit", input: { name } });
-    const state = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
-      habits: [],
-    });
+    const state = loadRoutineState();
     return state.habits[0]!.id;
   }
 
@@ -653,9 +639,7 @@ describe("set_habit_schedule", () => {
     expect(msg).toContain("Пн");
     expect(msg).toContain("Ср");
     expect(msg).toContain("Пт");
-    const state = readLS<{
-      habits: Array<{ id: string; recurrence: string; weekdays: number[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.recurrence).toBe("weekly");
     expect(state.habits[0]!.weekdays).toEqual([0, 2, 4]);
   });
@@ -666,9 +650,7 @@ describe("set_habit_schedule", () => {
       name: "set_habit_schedule",
       input: { habit_id: id, days: ["Пн", "СР", "пт"] },
     });
-    const state = readLS<{
-      habits: Array<{ id: string; weekdays: number[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.weekdays).toEqual([0, 2, 4]);
   });
 
@@ -678,25 +660,19 @@ describe("set_habit_schedule", () => {
       name: "set_habit_schedule",
       input: { habit_id: id, days: ["fri", "mon", "fri", "пн", "wed"] },
     });
-    const state = readLS<{
-      habits: Array<{ id: string; weekdays: number[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.weekdays).toEqual([0, 2, 4]);
   });
 
   it("повертає помилку коли всі токени невалідні (не змінює стан)", () => {
     const id = createHabitAndId();
-    const before = readLS<{
-      habits: Array<{ id: string; recurrence?: string; weekdays?: number[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const before = loadRoutineState();
     const msg = executeAction({
       name: "set_habit_schedule",
       input: { habit_id: id, days: ["foo", "bar"] },
     });
     expect(msg).toContain("Не вдалось розпізнати");
-    const after = readLS<{
-      habits: Array<{ id: string; recurrence?: string; weekdays?: number[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const after = loadRoutineState();
     expect(after.habits[0]!.weekdays).toEqual(before.habits[0]!.weekdays);
   });
 
@@ -725,9 +701,7 @@ describe("set_habit_schedule", () => {
 describe("pause_habit", () => {
   function createHabitAndId(name = "Біг"): string {
     executeAction({ name: "create_habit", input: { name } });
-    const state = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
-      habits: [],
-    });
+    const state = loadRoutineState();
     return state.habits[0]!.id;
   }
 
@@ -738,10 +712,7 @@ describe("pause_habit", () => {
       input: { habit_id: id },
     });
     expect(msg).toContain("на паузу");
-    const state = readLS<{ habits: Array<{ id: string; paused?: boolean }> }>(
-      "hub_routine_v1",
-      { habits: [] },
-    );
+    const state = loadRoutineState();
     expect(state.habits[0]!.paused).toBe(true);
   });
 
@@ -753,10 +724,7 @@ describe("pause_habit", () => {
       input: { habit_id: id, paused: false },
     });
     expect(msg).toContain("знято з паузи");
-    const state = readLS<{ habits: Array<{ id: string; paused?: boolean }> }>(
-      "hub_routine_v1",
-      { habits: [] },
-    );
+    const state = loadRoutineState();
     expect(state.habits[0]!.paused).toBe(false);
   });
 
@@ -788,15 +756,7 @@ describe("add_calendar_event", () => {
     });
     expect(msg).toContain("Лікар");
     expect(msg).toContain("09:30");
-    const state = readLS<{
-      habits: Array<{
-        name: string;
-        recurrence: string;
-        startDate: string;
-        endDate: string;
-        timeOfDay: string;
-      }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.recurrence).toBe("once");
     expect(state.habits[0]!.startDate).toBe("2024-07-01");
     expect(state.habits[0]!.endDate).toBe("2024-07-01");

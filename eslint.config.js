@@ -884,6 +884,13 @@ export default [
       // read/write entry-points that everyone else should call.
       "apps/web/src/modules/routine/lib/routineStorage.ts",
       "apps/mobile/src/modules/routine/lib/routineStore.ts",
+      // Stage 8 PR #057r-tombstone — the residual-import helper +
+      // shared `routineStorage` instance are the only callsites
+      // allowed to touch the now-deprecated `hub_routine_v1` LS key.
+      // The helper drains the leftover LS payload into SQLite once
+      // on boot and then deletes the key.
+      "apps/web/src/modules/routine/lib/residualImport.ts",
+      "apps/web/src/modules/routine/lib/routineStorageInstance.ts",
       // Mobile backup still reads ROUTINE for full-state export/import
       // (migration planned for a future PR).
       "apps/mobile/src/core/hub/hubBackup.ts",

@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   // ─── Hub ──────────────────────────────────────────────────────────────
   DARK_MODE: "hub_dark_mode_v1",
   LAST_MODULE: "hub_last_module",
+  /** @deprecated Stage 8 PR #057r-tombstone — use SQLite `routine_*` tables via `loadRoutineState()`. */
   ROUTINE: "hub_routine_v1",
   ROUTINE_MAIN_TAB: "hub_routine_main_tab_v1",
   NUTRITION_MAIN_TAB: "hub_nutrition_main_tab_v1",

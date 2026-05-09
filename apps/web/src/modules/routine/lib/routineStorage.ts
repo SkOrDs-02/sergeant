@@ -1,6 +1,21 @@
-/** Hub «Рутина»: звички, теги, категорії (не-спорт), localStorage */
+/**
+ * Hub «Рутина»: звички, теги, категорії — SQLite-backed read/persist.
+ *
+ * Stage 8 PR #057r-tombstone (web) — the localStorage write path is
+ * retired. `loadRoutineState()` overlays the cached SQLite full-state
+ * onto `defaultRoutineState()` and `saveRoutineState()` triggers the
+ * dual-write pipeline (the same one Stage 10 PR #070r-dualwrite uses
+ * to mirror habits / tags / categories / prefs / pushups / habitOrder /
+ * completionNotes / completions to the 7 routine_* SQLite tables).
+ * Residual LS data is drained on boot once via
+ * `importRoutineResidualFromLs` (`./residualImport.ts`) and then the
+ * legacy `STORAGE_KEYS.ROUTINE` key is deleted.
+ *
+ * The exported function names are unchanged so call sites across the
+ * web app keep working — only the source of truth moved from LS to
+ * the SQLite cache.
+ */
 
-import { createModuleStorage } from "@shared/lib/storage/createModuleStorage";
 import {
   ROUTINE_STORAGE_KEY,
   ROUTINE_EVENT,
@@ -33,16 +48,13 @@ import {
   type Habit,
   type HabitSnapshot,
 } from "@sergeant/routine-domain";
-import {
-  isRoutineDualWriteRegistered,
-  triggerRoutineDualWrite,
-} from "./dualWrite/index.js";
+import { triggerRoutineDualWrite } from "./dualWrite/index.js";
 import {
   getCachedSqliteCompletions,
   getCachedSqliteRoutineState,
+  setCachedSqliteCompletions,
+  setCachedSqliteRoutineState,
 } from "./sqliteReader.js";
-
-const storage = createModuleStorage({ name: "routine" });
 
 // Re-export key constants so web callers can keep their existing imports.
 export { ROUTINE_STORAGE_KEY, ROUTINE_EVENT, ROUTINE_STORAGE_ERROR };
@@ -56,107 +68,137 @@ export function emitRoutineStorage() {
 }
 
 /**
- * Normalize habit order and persist if changed.
- * Legacy pushup migration is handled by storageManager (routine_001_migrate_fizruk_pushups)
- * which runs before the React tree mounts, so by the time this is called the migration is done.
- */
-function finalizeLoadedRoutineState(state: RoutineState): RoutineState {
-  const { state: s, changed } = ensureHabitOrder(state);
-  if (changed) {
-    saveRoutineState(s);
-  }
-  return s;
-}
-
-/**
- * Load and normalize the full routine state from localStorage.
- * Falls back to default state on parse errors or missing key.
+ * Returns the routine state assembled from the SQLite warm caches.
  *
- * Once `bootSqliteReadPath()` has run successfully (Stage 8 PR
- * #057r-flag dropped the `feature.routine.sqlite_v2.read_sqlite`
- * gate — boot is unconditional now), the `completions` field is
- * replaced with the cached SQLite completions so reads come from
- * the normalized `routine_entries` table. Everything else (habits,
- * tags, categories, prefs, pushups, habitOrder, completionNotes)
- * still comes from LS.
+ * Stage 8 PR #057r-tombstone — LS read is retired. When the
+ * `bootSqliteReadPath()` warm-up has populated
+ * `getCachedSqliteRoutineState()` we overlay all 7 entity slices
+ * (habits / tags / categories / prefs / pushups / habitOrder /
+ * completionNotes) onto a fresh `defaultRoutineState()`. The
+ * legacy `getCachedSqliteCompletions()` cache wins for
+ * `completions` (it stays as source-of-truth for the
+ * `routine_entries` reader so the rest of the codebase keeps
+ * its O(1) lookup shape).
+ *
+ * If neither cache is warm yet (pre-boot window), returns
+ * `defaultRoutineState()` so first-paint is deterministic.
  */
 export function loadRoutineState(): RoutineState {
-  const raw = storage.readJSON(ROUTINE_STORAGE_KEY, null);
-  const merged = normalizeRoutineState(raw);
-  const finalized = finalizeLoadedRoutineState(merged);
+  const base = defaultRoutineState();
 
-  const sqliteCache = getCachedSqliteCompletions();
-  if (sqliteCache.refreshedAt !== null) {
-    const merged = { ...finalized, completions: sqliteCache.completions };
-    // Stage 10: overlay full-state fields when the cache is warm.
-    const fullState = getCachedSqliteRoutineState();
-    if (fullState.refreshedAt !== null) {
-      return {
-        ...merged,
-        habits: fullState.habits,
-        tags: fullState.tags,
-        categories: fullState.categories,
-        prefs: fullState.prefs,
-        pushupsByDate: fullState.pushupsByDate,
-        habitOrder: fullState.habitOrder,
-        completionNotes: fullState.completionNotes,
-      };
-    }
-    return merged;
+  const fullState = getCachedSqliteRoutineState();
+  const completionsCache = getCachedSqliteCompletions();
+
+  let next: RoutineState = base;
+
+  if (fullState.refreshedAt !== null) {
+    next = {
+      ...base,
+      habits: fullState.habits,
+      tags: fullState.tags,
+      categories: fullState.categories,
+      prefs: { ...base.prefs, ...fullState.prefs },
+      pushupsByDate: fullState.pushupsByDate,
+      habitOrder: fullState.habitOrder,
+      completionNotes: fullState.completionNotes,
+    };
   }
 
-  return finalized;
+  if (completionsCache.refreshedAt !== null) {
+    next = { ...next, completions: completionsCache.completions };
+  }
+
+  // Idempotent: ensure the order array is canonical before handing
+  // state to React. The dual-write layer mirrors the canonical order
+  // back into SQLite via `saveRoutineState` if a normalization
+  // happens to produce a change.
+  const { state, changed } = ensureHabitOrder(next);
+  if (changed) {
+    saveRoutineState(state);
+  }
+  return state;
 }
 
 /**
- * Read the currently-persisted routine state without triggering the
- * `ensureHabitOrder` re-save that {@link loadRoutineState} performs.
- * Used by {@link saveRoutineState} as the `prev` snapshot for the
- * Stage 4 PR #024 dual-write layer; returns `null` if the dual-write
- * context is not registered (zero overhead when the feature is off).
- */
-function peekRoutineDualWritePrev(): RoutineState | null {
-  if (!isRoutineDualWriteRegistered()) return null;
-  try {
-    const raw = storage.readJSON(ROUTINE_STORAGE_KEY, null);
-    return normalizeRoutineState(raw);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Persist routine state to localStorage and dispatch a storage event.
- * Returns `true` on success, `false` if localStorage threw (e.g. quota exceeded).
+ * Persist routine state via the dual-write pipeline.
  *
- * On success, also fires the Stage 4 PR #024 dual-write hook (mirror
- * completion ops to local SQLite `routine_entries`). The hook is
- * fire-and-forget — SQLite latency or failures never block or break
- * the LS write. LS remains source-of-truth for habits / tags /
- * categories / prefs / pushups / habitOrder / completionNotes
- * (those fields are not part of the routine SQLite schema yet).
- *
- * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`
- * flag — the dual-write fires whenever a context is registered.
+ * Stage 8 PR #057r-tombstone — no localStorage write. The function
+ * (a) snapshots the previous state from the SQLite warm cache so
+ * `diffRoutineDualWriteOps` can emit only the deltas, (b) fires the
+ * fire-and-forget dual-write trigger, and (c) emits the legacy
+ * `ROUTINE_EVENT` so existing same-tab subscribers (`useRoutineState`,
+ * etc.) refresh their snapshots. Returns `true` whenever the trigger
+ * is dispatched — SQLite latency / failures are observed via
+ * dual-write telemetry, not the boolean return.
  */
 export function saveRoutineState(next: RoutineState): boolean {
-  const prev = peekRoutineDualWritePrev();
-  const ok = storage.writeJSON(ROUTINE_STORAGE_KEY, next);
-  if (ok) {
-    emitRoutineStorage();
-    if (prev !== null) triggerRoutineDualWrite(prev, next);
-    return true;
-  }
   try {
-    window.dispatchEvent(
-      new CustomEvent(ROUTINE_STORAGE_ERROR, {
-        detail: { message: "save failed" },
-      }),
-    );
-  } catch {
-    /* noop */
+    const prev = readCachedRoutineState();
+
+    // Write-through: update the warm caches synchronously so the next
+    // `loadRoutineState()` reflects the change without waiting for
+    // the async dual-write → SQLite round trip. The dual-write is
+    // still authoritative on boot (`refreshSqliteRoutineState`
+    // overwrites these caches with the canonical SQLite read).
+    setCachedSqliteRoutineState({
+      habits: next.habits,
+      tags: next.tags,
+      categories: next.categories,
+      prefs: next.prefs,
+      pushupsByDate: next.pushupsByDate,
+      habitOrder: next.habitOrder,
+      completionNotes: next.completionNotes,
+    });
+    setCachedSqliteCompletions(next.completions);
+
+    triggerRoutineDualWrite(prev, next);
+    emitRoutineStorage();
+    return true;
+  } catch (err) {
+    try {
+      window.dispatchEvent(
+        new CustomEvent(ROUTINE_STORAGE_ERROR, {
+          detail: {
+            message: err instanceof Error ? err.message : "save failed",
+          },
+        }),
+      );
+    } catch {
+      /* noop */
+    }
+    return false;
   }
-  return false;
+}
+
+/**
+ * Snapshot the currently-cached routine state. Mirrors the structure
+ * of {@link loadRoutineState} without the
+ * `ensureHabitOrder` re-save that the loader performs — used by
+ * {@link saveRoutineState} as the `prev` argument to
+ * `diffRoutineDualWriteOps`.
+ */
+function readCachedRoutineState(): RoutineState {
+  const base = defaultRoutineState();
+  const fullState = getCachedSqliteRoutineState();
+  const completionsCache = getCachedSqliteCompletions();
+
+  let prev: RoutineState = base;
+  if (fullState.refreshedAt !== null) {
+    prev = {
+      ...base,
+      habits: fullState.habits,
+      tags: fullState.tags,
+      categories: fullState.categories,
+      prefs: { ...base.prefs, ...fullState.prefs },
+      pushupsByDate: fullState.pushupsByDate,
+      habitOrder: fullState.habitOrder,
+      completionNotes: fullState.completionNotes,
+    };
+  }
+  if (completionsCache.refreshedAt !== null) {
+    prev = { ...prev, completions: completionsCache.completions };
+  }
+  return prev;
 }
 
 /** Generic wrapper: apply a pure reducer and persist the result. */
@@ -367,6 +409,3 @@ export function deleteCategory(state: RoutineState, id: string): RoutineState {
 export function deleteTag(state: RoutineState, id: string): RoutineState {
   return persist(applyDeleteTag(state, id));
 }
-
-// Silence TS about the unused default import for backward-compat consumers.
-void defaultRoutineState;

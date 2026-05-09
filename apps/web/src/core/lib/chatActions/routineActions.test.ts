@@ -1,15 +1,30 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  loadRoutineState,
+  saveRoutineState,
+} from "../../../modules/routine/lib/routineStorage";
+import {
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "../../../modules/routine/lib/sqliteReader";
 import { handleRoutineAction } from "./routineActions";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
+  // Stage 8 PR #057r-tombstone — routine state is backed by the
+  // SQLite warm cache, not localStorage. Reset both so each spec
+  // starts from a known-clean state.
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useRealTimers();
 });
 
@@ -22,11 +37,30 @@ function call(action: ChatAction): string {
 }
 
 function seedHabit(id: string, name: string, extra?: Record<string, unknown>) {
-  const state = JSON.parse(
-    localStorage.getItem("hub_routine_v1") || '{"habits":[],"completions":{}}',
-  );
-  state.habits.push({ id, name, emoji: "✓", ...extra });
-  localStorage.setItem("hub_routine_v1", JSON.stringify(state));
+  const state = loadRoutineState();
+  // Synthesise a habit with the legacy shape; routine-domain reducers
+  // round-trip through `normalizeHabit` so missing optional fields
+  // (createdAt, weekdays, recurrence, startDate, etc.) are filled
+  // with defaults during the next normalize pass. The seed only needs
+  // to be "good enough" for the chat-action handler to find the id.
+  const newHabit = {
+    id,
+    name,
+    emoji: "✓",
+    archived: false,
+    paused: false,
+    recurrence: "daily" as const,
+    startDate: "2026-01-01",
+    weekdays: [0, 1, 2, 3, 4, 5, 6],
+    reminderTimes: [],
+    createdAt: "2026-01-01T00:00:00.000Z",
+    ...extra,
+  };
+  saveRoutineState({
+    ...state,
+    habits: [...state.habits, newHabit],
+    habitOrder: [...state.habitOrder, id],
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -480,9 +514,11 @@ describe("reorder_habits", () => {
 describe("habit_stats", () => {
   it("happy: returns stats for existing habit", () => {
     seedHabit("h1", "Вода");
-    const state = JSON.parse(localStorage.getItem("hub_routine_v1")!);
-    state.completions = { h1: ["2026-04-22", "2026-04-21"] };
-    localStorage.setItem("hub_routine_v1", JSON.stringify(state));
+    const state = loadRoutineState();
+    saveRoutineState({
+      ...state,
+      completions: { ...state.completions, h1: ["2026-04-22", "2026-04-21"] },
+    });
     const out = call({
       name: "habit_stats",
       input: { habit_id: "h1", period_days: 7 },
@@ -568,6 +604,9 @@ describe("habit_trend", () => {
 // ---------------------------------------------------------------------------
 describe("create_habit · undo", () => {
   it("повертає {undo} що видаляє створену звичку", () => {
+    // Stage 8 PR #057r-tombstone — routine state lives in the SQLite
+    // warm cache, not localStorage. We trigger the action, snapshot
+    // the cache, run undo, and assert the deletion via the cache.
     const out = handleRoutineAction({
       name: "create_habit",
       input: { name: "Біг" },
@@ -576,13 +615,13 @@ describe("create_habit · undo", () => {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
     expect(out.result).toContain("Біг");
-    const before = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
+    const before = loadRoutineState();
     expect(before.habits).toHaveLength(1);
-    const createdId = before.habits[0].id;
+    const createdId = before.habits[0]!.id;
 
     out.undo();
 
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
+    const after = loadRoutineState();
     expect(
       after.habits.find((h: { id: string }) => h.id === createdId),
     ).toBeUndefined();
@@ -597,17 +636,19 @@ describe("create_habit · undo", () => {
       throw new Error("expected object");
 
     // Додаємо completion вручну, щоб перевірити що undo чистить його теж.
-    const state = JSON.parse(localStorage.getItem("hub_routine_v1")!);
-    const createdId = state.habits[0].id;
-    state.completions = {
-      ...(state.completions || {}),
-      [createdId]: ["2024-06-15"],
-    };
-    localStorage.setItem("hub_routine_v1", JSON.stringify(state));
+    const state = loadRoutineState();
+    const createdId = state.habits[0]!.id;
+    saveRoutineState({
+      ...state,
+      completions: {
+        ...state.completions,
+        [createdId]: ["2024-06-15"],
+      },
+    });
 
     out.undo();
 
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
+    const after = loadRoutineState();
     expect(after.completions[createdId]).toBeUndefined();
   });
 
@@ -633,12 +674,12 @@ describe("mark_habit_done · undo", () => {
     if (typeof out === "string" || out == null) {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
-    const before = JSON.parse(localStorage.getItem("hub_routine_v1")!);
+    const before = loadRoutineState();
     expect(before.completions.h1).toContain("2024-06-15");
 
     out.undo();
 
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1")!);
+    const after = loadRoutineState();
     expect(after.completions.h1 ?? []).not.toContain("2024-06-15");
   });
 
@@ -674,7 +715,7 @@ describe("mark_habit_done · undo", () => {
 
     out.undo();
 
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1")!);
+    const after = loadRoutineState();
     expect(after.completions.h1).toContain("2024-06-13");
     expect(after.completions.h1).not.toContain("2024-06-15");
   });
@@ -685,13 +726,7 @@ describe("mark_habit_done · undo", () => {
 // ---------------------------------------------------------------------------
 describe("create_reminder · undo", () => {
   it("повертає {undo} який видаляє щойно додане нагадування", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [{ id: "h1", name: "Йога", reminderTimes: [] }],
-        completions: {},
-      }),
-    );
+    seedHabit("h1", "Йога");
     const out = handleRoutineAction({
       name: "create_reminder",
       input: { habit_id: "h1", time: "08:00" },
@@ -699,22 +734,16 @@ describe("create_reminder · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    const before = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
-    expect(before.habits[0].reminderTimes).toEqual(["08:00"]);
+    const before = loadRoutineState();
+    expect(before.habits[0]!.reminderTimes).toEqual(["08:00"]);
 
     out.undo();
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
-    expect(after.habits[0].reminderTimes).toEqual([]);
+    const after = loadRoutineState();
+    expect(after.habits[0]!.reminderTimes).toEqual([]);
   });
 
   it("якщо час уже існує — return string (no-op, без undo)", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [{ id: "h1", name: "Йога", reminderTimes: ["08:00"] }],
-        completions: {},
-      }),
-    );
+    seedHabit("h1", "Йога", { reminderTimes: ["08:00"] });
     const out = handleRoutineAction({
       name: "create_reminder",
       input: { habit_id: "h1", time: "08:00" },
@@ -728,13 +757,12 @@ describe("create_reminder · undo", () => {
 // ---------------------------------------------------------------------------
 describe("complete_habit_for_date · undo", () => {
   it("undo на mark-complete видаляє ту дату; інші дати залишаються", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [{ id: "h1", name: "Йога" }],
-        completions: { h1: ["2025-01-01"] },
-      }),
-    );
+    seedHabit("h1", "Йога");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: { ...seeded.completions, h1: ["2025-01-01"] },
+    });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
       input: { habit_id: "h1", date: "2025-01-02" },
@@ -743,18 +771,17 @@ describe("complete_habit_for_date · undo", () => {
       throw new Error("expected object");
 
     out.undo();
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
+    const after = loadRoutineState();
     expect(after.completions.h1).toEqual(["2025-01-01"]);
   });
 
   it("повторне виставлення дати: вже виконано → return string без undo", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [{ id: "h1" }],
-        completions: { h1: ["2025-01-02"] },
-      }),
-    );
+    seedHabit("h1", "H");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: { ...seeded.completions, h1: ["2025-01-02"] },
+    });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
       input: { habit_id: "h1", date: "2025-01-02" },
@@ -763,13 +790,12 @@ describe("complete_habit_for_date · undo", () => {
   });
 
   it("undo на uncheck (completed:false) повертає дату назад", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [{ id: "h1" }],
-        completions: { h1: ["2025-01-02"] },
-      }),
-    );
+    seedHabit("h1", "H");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: { ...seeded.completions, h1: ["2025-01-02"] },
+    });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
       input: { habit_id: "h1", date: "2025-01-02", completed: false },
@@ -778,7 +804,7 @@ describe("complete_habit_for_date · undo", () => {
       throw new Error("expected object");
 
     out.undo();
-    const after = JSON.parse(localStorage.getItem("hub_routine_v1") || "{}");
+    const after = loadRoutineState();
     expect(after.completions.h1).toContain("2025-01-02");
   });
 });
