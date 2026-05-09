@@ -311,3 +311,22 @@ export async function refreshNutritionSqliteState(
 export function clearNutritionSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
 }
+
+/**
+ * Test helper: seed the cache directly without running migrations / SQLite
+ * queries. The provided fields override the empty defaults and the cache
+ * is marked as refreshed (`refreshedAt`) so consumers treat it as warm.
+ *
+ * Stage 8 PR #057n-tombstone — used by `nutritionStorage.test.ts` and the
+ * hook tests now that the load/persist surface reads from this cache
+ * instead of LS.
+ */
+export function __setNutritionSqliteCacheForTests(
+  partial: Partial<SqliteNutritionCache>,
+): void {
+  cache = {
+    ...EMPTY_CACHE,
+    refreshedAt: new Date().toISOString(),
+    ...partial,
+  };
+}

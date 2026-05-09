@@ -92,11 +92,27 @@ export const STORAGE_KEYS = {
   FIZRUK_REST_SETTINGS: "fizruk_rest_settings_v1",
 
   // ─── Nutrition ────────────────────────────────────────────────────────
+  // Stage 8 PR #057n-tombstone: the keys below are tombstoned. The
+  // SQLite-WASM (web) / expo-sqlite (mobile) `nutrition_*` tables are
+  // the canonical source of truth. The boot-time residual-import helper
+  // (`apps/{web,mobile}/src/modules/nutrition/lib/residualImport.ts`)
+  // imports any leftover values written by older builds into SQLite
+  // and then deletes the LS / MMKV entries. Entries are kept here (not
+  // deleted) so legacy cross-module reads / fixtures still resolve to
+  // the same string literals. **Do NOT add new reads/writes against
+  // these keys.**
+  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_meals`. */
   NUTRITION_LOG: "nutrition_log_v1",
+  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_pantries` / `nutrition_pantry_items`. */
   NUTRITION_PANTRIES: "nutrition_pantries_v1",
+  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_prefs.active_pantry_id`. */
   NUTRITION_ACTIVE_PANTRY: "nutrition_active_pantry_v1",
+  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_prefs`. */
   NUTRITION_PREFS: "nutrition_prefs_v1",
-  /** Локальна книга збережених рецептів (mobile MMKV; web — IndexedDB). */
+  /**
+   * Локальна книга збережених рецептів (mobile MMKV; web — IndexedDB).
+   * @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_recipes`.
+   */
   NUTRITION_SAVED_RECIPES: "nutrition_recipe_book_v1",
 
   // ─── Weekly Digest ────────────────────────────────────────────────────

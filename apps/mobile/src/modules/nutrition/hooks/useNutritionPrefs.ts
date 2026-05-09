@@ -1,16 +1,15 @@
 /**
- * `useNutritionPrefs` — MMKV-backed read/write hook для nutrition prefs
- * (денні цілі КБЖВ, водна ціль, reminder-опції).
+ * `useNutritionPrefs` — SQLite-cache-backed read/write hook for
+ * nutrition prefs (денні цілі КБЖВ, водна ціль, reminder-опції).
  *
- * PR-4 використовує це лише для читання (денні targets у Dashboard).
- * Запис prefs-форми через реальний settings-екран прилітає з PR-7/8.
+ * Stage 8 PR #057n-tombstone: initial state reads from the SQLite
+ * warm cache. The MMKV value-changed listener was removed because
+ * `nutrition_prefs_v1` is tombstoned — cross-consumer notifications
+ * now flow through `useNutritionSqliteReadTick`.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type NutritionPrefs } from "@sergeant/nutrition-domain";
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { _getMMKVInstance } from "@/lib/storage";
 
 import { loadNutritionPrefs, saveNutritionPrefs } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -32,20 +31,11 @@ export function useNutritionPrefs(): UseNutritionPrefsResult {
     prefsRef.current = prefs;
   }, [prefs]);
 
-  useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey === STORAGE_KEYS.NUTRITION_PREFS) {
-        setPrefsState(loadNutritionPrefs());
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay nutrition prefs from
-  // the local SQLite cache once it's warm. The MMKV first-paint read
-  // above stays as a synchronous fallback so the first paint never
-  // blocks on SQLite.
+  // Stage 4 PR #033 + Stage 8 PR #057n-tombstone: overlay nutrition
+  // prefs from the local SQLite cache once it's warm. The MMKV
+  // value-changed listener was dropped — `nutrition_prefs_v1` no
+  // longer exists, the cache-tick is the single source of "value
+  // changed" notifications.
   const sqliteCacheTick = useNutritionSqliteReadTick();
   useEffect(() => {
     const cache = getCachedNutritionSqliteState();

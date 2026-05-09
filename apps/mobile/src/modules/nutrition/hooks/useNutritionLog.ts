@@ -1,15 +1,15 @@
 /**
- * `useNutritionLog` — MMKV-backed React hook над журналом прийомів їжі
- * для mobile. Mirror `apps/web/src/modules/nutrition/hooks/useNutritionLog.ts`
+ * `useNutritionLog` — SQLite-cache-backed React hook над журналом
+ * прийомів їжі для mobile. Mirror `apps/web/src/modules/nutrition/hooks/useNutritionLog.ts`
  * але без photo-thumbnail-GC, query-invalidation і storage-error-banner
  * (ті блоки специфічні для web або прилітають у пізніших PR-ах).
  *
- * Action-surface цього PR-а (PR-4 — read-only UI):
- * - `log` + `selectedDate` + `setSelectedDate`
- * - мутатори (`addMeal`, `removeMeal`, `updateMeal`) повертають void;
- *   після мутації значення вже у MMKV, далі op-log v2 push підхопить.
- *
- * AddMealSheet / PhotoAnalyze / AI-фічі — PR-5+.
+ * Stage 8 PR #057n-tombstone: initial state reads `loadNutritionLog`
+ * which now hits the SQLite warm cache (empty pre-boot). The MMKV
+ * value-changed listener was removed because `nutrition_log_v1` is
+ * tombstoned — cross-consumer notifications now flow through
+ * `useNutritionSqliteReadTick` (the dual-write orchestrator bumps
+ * the tick after every successful apply).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -21,9 +21,7 @@ import {
   type Meal,
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
-import { STORAGE_KEYS, toLocalISODate } from "@sergeant/shared";
-
-import { _getMMKVInstance } from "@/lib/storage";
+import { toLocalISODate } from "@sergeant/shared";
 
 import { loadNutritionLog, saveNutritionLog } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -59,17 +57,11 @@ export function useNutritionLog(): UseNutritionLogResult {
     setNutritionLog(loadNutritionLog());
   }, []);
 
-  useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey === STORAGE_KEYS.NUTRITION_LOG) refresh();
-    });
-    return () => sub.remove();
-  }, [refresh]);
-
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay the meal log from
-  // the local SQLite cache once it's warm. MMKV first-paint read
-  // above stays as a synchronous fallback.
+  // Stage 4 PR #033 + Stage 8 PR #057n-tombstone: overlay the meal log
+  // from the local SQLite cache once it's warm. The MMKV value-changed
+  // listener was dropped because `nutrition_log_v1` no longer exists —
+  // cache-tick is now the only "value changed" signal, and the
+  // dual-write orchestrator bumps it after every successful apply.
   const sqliteCacheTick = useNutritionSqliteReadTick();
   useEffect(() => {
     const cache = getCachedNutritionSqliteState();

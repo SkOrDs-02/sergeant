@@ -5,6 +5,8 @@ import {
   recordParityCheck,
   recordReadFallback,
 } from "../../../../core/observability/dualWriteTelemetry.js";
+import { refreshNutritionSqliteState } from "../sqliteReader.js";
+import { notifyNutritionSqliteCacheRefresh } from "../sqliteReadGate.js";
 import {
   applyNutritionDualWriteOps,
   type ApplyDualWriteResult,
@@ -136,6 +138,23 @@ async function runDualWriteNutritionState(
     clientTs: ctx.getNow(),
     logger: ctx.logger,
   });
+
+  // Stage 8 PR #057n-tombstone: refresh the SQLite warm cache so
+  // subsequent reads (overlay effects in hooks, `peek` in
+  // `nutritionStorage`) reflect what we just wrote. Best-effort —
+  // a failed refresh is logged via `recordReadFallback` but does not
+  // disturb the dual-write outcome.
+  try {
+    await refreshNutritionSqliteState(client, userId);
+    notifyNutritionSqliteCacheRefresh();
+  } catch (err) {
+    recordReadFallback(
+      "nutrition",
+      err instanceof Error
+        ? `cache-refresh-failed: ${err.message}`
+        : "cache-refresh-failed",
+    );
+  }
 
   // Stage 8 parity probe — best-effort: never throws, never disturbs
   // the dual-write outcome. A failed probe-read is tagged distinctly

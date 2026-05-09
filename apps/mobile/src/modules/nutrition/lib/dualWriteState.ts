@@ -2,8 +2,9 @@
  * Snapshot extractor for the mobile Nutrition dual-write layer.
  *
  * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Reads the
- * MMKV slices that map to `nutrition_*` SQLite tables and produces
- * a `NutritionDualWriteState` blob that the diff layer can compare.
+ * SQLite warm cache (Stage 8 PR #057n-tombstone — was MMKV before)
+ * and produces a `NutritionDualWriteState` blob that the diff layer
+ * can compare.
  *
  * Lives in its own file (instead of next to either store) to break
  * the otherwise-circular import between `nutritionStore.ts` and
@@ -12,14 +13,11 @@
  */
 
 import {
-  NUTRITION_ACTIVE_PANTRY_KEY,
-  NUTRITION_PANTRIES_KEY,
-  normalizePantries,
+  defaultNutritionPrefs,
   type NutritionLog,
+  type NutritionPrefs,
   type Pantry,
 } from "@sergeant/nutrition-domain";
-
-import { safeReadLS, safeReadStringLS } from "@/lib/storage";
 
 import {
   isNutritionDualWriteRegistered,
@@ -30,27 +28,22 @@ import type {
   NutritionPantrySnapshot,
   NutritionRecipeSnapshot,
 } from "./dualWrite/diff";
-import { loadNutritionLog, loadNutritionPrefs } from "./nutritionStore";
 import { loadSavedRecipes, type SavedRecipe } from "./recipeBookStore";
+import { getCachedNutritionSqliteState } from "./sqliteReader";
 
 export function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   if (!isNutritionDualWriteRegistered()) return null;
   try {
-    const log = loadNutritionLog();
-    const pantries = normalizePantries(
-      safeReadLS<unknown>(NUTRITION_PANTRIES_KEY, null),
-    );
-    const activePantryRaw = safeReadStringLS(NUTRITION_ACTIVE_PANTRY_KEY, null);
-    const activePantryId = activePantryRaw ? String(activePantryRaw) : null;
-    const prefs = loadNutritionPrefs();
+    const cache = getCachedNutritionSqliteState();
+    const prefs: NutritionPrefs = cache.prefs ?? defaultNutritionPrefs();
     const recipes = loadSavedRecipes();
 
     return {
-      meals: extractMealSnapshots(log),
-      pantries: extractPantrySnapshots(pantries),
+      meals: extractMealSnapshots(cache.log),
+      pantries: extractPantrySnapshots(cache.pantries),
       prefs: {
         prefsJson: JSON.stringify(prefs),
-        activePantryId,
+        activePantryId: cache.activePantryId,
       },
       recipes: extractRecipeSnapshots(recipes),
     };

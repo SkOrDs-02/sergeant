@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-08 by @Skords-01 (Stage 9 COMPLETE 7/7 — PRs #060–#066 landed; PR #066 moved `createMemoryKVStore` to `@sergeant/shared/test-utils` and kept the web SSR/private-mode memory fallback app-local. Stage 9 hotfix tail (boot-path resilience for `sync_op_outbox`) landed post-canary — див. § Stage 9 нижче. Stage 7 9/9 — COMPLETE. Stage 8 dual-write default-on landed для всіх 4 модулів: Routine [#2133](https://github.com/Skords-01/Sergeant/pull/2133), Fizruk [#2135](https://github.com/Skords-01/Sergeant/pull/2135), Nutrition + Finyk + Finyk Mono mirror [#2178](https://github.com/Skords-01/Sergeant/pull/2178); plus Stage 8 dual-write telemetry sink (`ff92dbb4`) і PR #058 mobile sync-engine writer-runtime boot path landed у [#2118](https://github.com/Skords-01/Sergeant/pull/2118) alongside CloudSync v1 client cleanup. Read-default-on slice [#2179](https://github.com/Skords-01/Sergeant/pull/2179) was rolled back via [#2181](https://github.com/Skords-01/Sergeant/pull/2181) (`2735fa75`) after a PWA habit-input regression — re-rollout gated on stability re-verify. **Read-default-on quartet re-rolled out** після rollback #2181: Routine [#2244](https://github.com/Skords-01/Sergeant/pull/2244) (PR #055r2), Fizruk [#2247](https://github.com/Skords-01/Sergeant/pull/2247) (PR #055f2), Nutrition [#2251](https://github.com/Skords-01/Sergeant/pull/2251) (PR #055n2), Finyk (`24616449`, PR #055k2). **Stage 8 §3 parity probe quartet COMPLETE** на всіх 4 dual-write модулях: Routine ([#2243](https://github.com/Skords-01/Sergeant/pull/2243), `4ea2c952`), Fizruk ([#2257](https://github.com/Skords-01/Sergeant/pull/2257), PR #055f3), Nutrition ([#2259](https://github.com/Skords-01/Sergeant/pull/2259), PR #055n3), Finyk ([#2260](https://github.com/Skords-01/Sergeant/pull/2260), PR #055k3) — `<m>.sqlite.dualwrite.parity` decision-gate metric тепер populated на всіх 4 модулях. **Stage 8 dual-write feature-flag drop quartet COMPLETE** з revised scope (drop flag-gating only, не LS-write — schema-gap для Routine, parity з Routine для решти): Routine `#056r` (`ff852475`), Fizruk `#056f` (`abc575f0`), Finyk `#056k` ([#2265](https://github.com/Skords-01/Sergeant/pull/2265), `535a9984`), Nutrition `#056n` ([#2266](https://github.com/Skords-01/Sergeant/pull/2266), `65fe17fe`). **Outstanding:** Stage 8 — 4 module rollout PR-ів left (`#057*` quartet — drop LS-readers + tombstone `STORAGE_KEYS.{ROUTINE,FIZRUK_*,NUTRITION_*,FINYK_*}`), 14d canary-gated; plus Stage 10 candidate (Routine SQLite schema extension) before Routine LS-write can be dropped. Stage 9 KV store swap is complete. #045 Redis — opt-in optional Stage-6 follow-up. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-08 by @Skords-01 (Stage 9 COMPLETE 7/7 — PRs #060–#066 landed; PR #066 moved `createMemoryKVStore` to `@sergeant/shared/test-utils` and kept the web SSR/private-mode memory fallback app-local. Stage 9 hotfix tail (boot-path resilience for `sync_op_outbox`) landed post-canary — див. § Stage 9 нижче. Stage 7 9/9 — COMPLETE. Stage 8 dual-write default-on landed для всіх 4 модулів: Routine [#2133](https://github.com/Skords-01/Sergeant/pull/2133), Fizruk [#2135](https://github.com/Skords-01/Sergeant/pull/2135), Nutrition + Finyk + Finyk Mono mirror [#2178](https://github.com/Skords-01/Sergeant/pull/2178); plus Stage 8 dual-write telemetry sink (`ff92dbb4`) і PR #058 mobile sync-engine writer-runtime boot path landed у [#2118](https://github.com/Skords-01/Sergeant/pull/2118) alongside CloudSync v1 client cleanup. Read-default-on slice [#2179](https://github.com/Skords-01/Sergeant/pull/2179) was rolled back via [#2181](https://github.com/Skords-01/Sergeant/pull/2181) (`2735fa75`) after a PWA habit-input regression — re-rollout gated on stability re-verify. **Read-default-on quartet re-rolled out** після rollback #2181: Routine [#2244](https://github.com/Skords-01/Sergeant/pull/2244) (PR #055r2), Fizruk [#2247](https://github.com/Skords-01/Sergeant/pull/2247) (PR #055f2), Nutrition [#2251](https://github.com/Skords-01/Sergeant/pull/2251) (PR #055n2), Finyk (`24616449`, PR #055k2). **Stage 8 §3 parity probe quartet COMPLETE** на всіх 4 dual-write модулях: Routine ([#2243](https://github.com/Skords-01/Sergeant/pull/2243), `4ea2c952`), Fizruk ([#2257](https://github.com/Skords-01/Sergeant/pull/2257), PR #055f3), Nutrition ([#2259](https://github.com/Skords-01/Sergeant/pull/2259), PR #055n3), Finyk ([#2260](https://github.com/Skords-01/Sergeant/pull/2260), PR #055k3) — `<m>.sqlite.dualwrite.parity` decision-gate metric тепер populated на всіх 4 модулях. **Stage 8 dual-write feature-flag drop quartet COMPLETE** з revised scope (drop flag-gating only, не LS-write — schema-gap для Routine, parity з Routine для решти): Routine `#056r` (`ff852475`), Fizruk `#056f` (`abc575f0`), Finyk `#056k` ([#2265](https://github.com/Skords-01/Sergeant/pull/2265), `535a9984`), Nutrition `#056n` ([#2266](https://github.com/Skords-01/Sergeant/pull/2266), `65fe17fe`). **Stage 8 read-flag drop quartet COMPLETE** (registry + hook + boot cleanup, sets the canary for #057\*-tombstone): Nutrition `#057n-flag` ([#2269](https://github.com/Skords-01/Sergeant/pull/2269)), Finyk `#057k-flag` ([#2270](https://github.com/Skords-01/Sergeant/pull/2270)), Fizruk `#057f-flag` ([#2271](https://github.com/Skords-01/Sergeant/pull/2271)), Routine `#057r-flag` ([#2273](https://github.com/Skords-01/Sergeant/pull/2273)). **Stage 8 #057\*-tombstone quartet IN PROGRESS:** Nutrition `#057n-tombstone` ✅ LANDED (full LS-write + LS-read drop, residual-import, `STORAGE_KEYS.NUTRITION_*` `@deprecated`). **Outstanding:** Stage 8 — 3 module tombstone PR-ів left (`#057f-tombstone` Fizruk, `#057k-tombstone` Finyk; `#057r-tombstone` Routine blocked by Stage 10 schema extension), 14d canary-gated. Stage 9 KV store swap is complete. #045 Redis — opt-in optional Stage-6 follow-up. **Next review:** 2026-08-05.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
@@ -3035,13 +3035,30 @@ via SqliteReader`).
 NUTRITION_*`. Зняти стару migration `storageManager #002`
   (legacy single pantry → multi pantry), бо residual-import
   bootstrap покриє цей переїзд.
-  - **PR #057n-flag** ✅ LANDED — drop the now-redundant
+  - **PR #057n-flag** ✅ LANDED ([#2269](https://github.com/Skords-01/Sergeant/pull/2269)) —
+    drop the now-redundant
     `feature.nutrition.sqlite_v2.read_sqlite` flag-check from
     web + mobile (registry entry, hooks, boot, reader gate).
     SQLite read-overlay тепер unconditional once boot completes;
     LS first-paint read залишається synchronous fallback. Pre-step
     для `#057n-tombstone` (LS-reader drop + `STORAGE_KEYS`
     tombstone + residual-import bootstrap).
+  - **PR #057n-tombstone** ✅ LANDED — full LS-write + LS-read
+    drop for Nutrition (web + mobile). `nutritionStorage.ts` /
+    `nutritionStore.ts` `load*` тепер хитают the SQLite warm
+    cache (`getCachedNutritionSqliteState`); `persist*` /
+    `save*` фірять диф через `triggerNutritionDualWrite` без
+    жодного `localStorage.setItem` / MMKV `safeWriteLS`. Boot
+    додає `importNutritionResidualFromMmkv` /
+    `importNutritionResidualFromLocalStorage` (idempotent
+    LS→SQLite migration з stale LWW timestamp і delete LS keys
+    after successful apply). Hooks втратили MMKV /
+    `storage` listeners — cache-tick-bump після dual-write
+    apply тепер єдиний "value changed" сигнал.
+    `STORAGE_KEYS.{NUTRITION_LOG, NUTRITION_PANTRIES,
+NUTRITION_ACTIVE_PANTRY, NUTRITION_PREFS}` помічені
+    `@deprecated` (entries kept так як є cross-module reads
+    у tombstoned reader paths під час residual-import).
 
 #### **Finyk (4 PR-и)** — структура ідентична
 

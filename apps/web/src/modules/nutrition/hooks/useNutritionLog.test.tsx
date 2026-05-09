@@ -4,7 +4,12 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useNutritionLog } from "./useNutritionLog";
-import { NUTRITION_LOG_KEY } from "../lib/nutritionStorage";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "../lib/sqliteReader";
+import { notifyNutritionSqliteCacheRefresh } from "../lib/sqliteReadGate";
+import type { NutritionLog } from "@sergeant/nutrition-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
 
 function makeWrapper() {
@@ -23,6 +28,7 @@ function makeWrapper() {
 describe("useNutritionLog – defensive imports", () => {
   beforeEach(() => {
     localStorage.clear();
+    clearNutritionSqliteCache();
   });
 
   it("replaceLogFromJsonText returns false and does not throw on malformed JSON", () => {
@@ -57,11 +63,16 @@ describe("useNutritionLog – defensive imports", () => {
         ],
       },
     };
-    localStorage.setItem(NUTRITION_LOG_KEY, JSON.stringify(seeded));
+    // Stage 8 PR #057n-tombstone: seed via SQLite warm cache instead of
+    // LS, then bump the cache tick so the overlay effect picks it up.
+    __setNutritionSqliteCacheForTests({
+      log: seeded as unknown as NutritionLog,
+    });
 
     const { result } = renderHook(() => useNutritionLog(), {
       wrapper: makeWrapper(),
     });
+    act(() => notifyNutritionSqliteCacheRefresh());
     await waitFor(() =>
       expect(result.current.nutritionLog["2025-01-01"]?.meals?.length).toBe(1),
     );

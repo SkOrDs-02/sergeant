@@ -1,17 +1,17 @@
 import {
-  safeReadLS,
-  safeReadStringLS,
-  safeWriteLS,
-} from "@shared/lib/storage/storage";
-import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,
   NUTRITION_PREFS_KEY,
   NUTRITION_LOG_KEY,
   defaultNutritionPrefs,
-  loadNutritionPrefs,
+  loadActivePantryId,
   loadNutritionLog,
+  loadNutritionPrefs,
+  loadPantries,
   normalizeNutritionLog,
+  persistNutritionLog,
+  persistNutritionPrefs,
+  persistPantries,
   type NutritionLog,
   type NutritionPrefs,
 } from "../lib/nutritionStorage";
@@ -46,13 +46,6 @@ export interface NutritionBackupPayload {
   schemaVersion: number;
   exportedAt: string;
   data: NutritionBackupData;
-}
-
-function readJsonFromLocalStorage<T>(key: string, fallback: T): T | unknown {
-  // safeReadLS повертає `T | null` (parse-fail / quota / private mode → null),
-  // а ми зберігаємо стару семантику «fallback при порожньому ключі / збої».
-  const value = safeReadLS<unknown>(key, null);
-  return value ?? fallback;
 }
 
 function safeString(x: unknown, fallback = ""): string {
@@ -131,15 +124,19 @@ function normalizePrefs(x: unknown): NutritionPrefs {
 }
 
 export function buildNutritionBackupPayload(): NutritionBackupPayload {
-  const pantries = readJsonFromLocalStorage(NUTRITION_PANTRIES_KEY, []);
+  // Stage 8 PR #057n-tombstone: all four reads now hit the SQLite
+  // warm cache (populated at boot by `useNutritionSqliteReadBoot`),
+  // not LS. Backup is an on-demand user action so the cache is
+  // guaranteed to be warm by the time this runs.
+  const pantries = loadPantries(
+    NUTRITION_PANTRIES_KEY,
+    NUTRITION_ACTIVE_PANTRY_KEY,
+  );
   const activePantryId = safeString(
-    safeReadStringLS(NUTRITION_ACTIVE_PANTRY_KEY, ""),
+    loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY),
     "home",
   );
-
-  // prefs завжди читаємо через loadNutritionPrefs (в ньому дефолти + нормалізація)
   const prefs = loadNutritionPrefs(NUTRITION_PREFS_KEY);
-
   const log = loadNutritionLog(NUTRITION_LOG_KEY);
 
   return {
@@ -184,14 +181,23 @@ export function applyNutritionBackupPayload(payload: unknown): void {
   const activePantryId = safeString(data.activePantryId, "home") || "home";
   const prefs = normalizePrefs(data.prefs);
 
-  // Кожен `safeWriteLS` глитає quota / private-mode помилку самостійно — це
-  // та сама `try/catch + ignore` семантика, що була inline-реалізована
-  // нижче: якщо одне поле бекапу не записалось через quota, продовжуємо
-  // зі скинутими іншими, замість обвалу всієї відновлюваної операції.
-  safeWriteLS(NUTRITION_PANTRIES_KEY, pantries);
-  safeWriteLS(NUTRITION_ACTIVE_PANTRY_KEY, activePantryId);
-  safeWriteLS(NUTRITION_PREFS_KEY, prefs);
+  // Stage 8 PR #057n-tombstone: writes go through the dual-write
+  // pipeline so the SQLite tables become the source of truth and the
+  // warm cache reflects the restored payload on next overlay tick.
+  // The previous `safeWriteLS` swallow-quota semantics is preserved
+  // because `persist*` returns a boolean — the caller already calls
+  // `window.location.reload()` so any partial failure is recovered
+  // from on the next boot via `importNutritionResidualFromLs` (no-op
+  // here since LS is no longer touched, but the dual-write happy path
+  // will have populated SQLite).
+  persistPantries(
+    NUTRITION_PANTRIES_KEY,
+    NUTRITION_ACTIVE_PANTRY_KEY,
+    pantries,
+    activePantryId,
+  );
+  persistNutritionPrefs(prefs, NUTRITION_PREFS_KEY);
   if (data.log && typeof data.log === "object" && !Array.isArray(data.log)) {
-    safeWriteLS(NUTRITION_LOG_KEY, normalizeNutritionLog(data.log));
+    persistNutritionLog(normalizeNutritionLog(data.log), NUTRITION_LOG_KEY);
   }
 }
