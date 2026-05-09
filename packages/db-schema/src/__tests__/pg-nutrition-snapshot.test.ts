@@ -6,6 +6,8 @@ import {
   nutritionPantryItems,
   nutritionPrefs,
   nutritionRecipes,
+  nutritionShoppingList,
+  nutritionWaterLog,
 } from "../pg/nutrition.js";
 
 /**
@@ -261,5 +263,73 @@ describe("pg/nutritionRecipes schema snapshot", () => {
   it("declares the soft-delete partial index", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("nutrition_recipes_user_active_idx");
+  });
+});
+
+describe("pg/nutritionWaterLog schema snapshot", () => {
+  const config = getTableConfig(nutritionWaterLog);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_water_log");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "user_id",
+      "date_key",
+      "volume_ml",
+      "updated_at",
+    ]);
+  });
+
+  it("declares column types matching migration 051", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["user_id"]!.columnType).toBe("PgText");
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["date_key"]!.columnType).toBe("PgText");
+    expect(columnMap["date_key"]!.notNull).toBe(true);
+    expect(columnMap["volume_ml"]!.columnType).toBe("PgInteger");
+    expect(columnMap["volume_ml"]!.notNull).toBe(true);
+    expect(columnMap["volume_ml"]!.hasDefault).toBe(true);
+    expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
+    expect(columnMap["updated_at"]!.hasDefault).toBe(true);
+  });
+
+  it("is keyed on (user_id, date_key)", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    const pk = config.primaryKeys[0]!;
+    expect(pk.columns.map((c) => c.name)).toEqual(["user_id", "date_key"]);
+  });
+});
+
+describe("pg/nutritionShoppingList schema snapshot", () => {
+  const config = getTableConfig(nutritionShoppingList);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_shopping_list");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "data", "updated_at"]);
+  });
+
+  it("declares column types matching migration 051", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["user_id"]!.columnType).toBe("PgText");
+    expect(columnMap["user_id"]!.primary).toBe(true);
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["data"]!.columnType).toBe("PgJsonb");
+    expect(columnMap["data"]!.notNull).toBe(true);
+    expect(columnMap["data"]!.hasDefault).toBe(true);
+    expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
+    expect(columnMap["updated_at"]!.hasDefault).toBe(true);
   });
 });

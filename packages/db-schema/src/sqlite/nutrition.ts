@@ -1,6 +1,7 @@
 import {
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -176,3 +177,51 @@ export const nutritionRecipes = sqliteTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+// ---------------------------------------------------------------------
+// Stage 11 — extend Nutrition schema to full LS coverage
+// (water_log, shopping_list).
+// Mirrors migration 002_nutrition_full_state.sql in
+// `packages/db-schema/src/sqlite/migrations/index.ts`.
+// ---------------------------------------------------------------------
+
+/**
+ * SQLite schema for the `nutrition_water_log` table.
+ *
+ * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
+ * `routine_pushups` за формою. Day key — `YYYY-MM-DD` у локальному
+ * часовому поясі користувача (як уже працює `WaterLog` blob у
+ * `packages/nutrition-domain/src/waterLog.ts`).
+ *
+ * Soft-delete не потрібен — обнулення дня = `volume_ml = 0` або
+ * відсутність рядка.
+ */
+export const nutritionWaterLog = sqliteTable(
+  "nutrition_water_log",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    volumeMl: integer("volume_ml").notNull().default(0),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
+);
+
+/**
+ * SQLite schema for the `nutrition_shopping_list` table.
+ *
+ * Один рядок на користувача — JSON blob категорій + items
+ * (`ShoppingList` shape із `packages/nutrition-domain/src/shoppingList.ts`).
+ * JSONB → TEXT (JSON-encoded). Цілий документ читається разом коли
+ * користувач відкриває список — per-item normalisation тут не
+ * потрібна.
+ */
+export const nutritionShoppingList = sqliteTable("nutrition_shopping_list", {
+  userId: text("user_id").primaryKey(),
+  dataJson: text("data_json").notNull().default('{"categories":[]}'),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});

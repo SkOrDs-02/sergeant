@@ -88,6 +88,8 @@ export {
   nutritionPantryItems,
   nutritionPrefs,
   nutritionRecipes,
+  nutritionWaterLog,
+  nutritionShoppingList,
 } from "./nutrition.js";
 export {
   finykHiddenAccounts,

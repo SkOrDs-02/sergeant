@@ -3038,9 +3038,11 @@ Split into 2 PRs:
 
 **Scope (4 PRs, mirror of Stage 10 pattern):**
 
-- **PR #070n-schema** 📋 PROPOSED — 2 нові SQLite/Pg таблиці
+- **PR #070n-schema** 🚧 IN PROGRESS — 2 нові SQLite/Pg таблиці
   (`nutrition_water_log`, `nutrition_shopping_list`) + Drizzle schemas
-  (SQLite + Pg) + sequential client migration `005_nutrition_full_state.sql`
+  (SQLite + Pg) + sequential client migration
+  `002_nutrition_full_state.sql` (per-module ledger numbering — Nutrition
+  starts at `001_nutrition_tables.sql`, не глобальне `005_*`).
   - server migration `051_nutrition_full_state.sql` (+ companion
     `051_nutrition_full_state.down.sql` + 051 round-trip testcontainer
     harness modelled on 050).

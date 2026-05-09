@@ -4,6 +4,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -182,3 +183,49 @@ export const nutritionRecipes = pgTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+// ---------------------------------------------------------------------
+// Stage 11 — extend Nutrition schema to full LS coverage
+// (water_log, shopping_list).
+// Mirrors migration 051_nutrition_full_state.sql.
+// ---------------------------------------------------------------------
+
+/**
+ * Postgres schema for `nutrition_water_log` table.
+ *
+ * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
+ * `routine_pushups` за формою (per-(user, date) лічильник). Day key —
+ * `YYYY-MM-DD` у локальному часовому поясі користувача (як уже працює
+ * `WaterLog` blob у `packages/nutrition-domain/src/waterLog.ts`).
+ *
+ * Soft-delete не потрібен — обнулення дня = `volume_ml = 0` або просто
+ * відсутність рядка для цієї дати.
+ */
+export const nutritionWaterLog = pgTable(
+  "nutrition_water_log",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    volumeMl: integer("volume_ml").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
+);
+
+/**
+ * Postgres schema for `nutrition_shopping_list` table.
+ *
+ * Один рядок на користувача — JSON blob категорій + items
+ * (`ShoppingList` shape із `packages/nutrition-domain/src/shoppingList.ts`).
+ * Цілий документ читається разом коли користувач відкриває список —
+ * per-item normalisation тут не потрібна.
+ */
+export const nutritionShoppingList = pgTable("nutrition_shopping_list", {
+  userId: text("user_id").primaryKey(),
+  data: jsonb().notNull().default({ categories: [] }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
