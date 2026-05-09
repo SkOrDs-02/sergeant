@@ -65,6 +65,7 @@ import {
 } from "./components/RoutineBottomNav";
 import { useRoutineDualWriteBoot } from "./hooks/useRoutineDualWriteBoot";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
+import { useRoutineSqliteReadBoot } from "./hooks/useRoutineSqliteReadBoot";
 import { useRoutineStore } from "./lib/routineStore";
 import { Calendar } from "./pages/Calendar";
 import { HabitsPage } from "./pages/Habits/HabitsPage";
@@ -118,6 +119,13 @@ function RoutineShell() {
   // at the `isRoutineDualWriteRegistered()` check and SQLite stays
   // empty even with the flag flipped.
   useRoutineDualWriteBoot();
+
+  // Stage 8 PR #057r-tombstone-mobile: warm the SQLite read caches
+  // (and drain any residual `hub_routine_v1` MMKV blob into SQLite)
+  // before `useRoutineStore` reads. Fire-and-forget — failures fall
+  // back to an empty default state until the dual-write tail
+  // catches up.
+  useRoutineSqliteReadBoot();
 
   // Subscribe to the routine store so the reminder scheduler sees
   // live habit edits without us re-reading MMKV on every change.

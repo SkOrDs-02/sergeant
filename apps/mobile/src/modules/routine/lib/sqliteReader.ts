@@ -158,6 +158,51 @@ export function clearSqliteRoutineStateCache(): void {
 }
 
 /**
+ * Stage 8 PR #057r-tombstone-mobile — write-through cache update.
+ *
+ * Called by `saveRoutineState()` after firing the dual-write so
+ * subsequent synchronous `loadRoutineState()` calls see the just-saved
+ * fields without waiting for the async dual-write → SQLite round trip.
+ * The next `refreshSqliteRoutineState(client, userId)` (boot, sync
+ * pull, scheduled refresh) replaces these in-memory values with the
+ * canonical SQLite read.
+ */
+export function setCachedSqliteRoutineState(
+  state: Pick<
+    SqliteRoutineStateCache,
+    | "habits"
+    | "tags"
+    | "categories"
+    | "prefs"
+    | "pushupsByDate"
+    | "habitOrder"
+    | "completionNotes"
+  >,
+): void {
+  stateCache = {
+    habits: state.habits,
+    tags: state.tags,
+    categories: state.categories,
+    prefs: state.prefs,
+    pushupsByDate: state.pushupsByDate,
+    habitOrder: state.habitOrder,
+    completionNotes: state.completionNotes,
+    refreshedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Stage 8 PR #057r-tombstone-mobile — write-through cache update for
+ * the legacy completions cache. Mirrors {@link setCachedSqliteRoutineState}
+ * for the `getCachedSqliteCompletions()` slice.
+ */
+export function setCachedSqliteCompletions(
+  completions: Record<string, string[]>,
+): void {
+  cache = { completions, refreshedAt: new Date().toISOString() };
+}
+
+/**
  * Test helper: seed the full-state cache directly without running
  * migrations / SQLite queries.
  */

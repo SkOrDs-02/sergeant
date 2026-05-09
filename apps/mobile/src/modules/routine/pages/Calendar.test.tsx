@@ -6,30 +6,42 @@
  *  - Перемикач режимів видимий (Сьогодні / Тиждень / Місяць);
  *  - Звичку, запланована на сьогодні, видно у списку;
  *  - Тап по її рядку викликає `applyToggleHabitCompletion` через
- *    `useRoutineStore`, і стан зберігається у MMKV.
+ *    `useRoutineStore`, і стан зберігається у SQLite warm cache
+ *    (Stage 8 PR #057r-tombstone-mobile — MMKV write retired).
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
 
 import {
   dateKeyFromDate,
-  defaultRoutineState,
-  ROUTINE_STORAGE_KEY,
-  serializeRoutineState,
   todayDate,
   type Habit,
 } from "@sergeant/routine-domain";
 
 import { _getMMKVInstance } from "@/lib/storage";
+import {
+  __setRoutineSqliteCompletionsCacheForTests,
+  __setRoutineSqliteStateCacheForTests,
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+  getCachedSqliteCompletions,
+} from "../lib/sqliteReader";
+import { __resetRoutineSqliteReadGateForTests } from "../lib/sqliteReadGate";
 
 import { Calendar } from "./Calendar";
 
 beforeEach(() => {
+  // Stage 8 PR #057r-tombstone-mobile — load/persist now read from the
+  // SQLite warm caches instead of MMKV, so each test starts from a
+  // known-cold cache plus a clean MMKV (in case any unrelated keys
+  // are exercised).
   _getMMKVInstance().clearAll();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
+  __resetRoutineSqliteReadGateForTests();
 });
 
 function seedHabit(habit: Partial<Habit> = {}): void {
-  const base = defaultRoutineState();
   const seeded: Habit = {
     id: "h1",
     name: "Випити воду",
@@ -41,17 +53,15 @@ function seedHabit(habit: Partial<Habit> = {}): void {
     reminderTimes: [],
     ...habit,
   } as Habit;
-  const state = {
-    ...base,
+  __setRoutineSqliteStateCacheForTests({
     habits: [seeded],
     habitOrder: [seeded.id],
     prefs: {
-      ...base.prefs,
       showFizrukInCalendar: false,
       showFinykSubscriptionsInCalendar: false,
     },
-  };
-  _getMMKVInstance().set(ROUTINE_STORAGE_KEY, serializeRoutineState(state));
+  });
+  __setRoutineSqliteCompletionsCacheForTests({ completions: {} });
 }
 
 describe("Calendar (mobile)", () => {
@@ -77,16 +87,19 @@ describe("Calendar (mobile)", () => {
     expect(getByText("💧 Випити воду")).toBeTruthy();
   });
 
-  it("toggles habit completion and persists to MMKV", () => {
+  it("toggles habit completion and persists to the SQLite warm cache", () => {
     seedHabit();
     const todayKey = dateKeyFromDate(todayDate());
     const { getByText } = render(<Calendar />);
 
     fireEvent.press(getByText("💧 Випити воду"));
 
-    const raw = _getMMKVInstance().getString(ROUTINE_STORAGE_KEY);
-    expect(raw).toBeTruthy();
-    const parsed = JSON.parse(raw || "{}");
-    expect(parsed.completions?.h1 ?? []).toContain(todayKey);
+    // Stage 8 PR #057r-tombstone-mobile — `saveRoutineState` now
+    // updates the SQLite completions cache (write-through) and
+    // triggers the dual-write pipeline. MMKV no longer holds the
+    // routine blob, so we assert against the warm cache directly.
+    const completions = getCachedSqliteCompletions();
+    expect(completions.refreshedAt).not.toBeNull();
+    expect(completions.completions.h1 ?? []).toContain(todayKey);
   });
 });

@@ -1,24 +1,26 @@
 /**
- * MMKV-backed routine state hook for the mobile app.
+ * SQLite-backed routine state hook for the mobile app.
  *
- * Mirrors the shape of `apps/web/src/modules/routine/lib/routineStorage.ts`
- * (Phase 5 / PR 2) but on top of MMKV via `@/lib/storage`. Delegates
- * all normalization / reducer logic to `@sergeant/routine-domain` so
- * mobile and web share the exact same `RoutineState` semantics.
+ * Stage 8 PR #057r-tombstone-mobile of `docs/planning/storage-roadmap.md`
+ * — the MMKV write path is retired. `loadRoutineState()` overlays the
+ * cached SQLite full-state onto `defaultRoutineState()` and
+ * `saveRoutineState()` triggers the dual-write pipeline (the same one
+ * Stage 10 PR #070r-mobile-dualwrite uses to mirror habits / tags /
+ * categories / prefs / pushups / habitOrder / completionNotes /
+ * completions to the 7 routine_* SQLite tables). Residual MMKV data
+ * is drained on boot once via `importRoutineResidualFromMmkv`
+ * (`./residualImport.ts`) and then the legacy `ROUTINE_STORAGE_KEY`
+ * MMKV slot is deleted.
  *
- * Scope of this file (Phase 5 / PR 2 — Calendar):
- *  - `loadRoutineState()` + `saveRoutineState()` — raw MMKV I/O with
- *    the shared `ROUTINE_STORAGE_KEY`.
- *  - `useRoutineStore()` — React hook that returns the current state
- *    plus action callbacks for the minimum set of mutations the
- *    Calendar screen needs (toggle completion, bulk-mark day,
- *    set completion note). Habits edit UI / reminders / backup /
- *    delete ship in later PRs.
+ * Mobile mirror of `apps/web/src/modules/routine/lib/routineStorage.ts`
+ * (PR #057r-tombstone web). The exported function names and the
+ * `useRoutineStore` hook surface stay unchanged so call sites across
+ * the mobile app keep working — only the source of truth moved from
+ * MMKV to the SQLite cache.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  ROUTINE_STORAGE_KEY,
   applyCreateHabit,
   applyDeleteHabit,
   applyMarkAllScheduledHabitsComplete,
@@ -31,7 +33,6 @@ import {
   applyUpdateHabit,
   defaultRoutineState,
   ensureHabitOrder,
-  normalizeRoutineState,
   snapshotHabit as snapshotHabitPure,
   type CreateHabitOptions,
   type Habit,
@@ -39,74 +40,145 @@ import {
   type HabitSnapshot,
   type RoutineState,
 } from "@sergeant/routine-domain";
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerRoutineDualWrite } from "./dualWrite";
 import {
-  isRoutineDualWriteRegistered,
-  triggerRoutineDualWrite,
-} from "./dualWrite";
-import { getCachedSqliteCompletions } from "./sqliteReader";
+  getCachedSqliteCompletions,
+  getCachedSqliteRoutineState,
+  setCachedSqliteCompletions,
+  setCachedSqliteRoutineState,
+} from "./sqliteReader";
+import {
+  notifyRoutineSqliteCacheRefresh,
+  useRoutineSqliteReadTick,
+} from "./sqliteReadGate";
 
 /**
- * Читає й нормалізує повний стан Рутини з MMKV.
+ * Returns the routine state assembled from the SQLite warm caches.
  *
- * Stage 8 PR #057r-flag dropped `feature.routine.sqlite_v2.read_sqlite`
- * — the SQLite-completions overlay is now applied unconditionally
- * once the cache has been populated (`refreshedAt !== null`).
- * Everything else (habits / tags / categories / prefs / pushups /
- * habitOrder / completionNotes) still comes from MMKV.
+ * Stage 8 PR #057r-tombstone-mobile — MMKV read is retired. When
+ * `bootRoutineSqliteReadPath()` has populated
+ * `getCachedSqliteRoutineState()` we overlay all 7 entity slices
+ * (habits / tags / categories / prefs / pushups / habitOrder /
+ * completionNotes) onto a fresh `defaultRoutineState()`. The
+ * `getCachedSqliteCompletions()` cache wins for `completions` (it
+ * stays as source-of-truth for the `routine_entries` reader so the
+ * rest of the codebase keeps its O(1) lookup shape).
+ *
+ * If neither cache is warm yet (pre-boot window — auth not resolved,
+ * SQLite migration in flight, residual import running), returns
+ * `defaultRoutineState()` so first-paint is deterministic. The
+ * `useRoutineStore` hook re-renders via `useRoutineSqliteReadTick()`
+ * once the boot wiring fires `notifyRoutineSqliteCacheRefresh()`.
  */
 export function loadRoutineState(): RoutineState {
-  const raw = safeReadLS<unknown>(ROUTINE_STORAGE_KEY, null);
-  const merged = normalizeRoutineState(raw);
-  const { state, changed } = ensureHabitOrder(merged);
+  const base = defaultRoutineState();
+
+  const fullState = getCachedSqliteRoutineState();
+  const completionsCache = getCachedSqliteCompletions();
+
+  let next: RoutineState = base;
+
+  if (fullState.refreshedAt !== null) {
+    next = {
+      ...base,
+      habits: fullState.habits,
+      tags: fullState.tags,
+      categories: fullState.categories,
+      prefs: { ...base.prefs, ...fullState.prefs },
+      pushupsByDate: fullState.pushupsByDate,
+      habitOrder: fullState.habitOrder,
+      completionNotes: fullState.completionNotes,
+    };
+  }
+
+  if (completionsCache.refreshedAt !== null) {
+    next = { ...next, completions: completionsCache.completions };
+  }
+
+  // Idempotent: ensure the order array is canonical before handing
+  // state to React. The dual-write layer mirrors the canonical order
+  // back into SQLite via `saveRoutineState` if a normalization
+  // happens to produce a change.
+  const { state, changed } = ensureHabitOrder(next);
   if (changed) {
-    safeWriteLS(ROUTINE_STORAGE_KEY, state);
+    saveRoutineState(state);
   }
-
-  const sqliteCache = getCachedSqliteCompletions();
-  if (sqliteCache.refreshedAt !== null) {
-    return { ...state, completions: sqliteCache.completions };
-  }
-
   return state;
 }
 
 /**
- * Read the currently-persisted MMKV state without triggering the
- * `ensureHabitOrder` re-save that {@link loadRoutineState} performs.
- * Used by {@link saveRoutineState} as the `prev` snapshot for the
- * Stage 4 PR #024 dual-write layer; returns `null` when the
- * dual-write context is not registered (zero overhead off-flag).
+ * Snapshot the currently-cached routine state. Mirrors the structure
+ * of {@link loadRoutineState} without the `ensureHabitOrder` re-save
+ * that the loader performs — used by {@link saveRoutineState} as the
+ * `prev` argument to `diffRoutineDualWriteOps`.
  */
-function peekRoutineDualWritePrev(): RoutineState | null {
-  if (!isRoutineDualWriteRegistered()) return null;
-  try {
-    const raw = safeReadLS<unknown>(ROUTINE_STORAGE_KEY, null);
-    return normalizeRoutineState(raw);
-  } catch {
-    return null;
+function readCachedRoutineState(): RoutineState {
+  const base = defaultRoutineState();
+  const fullState = getCachedSqliteRoutineState();
+  const completionsCache = getCachedSqliteCompletions();
+
+  let prev: RoutineState = base;
+  if (fullState.refreshedAt !== null) {
+    prev = {
+      ...base,
+      habits: fullState.habits,
+      tags: fullState.tags,
+      categories: fullState.categories,
+      prefs: { ...base.prefs, ...fullState.prefs },
+      pushupsByDate: fullState.pushupsByDate,
+      habitOrder: fullState.habitOrder,
+      completionNotes: fullState.completionNotes,
+    };
   }
+  if (completionsCache.refreshedAt !== null) {
+    prev = { ...prev, completions: completionsCache.completions };
+  }
+  return prev;
 }
 
 /**
- * Записує повний стан Рутини у MMKV.
+ * Persist routine state via the dual-write pipeline.
  *
- * On success, also fires the Stage 4 PR #024 dual-write hook (mirror
- * completion ops to local SQLite `routine_entries`). Fire-and-forget
- * — SQLite errors never break the MMKV write path. MMKV залишається
- * source-of-truth для habits / tags / categories / prefs / pushups /
- * habitOrder / completionNotes (відсутні у SQLite-схемі рутини).
+ * Stage 8 PR #057r-tombstone-mobile — no MMKV write. The function
+ * (a) snapshots the previous state from the SQLite warm cache so
+ * `diffRoutineDualWriteOps` can emit only the deltas, (b) updates
+ * the warm caches synchronously so the next `loadRoutineState()`
+ * sees the change without waiting for the async dual-write round
+ * trip, (c) fires the fire-and-forget dual-write trigger, and
+ * (d) bumps the `sqliteReadGate` tick so `useRoutineStore`
+ * subscribers re-render with the latest snapshot. Returns `true`
+ * whenever the trigger is dispatched — SQLite latency / failures
+ * are observed via dual-write telemetry, not the boolean return.
  *
  * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`
  * flag — the dual-write fires whenever a context is registered.
  */
 export function saveRoutineState(next: RoutineState): boolean {
-  const prev = peekRoutineDualWritePrev();
-  const ok = safeWriteLS(ROUTINE_STORAGE_KEY, next);
-  if (ok && prev !== null) {
+  try {
+    const prev = readCachedRoutineState();
+
+    // Write-through: update the warm caches synchronously so the next
+    // `loadRoutineState()` reflects the change without waiting for
+    // the async dual-write → SQLite round trip. The dual-write is
+    // still authoritative on boot (`refreshSqliteRoutineState`
+    // overwrites these caches with the canonical SQLite read).
+    setCachedSqliteRoutineState({
+      habits: next.habits,
+      tags: next.tags,
+      categories: next.categories,
+      prefs: next.prefs,
+      pushupsByDate: next.pushupsByDate,
+      habitOrder: next.habitOrder,
+      completionNotes: next.completionNotes,
+    });
+    setCachedSqliteCompletions(next.completions);
+
     triggerRoutineDualWrite(prev, next);
+    notifyRoutineSqliteCacheRefresh();
+    return true;
+  } catch {
+    return false;
   }
-  return ok;
 }
 
 export interface UseRoutineStoreReturn {
@@ -150,8 +222,14 @@ export interface UseRoutineStoreReturn {
 }
 
 /**
- * React-hook над MMKV: синхронний initial read, підписка на зовнішні
- * записи у той самий ключ через `addOnValueChangedListener`.
+ * React-hook над SQLite warm cache: синхронний initial read,
+ * підписка на cache-refresh tick через `useRoutineSqliteReadTick`.
+ *
+ * Stage 8 PR #057r-tombstone-mobile — listens to
+ * `notifyRoutineSqliteCacheRefresh()` ticks (fired by
+ * `useRoutineSqliteReadBoot` after warm-up and by every
+ * `saveRoutineState` for write-through reactivity) instead of the
+ * MMKV `addOnValueChangedListener` that backed the legacy LS read.
  */
 export function useRoutineStore(): UseRoutineStoreReturn {
   const [routine, setRoutineState] = useState<RoutineState>(loadRoutineState);
@@ -160,13 +238,15 @@ export function useRoutineStore(): UseRoutineStoreReturn {
     setRoutineState(loadRoutineState());
   }, []);
 
+  // Re-read whenever the SQLite warm cache tick advances (boot
+  // warm-up or write-through after a `saveRoutineState`). The tick
+  // hook bumps via `useSyncExternalStore` so React schedules a
+  // re-render automatically; the `useEffect` below pulls the fresh
+  // snapshot into local state for downstream consumers.
+  const cacheTick = useRoutineSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey === ROUTINE_STORAGE_KEY) refresh();
-    });
-    return () => sub.remove();
-  }, [refresh]);
+    refresh();
+  }, [cacheTick, refresh]);
 
   const setRoutine = useCallback((next: RoutineState) => {
     setRoutineState(next);

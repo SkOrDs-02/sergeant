@@ -8,10 +8,12 @@
  *  - Submitting the form from empty state creates a habit that
  *    appears in the list after the sheet closes.
  *
- * All persistence flows through the shared MMKV-backed `useRoutineStore`
- * hook — the in-memory shim registered in `jest.setup.js` replaces
- * `react-native-mmkv` so the tests exercise the real reducer contract
- * end-to-end without a native TurboModule.
+ * Persistence flows through `useRoutineStore`. Stage 8 PR
+ * #057r-tombstone-mobile retired the MMKV write path — the hook now
+ * reads from the SQLite warm cache and `saveRoutineState` updates that
+ * cache (write-through) plus the dual-write pipeline. Tests seed /
+ * inspect state via the cache helpers; MMKV is still cleared to keep
+ * unrelated keys (e.g. tab-persistence) clean.
  */
 
 import { AccessibilityInfo } from "react-native";
@@ -19,6 +21,11 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { _getMMKVInstance } from "@/lib/storage";
 import { ToastProvider } from "@/components/ui/Toast";
+import {
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "../../lib/sqliteReader";
+import { __resetRoutineSqliteReadGateForTests } from "../../lib/sqliteReadGate";
 
 import { HabitsPage } from "./HabitsPage";
 
@@ -32,6 +39,9 @@ function renderPage() {
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
+  __resetRoutineSqliteReadGateForTests();
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
     .mockResolvedValue(false);

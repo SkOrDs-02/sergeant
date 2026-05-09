@@ -11,36 +11,39 @@
 
 import { fireEvent, render } from "@testing-library/react-native";
 
-import {
-  ROUTINE_STORAGE_KEY,
-  defaultRoutineState,
-  serializeRoutineState,
-  type Habit,
-  type RoutineState,
-} from "@sergeant/routine-domain";
+import { type Habit, type RoutineState } from "@sergeant/routine-domain";
 
 import { _getMMKVInstance } from "@/lib/storage";
+import {
+  __setRoutineSqliteCompletionsCacheForTests,
+  __setRoutineSqliteStateCacheForTests,
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "../../lib/sqliteReader";
+import { __resetRoutineSqliteReadGateForTests } from "../../lib/sqliteReadGate";
 
 import { HeatmapPage } from "./HeatmapPage";
 
 const TODAY = new Date(2025, 0, 15, 12, 0, 0, 0);
 
 beforeEach(() => {
+  // Stage 8 PR #057r-tombstone-mobile — load now reads from the SQLite
+  // warm caches instead of MMKV. Reset both so each test starts cold.
   _getMMKVInstance().clearAll();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
+  __resetRoutineSqliteReadGateForTests();
 });
 
 function seed(
   habits: Habit[],
   completions: RoutineState["completions"] = {},
 ): void {
-  const base = defaultRoutineState();
-  const state: RoutineState = {
-    ...base,
+  __setRoutineSqliteStateCacheForTests({
     habits,
     habitOrder: habits.map((h) => h.id),
-    completions,
-  };
-  _getMMKVInstance().set(ROUTINE_STORAGE_KEY, serializeRoutineState(state));
+  });
+  __setRoutineSqliteCompletionsCacheForTests({ completions });
 }
 
 function habit(partial: Partial<Habit> & Pick<Habit, "id" | "name">): Habit {

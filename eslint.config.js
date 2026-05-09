@@ -891,6 +891,11 @@ export default [
       // on boot and then deletes the key.
       "apps/web/src/modules/routine/lib/residualImport.ts",
       "apps/web/src/modules/routine/lib/routineStorageInstance.ts",
+      // Stage 8 PR #057r-tombstone-mobile — mobile mirror of the
+      // residual-import helper. Drains the leftover `hub_routine_v1`
+      // MMKV payload into SQLite via the dual-write pipeline (with a
+      // stale LWW timestamp) and then deletes the MMKV key.
+      "apps/mobile/src/modules/routine/lib/residualImport.ts",
       // Mobile backup still reads ROUTINE for full-state export/import
       // (migration planned for a future PR).
       "apps/mobile/src/core/hub/hubBackup.ts",
