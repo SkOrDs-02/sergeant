@@ -19,7 +19,9 @@ import type {
   NutritionLog,
   NutritionPrefs,
   Pantry,
+  ShoppingList,
 } from "@sergeant/nutrition-domain";
+import { normalizeShoppingList } from "@sergeant/nutrition-domain";
 import type { NullableMacros } from "@sergeant/shared";
 import type { SavedRecipe } from "./recipeBook";
 
@@ -34,6 +36,17 @@ export interface SqliteNutritionCache {
   prefs: NutritionPrefs | null;
   /** Saved recipes. */
   recipes: SavedRecipe[];
+  /**
+   * Water log keyed by `YYYY-MM-DD` (local date). Stage 11 /
+   * PR #070n-dualwrite. Empty record means «no water rows yet».
+   */
+  waterLog: Record<string, number>;
+  /**
+   * Singleton shopping list document. `null` means «no row yet» —
+   * consumers should treat it as the default empty document.
+   * Stage 11 / PR #070n-dualwrite.
+   */
+  shoppingList: ShoppingList | null;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -44,6 +57,8 @@ const EMPTY_CACHE: SqliteNutritionCache = {
   activePantryId: null,
   prefs: null,
   recipes: [],
+  waterLog: {},
+  shoppingList: null,
   refreshedAt: null,
 };
 
@@ -104,6 +119,18 @@ interface PrefsRow {
 interface RecipeRow {
   id: string;
   name: string | null;
+  data_json: string | null;
+  [key: string]: unknown;
+}
+
+interface WaterLogRow {
+  date_key: string;
+  volume_ml: number;
+  [key: string]: unknown;
+}
+
+interface ShoppingListRow {
+  user_id: string;
   data_json: string | null;
   [key: string]: unknown;
 }
@@ -219,45 +246,64 @@ export async function refreshNutritionSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteNutritionCache> {
-  const [mealRows, pantryRows, pantryItemRows, prefsRows, recipeRows] =
-    await Promise.all([
-      client.all<MealRow>(
-        `SELECT id, eaten_at, meal_type, name, label,
+  const [
+    mealRows,
+    pantryRows,
+    pantryItemRows,
+    prefsRows,
+    recipeRows,
+    waterRows,
+    shoppingRows,
+  ] = await Promise.all([
+    client.all<MealRow>(
+      `SELECT id, eaten_at, meal_type, name, label,
                 kcal, protein_g, fat_g, carbs_g,
                 source, macro_source, amount_g, food_id, is_demo
            FROM nutrition_meals
           WHERE user_id = ? AND deleted_at IS NULL
           ORDER BY eaten_at DESC`,
-        [userId],
-      ),
-      client.all<PantryRow>(
-        `SELECT id, name, text
+      [userId],
+    ),
+    client.all<PantryRow>(
+      `SELECT id, name, text
            FROM nutrition_pantries
           WHERE user_id = ? AND deleted_at IS NULL
           ORDER BY created_at ASC`,
-        [userId],
-      ),
-      client.all<PantryItemRow>(
-        `SELECT id, pantry_id, name, qty, unit, notes, sort_order
+      [userId],
+    ),
+    client.all<PantryItemRow>(
+      `SELECT id, pantry_id, name, qty, unit, notes, sort_order
            FROM nutrition_pantry_items
           WHERE user_id = ? AND deleted_at IS NULL
           ORDER BY pantry_id ASC, sort_order ASC, id ASC`,
-        [userId],
-      ),
-      client.all<PrefsRow>(
-        `SELECT user_id, prefs_json, active_pantry_id
+      [userId],
+    ),
+    client.all<PrefsRow>(
+      `SELECT user_id, prefs_json, active_pantry_id
            FROM nutrition_prefs
           WHERE user_id = ?`,
-        [userId],
-      ),
-      client.all<RecipeRow>(
-        `SELECT id, name, data_json
+      [userId],
+    ),
+    client.all<RecipeRow>(
+      `SELECT id, name, data_json
            FROM nutrition_recipes
           WHERE user_id = ? AND deleted_at IS NULL
           ORDER BY updated_at DESC`,
-        [userId],
-      ),
-    ]);
+      [userId],
+    ),
+    client.all<WaterLogRow>(
+      `SELECT date_key, volume_ml
+           FROM nutrition_water_log
+          WHERE user_id = ?`,
+      [userId],
+    ),
+    client.all<ShoppingListRow>(
+      `SELECT user_id, data_json
+           FROM nutrition_shopping_list
+          WHERE user_id = ?`,
+      [userId],
+    ),
+  ]);
 
   // Build NutritionLog from meal rows.
   const log: NutritionLog = {};
@@ -296,12 +342,27 @@ export async function refreshNutritionSqliteState(
     .map(rowToRecipe)
     .filter((r): r is SavedRecipe => r !== null);
 
+  // Water log — flat date_key → volume_ml map.
+  const waterLog: Record<string, number> = {};
+  for (const row of waterRows) {
+    waterLog[row.date_key] = row.volume_ml;
+  }
+
+  // Shopping list — singleton row, parsed via the domain normalizer
+  // so consumers get the canonical `{ categories: [...] }` shape.
+  const shoppingRow = shoppingRows[0] ?? null;
+  const shoppingList: ShoppingList | null = shoppingRow
+    ? normalizeShoppingList(safeParseJson<unknown>(shoppingRow.data_json, null))
+    : null;
+
   cache = {
     log,
     pantries,
     activePantryId,
     prefs,
     recipes,
+    waterLog,
+    shoppingList,
     refreshedAt: new Date().toISOString(),
   };
   return cache;

@@ -19,6 +19,8 @@ const EMPTY_STATE: NutritionDualWriteState = {
   pantries: [],
   prefs: null,
   recipes: [],
+  waterLog: {},
+  shoppingList: null,
 };
 
 async function seedMeal(
@@ -93,6 +95,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0 },
         recipes: { ls: 0, sqlite: 0 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -114,6 +118,8 @@ describe("probeNutritionParity", () => {
         pantries: [makePantry("p1")],
         prefs: makePrefs(),
         recipes: [makeRecipe("r1"), makeRecipe("r2")],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -123,6 +129,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 1, sqlite: 1 },
         recipes: { ls: 2, sqlite: 2 },
         prefs: { ls: true, sqlite: true },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -142,6 +150,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: null,
         recipes: [makeRecipe("r1")],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -151,6 +161,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0 },
         recipes: { ls: 1, sqlite: 1 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -167,6 +179,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: null,
         recipes: [],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -176,6 +190,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         recipes: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -194,6 +210,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: null,
         recipes: [makeRecipe("r1")],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -203,6 +221,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         recipes: { ls: 1, sqlite: 3, lsOnly: 0, sqliteOnly: 2 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -217,6 +237,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: makePrefs(),
         recipes: [],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -226,6 +248,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         recipes: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         prefs: { ls: true, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -242,6 +266,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: null,
         recipes: [],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -251,6 +277,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         recipes: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         prefs: { ls: false, sqlite: true },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -267,6 +295,8 @@ describe("probeNutritionParity", () => {
         pantries: [makePantry("p-new")],
         prefs: null,
         recipes: [],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -276,6 +306,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 1, sqlite: 1, lsOnly: 1, sqliteOnly: 1 },
         recipes: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -306,6 +338,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: null,
         recipes: [],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -315,6 +349,8 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0 },
         recipes: { ls: 0, sqlite: 0 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -339,6 +375,8 @@ describe("probeNutritionParity", () => {
         pantries: [],
         prefs: null,
         recipes: [],
+        waterLog: {},
+        shoppingList: null,
       };
 
       const out = await probeNutritionParity(handle.client, USER_ID, next);
@@ -348,7 +386,158 @@ describe("probeNutritionParity", () => {
         pantries: { ls: 0, sqlite: 0 },
         recipes: { ls: 0, sqlite: 0 },
         prefs: { ls: false, sqlite: false },
+        waterLog: { ls: 0, sqlite: 0 },
+        shoppingList: { ls: false, sqlite: false },
       });
+    } finally {
+      handle.close();
+    }
+  });
+
+  // --- Stage 11 — water log -----------------------------------------
+
+  it("reports match when LS waterLog mirrors SQLite rows", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await handle.client.run(
+        `INSERT INTO nutrition_water_log
+           (user_id, date_key, volume_ml, updated_at)
+         VALUES (?, ?, ?, ?), (?, ?, ?, ?)`,
+        [USER_ID, "2026-05-01", 500, TS, USER_ID, "2026-05-02", 250, TS],
+      );
+      const next: NutritionDualWriteState = {
+        ...EMPTY_STATE,
+        waterLog: { "2026-05-01": 500, "2026-05-02": 250 },
+      };
+      const out = await probeNutritionParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("match");
+      expect(
+        (out.details as { waterLog: { ls: number; sqlite: number } }).waterLog,
+      ).toEqual({ ls: 2, sqlite: 2 });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("reports mismatch when waterLog values diverge", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await handle.client.run(
+        `INSERT INTO nutrition_water_log
+           (user_id, date_key, volume_ml, updated_at)
+         VALUES (?, ?, ?, ?)`,
+        [USER_ID, "2026-05-01", 500, TS],
+      );
+      const next: NutritionDualWriteState = {
+        ...EMPTY_STATE,
+        waterLog: { "2026-05-01": 750 },
+      };
+      const out = await probeNutritionParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("mismatch");
+      expect(
+        (
+          out.details as {
+            waterLog: { ls: number; sqlite: number; mismatchedValues: number };
+          }
+        ).waterLog,
+      ).toMatchObject({ ls: 1, sqlite: 1, mismatchedValues: 1 });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("treats LS-missing dateKey as equivalent to SQLite volume_ml = 0", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await handle.client.run(
+        `INSERT INTO nutrition_water_log
+           (user_id, date_key, volume_ml, updated_at)
+         VALUES (?, ?, ?, ?)`,
+        [USER_ID, "2026-05-01", 0, TS],
+      );
+      const next: NutritionDualWriteState = { ...EMPTY_STATE };
+      const out = await probeNutritionParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("match");
+    } finally {
+      handle.close();
+    }
+  });
+
+  // --- Stage 11 — shopping list -------------------------------------
+
+  it("reports match when LS shoppingList JSON equals SQLite blob", async () => {
+    const handle = await createTestSqlite();
+    try {
+      const json = '{"categories":[{"name":"Овочі","items":[]}]}';
+      await handle.client.run(
+        `INSERT INTO nutrition_shopping_list
+           (user_id, data_json, updated_at)
+         VALUES (?, ?, ?)`,
+        [USER_ID, json, TS],
+      );
+      const next: NutritionDualWriteState = {
+        ...EMPTY_STATE,
+        shoppingList: { dataJson: json },
+      };
+      const out = await probeNutritionParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("match");
+      expect(
+        (
+          out.details as {
+            shoppingList: { ls: boolean; sqlite: boolean; equal?: boolean };
+          }
+        ).shoppingList,
+      ).toEqual({ ls: true, sqlite: true, equal: true });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("reports mismatch when shoppingList blobs differ", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await handle.client.run(
+        `INSERT INTO nutrition_shopping_list
+           (user_id, data_json, updated_at)
+         VALUES (?, ?, ?)`,
+        [USER_ID, '{"categories":[]}', TS],
+      );
+      const next: NutritionDualWriteState = {
+        ...EMPTY_STATE,
+        shoppingList: { dataJson: '{"categories":[{"name":"X","items":[]}]}' },
+      };
+      const out = await probeNutritionParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("mismatch");
+      expect(
+        (
+          out.details as {
+            shoppingList: {
+              ls: boolean;
+              sqlite: boolean;
+              lsLen?: number;
+              sqliteLen?: number;
+            };
+          }
+        ).shoppingList,
+      ).toMatchObject({ ls: true, sqlite: true });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("reports mismatch when shoppingList presence diverges", async () => {
+    const handle = await createTestSqlite();
+    try {
+      const next: NutritionDualWriteState = {
+        ...EMPTY_STATE,
+        shoppingList: { dataJson: '{"categories":[]}' },
+      };
+      const out = await probeNutritionParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("mismatch");
+      expect(
+        (out.details as { shoppingList: { ls: boolean; sqlite: boolean } })
+          .shoppingList,
+      ).toEqual({ ls: true, sqlite: false });
     } finally {
       handle.close();
     }

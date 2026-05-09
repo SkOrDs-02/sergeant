@@ -14,6 +14,8 @@ const EMPTY: NutritionDualWriteState = {
   pantries: [],
   prefs: null,
   recipes: [],
+  waterLog: {},
+  shoppingList: null,
 };
 
 function makeMeal(
@@ -59,6 +61,8 @@ describe("diffNutritionDualWriteOps", () => {
       pantries: [makePantry()],
       prefs: makePrefs(),
       recipes: [makeRecipe()],
+      waterLog: { "2026-05-01": 500 },
+      shoppingList: { dataJson: '{"categories":[]}' },
     };
     expect(diffNutritionDualWriteOps(state, state)).toEqual([]);
   });
@@ -230,12 +234,16 @@ describe("diffNutritionDualWriteOps", () => {
       pantries: [p],
       prefs,
       recipes: [r],
+      waterLog: {},
+      shoppingList: null,
     };
     const next: NutritionDualWriteState = {
       meals: [],
       pantries: [p],
       prefs: { ...prefs, activePantryId: "p2" },
       recipes: [r],
+      waterLog: {},
+      shoppingList: null,
     };
     const ops = diffNutritionDualWriteOps(prev, next);
     // meal-delete + prefs-upsert (p, r same ref → no op)
@@ -252,5 +260,124 @@ describe("diffNutritionDualWriteOps", () => {
     expect(ops).toHaveLength(2);
     expect((ops[0] as { meal: { id: string } }).meal.id).toBe("a");
     expect((ops[1] as { meal: { id: string } }).meal.id).toBe("z");
+  });
+
+  // --- Water log (Stage 11) ---
+
+  it("emits water-log-set on add", () => {
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      waterLog: { "2026-05-01": 500 },
+    };
+    const ops = diffNutritionDualWriteOps(EMPTY, next);
+    expect(ops).toEqual([
+      { kind: "water-log-set", dateKey: "2026-05-01", volumeMl: 500 },
+    ]);
+  });
+
+  it("emits water-log-set with 0 on remove", () => {
+    const prev: NutritionDualWriteState = {
+      ...EMPTY,
+      waterLog: { "2026-05-01": 500 },
+    };
+    const ops = diffNutritionDualWriteOps(prev, EMPTY);
+    expect(ops).toEqual([
+      { kind: "water-log-set", dateKey: "2026-05-01", volumeMl: 0 },
+    ]);
+  });
+
+  it("emits water-log-set on value change", () => {
+    const prev: NutritionDualWriteState = {
+      ...EMPTY,
+      waterLog: { "2026-05-01": 500 },
+    };
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      waterLog: { "2026-05-01": 750 },
+    };
+    const ops = diffNutritionDualWriteOps(prev, next);
+    expect(ops).toEqual([
+      { kind: "water-log-set", dateKey: "2026-05-01", volumeMl: 750 },
+    ]);
+  });
+
+  it("does not emit water-log-set when same map reference and identical values", () => {
+    const log = { "2026-05-01": 500, "2026-05-02": 250 };
+    const prev: NutritionDualWriteState = { ...EMPTY, waterLog: log };
+    const next: NutritionDualWriteState = { ...EMPTY, waterLog: log };
+    expect(diffNutritionDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  it("sorts water-log-set ops by dateKey ascending", () => {
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      waterLog: {
+        "2026-05-03": 600,
+        "2026-05-01": 500,
+        "2026-05-02": 200,
+      },
+    };
+    const ops = diffNutritionDualWriteOps(EMPTY, next);
+    expect(ops).toHaveLength(3);
+    expect(
+      ops.map((o) => (o as { kind: string; dateKey?: string }).dateKey),
+    ).toEqual(["2026-05-01", "2026-05-02", "2026-05-03"]);
+  });
+
+  // --- Shopping list (Stage 11) ---
+
+  it("emits shopping-list-set on add", () => {
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      shoppingList: { dataJson: '{"categories":[]}' },
+    };
+    const ops = diffNutritionDualWriteOps(EMPTY, next);
+    expect(ops).toEqual([
+      {
+        kind: "shopping-list-set",
+        shoppingList: { dataJson: '{"categories":[]}' },
+      },
+    ]);
+  });
+
+  it("emits shopping-list-set on JSON change", () => {
+    const prev: NutritionDualWriteState = {
+      ...EMPTY,
+      shoppingList: { dataJson: '{"categories":[]}' },
+    };
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      shoppingList: { dataJson: '{"categories":[{"name":"Овочі"}]}' },
+    };
+    const ops = diffNutritionDualWriteOps(prev, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({
+      kind: "shopping-list-set",
+      shoppingList: { dataJson: '{"categories":[{"name":"Овочі"}]}' },
+    });
+  });
+
+  it("does not emit shopping-list-set when JSON is identical", () => {
+    const blob = '{"categories":[]}';
+    const prev: NutritionDualWriteState = {
+      ...EMPTY,
+      shoppingList: { dataJson: blob },
+    };
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      shoppingList: { dataJson: blob },
+    };
+    expect(diffNutritionDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  it("does not emit shopping-list-set when next is null", () => {
+    const prev: NutritionDualWriteState = {
+      ...EMPTY,
+      shoppingList: { dataJson: '{"categories":[]}' },
+    };
+    // null → null is no-op, and prev → null also produces no op (no
+    // hard-delete; subsequent dual-write picks up the next non-null
+    // value). This matches `prefs-upsert` which never emits a delete.
+    expect(diffNutritionDualWriteOps(prev, EMPTY)).toEqual([]);
   });
 });

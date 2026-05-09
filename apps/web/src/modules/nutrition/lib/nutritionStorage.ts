@@ -25,9 +25,11 @@ import {
   normalizeNutritionLog,
   normalizeNutritionPrefs,
   normalizePantries,
+  normalizeShoppingList,
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
+  type ShoppingList,
 } from "@sergeant/nutrition-domain";
 
 import {
@@ -182,6 +184,55 @@ export function persistNutritionLog(
 }
 
 // ─────────────────────────────────────────────
+// Stage 11 / PR #070n-dualwrite — water-log + shopping-list
+// dual-write hooks. Mirrors `persistNutritionLog` shape: peek prev
+// from the warm cache, build a `next` state with the new slice,
+// and fire the dual-write trigger.
+// ─────────────────────────────────────────────
+
+/**
+ * Persist the entire water-log map. Mirrors `persistNutritionLog` — the
+ * caller passes the full `Record<dateKey, volumeMl>` and the diff
+ * layer emits one `water-log-set` op per changed date. Pre-boot or
+ * pre-auth (`peekNutritionDualWriteState() === null`) is a no-op so
+ * first-paint stays on the in-memory hook state.
+ */
+export function persistNutritionWaterLog(
+  waterLog: Record<string, number> | null | undefined,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const safe: Record<string, number> = {};
+  if (waterLog && typeof waterLog === "object") {
+    for (const [k, v] of Object.entries(waterLog)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0) safe[k] = Math.round(n);
+    }
+  }
+  const next: NutritionDualWriteState = { ...prev, waterLog: safe };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+/**
+ * Persist the shopping-list singleton. The whole document is sent as
+ * one `shopping-list-set` op carrying `dataJson` for `data_json`.
+ */
+export function persistNutritionShoppingList(
+  shoppingList: ShoppingList | null | undefined,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const normalized = normalizeShoppingList(shoppingList ?? null);
+  const next: NutritionDualWriteState = {
+    ...prev,
+    shoppingList: { dataJson: JSON.stringify(normalized) },
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+// ─────────────────────────────────────────────
 // Dual-write state extraction (Stage 4 PR #032; rewired by
 // PR #057n-tombstone to peek the SQLite warm cache instead of LS).
 //
@@ -208,6 +259,15 @@ function peekNutritionDualWriteState(): NutritionDualWriteState | null {
         activePantryId: cache.activePantryId ?? null,
       },
       recipes: [],
+      // Stage 11 / PR #070n-dualwrite — peek water-log + shopping-list
+      // from the warm cache. Pre-tombstone these slices may be empty
+      // until the call site below dual-writes them on first save —
+      // that's fine: the diff treats `0 → N` as a write op and the
+      // subsequent reads re-warm them.
+      waterLog: cache.waterLog ?? {},
+      shoppingList: cache.shoppingList
+        ? { dataJson: JSON.stringify(cache.shoppingList) }
+        : null,
     };
   } catch {
     return null;

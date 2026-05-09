@@ -14,7 +14,7 @@ import type { NutritionDualWriteState } from "./diff.js";
  *
  * The orchestrator (`./index.ts`) calls this helper after every
  * successful `applyNutritionDualWriteOps` apply. Nutrition SQLite
- * mirrors four entity classes:
+ * mirrors six entity classes:
  *
  *   1. **Meals** — top-level rows in `nutrition_meals`.
  *   2. **Pantries** — top-level rows in `nutrition_pantries`. Child
@@ -26,6 +26,10 @@ import type { NutritionDualWriteState } from "./diff.js";
  *      iff `next.prefs !== null`; SQLite-side iff a row exists for
  *      `user_id`.
  *   4. **Recipes** — top-level rows in `nutrition_recipes`.
+ *   5. **Water log** — `nutrition_water_log` rows compared by
+ *      (date_key, volume_ml) parity. Stage 11 / PR #070n-dualwrite.
+ *   6. **Shopping list** — singleton `nutrition_shopping_list` blob
+ *      compared by JSON-string equality. Stage 11 / PR #070n-dualwrite.
  *
  * The probe is best-effort: it must NEVER throw, and any read failure
  * is surfaced as a `read.fallback` — distinct from a real parity
@@ -76,9 +80,17 @@ export async function probeNutritionParity(
   const pantriesDiff = compareSets(lsPantries, sqlitePantries);
   const recipesDiff = compareSets(lsRecipes, sqliteRecipes);
   const prefsDiff = lsHasPrefs === sqliteHasPrefs;
+  // Stage 11 — water log and shopping list parity probes.
+  const waterDiff = await probeWaterLog(client, userId, next);
+  const shoppingDiff = await probeShoppingList(client, userId, next);
 
   const allMatch =
-    mealsDiff.match && pantriesDiff.match && recipesDiff.match && prefsDiff;
+    mealsDiff.match &&
+    pantriesDiff.match &&
+    recipesDiff.match &&
+    prefsDiff &&
+    waterDiff.match &&
+    shoppingDiff.match;
 
   if (allMatch) {
     return {
@@ -88,6 +100,8 @@ export async function probeNutritionParity(
         pantries: { ls: lsPantries.size, sqlite: sqlitePantries.size },
         recipes: { ls: lsRecipes.size, sqlite: sqliteRecipes.size },
         prefs: { ls: lsHasPrefs, sqlite: sqliteHasPrefs },
+        waterLog: waterDiff.details,
+        shoppingList: shoppingDiff.details,
       },
     };
   }
@@ -118,6 +132,8 @@ export async function probeNutritionParity(
         sqliteOnly: recipesDiff.sqliteOnly,
       },
       prefs: { ls: lsHasPrefs, sqlite: sqliteHasPrefs },
+      waterLog: waterDiff.details,
+      shoppingList: shoppingDiff.details,
     },
   };
 }
@@ -191,4 +207,101 @@ function compareSets(ls: Set<string>, sqlite: Set<string>): SetCompareOutcome {
   for (const key of ls) if (!sqlite.has(key)) lsOnly += 1;
   for (const key of sqlite) if (!ls.has(key)) sqliteOnly += 1;
   return { match: false, lsOnly, sqliteOnly };
+}
+
+// -----------------------------------------------------------------------
+// Stage 11 — water log probe (compare per-(date_key, volume_ml))
+// -----------------------------------------------------------------------
+
+interface DiffResult {
+  match: boolean;
+  details: Record<string, unknown>;
+}
+
+async function probeWaterLog(
+  client: SqliteMigrationClient,
+  userId: string,
+  next: NutritionDualWriteState,
+): Promise<DiffResult> {
+  const rows = await client.all<{ date_key: string; volume_ml: number }>(
+    `SELECT date_key, volume_ml FROM nutrition_water_log WHERE user_id = ?`,
+    [userId],
+  );
+  const sqliteMap = new Map<string, number>();
+  for (const row of rows) sqliteMap.set(row.date_key, row.volume_ml);
+
+  const lsMap = next.waterLog ?? {};
+  // The diff layer emits a `water-log-set` op with `volumeMl = 0`
+  // when an LS entry is removed; the SQLite row stays as `volume_ml = 0`
+  // (no soft-delete column). So treat «missing key» and «value 0» as
+  // equivalent for parity, mirroring routine_pushups.
+  const allKeys = new Set([...Object.keys(lsMap), ...sqliteMap.keys()]);
+
+  let lsOnly = 0;
+  let sqliteOnly = 0;
+  let mismatchedValues = 0;
+  for (const key of allKeys) {
+    const lsVal = lsMap[key] ?? 0;
+    const sqliteVal = sqliteMap.get(key) ?? 0;
+    if (lsVal === sqliteVal) continue;
+    if (sqliteVal === 0) lsOnly += 1;
+    else if (lsVal === 0) sqliteOnly += 1;
+    else mismatchedValues += 1;
+  }
+
+  if (lsOnly === 0 && sqliteOnly === 0 && mismatchedValues === 0) {
+    return {
+      match: true,
+      details: { ls: Object.keys(lsMap).length, sqlite: sqliteMap.size },
+    };
+  }
+  return {
+    match: false,
+    details: {
+      ls: Object.keys(lsMap).length,
+      sqlite: sqliteMap.size,
+      lsOnly,
+      sqliteOnly,
+      mismatchedValues,
+    },
+  };
+}
+
+// -----------------------------------------------------------------------
+// Stage 11 — shopping list probe (compare singleton JSON blob)
+// -----------------------------------------------------------------------
+
+async function probeShoppingList(
+  client: SqliteMigrationClient,
+  userId: string,
+  next: NutritionDualWriteState,
+): Promise<DiffResult> {
+  const rows = await client.all<{ data_json: string }>(
+    `SELECT data_json FROM nutrition_shopping_list WHERE user_id = ?`,
+    [userId],
+  );
+  const sqliteHas = rows.length > 0;
+  const lsHas = next.shoppingList !== null && next.shoppingList !== undefined;
+
+  if (!lsHas && !sqliteHas) {
+    return { match: true, details: { ls: false, sqlite: false } };
+  }
+  if (lsHas !== sqliteHas) {
+    return { match: false, details: { ls: lsHas, sqlite: sqliteHas } };
+  }
+  // Both sides have a row — compare the JSON blob byte-for-byte.
+  const sqliteJson = rows[0]?.data_json ?? '{"categories":[]}';
+  const lsJson = next.shoppingList?.dataJson ?? '{"categories":[]}';
+  const equal = sqliteJson === lsJson;
+  return {
+    match: equal,
+    details: equal
+      ? { ls: true, sqlite: true, equal: true }
+      : {
+          ls: true,
+          sqlite: true,
+          lsLen: lsJson.length,
+          sqliteLen: sqliteJson.length,
+        },
+  };
 }

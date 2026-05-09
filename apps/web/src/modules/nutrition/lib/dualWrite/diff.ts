@@ -13,7 +13,7 @@
  * same semantics, separate types because the entity surface is
  * different.
  *
- * Five entity classes are tracked:
+ * Six entity classes are tracked:
  *
  *   1. **Meals** — flattened from
  *      `Record<dateKey, { meals: Meal[] }>` (`NUTRITION_LOG_KEY`). Each
@@ -31,6 +31,16 @@
  *
  *   4. **Recipes** — `SavedRecipe[]` (mobile MMKV / web IDB). Stored as
  *      JSON blob per row in `nutrition_recipes`.
+ *
+ *   5. **Water log** — `Record<dateKey, volume_ml>` persisted under
+ *      `WATER_LOG_KEY`. One row per (user, dateKey) in
+ *      `nutrition_water_log`; mirrors the `routine_pushups` shape.
+ *      Stage 11 / PR #070n-dualwrite.
+ *
+ *   6. **Shopping list** — singleton `ShoppingList` blob persisted under
+ *      `SHOPPING_LIST_KEY`. Stored as JSON-encoded `data_json` in
+ *      `nutrition_shopping_list`; mirrors the `prefs-upsert` singleton
+ *      pattern. Stage 11 / PR #070n-dualwrite.
  */
 
 // -----------------------------------------------------------------------
@@ -90,6 +100,17 @@ export interface NutritionRecipeSnapshot {
   readonly dataJson: string;
 }
 
+/**
+ * Singleton snapshot for the shopping list. The whole `ShoppingList`
+ * document is serialized to JSON (`data_json`) — there is no per-item
+ * normalisation in `nutrition_shopping_list`, the document is read as
+ * one blob. Stage 11 / PR #070n-dualwrite.
+ */
+export interface NutritionShoppingListSnapshot {
+  /** Whole ShoppingList blob serialized to JSON for `data_json`. */
+  readonly dataJson: string;
+}
+
 // -----------------------------------------------------------------------
 // Op types
 // -----------------------------------------------------------------------
@@ -129,6 +150,29 @@ export interface RecipeDeleteOp {
   readonly recipeId: string;
 }
 
+/**
+ * Stage 11 / PR #070n-dualwrite — water-log per-(user, dateKey) row.
+ * Mirrors `routine_pushups`: a row stores a single integer counter
+ * keyed by date. There is no soft-delete — `volume_ml = 0` is a valid
+ * "reset for that day" state and the diff still emits the op so
+ * cross-device LWW resolution converges.
+ */
+export interface WaterLogSetOp {
+  readonly kind: "water-log-set";
+  readonly dateKey: string;
+  readonly volumeMl: number;
+}
+
+/**
+ * Stage 11 / PR #070n-dualwrite — singleton shopping-list row.
+ * Mirrors `prefs-upsert`: a single row per user with the whole
+ * document JSON-encoded into `data_json`.
+ */
+export interface ShoppingListSetOp {
+  readonly kind: "shopping-list-set";
+  readonly shoppingList: NutritionShoppingListSnapshot;
+}
+
 export type NutritionDualWriteOp =
   | MealUpsertOp
   | MealDeleteOp
@@ -136,7 +180,9 @@ export type NutritionDualWriteOp =
   | PantryDeleteOp
   | PrefsUpsertOp
   | RecipeUpsertOp
-  | RecipeDeleteOp;
+  | RecipeDeleteOp
+  | WaterLogSetOp
+  | ShoppingListSetOp;
 
 // -----------------------------------------------------------------------
 // State shape — what LS looks like across all nutrition keys
@@ -147,6 +193,17 @@ export interface NutritionDualWriteState {
   readonly pantries: readonly NutritionPantrySnapshot[];
   readonly prefs: NutritionPrefsSnapshot | null;
   readonly recipes: readonly NutritionRecipeSnapshot[];
+  /**
+   * Water log keyed by `YYYY-MM-DD` (local date). Stage 11 /
+   * PR #070n-dualwrite. Empty record means «no water rows yet».
+   */
+  readonly waterLog: Readonly<Record<string, number>>;
+  /**
+   * Shopping list singleton. `null` means «no row in
+   * `nutrition_shopping_list` yet» — the diff treats `null → non-null`
+   * as a single `shopping-list-set` op.
+   */
+  readonly shoppingList: NutritionShoppingListSnapshot | null;
 }
 
 // -----------------------------------------------------------------------
@@ -161,6 +218,8 @@ export interface NutritionDualWriteState {
  *   2. pantry-upsert / pantry-delete (by id asc)
  *   3. prefs-upsert
  *   4. recipe-upsert / recipe-delete (by id asc)
+ *   5. water-log-set (by dateKey asc) — Stage 11 / PR #070n-dualwrite
+ *   6. shopping-list-set (at most one) — Stage 11 / PR #070n-dualwrite
  */
 export function diffNutritionDualWriteOps(
   prev: NutritionDualWriteState,
@@ -203,7 +262,53 @@ export function diffNutritionDualWriteOps(
     (id) => ops.push({ kind: "recipe-delete", recipeId: id }),
   );
 
+  // --- Water log (Stage 11) ---
+  diffWaterLogOps(prev, next, ops);
+
+  // --- Shopping list (Stage 11) ---
+  diffShoppingListOps(prev, next, ops);
+
   return ops;
+}
+
+// -----------------------------------------------------------------------
+// Stage 11 — water log diff
+// -----------------------------------------------------------------------
+
+function diffWaterLogOps(
+  prev: NutritionDualWriteState,
+  next: NutritionDualWriteState,
+  ops: NutritionDualWriteOp[],
+): void {
+  const prevLog = prev.waterLog ?? {};
+  const nextLog = next.waterLog ?? {};
+  if (prevLog === nextLog) return;
+  const setOps: WaterLogSetOp[] = [];
+  const allKeys = new Set([...Object.keys(prevLog), ...Object.keys(nextLog)]);
+  for (const dateKey of allKeys) {
+    const prevVal = prevLog[dateKey] ?? 0;
+    const nextVal = nextLog[dateKey] ?? 0;
+    if (prevVal === nextVal) continue;
+    setOps.push({ kind: "water-log-set", dateKey, volumeMl: nextVal });
+  }
+  setOps.sort((a, b) =>
+    a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0,
+  );
+  ops.push(...setOps);
+}
+
+// -----------------------------------------------------------------------
+// Stage 11 — shopping list diff
+// -----------------------------------------------------------------------
+
+function diffShoppingListOps(
+  prev: NutritionDualWriteState,
+  next: NutritionDualWriteState,
+  ops: NutritionDualWriteOp[],
+): void {
+  if (!shoppingListChanged(prev.shoppingList, next.shoppingList)) return;
+  if (!next.shoppingList) return;
+  ops.push({ kind: "shopping-list-set", shoppingList: next.shoppingList });
 }
 
 // -----------------------------------------------------------------------
@@ -310,4 +415,13 @@ function prefsChanged(
     prev.prefsJson !== next.prefsJson ||
     prev.activePantryId !== next.activePantryId
   );
+}
+
+function shoppingListChanged(
+  prev: NutritionShoppingListSnapshot | null,
+  next: NutritionShoppingListSnapshot | null,
+): boolean {
+  if (prev === next) return false;
+  if (!prev || !next) return prev !== next;
+  return prev.dataJson !== next.dataJson;
 }

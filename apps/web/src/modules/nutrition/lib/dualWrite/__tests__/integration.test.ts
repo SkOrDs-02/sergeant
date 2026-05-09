@@ -40,6 +40,8 @@ const EMPTY: NutritionDualWriteState = {
   pantries: [],
   prefs: null,
   recipes: [],
+  waterLog: {},
+  shoppingList: null,
 };
 
 describe("nutrition dualWrite orchestrator", () => {
@@ -155,6 +157,8 @@ describe("nutrition dualWrite orchestrator", () => {
           dataJson: '{"id":"rcp1","title":"Омлет"}',
         },
       ],
+      waterLog: { "2026-05-01": 500 },
+      shoppingList: { dataJson: '{"categories":[]}' },
     };
 
     const result = await dualWriteNutritionState(EMPTY, next);
@@ -197,6 +201,20 @@ describe("nutrition dualWrite orchestrator", () => {
       ["rcp1"],
     );
     expect(recipes).toHaveLength(1);
+
+    // Stage 11 — water-log + shopping-list rows.
+    const waterRows = await handle.client.all<Record<string, unknown>>(
+      "SELECT date_key, volume_ml FROM nutrition_water_log WHERE user_id = ?",
+      [UID],
+    );
+    expect(waterRows).toEqual([{ date_key: "2026-05-01", volume_ml: 500 }]);
+
+    const shoppingRows = await handle.client.all<Record<string, unknown>>(
+      "SELECT user_id, data_json FROM nutrition_shopping_list WHERE user_id = ?",
+      [UID],
+    );
+    expect(shoppingRows).toHaveLength(1);
+    expect(shoppingRows[0]!.data_json).toBe('{"categories":[]}');
   });
 
   it("triggerNutritionDualWrite is fire-and-forget (resolves immediately)", async () => {
