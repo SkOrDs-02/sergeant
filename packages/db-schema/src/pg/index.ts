@@ -4,7 +4,17 @@ export { user, session, account, verification } from "./auth.js";
 export { syncAuditLog } from "./syncAuditLog.js";
 export { syncOpLog } from "./syncOpLog.js";
 export { pushSubscriptions } from "./pushSubscriptions.js";
-export { routineEntries, routineStreaks } from "./routine.js";
+export {
+  routineEntries,
+  routineStreaks,
+  routineHabits,
+  routineTags,
+  routineCategories,
+  routinePrefs,
+  routinePushups,
+  routineHabitOrder,
+  routineCompletionNotes,
+} from "./routine.js";
 export {
   fizrukWorkouts,
   fizrukWorkoutItems,

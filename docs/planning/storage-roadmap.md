@@ -2920,22 +2920,24 @@ value JSON)`)». Та редакція об'єднувала **дві** орто
     10 candidate below), dropping Routine LS-write is silent
     data-loss.
 
-##### **Stage 10 candidate — extend Routine SQLite schema to full LS coverage** 📋 PROPOSED
+##### **Stage 10 — extend Routine SQLite schema to full LS coverage** 🔧 IN PROGRESS
 
-- New SQLite tables (`routine_habits`, `routine_tags`,
-  `routine_categories`, `routine_prefs`, `routine_pushups`,
-  `routine_habit_order`, `routine_completion_notes`) + Drizzle
-  schemas + sequential migration (per Hard rule #4).
-- Extend `dualWrite/diff.ts` to emit ops for habit-create /
-  habit-update / habit-archive / habit-delete / habit-restore /
-  tag-create / tag-update / tag-delete / category-create /
-  category-update / category-delete / pref-set / pushup-add /
-  habit-order-set / completion-note-set.
-- New parity probe + read-path adapter, then a real PR #056r-bis
-  (or PR #056r-final) that **does** drop the
-  `localStorage.setItem(STORAGE_KEYS.ROUTINE, …)` callsite.
-- Until then, Routine remains LS-primary / SQLite-mirror for
-  non-completion fields.
+Split into 2 PRs:
+
+- **PR #070r-schema** 🔧 IN PROGRESS — 7 new SQLite tables
+  (`routine_habits`, `routine_tags`, `routine_categories`,
+  `routine_prefs`, `routine_pushups`, `routine_habit_order`,
+  `routine_completion_notes`) + Drizzle schemas (SQLite + Pg) +
+  sequential client migration `004_routine_full_state.sql` +
+  server migration `050_routine_full_state.sql` + snapshot tests.
+- **PR #070r-dualwrite** 📋 PROPOSED — extend `dualWrite/diff.ts`
+  to emit ops for habit-create / habit-update / habit-archive /
+  habit-delete / habit-restore / tag-create / tag-update /
+  tag-delete / category-create / category-update /
+  category-delete / pref-set / pushup-add / habit-order-set /
+  completion-note-set. New parity probe + read-path adapter.
+- Until Stage 10 is complete, Routine remains LS-primary /
+  SQLite-mirror for non-completion fields.
 
 ##### **PR #057r — `chore(routine): drop LS reader paths + tombstone STORAGE_KEYS.ROUTINE`** 📋 ROADMAP
 

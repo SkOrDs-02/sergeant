@@ -247,6 +247,121 @@ CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
 `;
 
 /**
+ * Stage 10 / PR #070r-schema migration: extend Routine SQLite schema
+ * to full LS-state coverage.
+ *
+ * Adds 7 new tables for the remaining `RoutineState` fields that were
+ * still LS/MMKV-only:
+ *
+ *   - `routine_habits`           — Habit[] (per-row, JSON arrays for
+ *                                   tagIds / reminderTimes / weekdays)
+ *   - `routine_tags`             — Tag[]
+ *   - `routine_categories`       — Category[]
+ *   - `routine_prefs`            — RoutinePrefs (single row per user,
+ *                                   JSON blob)
+ *   - `routine_pushups`          — pushupsByDate (composite PK
+ *                                   user_id + date_key)
+ *   - `routine_habit_order`      — habitOrder (single row per user,
+ *                                   JSON array)
+ *   - `routine_completion_notes` — completionNotes (composite PK
+ *                                   user_id + note_key)
+ *
+ * This migration is additive (CREATE TABLE IF NOT EXISTS) — safe to
+ * replay on an already-migrated client DB. All tables follow the
+ * established conventions:
+ *   - TEXT for timestamps (ISO-8601 with offset)
+ *   - `_lite`-suffixed index names
+ *   - `deleted_at` soft-delete where applicable
+ *   - `updated_at` for LWW comparison
+ */
+const ROUTINE_004_FULL_STATE_SQL = `
+CREATE TABLE IF NOT EXISTS routine_habits (
+  id                  TEXT PRIMARY KEY,
+  user_id             TEXT NOT NULL,
+  name                TEXT NOT NULL,
+  emoji               TEXT NOT NULL DEFAULT '',
+  tag_ids_json        TEXT NOT NULL DEFAULT '[]',
+  category_id         TEXT,
+  archived            INTEGER NOT NULL DEFAULT 0,
+  paused              INTEGER NOT NULL DEFAULT 0,
+  recurrence          TEXT NOT NULL DEFAULT 'daily',
+  start_date          TEXT,
+  end_date            TEXT,
+  time_of_day         TEXT NOT NULL DEFAULT '',
+  reminder_times_json TEXT NOT NULL DEFAULT '[]',
+  weekdays_json       TEXT NOT NULL DEFAULT '[0,1,2,3,4,5,6]',
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at          TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_habits_user_active_idx_lite
+  ON routine_habits (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_tags (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  scope       TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_tags_user_active_idx_lite
+  ON routine_tags (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_categories (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  emoji       TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_categories_user_active_idx_lite
+  ON routine_categories (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_prefs (
+  user_id     TEXT PRIMARY KEY,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS routine_pushups (
+  user_id     TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  reps        INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date_key)
+);
+
+CREATE TABLE IF NOT EXISTS routine_habit_order (
+  user_id     TEXT PRIMARY KEY,
+  order_json  TEXT NOT NULL DEFAULT '[]',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS routine_completion_notes (
+  user_id     TEXT NOT NULL,
+  note_key    TEXT NOT NULL,
+  note        TEXT NOT NULL DEFAULT '',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, note_key)
+);
+
+CREATE INDEX IF NOT EXISTS routine_completion_notes_user_active_idx_lite
+  ON routine_completion_notes (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate`.
@@ -258,8 +373,8 @@ CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
  * columns and the `'dead_letter'` status onto the same `__migrations`
  * ledger; `003_sync_op_outbox_increment_op.sql` extends the `op`
  * CHECK constraint with `'increment'` for PN-counter outbox writes
- * (PR #042d-prep). Future Stage-5+ migrations append as `004_*.sql`, …
- * and always show a Stage-5-or-later prefix in the file name.
+ * (PR #042d-prep). `004_routine_full_state.sql` extends the routine
+ * schema to full LS-state coverage (Stage 10 / PR #070r-schema).
  */
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
@@ -268,6 +383,7 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
     name: "003_sync_op_outbox_increment_op.sql",
     sql: SYNC_OP_OUTBOX_INCREMENT_OP_SQL,
   },
+  { name: "004_routine_full_state.sql", sql: ROUTINE_004_FULL_STATE_SQL },
 ] as const;
 
 /**

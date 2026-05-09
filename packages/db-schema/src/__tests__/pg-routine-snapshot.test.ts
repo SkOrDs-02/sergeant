@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { routineEntries, routineStreaks } from "../pg/routine.js";
+import {
+  routineEntries,
+  routineStreaks,
+  routineHabits,
+  routineTags,
+  routineCategories,
+  routinePrefs,
+  routinePushups,
+  routineHabitOrder,
+  routineCompletionNotes,
+} from "../pg/routine.js";
 
 /**
- * SQL snapshot tests: verify that the Drizzle schemas for `routine_entries`
- * and `routine_streaks` match the shape defined in migration
- * 026_routine_tables.sql (Stage 2 / PR #020 із `docs/planning/storage-roadmap.md`).
+ * SQL snapshot tests: verify that the Drizzle schemas for routine tables
+ * match the shapes defined in migrations 026_routine_tables.sql (entries +
+ * streaks) and 050_routine_full_state.sql (habits, tags, categories,
+ * prefs, pushups, habitOrder, completionNotes).
  *
  * Mirrors the structural pattern from `pg-waitlist-snapshot.test.ts` —
  * checks names, types, nullability, defaults, indexes — rather than
@@ -126,5 +137,182 @@ describe("pg/routineStreaks schema snapshot", () => {
     // last_completed_at TIMESTAMPTZ (nullable)
     expect(columnMap["last_completed_at"]!.dataType).toBe("date");
     expect(columnMap["last_completed_at"]!.notNull).toBe(false);
+  });
+});
+
+// -----------------------------------------------------------------
+// Stage 10 — 7 new Routine tables (migration 050_routine_full_state.sql)
+// -----------------------------------------------------------------
+
+describe("pg/routineHabits schema snapshot", () => {
+  const config = getTableConfig(routineHabits);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_habits");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "id",
+      "user_id",
+      "name",
+      "emoji",
+      "tag_ids",
+      "category_id",
+      "archived",
+      "paused",
+      "recurrence",
+      "start_date",
+      "end_date",
+      "time_of_day",
+      "reminder_times",
+      "weekdays",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_habits_user_active_idx",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
+describe("pg/routineTags schema snapshot", () => {
+  const config = getTableConfig(routineTags);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_tags");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "id",
+      "user_id",
+      "name",
+      "scope",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_tags_user_active_idx",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
+describe("pg/routineCategories schema snapshot", () => {
+  const config = getTableConfig(routineCategories);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_categories");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "id",
+      "user_id",
+      "name",
+      "emoji",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_categories_user_active_idx",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
+describe("pg/routinePrefs schema snapshot", () => {
+  const config = getTableConfig(routinePrefs);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_prefs");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "data", "updated_at"]);
+  });
+
+  it("has user_id as PK", () => {
+    const col = config.columns.find((c) => c.name === "user_id");
+    expect(col!.primary).toBe(true);
+  });
+});
+
+describe("pg/routinePushups schema snapshot", () => {
+  const config = getTableConfig(routinePushups);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_pushups");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
+  });
+});
+
+describe("pg/routineHabitOrder schema snapshot", () => {
+  const config = getTableConfig(routineHabitOrder);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_habit_order");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "order", "updated_at"]);
+  });
+
+  it("has user_id as PK", () => {
+    const col = config.columns.find((c) => c.name === "user_id");
+    expect(col!.primary).toBe(true);
+  });
+});
+
+describe("pg/routineCompletionNotes schema snapshot", () => {
+  const config = getTableConfig(routineCompletionNotes);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_completion_notes");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "user_id",
+      "note_key",
+      "note",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_completion_notes_user_active_idx",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
   });
 });

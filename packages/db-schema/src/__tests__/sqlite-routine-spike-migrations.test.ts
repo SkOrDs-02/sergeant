@@ -69,6 +69,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "001_routine_spike.sql",
       "002_sync_op_outbox_retry.sql",
       "003_sync_op_outbox_increment_op.sql",
+      "004_routine_full_state.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -81,8 +82,15 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       .all() as { name: string }[];
     expect(tables.map((r) => r.name)).toEqual([
       "__migrations",
+      "routine_categories",
+      "routine_completion_notes",
       "routine_entries",
+      "routine_habit_order",
+      "routine_habits",
+      "routine_prefs",
+      "routine_pushups",
       "routine_streaks",
+      "routine_tags",
       "sync_op_cursor",
       "sync_op_outbox",
     ]);
@@ -135,6 +143,56 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       )
       .all() as { name: string }[];
     expect(cuPk.map((r) => r.name)).toEqual(["key"]);
+
+    // Stage 10 tables — verify PK columns.
+    const habitsPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_habits') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(habitsPk.map((r) => r.name)).toEqual(["id"]);
+
+    const tagsPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_tags') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(tagsPk.map((r) => r.name)).toEqual(["id"]);
+
+    const categoriesPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_categories') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(categoriesPk.map((r) => r.name)).toEqual(["id"]);
+
+    const prefsPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_prefs') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(prefsPk.map((r) => r.name)).toEqual(["user_id"]);
+
+    const pushupsPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_pushups') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(pushupsPk.map((r) => r.name)).toEqual(["user_id", "date_key"]);
+
+    const orderPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_habit_order') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(orderPk.map((r) => r.name)).toEqual(["user_id"]);
+
+    const notesPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_completion_notes') WHERE pk != 0",
+      )
+      .all() as { name: string }[];
+    expect(notesPk.map((r) => r.name)).toEqual(["user_id", "note_key"]);
   });
 
   it("re-running is a no-op (idempotent migrations ledger)", async () => {
@@ -154,6 +212,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "001_routine_spike.sql",
       "002_sync_op_outbox_retry.sql",
       "003_sync_op_outbox_increment_op.sql",
+      "004_routine_full_state.sql",
     ]);
   });
 

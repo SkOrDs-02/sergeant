@@ -208,6 +208,7 @@ describe("repairPartialOutboxMigration", () => {
     expect(rerun.applied).toEqual([
       "002_sync_op_outbox_retry.sql",
       "003_sync_op_outbox_increment_op.sql",
+      "004_routine_full_state.sql",
     ]);
     expect(rerun.skipped).toEqual(["001_routine_spike.sql"]);
 

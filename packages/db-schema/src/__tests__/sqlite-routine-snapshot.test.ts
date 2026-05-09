@@ -3,6 +3,13 @@ import { getTableConfig } from "drizzle-orm/sqlite-core";
 import {
   routineEntries,
   routineStreaks,
+  routineHabits,
+  routineTags,
+  routineCategories,
+  routinePrefs,
+  routinePushups,
+  routineHabitOrder,
+  routineCompletionNotes,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
@@ -328,9 +335,186 @@ describe("sqlite/syncOpCursor schema snapshot", () => {
   });
 });
 
+// -----------------------------------------------------------------
+// Stage 10 — 7 new Routine tables
+// -----------------------------------------------------------------
+
+describe("sqlite/routineHabits schema snapshot", () => {
+  const config = getTableConfig(routineHabits);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_habits");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "id",
+      "user_id",
+      "name",
+      "emoji",
+      "tag_ids_json",
+      "category_id",
+      "archived",
+      "paused",
+      "recurrence",
+      "start_date",
+      "end_date",
+      "time_of_day",
+      "reminder_times_json",
+      "weekdays_json",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_habits_user_active_idx_lite",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
+describe("sqlite/routineTags schema snapshot", () => {
+  const config = getTableConfig(routineTags);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_tags");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "id",
+      "user_id",
+      "name",
+      "scope",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_tags_user_active_idx_lite",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
+describe("sqlite/routineCategories schema snapshot", () => {
+  const config = getTableConfig(routineCategories);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_categories");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "id",
+      "user_id",
+      "name",
+      "emoji",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_categories_user_active_idx_lite",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
+describe("sqlite/routinePrefs schema snapshot", () => {
+  const config = getTableConfig(routinePrefs);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_prefs");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "data_json", "updated_at"]);
+  });
+
+  it("has user_id as PK", () => {
+    const col = config.columns.find((c) => c.name === "user_id");
+    expect(col!.primary).toBe(true);
+  });
+});
+
+describe("sqlite/routinePushups schema snapshot", () => {
+  const config = getTableConfig(routinePushups);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_pushups");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
+  });
+});
+
+describe("sqlite/routineHabitOrder schema snapshot", () => {
+  const config = getTableConfig(routineHabitOrder);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_habit_order");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "order_json", "updated_at"]);
+  });
+
+  it("has user_id as PK", () => {
+    const col = config.columns.find((c) => c.name === "user_id");
+    expect(col!.primary).toBe(true);
+  });
+});
+
+describe("sqlite/routineCompletionNotes schema snapshot", () => {
+  const config = getTableConfig(routineCompletionNotes);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_completion_notes");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "user_id",
+      "note_key",
+      "note",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("has a partial active index on user_id", () => {
+    const idx = config.indexes.find(
+      (i) => i.config.name === "routine_completion_notes_user_active_idx_lite",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeDefined();
+  });
+});
+
 describe("sqlite/migrations exports", () => {
-  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(3);
+  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(4);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -387,6 +571,33 @@ describe("sqlite/migrations exports", () => {
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
       /sync_op_outbox_pending_due_idx_lite/,
+    );
+
+    // Stage 10 / PR #070r-schema migration adds 7 new Routine tables
+    // for full LS-state coverage.
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.name).toBe(
+      "004_routine_full_state.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_habits/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_tags/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_categories/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_prefs/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_pushups/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_habit_order/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_completion_notes/,
     );
   });
 

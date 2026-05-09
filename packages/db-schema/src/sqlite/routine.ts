@@ -1,6 +1,7 @@
 import {
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
   uniqueIndex,
@@ -71,6 +72,182 @@ export const routineStreaks = sqliteTable("routine_streaks", {
   longestStreak: integer("longest_streak").notNull().default(0),
   lastCompletedAt: text("last_completed_at"),
 });
+
+// ---------------------------------------------------------------------
+// Stage 10 — extend Routine SQLite schema to full LS coverage
+// (habits, tags, categories, prefs, pushups, habitOrder, completionNotes)
+// ---------------------------------------------------------------------
+
+/**
+ * SQLite schema for the `routine_habits` table.
+ *
+ * Один рядок на звичку. Поля дзеркалять `Habit` з
+ * `@sergeant/routine-domain`. JSON-масиви (`tagIds`, `reminderTimes`,
+ * `weekdays`) зберігаються як TEXT (JSON string) — SQLite не має
+ * нативного JSONB.
+ *
+ * Stage 10 / PR #070r-schema of `docs/planning/storage-roadmap.md`.
+ */
+export const routineHabits = sqliteTable(
+  "routine_habits",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    name: text().notNull(),
+    emoji: text().notNull().default(""),
+    tagIdsJson: text("tag_ids_json").notNull().default("[]"),
+    categoryId: text("category_id"),
+    archived: integer({ mode: "boolean" }).notNull().default(false),
+    paused: integer({ mode: "boolean" }).notNull().default(false),
+    recurrence: text().notNull().default("daily"),
+    startDate: text("start_date"),
+    endDate: text("end_date"),
+    timeOfDay: text("time_of_day").notNull().default(""),
+    reminderTimesJson: text("reminder_times_json").notNull().default("[]"),
+    weekdaysJson: text("weekdays_json").notNull().default("[0,1,2,3,4,5,6]"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("routine_habits_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for the `routine_tags` table.
+ *
+ * Один рядок на тег. Поля дзеркалять `Tag` з `@sergeant/routine-domain`.
+ */
+export const routineTags = sqliteTable(
+  "routine_tags",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    name: text().notNull(),
+    scope: text().notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("routine_tags_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for the `routine_categories` table.
+ *
+ * Один рядок на категорію. Поля дзеркалять `Category` з
+ * `@sergeant/routine-domain`.
+ */
+export const routineCategories = sqliteTable(
+  "routine_categories",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    name: text().notNull(),
+    emoji: text().notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("routine_categories_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for the `routine_prefs` table.
+ *
+ * Один рядок на користувача — JSON blob з RoutinePrefs.
+ * Зберігається як єдиний TEXT-стовпець `data_json` щоб уникнути
+ * ALTER TABLE при додаванні нових pref-полів.
+ */
+export const routinePrefs = sqliteTable("routine_prefs", {
+  userId: text("user_id").primaryKey(),
+  dataJson: text("data_json").notNull().default("{}"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/**
+ * SQLite schema for the `routine_pushups` table.
+ *
+ * Один рядок на (user, date) — кількість відтискань за день.
+ * Дзеркалить `RoutineState.pushupsByDate`.
+ */
+export const routinePushups = sqliteTable(
+  "routine_pushups",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    reps: integer().notNull().default(0),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
+);
+
+/**
+ * SQLite schema for the `routine_habit_order` table.
+ *
+ * Один рядок на користувача — JSON array з id-шниками звичок у
+ * бажаному порядку. Дзеркалить `RoutineState.habitOrder`.
+ */
+export const routineHabitOrder = sqliteTable("routine_habit_order", {
+  userId: text("user_id").primaryKey(),
+  orderJson: text("order_json").notNull().default("[]"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/**
+ * SQLite schema for the `routine_completion_notes` table.
+ *
+ * Один рядок на (user, noteKey) — короткий текст нотатки до
+ * завершення звички. Дзеркалить `RoutineState.completionNotes`.
+ * `noteKey` — це `completionNoteKey(habitId, dateKey)`.
+ */
+export const routineCompletionNotes = sqliteTable(
+  "routine_completion_notes",
+  {
+    userId: text("user_id").notNull(),
+    noteKey: text("note_key").notNull(),
+    note: text().notNull().default(""),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.noteKey] }),
+    index("routine_completion_notes_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 
 /**
  * Client-only outbox of pending `/api/v2/sync/push` ops.
