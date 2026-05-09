@@ -623,6 +623,35 @@ CREATE INDEX IF NOT EXISTS nutrition_recipes_user_active_idx_lite
 `;
 
 /**
+ * Stage 11 / PR #070n-schema — extend Nutrition SQLite schema to full
+ * LS-state coverage (water_log, shopping_list).
+ *
+ * Mirrors the Postgres migration `051_nutrition_full_state.sql`.
+ * Append-only — `001_nutrition_tables.sql` shipped first; this file
+ * is `002_*` so already-migrated client DBs only apply the delta.
+ *
+ * Why these two tables specifically:
+ *   - water_log та shopping_list — це ті дві LS-only сутності, які
+ *     Stage 4 (PR #031) лишив поза dual-write. Web `#057n-tombstone`
+ *     (PR #2274) їх теж не зачепив. Stage 11 закриває цей schema gap.
+ */
+const NUTRITION_002_FULL_STATE_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_water_log (
+  user_id     TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  volume_ml   INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date_key)
+);
+
+CREATE TABLE IF NOT EXISTS nutrition_shopping_list (
+  user_id     TEXT PRIMARY KEY,
+  data_json   TEXT NOT NULL DEFAULT '{"categories":[]}',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
+
+/**
  * Ordered list of bundled client migrations for the Nutrition module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate`.
@@ -632,9 +661,16 @@ CREATE INDEX IF NOT EXISTS nutrition_recipes_user_active_idx_lite
  * migrations are independent — each module can be migrated, rolled
  * out, and rolled back without affecting the others. Same rationale
  * as fizruk's split from routine in PR #027.
+ *
+ * `002_nutrition_full_state.sql` extends the schema to full LS-state
+ * coverage (Stage 11 / PR #070n-schema).
  */
 export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
+  {
+    name: "002_nutrition_full_state.sql",
+    sql: NUTRITION_002_FULL_STATE_SQL,
+  },
 ] as const;
 
 /**

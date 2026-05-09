@@ -6,6 +6,8 @@ import {
   nutritionPantryItems,
   nutritionPrefs,
   nutritionRecipes,
+  nutritionShoppingList,
+  nutritionWaterLog,
 } from "../sqlite/nutrition.js";
 import {
   NUTRITION_CLIENT_MIGRATIONS,
@@ -311,9 +313,76 @@ describe("sqlite/nutritionRecipes schema snapshot", () => {
   });
 });
 
+describe("sqlite/nutritionWaterLog schema snapshot", () => {
+  const config = getTableConfig(nutritionWaterLog);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_water_log");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual([
+      "user_id",
+      "date_key",
+      "volume_ml",
+      "updated_at",
+    ]);
+  });
+
+  it("declares column types matching the inline migration", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["user_id"]!.dataType).toBe("string");
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["date_key"]!.dataType).toBe("string");
+    expect(columnMap["date_key"]!.notNull).toBe(true);
+    expect(columnMap["volume_ml"]!.dataType).toBe("number");
+    expect(columnMap["volume_ml"]!.notNull).toBe(true);
+    expect(columnMap["volume_ml"]!.hasDefault).toBe(true);
+    expect(columnMap["updated_at"]!.dataType).toBe("string");
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
+    expect(columnMap["updated_at"]!.hasDefault).toBe(true);
+  });
+
+  it("is keyed on (user_id, date_key)", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    const pk = config.primaryKeys[0]!;
+    expect(pk.columns.map((c) => c.name)).toEqual(["user_id", "date_key"]);
+  });
+});
+
+describe("sqlite/nutritionShoppingList schema snapshot", () => {
+  const config = getTableConfig(nutritionShoppingList);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_shopping_list");
+  });
+
+  it("declares all expected columns", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "data_json", "updated_at"]);
+  });
+
+  it("declares column types matching the inline migration", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["user_id"]!.dataType).toBe("string");
+    expect(columnMap["user_id"]!.primary).toBe(true);
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["data_json"]!.dataType).toBe("string");
+    expect(columnMap["data_json"]!.notNull).toBe(true);
+    expect(columnMap["data_json"]!.hasDefault).toBe(true);
+    expect(columnMap["updated_at"]!.dataType).toBe("string");
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
+    expect(columnMap["updated_at"]!.hasDefault).toBe(true);
+  });
+});
+
 describe("sqlite/nutrition migrations exports", () => {
-  it("exports a single 001_nutrition_tables.sql migration", () => {
-    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(1);
+  it("ships the 001_nutrition_tables.sql baseline", () => {
     expect(NUTRITION_CLIENT_MIGRATIONS[0]!.name).toBe(
       "001_nutrition_tables.sql",
     );
@@ -331,6 +400,23 @@ describe("sqlite/nutrition migrations exports", () => {
     );
     expect(NUTRITION_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS nutrition_recipes/,
+    );
+  });
+
+  it("ships the Stage 11 002_nutrition_full_state.sql delta", () => {
+    // Append-only — `001_*` first, then `002_*` for the Stage 11 delta.
+    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(2);
+    expect(NUTRITION_CLIENT_MIGRATIONS[1]!.name).toBe(
+      "002_nutrition_full_state.sql",
+    );
+    expect(NUTRITION_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS nutrition_water_log/,
+    );
+    expect(NUTRITION_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS nutrition_shopping_list/,
+    );
+    expect(NUTRITION_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /PRIMARY KEY \(user_id, date_key\)/,
     );
   });
 
