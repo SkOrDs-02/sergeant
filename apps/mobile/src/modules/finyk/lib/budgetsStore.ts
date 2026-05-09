@@ -26,7 +26,7 @@ import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
 import { EMPTY_FINYK_STATE, type FinykPrefsSnapshot } from "./dualWrite/diff";
 import { blobsFromArray, stateWithSlice } from "./dualWrite/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
-import { useFinykSqliteReadGate } from "./sqliteReadGate";
+import { useFinykSqliteReadTick } from "./sqliteReadGate";
 
 const KEY_BUDGETS = STORAGE_KEYS.FINYK_BUDGETS;
 const KEY_MONTHLY_PLAN = STORAGE_KEYS.FINYK_MONTHLY_PLAN;
@@ -165,12 +165,12 @@ export function useFinykBudgetsStore(
   }, []);
 
   // Stage 4 PR #037 — overlay each persisted slice from the local
-  // SQLite cache once it's warm and the read flag is on. MMKV
-  // first-paint reads above stay as a fallback.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useFinykSqliteReadGate();
+  // SQLite cache once it's warm. MMKV first-paint reads above stay
+  // as a fallback. Stage 8 PR #057k-flag dropped the
+  // `feature.finyk.sqlite_v2.read_sqlite` gate; the overlay is now
+  // unconditional.
+  const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedFinykSqliteState();
     if (cache.refreshedAt === null) return;
     setBudgetsState(cache.budgets);
@@ -182,7 +182,7 @@ export function useFinykBudgetsStore(
       // structural widening, not a downcast.
       setMonthlyPlanState(cache.monthlyPlan);
     }
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const setBudgets = useCallback<UseFinykBudgetsStoreReturn["setBudgets"]>(
     (next) => {

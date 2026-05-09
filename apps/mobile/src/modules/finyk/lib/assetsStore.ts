@@ -33,7 +33,7 @@ import {
   stateWithSlice,
 } from "./dualWrite/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
-import { useFinykSqliteReadGate } from "./sqliteReadGate";
+import { useFinykSqliteReadTick } from "./sqliteReadGate";
 
 const KEY_ASSETS = FINYK_BACKUP_STORAGE_KEYS.manualAssets;
 const KEY_DEBTS = FINYK_BACKUP_STORAGE_KEYS.manualDebts;
@@ -132,12 +132,12 @@ export function useFinykAssetsStore(
   }, []);
 
   // Stage 4 PR #037 — overlay each persisted slice from the local
-  // SQLite cache once it's warm and the read flag is on. MMKV
-  // first-paint reads above stay as a fallback.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useFinykSqliteReadGate();
+  // SQLite cache once it's warm. MMKV first-paint reads above stay
+  // as a fallback. Stage 8 PR #057k-flag dropped the
+  // `feature.finyk.sqlite_v2.read_sqlite` gate; the overlay is now
+  // unconditional.
+  const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedFinykSqliteState();
     if (cache.refreshedAt === null) return;
     setAssetsState(cache.manualAssets);
@@ -149,7 +149,7 @@ export function useFinykAssetsStore(
     setDebtsState(cache.manualDebts as AssetsDebt[]);
     setRecvState(cache.receivables as AssetsReceivable[]);
     setHiddenState(cache.hiddenAccounts);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const setManualAssets = useCallback(
     (next: ManualAsset[]) => {

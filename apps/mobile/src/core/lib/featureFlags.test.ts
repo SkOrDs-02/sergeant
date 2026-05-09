@@ -68,12 +68,11 @@ describe("mobile featureFlags", () => {
     expect(flag).toBeUndefined();
   });
 
-  it("flips Finyk sqlite reads default-on for Stage 8 PR #055k2 re-rollout", () => {
+  it("Stage 8 PR #057k drop: feature.finyk.sqlite_v2.read_sqlite більше не існує у реєстрі", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.finyk.sqlite_v2.read_sqlite",
     );
 
-    expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag).toBeUndefined();
   });
 });

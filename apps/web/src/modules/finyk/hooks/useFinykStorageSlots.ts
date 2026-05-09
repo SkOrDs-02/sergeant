@@ -4,7 +4,7 @@ import { DEFAULT_SUBSCRIPTIONS } from "../constants";
 import { readJSON, finykStorageManager } from "../lib/finykStorage";
 import { usePersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
-import { useFinykSqliteReadGate } from "../lib/sqliteReadGate";
+import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
 import type {
   Subscription,
   Budget,
@@ -139,21 +139,20 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     }) ?? { date: null, value: null },
   );
 
-  // Stage 4 PR #037 — under `feature.finyk.sqlite_v2.read_sqlite`,
-  // overlay every slot value from the local SQLite cache once it's
-  // warm. The LS-backed `usePersist` reads above stay as a synchronous
-  // first-paint fallback, so a cold start renders identically to the
-  // dual-write era; the SQLite cache snaps in on the next render once
-  // `useFinykSqliteReadBoot` flips the gate.
+  // Stage 4 PR #037 — overlay every slot value from the local SQLite
+  // cache once it's warm. The LS-backed `usePersist` reads above stay
+  // as a synchronous first-paint fallback, so a cold start renders
+  // identically to the dual-write era; the SQLite cache snaps in on
+  // the next render once `useFinykSqliteReadBoot` warms it. Stage 8
+  // PR #057k-flag dropped the `feature.finyk.sqlite_v2.read_sqlite`
+  // gate; the overlay is now unconditional.
   //
   // We deliberately call each setter (rather than swap the slot bundle
   // out wholesale) so the subsequent `usePersist` debounced LS write
-  // keeps LS in sync with the cache during cutover. PR #039 drops the
-  // LS-write path once 100% of users are on the SQLite read.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useFinykSqliteReadGate();
+  // keeps LS in sync with the cache during cutover. PR #057k-tombstone
+  // drops the LS-write path once 100% of users are on the SQLite read.
+  const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedFinykSqliteState();
     if (cache.refreshedAt === null) return;
     setHiddenAccounts(cache.hiddenAccounts);
@@ -175,7 +174,7 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     // dual-write only covers the 14 cloud-sync keys, so the cache has
     // nothing to overlay for them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   return {
     hiddenAccounts,

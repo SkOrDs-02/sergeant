@@ -40,7 +40,7 @@ import {
 import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
 
 import { getCachedFinykSqliteState } from "./sqliteReader";
-import { useFinykSqliteReadGate } from "./sqliteReadGate";
+import { useFinykSqliteReadTick } from "./sqliteReadGate";
 import { useUser } from "@sergeant/api-client/react";
 import { getSqliteMigrationClient } from "@/core/db/sqlite";
 import { migrateFinyk } from "./clientMigrate";
@@ -301,16 +301,14 @@ export function useFinykTransactionsStore(
     return () => sub.remove();
   }, []);
 
-  // Stage 4 PR #037 — under `feature.finyk.sqlite_v2.read_sqlite`,
-  // overlay every persisted slice from the local SQLite cache once
-  // it's warm. The MMKV first-paint reads above stay as a synchronous
-  // fallback; this effect only fires after `useFinykSqliteReadBoot`
-  // has refreshed the cache, so the overlay is no-op for cold starts
-  // with the flag off.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useFinykSqliteReadGate();
+  // Stage 4 PR #037 — overlay every persisted slice from the local
+  // SQLite cache once it's warm. The MMKV first-paint reads above
+  // stay as a synchronous fallback; this effect only fires after
+  // `useFinykSqliteReadBoot` has refreshed the cache. Stage 8
+  // PR #057k-flag dropped the `feature.finyk.sqlite_v2.read_sqlite`
+  // gate; the overlay is now unconditional.
+  const sqliteCacheTick = useFinykSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedFinykSqliteState();
     if (cache.refreshedAt === null) return;
     // The cache's `ManualExpense` shape mirrors `ManualExpenseRecord`
@@ -335,7 +333,7 @@ export function useFinykTransactionsStore(
     }
     setTxSplitsState(txSplitsMap);
     setHiddenState(cache.hiddenTransactions);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache when
   // `feature.finyk.sqlite_v2.mono_mirror` is on. The MMKV first-paint

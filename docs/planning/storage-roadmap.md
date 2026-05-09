@@ -3070,6 +3070,13 @@ NUTRITION_*`. Зняти стару migration `storageManager #002`
   виноситься у future PR (разом з #057k LS-reader drop або
   окремим кроком).
 - **PR #057k** — drop LS readers + tombstone `STORAGE_KEYS.FINYK_*`.
+  - **PR #057k-flag** ✅ LANDED — drop the now-redundant
+    `feature.finyk.sqlite_v2.read_sqlite` flag-check from web +
+    mobile (registry entry, store hooks, boot, reader gate).
+    SQLite read-overlay тепер unconditional once boot completes;
+    LS/MMKV first-paint read залишається synchronous fallback.
+    Pre-step для `#057k-tombstone` (LS-reader drop + `STORAGE_KEYS`
+    tombstone + residual-import bootstrap).
 
 #### **PR #058 — `feat(mobile): wire sync-engine writer-runtime in boot path`** ✅ LANDED
 

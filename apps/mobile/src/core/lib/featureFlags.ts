@@ -69,13 +69,6 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     defaultValue: true,
   },
   {
-    id: "feature.finyk.sqlite_v2.read_sqlite",
-    label: "Finyk — read state from SQLite",
-    description:
-      "Hidden / budgets / subscriptions / assets / debts / receivables / custom_categories / manual_expenses / tx_categories / tx_splits / mono_debt_links / networth_history / prefs читаються з локальної SQLite (`finyk_*`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056k. Default: on.",
-    defaultValue: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.mono_mirror",
     label: "Finyk — Mono cache mirror",
     description:

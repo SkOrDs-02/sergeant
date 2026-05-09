@@ -113,12 +113,13 @@ describe("featureFlags", () => {
     );
   });
 
-  it("flips Finyk read_sqlite default-on for Stage 8 PR #055k2 re-rollout", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.finyk.sqlite_v2.read_sqlite", false)).toBe(true);
+  it("Stage 8 PR #057k drop: feature.finyk.sqlite_v2.read_sqlite більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find((f) => f.id === "feature.finyk.sqlite_v2.read_sqlite"),
+    ).toBeUndefined();
     expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(false);
+    expect(setFlag("feature.finyk.sqlite_v2.read_sqlite", true)).toBe(false);
   });
 
   it("setFlag зберігає boolean і getFlag його повертає", async () => {

@@ -76,14 +76,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.finyk.sqlite_v2.read_sqlite",
-    label: "Finyk — read from SQLite",
-    description:
-      "Hidden / budgets / subscriptions / assets / debts / receivables / custom categories / manual expenses / tx categories / tx splits / mono debt links / networth history / prefs читаються з локальної SQLite (`finyk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056k. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.mono_mirror",
     label: "Finyk — Mono cache mirror",
     description:
