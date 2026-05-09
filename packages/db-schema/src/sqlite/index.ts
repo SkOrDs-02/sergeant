@@ -5,6 +5,13 @@ export { kvStore } from "./kvStore.js";
 export {
   routineEntries,
   routineStreaks,
+  routineHabits,
+  routineTags,
+  routineCategories,
+  routinePrefs,
+  routinePushups,
+  routineHabitOrder,
+  routineCompletionNotes,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
