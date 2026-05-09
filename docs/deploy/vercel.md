@@ -1,6 +1,6 @@
 # Deploy — Vercel (apps/web SPA)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-09 by @Skords-01. **Next review:** 2026-08-07.
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface lives on Railway —
@@ -41,15 +41,15 @@ pnpm --filter @sergeant/web build"` in the active file. Without that
 These match the assumptions baked into `apps/web/vercel.json`. Out-of-repo
 settings live in the Vercel UI under **Project → Settings → General**:
 
-| Setting             | Required value             | Why                                                                                               |
-| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
-| Root Directory      | `apps/web`                 | The project deploys the PWA in `apps/web`; Vercel reads `apps/web/vercel.json` from this setting. |
-| Framework Preset    | Other                      | We override with `installCommand` + `buildCommand` in `vercel.json`.                              |
-| Output Directory    | `dist`                     | Set in `vercel.json` (`outputDirectory`, relative to Root Directory); Vercel UI must match.       |
-| Install Command     | `(from vercel.json)`       | Vercel honours `installCommand` from `vercel.json`; UI override is empty.                         |
-| Build Command       | `(from vercel.json)`       | Same — leave blank in UI to defer to the file.                                                    |
-| Node.js Version     | `20.x`                     | Matches `package.json:engines.node` and `.nvmrc`.                                                 |
-| Skip Build for Docs | enabled (`docs/**` ignore) | Optional; CI handles docs-freshness separately.                                                   |
+| Setting           | Required value       | Why                                                                                                                                                                                                                          |
+| ----------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root Directory    | `apps/web`           | The project deploys the PWA in `apps/web`; Vercel reads `apps/web/vercel.json` from this setting.                                                                                                                            |
+| Framework Preset  | Other                | We override with `installCommand` + `buildCommand` in `vercel.json`.                                                                                                                                                         |
+| Output Directory  | `dist`               | Set in `vercel.json` (`outputDirectory`, relative to Root Directory); Vercel UI must match.                                                                                                                                  |
+| Install Command   | `(from vercel.json)` | Vercel honours `installCommand` from `vercel.json`; UI override is empty.                                                                                                                                                    |
+| Build Command     | `(from vercel.json)` | Same — leave blank in UI to defer to the file.                                                                                                                                                                               |
+| Ignored Build Cmd | `(from vercel.json)` | `ignoreCommand` in `vercel.json` runs `turbo-ignore @sergeant/web` so commits that don't touch `@sergeant/web` or its workspace deps skip the build. See [`./monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md). |
+| Node.js Version   | `20.x`               | Matches `package.json:engines.node` and `.nvmrc`.                                                                                                                                                                            |
 
 Verify after every Vercel UI change:
 
