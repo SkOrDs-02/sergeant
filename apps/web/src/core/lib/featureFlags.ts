@@ -60,14 +60,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.routine.sqlite_v2.read_sqlite",
-    label: "Routine — read completions from SQLite",
-    description:
-      "Completions читаються з локальної SQLite (`routine_entries`) замість LS blob. LS-write залишається як source-of-truth для habits / tags / categories / prefs / pushups / habitOrder / completionNotes (відсутні у SQLite-схемі рутини). Stage 8 PR #055r2 storage-roadmap — default-on rollout. SQLite mirror для completions — unconditional з PR #056r. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.mono_mirror",
     label: "Finyk — Mono cache mirror",
     description:
