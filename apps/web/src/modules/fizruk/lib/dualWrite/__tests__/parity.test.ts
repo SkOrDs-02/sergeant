@@ -12,6 +12,9 @@ const EMPTY_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
   measurements: [],
+  dailyLog: [],
+  monthlyPlan: null,
+  workoutTemplates: [],
 };
 
 async function seedWorkout(
@@ -68,6 +71,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 0, sqlite: 0 },
         customExercises: { ls: 0, sqlite: 0 },
         measurements: { ls: 0, sqlite: 0 },
+        dailyLog: { ls: 0, sqlite: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -84,6 +90,7 @@ describe("probeFizrukParity", () => {
       await seedMeasurement(handle.client, "m2");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [makeWorkout("w1"), makeWorkout("w2")],
         customExercises: [{ id: "cex1" }],
         measurements: [
@@ -98,6 +105,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 2, sqlite: 2 },
         customExercises: { ls: 1, sqlite: 1 },
         measurements: { ls: 2, sqlite: 2 },
+        dailyLog: { ls: 0, sqlite: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -113,6 +123,7 @@ describe("probeFizrukParity", () => {
       await seedMeasurement(handle.client, "m1");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [makeWorkout("w1")],
         customExercises: [],
         measurements: [{ id: "m1", at: TS }],
@@ -124,6 +135,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 1, sqlite: 1 },
         customExercises: { ls: 0, sqlite: 0 },
         measurements: { ls: 1, sqlite: 1 },
+        dailyLog: { ls: 0, sqlite: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -136,6 +150,7 @@ describe("probeFizrukParity", () => {
       await seedWorkout(handle.client, "w1");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [makeWorkout("w1"), makeWorkout("w2")],
         customExercises: [],
         measurements: [],
@@ -147,6 +162,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 2, sqlite: 1, lsOnly: 1, sqliteOnly: 0 },
         customExercises: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         measurements: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        dailyLog: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -161,6 +179,7 @@ describe("probeFizrukParity", () => {
       await seedMeasurement(handle.client, "m3");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [],
         customExercises: [],
         measurements: [{ id: "m1", at: TS }],
@@ -172,6 +191,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         customExercises: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         measurements: { ls: 1, sqlite: 3, lsOnly: 0, sqliteOnly: 2 },
+        dailyLog: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -184,6 +206,7 @@ describe("probeFizrukParity", () => {
       await seedCustomExercise(handle.client, "cex-old");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [],
         customExercises: [{ id: "cex-new" }],
         measurements: [],
@@ -195,6 +218,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
         customExercises: { ls: 1, sqlite: 1, lsOnly: 1, sqliteOnly: 1 },
         measurements: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        dailyLog: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -211,6 +237,7 @@ describe("probeFizrukParity", () => {
       await seedMeasurement(handle.client, "m2");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [makeWorkout("w1")],
         customExercises: [{ id: "cex1" }],
         measurements: [{ id: "m1", at: TS }],
@@ -222,6 +249,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 1, sqlite: 1, lsOnly: 0, sqliteOnly: 0 },
         customExercises: { ls: 1, sqlite: 1, lsOnly: 0, sqliteOnly: 0 },
         measurements: { ls: 1, sqlite: 2, lsOnly: 0, sqliteOnly: 1 },
+        dailyLog: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0, lsOnly: 0, sqliteOnly: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -243,6 +273,7 @@ describe("probeFizrukParity", () => {
       await seedWorkout(handle.client, "w1");
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: [makeWorkout("w1")],
         customExercises: [],
         measurements: [],
@@ -254,6 +285,9 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 1, sqlite: 1 },
         customExercises: { ls: 0, sqlite: 0 },
         measurements: { ls: 0, sqlite: 0 },
+        dailyLog: { ls: 0, sqlite: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
       });
     } finally {
       handle.close();
@@ -275,6 +309,7 @@ describe("probeFizrukParity", () => {
       ] as unknown as readonly FizrukWorkoutSnapshot[];
 
       const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
         workouts: malformedWorkouts,
         customExercises: [],
         measurements: [],
@@ -286,12 +321,218 @@ describe("probeFizrukParity", () => {
         workouts: { ls: 1, sqlite: 1 },
         customExercises: { ls: 0, sqlite: 0 },
         measurements: { ls: 0, sqlite: 0 },
+        dailyLog: { ls: 0, sqlite: 0 },
+        workoutTemplates: { ls: 0, sqlite: 0 },
+        monthlyPlan: { ls: false, sqlite: false },
+      });
+    } finally {
+      handle.close();
+    }
+  });
+
+  // -- Stage 12 / PR #070f-dualwrite — daily-log probe --
+
+  it("reports match when LS and SQLite agree on daily-log rows", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await seedDailyLog(handle.client, "d1");
+      await seedDailyLog(handle.client, "d2");
+
+      const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
+        dailyLog: [
+          {
+            id: "d1",
+            at: TS,
+            weightKg: null,
+            sleepHours: null,
+            energyLevel: null,
+            mood: null,
+            note: "",
+          },
+          {
+            id: "d2",
+            at: TS,
+            weightKg: null,
+            sleepHours: null,
+            energyLevel: null,
+            mood: null,
+            note: "",
+          },
+        ],
+      };
+
+      const out = await probeFizrukParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("match");
+      expect(out.details).toMatchObject({
+        dailyLog: { ls: 2, sqlite: 2 },
+      });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("reports mismatch when daily-log rows diverge", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await seedDailyLog(handle.client, "d1");
+
+      const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
+        dailyLog: [
+          {
+            id: "d2",
+            at: TS,
+            weightKg: null,
+            sleepHours: null,
+            energyLevel: null,
+            mood: null,
+            note: "",
+          },
+        ],
+      };
+
+      const out = await probeFizrukParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("mismatch");
+      expect(out.details).toMatchObject({
+        dailyLog: { ls: 1, sqlite: 1, lsOnly: 1, sqliteOnly: 1 },
+      });
+    } finally {
+      handle.close();
+    }
+  });
+
+  // -- Stage 12 / PR #070f-dualwrite — workout-template probe --
+
+  it("reports match when LS and SQLite agree on workout-template rows", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await seedWorkoutTemplate(handle.client, "t1");
+
+      const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
+        workoutTemplates: [
+          {
+            id: "t1",
+            name: "Push",
+            exerciseIds: [],
+            groups: [],
+            updatedAt: TS,
+          },
+        ],
+      };
+
+      const out = await probeFizrukParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("match");
+      expect(out.details).toMatchObject({
+        workoutTemplates: { ls: 1, sqlite: 1 },
+      });
+    } finally {
+      handle.close();
+    }
+  });
+
+  // -- Stage 12 / PR #070f-dualwrite — monthly-plan probe --
+
+  it("reports match when both sides have identical monthly-plan blob", async () => {
+    const handle = await createTestSqlite();
+    const json = '{"reminderEnabled":true}';
+    try {
+      await seedMonthlyPlan(handle.client, json);
+
+      const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
+        monthlyPlan: { dataJson: json },
+      };
+
+      const out = await probeFizrukParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("match");
+      expect(out.details).toMatchObject({
+        monthlyPlan: { ls: true, sqlite: true, equal: true },
+      });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("reports mismatch when monthly-plan blobs differ", async () => {
+    const handle = await createTestSqlite();
+    try {
+      await seedMonthlyPlan(handle.client, '{"reminderEnabled":true}');
+
+      const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
+        monthlyPlan: { dataJson: '{"reminderEnabled":false}' },
+      };
+
+      const out = await probeFizrukParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("mismatch");
+      expect(out.details).toMatchObject({
+        monthlyPlan: { ls: true, sqlite: true },
+      });
+    } finally {
+      handle.close();
+    }
+  });
+
+  it("reports mismatch when only LS has monthly-plan", async () => {
+    const handle = await createTestSqlite();
+    try {
+      const next: FizrukDualWriteState = {
+        ...EMPTY_STATE,
+        monthlyPlan: { dataJson: "{}" },
+      };
+
+      const out = await probeFizrukParity(handle.client, USER_ID, next);
+      expect(out.result).toBe("mismatch");
+      expect(out.details).toMatchObject({
+        monthlyPlan: { ls: true, sqlite: false },
       });
     } finally {
       handle.close();
     }
   });
 });
+
+async function seedDailyLog(
+  client: SqliteMigrationClient,
+  id: string,
+  opts: { deletedAt?: string | null } = {},
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_daily_log
+       (id, user_id, entry_at, weight_kg, sleep_hours, energy_level, mood,
+        note, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, NULL, NULL, NULL, NULL, '', ?, ?, ?)`,
+    [id, USER_ID, TS, TS, TS, opts.deletedAt ?? null],
+  );
+}
+
+async function seedWorkoutTemplate(
+  client: SqliteMigrationClient,
+  id: string,
+  opts: { deletedAt?: string | null } = {},
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_workout_templates
+       (id, user_id, name, exercise_ids_json, groups_json,
+        last_used_at, created_at, updated_at, deleted_at)
+     VALUES (?, ?, 'tpl', '[]', '[]', NULL, ?, ?, ?)`,
+    [id, USER_ID, TS, TS, opts.deletedAt ?? null],
+  );
+}
+
+async function seedMonthlyPlan(
+  client: SqliteMigrationClient,
+  dataJson: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_monthly_plan
+       (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)`,
+    [USER_ID, dataJson, TS],
+  );
+}
 
 function makeWorkout(id: string) {
   return {

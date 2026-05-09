@@ -6,6 +6,9 @@ import type {
   FizrukItemSnapshot,
   FizrukMeasurementSnapshot,
   FizrukCustomExerciseSnapshot,
+  FizrukDailyLogSnapshot,
+  FizrukMonthlyPlanSnapshot,
+  FizrukWorkoutTemplateSnapshot,
 } from "./diff.js";
 
 /**
@@ -109,6 +112,27 @@ async function applyOne(
 
     case "measurement-delete":
       await softDeleteMeasurement(client, op.measurementId, userId, clientTs);
+      return "applied";
+
+    // Stage 12 / PR #070f-dualwrite ops -----------------------------
+    case "daily-log-upsert":
+      await upsertDailyLog(client, op.entry, userId, clientTs);
+      return "applied";
+
+    case "daily-log-delete":
+      await softDeleteDailyLog(client, op.entryId, userId, clientTs);
+      return "applied";
+
+    case "monthly-plan-set":
+      await setMonthlyPlan(client, op.monthlyPlan, userId, clientTs);
+      return "applied";
+
+    case "workout-template-upsert":
+      await upsertWorkoutTemplate(client, op.template, userId, clientTs);
+      return "applied";
+
+    case "workout-template-delete":
+      await softDeleteWorkoutTemplate(client, op.templateId, userId, clientTs);
       return "applied";
 
     default: {
@@ -441,6 +465,141 @@ function toIntOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   const n = Number(v);
   return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+function toRealOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12 / PR #070f-dualwrite — daily-log per-row upsert/soft-delete
+// -----------------------------------------------------------------------
+
+async function upsertDailyLog(
+  client: SqliteMigrationClient,
+  e: FizrukDailyLogSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_daily_log
+       (id, user_id, entry_at, weight_kg, sleep_hours, energy_level, mood,
+        note, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       entry_at      = excluded.entry_at,
+       weight_kg     = excluded.weight_kg,
+       sleep_hours   = excluded.sleep_hours,
+       energy_level  = excluded.energy_level,
+       mood          = excluded.mood,
+       note          = excluded.note,
+       updated_at    = excluded.updated_at,
+       deleted_at    = NULL
+     WHERE excluded.updated_at > fizruk_daily_log.updated_at`,
+    [
+      e.id,
+      userId,
+      e.at,
+      toRealOrNull(e.weightKg),
+      toRealOrNull(e.sleepHours),
+      toIntOrNull(e.energyLevel),
+      toIntOrNull(e.mood),
+      e.note ?? "",
+      clientTs,
+      clientTs,
+    ],
+  );
+}
+
+async function softDeleteDailyLog(
+  client: SqliteMigrationClient,
+  entryId: string,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `UPDATE fizruk_daily_log
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?`,
+    [clientTs, clientTs, entryId, userId, clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 12 / PR #070f-dualwrite — monthly-plan singleton row
+// -----------------------------------------------------------------------
+
+async function setMonthlyPlan(
+  client: SqliteMigrationClient,
+  monthlyPlan: FizrukMonthlyPlanSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_monthly_plan (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json  = excluded.data_json,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > fizruk_monthly_plan.updated_at`,
+    [userId, monthlyPlan.dataJson ?? "{}", clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 12 / PR #070f-dualwrite — workout-template per-row upsert/soft-delete
+// -----------------------------------------------------------------------
+
+async function upsertWorkoutTemplate(
+  client: SqliteMigrationClient,
+  t: FizrukWorkoutTemplateSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  const exerciseIdsJson = JSON.stringify(
+    Array.isArray(t.exerciseIds) ? t.exerciseIds.map(String) : [],
+  );
+  const groupsJson = JSON.stringify(Array.isArray(t.groups) ? t.groups : []);
+  await client.run(
+    `INSERT INTO fizruk_workout_templates
+       (id, user_id, name, exercise_ids_json, groups_json, last_used_at,
+        created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       name              = excluded.name,
+       exercise_ids_json = excluded.exercise_ids_json,
+       groups_json       = excluded.groups_json,
+       last_used_at      = excluded.last_used_at,
+       updated_at        = excluded.updated_at,
+       deleted_at        = NULL
+     WHERE excluded.updated_at > fizruk_workout_templates.updated_at`,
+    [
+      t.id,
+      userId,
+      t.name ?? "",
+      exerciseIdsJson,
+      groupsJson,
+      t.lastUsedAt ?? null,
+      clientTs,
+      clientTs,
+    ],
+  );
+}
+
+async function softDeleteWorkoutTemplate(
+  client: SqliteMigrationClient,
+  templateId: string,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `UPDATE fizruk_workout_templates
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?`,
+    [clientTs, clientTs, templateId, userId, clientTs],
+  );
 }
 
 // -----------------------------------------------------------------------

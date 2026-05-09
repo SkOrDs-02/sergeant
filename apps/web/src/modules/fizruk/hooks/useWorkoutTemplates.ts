@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
+import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractWorkoutTemplateSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
+
 const KEY = STORAGE_KEYS.FIZRUK_TEMPLATES;
 
 export interface WorkoutTemplate {
@@ -37,6 +44,20 @@ export function useWorkoutTemplates() {
     setTemplates((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       safeWriteLS(KEY, next);
+      // Stage 12 / PR #070f-dualwrite — mirror template writes into
+      // SQLite via the dual-write pipeline. Fire-and-forget; the
+      // trigger is a no-op when no dual-write context is registered.
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        workoutTemplates: extractWorkoutTemplateSnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
       return next;
     });
   }, []);

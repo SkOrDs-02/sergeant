@@ -3101,7 +3101,7 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
 
 [#2274]: https://github.com/Skords-01/Sergeant/pull/2274
 
-##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 🚧 IN PROGRESS (1/4)
+##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 🚧 IN PROGRESS (2/4)
 
 > **Why this is its own stage:** найбільший залишковий schema gap у tail.
 > Поточний Fizruk dual-write covers лише workouts / custom-exercises /

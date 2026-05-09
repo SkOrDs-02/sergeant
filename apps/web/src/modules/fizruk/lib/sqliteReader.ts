@@ -26,6 +26,40 @@ import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
+/**
+ * Stage 12 / PR #070f-dualwrite — minimal cache shapes for the new
+ * tables. The hook-side TypeScript types live alongside the hooks
+ * themselves; the cache only needs the structural shape used by both
+ * the LS-compat React state and the `extract*Snapshot` helpers in
+ * `fizrukDualWriteState.ts`.
+ */
+export interface CachedDailyLogEntry {
+  id: string;
+  at: string;
+  weightKg: number | null;
+  sleepHours: number | null;
+  energyLevel: number | null;
+  /** Coalesced from `mood` (DB column). The web hook also reads it as `moodScore`. */
+  moodScore: number | null;
+  note: string;
+}
+
+export interface CachedMonthlyPlanState {
+  reminderEnabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
+  days: Record<string, { templateId: string }>;
+}
+
+export interface CachedWorkoutTemplate {
+  id: string;
+  name: string;
+  exerciseIds: string[];
+  groups: unknown[];
+  updatedAt: string;
+  lastUsedAt?: string | null;
+}
+
 export interface SqliteFizrukCache {
   /** Workouts ordered newest-first by `startedAt`. */
   workouts: Workout[];
@@ -33,6 +67,22 @@ export interface SqliteFizrukCache {
   customExercises: RawExerciseDef[];
   /** Body / wellbeing measurements ordered newest-first by `at`. */
   measurements: MeasurementEntry[];
+  /**
+   * Daily-log entries ordered newest-first by `at`. Stage 12 /
+   * PR #070f-dualwrite. Empty array means «no rows yet».
+   */
+  dailyLog: CachedDailyLogEntry[];
+  /**
+   * Singleton monthly-plan document. `null` means «no row in
+   * `fizruk_monthly_plan` yet» — consumers should treat that as the
+   * default-empty state. Stage 12 / PR #070f-dualwrite.
+   */
+  monthlyPlan: CachedMonthlyPlanState | null;
+  /**
+   * Workout templates ordered newest-first by `updatedAt`. Stage 12 /
+   * PR #070f-dualwrite. Empty array means «no template rows yet».
+   */
+  workoutTemplates: CachedWorkoutTemplate[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -41,6 +91,9 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   workouts: [],
   customExercises: [],
   measurements: [],
+  dailyLog: [],
+  monthlyPlan: null,
+  workoutTemplates: [],
   refreshedAt: null,
 };
 
@@ -187,6 +240,81 @@ function rowToMeasurement(row: MeasurementRow): MeasurementEntry {
   return entry;
 }
 
+// Stage 12 / PR #070f-dualwrite — row shapes for the new tables.
+interface DailyLogRow {
+  id: string;
+  at: string;
+  weight_kg: number | null;
+  sleep_hours: number | null;
+  energy_level: number | null;
+  mood: number | null;
+  note: string | null;
+  [key: string]: unknown;
+}
+
+interface MonthlyPlanRow {
+  data_json: string | null;
+  [key: string]: unknown;
+}
+
+interface WorkoutTemplateRow {
+  id: string;
+  name: string | null;
+  exercise_ids_json: string | null;
+  groups_json: string | null;
+  updated_at: string | null;
+  last_used_at: string | null;
+  [key: string]: unknown;
+}
+
+function rowToDailyLog(row: DailyLogRow): CachedDailyLogEntry {
+  return {
+    id: row.id,
+    at: row.at,
+    weightKg: row.weight_kg ?? null,
+    sleepHours: row.sleep_hours ?? null,
+    energyLevel: row.energy_level ?? null,
+    moodScore: row.mood ?? null,
+    note: row.note ?? "",
+  };
+}
+
+function rowToWorkoutTemplate(row: WorkoutTemplateRow): CachedWorkoutTemplate {
+  return {
+    id: row.id,
+    name: row.name ?? "",
+    exerciseIds: safeParseJson<string[]>(row.exercise_ids_json, []),
+    groups: safeParseJson<unknown[]>(row.groups_json, []),
+    updatedAt: row.updated_at ?? "",
+    lastUsedAt: row.last_used_at ?? null,
+  };
+}
+
+function rowToMonthlyPlan(
+  row: MonthlyPlanRow | undefined,
+): CachedMonthlyPlanState | null {
+  if (!row || !row.data_json) return null;
+  try {
+    const parsed = JSON.parse(row.data_json) as Partial<CachedMonthlyPlanState>;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      reminderEnabled: parsed.reminderEnabled !== false,
+      reminderHour: Number.isFinite(parsed.reminderHour)
+        ? Math.max(0, Math.min(23, parsed.reminderHour ?? 18))
+        : 18,
+      reminderMinute: Number.isFinite(parsed.reminderMinute)
+        ? Math.max(0, Math.min(59, parsed.reminderMinute ?? 0))
+        : 0,
+      days:
+        parsed.days && typeof parsed.days === "object"
+          ? (parsed.days as Record<string, { templateId: string }>)
+          : {},
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Refresh the fizruk cache from the local SQLite tables. Reads all
  * active (non-tombstoned) rows for `userId`, joins items↔sets, and
@@ -196,47 +324,74 @@ export async function refreshFizrukSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteFizrukCache> {
-  const [workoutRows, itemRows, setRows, customRows, measurementRows] =
-    await Promise.all([
-      client.all<WorkoutRow>(
-        `SELECT id, started_at, ended_at, note, groups_json,
-                warmup_json, cooldown_json, wellbeing_json
-           FROM fizruk_workouts
-          WHERE user_id = ? AND deleted_at IS NULL
-          ORDER BY started_at DESC`,
-        [userId],
-      ),
-      client.all<WorkoutItemRow>(
-        `SELECT id, workout_id, exercise_id, name_uk, primary_group,
-                muscles_primary, muscles_secondary, type,
-                duration_sec, distance_m, sort_order
-           FROM fizruk_workout_items
-          WHERE user_id = ? AND deleted_at IS NULL
-          ORDER BY workout_id ASC, sort_order ASC, id ASC`,
-        [userId],
-      ),
-      client.all<WorkoutSetRow>(
-        `SELECT id, workout_item_id, weight_kg, reps, rpe, sort_order
-           FROM fizruk_workout_sets
-          WHERE user_id = ? AND deleted_at IS NULL
-          ORDER BY workout_item_id ASC, sort_order ASC, id ASC`,
-        [userId],
-      ),
-      client.all<CustomExerciseRow>(
-        `SELECT id, data_json
-           FROM fizruk_custom_exercises
-          WHERE user_id = ? AND deleted_at IS NULL`,
-        [userId],
-      ),
-      client.all<MeasurementRow>(
-        `SELECT id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
-                bicep_cm, sleep_hours, energy_level, mood
-           FROM fizruk_measurements
-          WHERE user_id = ? AND deleted_at IS NULL
-          ORDER BY measured_at DESC`,
-        [userId],
-      ),
-    ]);
+  const [
+    workoutRows,
+    itemRows,
+    setRows,
+    customRows,
+    measurementRows,
+    dailyLogRows,
+    monthlyPlanRows,
+    workoutTemplateRows,
+  ] = await Promise.all([
+    client.all<WorkoutRow>(
+      `SELECT id, started_at, ended_at, note, groups_json,
+              warmup_json, cooldown_json, wellbeing_json
+         FROM fizruk_workouts
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY started_at DESC`,
+      [userId],
+    ),
+    client.all<WorkoutItemRow>(
+      `SELECT id, workout_id, exercise_id, name_uk, primary_group,
+              muscles_primary, muscles_secondary, type,
+              duration_sec, distance_m, sort_order
+         FROM fizruk_workout_items
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY workout_id ASC, sort_order ASC, id ASC`,
+      [userId],
+    ),
+    client.all<WorkoutSetRow>(
+      `SELECT id, workout_item_id, weight_kg, reps, rpe, sort_order
+         FROM fizruk_workout_sets
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY workout_item_id ASC, sort_order ASC, id ASC`,
+      [userId],
+    ),
+    client.all<CustomExerciseRow>(
+      `SELECT id, data_json
+         FROM fizruk_custom_exercises
+        WHERE user_id = ? AND deleted_at IS NULL`,
+      [userId],
+    ),
+    client.all<MeasurementRow>(
+      `SELECT id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
+              bicep_cm, sleep_hours, energy_level, mood
+         FROM fizruk_measurements
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY measured_at DESC`,
+      [userId],
+    ),
+    client.all<DailyLogRow>(
+      `SELECT id, entry_at, weight_kg, sleep_hours, energy_level, mood, note
+         FROM fizruk_daily_log
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY entry_at DESC, id ASC`,
+      [userId],
+    ),
+    client.all<MonthlyPlanRow>(
+      `SELECT data_json FROM fizruk_monthly_plan WHERE user_id = ?`,
+      [userId],
+    ),
+    client.all<WorkoutTemplateRow>(
+      `SELECT id, name, exercise_ids_json, groups_json,
+              updated_at, last_used_at
+         FROM fizruk_workout_templates
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY updated_at DESC, id ASC`,
+      [userId],
+    ),
+  ]);
 
   // Build sets-by-item map first.
   const setsByItem = new Map<string, WorkoutItem["sets"]>();
@@ -263,11 +418,17 @@ export async function refreshFizrukSqliteState(
     .map(rowToCustomExercise)
     .filter((x): x is RawExerciseDef => x !== null);
   const measurements = measurementRows.map(rowToMeasurement);
+  const dailyLog = dailyLogRows.map(rowToDailyLog);
+  const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
+  const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
 
   cache = {
     workouts,
     customExercises,
     measurements,
+    dailyLog,
+    monthlyPlan,
+    workoutTemplates,
     refreshedAt: new Date().toISOString(),
   };
   return cache;

@@ -28,20 +28,62 @@ import type {
 import { isFizrukDualWriteRegistered } from "./dualWrite/index.js";
 import {
   type FizrukCustomExerciseSnapshot,
+  type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
+  type FizrukMonthlyPlanSnapshot,
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
+  type FizrukWorkoutTemplateSnapshot,
 } from "./dualWrite/diff.js";
 import { getCachedFizrukSqliteState } from "./sqliteReader.js";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
+/**
+ * Stage 12 — minimal hook-side shapes the extractors accept. They are
+ * structurally compatible with the web hooks' types
+ * (`apps/web/src/modules/fizruk/hooks/useDailyLog.ts`,
+ * `useMonthlyPlan.ts`, `useWorkoutTemplates.ts`) but do not import
+ * those files to keep this module hook-free.
+ */
+export interface FizrukDailyLogEntryLike {
+  id?: string | null;
+  at?: string | null;
+  weightKg?: number | null;
+  sleepHours?: number | null;
+  energyLevel?: number | null;
+  /** Web hook field. */
+  moodScore?: number | null;
+  /** Mobile / domain-shared field — used as a fallback. */
+  mood?: number | null;
+  note?: string | null;
+}
+
+export interface FizrukMonthlyPlanLike {
+  reminderEnabled?: boolean;
+  reminderHour?: number;
+  reminderMinute?: number;
+  days?: Record<string, { templateId?: string }>;
+}
+
+export interface FizrukWorkoutTemplateLike {
+  id?: string | null;
+  name?: string | null;
+  exerciseIds?: readonly unknown[];
+  groups?: readonly unknown[];
+  updatedAt?: string | null;
+  lastUsedAt?: string | null;
+}
+
 export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
   measurements: [],
+  dailyLog: [],
+  monthlyPlan: null,
+  workoutTemplates: [],
 };
 
 /**
@@ -57,6 +99,11 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       workouts: extractWorkoutSnapshots(cache.workouts),
       customExercises: extractCustomExerciseSnapshots(cache.customExercises),
       measurements: extractMeasurementSnapshots(cache.measurements),
+      dailyLog: extractDailyLogSnapshots(cache.dailyLog ?? []),
+      monthlyPlan: extractMonthlyPlanSnapshot(cache.monthlyPlan ?? null),
+      workoutTemplates: extractWorkoutTemplateSnapshots(
+        cache.workoutTemplates ?? [],
+      ),
     };
   } catch {
     return null;
@@ -113,6 +160,110 @@ export function extractMeasurementSnapshots(
     out.push({ ...snap, id: String(m.id), at: String(m.at) });
   }
   return out;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12 / PR #070f-dualwrite — daily-log / monthly-plan / templates
+// -----------------------------------------------------------------------
+
+/**
+ * Extract daily-log snapshots from a hook-side array. The web hook
+ * uses `moodScore` while the domain / mobile shape uses `mood` — we
+ * coalesce both into the single `mood` integer column the
+ * `fizruk_daily_log` schema exposes.
+ */
+export function extractDailyLogSnapshots(
+  entries: readonly FizrukDailyLogEntryLike[],
+): FizrukDailyLogSnapshot[] {
+  const out: FizrukDailyLogSnapshot[] = [];
+  for (const e of entries) {
+    if (!e || typeof e !== "object" || !e.id || !e.at) continue;
+    out.push({
+      id: String(e.id),
+      at: String(e.at),
+      weightKg: numericOrNull(e.weightKg),
+      sleepHours: numericOrNull(e.sleepHours),
+      energyLevel: numericOrNull(e.energyLevel),
+      // Coalesce moodScore (web) ↔ mood (domain).
+      mood: numericOrNull(e.moodScore ?? e.mood ?? null),
+      note: typeof e.note === "string" ? e.note : "",
+    });
+  }
+  return out;
+}
+
+/**
+ * Serialize the singleton monthly-plan document into the snapshot
+ * shape — the diff layer only needs the JSON string for byte-equal
+ * change detection. Returns `null` when the input is `null`.
+ */
+export function extractMonthlyPlanSnapshot(
+  state: FizrukMonthlyPlanLike | null | undefined,
+): FizrukMonthlyPlanSnapshot | null {
+  if (!state || typeof state !== "object") return null;
+  const safe = {
+    reminderEnabled: state.reminderEnabled !== false,
+    reminderHour: Number.isFinite(state.reminderHour)
+      ? Math.max(0, Math.min(23, state.reminderHour ?? 18))
+      : 18,
+    reminderMinute: Number.isFinite(state.reminderMinute)
+      ? Math.max(0, Math.min(59, state.reminderMinute ?? 0))
+      : 0,
+    days:
+      state.days && typeof state.days === "object"
+        ? Object.fromEntries(
+            Object.entries(state.days)
+              .filter(
+                ([k, v]) =>
+                  typeof k === "string" &&
+                  v != null &&
+                  typeof v === "object" &&
+                  typeof (v as { templateId?: unknown }).templateId ===
+                    "string",
+              )
+              .map(([k, v]) => [
+                k,
+                {
+                  templateId: String((v as { templateId: string }).templateId),
+                },
+              ]),
+          )
+        : {},
+  };
+  return { dataJson: JSON.stringify(safe) };
+}
+
+/**
+ * Extract workout-template snapshots from a hook-side array. Falls
+ * back to the entry's own `at`/created timestamp when `updatedAt` is
+ * missing so the LWW guard always has a non-empty value.
+ */
+export function extractWorkoutTemplateSnapshots(
+  templates: readonly FizrukWorkoutTemplateLike[],
+): FizrukWorkoutTemplateSnapshot[] {
+  const out: FizrukWorkoutTemplateSnapshot[] = [];
+  for (const t of templates) {
+    if (!t || typeof t !== "object" || !t.id) continue;
+    const exerciseIds = Array.isArray(t.exerciseIds)
+      ? t.exerciseIds.filter((id): id is string => typeof id === "string")
+      : [];
+    const groups = Array.isArray(t.groups) ? [...t.groups] : [];
+    out.push({
+      id: String(t.id),
+      name: typeof t.name === "string" ? t.name : "",
+      exerciseIds,
+      groups,
+      updatedAt: typeof t.updatedAt === "string" ? t.updatedAt : "",
+      lastUsedAt: typeof t.lastUsedAt === "string" ? t.lastUsedAt : null,
+    });
+  }
+  return out;
+}
+
+function numericOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 // -----------------------------------------------------------------------

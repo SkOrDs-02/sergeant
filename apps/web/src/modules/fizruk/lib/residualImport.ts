@@ -79,6 +79,9 @@ export async function importFizrukResidualFromLs(
       ? extractCustomExerciseSnapshots(customExercises)
       : [],
     measurements: measurements ? extractMeasurementSnapshots(measurements) : [],
+    dailyLog: [],
+    monthlyPlan: null,
+    workoutTemplates: [],
   };
 
   const ops = diffFizrukDualWriteOps(EMPTY_FIZRUK_DUAL_WRITE_STATE, next);

@@ -3,6 +3,12 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
 import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
+import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractDailyLogSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
@@ -42,6 +48,20 @@ export function useDailyLog() {
   const persist = useCallback((next: DailyLogEntry[]) => {
     setEntries(next);
     safeWriteLS(KEY, next);
+    // Stage 12 / PR #070f-dualwrite — mirror the LS write into SQLite
+    // through the dual-write pipeline. Fire-and-forget; trigger is a
+    // no-op when the context is not registered (pre-auth).
+    const prevDualWrite =
+      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+    const nextDualWrite = {
+      ...prevDualWrite,
+      dailyLog: extractDailyLogSnapshots(next),
+    };
+    try {
+      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+    } catch {
+      /* trigger is fire-and-forget — never propagate */
+    }
   }, []);
 
   const addEntry = useCallback(

@@ -17,6 +17,9 @@ const EMPTY: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
   measurements: [],
+  dailyLog: [],
+  monthlyPlan: null,
+  workoutTemplates: [],
 };
 
 beforeEach(async () => {
@@ -51,6 +54,9 @@ describe("dualWriteFizrukState integration", () => {
       workouts: [],
       customExercises: [],
       measurements: [],
+      dailyLog: [],
+      monthlyPlan: null,
+      workoutTemplates: [],
     };
     const result = await dualWriteFizrukState(state, state);
     expect(result).toEqual({ status: "skipped", reason: "no-ops" });
@@ -114,6 +120,9 @@ describe("dualWriteFizrukState integration", () => {
         { id: "cex1", nameUk: "Моя вправа", primaryGroup: "back" },
       ],
       measurements: [{ id: "m1", at: "2026-05-01T08:00:00Z", weightKg: 80 }],
+      dailyLog: [],
+      monthlyPlan: null,
+      workoutTemplates: [],
     };
 
     const result = await dualWriteFizrukState(EMPTY, next);
@@ -159,5 +168,70 @@ describe("dualWriteFizrukState integration", () => {
       measurements: [{ id: "m1", at: "2026-05-01T08:00:00Z", weightKg: 80 }],
     });
     expect(result).toEqual({ status: "skipped", reason: "context-unset" });
+  });
+
+  // Stage 12 / PR #070f-dualwrite — round-trip for new entity classes.
+  it("applies daily-log + monthly-plan + workout-template ops end-to-end", async () => {
+    const teardown = registerFizrukDualWriteContext(makeCtx());
+
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      dailyLog: [
+        {
+          id: "d1",
+          at: "2026-05-01T07:00:00Z",
+          weightKg: 80,
+          sleepHours: 7,
+          energyLevel: 6,
+          mood: 4,
+          note: "ok",
+        },
+      ],
+      monthlyPlan: { dataJson: '{"days":{"2026-05-01":[]}}' },
+      workoutTemplates: [
+        {
+          id: "t1",
+          name: "Push day",
+          exerciseIds: ["bench-press"],
+          groups: [],
+          updatedAt: TS,
+          lastUsedAt: null,
+        },
+      ],
+    };
+
+    const result = await dualWriteFizrukState(EMPTY, next);
+    expect(result.status).toBe("applied");
+    if (result.status !== "applied") throw new Error("expected applied");
+    expect(result.result.applied).toBe(3);
+    expect(result.result.errored).toBe(0);
+
+    const dailyLog = await handle.client.all<Record<string, unknown>>(
+      "SELECT id, entry_at, weight_kg, mood FROM fizruk_daily_log",
+    );
+    expect(dailyLog).toHaveLength(1);
+    expect(dailyLog[0]!.id).toBe("d1");
+    expect(dailyLog[0]!.entry_at).toBe("2026-05-01T07:00:00Z");
+    expect(dailyLog[0]!.weight_kg).toBe(80);
+    expect(dailyLog[0]!.mood).toBe(4);
+
+    const plan = await handle.client.all<Record<string, unknown>>(
+      "SELECT user_id, data_json FROM fizruk_monthly_plan",
+    );
+    expect(plan).toHaveLength(1);
+    expect(plan[0]!.user_id).toBe(UID);
+    expect(plan[0]!.data_json).toBe('{"days":{"2026-05-01":[]}}');
+
+    const templates = await handle.client.all<Record<string, unknown>>(
+      "SELECT id, name, exercise_ids_json FROM fizruk_workout_templates",
+    );
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.id).toBe("t1");
+    expect(templates[0]!.name).toBe("Push day");
+    expect(JSON.parse(templates[0]!.exercise_ids_json as string)).toEqual([
+      "bench-press",
+    ]);
+
+    teardown();
   });
 });

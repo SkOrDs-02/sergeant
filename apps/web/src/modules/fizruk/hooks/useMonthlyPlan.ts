@@ -3,6 +3,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
+import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractMonthlyPlanSnapshot,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
+
 const STORAGE_KEY = MONTHLY_PLAN_STORAGE_KEY;
 
 interface DayEntry {
@@ -43,6 +50,20 @@ function loadState(): MonthlyPlanState {
 
 function saveState(s: MonthlyPlanState): void {
   safeWriteLS(STORAGE_KEY, s);
+  // Stage 12 / PR #070f-dualwrite — mirror the singleton monthly-plan
+  // doc into SQLite via the dual-write pipeline. Fire-and-forget; the
+  // trigger is a no-op when no dual-write context is registered.
+  const prevDualWrite =
+    peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+  const nextDualWrite = {
+    ...prevDualWrite,
+    monthlyPlan: extractMonthlyPlanSnapshot(s),
+  };
+  try {
+    triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+  } catch {
+    /* trigger is fire-and-forget — never propagate */
+  }
   window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
 }
 

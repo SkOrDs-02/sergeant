@@ -14,13 +14,22 @@ import type { FizrukDualWriteState } from "./diff.js";
  *
  * The orchestrator (`./index.ts`) calls this helper after every
  * successful `applyFizrukDualWriteOps` apply. Fizruk SQLite mirrors
- * three top-level entity classes — workouts, custom exercises, and
- * measurements — so the probe compares the live id-sets of each
- * against the LS-derived `next.{workouts,customExercises,measurements}`
- * lists. Child tables (`fizruk_workout_items`, `fizruk_workout_sets`)
- * are not compared directly: the workout-level cardinality already
- * captures the most common drift mode (lost or duplicated workout)
- * and child-row drift would surface as a downstream `applied:errored`
+ * six top-level entity classes:
+ *
+ *   1. **Workouts** — top-level rows in `fizruk_workouts`.
+ *   2. **Custom exercises** — top-level rows in `fizruk_custom_exercises`.
+ *   3. **Measurements** — top-level rows in `fizruk_measurements`.
+ *   4. **Daily log** — top-level rows in `fizruk_daily_log`. Stage 12 /
+ *      PR #070f-dualwrite.
+ *   5. **Monthly plan** — singleton `fizruk_monthly_plan` blob compared
+ *      by JSON-string equality. Stage 12 / PR #070f-dualwrite.
+ *   6. **Workout templates** — top-level rows in
+ *      `fizruk_workout_templates`. Stage 12 / PR #070f-dualwrite.
+ *
+ * Child tables (`fizruk_workout_items`, `fizruk_workout_sets`) are not
+ * compared directly: the workout-level cardinality already captures
+ * the most common drift mode (lost or duplicated workout) and
+ * child-row drift would surface as a downstream `applied:errored`
  * spike on the next dual-write attempt.
  *
  * The probe is best-effort: it must NEVER throw, and any read failure
@@ -61,10 +70,23 @@ export async function probeFizrukParity(
     "fizruk_measurements",
     userId,
   );
+  // Stage 12 — daily-log + workout-template id sets, monthly-plan blob.
+  const sqliteDailyLog = await readActiveIds(
+    client,
+    "fizruk_daily_log",
+    userId,
+  );
+  const sqliteWorkoutTemplates = await readActiveIds(
+    client,
+    "fizruk_workout_templates",
+    userId,
+  );
 
   const lsWorkouts = buildIdSet(next.workouts);
   const lsCustomExercises = buildIdSet(next.customExercises);
   const lsMeasurements = buildIdSet(next.measurements);
+  const lsDailyLog = buildIdSet(next.dailyLog ?? []);
+  const lsWorkoutTemplates = buildIdSet(next.workoutTemplates ?? []);
 
   const workoutsDiff = compareSets(lsWorkouts, sqliteWorkouts);
   const customExercisesDiff = compareSets(
@@ -72,9 +94,21 @@ export async function probeFizrukParity(
     sqliteCustomExercises,
   );
   const measurementsDiff = compareSets(lsMeasurements, sqliteMeasurements);
+  const dailyLogDiff = compareSets(lsDailyLog, sqliteDailyLog);
+  const workoutTemplatesDiff = compareSets(
+    lsWorkoutTemplates,
+    sqliteWorkoutTemplates,
+  );
+  // Stage 12 — monthly-plan singleton compared by JSON-blob equality.
+  const monthlyPlanDiff = await probeMonthlyPlan(client, userId, next);
 
   const allMatch =
-    workoutsDiff.match && customExercisesDiff.match && measurementsDiff.match;
+    workoutsDiff.match &&
+    customExercisesDiff.match &&
+    measurementsDiff.match &&
+    dailyLogDiff.match &&
+    workoutTemplatesDiff.match &&
+    monthlyPlanDiff.match;
 
   if (allMatch) {
     return {
@@ -89,6 +123,12 @@ export async function probeFizrukParity(
           ls: lsMeasurements.size,
           sqlite: sqliteMeasurements.size,
         },
+        dailyLog: { ls: lsDailyLog.size, sqlite: sqliteDailyLog.size },
+        workoutTemplates: {
+          ls: lsWorkoutTemplates.size,
+          sqlite: sqliteWorkoutTemplates.size,
+        },
+        monthlyPlan: monthlyPlanDiff.details,
       },
     };
   }
@@ -119,13 +159,31 @@ export async function probeFizrukParity(
         lsOnly: measurementsDiff.lsOnly,
         sqliteOnly: measurementsDiff.sqliteOnly,
       },
+      dailyLog: {
+        ls: lsDailyLog.size,
+        sqlite: sqliteDailyLog.size,
+        lsOnly: dailyLogDiff.lsOnly,
+        sqliteOnly: dailyLogDiff.sqliteOnly,
+      },
+      workoutTemplates: {
+        ls: lsWorkoutTemplates.size,
+        sqlite: sqliteWorkoutTemplates.size,
+        lsOnly: workoutTemplatesDiff.lsOnly,
+        sqliteOnly: workoutTemplatesDiff.sqliteOnly,
+      },
+      monthlyPlan: monthlyPlanDiff.details,
     },
   };
 }
 
 async function readActiveIds(
   client: SqliteMigrationClient,
-  table: "fizruk_workouts" | "fizruk_custom_exercises" | "fizruk_measurements",
+  table:
+    | "fizruk_workouts"
+    | "fizruk_custom_exercises"
+    | "fizruk_measurements"
+    | "fizruk_daily_log"
+    | "fizruk_workout_templates",
   userId: string,
 ): Promise<Set<string>> {
   const rows = await client.all<{ id: string }>(
@@ -138,6 +196,50 @@ async function readActiveIds(
     if (typeof row.id === "string" && row.id.length > 0) out.add(row.id);
   }
   return out;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12 — monthly-plan probe (compare singleton JSON blob)
+// -----------------------------------------------------------------------
+
+interface MonthlyPlanDiffResult {
+  match: boolean;
+  details: Record<string, unknown>;
+}
+
+async function probeMonthlyPlan(
+  client: SqliteMigrationClient,
+  userId: string,
+  next: FizrukDualWriteState,
+): Promise<MonthlyPlanDiffResult> {
+  const rows = await client.all<{ data_json: string }>(
+    `SELECT data_json FROM fizruk_monthly_plan WHERE user_id = ?`,
+    [userId],
+  );
+  const sqliteHas = rows.length > 0;
+  const lsHas = next.monthlyPlan !== null && next.monthlyPlan !== undefined;
+
+  if (!lsHas && !sqliteHas) {
+    return { match: true, details: { ls: false, sqlite: false } };
+  }
+  if (lsHas !== sqliteHas) {
+    return { match: false, details: { ls: lsHas, sqlite: sqliteHas } };
+  }
+  // Both sides have a row — compare the JSON blob byte-for-byte.
+  const sqliteJson = rows[0]?.data_json ?? "{}";
+  const lsJson = next.monthlyPlan?.dataJson ?? "{}";
+  const equal = sqliteJson === lsJson;
+  return {
+    match: equal,
+    details: equal
+      ? { ls: true, sqlite: true, equal: true }
+      : {
+          ls: true,
+          sqlite: true,
+          lsLen: lsJson.length,
+          sqliteLen: sqliteJson.length,
+        },
+  };
 }
 
 function buildIdSet(items: readonly { id: string }[]): Set<string> {
