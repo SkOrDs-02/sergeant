@@ -4,15 +4,26 @@
  * create_habit, create_transaction, log_set, log_water.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
+import {
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "../../modules/routine/lib/sqliteReader";
 import { executeAction, executeActions } from "./hubChatActions";
 
 beforeEach(() => {
+  // Stage 8 PR #057r-tombstone — routine state lives in the SQLite
+  // warm cache, not localStorage. Reset both so each spec starts clean.
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useRealTimers();
 });
 
@@ -34,9 +45,7 @@ describe("create_habit", () => {
     });
     expect(msg).toContain("Пити воду");
     expect(msg).toContain("щодня");
-    const state = readLS<{
-      habits: Array<{ name: string; recurrence: string }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits).toHaveLength(1);
     expect(state.habits[0]!.name).toBe("Пити воду");
     expect(state.habits[0]!.recurrence).toBe("daily");
@@ -48,9 +57,7 @@ describe("create_habit", () => {
       input: { name: "Біг", recurrence: "weekly", weekdays: [1, 3, 5] },
     });
     expect(msg).toContain("щотижня");
-    const state = readLS<{
-      habits: Array<{ recurrence: string; weekdays: number[] }>;
-    }>("hub_routine_v1", { habits: [] });
+    const state = loadRoutineState();
     expect(state.habits[0]!.recurrence).toBe("weekly");
     expect(state.habits[0]!.weekdays).toEqual([1, 3, 5]);
   });
@@ -61,7 +68,9 @@ describe("create_habit", () => {
       input: { name: "   " },
     });
     expect(msg).toContain("назви");
-    expect(localStorage.getItem("hub_routine_v1")).toBeNull();
+    // Tombstone: no habits saved → cache stays empty.
+    const state = loadRoutineState();
+    expect(state.habits).toHaveLength(0);
   });
 });
 

@@ -167,6 +167,88 @@ export function clearSqliteRoutineStateCache(): void {
   stateCache = { ...EMPTY_STATE_CACHE };
 }
 
+/**
+ * Stage 8 PR #057r-tombstone — write-through cache update.
+ *
+ * Called by `saveRoutineState()` after firing the dual-write so
+ * subsequent synchronous `loadRoutineState()` calls see the just-saved
+ * fields without waiting for the async dual-write → SQLite round trip.
+ * The next `refreshSqliteRoutineState(client, userId)` (boot, sync
+ * pull, scheduled refresh) replaces these in-memory values with the
+ * canonical SQLite read.
+ */
+export function setCachedSqliteRoutineState(
+  state: Pick<
+    SqliteRoutineStateCache,
+    | "habits"
+    | "tags"
+    | "categories"
+    | "prefs"
+    | "pushupsByDate"
+    | "habitOrder"
+    | "completionNotes"
+  >,
+): void {
+  stateCache = {
+    habits: state.habits,
+    tags: state.tags,
+    categories: state.categories,
+    prefs: state.prefs,
+    pushupsByDate: state.pushupsByDate,
+    habitOrder: state.habitOrder,
+    completionNotes: state.completionNotes,
+    refreshedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Stage 8 PR #057r-tombstone — write-through cache update for the
+ * legacy completions cache. Mirrors {@link setCachedSqliteRoutineState}
+ * for the `getCachedSqliteCompletions()` slice.
+ */
+export function setCachedSqliteCompletions(
+  completions: Record<string, string[]>,
+): void {
+  cache = { completions, refreshedAt: new Date().toISOString() };
+}
+
+/**
+ * Test helper: seed the full-state cache directly without running
+ * migrations / SQLite queries. The provided fields override the empty
+ * defaults and the cache is marked as refreshed (`refreshedAt`) so
+ * `loadRoutineState()` overlays the values onto `defaultRoutineState()`.
+ *
+ * Stage 8 PR #057r-tombstone — the canonical load/persist surface
+ * now reads from this cache instead of localStorage, so unit tests
+ * seed state through this helper rather than the legacy
+ * `localStorage.setItem(ROUTINE_STORAGE_KEY, …)` round-trip.
+ */
+export function __setRoutineSqliteStateCacheForTests(
+  partial: Partial<SqliteRoutineStateCache>,
+): void {
+  stateCache = {
+    ...EMPTY_STATE_CACHE,
+    refreshedAt: new Date().toISOString(),
+    ...partial,
+  };
+}
+
+/**
+ * Test helper: seed the legacy completions cache. Mirrors
+ * `__setRoutineSqliteStateCacheForTests` for the
+ * `getCachedSqliteCompletions()` slice that pre-Stage-10 callers
+ * still read.
+ */
+export function __setRoutineSqliteCompletionsCacheForTests(
+  partial: Partial<SqliteCompletionsCache>,
+): void {
+  cache = {
+    ...EMPTY_CACHE,
+    refreshedAt: new Date().toISOString(),
+    ...partial,
+  };
+}
+
 // -----------------------------------------------------------------------
 // Per-table readers
 // -----------------------------------------------------------------------

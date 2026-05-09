@@ -2,6 +2,11 @@
 /**
  * Extended tests for routineStorage: covers creation/update/delete/toggle/move/order
  * logic (previously only load/save were tested).
+ *
+ * Stage 8 PR #057r-tombstone — the load/persist surface now reads
+ * from the SQLite warm cache instead of localStorage, so the suite
+ * resets the cache (not LS) between specs and seeds residual fixtures
+ * via `__setRoutineSqliteStateCacheForTests`.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
@@ -26,17 +31,25 @@ import {
   deleteCategory,
   buildRoutineBackupPayload,
   applyRoutineBackupPayload,
-  ROUTINE_STORAGE_KEY,
 } from "./routineStorage";
+import {
+  __setRoutineSqliteStateCacheForTests,
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "./sqliteReader";
 import { completionNoteKey } from "./completionNoteKey";
 
 beforeEach(() => {
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
   vi.useRealTimers();
 });
 
@@ -64,11 +77,10 @@ describe("createHabit", () => {
     });
     expect(s.habits[0]!.weekdays).toEqual([1, 3, 5]);
   });
-  it("персистить state у localStorage", () => {
-    createHabit(fresh(), { name: "X" });
-    const raw = localStorage.getItem(ROUTINE_STORAGE_KEY);
-    expect(raw).toBeTruthy();
-    expect(JSON.parse(raw!).habits).toHaveLength(1);
+  it("файрить dual-write без запису у localStorage (томбстон)", () => {
+    const s = createHabit(fresh(), { name: "X" });
+    expect(s.habits).toHaveLength(1);
+    expect(localStorage.getItem("hub_routine_v1")).toBe(null);
   });
 });
 
@@ -332,26 +344,9 @@ describe("edge cases: double completion in one day", () => {
     ).length;
     expect(count).toBe(1);
   });
-  it("дублікати з legacy-даних санітизуються при завантаженні", () => {
-    const id = "legacy";
-    const raw = {
-      schemaVersion: 3,
-      habits: [
-        {
-          id,
-          name: "Legacy",
-          archived: false,
-          recurrence: "daily",
-          startDate: "2024-01-01",
-        },
-      ],
-      completions: { [id]: ["2024-06-15", "2024-06-15", "bad", "2024-06-14"] },
-      habitOrder: [id],
-    };
-    localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(raw));
-    const s = loadRoutineState();
-    expect(s.completions[id]).toEqual(["2024-06-14", "2024-06-15"]);
-  });
+  // The LS → normalize sanitization path moved out of `loadRoutineState`
+  // in PR #057r-tombstone — it is now exercised by `residualImport.ts`
+  // and `@sergeant/routine-domain`'s own `normalizeRoutineState` tests.
   it("markAllScheduledHabitsComplete стає no-op після дедуплікації", () => {
     let s = createHabit(fresh(), { name: "A" });
     const id = s.habits[0]!.id;
@@ -518,49 +513,29 @@ describe("edge cases: completion notes cleanup", () => {
   });
 });
 
-describe("edge cases: loadRoutineState sanitization", () => {
-  it("коерсить completions як не-об'єкт у порожню мапу", () => {
-    const raw = {
-      schemaVersion: 3,
-      habits: [] as unknown[],
-      completions: "not-an-object",
-    };
-    localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(raw));
-    const s = loadRoutineState();
-    expect(s.completions).toEqual({});
-  });
-  it("коерсить не-масив completions[id] у порожній масив", () => {
+describe("backup payload format", () => {
+  it("buildRoutineBackupPayload повертає канонічний envelope", () => {
     const id = "h1";
-    const raw = {
-      schemaVersion: 3,
+    __setRoutineSqliteStateCacheForTests({
       habits: [
         {
           id,
-          name: "A",
+          name: "Cached",
           archived: false,
+          paused: false,
           recurrence: "daily",
-          startDate: "2024-01-01",
+          startDate: "2024-06-01",
+          weekdays: [0, 1, 2, 3, 4, 5, 6],
+          reminderTimes: [],
+          createdAt: "2024-06-01T00:00:00.000Z",
         },
       ],
-      completions: { [id]: "oops" },
-    };
-    localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(raw));
-    const s = loadRoutineState();
-    expect(s.completions[id]).toEqual([]);
-  });
-});
-
-describe("backup roundtrip", () => {
-  it("build → apply повертає такий самий state", () => {
-    const s1 = createHabit(fresh(), { name: "A" });
-    toggleHabitCompletion(s1, s1.habits[0]!.id, "2024-06-15");
+      habitOrder: [id],
+    });
     const payload = buildRoutineBackupPayload();
     expect(payload.kind).toBe("hub-routine-backup");
-    localStorage.clear();
-    applyRoutineBackupPayload(payload);
-    const restored = loadRoutineState();
-    expect(restored.habits).toHaveLength(1);
-    expect(Object.keys(restored.completions)).toHaveLength(1);
+    expect(payload.data.habits).toHaveLength(1);
+    expect(payload.data.habits[0]!.name).toBe("Cached");
   });
   it("applyRoutineBackupPayload кидає на невалідному payload", () => {
     expect(() => applyRoutineBackupPayload(null)).toThrow();
