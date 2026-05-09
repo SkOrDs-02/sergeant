@@ -138,6 +138,67 @@ describe("requireCsrfHeader — exempt paths", () => {
   });
 });
 
+describe('requireCsrfHeader — exempt paths під `app.use("/api", …)` mount', () => {
+  function makeMountedApp() {
+    const app = express();
+    app.use("/api", requireCsrfHeader());
+    app.all("/api/auth/sign-up/email", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/auth/sign-in/email", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/mono/webhook", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/billing/stripe-webhook", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/csp-report", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/metrics/web-vitals", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/internal/billing/charge", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.all("/api/foo", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    return app;
+  }
+
+  it.each([
+    "/api/auth/sign-up/email",
+    "/api/auth/sign-in/email",
+    "/api/mono/webhook",
+    "/api/billing/stripe-webhook",
+    "/api/csp-report",
+    "/api/metrics/web-vitals",
+    "/api/internal/billing/charge",
+  ])("POST %s БЕЗ XRW під `/api` mount → пропускається (200)", async (path) => {
+    const app = makeMountedApp();
+    const res = await request(app).post(path);
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /api/foo під `/api` mount БЕЗ XRW → 403 (regression guard)", async () => {
+    const app = makeMountedApp();
+    const res = await request(app).post("/api/foo");
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("CSRF_HEADER_REQUIRED");
+  });
+
+  it("POST /api/foo під `/api` mount з XRW → 200", async () => {
+    const app = makeMountedApp();
+    const res = await request(app)
+      .post("/api/foo")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(200);
+  });
+});
+
 describe("requireCsrfHeader — X-Api-Secret bypass для S2S викликів", () => {
   it("POST /api/push/send з X-Api-Secret → пропускається без XRW", async () => {
     // Defensive: CSRF-вектор покладається на cookie-сесію, що приклеїться

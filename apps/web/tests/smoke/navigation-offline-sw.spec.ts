@@ -43,7 +43,7 @@ test("@extended offline: shows OfflineBanner status", async ({
   await context.setOffline(true);
 
   await expect(
-    page.getByRole("status").filter({ hasText: "Немає підключення" }),
+    page.locator('[data-testid="offline-banner"][data-state="offline"]'),
   ).toBeVisible({ timeout: 10_000 });
 
   await context.setOffline(false);

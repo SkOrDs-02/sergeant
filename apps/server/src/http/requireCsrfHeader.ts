@@ -77,6 +77,19 @@ function isExemptPath(path: string): boolean {
   return false;
 }
 
+/**
+ * Build the full request path for exempt-list matching, independent of
+ * Express mount-point. When the middleware is mounted via
+ * `app.use("/api", requireCsrfHeader())`, `req.path` is stripped of the
+ * `/api` prefix — so naive `isExemptPath(req.path)` would never match the
+ * `/api/...` entries in `EXEMPT_PATH_PREFIXES`. Concatenating
+ * `req.baseUrl + req.path` reconstructs the canonical path the exempt list
+ * is written against.
+ */
+function fullRequestPath(req: { baseUrl?: string; path: string }): string {
+  return (req.baseUrl ?? "") + req.path;
+}
+
 export interface RequireCsrfHeaderOptions {
   /**
    * Custom logger callback for diagnostics. Default: no-op. Tests
@@ -94,7 +107,8 @@ export function requireCsrfHeader(
       next();
       return;
     }
-    if (isExemptPath(req.path)) {
+    const checkedPath = fullRequestPath(req);
+    if (isExemptPath(checkedPath)) {
       next();
       return;
     }
@@ -109,7 +123,7 @@ export function requireCsrfHeader(
     const value =
       typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
     if (value !== REQUIRED_VALUE) {
-      opts.onReject?.({ method: req.method, path: req.path });
+      opts.onReject?.({ method: req.method, path: checkedPath });
       res.status(403).json({
         error: "CSRF header required",
         code: "CSRF_HEADER_REQUIRED",
