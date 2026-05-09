@@ -261,4 +261,237 @@ describe("applyRoutineDualWriteOps (mobile, better-sqlite3)", () => {
       expect.objectContaining({ error: "boom" }),
     );
   });
+
+  // -----------------------------------------------------------------------
+  // Stage 10: full-state entity ops
+  // -----------------------------------------------------------------------
+
+  describe("Stage 10 ops", () => {
+    function listAll<R extends Record<string, unknown>>(table: string): R[] {
+      // The sync better-sqlite3 client returns `R[]` directly even though
+      // the `SqliteMigrationClient` interface widens to `R[] | Promise<R[]>`
+      // for the async expo-sqlite path.
+      return client.all<R>(
+        `SELECT * FROM ${table} ORDER BY rowid ASC`,
+        [],
+      ) as R[];
+    }
+
+    it("habit-upsert inserts a row in routine_habits", async () => {
+      const result = await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "habit-upsert",
+            habit: {
+              id: "h1",
+              name: "Drink water",
+              emoji: "💧",
+              archived: false,
+              paused: false,
+              tagIds: ["t1"],
+              weekdays: [1, 2, 3, 4, 5],
+              createdAt: T0,
+            },
+          },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
+      const rows = listAll<{
+        id: string;
+        name: string;
+        emoji: string;
+        tag_ids_json: string;
+        archived: number;
+        weekdays_json: string;
+        deleted_at: string | null;
+      }>("routine_habits");
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        id: "h1",
+        name: "Drink water",
+        emoji: "💧",
+        archived: 0,
+        deleted_at: null,
+      });
+      expect(JSON.parse(rows[0]!.tag_ids_json)).toEqual(["t1"]);
+      expect(JSON.parse(rows[0]!.weekdays_json)).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it("habit-upsert is LWW-guarded by updated_at", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "habit-upsert",
+            habit: { id: "h1", name: "New name", createdAt: T0 },
+          },
+        ],
+        { userId: USER_ID, clientTs: T2, logger },
+      );
+      // Stale write — must not overwrite the newer row.
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "habit-upsert",
+            habit: { id: "h1", name: "Stale", createdAt: T0 },
+          },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      const rows = listAll<{ name: string; updated_at: string }>(
+        "routine_habits",
+      );
+      expect(rows[0]).toMatchObject({ name: "New name", updated_at: T2 });
+    });
+
+    it("habit-delete soft-deletes the row", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "habit-upsert",
+            habit: { id: "h1", name: "X", createdAt: T0 },
+          },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      await applyRoutineDualWriteOps(
+        client,
+        [{ kind: "habit-delete", habitId: "h1" }],
+        { userId: USER_ID, clientTs: T2, logger },
+      );
+      const rows = listAll<{ deleted_at: string | null }>("routine_habits");
+      expect(rows[0]).toMatchObject({ deleted_at: T2 });
+    });
+
+    it("tag-upsert + tag-delete round-trip", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "tag-upsert",
+            tag: { id: "t1", name: "morning", scope: "user" },
+          },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      let rows = listAll<{
+        name: string;
+        scope: string;
+        deleted_at: string | null;
+      }>("routine_tags");
+      expect(rows[0]).toMatchObject({ name: "morning", scope: "user" });
+
+      await applyRoutineDualWriteOps(
+        client,
+        [{ kind: "tag-delete", tagId: "t1" }],
+        { userId: USER_ID, clientTs: T2, logger },
+      );
+      rows = listAll<{
+        name: string;
+        scope: string;
+        deleted_at: string | null;
+      }>("routine_tags");
+      expect(rows[0]?.deleted_at).toBe(T2);
+    });
+
+    it("category-upsert writes to routine_categories", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "category-upsert",
+            category: { id: "c1", name: "Health", emoji: "🏥" },
+          },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      const rows = listAll<{ name: string; emoji: string }>(
+        "routine_categories",
+      );
+      expect(rows[0]).toMatchObject({ name: "Health", emoji: "🏥" });
+    });
+
+    it("prefs-set upserts a single row keyed by user_id", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [{ kind: "prefs-set", prefs: { showFizrukInCalendar: true } }],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      await applyRoutineDualWriteOps(
+        client,
+        [{ kind: "prefs-set", prefs: { showFizrukInCalendar: false } }],
+        { userId: USER_ID, clientTs: T2, logger },
+      );
+      const rows = listAll<{ data_json: string }>("routine_prefs");
+      expect(rows).toHaveLength(1);
+      expect(JSON.parse(rows[0]!.data_json)).toEqual({
+        showFizrukInCalendar: false,
+      });
+    });
+
+    it("pushup-upsert writes per (user, date_key)", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          { kind: "pushup-upsert", dateKey: "2026-05-01", reps: 30 },
+          { kind: "pushup-upsert", dateKey: "2026-05-02", reps: 40 },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      const rows = listAll<{ date_key: string; reps: number }>(
+        "routine_pushups",
+      );
+      expect(rows).toHaveLength(2);
+      const map = new Map(rows.map((r) => [r.date_key, r.reps]));
+      expect(map.get("2026-05-01")).toBe(30);
+      expect(map.get("2026-05-02")).toBe(40);
+    });
+
+    it("habit-order-set persists JSON array", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [{ kind: "habit-order-set", orderedIds: ["h2", "h1", "h3"] }],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      const rows = listAll<{ order_json: string }>("routine_habit_order");
+      expect(JSON.parse(rows[0]!.order_json)).toEqual(["h2", "h1", "h3"]);
+    });
+
+    it("completion-note upsert + delete cycle", async () => {
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "completion-note-upsert",
+            noteKey: "h1__2026-05-01",
+            note: "did well",
+          },
+        ],
+        { userId: USER_ID, clientTs: T1, logger },
+      );
+      let rows = listAll<{ note: string; deleted_at: string | null }>(
+        "routine_completion_notes",
+      );
+      expect(rows[0]).toMatchObject({ note: "did well", deleted_at: null });
+
+      await applyRoutineDualWriteOps(
+        client,
+        [
+          {
+            kind: "completion-note-delete",
+            noteKey: "h1__2026-05-01",
+          },
+        ],
+        { userId: USER_ID, clientTs: T2, logger },
+      );
+      rows = listAll<{ note: string; deleted_at: string | null }>(
+        "routine_completion_notes",
+      );
+      expect(rows[0]?.deleted_at).toBe(T2);
+    });
+  });
 });

@@ -2,11 +2,17 @@ import type { RoutineState } from "@sergeant/routine-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import {
+  recordDualWriteOutcome,
+  recordParityCheck,
+  recordReadFallback,
+} from "../../../../lib/observability/dualWriteTelemetry";
+import {
   applyRoutineDualWriteOps,
   type ApplyDualWriteResult,
   type DualWriteLogger,
 } from "./adapter";
 import { diffRoutineDualWriteOps } from "./diff";
+import { probeRoutineParity } from "./parity";
 
 /**
  * Orchestrator for the routine dual-write layer (mobile mirror of
@@ -21,10 +27,14 @@ import { diffRoutineDualWriteOps } from "./diff";
  * Stage 8 PR #056r removed `isEnabled()` from the context — the
  * legacy `feature.routine.sqlite_v2.dual_write` flag was default-on
  * with no toggle path remaining. Registration is `userId`-gated only.
- * The MMKV write stays as the source-of-truth for non-completion
- * routine state (habits / tags / categories / prefs / pushups /
- * habitOrder / completionNotes) because the routine SQLite schema is
- * narrower (only `routine_entries` + `routine_streaks`).
+ *
+ * **Stage 10 mobile mirror** extends the orchestrator from the
+ * completion-only mirror (`routine_entries` only) to the full
+ * `RoutineState` (all 7 new tables shipped in PR #070r-schema). The
+ * MMKV write stays as the source-of-truth for the read path on
+ * mobile until the MMKV-write drop follow-up — but the SQLite mirror
+ * is now complete enough that a parity probe can validate
+ * convergence.
  *
  * Decoupling: see the web copy for the rationale (avoids cycles
  * between LS layer ↔ auth ↔ sqlite singleton, keeps tests independent).
@@ -56,7 +66,23 @@ export function isRoutineDualWriteRegistered(): boolean {
   return registeredContext !== null;
 }
 
+/**
+ * Run the dual-write pipeline for a `prev → next` MMKV-state transition.
+ *
+ * Every call records its terminal outcome through
+ * `recordDualWriteOutcome("routine", …)` so the Stage 8 decision-gate
+ * counters stay current on mobile Sentry breadcrumbs.
+ */
 export async function dualWriteRoutineState(
+  prev: RoutineState,
+  next: RoutineState,
+): Promise<DualWriteOutcome> {
+  const outcome = await runDualWriteRoutineState(prev, next);
+  recordDualWriteOutcome("routine", outcome);
+  return outcome;
+}
+
+async function runDualWriteRoutineState(
   prev: RoutineState,
   next: RoutineState,
 ): Promise<DualWriteOutcome> {
@@ -93,6 +119,25 @@ export async function dualWriteRoutineState(
     clientTs: ctx.getNow(),
     logger: ctx.logger,
   });
+
+  // Stage 8 parity probe — best-effort: never throws, never disturbs
+  // the dual-write outcome. A failed probe-read is tagged distinctly
+  // (`recordReadFallback`) so triage can tell `SELECT failing` apart
+  // from a real MMKV↔SQLite divergence (`recordParityCheck("…",
+  // "mismatch", …)`). Stage 10 mobile mirror extends the probe to
+  // all 7 entity classes — see `./parity.ts`.
+  try {
+    const parity = await probeRoutineParity(client, userId, next);
+    recordParityCheck("routine", parity.result, parity.details);
+  } catch (err) {
+    recordReadFallback(
+      "routine",
+      err instanceof Error
+        ? `parity-probe-failed: ${err.message}`
+        : "parity-probe-failed",
+    );
+  }
+
   return { status: "applied", result };
 }
 
