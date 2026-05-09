@@ -2978,20 +2978,24 @@ Split into 2 PRs:
   коли mobile отримає `setSentryTag`). Web Drizzle schemas (SQLite + Pg) +
   serial migrations (`004_routine_full_state.sql` / `050_routine_full_state.sql`)
   уже landed у [#2279] — на mobile додалися тільки клієнтський диф/apply/parity/reader/telemetry.
-- **PR #057r-tombstone-mobile** 📋 PROPOSED — drop MMKV writes у
-  `apps/mobile/src/modules/routine/lib/routineStorage.ts` (mirror
+- **PR #057r-tombstone-mobile** ✅ LANDED в [#2288] — drop MMKV writes у
+  `apps/mobile/src/modules/routine/lib/routineStore.ts` (mirror
   web write-through cache pattern: `setCachedSqliteRoutineState()` +
   `setCachedSqliteCompletions()` → `triggerRoutineDualWrite()`); add
   `residualImport.ts` (MMKV → SQLite drain on boot з stale LWW timestamp,
   ідентичний pattern у Finyk `#057k-tombstone` mobile residual-import);
-  wire у mobile boot path; `STORAGE_KEYS.ROUTINE` allowlist розширити
-  на mobile `residualImport.ts` + shared instance.
-- **PR #057r-mobile-chat-actions** 📋 PROPOSED (умовно — якщо будуть
-  mobile chat handlers, які пишуть Routine) — мігрувати з прямого
-  MMKV-доступу на `loadRoutineState()` / `saveRoutineState()`. Web
-  робив це у `apps/web/src/core/lib/chatActions/routineActions.ts`;
-  mobile-сторона зараз без dedicated chat handler tree, тому цей PR
-  активується тільки якщо mobile chat будемо вмикати до tombstone.
+  wire у mobile boot path; `STORAGE_KEYS.ROUTINE` allowlist розширив
+  на mobile `residualImport.ts`.
+- **PR #057r-mobile-chat-actions** ❌ N/A — мобільна версія ще **не відвантажує**
+  HubChat (тільки web; див. `apps/mobile/src/core/AssistantCataloguePage.tsx`,
+  де UI буквально пише: «HubChat — наразі веб-версія»). Немає жодного
+  mobile chat handler-а, який би писав Routine state напряму через MMKV.
+  Web `apps/web/src/core/lib/chatActions/routineActions.ts` — залишається
+  єдиним споживачем цього api ї вже переведений на
+  `loadRoutineState()` / `saveRoutineState()` у [#2284]. PR реактивується
+  автоматично, якщо/коли mobile HubChat handler tree буде додано до
+  tombstone-у іншого модуля — або як окремий PR в рамках mobile-chat
+  ініціативи. До того моменту — немає callsites, немає роботи.
 
 **Done criteria.**
 
@@ -3014,7 +3018,9 @@ Split into 2 PRs:
 [#2279]: https://github.com/Skords-01/Sergeant/pull/2279
 [#2281]: https://github.com/Skords-01/Sergeant/pull/2281
 [#2277]: https://github.com/Skords-01/Sergeant/pull/2277
+[#2284]: https://github.com/Skords-01/Sergeant/pull/2284
 [#2286]: https://github.com/Skords-01/Sergeant/pull/2286
+[#2288]: https://github.com/Skords-01/Sergeant/pull/2288
 
 ##### **Stage 11 — extend Nutrition SQLite schema to full LS coverage** 📋 PROPOSED (0/4)
 
