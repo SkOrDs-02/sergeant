@@ -1,0 +1,20 @@
+# Suppress false-positive gitleaks findings.
+#
+# Format: <commit-sha>:<path>:<rule-id>:<line>
+#
+# When adding entries, leave a comment explaining WHY the value is not a
+# secret. Public identifiers (Railway service IDs, Vercel project IDs,
+# Sentry DSNs without a private token, etc.) commonly trip the
+# `generic-api-key` heuristic when they appear in `KEY="value"` shell
+# assignments — those are documented IDs, not credentials, and live in
+# plain text in `docs/deploy/console.md` and similar.
+
+# docs/deploy/monorepo-deploy-filtering.md (commit fcd3c267) carried the
+# Railway service ID `accea0e9-…` inside a shell-assignment example line
+# `API_SVC="<uuid>"`. Tripped `generic-api-key` because of the high-entropy
+# UUID following an ALL_CAPS name + `=`. The ID is a public Railway service
+# identifier (also listed in plain text in docs/deploy/console.md
+# §«Project / environment»), not a credential. Follow-up commit 2ce3ad40
+# replaced the snippet with `$SERVICE_ID` placeholders so future commits
+# don't carry the pattern.
+fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/deploy/monorepo-deploy-filtering.md:generic-api-key:134

@@ -385,16 +385,21 @@ describe("052_fizruk_full_state migration", () => {
          FROM fizruk_daily_log WHERE user_id = $1`,
         ["u1"],
       );
-      expect(r.rows).toEqual([
-        {
-          user_id: "u1",
-          weight_kg: 72.4000015258789, // float32 round-trip is byte-identical to ±5 ULP
-          sleep_hours: 7.5,
-          energy_level: 4,
-          mood: 4,
-          note: "felt great",
-        },
-      ]);
+      expect(r.rows).toHaveLength(1);
+      const row = r.rows[0]!;
+      expect(row.user_id).toBe("u1");
+      expect(row.sleep_hours).toBe(7.5);
+      expect(row.energy_level).toBe(4);
+      expect(row.mood).toBe(4);
+      expect(row.note).toBe("felt great");
+      // weight_kg is REAL (float32). Postgres stores it as float32 and pg-types
+      // parses the text result back to a JS number. The exact JS number depends
+      // on PG's float-text formatter — newer PG versions round-trip 72.4 → "72.4"
+      // → 72.4 (since parseFloat("72.4") cast back to float32 is the same value),
+      // older versions would emit the full float32 expansion (72.4000015258789).
+      // Assert closeness to the input rather than a hardcoded representation,
+      // so the test stays portable across pg/pgvector image bumps.
+      expect(row.weight_kg).toBeCloseTo(72.4, 4);
     },
     TIMEOUT_MS,
   );

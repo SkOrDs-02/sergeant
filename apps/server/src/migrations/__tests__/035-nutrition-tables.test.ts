@@ -119,20 +119,28 @@ async function resetSchema(p: pg.Pool): Promise<void> {
   await p.query(`GRANT ALL ON SCHEMA public TO public;`);
 }
 
-async function listTables(p: pg.Pool): Promise<string[]> {
+// Scoped to the 5 tables 035 owns. Later migrations (e.g. 051's water_log /
+// shopping_list) introduce more `nutrition_*` tables — those belong to
+// their own focused round-trip suites (`051-nutrition-full-state.test.ts`),
+// so this file must not couple to them.
+async function listOwnTables(p: pg.Pool): Promise<string[]> {
   const r = await p.query<{ tablename: string }>(
     `SELECT tablename FROM pg_tables
-     WHERE schemaname = 'public' AND tablename LIKE 'nutrition_%'
+     WHERE schemaname = 'public'
+       AND tablename = ANY($1::text[])
      ORDER BY tablename`,
+    [[...NUTRITION_TABLES]],
   );
   return r.rows.map((row) => row.tablename);
 }
 
-async function listNutritionIndexes(p: pg.Pool): Promise<string[]> {
+async function listOwnIndexes(p: pg.Pool): Promise<string[]> {
   const r = await p.query<{ indexname: string }>(
     `SELECT indexname FROM pg_indexes
-     WHERE schemaname = 'public' AND indexname LIKE 'nutrition_%'
+     WHERE schemaname = 'public'
+       AND indexname = ANY($1::text[])
      ORDER BY indexname`,
+    [[...NUTRITION_INDEXES]],
   );
   return r.rows.map((row) => row.indexname);
 }
@@ -171,10 +179,10 @@ describe("035_nutrition_tables migration", () => {
       await resetSchema(pool);
       for (const f of ups) await execSqlFile(pool, f);
 
-      const tables = await listTables(pool);
+      const tables = await listOwnTables(pool);
       expect(tables).toEqual([...NUTRITION_TABLES].sort());
 
-      const indexes = await listNutritionIndexes(pool);
+      const indexes = await listOwnIndexes(pool);
       // Per-table primary-key indexes (`nutrition_*_pkey`) are auto-created
       // by Postgres — filter them out so we only assert the explicit
       // CREATE INDEX statements from 035_nutrition_tables.sql.
@@ -268,7 +276,7 @@ describe("035_nutrition_tables migration", () => {
   );
 
   it(
-    "035_nutrition_tables.down.sql drops every nutrition_* table",
+    "035_nutrition_tables.down.sql drops every 035-owned nutrition_* table",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -277,11 +285,11 @@ describe("035_nutrition_tables migration", () => {
       const ups = await readMigrationFiles();
       await resetSchema(pool);
       for (const f of ups) await execSqlFile(pool, f);
-      expect((await listTables(pool)).length).toBeGreaterThan(0);
+      expect((await listOwnTables(pool)).length).toBeGreaterThan(0);
 
       await execSqlFile(pool, "035_nutrition_tables.down.sql");
-      expect(await listTables(pool)).toEqual([]);
-      expect(await listNutritionIndexes(pool)).toEqual([]);
+      expect(await listOwnTables(pool)).toEqual([]);
+      expect(await listOwnIndexes(pool)).toEqual([]);
     },
     TIMEOUT_MS,
   );
@@ -317,8 +325,8 @@ describe("035_nutrition_tables migration", () => {
       for (const f of ups) await execSqlFile(pool, f);
 
       const before = {
-        tables: await listTables(pool),
-        indexes: await listNutritionIndexes(pool),
+        tables: await listOwnTables(pool),
+        indexes: await listOwnIndexes(pool),
         meals: await listColumns(pool, "nutrition_meals"),
         prefs: await listColumns(pool, "nutrition_prefs"),
       };
@@ -327,8 +335,8 @@ describe("035_nutrition_tables migration", () => {
       await execSqlFile(pool, "035_nutrition_tables.sql");
 
       const after = {
-        tables: await listTables(pool),
-        indexes: await listNutritionIndexes(pool),
+        tables: await listOwnTables(pool),
+        indexes: await listOwnIndexes(pool),
         meals: await listColumns(pool, "nutrition_meals"),
         prefs: await listColumns(pool, "nutrition_prefs"),
       };
