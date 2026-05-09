@@ -127,27 +127,36 @@ Rationale:
 
 ### Read / update via GraphQL
 
-```bash
-RAILWAY_TOKEN="…"
-PROJECT_ID="eaa696f9-e197-4b76-9645-0e62ce51bb18"           # humorous-eagerness
-ENV_ID="81b68dcb-0107-44ba-b719-df445ea71c71"               # production
-API_SVC="accea0e9-a138-45a3-bff1-58a9bae8ff6c"              # Sergeant (api)
-CONSOLE_SVC="5f3248d1-5a67-4702-81ee-1371f9d31191"          # sergeant-openclaw
+Set the following environment variables (look up the IDs in the
+[`./console.md`](./console.md) §«Project / environment» section and in the
+service-IDs noted in the per-service subsections above):
 
-# Read current state:
+```text
+RAILWAY_TOKEN  — workspace-scoped Railway API token
+PROJECT_ID     — humorous-eagerness project id
+ENV_ID         — production environment id
+SERVICE_ID     — service id (api or console — pick one)
+```
+
+Read current state:
+
+```bash
 curl -sS -X POST https://backboard.railway.com/graphql/v2 \
   -H "Authorization: Bearer $RAILWAY_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"query\":\"{ serviceInstance(serviceId: \\\"$API_SVC\\\", environmentId: \\\"$ENV_ID\\\") { watchPatterns } }\"}"
+  -d "{\"query\":\"{ serviceInstance(serviceId: \\\"$SERVICE_ID\\\", environmentId: \\\"$ENV_ID\\\") { watchPatterns } }\"}"
+```
 
-# Update:
+Update:
+
+```bash
 curl -sS -X POST https://backboard.railway.com/graphql/v2 \
   -H "Authorization: Bearer $RAILWAY_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "mutation Update($serviceId: String!, $environmentId: String!, $input: ServiceInstanceUpdateInput!) { serviceInstanceUpdate(serviceId: $serviceId, environmentId: $environmentId, input: $input) }",
     "variables": {
-      "serviceId": "'"$API_SVC"'",
+      "serviceId": "'"$SERVICE_ID"'",
       "environmentId": "'"$ENV_ID"'",
       "input": { "watchPatterns": ["apps/server/**", "…"] }
     }
