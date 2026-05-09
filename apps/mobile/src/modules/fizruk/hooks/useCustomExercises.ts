@@ -2,24 +2,30 @@
  * `useCustomExercises` — mobile hook for the Fizruk **Exercise library**
  * (user-created entries layered on top of the built-in catalogue).
  *
- * Persists under `STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES`
- * (`fizruk_custom_exercises_v1`), the same MMKV slot already declared
- * in `apps/mobile/src/sync/config.ts`. Every mutator routes through
- * `persist()` so writes share a single code path. Mutators are
- * no-op-guarded: passing an unknown id to `update` / `remove` keeps
- * the in-memory state referentially identical and skips the MMKV
- * write entirely.
+ * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Reads from the SQLite warm cache and persists exclusively through
+ * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
+ * slot `STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES` is drained on first
+ * boot via `importFizrukResidualFromMmkv` and removed.
+ *
+ * Mutators are no-op-guarded: passing an unknown id to `update` /
+ * `remove` keeps the in-memory state referentially identical and
+ * skips the dual-write trigger entirely.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
+import type { FizrukData } from "@sergeant/fizruk-domain";
 
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractCustomExerciseSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES;
+type RawExerciseDef = FizrukData.RawExerciseDef;
 
 export interface CustomExercise {
   id: string;
@@ -40,9 +46,37 @@ function uid(): string {
   return `cex_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function readList(): CustomExercise[] {
-  const raw = safeReadLS<unknown>(STORAGE_KEY, []);
-  return Array.isArray(raw) ? (raw as CustomExercise[]) : [];
+/**
+ * Translate the cache's `RawExerciseDef[]` shape (from
+ * `@sergeant/fizruk-domain`) onto the loose mobile `CustomExercise`
+ * shape consumed by `useExerciseCatalog`.
+ */
+function projectFromCache(ex: RawExerciseDef): CustomExercise {
+  return {
+    id: ex.id,
+    nameUk: ex.name?.uk ?? "",
+    primaryGroup: ex.primaryGroup ?? "",
+    musclesPrimary: ex.muscles?.primary ?? [],
+    musclesSecondary: ex.muscles?.secondary ?? [],
+  };
+}
+
+/**
+ * Translate the loose mobile `CustomExercise` shape into the
+ * `RawExerciseDef` shape understood by the dual-write snapshot
+ * extractor and the SQLite adapter.
+ */
+function toRawExerciseDef(ex: CustomExercise): RawExerciseDef {
+  return {
+    id: ex.id,
+    name: { uk: ex.nameUk },
+    primaryGroup: ex.primaryGroup ?? "",
+    muscles: {
+      primary: ex.musclesPrimary ?? [],
+      secondary: ex.musclesSecondary ?? [],
+    },
+    _custom: true,
+  };
 }
 
 export interface UseCustomExercisesResult {
@@ -53,40 +87,25 @@ export interface UseCustomExercisesResult {
   clear(): void;
 }
 
+function readInitialFromCache(): CustomExercise[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return [];
+  return cache.customExercises.map(projectFromCache);
+}
+
 export function useCustomExercises(): UseCustomExercisesResult {
-  const [exercises, setExercises] = useState<CustomExercise[]>(readList);
+  const [exercises, setExercises] =
+    useState<CustomExercise[]>(readInitialFromCache);
   // See `useFizrukWorkouts` for why we mirror state in a ref.
   const stateRef = useRef<CustomExercise[]>(exercises);
 
-  useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey !== STORAGE_KEY) return;
-      const fresh = readList();
-      stateRef.current = fresh;
-      setExercises(fresh);
-    });
-    return () => sub.remove();
-  }, []);
-
-  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
-  // dropped). Overlay custom exercises from the local SQLite cache
-  // once it's warm. The MMKV first-paint read above stays as a
-  // synchronous fallback so the first paint never blocks on SQLite.
+  // Stage 8 PR #057f-tombstone: overlay custom exercises from the
+  // SQLite warm cache once it's available.
   const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
-    // `cache.customExercises` is `RawExerciseDef[]` from
-    // `@sergeant/fizruk-domain`; translate to the loose mobile
-    // `CustomExercise` shape consumed by `useExerciseCatalog`.
-    const overlay: CustomExercise[] = cache.customExercises.map((ex) => ({
-      id: ex.id,
-      nameUk: ex.name?.uk ?? "",
-      primaryGroup: ex.primaryGroup ?? "",
-      musclesPrimary: ex.muscles?.primary ?? [],
-      musclesSecondary: ex.muscles?.secondary ?? [],
-    }));
+    const overlay = cache.customExercises.map(projectFromCache);
     stateRef.current = overlay;
     setExercises(overlay);
   }, [sqliteCacheTick]);
@@ -97,7 +116,21 @@ export function useCustomExercises(): UseCustomExercisesResult {
       const next = updater(prev);
       if (next === prev) return;
       stateRef.current = next;
-      safeWriteLS(STORAGE_KEY, next);
+
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        customExercises: extractCustomExerciseSnapshots(
+          next.map(toRawExerciseDef),
+        ),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget */
+      }
+
       setExercises(next);
     },
     [],

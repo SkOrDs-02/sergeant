@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractMeasurementSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
-
-const KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
 export type MeasurementFieldId =
   | "weightKg"
@@ -49,26 +51,42 @@ export const MEASURE_FIELDS = [
   { id: "calfRCm", label: "Литка (П)", unit: "см" },
 ];
 
+/**
+ * Stage 8 PR #057f-tombstone: measurements are sourced from the
+ * SQLite cache (`fizruk_measurements` table) and persisted exclusively
+ * through the dual-write pipeline. The legacy
+ * `fizruk_measurements_v1` LS key is drained on first boot via
+ * `importFizrukResidualFromLs` and removed.
+ */
 export function useMeasurements() {
-  const [entries, setEntries] = useState<MeasurementEntry[]>([]);
   const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [entries, setEntries] = useState<MeasurementEntry[]>(() => {
+    const cache = getCachedFizrukSqliteState();
+    return cache.refreshedAt === null
+      ? []
+      : (cache.measurements as MeasurementEntry[]);
+  });
 
-  useEffect(() => {
-    const parsed = safeReadLS(KEY, []);
-    if (Array.isArray(parsed)) setEntries(parsed);
-  }, []);
-
-  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
-  // dropped). Overlay measurements from the SQLite cache once it's warm.
+  // Overlay measurements from the SQLite cache once it's warm.
   useEffect(() => {
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
-    setEntries(cache.measurements);
+    setEntries(cache.measurements as MeasurementEntry[]);
   }, [sqliteCacheTick]);
 
   const persist = useCallback((next: MeasurementEntry[]) => {
     setEntries(next);
-    safeWriteLS(KEY, next);
+    const prevDualWrite =
+      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+    const nextDualWrite = {
+      ...prevDualWrite,
+      measurements: extractMeasurementSnapshots(next),
+    };
+    try {
+      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+    } catch {
+      /* trigger is fire-and-forget — never propagate */
+    }
   }, []);
 
   const addEntry = useCallback(

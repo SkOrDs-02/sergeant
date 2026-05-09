@@ -3,25 +3,30 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useWorkouts } from "./useWorkouts";
 import {
-  WORKOUTS_STORAGE_KEY,
-  serializeWorkoutsToStorage,
-} from "../lib/fizrukStorage";
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../lib/sqliteReader";
+import { notifyFizrukSqliteCacheRefresh } from "../lib/sqliteReadGate";
 import type { Workout } from "@sergeant/fizruk-domain";
 
 type CreatedWorkout = ReturnType<
   ReturnType<typeof useWorkouts>["createWorkout"]
 >;
 
+/**
+ * Stage 8 PR #057f-tombstone: hooks read from the SQLite warm cache,
+ * not LS. Seed the cache directly + notify the read gate so the
+ * `loaded` flag flips to `true` on the next tick.
+ */
 function seedWorkouts(workouts: Workout[]) {
-  localStorage.setItem(
-    WORKOUTS_STORAGE_KEY,
-    serializeWorkoutsToStorage(workouts),
-  );
+  __setFizrukSqliteCacheForTests({ workouts });
+  notifyFizrukSqliteCacheRefresh();
 }
 
 describe("useWorkouts – finish flow edge cases", () => {
   beforeEach(() => {
     localStorage.clear();
+    clearFizrukSqliteCache();
   });
 
   it("eventually reports loaded=true after mount", async () => {
@@ -31,6 +36,7 @@ describe("useWorkouts – finish flow edge cases", () => {
   });
 
   it("endWorkout sets endedAt on first call and keeps it idempotent on re-call", async () => {
+    seedWorkouts([]);
     const { result } = renderHook(() => useWorkouts());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
@@ -63,6 +69,7 @@ describe("useWorkouts – finish flow edge cases", () => {
   });
 
   it("endWorkout is a no-op for an unknown id", async () => {
+    seedWorkouts([]);
     const { result } = renderHook(() => useWorkouts());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 

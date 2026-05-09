@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-09 by @Skords-01. **Next review:** 2026-08-07.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -43,7 +43,7 @@ Quick lookup before editing: which path uses which test stack and which conventi
 | `apps/web/src/shared/**`                              | `@Skords-01` | TBD (frontend-engineer) | Vitest                                  | factories defined here                | Pure utils. No React.                                                                                                                                                  |
 | `apps/server/src/modules/**`                          | `@Skords-01` | TBD (backend-engineer)  | Vitest + Testcontainers (real Postgres) | n/a                                   | Always coerce bigint→number in serializers (rule #1). Update `api-client` types.                                                                                       |
 | `apps/server/src/modules/chat/**`                     | `@Skords-01` | TBD (backend-engineer)  | Vitest                                  | n/a                                   | Anthropic tool defs split per domain in `toolDefs/`. See Architecture section.                                                                                         |
-| `apps/server/src/migrations/**`                       | `@Skords-01` | TBD (data-engineer)     | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–044). No gaps. Two-phase for DROP — see rule #4.                                                                                 |
+| `apps/server/src/migrations/**`                       | `@Skords-01` | TBD (data-engineer)     | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–049). No gaps. Two-phase for DROP — see rule #4.                                                                                 |
 | `apps/mobile/src/core/**`                             | `@Skords-01` | TBD (mobile-engineer)   | Jest                                    | (mobile RQ uses module-local keys)    | NativeWind (not Tailwind). MMKV (not localStorage). No DOM.                                                                                                            |
 | `apps/mobile/app/**`                                  | `@Skords-01` | TBD (mobile-engineer)   | Jest                                    | n/a                                   | Expo Router routes. Each `_layout.tsx` is a navigator.                                                                                                                 |
 | `apps/mobile-shell/**`                                | `@Skords-01` | TBD (mobile-engineer)   | none                                    | n/a                                   | Capacitor wrapper around `apps/web`. No app code lives here, only build glue.                                                                                          |

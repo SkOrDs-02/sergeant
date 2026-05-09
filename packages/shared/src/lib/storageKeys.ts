@@ -76,14 +76,17 @@ export const STORAGE_KEYS = {
   FINYK_TX_DAY_COLLAPSE: "finyk_tx_day_collapse_v1",
 
   // ─── Fizruk ───────────────────────────────────────────────────────────
+  /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_workouts`. */
   FIZRUK_WORKOUTS: "fizruk_workouts_v1",
   FIZRUK_EXERCISES: "fizruk_exercises_v1",
+  /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_custom_exercises`. */
   FIZRUK_CUSTOM_EXERCISES: "fizruk_custom_exercises_v1",
   FIZRUK_TEMPLATES: "fizruk_workout_templates_v1",
   FIZRUK_PLAN: "fizruk-storage-monthly-plan",
   FIZRUK_MONTHLY_PLAN: "fizruk_monthly_plan_v1",
   FIZRUK_PLAN_TEMPLATE: "fizruk_plan_template_v1",
   FIZRUK_WELLBEING: "fizruk_wellbeing_v1",
+  /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_measurements`. */
   FIZRUK_MEASUREMENTS: "fizruk_measurements_v1",
   FIZRUK_SELECTED_TEMPLATE: "fizruk_selected_template_id_v1",
   FIZRUK_ACTIVE_WORKOUT: "fizruk_active_workout_id_v1",

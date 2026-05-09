@@ -13,10 +13,13 @@
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { _getMMKVInstance } from "@/lib/storage";
 
-import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
-
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type FizrukMeasurementEntry,
+} from "../lib/sqliteReader";
 import { Body } from "./Body";
 
 jest.mock("react-native-safe-area-context", () => {
@@ -53,15 +56,21 @@ function seedEntries(
     mood?: number;
   }[],
 ) {
-  safeWriteLS(STORAGE_KEYS.FIZRUK_MEASUREMENTS, rows);
+  // Stage 8 PR #057f-tombstone: hooks read measurements from the
+  // SQLite warm cache, not MMKV. Seed the cache directly.
+  __setFizrukSqliteCacheForTests({
+    measurements: rows.map((r) => ({ ...r }) as FizrukMeasurementEntry),
+  });
 }
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearFizrukSqliteCache();
+  __setFizrukSqliteCacheForTests({ measurements: [] });
 });
 
 describe("Fizruk Body page (mobile)", () => {
-  it("renders empty-state when MMKV has no entries", () => {
+  it("renders empty-state when the SQLite cache has no entries", () => {
     const onOpen = jest.fn();
     render(<Body onOpenMeasurements={onOpen} />);
 

@@ -27,6 +27,7 @@
 import { getSqliteMigrationClient } from "@/core/db/sqlite";
 
 import { migrateFizruk } from "./clientMigrate";
+import { importFizrukResidualFromMmkv } from "./residualImport";
 import { refreshFizrukSqliteState } from "./sqliteReader";
 
 /**
@@ -47,6 +48,13 @@ export async function bootFizrukSqliteReadPath(
   try {
     const client = await getSqliteMigrationClient();
     await migrateFizruk(client);
+
+    // Stage 8 PR #057f-tombstone: drain MMKV into SQLite before the
+    // first cache refresh so warm-up sees any leftover values that
+    // older builds wrote. Failures here are non-fatal — the residual
+    // helper logs and falls back to a no-op.
+    await importFizrukResidualFromMmkv(client, userId);
+
     await refreshFizrukSqliteState(client, userId);
     return true;
   } catch (err) {

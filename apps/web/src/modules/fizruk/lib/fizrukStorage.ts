@@ -5,7 +5,6 @@
  * `createModuleStorage` для apps/web.
  */
 
-import { createModuleStorage } from "@shared/lib/storage/createModuleStorage";
 import {
   CUSTOM_EXERCISES_KEY,
   FIZRUK_FULL_BACKUP_KEYS,
@@ -17,6 +16,8 @@ import {
   serializeCustomExercisesToStorage,
   serializeWorkoutsToStorage,
 } from "@sergeant/fizruk-domain";
+
+import { fizrukStorage } from "./fizrukStorageInstance";
 
 export {
   ACTIVE_WORKOUT_KEY,
@@ -39,7 +40,7 @@ export {
   serializeWorkoutsToStorage,
 } from "@sergeant/fizruk-domain";
 
-const storage = createModuleStorage({ name: "fizruk" });
+const storage = fizrukStorage;
 
 /** Full backup blob for export/import. */
 export function buildFizrukBackupPayload() {

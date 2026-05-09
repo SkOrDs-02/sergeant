@@ -277,3 +277,22 @@ export async function refreshFizrukSqliteState(
 export function clearFizrukSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
 }
+
+/**
+ * Test helper: seed the cache directly without running migrations /
+ * SQLite queries. The provided fields override the empty defaults and
+ * the cache is marked as refreshed (`refreshedAt`) so consumers treat
+ * it as warm.
+ *
+ * Stage 8 PR #057f-tombstone — used by hook tests now that the
+ * load/persist surface reads from this cache instead of LS.
+ */
+export function __setFizrukSqliteCacheForTests(
+  partial: Partial<SqliteFizrukCache>,
+): void {
+  cache = {
+    ...EMPTY_CACHE,
+    refreshedAt: new Date().toISOString(),
+    ...partial,
+  };
+}

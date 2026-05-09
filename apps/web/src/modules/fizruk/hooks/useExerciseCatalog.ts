@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FizrukData } from "@sergeant/fizruk-domain";
+import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
 import {
-  CUSTOM_EXERCISES_KEY,
-  FizrukData,
-  parseCustomExercisesFromStorage,
-  serializeCustomExercisesToStorage,
-} from "@sergeant/fizruk-domain";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractCustomExerciseSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -17,28 +17,31 @@ function norm(s: unknown) {
 
 /**
  * Хук-обгортка над каталогом вправ із пакета `@sergeant/fizruk-domain`.
- * Користувацькі вправи персистяться в localStorage, базові — беруться зі
- * статично імпортованого JSON-каталогу пакета.
+ *
+ * Stage 8 PR #057f-tombstone: користувацькі вправи персистяться лише
+ * через SQLite (`fizruk_custom_exercises`), а базові — беруться зі
+ * статично імпортованого JSON-каталогу пакета. LS-сторінка
+ * (`fizruk_custom_exercises_v1`) дренажиться у SQLite на першому boot
+ * через `importFizrukResidualFromLs` і після того видаляється.
  */
 export function useExerciseCatalog() {
   const catalogData = FizrukData.EXERCISE_CATALOG;
-  const [customExercises, setCustomExercises] = useState<RawExerciseDef[]>([]);
   const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [customExercises, setCustomExercises] = useState<RawExerciseDef[]>(
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? [] : cache.customExercises;
+    },
+  );
 
   const primaryGroupsUk = FizrukData.PRIMARY_GROUPS_UK;
   const equipmentUk = FizrukData.EQUIPMENT_UK;
   const musclesUk = FizrukData.MUSCLES_UK;
   const musclesByPrimaryGroup = FizrukData.MUSCLES_BY_PRIMARY_GROUP;
 
-  useEffect(() => {
-    const raw = safeReadStringLS(CUSTOM_EXERCISES_KEY);
-    const parsed = parseCustomExercisesFromStorage(raw);
-    if (Array.isArray(parsed)) setCustomExercises(parsed as RawExerciseDef[]);
-  }, []);
-
-  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
-  // dropped). Overlay the user-added custom exercises from the SQLite
-  // cache. Built-in catalogue entries always come from the static JSON.
+  // Stage 8 PR #057f-tombstone: overlay the user-added custom
+  // exercises from the SQLite cache once it's warm. Built-in catalogue
+  // entries always come from the static JSON.
   useEffect(() => {
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
@@ -47,7 +50,17 @@ export function useExerciseCatalog() {
 
   const persistCustom = useCallback((next: RawExerciseDef[]) => {
     setCustomExercises(next);
-    safeWriteLS(CUSTOM_EXERCISES_KEY, serializeCustomExercisesToStorage(next));
+    const prevDualWrite =
+      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+    const nextDualWrite = {
+      ...prevDualWrite,
+      customExercises: extractCustomExerciseSnapshots(next),
+    };
+    try {
+      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+    } catch {
+      /* trigger is fire-and-forget — never propagate */
+    }
   }, []);
 
   const exercises = useMemo(

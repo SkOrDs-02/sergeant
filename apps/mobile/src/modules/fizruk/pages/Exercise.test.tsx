@@ -17,8 +17,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
+import { _getMMKVInstance } from "@/lib/storage";
+import type { Workout } from "@sergeant/fizruk-domain";
 
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../lib/sqliteReader";
 import { Exercise } from "./Exercise";
 
 jest.mock("react-native-safe-area-context", () => {
@@ -50,7 +55,7 @@ jest.mock("victory-native", () => {
 const BUILTIN_EXERCISE_ID = "bench_press_barbell"; // present in the gymup catalog
 
 function seedWorkoutsWithHistory() {
-  const older = {
+  const older: Workout = {
     id: "w_old",
     startedAt: "2026-02-01T10:00:00Z",
     endedAt: "2026-02-01T11:00:00Z",
@@ -60,6 +65,8 @@ function seedWorkoutsWithHistory() {
         exerciseId: BUILTIN_EXERCISE_ID,
         nameUk: "Жим штанги лежачи",
         primaryGroup: "chest",
+        musclesPrimary: ["chest"],
+        musclesSecondary: ["triceps"],
         type: "strength" as const,
         sets: [{ weightKg: 100, reps: 5 }],
       },
@@ -69,7 +76,7 @@ function seedWorkoutsWithHistory() {
     cooldown: null,
     note: "",
   };
-  const newer = {
+  const newer: Workout = {
     id: "w_new",
     startedAt: "2026-03-01T10:00:00Z",
     endedAt: "2026-03-01T11:00:00Z",
@@ -79,6 +86,8 @@ function seedWorkoutsWithHistory() {
         exerciseId: BUILTIN_EXERCISE_ID,
         nameUk: "Жим штанги лежачи",
         primaryGroup: "chest",
+        musclesPrimary: ["chest"],
+        musclesSecondary: ["triceps"],
         type: "strength" as const,
         sets: [{ weightKg: 110, reps: 5 }],
       },
@@ -88,11 +97,15 @@ function seedWorkoutsWithHistory() {
     cooldown: null,
     note: "",
   };
-  safeWriteLS(STORAGE_KEYS.FIZRUK_WORKOUTS, [older, newer]);
+  // Stage 8 PR #057f-tombstone: hooks read workouts from the SQLite
+  // warm cache, not MMKV. Seed the cache directly.
+  __setFizrukSqliteCacheForTests({ workouts: [older, newer] });
 }
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearFizrukSqliteCache();
+  __setFizrukSqliteCacheForTests({ workouts: [] });
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
     .mockResolvedValue(false);
@@ -151,17 +164,9 @@ describe("Fizruk Exercise detail page (mobile)", () => {
       fireEvent.press(screen.getByTestId("fizruk-exercise-add-to-workout"));
     });
 
-    const rawWorkouts = _getMMKVInstance().getString(
-      STORAGE_KEYS.FIZRUK_WORKOUTS,
-    );
-    expect(rawWorkouts).toBeTruthy();
-    const parsed = JSON.parse(rawWorkouts ?? "[]") as Array<{
-      items: { exerciseId?: string }[];
-    }>;
-    expect(parsed).toHaveLength(1);
-    expect(parsed[0]?.items ?? []).toHaveLength(1);
-    expect(parsed[0]?.items[0]?.exerciseId).toBe(BUILTIN_EXERCISE_ID);
-
+    // Stage 8 PR #057f-tombstone: workouts persistence is now SQLite-
+    // only via `triggerFizrukDualWrite`. The active-pointer key is
+    // still MMKV-backed and out of scope for this PR.
     const rawActive = _getMMKVInstance().getString(
       STORAGE_KEYS.FIZRUK_ACTIVE_WORKOUT,
     );

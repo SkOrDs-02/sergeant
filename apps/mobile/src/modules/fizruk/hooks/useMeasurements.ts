@@ -1,22 +1,16 @@
 /**
- * `useMeasurements` — mobile hook for the Fizruk Measurements screen
- * (Phase 6 · Measurements PR).
+ * `useMeasurements` — mobile hook for the Fizruk Measurements screen.
  *
- * Mirrors the public surface of the web hook at
- * `apps/web/src/modules/fizruk/hooks/useMeasurements.ts` — a sorted
- * newest-first list plus imperative CRUD — but wider (the mobile port
- * needs `update` + `clear` for edit-in-place and delete-all flows).
+ * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Reads from the SQLite warm cache and persists exclusively through
+ * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
+ * slot `STORAGE_KEYS.FIZRUK_MEASUREMENTS` is drained on first boot
+ * via `importFizrukResidualFromMmkv` and removed.
  *
- * Persistence goes through the shared MMKV-backed `useLocalStorage`
- * helper so the same `FIZRUK_MEASUREMENTS` storage slot that web
- * CloudSync already tracks is reused unchanged. All ordering,
- * upserting, and removal logic lives in
- * `@sergeant/fizruk-domain/domain/measurements` — this file is a thin
+ * All ordering / upserting / removal logic lives in
+ * `@sergeant/fizruk-domain/domain/measurements`; this file is a thin
  * wrapper so the selectors stay unit-testable in isolation and we can
  * share them with the web port later.
- *
- * Scope note: photo progress (`BodyPhoto`) is explicitly out of scope
- * for the Phase 6 migration, so this hook only owns numeric entries.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -28,19 +22,18 @@ import {
   type MeasurementDraft,
   type MobileMeasurementEntry,
 } from "@sergeant/fizruk-domain/domain";
-import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { useLocalStorage } from "@/lib/storage";
-
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractMeasurementSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 import {
   getCachedFizrukSqliteState,
   type FizrukMeasurementEntry,
 } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
-
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
-
-const EMPTY: readonly MobileMeasurementEntry[] = [];
 
 function makeId(): string {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -121,90 +114,101 @@ export interface UseMeasurementsResult {
   clear: () => void;
 }
 
+function readInitialFromCache(): MobileMeasurementEntry[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return [];
+  return cache.measurements.map(projectMeasurementForMobile);
+}
+
 /**
- * Read / mutate the Fizruk measurement entries backed by MMKV.
+ * Read / mutate the Fizruk measurement entries backed by SQLite.
  *
  * The hook returns sorted (newest-first) entries so the list
  * component stays pure. All mutations flow through pure reducers from
  * `@sergeant/fizruk-domain/domain/measurements`.
  */
 export function useMeasurements(): UseMeasurementsResult {
-  const [raw, setRaw, removeRaw] = useLocalStorage<
-    readonly MobileMeasurementEntry[]
-  >(STORAGE_KEY, EMPTY);
+  const [raw, setRaw] =
+    useState<MobileMeasurementEntry[]>(readInitialFromCache);
 
-  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
-  // dropped). Overlay measurements from the local SQLite cache once
-  // it's warm. The MMKV-backed `useLocalStorage` read above stays as
-  // the synchronous fallback so the first paint never blocks on
-  // SQLite. Writes still go through `setRaw` / `removeRaw` exactly as
-  // today — this PR does NOT change the write path.
+  // Stage 8 PR #057f-tombstone: overlay measurements from the local
+  // SQLite cache once it's warm.
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [overlay, setOverlay] = useState<
-    readonly MobileMeasurementEntry[] | null
-  >(null);
-
   useEffect(() => {
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
-    setOverlay(cache.measurements.map(projectMeasurementForMobile));
+    setRaw(cache.measurements.map(projectMeasurementForMobile));
   }, [sqliteCacheTick]);
 
-  const entries = useMemo(() => {
-    const source: readonly MobileMeasurementEntry[] =
-      overlay !== null ? overlay : Array.isArray(raw) ? raw : [];
-    return sortMeasurementsDesc(source);
-  }, [overlay, raw]);
+  const entries = useMemo(
+    () => sortMeasurementsDesc(Array.isArray(raw) ? raw : []),
+    [raw],
+  );
+
+  const persist = useCallback(
+    (updater: (prev: MobileMeasurementEntry[]) => MobileMeasurementEntry[]) => {
+      setRaw((prev) => {
+        const next = updater(Array.isArray(prev) ? prev : []);
+        const prevDualWrite =
+          peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+        const nextDualWrite = {
+          ...prevDualWrite,
+          measurements: extractMeasurementSnapshots(next),
+        };
+        try {
+          triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        } catch {
+          /* trigger is fire-and-forget */
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const add = useCallback<UseMeasurementsResult["add"]>(
     (draft) => {
       const entry = normaliseMeasurementDraft(draft, makeId());
-      setRaw((prev) =>
-        upsertMeasurement(Array.isArray(prev) ? prev : [], entry),
-      );
+      persist((prev) => upsertMeasurement(prev, entry));
       return entry;
     },
-    [setRaw],
+    [persist],
   );
 
   const update = useCallback<UseMeasurementsResult["update"]>(
     (id, draft) => {
-      const prev = Array.isArray(raw) ? raw : [];
-      const exists = prev.some((e) => e.id === id);
+      const exists = (Array.isArray(raw) ? raw : []).some((e) => e.id === id);
       if (!exists) return null;
       const nextEntry = normaliseMeasurementDraft(draft, id);
-      setRaw((current) =>
-        upsertMeasurement(Array.isArray(current) ? current : [], nextEntry),
-      );
+      persist((prev) => upsertMeasurement(prev, nextEntry));
       return nextEntry;
     },
-    [raw, setRaw],
+    [raw, persist],
   );
 
   const remove = useCallback<UseMeasurementsResult["remove"]>(
     (id) => {
       const current = Array.isArray(raw) ? raw : [];
       if (!current.some((e) => e.id === id)) return;
-      setRaw((prev) => removeInList(Array.isArray(prev) ? prev : [], id));
+      persist((prev) => removeInList(prev, id));
     },
-    [raw, setRaw],
+    [raw, persist],
   );
 
   const restore = useCallback<UseMeasurementsResult["restore"]>(
     (entry) => {
       if (!entry?.id) return;
-      setRaw((prev) => {
-        const list = Array.isArray(prev) ? prev : [];
-        if (list.some((e) => e.id === entry.id)) return list;
-        return upsertMeasurement(list, entry);
+      persist((prev) => {
+        if (prev.some((e) => e.id === entry.id)) return prev;
+        return upsertMeasurement(prev, entry);
       });
     },
-    [setRaw],
+    [persist],
   );
 
   const clear = useCallback<UseMeasurementsResult["clear"]>(() => {
-    removeRaw();
-  }, [removeRaw]);
+    persist((prev) => (prev.length === 0 ? prev : []));
+  }, [persist]);
 
   return { entries, add, update, remove, restore, clear };
 }

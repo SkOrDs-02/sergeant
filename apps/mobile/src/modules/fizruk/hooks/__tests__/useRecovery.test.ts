@@ -10,10 +10,17 @@ import { renderHook } from "@testing-library/react-native";
 import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
+import type { Workout } from "@sergeant/fizruk-domain";
+
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../../lib/sqliteReader";
 import { useRecovery } from "../useRecovery";
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearFizrukSqliteCache();
 });
 
 describe("useRecovery", () => {
@@ -28,7 +35,7 @@ describe("useRecovery", () => {
 
   it("marks a muscle trained today as red", () => {
     const now = new Date();
-    const workout = {
+    const workout: Workout = {
       id: "w1",
       startedAt: now.toISOString(),
       endedAt: now.toISOString(),
@@ -50,7 +57,9 @@ describe("useRecovery", () => {
       note: "",
     };
 
-    safeWriteLS(STORAGE_KEYS.FIZRUK_WORKOUTS, [workout]);
+    // Stage 8 PR #057f-tombstone: hooks read from SQLite cache,
+    // not MMKV. Seed the cache directly.
+    __setFizrukSqliteCacheForTests({ workouts: [workout] });
 
     const { result } = renderHook(() => useRecovery());
 
@@ -62,7 +71,7 @@ describe("useRecovery", () => {
 
   it("marks a muscle trained 5+ days ago as green", () => {
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-    const workout = {
+    const workout: Workout = {
       id: "w2",
       startedAt: fiveDaysAgo.toISOString(),
       endedAt: fiveDaysAgo.toISOString(),
@@ -84,7 +93,7 @@ describe("useRecovery", () => {
       note: "",
     };
 
-    safeWriteLS(STORAGE_KEYS.FIZRUK_WORKOUTS, [workout]);
+    __setFizrukSqliteCacheForTests({ workouts: [workout] });
 
     const { result } = renderHook(() => useRecovery());
 

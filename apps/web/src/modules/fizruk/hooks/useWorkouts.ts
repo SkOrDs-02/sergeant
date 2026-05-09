@@ -5,63 +5,24 @@ import type {
   WorkoutGroup,
   WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
+import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
 import {
-  parseWorkoutsFromStorage,
-  serializeWorkoutsToStorage,
-  WORKOUTS_STORAGE_KEY,
-} from "../lib/fizrukStorage";
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractWorkoutSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 /**
- * Window event fired when persisting workouts to `localStorage` throws
- * (quota exceeded, Safari private mode, etc.). `FizrukApp` listens for this
- * and surfaces a persistent `<Banner variant="danger">` so the user can free
- * space or export a backup — mirroring Nutrition's `storageBanner` pattern
- * and Routine's `ROUTINE_STORAGE_ERROR` event.
+ * Window event fired when persisting workouts fails. Kept for backwards
+ * compatibility with the `<StorageErrorBanner>` listener — Stage 8 PR
+ * #057f-tombstone makes SQLite the only sink, so this event is now
+ * dispatched only when the dual-write context is unavailable (typically
+ * pre-auth) and we have no place to persist mutations to.
  */
 export const FIZRUK_WORKOUTS_STORAGE_ERROR = "fizruk-workouts-storage-error";
 
-/**
- * @typedef {{ id: string, done: boolean, label: string }} ChecklistItem
- */
-
-/**
- * @typedef {{
- *   id: string,
- *   exerciseId: string,
- *   nameUk: string,
- *   primaryGroup: string,
- *   musclesPrimary: string[],
- *   musclesSecondary: string[],
- *   type: 'strength'|'distance'|'time',
- *   sets?: Array<{ weightKg: number, reps: number }>,
- *   durationSec?: number,
- *   distanceM?: number,
- * }} WorkoutItem
- * A single exercise entry within a workout session.
- */
-
-/**
- * @typedef {{
- *   id: string,
- *   startedAt: string,
- *   endedAt: string|null,
- *   items: WorkoutItem[],
- *   groups: Array<{ id: string, itemIds: string[] }>,
- *   warmup: ChecklistItem[]|null,
- *   cooldown: ChecklistItem[]|null,
- *   note: string,
- * }} Workout
- * A complete workout session.
- */
-
-/**
- * Generate a unique ID with a given prefix.
- * @param {string} [prefix]
- * @returns {string}
- */
 function uid(prefix = "id") {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -80,9 +41,7 @@ const DEFAULT_COOLDOWN_ITEMS = [
   { label: "Пінний ролик або масаж (за потреби)" },
 ];
 
-/**
- * Build a default warmup checklist with generated IDs.
- */
+/** Build a default warmup checklist with generated IDs. */
 export function makeDefaultWarmup(): ChecklistItem[] {
   return DEFAULT_WARMUP_ITEMS.map((x) => ({
     id: uid("wm"),
@@ -91,9 +50,7 @@ export function makeDefaultWarmup(): ChecklistItem[] {
   }));
 }
 
-/**
- * Build a default cooldown checklist with generated IDs.
- */
+/** Build a default cooldown checklist with generated IDs. */
 export function makeDefaultCooldown(): ChecklistItem[] {
   return DEFAULT_COOLDOWN_ITEMS.map((x) => ({
     id: uid("cd"),
@@ -104,92 +61,83 @@ export function makeDefaultCooldown(): ChecklistItem[] {
 
 /**
  * Hook for managing the list of workout sessions.
- * Persists to localStorage under `WORKOUTS_STORAGE_KEY`.
  *
- * @returns {{
- *   workouts: Workout[],
- *   loaded: boolean,
- *   createWorkout: () => Workout,
- *   createWorkoutWithTimes: (opts: { startedAt: string }) => Workout,
- *   updateWorkout: (id: string, patch: Partial<Workout>) => void,
- *   deleteWorkout: (id: string) => void,
- *   restoreWorkout: (workout: Workout) => void,
- *   endWorkout: (id: string) => Workout|null,
- *   addItem: (workoutId: string, item: Partial<WorkoutItem>) => string,
- *   updateItem: (workoutId: string, itemId: string, patch: Partial<WorkoutItem>) => void,
- *   removeItem: (workoutId: string, itemId: string) => void,
- * }}
+ * Stage 8 PR #057f-tombstone: state is initialised from the SQLite
+ * warm cache (empty `[]` until `useFizrukSqliteReadBoot` finishes)
+ * and re-overlaid whenever the cache ticks. Mutations call
+ * `triggerFizrukDualWrite` directly (no LS round-trip).
  */
 export function useWorkouts() {
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [workouts, setWorkouts] = useState<Workout[]>(() => {
+    const cache = getCachedFizrukSqliteState();
+    return cache.refreshedAt === null ? [] : cache.workouts;
+  });
+  const [loaded, setLoaded] = useState(() => {
+    return getCachedFizrukSqliteState().refreshedAt !== null;
+  });
 
-  useEffect(() => {
-    // `safeReadStringLS` глитає будь-які read-failure-и (private mode,
-    // disabled storage, throwing access) — так само, як попередній
-    // inline try/catch, тільки централізовано в `@shared/lib/storage`.
-    const raw = safeReadStringLS(WORKOUTS_STORAGE_KEY, null);
-    const parsed = parseWorkoutsFromStorage(raw);
-    // Storage parser returns `unknown[]` (the persisted blob is loose):
-    // it's the boundary between untyped JSON and typed runtime state, so
-    // we trust the shape here. Each consumer already guards optional
-    // fields (`w.items || []`, `w.endedAt`, etc.).
-    if (Array.isArray(parsed)) setWorkouts(parsed as Workout[]);
-    setLoaded(true);
-  }, []);
-
-  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
-  // dropped). Overlay workouts from the local SQLite cache once it's
-  // warm. LS reads above stay as a synchronous fallback so the first
-  // paint never blocks on SQLite.
+  // Stage 8 PR #057f-tombstone: overlay workouts from the local SQLite
+  // cache once it's warm. The hook exposes `loaded=true` after the
+  // first cache refresh so consumers can distinguish "boot in flight"
+  // from "boot complete with empty state".
   useEffect(() => {
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
     setWorkouts(cache.workouts);
+    setLoaded(true);
   }, [sqliteCacheTick]);
 
   /**
-   * Persist an updated workouts array to localStorage.
-   * Accepts either a new array or an updater function.
+   * Persist an updated workouts array. Stage 8 PR #057f-tombstone: the
+   * SQLite-backed dual-write pipeline is the only sink — LS writes are
+   * gone. Pre-auth (no dual-write context) the call is a silent no-op
+   * on the persistence side, but the React state still updates so the
+   * pending UI reflects the change until the boot wires up the
+   * context.
    */
   const persist = useCallback(
     (nextOrUpdater: Workout[] | ((prev: Workout[]) => Workout[])) => {
-      setWorkouts((prev) => {
+      setWorkouts((prevState) => {
         const next =
           typeof nextOrUpdater === "function"
-            ? nextOrUpdater(prev)
+            ? nextOrUpdater(prevState)
             : nextOrUpdater;
-        const ok = safeWriteLS(
-          WORKOUTS_STORAGE_KEY,
-          serializeWorkoutsToStorage(next),
-        );
-        if (!ok) {
-          // Surface quota/private-mode failures to the UI instead of silently
-          // losing data. We keep `next` in memory so the current session does
-          // not visibly reset — the banner prompts the user to act.
-          // `safeWriteLS` глитає specific Error.message (quota / private
-          // mode), тож передаємо generic reason — банер сам формує текст.
+
+        const prevDualWrite =
+          peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+        const nextDualWrite = {
+          ...prevDualWrite,
+          workouts: extractWorkoutSnapshots(next),
+        };
+        try {
+          triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        } catch (err) {
+          // The trigger is fire-and-forget — it should never throw, but
+          // surface unexpected sync failures via the existing banner so
+          // the user knows the change did not persist.
           try {
             window.dispatchEvent(
               new CustomEvent(FIZRUK_WORKOUTS_STORAGE_ERROR, {
-                detail: { message: "сховище недоступне або переповнене" },
+                detail: {
+                  message:
+                    err instanceof Error
+                      ? err.message
+                      : "не вдалося зберегти сесію",
+                },
               }),
             );
           } catch {
             /* dispatchEvent can throw in exotic embeddings — ignore */
           }
         }
+
         return next;
       });
     },
     [],
   );
 
-  /**
-   * Create a new workout session starting now and add it to the list.
-   * @returns {Workout} The newly created workout.
-   */
   const createWorkout = useCallback((): Workout => {
     const w: Workout = {
       id: uid("w"),
@@ -205,11 +153,6 @@ export function useWorkouts() {
     return w;
   }, [persist]);
 
-  /**
-   * Create a new workout session with a custom start time.
-   * @param {{ startedAt: string }} opts - ISO start timestamp.
-   * @returns {Workout} The newly created workout.
-   */
   const createWorkoutWithTimes = useCallback(
     ({ startedAt }: { startedAt: string }): Workout => {
       const w: Workout = {
@@ -228,12 +171,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Mark a workout as ended with the current timestamp.
-   * If the workout is already ended, returns it unchanged.
-   * @param {string} id - Workout ID.
-   * @returns {Workout|null} The updated (or already-ended) workout, or null.
-   */
   const endWorkout = useCallback(
     (id: string): Workout | null => {
       const nowIso = new Date().toISOString();
@@ -254,11 +191,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Apply a partial update to a workout.
-   * @param {string} id - Workout ID.
-   * @param {Partial<Workout>} patch - Fields to merge.
-   */
   const updateWorkout = useCallback(
     (id: string, patch: Partial<Workout>) => {
       persist((prev: Workout[]) =>
@@ -268,10 +200,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Permanently delete a workout by ID.
-   * @param {string} id - Workout ID.
-   */
   const deleteWorkout = useCallback(
     (id: string) => {
       persist((prev: Workout[]) => prev.filter((w: Workout) => w.id !== id));
@@ -279,11 +207,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Re-insert a previously deleted workout, preserving chronological order by
-   * `startedAt`. Used by undo flows after `deleteWorkout`.
-   * @param {Workout} workout
-   */
   const restoreWorkout = useCallback(
     (workout: Workout) => {
       if (!workout?.id) return;
@@ -301,14 +224,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Add an exercise item to a workout. Appends to the items list so that the
-   * stored order matches the order in which the user (or a template) added
-   * exercises — users read the workout log top-to-bottom chronologically.
-   * @param {string} workoutId
-   * @param {Partial<WorkoutItem>} item - Item data; `id` is generated if absent.
-   * @returns {string} The generated item ID.
-   */
   const addItem = useCallback(
     (workoutId: string, item: Partial<WorkoutItem>): string => {
       const itemId = item.id || uid("i");
@@ -326,12 +241,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Apply a partial update to a specific exercise item within a workout.
-   * @param {string} workoutId
-   * @param {string} itemId
-   * @param {Partial<WorkoutItem>} patch
-   */
   const updateItem = useCallback(
     (workoutId: string, itemId: string, patch: Partial<WorkoutItem>) => {
       persist((prev: Workout[]) =>
@@ -349,12 +258,6 @@ export function useWorkouts() {
     [persist],
   );
 
-  /**
-   * Remove an exercise item from a workout.
-   * Also cleans up any superset groups that referenced the item.
-   * @param {string} workoutId
-   * @param {string} itemId
-   */
   const removeItem = useCallback(
     (workoutId: string, itemId: string) => {
       persist((prev: Workout[]) =>

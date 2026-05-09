@@ -17,8 +17,12 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
+import { _getMMKVInstance } from "@/lib/storage";
 
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../lib/sqliteReader";
 import { Workouts } from "./Workouts";
 
 jest.mock("react-native-safe-area-context", () => {
@@ -32,6 +36,10 @@ jest.mock("react-native-safe-area-context", () => {
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  // Stage 8 PR #057f-tombstone: hooks read workouts from the SQLite
+  // warm cache, not MMKV. Reset the cache between tests.
+  clearFizrukSqliteCache();
+  __setFizrukSqliteCacheForTests({ workouts: [] });
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
     .mockResolvedValue(false);
@@ -67,41 +75,45 @@ describe("Fizruk Workouts page (mobile)", () => {
     // The catalog subview is now active (search input visible).
     expect(screen.getByTestId("fizruk-workouts-catalog-search")).toBeTruthy();
 
+    // FIZRUK_ACTIVE_WORKOUT is a separate MMKV-backed pointer to
+    // the in-flight workout id; not part of #057f-tombstone scope.
     const rawActive = _getMMKVInstance().getString(
       STORAGE_KEYS.FIZRUK_ACTIVE_WORKOUT,
     );
     expect(rawActive).toBeTruthy();
-    const rawWorkouts = _getMMKVInstance().getString(
-      STORAGE_KEYS.FIZRUK_WORKOUTS,
-    );
-    expect(rawWorkouts).toBeTruthy();
-    const parsed = JSON.parse(rawWorkouts ?? "[]") as Array<{ id: string }>;
-    expect(parsed).toHaveLength(1);
+    // Stage 8 PR #057f-tombstone: workouts persistence is now SQLite-
+    // only via `triggerFizrukDualWrite`. The hook surface still
+    // reflects the new workout in React state, so verify via UI
+    // (active hero is on-screen with elapsed timer) instead of MMKV.
+    expect(screen.getByTestId("fizruk-workouts-active-elapsed")).toBeTruthy();
   });
 
   it("opens the journal subview from the 'Всі →' shortcut", () => {
-    safeWriteLS(STORAGE_KEYS.FIZRUK_WORKOUTS, [
-      {
-        id: "w_older",
-        startedAt: "2026-04-10T12:00:00Z",
-        endedAt: "2026-04-10T13:00:00Z",
-        items: [],
-        groups: [],
-        warmup: null,
-        cooldown: null,
-        note: "",
-      },
-      {
-        id: "w_newer",
-        startedAt: "2026-04-20T18:00:00Z",
-        endedAt: "2026-04-20T19:00:00Z",
-        items: [],
-        groups: [],
-        warmup: null,
-        cooldown: null,
-        note: "",
-      },
-    ]);
+    // Stage 8 PR #057f-tombstone: seed the SQLite cache instead of MMKV.
+    __setFizrukSqliteCacheForTests({
+      workouts: [
+        {
+          id: "w_older",
+          startedAt: "2026-04-10T12:00:00Z",
+          endedAt: "2026-04-10T13:00:00Z",
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+        },
+        {
+          id: "w_newer",
+          startedAt: "2026-04-20T18:00:00Z",
+          endedAt: "2026-04-20T19:00:00Z",
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+        },
+      ],
+    });
 
     render(<Workouts />);
 
@@ -126,14 +138,6 @@ describe("Fizruk Workouts page (mobile)", () => {
       "Жим штанги лежачи",
     );
 
-    const rawBefore = _getMMKVInstance().getString(
-      STORAGE_KEYS.FIZRUK_WORKOUTS,
-    );
-    const parsedBefore = JSON.parse(rawBefore ?? "[]") as Array<{
-      items: { id: string }[];
-    }>;
-    expect(parsedBefore[0]?.items).toHaveLength(0);
-
     const rows = screen.getAllByTestId(/^fizruk-workouts-catalog-row-/);
     expect(rows.length).toBeGreaterThan(0);
 
@@ -141,11 +145,12 @@ describe("Fizruk Workouts page (mobile)", () => {
       fireEvent.press(rows[0]!);
     });
 
-    const rawAfter = _getMMKVInstance().getString(STORAGE_KEYS.FIZRUK_WORKOUTS);
-    const parsedAfter = JSON.parse(rawAfter ?? "[]") as Array<{
-      items: { id: string; exerciseId?: string }[];
-    }>;
-    expect(parsedAfter[0]?.items ?? []).toHaveLength(1);
+    // Stage 8 PR #057f-tombstone: verify via UI rather than MMKV.
+    // The active-item card with an `-add-set` button is rendered
+    // when an exercise is appended to the active workout.
+    fireEvent.press(screen.getByTestId("fizruk-workouts-back"));
+    const addSetButtons = screen.getAllByTestId(/-add-set$/);
+    expect(addSetButtons.length).toBeGreaterThan(0);
   });
 
   it("appends a set via the active-set editor", () => {
@@ -186,14 +191,11 @@ describe("Fizruk Workouts page (mobile)", () => {
       fireEvent.press(screen.getByTestId("fizruk-workouts-set-editor-save"));
     });
 
-    const rawAfter = _getMMKVInstance().getString(STORAGE_KEYS.FIZRUK_WORKOUTS);
-    const parsed = JSON.parse(rawAfter ?? "[]") as Array<{
-      items: {
-        sets?: { weightKg: number; reps: number }[];
-      }[];
-    }>;
-    const sets = parsed[0]?.items[0]?.sets ?? [];
-    expect(sets).toHaveLength(1);
-    expect(sets[0]).toMatchObject({ weightKg: 60, reps: 10 });
+    // Stage 8 PR #057f-tombstone: verify via UI — the set editor
+    // closes after save, and a `-set-` row representing the appended
+    // set is rendered on the active item card.
+    expect(screen.queryByTestId("fizruk-workouts-set-editor-save")).toBeNull();
+    const setRows = screen.getAllByTestId(/-set-\d+$/);
+    expect(setRows.length).toBeGreaterThan(0);
   });
 });

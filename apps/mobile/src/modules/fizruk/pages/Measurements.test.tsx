@@ -19,11 +19,14 @@
 import { AccessibilityInfo } from "react-native";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
+import { _getMMKVInstance } from "@/lib/storage";
 import { ToastProvider } from "@/components/ui/Toast";
 
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type FizrukMeasurementEntry,
+} from "../lib/sqliteReader";
 import { Measurements } from "./Measurements";
 
 function renderPage() {
@@ -61,11 +64,17 @@ jest.mock("victory-native", () => {
 function seedEntries(
   rows: readonly { id: string; at: string; weightKg?: number }[],
 ) {
-  safeWriteLS(STORAGE_KEYS.FIZRUK_MEASUREMENTS, rows);
+  // Stage 8 PR #057f-tombstone: hooks read measurements from the
+  // SQLite warm cache, not MMKV. Seed the cache directly.
+  __setFizrukSqliteCacheForTests({
+    measurements: rows.map((r) => ({ ...r }) as FizrukMeasurementEntry),
+  });
 }
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearFizrukSqliteCache();
+  __setFizrukSqliteCacheForTests({ measurements: [] });
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
     .mockResolvedValue(false);
@@ -79,7 +88,7 @@ afterEach(() => {
 });
 
 describe("Fizruk Measurements page (mobile)", () => {
-  it("renders the empty-state card when MMKV has no entries", () => {
+  it("renders the empty-state card when the SQLite cache has no entries", () => {
     renderPage();
 
     expect(screen.getByText("Вимірювання")).toBeTruthy();
@@ -138,12 +147,10 @@ describe("Fizruk Measurements page (mobile)", () => {
     expect(screen.queryByTestId("fizruk-measurements-list-empty")).toBeNull();
     expect(screen.getByText(/Вага: 80\.5 кг/)).toBeTruthy();
 
-    // MMKV persisted the entry.
-    const raw = _getMMKVInstance().getString(STORAGE_KEYS.FIZRUK_MEASUREMENTS);
-    expect(raw).toBeTruthy();
-    const parsed = JSON.parse(raw ?? "[]") as Array<{ weightKg?: number }>;
-    expect(parsed).toHaveLength(1);
-    expect(parsed[0]?.weightKg).toBe(80.5);
+    // Stage 8 PR #057f-tombstone: persistence is now SQLite-only via
+    // `triggerFizrukDualWrite`. The UI assertion above already proves
+    // the entry flowed through the React state path; MMKV inspection
+    // is no longer applicable.
   });
 
   it("opens the edit sheet pre-populated when a row is tapped", () => {

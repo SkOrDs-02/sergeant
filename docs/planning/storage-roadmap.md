@@ -3000,6 +3000,22 @@ via SqliteReader`).
     first-paint read залишається synchronous fallback. Pre-step для
     `#057f-tombstone` (LS-reader drop + `STORAGE_KEYS.FIZRUK_*`
     tombstone + residual-import bootstrap).
+  - **PR #057f-tombstone** 🚧 IN PROGRESS — drop LS-write + LS-read
+    callsites from web/mobile Fizruk hooks (`useWorkouts`,
+    `useExerciseCatalog`/`useCustomExercises`, `useMeasurements`),
+    persist exclusively via `triggerFizrukDualWrite` (the existing
+    dual-write trigger that was orchestrator-only до PR #057f-flag).
+    Add `residualImport.ts` (web LS + mobile MMKV) wired into
+    `bootFizrukSqliteReadPath` to drain leftover keys into SQLite
+    with stale `clientTs` (epoch zero) so existing rows always win.
+    Mark `STORAGE_KEYS.FIZRUK_{WORKOUTS,CUSTOM_EXERCISES,MEASUREMENTS}`
+    as `@deprecated`. Mirrors the Nutrition `#057n-tombstone`
+    pattern exactly. Drift-fix sub-task: dual-write trigger був
+    declared (PR #028) but ніколи не invoked from LS-write callsites
+    через відсутність LS-write rewriting у попередніх PR-ах — це
+    означало, що SQLite mirror для Fizruk весь час був порожній і
+    parity probe з #055f3 фактично ніколи не виконувалась. Цей PR
+    закриває drift одночасно з tombstone scope.
 
 #### **Nutrition (4 PR-и)** — структура ідентична
 
