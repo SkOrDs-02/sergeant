@@ -36,7 +36,7 @@ import {
   getCachedFizrukSqliteState,
   type FizrukMeasurementEntry,
 } from "../lib/sqliteReader";
-import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
@@ -133,29 +133,22 @@ export function useMeasurements(): UseMeasurementsResult {
     readonly MobileMeasurementEntry[]
   >(STORAGE_KEY, EMPTY);
 
-  // Stage 4 PR #029a: under `feature.fizruk.sqlite_v2.read_sqlite`,
-  // overlay measurements from the local SQLite cache once it's warm.
-  // The MMKV-backed `useLocalStorage` read above stays as the
-  // synchronous fallback so the first paint never blocks on SQLite.
-  // Writes still go through `setRaw` / `removeRaw` exactly as today —
-  // PR #029a does NOT change the write path.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useFizrukSqliteReadGate();
+  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
+  // dropped). Overlay measurements from the local SQLite cache once
+  // it's warm. The MMKV-backed `useLocalStorage` read above stays as
+  // the synchronous fallback so the first paint never blocks on
+  // SQLite. Writes still go through `setRaw` / `removeRaw` exactly as
+  // today — this PR does NOT change the write path.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   const [overlay, setOverlay] = useState<
     readonly MobileMeasurementEntry[] | null
   >(null);
 
   useEffect(() => {
-    if (!sqliteReadEnabled) {
-      // Flag flipped off — drop the overlay so we fall back to MMKV
-      // without waiting for a remount.
-      setOverlay((prev) => (prev === null ? prev : null));
-      return;
-    }
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
     setOverlay(cache.measurements.map(projectMeasurementForMobile));
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const entries = useMemo(() => {
     const source: readonly MobileMeasurementEntry[] =

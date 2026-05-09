@@ -28,7 +28,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
-import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_WORKOUTS;
 
@@ -160,20 +160,18 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
     return () => sub.remove();
   }, []);
 
-  // Stage 4 PR #029a: under `feature.fizruk.sqlite_v2.read_sqlite`,
-  // overlay workouts from the local SQLite cache once it's warm. The
-  // MMKV first-paint read above stays as a synchronous fallback so the
-  // first paint never blocks on SQLite.
-  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
-    useFizrukSqliteReadGate();
+  // Stage 8 PR #057f-flag: read overlay тепер unconditional (flag
+  // dropped). Overlay workouts from the local SQLite cache once it's
+  // warm. The MMKV first-paint read above stays as a synchronous
+  // fallback so the first paint never blocks on SQLite.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    if (!sqliteReadEnabled) return;
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt === null) return;
     const overlay = cache.workouts.map(projectWorkout);
     stateRef.current = overlay;
     setWorkouts(overlay);
-  }, [sqliteReadEnabled, sqliteCacheTick]);
+  }, [sqliteCacheTick]);
 
   const persist = useCallback(
     (updater: (prev: FizrukWorkout[]) => FizrukWorkout[]) => {

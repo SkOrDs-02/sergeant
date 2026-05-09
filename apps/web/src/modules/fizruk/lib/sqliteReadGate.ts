@@ -1,24 +1,24 @@
 /**
- * Read-path gate + subscription for the Fizruk SQLite cutover (PR #029).
+ * Read-path subscription for the Fizruk SQLite cutover.
  *
- * The web Фізрук module spreads its persisted state across multiple
- * hooks (`useWorkouts`, `useExerciseCatalog`, `useMeasurements`),
- * each reading directly from `localStorage` on mount. To overlay
- * SQLite reads under the `feature.fizruk.sqlite_v2.read_sqlite` flag
- * we need a tiny in-process pub-sub so:
+ * Stage 8 PR #057f-flag: the `feature.fizruk.sqlite_v2.read_sqlite`
+ * flag has graduated — overlay читання тепер unconditional once the
+ * boot wiring (`sqliteReadBoot.ts`) reports activation. This file
+ * keeps only the pub-sub pieces:
  *
- *  - the boot wiring file (`sqliteReadBoot.ts`) flips the gate after
- *    a successful migration + cache refresh,
- *  - and every hook re-reads on the next render.
+ *  - `useFizrukSqliteReadTick()` — re-renders subscribers whenever
+ *    {@link notifyFizrukSqliteCacheRefresh} fires, so consumer hooks
+ *    pick up the freshly warmed cache.
+ *  - `notifyFizrukSqliteCacheRefresh()` — bumps the tick + fans out
+ *    to listeners; called from `useFizrukSqliteReadBoot` after a
+ *    successful migration + cache refresh.
  *
- * Mirrors the registration shape of the dual-write context but is
- * dramatically simpler — there's only one boolean and one event.
+ * The flag-gated `useFizrukSqliteReadFlag()` / `useFizrukSqliteReadGate()`
+ * exports were dropped together with the registry entry as part of
+ * Stage 8 PR #057f-flag — see `apps/web/src/core/lib/featureFlags.ts`.
  */
 
 import { useSyncExternalStore } from "react";
-import { useFlag } from "../../../core/lib/featureFlags";
-
-const READ_FLAG_ID = "feature.fizruk.sqlite_v2.read_sqlite";
 
 let cacheTick = 0;
 const listeners = new Set<() => void>();
@@ -37,18 +37,9 @@ function getSnapshot(): number {
 /**
  * React-hook for components that overlay reads from the SQLite cache.
  * Re-renders whenever {@link notifyFizrukSqliteCacheRefresh} fires.
- *
- * Returns the current `read_sqlite` flag value AND a tick counter —
- * consumers should rely on `useFizrukSqliteReadFlag()` to gate their
- * overlay logic and on the tick value to invalidate memoised reads.
  */
 export function useFizrukSqliteReadTick(): number {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
-
-/** Flag-gated read-overlay enable for the fizruk hooks. */
-export function useFizrukSqliteReadFlag(): boolean {
-  return useFlag(READ_FLAG_ID);
 }
 
 /**

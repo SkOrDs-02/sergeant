@@ -68,14 +68,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.fizruk.sqlite_v2.read_sqlite",
-    label: "Fizruk — read from SQLite",
-    description:
-      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як source-of-truth. Stage 8 PR #055f2 storage-roadmap — default-on rollout. SQLite mirror — unconditional з PR #056f. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.finyk.sqlite_v2.mono_mirror",
     label: "Finyk — Mono cache mirror",
     description:

@@ -1,31 +1,19 @@
 /**
- * Overlay tests for `useFizrukWorkouts` (PR #029a — mobile).
+ * Overlay tests for `useFizrukWorkouts` (Stage 8 PR #057f-flag —
+ * mobile).
  *
- * Verifies the SQLite read overlay swaps in `getCachedFizrukSqliteState()`
- * exactly when `feature.fizruk.sqlite_v2.read_sqlite` is on AND the
- * cache has been refreshed at least once. With the flag off, the hook
- * keeps reading from MMKV (verified via the existing
- * `useFizrukWorkouts.enqueue.test.ts`) and the cache is ignored even
- * if it has data.
- *
- * Mirrors the web vitest suite at
- * `apps/web/src/modules/fizruk/hooks/useWorkouts.sqliteOverlay.test.tsx`.
+ * Verifies the SQLite read overlay swaps in
+ * `getCachedFizrukSqliteState()` once the cache has been refreshed at
+ * least once. The `feature.fizruk.sqlite_v2.read_sqlite` flag was
+ * dropped — overlay читання тепер unconditional, тому "flag off" кейс
+ * прибрано. Cold-cache (`refreshedAt === null`) залишається single
+ * gating condition.
  */
 import { act, renderHook } from "@testing-library/react-native";
 
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 
 import { _getMMKVInstance } from "@/lib/storage";
-
-const mockUseFlag = jest.fn<boolean, [string]>();
-
-jest.mock("@/core/lib/featureFlags", () => {
-  const actual = jest.requireActual("@/core/lib/featureFlags");
-  return {
-    ...actual,
-    useFlag: (id: string) => mockUseFlag(id),
-  };
-});
 
 import {
   notifyFizrukSqliteCacheRefresh,
@@ -75,25 +63,10 @@ beforeEach(() => {
   _getMMKVInstance().clearAll();
   clearFizrukSqliteCache();
   __resetFizrukSqliteReadGateForTests();
-  mockUseFlag.mockReset();
-  mockUseFlag.mockReturnValue(false);
 });
 
-describe("useFizrukWorkouts — SQLite read overlay (PR #029a)", () => {
-  it("does NOT overlay when the flag is off (returns MMKV state)", () => {
-    mockUseFlag.mockReturnValue(false);
-
-    seedCache([makeWorkout("w-from-sqlite", "2026-01-01T00:00:00Z")]);
-
-    const { result } = renderHook(() => useFizrukWorkouts());
-
-    // No MMKV write happened, so we expect the empty-array default.
-    expect(result.current.workouts).toEqual([]);
-  });
-
-  it("does NOT overlay when the flag is on but the cache is cold (refreshedAt === null)", () => {
-    mockUseFlag.mockReturnValue(true);
-
+describe("useFizrukWorkouts — SQLite read overlay (Stage 8 PR #057f-flag)", () => {
+  it("does NOT overlay when the cache is cold (refreshedAt === null)", () => {
     // Cache is cold (default state).
     expect(getCachedFizrukSqliteState().refreshedAt).toBeNull();
 
@@ -104,9 +77,7 @@ describe("useFizrukWorkouts — SQLite read overlay (PR #029a)", () => {
     expect(result.current.workouts).toEqual([]);
   });
 
-  it("overlays SQLite workouts on render when flag is on AND cache is warm", () => {
-    mockUseFlag.mockReturnValue(true);
-
+  it("overlays SQLite workouts on render when cache is warm", () => {
     seedCache([
       makeWorkout("w-recent", "2026-01-02T00:00:00Z"),
       makeWorkout("w-older", "2026-01-01T00:00:00Z"),
@@ -119,8 +90,6 @@ describe("useFizrukWorkouts — SQLite read overlay (PR #029a)", () => {
   });
 
   it("re-overlays after notifyFizrukSqliteCacheRefresh fires (cache update)", () => {
-    mockUseFlag.mockReturnValue(true);
-
     seedCache([makeWorkout("w-1", "2026-01-01T00:00:00Z")]);
 
     const { result } = renderHook(() => useFizrukWorkouts());

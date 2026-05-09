@@ -2984,6 +2984,13 @@ via SqliteReader`).
   виноситься у future PR (разом з #057f LS-reader drop або
   окремим кроком).
 - **PR #057f** — drop LS readers + tombstone `STORAGE_KEYS.FIZRUK_*`.
+  - **PR #057f-flag** ✅ LANDED — drop the now-redundant
+    `feature.fizruk.sqlite_v2.read_sqlite` flag-check from web +
+    mobile (registry entry, hooks, boot, reader gate). SQLite
+    read-overlay тепер unconditional once boot completes; LS/MMKV
+    first-paint read залишається synchronous fallback. Pre-step для
+    `#057f-tombstone` (LS-reader drop + `STORAGE_KEYS.FIZRUK_*`
+    tombstone + residual-import bootstrap).
 
 #### **Nutrition (4 PR-и)** — структура ідентична
 
