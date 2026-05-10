@@ -14,6 +14,7 @@
  */
 import {
   diffFizrukDualWriteOps,
+  type FizrukActiveWorkoutSnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
@@ -36,6 +37,7 @@ const EMPTY: FizrukDualWriteState = {
   programs: null,
   planTemplate: null,
   wellbeing: [],
+  activeWorkout: null,
 };
 
 function makeWorkout(
@@ -478,9 +480,86 @@ describe("diffFizrukDualWriteOps (mobile)", () => {
     expect(kinds).toEqual(["wellbeing-delete", "wellbeing-upsert"]);
   });
 
-  // --- Mixed (all nine entity classes) ---
+  // --- Active workout (Stage 12.5 / PR #070f3) ---
 
-  it("handles changes across all nine entity classes in one diff", () => {
+  it("emits no op when prev/next both have null activeWorkout", () => {
+    expect(diffFizrukDualWriteOps(EMPTY, EMPTY)).toEqual([]);
+  });
+
+  it("emits no op when next.activeWorkout is null (cold cache)", () => {
+    const prev: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const next: FizrukDualWriteState = { ...EMPTY, activeWorkout: null };
+    expect(diffFizrukDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  it("emits an active-workout-set op on first set from cold cache", () => {
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const ops = diffFizrukDualWriteOps(EMPTY, next);
+    expect(ops).toEqual([
+      {
+        kind: "active-workout-set",
+        activeWorkout: { activeWorkoutId: "w-1" },
+      },
+    ]);
+  });
+
+  it("emits an active-workout-set op when the id changes", () => {
+    const prev: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-2" },
+    };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toEqual([
+      {
+        kind: "active-workout-set",
+        activeWorkout: { activeWorkoutId: "w-2" },
+      },
+    ]);
+  });
+
+  it("emits an active-workout-set op on clear (id → null)", () => {
+    const prev: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: null },
+    };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toEqual([
+      {
+        kind: "active-workout-set",
+        activeWorkout: { activeWorkoutId: null },
+      },
+    ]);
+  });
+
+  it("skips active-workout-set when the id is unchanged", () => {
+    const prev: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    expect(diffFizrukDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  // --- Mixed (all ten entity classes) ---
+
+  it("handles changes across all ten entity classes in one diff", () => {
     const w = makeWorkout();
     const ex = makeExercise();
     const m = makeMeasurement();
@@ -492,6 +571,9 @@ describe("diffFizrukDualWriteOps (mobile)", () => {
       dataJson: '{"id":"t1"}',
     };
     const wb = makeWellbeing();
+    const activeWorkout: FizrukActiveWorkoutSnapshot = {
+      activeWorkoutId: "w-active",
+    };
 
     const ops = diffFizrukDualWriteOps(EMPTY, {
       workouts: [w],
@@ -503,10 +585,12 @@ describe("diffFizrukDualWriteOps (mobile)", () => {
       programs,
       planTemplate,
       wellbeing: [wb],
+      activeWorkout,
     });
     const kinds = ops.map((o) => o.kind).sort();
     expect(kinds).toEqual(
       [
+        "active-workout-set",
         "custom-exercise-upsert",
         "daily-log-upsert",
         "measurement-upsert",

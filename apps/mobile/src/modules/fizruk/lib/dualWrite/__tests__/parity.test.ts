@@ -46,7 +46,24 @@ const EMPTY: FizrukDualWriteState = {
   programs: null,
   planTemplate: null,
   wellbeing: [],
+  activeWorkout: null,
 };
+
+/**
+ * Stage 12.5 / PR #070f3-active-workout-dualwrite — the mobile
+ * `migrateFizruk` runner only installs the per-module fizruk_*
+ * tables. The active-workout op writes to the shared `kv_store`
+ * table, so tests that exercise the active-workout probe must
+ * pre-create it. This mirrors the production boot sequence
+ * (`bootstrapMobileKvStore` runs before any dual-write op).
+ */
+const KV_STORE_INIT_SQL = `
+  CREATE TABLE IF NOT EXISTS kv_store (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`;
 
 describe("probeFizrukParity (mobile)", () => {
   let db: ReturnType<typeof Database>;
@@ -56,6 +73,7 @@ describe("probeFizrukParity (mobile)", () => {
     db = new Database(":memory:");
     client = syncClient(db);
     await migrateFizruk(client);
+    db.exec(KV_STORE_INIT_SQL);
   });
 
   afterEach(() => {
@@ -370,5 +388,90 @@ describe("probeFizrukParity (mobile)", () => {
     expect(outcome.details).toMatchObject({
       wellbeing: { ls: 1, sqlite: 1, lsOnly: 1, sqliteOnly: 1 },
     });
+  });
+
+  // --- Stage 12.5 / PR #070f3 — active-workout (kv_store) ----------
+
+  it("reports match when both LS and kv_store have no active-workout", async () => {
+    const outcome = await probeFizrukParity(client, UID, EMPTY);
+    expect(outcome.result).toBe("match");
+    expect(outcome.details).toMatchObject({
+      activeWorkout: { ls: false, sqlite: false },
+    });
+  });
+
+  it("reports match after an active-workout-set apply", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "w-1" },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("match");
+  });
+
+  it("reports mismatch when LS has an id but kv_store has no row", async () => {
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+    expect(outcome.details).toMatchObject({
+      activeWorkout: { ls: true, sqlite: false },
+    });
+  });
+
+  it("reports mismatch when LS and kv_store disagree on the id", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "w-A" },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-B" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+    expect(outcome.details).toMatchObject({
+      activeWorkout: { ls: true, sqlite: true, equalId: false },
+    });
+  });
+
+  it("does not leak active-workout id values into mismatch details", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "sqlite-id-leak" },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "ls-id-leak" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+    const json = JSON.stringify(outcome.details);
+    expect(json).not.toContain("ls-id-leak");
+    expect(json).not.toContain("sqlite-id-leak");
   });
 });

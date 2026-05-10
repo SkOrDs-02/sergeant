@@ -61,6 +61,7 @@ export type ExtractableChecklistLike = {
 
 import { isFizrukDualWriteRegistered } from "./dualWrite/index";
 import {
+  type FizrukActiveWorkoutSnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
@@ -154,6 +155,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   programs: null,
   planTemplate: null,
   wellbeing: [],
+  activeWorkout: null,
 };
 
 /**
@@ -179,6 +181,12 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
         cache.planTemplate ?? null,
       ),
       wellbeing: extractWellbeingSnapshots(cache.wellbeing ?? []),
+      // Stage 12.5 / PR #070f3-active-workout-dualwrite — the
+      // active-workout slot is per-device (kv_store) and lives
+      // outside the cached fizruk_* tables. The hook owns its own
+      // state, so we always emit `null` here and let the hook
+      // overlay an explicit snapshot on `prev` / `next`.
+      activeWorkout: null,
     };
   } catch {
     return null;
@@ -407,6 +415,23 @@ function extractPlanTemplateSnapshotFromCache(
 ): FizrukPlanTemplateSnapshot | null {
   if (cached === null) return null;
   return { dataJson: cached.dataJson };
+}
+
+/**
+ * Stage 12.5 / PR #070f3-active-workout-dualwrite — active-workout
+ * extractor. Accepts the raw MMKV string id (or `null`) and emits
+ * the singleton snapshot consumed by the dual-write diff. The
+ * `null` and empty-string inputs are normalised to
+ * `{ activeWorkoutId: null }` so a downstream `JSON.stringify`
+ * round-trip in the adapter always produces the literal `'null'`
+ * for the cleared slot.
+ */
+export function extractActiveWorkoutSnapshot(
+  id: string | null | undefined,
+): FizrukActiveWorkoutSnapshot {
+  return {
+    activeWorkoutId: typeof id === "string" && id.length > 0 ? id : null,
+  };
 }
 
 /**

@@ -39,6 +39,13 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadStringLS, safeRemoveLS, safeWriteLS } from "@/lib/storage";
 
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractActiveWorkoutSnapshot,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
+
 const FIZRUK_ACTIVE_WORKOUT = STORAGE_KEYS.FIZRUK_ACTIVE_WORKOUT;
 
 /**
@@ -244,13 +251,39 @@ export function useActiveFizrukWorkout(
   const [activeWorkoutId, setActiveWorkoutIdState] = useState<string | null>(
     () => safeReadStringLS(FIZRUK_ACTIVE_WORKOUT, null),
   );
+  // Stage 12.5 / PR #070f3-active-workout-dualwrite — mirror the
+  // last-emitted active-workout id in a ref so the imperative
+  // setter can build a `prev → next` snapshot pair without
+  // depending on a stale closure of the React state.
+  const activeWorkoutIdRef = useRef<string | null>(activeWorkoutId);
 
   const setActiveWorkoutId = useCallback((id: string | null) => {
-    setActiveWorkoutIdState(id);
-    if (id === null || id === "") {
+    const normalised = id === null || id === "" ? null : id;
+    const prevId = activeWorkoutIdRef.current;
+    setActiveWorkoutIdState(normalised);
+    activeWorkoutIdRef.current = normalised;
+    if (normalised === null) {
       safeRemoveLS(FIZRUK_ACTIVE_WORKOUT);
     } else {
-      safeWriteLS(FIZRUK_ACTIVE_WORKOUT, id);
+      safeWriteLS(FIZRUK_ACTIVE_WORKOUT, normalised);
+    }
+    // Stage 12.5 / PR #070f3-active-workout-dualwrite — mirror to
+    // the shared `kv_store` table via the dual-write pipeline. The
+    // MMKV write above remains the source of truth until a future
+    // tombstone PR drains the slot.
+    if (prevId === normalised) return;
+    const baseState =
+      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+    try {
+      triggerFizrukDualWrite(
+        { ...baseState, activeWorkout: extractActiveWorkoutSnapshot(prevId) },
+        {
+          ...baseState,
+          activeWorkout: extractActiveWorkoutSnapshot(normalised),
+        },
+      );
+    } catch {
+      /* trigger is fire-and-forget — never propagate */
     }
   }, []);
 

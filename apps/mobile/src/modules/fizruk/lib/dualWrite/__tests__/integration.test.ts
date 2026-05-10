@@ -54,7 +54,23 @@ const EMPTY: FizrukDualWriteState = {
   programs: null,
   planTemplate: null,
   wellbeing: [],
+  activeWorkout: null,
 };
+
+/**
+ * Stage 12.5 / PR #070f3-active-workout-dualwrite — the active-workout
+ * op writes to the shared `kv_store` table (per-device, no `user_id`
+ * scope). `migrateFizruk()` does not install `kv_store`, so the test
+ * harness pre-creates it to mirror the production boot sequence
+ * (`bootstrapMobileKvStore` runs before any dual-write op).
+ */
+const KV_STORE_INIT_SQL = `
+  CREATE TABLE IF NOT EXISTS kv_store (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`;
 
 describe("dualWriteFizrukState orchestrator (mobile, Stage 12)", () => {
   let db: ReturnType<typeof Database>;
@@ -64,6 +80,7 @@ describe("dualWriteFizrukState orchestrator (mobile, Stage 12)", () => {
     db = new Database(":memory:");
     client = syncClient(db);
     await migrateFizruk(client);
+    db.exec(KV_STORE_INIT_SQL);
     __resetDualWriteTelemetryForTests();
   });
 
@@ -237,6 +254,32 @@ describe("dualWriteFizrukState orchestrator (mobile, Stage 12)", () => {
     const telemetry = __peekDualWriteTelemetryForTests("fizruk");
     expect(telemetry.applied).toBe(1);
     expect(telemetry.parityMatch).toBe(1);
+    expect(telemetry.parityMismatch).toBe(0);
+  });
+
+  // --- Stage 12.5 / PR #070f3 — active-workout end-to-end ---------
+
+  it("applies an active-workout-set op end-to-end and writes to kv_store", async () => {
+    registerFizrukDualWriteContext(makeContext());
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      activeWorkout: { activeWorkoutId: "w-1" },
+    };
+    const outcome = await dualWriteFizrukState(EMPTY, next);
+    expect(outcome.status).toBe("applied");
+    if (outcome.status === "applied") {
+      expect(outcome.result.applied).toBe(1);
+      expect(outcome.result.errored).toBe(0);
+    }
+
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT value FROM kv_store WHERE key = ?",
+      ["fizruk_active_workout_id_v1"],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.value).toBe('"w-1"');
+
+    const telemetry = __peekDualWriteTelemetryForTests("fizruk");
+    expect(telemetry.parityMatch).toBeGreaterThanOrEqual(1);
     expect(telemetry.parityMismatch).toBe(0);
   });
 });

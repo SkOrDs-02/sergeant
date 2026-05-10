@@ -713,3 +713,137 @@ describe("applyFizrukDualWriteOps — Stage 12.5 ops (mobile, better-sqlite3)", 
     expect(rows[0]!.deleted_at).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Stage 12.5 / PR #070f3-active-workout-dualwrite — kv_store-backed singleton
+// ---------------------------------------------------------------------------
+
+const KV_STORE_INIT_SQL = `
+  CREATE TABLE IF NOT EXISTS kv_store (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`;
+
+const ACTIVE_WORKOUT_KEY = "fizruk_active_workout_id_v1";
+
+describe("applyFizrukDualWriteOps — active-workout (kv_store, mobile, better-sqlite3)", () => {
+  let db: ReturnType<typeof Database>;
+  let client: SqliteMigrationClient;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    client = syncClient(db);
+    db.exec(KV_STORE_INIT_SQL);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("upserts the active-workout row with a JSON-encoded id on first set", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "active-workout-set",
+        activeWorkout: { activeWorkoutId: "w-1" },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT key, value, updated_at FROM kv_store WHERE key = ?",
+      [ACTIVE_WORKOUT_KEY],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.key).toBe(ACTIVE_WORKOUT_KEY);
+    expect(rows[0]!.value).toBe('"w-1"');
+    expect(rows[0]!.updated_at).toBe(Date.parse(TS1));
+  });
+
+  it("updates the active-workout row to JSON 'null' when the slot is cleared", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "w-1" },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: null },
+        },
+      ],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT value, updated_at FROM kv_store WHERE key = ?",
+      [ACTIVE_WORKOUT_KEY],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.value).toBe("null");
+    expect(rows[0]!.updated_at).toBe(Date.parse(TS2));
+  });
+
+  it("LWW guard: stale active-workout-set is a no-op", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "newer" },
+        },
+      ],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "stale" },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT value, updated_at FROM kv_store WHERE key = ?",
+      [ACTIVE_WORKOUT_KEY],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.value).toBe('"newer"');
+    expect(rows[0]!.updated_at).toBe(Date.parse(TS2));
+  });
+
+  it("falls back to current wall-clock when clientTs is unparseable", async () => {
+    const before = Date.now();
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "active-workout-set",
+          activeWorkout: { activeWorkoutId: "w-1" },
+        },
+      ],
+      { userId: UID, clientTs: "not-an-iso-string", logger: silentLogger },
+    );
+    const after = Date.now();
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT value, updated_at FROM kv_store WHERE key = ?",
+      [ACTIVE_WORKOUT_KEY],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.value).toBe('"w-1"');
+    const ts = rows[0]!.updated_at as number;
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+  });
+});

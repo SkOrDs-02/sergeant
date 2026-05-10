@@ -30,10 +30,21 @@
  *   - `wellbeing-upsert` / `wellbeing-delete` — composite-PK
  *     `fizruk_wellbeing` rows keyed by `(user_id, date_key)`.
  *
+ * **Stage 12.5 / PR #070f3-active-workout-dualwrite** — adds a
+ * 10th (last) Fizruk hook surface, `useActiveFizrukWorkout`. Unlike
+ * the previous nine entity classes, the active-workout id does NOT
+ * have a dedicated `fizruk_*` table: it is a single string slot
+ * persisted into the **shared Stage 9 `kv_store` table** under
+ * key `fizruk_active_workout_id_v1`. The op shape mirrors the
+ * `programs-set` singleton pattern but the adapter writes through
+ * to `kv_store` (and the parity probe reads from it), keeping the
+ * dual-write pipeline as the single point of mirror for all 10
+ * Fizruk hooks.
+ *
  * The diff order is stable: workouts → custom exercises →
  * measurements → daily-log → monthly-plan → workout-templates →
- * programs → plan-template → wellbeing. See the web copy for the
- * full mapping rules and design notes.
+ * programs → plan-template → wellbeing → active-workout. See the
+ * web copy for the full mapping rules and design notes.
  */
 
 // -----------------------------------------------------------------------
@@ -117,6 +128,12 @@ export interface WellbeingDeleteOp {
   readonly dateKey: string;
 }
 
+// Stage 12.5 / PR #070f3-active-workout-dualwrite ----------------------
+export interface ActiveWorkoutSetOp {
+  readonly kind: "active-workout-set";
+  readonly activeWorkout: FizrukActiveWorkoutSnapshot;
+}
+
 export type FizrukDualWriteOp =
   | WorkoutUpsertOp
   | WorkoutDeleteOp
@@ -132,7 +149,8 @@ export type FizrukDualWriteOp =
   | ProgramsSetOp
   | PlanTemplateSetOp
   | WellbeingUpsertOp
-  | WellbeingDeleteOp;
+  | WellbeingDeleteOp
+  | ActiveWorkoutSetOp;
 
 // -----------------------------------------------------------------------
 // Snapshot shapes
@@ -267,6 +285,18 @@ export interface FizrukWellbeingSnapshot {
   readonly updatedAt: string;
 }
 
+/**
+ * Stage 12.5 / PR #070f3-active-workout-dualwrite — active-workout
+ * singleton snapshot. Persisted into the shared Stage 9 `kv_store`
+ * table at `key = 'fizruk_active_workout_id_v1'`, with `value`
+ * encoded as `JSON.stringify(activeWorkoutId)` so the cleared slot
+ * (`activeWorkoutId === null`) round-trips through the
+ * `kv_store.value TEXT NOT NULL` column without a sentinel.
+ */
+export interface FizrukActiveWorkoutSnapshot {
+  readonly activeWorkoutId: string | null;
+}
+
 // -----------------------------------------------------------------------
 // State shape
 // -----------------------------------------------------------------------
@@ -292,6 +322,14 @@ export interface FizrukDualWriteState {
   readonly planTemplate?: FizrukPlanTemplateSnapshot | null;
   /** Stage 12.5 / PR #070f2-mobile-dualwrite. */
   readonly wellbeing?: readonly FizrukWellbeingSnapshot[];
+  /**
+   * Stage 12.5 / PR #070f3-active-workout-dualwrite. `null` ≡ "no
+   * value provided this tick" — the diff treats `null` on `next`
+   * as cold cache (no-op). The hook always emits an explicit
+   * snapshot (with `activeWorkoutId = null` for the cleared slot)
+   * when persisting through `triggerFizrukDualWrite`.
+   */
+  readonly activeWorkout?: FizrukActiveWorkoutSnapshot | null;
 }
 
 // -----------------------------------------------------------------------
@@ -377,6 +415,9 @@ export function diffFizrukDualWriteOps(
     (id) => ops.push({ kind: "wellbeing-delete", dateKey: id }),
   );
 
+  // --- Active workout (Stage 12.5) — singleton kv_store slot ---
+  diffActiveWorkoutOps(prev, next, ops);
+
   return ops;
 }
 
@@ -441,6 +482,28 @@ function diffPlanTemplateOps(
   if (nextPlan === null) return;
   if (prevPlan && prevPlan.dataJson === nextPlan.dataJson) return;
   ops.push({ kind: "plan-template-set", planTemplate: nextPlan });
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 / PR #070f3-active-workout-dualwrite — active-workout
+// singleton diff (kv_store-backed)
+// -----------------------------------------------------------------------
+
+function diffActiveWorkoutOps(
+  prev: FizrukDualWriteState,
+  next: FizrukDualWriteState,
+  ops: FizrukDualWriteOp[],
+): void {
+  const prevActive = prev.activeWorkout ?? null;
+  const nextActive = next.activeWorkout ?? null;
+  // `null` on `next` ≡ "hook didn't include this tick" → cold-cache
+  // no-op. The hook explicitly emits a snapshot with
+  // `activeWorkoutId = null` when clearing the slot.
+  if (nextActive === null) return;
+  if (prevActive && prevActive.activeWorkoutId === nextActive.activeWorkoutId) {
+    return;
+  }
+  ops.push({ kind: "active-workout-set", activeWorkout: nextActive });
 }
 
 // -----------------------------------------------------------------------

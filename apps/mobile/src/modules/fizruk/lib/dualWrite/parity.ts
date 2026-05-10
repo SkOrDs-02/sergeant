@@ -1,5 +1,6 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { ACTIVE_WORKOUT_KV_KEY } from "./adapter";
 import type { FizrukDualWriteState } from "./diff";
 
 /**
@@ -37,6 +38,17 @@ import type { FizrukDualWriteState } from "./diff";
  *   9. **Wellbeing** — composite-PK `fizruk_wellbeing` rows keyed
  *      by `(user_id, date_key)`; the probe compares the active
  *      `date_key` set rather than synthetic ids.
+ *
+ * **Stage 12.5 / PR #070f3-active-workout-dualwrite** — adds the
+ * 10th (last) Fizruk entity class:
+ *
+ *   10. **Active workout** — singleton string slot in the shared
+ *       `kv_store` table at `key = 'fizruk_active_workout_id_v1'`.
+ *       Unlike the other nine probes, this one is per-device (no
+ *       `user_id` scope) because `kv_store` is a per-device table.
+ *       The probe parses the `value` column via `JSON.parse` and
+ *       compares the resulting `string | null` to the LS snapshot
+ *       (`next.activeWorkout?.activeWorkoutId`).
  *
  * The probe is best-effort: it must NEVER throw, and any read failure
  * is surfaced as a `read.fallback` — distinct from a real parity
@@ -118,6 +130,8 @@ export async function probeFizrukParity(
   // Stage 12.5 — programs / plan-template singletons.
   const programsDiff = await probePrograms(client, userId, next);
   const planTemplateDiff = await probePlanTemplate(client, userId, next);
+  // Stage 12.5 / PR #070f3 — active-workout singleton (kv_store).
+  const activeWorkoutDiff = await probeActiveWorkout(client, next);
 
   const allMatch =
     workoutsDiff.match &&
@@ -128,6 +142,7 @@ export async function probeFizrukParity(
     monthlyPlanDiff.match &&
     programsDiff.match &&
     planTemplateDiff.match &&
+    activeWorkoutDiff.match &&
     wellbeingDiff.match;
 
   if (allMatch) {
@@ -151,6 +166,7 @@ export async function probeFizrukParity(
         monthlyPlan: monthlyPlanDiff.details,
         programs: programsDiff.details,
         planTemplate: planTemplateDiff.details,
+        activeWorkout: activeWorkoutDiff.details,
         wellbeing: {
           ls: lsWellbeingDates.size,
           sqlite: sqliteWellbeingDates.size,
@@ -200,6 +216,7 @@ export async function probeFizrukParity(
       monthlyPlan: monthlyPlanDiff.details,
       programs: programsDiff.details,
       planTemplate: planTemplateDiff.details,
+      activeWorkout: activeWorkoutDiff.details,
       wellbeing: {
         ls: lsWellbeingDates.size,
         sqlite: sqliteWellbeingDates.size,
@@ -415,6 +432,53 @@ interface SetCompareOutcome {
   match: boolean;
   lsOnly: number;
   sqliteOnly: number;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 / PR #070f3-active-workout-dualwrite — active-workout
+// singleton probe (kv_store-backed)
+// -----------------------------------------------------------------------
+
+async function probeActiveWorkout(
+  client: SqliteMigrationClient,
+  next: FizrukDualWriteState,
+): Promise<SingletonDiffResult> {
+  const rows = await client.all<{ value: string }>(
+    `SELECT value FROM kv_store WHERE key = ?`,
+    [ACTIVE_WORKOUT_KV_KEY],
+  );
+  const sqliteHas = rows.length > 0;
+  const lsActive = next.activeWorkout ?? null;
+  const lsHas = lsActive !== null;
+
+  if (!lsHas && !sqliteHas) {
+    return { match: true, details: { ls: false, sqlite: false } };
+  }
+  if (lsHas !== sqliteHas) {
+    return { match: false, details: { ls: lsHas, sqlite: sqliteHas } };
+  }
+  // Both sides have a value — parse the SQLite blob (`'"id"'` or
+  // `'null'`) and compare to the LS-derived id.
+  const sqliteId = parseActiveWorkoutValue(rows[0]?.value);
+  const lsId = lsActive?.activeWorkoutId ?? null;
+  const equal = sqliteId === lsId;
+  return {
+    match: equal,
+    details: equal
+      ? { ls: true, sqlite: true, equal: true }
+      : { ls: true, sqlite: true, equalId: false },
+  };
+}
+
+function parseActiveWorkoutValue(raw: string | undefined): string | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === "string" && parsed.length > 0) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function compareSets(ls: Set<string>, sqlite: Set<string>): SetCompareOutcome {
