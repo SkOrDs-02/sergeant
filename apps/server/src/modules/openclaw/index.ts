@@ -66,3 +66,58 @@ export type {
   MuteAlertInput,
   MuteAlertOutput,
 } from "./write-tools.js";
+
+// PR-C1b: code-understanding read tools (github_search/tree/diff/prs).
+export {
+  githubSearch,
+  githubTree,
+  githubDiff,
+  githubPrs,
+} from "./code-tools.js";
+export type {
+  GithubSearchInput,
+  GithubSearchScope,
+  GithubTreeInput,
+  GithubDiffInput,
+  GithubPrsInput,
+} from "./code-tools.js";
+
+// PR-C1b: SEO env-stub tools with graceful fallback.
+export {
+  seoGscQuery,
+  seoPsiAudit,
+  seoSerpLookup,
+  isNotConfigured,
+} from "./seo-tools.js";
+export type {
+  SeoGscQueryInput,
+  SeoGscQueryOutput,
+  GscDimension,
+  SeoGscRow,
+  SeoPsiAuditInput,
+  SeoPsiAuditOutput,
+  PsiStrategy,
+  SeoSerpLookupInput,
+  SeoSerpLookupOutput,
+  SeoSerpResult,
+} from "./seo-tools.js";
+
+// PR-C1b: reminder store + state transitions.
+export {
+  setReminder,
+  listDueReminders,
+  claimDueReminders,
+  markReminderSent,
+  markReminderFailed,
+  markReminderCancelled,
+  listFounderReminders,
+  ReminderValidationError,
+} from "./reminders.js";
+export type {
+  ReminderRecord,
+  ReminderStatus,
+  ReminderChannel,
+  SetReminderInput,
+  ListDueOptions,
+  ListFounderRemindersOptions,
+} from "./reminders.js";
