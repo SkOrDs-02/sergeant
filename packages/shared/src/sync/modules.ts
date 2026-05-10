@@ -75,16 +75,6 @@ export const SYNC_MODULES = {
 export type ModuleName = keyof typeof SYNC_MODULES;
 
 /**
- * DOM event name web dispatches when a sync-tracked write happens.
- * Mobile re-uses the same string so cross-platform diff tools
- * (Sentry breadcrumbs, dashboards) bucket the events together.
- */
-export const SYNC_EVENT = "hub-cloud-sync-dirty";
-
-/** Status broadcast event (push start / success / error). */
-export const SYNC_STATUS_EVENT = "hub-cloud-sync-status";
-
-/**
  * Hard cap on the offline queue length. Beyond this we drop the
  * oldest entries to keep storage usage bounded for users offline
  * for extended periods.

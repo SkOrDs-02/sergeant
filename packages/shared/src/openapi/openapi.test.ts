@@ -21,8 +21,14 @@ describe("OpenAPI document", () => {
     expect(schemas).toHaveProperty("MeResponse");
     expect(schemas).toHaveProperty("ChatRequest");
     expect(schemas).toHaveProperty("PushRegister");
-    expect(schemas).toHaveProperty("SyncPushAll");
     expect(schemas).toHaveProperty("ApiError");
+  });
+
+  it("does not register the v1 sync schemas (PR #076 — sunset since 2026-05-06)", () => {
+    const schemas = doc.components?.schemas ?? {};
+    expect(schemas).not.toHaveProperty("SyncPush");
+    expect(schemas).not.toHaveProperty("SyncPull");
+    expect(schemas).not.toHaveProperty("SyncPushAll");
   });
 
   it("declares cookieAuth and bearerAuth security schemes", () => {
@@ -35,10 +41,17 @@ describe("OpenAPI document", () => {
     const paths = doc.paths ?? {};
     expect(paths).toHaveProperty("/api/me");
     expect(paths).toHaveProperty("/api/chat");
-    expect(paths).toHaveProperty("/api/sync/push");
     expect(paths).toHaveProperty("/api/push/register");
     expect(paths["/api/me"]?.get).toBeTruthy();
     expect(paths["/api/chat"]?.post).toBeTruthy();
+  });
+
+  it("does not advertise v1 sync routes (PR #076 — they return 410 Gone)", () => {
+    const paths = doc.paths ?? {};
+    expect(paths).not.toHaveProperty("/api/sync/push");
+    expect(paths).not.toHaveProperty("/api/sync/pull");
+    expect(paths).not.toHaveProperty("/api/sync/pull-all");
+    expect(paths).not.toHaveProperty("/api/sync/push-all");
   });
 
   it("uses $ref for named components in /api/me response", () => {

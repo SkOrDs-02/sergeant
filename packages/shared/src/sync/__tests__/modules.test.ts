@@ -4,9 +4,7 @@ import { STORAGE_KEYS } from "../../lib/storageKeys";
 import {
   ALL_TRACKED_KEYS,
   MAX_OFFLINE_QUEUE,
-  SYNC_EVENT,
   SYNC_MODULES,
-  SYNC_STATUS_EVENT,
   keyToModule,
   type ModuleName,
 } from "../modules";
@@ -173,15 +171,7 @@ describe("SYNC_MODULES registry", () => {
     });
   });
 
-  describe("event + cap constants", () => {
-    it("SYNC_EVENT is the historical web event name", () => {
-      expect(SYNC_EVENT).toBe("hub-cloud-sync-dirty");
-    });
-
-    it("SYNC_STATUS_EVENT is the historical status event name", () => {
-      expect(SYNC_STATUS_EVENT).toBe("hub-cloud-sync-status");
-    });
-
+  describe("cap constants", () => {
     it("MAX_OFFLINE_QUEUE keeps the documented cap (raised to 10 000 in PR #009 once web moved to IDB)", () => {
       expect(MAX_OFFLINE_QUEUE).toBe(10_000);
     });

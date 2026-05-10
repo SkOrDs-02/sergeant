@@ -375,68 +375,12 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
-  // ────────────────────── /api/sync/* ──────────────────────
-  "/api/sync/push": {
-    post: {
-      summary: "Push module-data (LWW; per-module)",
-      tags: ["sync"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: { "application/json": { schema: namedSchemas.SyncPush } },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
-  "/api/sync/pull": {
-    post: {
-      summary: "Pull module-data (LWW; per-module)",
-      tags: ["sync"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: { "application/json": { schema: namedSchemas.SyncPull } },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
-  "/api/sync/pull-all": {
-    get: {
-      summary: "Pull всіх модулів одразу (LWW resolved snapshot)",
-      tags: ["sync"],
-      security: cookieOrBearer,
-      responses: { "200": okEmpty, "401": unauthorized },
-    },
-    post: {
-      summary: "Pull всіх модулів (POST варіант для клієнтів без GET-body)",
-      tags: ["sync"],
-      security: cookieOrBearer,
-      responses: { "200": okEmpty, "401": unauthorized },
-    },
-  },
-  "/api/sync/push-all": {
-    post: {
-      summary: "Bulk push модулів за один request",
-      tags: ["sync"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: {
-          "application/json": { schema: namedSchemas.SyncPushAll },
-        },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
+  // ────────────────────── /api/sync/* (v1 sunset) ──────────────────────
+  // Removed in PR #076 (storage-roadmap Stage 13). The legacy v1 endpoints
+  // `/api/sync/{push,pull,pull-all,push-all}` return 410 Gone since
+  // 2026-05-06 (T₀ in ADR-0047) — advertising them in the OpenAPI spec
+  // misled api-client codegen + dashboards. Final route + middleware
+  // removal is tracked in Initiative 0003 Phase 7.
 
   // ────────────────────── /api/push/* ──────────────────────
   "/api/push/vapid-public": {

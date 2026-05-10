@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { SYNC_EVENT, SYNC_STATUS_EVENT } from "@sergeant/shared";
 
 import { getSyncEngineWriter } from "../../syncEngine/singleton";
 
@@ -12,7 +11,10 @@ import { getSyncEngineWriter } from "../../syncEngine/singleton";
  * `offlineQueue` length. Both stores were dropped together with the v1
  * engine in PR #052b — `dirtyCount` and `queuedCount` are kept on the
  * return shape (always `0`) so `OfflineBanner` can stay agnostic about
- * which channel actually fed the value.
+ * which channel actually fed the value. The historical
+ * `hub-cloud-sync-dirty` / `hub-cloud-sync-status` window events were
+ * dropped together with the v1 engine in PR #076 — only `online` /
+ * `offline` and the v2 status subscription remain.
  */
 interface SyncStatusState {
   dirtyCount: number;
@@ -72,14 +74,10 @@ export function useSyncStatus(): SyncStatusState {
     };
 
     refresh();
-    window.addEventListener(SYNC_STATUS_EVENT, refresh);
-    window.addEventListener(SYNC_EVENT, refresh);
     window.addEventListener("online", refresh);
     window.addEventListener("offline", refresh);
     return () => {
       mounted = false;
-      window.removeEventListener(SYNC_STATUS_EVENT, refresh);
-      window.removeEventListener(SYNC_EVENT, refresh);
       window.removeEventListener("online", refresh);
       window.removeEventListener("offline", refresh);
     };
