@@ -550,6 +550,33 @@
           "ref": "#21"
         }
       ]
+    },
+    {
+      "id": 22,
+      "title": "Skill body security scan — no injection/exfiltration patterns in SKILL.md",
+      "scope": [".agents/skills/*/SKILL.md"],
+      "severity": "blocker",
+      "category": "lint-enforced-convention",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:skills (calls scripts/check-skill-body-security.mjs)"
+        },
+        {
+          "kind": "test",
+          "ref": "scripts/__tests__/check-skill-body-security.test.mjs (7 fixture categories)"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/agents/skills-evolution-roadmap.md (PR 5)"
+        },
+        {
+          "type": "agents",
+          "ref": "#22"
+        }
+      ]
     }
   ]
 }

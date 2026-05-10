@@ -43,7 +43,7 @@
     "api:check-openapi-types": "node scripts/api/check-openapi-types-fresh.mjs",
     "lint:plugins": "node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs",
     "lint:discoverability": "node scripts/check-discoverability.mjs",
-    "lint:skills": "node scripts/check-skill-shape.mjs && node scripts/check-skills-lock.mjs",
+    "lint:skills": "node scripts/check-skill-shape.mjs && node scripts/check-skills-lock.mjs && node scripts/check-skill-body-security.mjs",
     "lint:playbook-language": "node scripts/check-playbook-language.mjs",
     "skills:lock": "node scripts/check-skills-lock.mjs --write",
     "typecheck": "turbo run typecheck",

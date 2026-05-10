@@ -184,7 +184,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 5 — Security body-scan як гейт у `pnpm lint:skills` (≈1 день, M)
+### PR 5 — Security body-scan як гейт у `pnpm lint:skills` (≈1 день, M) ✅ (merged: #2377, 2026-05-10)
 
 **Проблема.** `pnpm lint:skills` зараз перевіряє shape (frontmatter, links) + integrity (SHA-256 ↔ skills-lock.json). Не перевіряє body на injection-патерни. `agentskill.sh` запровадив сервер-side static analysis на 12 категорій загроз після широковідомого OpenClaw-інциденту; це доцільно мати як local CI-gate теж.
 
@@ -350,7 +350,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 | 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373 |
 | 3   | Postgres references               | M      | High           | (no hard dep)       |          |
 | 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       |          |
-| 5   | Security body-scan in lint:skills | M      | High           | none                |          |
+| 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2377 |
 | 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |          |
 | 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |          |
 | 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |          |

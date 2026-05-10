@@ -62,7 +62,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 > - **`lint-enforced-convention`** — стилістичне/процесне правило з механічним enforcement (ESLint, commitlint, governance-sync, freshness). Severity blocker, але enforcement — лінтер, не ран-тайм.
 > - **`active-initiative`** — правило з allowlist + дедлайном (див. лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; винятки трекаються окремо.
 >
-> Поточний розподіл (21 rule): 8 `blocker-invariant`, 11 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/governance/rules/`](./docs/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
+> Поточний розподіл (22 rule): 8 `blocker-invariant`, 12 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/governance/rules/`](./docs/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
 
 | #   | Rule                                                                                  | Category                   | Per-rule file                                                                                                          |
 | --- | ------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -81,6 +81,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo      | `active-initiative`        | [`19-strict-mode-flag-canonical.md`](./docs/governance/rules/19-strict-mode-flag-canonical.md)                         |
 | 20  | No OpenClaw PATs in production                                                        | `blocker-invariant`        | [`20-no-openclaw-pats-in-production.md`](./docs/governance/rules/20-no-openclaw-pats-in-production.md)                 |
 | 21  | Pino redaction policy enforced                                                        | `blocker-invariant`        | [`21-pino-redaction-policy.md`](./docs/governance/rules/21-pino-redaction-policy.md)                                   |
+| 22  | Skill body security scan — no injection/exfiltration patterns in SKILL.md             | `lint-enforced-convention` | [`22-skill-body-security-scan.md`](./docs/governance/rules/22-skill-body-security-scan.md)                             |
 
 ## Lint-enforced design conventions
 

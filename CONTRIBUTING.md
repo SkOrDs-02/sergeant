@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -163,6 +163,7 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 19. **Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo**
 20. **No OpenClaw PATs in production**
 21. **Pino redaction policy enforced**
+22. **Skill body security scan — no injection/exfiltration patterns in SKILL.md**
 
 Джерела істини:
 
