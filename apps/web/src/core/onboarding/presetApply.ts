@@ -158,9 +158,10 @@ function applyFinykPreset(preset: FinykPreset) {
     amount: preset.amount,
     category: preset.category,
   };
-  // finyk был removed from SYNC_MODULES in PR #039; cross-device sync
-  // happens via the per-table SQLite mirror + op-log v2, so a plain
-  // `safeWriteLS` is enough here.
+  // Finyk cross-device sync живе у SQLite + op-log v2 (Stage 4 PR #039);
+  // цей LS write — local-only onboarding seed на tombstone-ключі
+  // (`@deprecated` у storageKeys.ts), residual-import drains у SQLite
+  // на наступний boot.
   safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
   // Keep the user out of the Monobank login gate — mirrors what
   // `enableFinykManualOnly()` does on the «Далі без банку» path.
@@ -285,9 +286,10 @@ function applyNutritionPreset(preset: NutritionPreset) {
   });
   day.meals = meals;
   base[today] = day;
-  // nutrition was removed from SYNC_MODULES in PR #034; cross-device
-  // sync happens via the per-table SQLite mirror + op-log v2, so a plain
-  // `safeWriteLS` is enough here.
+  // Nutrition cross-device sync живе у SQLite + op-log v2 (Stage 4 PR #034);
+  // цей LS write — local-only onboarding seed на tombstone-ключі
+  // (`@deprecated` у storageKeys.ts), residual-import drains у SQLite
+  // на наступний boot.
   safeWriteLS(NUTRITION_LOG_KEY, base);
   dispatch(NUTRITION_LOG_EVENT);
 }

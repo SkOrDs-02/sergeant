@@ -34,9 +34,9 @@ function cleanFinyk(): void {
   if (!Array.isArray(list)) return;
   const next = stripDemoArray(list);
   if (next.length === list.length) return;
-  // finyk был removed from SYNC_MODULES in PR #039; the per-table SQLite
-  // mirror + op-log v2 handle cross-device sync now, so this LS write is
-  // a local-only legacy-shape touch-up.
+  // Finyk cross-device sync живе у SQLite + op-log v2 (Stage 4 PR #039);
+  // цей LS write — local-only legacy-shape touch-up на
+  // tombstone-ключі (`@deprecated` у storageKeys.ts).
   safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, next);
 }
 
@@ -102,9 +102,9 @@ function cleanNutrition(): void {
     if (meals.length > 0) next[dateKey] = { ...day, meals };
     else touched = true;
   }
-  // nutrition was removed from SYNC_MODULES in PR #034; the per-table
-  // SQLite mirror + op-log v2 handle cross-device sync now, so this LS
-  // write is a local-only legacy-shape touch-up.
+  // Nutrition cross-device sync живе у SQLite + op-log v2 (Stage 4 PR #034);
+  // цей LS write — local-only legacy-shape touch-up на
+  // tombstone-ключі (`@deprecated` у storageKeys.ts).
   if (touched) safeWriteLS(NUTRITION_LOG_KEY, next);
 }
 

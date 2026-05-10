@@ -1,17 +1,56 @@
 # ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор
 
-- **Status:** accepted
-- **Date:** 2026-04-27
+> **Last validated:** 2026-05-10 by @Skords-01 / Devin. **Next review:** 2026-08-08.
+> **Status:** Active
+
+- **Status:** accepted (sub-decisions 11.1 / 11.2 / 11.5); **partially superseded** (11.3 / 11.4 — див. amendment нижче).
+- **Date:** 2026-04-27 (амендмент: 2026-05-10)
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`packages/shared/src/lib/storageKeys.ts`](../../packages/shared/src/lib/storageKeys.ts) — централізований реєстр ключів.
+  - [`packages/shared/src/lib/storageKeys.ts`](../../packages/shared/src/lib/storageKeys.ts) — централізований реєстр ключів (місце, де `@deprecated`-marker-и вказують на SQLite-tombstone-шлях для кожного домену).
   - [`packages/shared/src/storage/kv.ts`](../../packages/shared/src/storage/kv.ts) — DOM-free `KVStore` runtime-контракт; [`packages/shared/src/test-utils.ts`](../../packages/shared/src/test-utils.ts) — memory adapter для тестів.
-  - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр (single source of truth для web + mobile, shared registry).
-  - [`apps/web/src/core/cloudSync/index.ts`](../../apps/web/src/core/cloudSync/index.ts) — status/dirty-state barrel after the v1 CloudSync network facade was removed; see [ADR-0047](./0047-cloudsync-v1-410-gone.md).
+  - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр; історично — single source of truth для blob-sync, тепер тримає лише `profile` entry (USER_PROFILE / HUB_BIOMETRICS) як test-fixture для ESLint parity-check (`no-raw-tracked-storage`). Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](../planning/storage-roadmap.md).
+  - [`apps/web/src/core/cloudSync/index.ts`](../../apps/web/src/core/cloudSync/index.ts) — status/dirty-state barrel after the v1 CloudSync network facade was removed; див. [ADR-0047](./0047-cloudsync-v1-410-gone.md).
+  - [ADR-0047 — CloudSync v1 — T₀ executed (410 Gone)](./0047-cloudsync-v1-410-gone.md) — формально supersede-ить 11.3 (per-module LWW worldview engine на користь per-row op-log v2).
+  - [Storage roadmap §Stage 4 (per-module SQLite mirror)](../planning/storage-roadmap.md) і §Stage 7 (cleanup, drop `module_data` blob) — реалізують перехід.
+  - [`docs/architecture/data-exchange-storage-audit.md`](../architecture/data-exchange-storage-audit.md) — поточний знімок архітектури (валідовано 2026-05-08).
   - [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md) §6 — mobile sync-subsystem.
   - ADR-0010 — mobile dual-track (platform storage адаптери).
   - ADR-0012 — RLS як authz-межа (server-side чекає `user_id`-filter).
+
+---
+
+## Amendment (2026-05-10) — local-first контракт збережений, blob-sync engine замінений
+
+Цей ADR описує оригінальне рішення (квітень 2026) за умов, які вже не справедливі. **Інваріанти 1–4 з §0 TL;DR живі**, але storage engine + sync wire-protocol повністю замінені:
+
+| Аспект                  | Оригінально (цей ADR)                                                                    | Поточний стан (2026-05)                                                                                                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local engine (web)      | `window.localStorage` + IDB для рецептів                                                 | sqlite-wasm (OPFS-SAH VFS) — `apps/web/src/core/db/sqlite.ts`. LS лишається лише як boot-time first-paint fallback + tombstone-residual для одноразової міграції.                                                                             |
+| Local engine (mobile)   | MMKV blob                                                                                | expo-sqlite — `apps/mobile/src/core/db/sqlite.ts`. MMKV — для нечисленних KV-prefs, що не виграють від реляційного шару.                                                                                                                      |
+| Sync wire               | `POST /api/sync` (whole-module JSON blob, `module_data` JSONB column)                    | `POST /api/v2/sync/push` + `GET /api/v2/sync/pull?since=` (per-row op-log; `sync_op_outbox` на клієнті, `sync_op_log` на сервері — append-only).                                                                                              |
+| Conflict                | Module-level LWW по `module_modified` timestamp (§11.3)                                  | Per-row LWW з origin_device_id; op-log idempotent через `(user_id, idempotency_key)` unique.                                                                                                                                                  |
+| Offline                 | `SYNC_OFFLINE_QUEUE` LS-array з `MAX_OFFLINE_QUEUE` cap (§11.4)                          | `sync_op_outbox` SQLite-таблиця, push scheduler у `apps/web/src/core/syncEngine/singleton.ts` (`SyncEnginePushScheduler` + `SyncEngineFlushOnReconnect`). Жодного 5MB LS-cap-у.                                                               |
+| Schema authority        | Не існувала — server тримав opaque blob                                                  | Drizzle SQLite схема у `packages/db-schema/src/sqlite/` (cross-platform); Drizzle PG mirror у `packages/db-schema/src/pg/`. Whitelist для op-log: `OP_LOG_TABLE_REGISTRY` на server.                                                          |
+| `module_data` table     | Authoritative store на server                                                            | Дропнуто міграцією 046 (Stage 7 PR #051).                                                                                                                                                                                                     |
+| `useCloudSync` хук      | Live на web; mobile-паралель — `useSyncedStorage`                                        | Видалені (web — PR #052b/c, mobile — PR #053b/c). На web лишився тонкий barrel `useSyncStatus` для UI.                                                                                                                                        |
+| `SYNC_MODULES` registry | Single source of truth для blob-payload (finyk / fizruk / routine / nutrition / profile) | Майже порожній — лише `profile` entry; finyk зня­то у PR #039, fizruk у PR #030, routine у PR #026, nutrition у PR #034. Усе нерайтерне, тримається тільки для ESLint parity-test. Decision-pending tombstone (storage-roadmap §Stage 13 B6). |
+
+**Які саме секції цього ADR — досі живі:**
+
+- **§11.1 (client-first vs server-first архітектура)** — рішення живе. Принципи (UI ніколи не блокується мережею, offline-first, personal-app trade-offs) лишаються.
+- **§11.2 (`KVStore` контракт + platform-адаптери)** — живе. Web `webKVStore` (`apps/web/src/shared/lib/storage/storage.ts`) тепер resolve-ить SQLite-backed adapter першим, потім LS-fallback, потім memory. Mobile `apps/mobile/src/lib/storage.ts` — paralel адаптер.
+- **§11.5 (server-first винятки)** — живе. Better Auth, Monobank webhook, AI usage quota, push subscriptions, billing — як було, server-first. Coach memory мігрована у власну таблицю `coach_memory` (з `module_data WHERE module='coach'`, міграція 045).
+
+**Які секції — застарілі / superseded:**
+
+- **§11.3 (CloudSync LWW з module-level granularity)** — формально superseded by [ADR-0047](./0047-cloudsync-v1-410-gone.md) і Stage 4/7 з storage-roadmap. Концепція module-level LWW замінена на per-row op-log; `module_data` blob знесений; `useCloudSync` хук видалений. Конкретний приклад `SYNC_MODULES = { finyk: {...}, fizruk: {...}, ... }` у §11.3 НЕ відповідає поточному файлу — він тримає лише `profile`.
+- **§11.4 (offline queue з `MAX_OFFLINE_QUEUE` cap)** — superseded. v2 outbox у SQLite не має 5MB LS-cap-у і не використовує `MAX_OFFLINE_QUEUE`. Константа фізично залишається в `packages/shared/src/sync/modules.ts` як test-fixture, без runtime-споживачів.
+
+Дивись також **Implementation tracker** внизу ADR — він теж амендмент-овий.
+
+---
 
 ---
 
@@ -381,13 +420,24 @@ n/a (operational rule).
 
 ## Implementation tracker
 
-| Arte-fact                                                 | Статус |
-| --------------------------------------------------------- | ------ |
-| `KVStore` contract + memory store                         | live   |
-| `STORAGE_KEYS` централізований реєстр                     | live   |
-| `SYNC_MODULES` реєстр + `useCloudSync`                    | live   |
-| Offline queue з MAX cap                                   | live   |
-| LWW conflict resolver + metrics (`sync_operations_total`) | live   |
-| Mobile MMKV sync parity (see react-native-migration §6)   | live   |
-| CRDT для routine                                          | TBD    |
-| E2E encryption (optional privacy mode)                    | TBD    |
+> Оновлено 2026-05-10. Original 2026-04 трекер описував blob-sync; нижче — стан після Stage 4–9 + Stage 13 cleanup.
+
+| Arte-fact                                                | Статус                                                                                                                      |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `KVStore` contract + memory store                        | live                                                                                                                        |
+| `STORAGE_KEYS` централізований реєстр                    | live (з `@deprecated`-маркерами на tombstone-keys)                                                                          |
+| Web SQLite-WASM (OPFS-SAH VFS)                           | live (`apps/web/src/core/db/sqlite.ts`)                                                                                     |
+| Mobile expo-sqlite singleton                             | live (`apps/mobile/src/core/db/sqlite.ts`)                                                                                  |
+| Cross-platform Drizzle schema                            | live (`packages/db-schema/src/{sqlite,pg}/`)                                                                                |
+| Op-log v2 sync (`/api/v2/sync/push` + `pull`)            | live (storage-roadmap §Stage 7)                                                                                             |
+| `sync_op_outbox` (client) + `sync_op_log` (server)       | live                                                                                                                        |
+| `SyncEnginePushScheduler` + `SyncEngineFlushOnReconnect` | live (`apps/web/src/core/syncEngine/singleton.ts`)                                                                          |
+| Dead-letter recovery (`recoverAllDeadLetters`)           | live                                                                                                                        |
+| `useSyncStatus` UI status barrel                         | live (`apps/web/src/core/cloudSync/index.ts` — barrel only)                                                                 |
+| Mobile MMKV sync parity (see react-native-migration §6)  | live (через op-log, не blob)                                                                                                |
+| `SYNC_MODULES` реєстр + `useCloudSync` (v1 blob)         | **retired** — `useCloudSync` removed PR #052b/c; `SYNC_MODULES` тримає лише `profile` як test-fixture (B6 decision-pending) |
+| `module_data` JSONB column + `/api/sync` blob endpoints  | **retired** — column dropped міграцією 046; endpoint-и → 410 Gone (ADR-0047)                                                |
+| Offline queue з MAX cap (LS-array)                       | **retired** — замінено SQLite outbox; `MAX_OFFLINE_QUEUE` лишається як константа без споживачів                             |
+| Module-level LWW conflict resolver                       | **retired** — замінено per-row LWW через op-log                                                                             |
+| CRDT для routine                                         | TBD                                                                                                                         |
+| E2E encryption (optional privacy mode)                   | TBD                                                                                                                         |

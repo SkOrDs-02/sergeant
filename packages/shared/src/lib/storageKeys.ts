@@ -2,8 +2,24 @@
  * Centralized localStorage key constants.
  * Prevents magic strings scattered across the codebase.
  *
- * When adding a new key, also consider whether it should be part of cloud
- * sync — if yes, add it to `SYNC_MODULES` in `src/core/cloudSync/useCloudSync.js`.
+ * When adding a new key:
+ * 1. Prefer SQLite over a new LS/MMKV slot — додай колонку у відповідну
+ *    Drizzle-схему `packages/db-schema/src/sqlite/<module>.ts`, додай op-log
+ *    write helper (через `enqueueSyncOp` з
+ *    `packages/db-schema/src/sqlite/syncOpOutboxEnqueue.ts`), і додай
+ *    table whitelist у `OP_LOG_TABLE_REGISTRY` сервера
+ *    (`apps/server/src/modules/sync/syncV2.ts`). Так ключ автоматично
+ *    учасник cross-device sync v2 (`POST /api/v2/sync/push`).
+ * 2. Якщо все-таки LS/MMKV (UI-only prefs, кеш Mono API, residual
+ *    bootstrap-state) — додай ключ нижче. **Не додавай у `SYNC_MODULES`**:
+ *    blob-sync engine (v1) знятий з production у PR #052b/c (див. ADR-0047
+ *    і ADR-0011 amendment 2026-05-10). `SYNC_MODULES` registry тримає
+ *    лише `profile` як test-fixture для ESLint parity-check; нові
+ *    cross-device-keys ідуть через op-log v2, не через його реєстр.
+ *
+ * `@deprecated`-marker нижче на ключі = tombstone: писати у нього не
+ * можна (residual-import drains у SQLite на boot), літерал залишений
+ * лише для cross-module reads / fixtures.
  */
 export const STORAGE_KEYS = {
   // ─── Hub ──────────────────────────────────────────────────────────────

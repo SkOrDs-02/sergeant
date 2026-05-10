@@ -1,7 +1,10 @@
 /**
  * `useShoppingList` — MMKV + `@sergeant/nutrition-domain` (паритет із web
- * `apps/web/.../useShoppingList.ts`). Cloud-sync для ключа shopping поки
- * не реєстрований у `SYNC_MODULES` (як і на web).
+ * `apps/web/.../useShoppingList.ts`). Cross-device sync для shopping
+ * наразі не активований — модуль не нормалізований у SQLite (немає
+ * `nutrition_shopping_*` таблиць у `packages/db-schema/src/sqlite/`),
+ * тож op-log v2 його не покриває (як і на web). Локальний MMKV-стан
+ * лише.
  */
 import { useCallback, useEffect, useState } from "react";
 

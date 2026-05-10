@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-05-08 by @Skords-01. **Next review:** 2026-08-06.
+> **Last validated:** 2026-05-10 by @zlupa005. **Next review:** 2026-08-08.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -31,7 +31,7 @@ v1 cloud sync повністю видалений (ADR-0047, web phase PR #053a,
 - **Web:** `cloudSync/engine/`, `cloudSync/queue/`, `cloudSync/conflict/`, `storagePatch.ts`, `enqueue.ts` — всі видалені. `cloudSync/` тепер — мінімальний barrel, що експортує лише `useSyncStatus` (статус поточного v2 sync cycle).
 - **Mobile:** `sync/config.ts`, `sync/api.ts`, `sync/useSyncedStorage.ts`, та вся v1 mobile engine tree — видалені у PR #052c/053c.
 - **Server:** `POST /api/sync` і `GET /api/sync` routes тепер повертають `410 Gone` через `respondV1Gone` middleware (PR #2003). `module_data` table дропнута міграцією 046 (Stage 7 cleanup).
-- **`SYNC_MODULES` registry** (`packages/shared/src/sync/modules.ts`) — видалений; усі модулі знято з v1 в окремих PRs: Routine → PR #026, Fizruk → PR #030, Nutrition → PR #034, Finyk → PR #039, Profile/Coach → PR #053a + міграція 046.
+- **`SYNC_MODULES` registry** (`packages/shared/src/sync/modules.ts`) — практично видалений: усі продуктові модулі знято з v1 в окремих PRs (Routine → PR #026, Fizruk → PR #030, Nutrition → PR #034, Finyk → PR #039, Coach → PR #053a + міграція 045). Реєстр тримає лише `profile` entry (`USER_PROFILE`, `HUB_BIOMETRICS`) як test-fixture для ESLint parity-check `no-raw-tracked-storage`. Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](../planning/storage-roadmap.md). `MAX_OFFLINE_QUEUE` / `MAX_QUEUE_ATTEMPTS` константи з того ж файла теж лишилися як test-fixture, runtime-споживачів немає (v2 outbox у SQLite не cap-нутий цією константою).
 
 ### 2.3. Sync v2 / operation log — primary sync шлях
 
