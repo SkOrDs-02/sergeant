@@ -63,6 +63,23 @@ import {
   // ADR-0037 (Phase 4.5): persistent write-audit log helpers.
   recordWriteAudit,
   listRecentWriteAudits,
+  // PR-C1b: code-understanding tools.
+  githubSearch,
+  githubTree,
+  githubDiff,
+  githubPrs,
+  // PR-C1b: SEO env-stub tools.
+  seoGscQuery,
+  seoPsiAudit,
+  seoSerpLookup,
+  // PR-C1b: reminder store + FSM helpers.
+  setReminder,
+  listDueReminders,
+  markReminderSent,
+  markReminderFailed,
+  markReminderCancelled,
+  listFounderReminders,
+  ReminderValidationError,
 } from "../../modules/openclaw/index.js";
 import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 import type {
@@ -276,6 +293,127 @@ const WriteAuditListBody = z
      * standard `Date` ctor (rejects NaN as 400).
      */
     recordedAfterIso: z.string().datetime({ offset: true }).optional(),
+  })
+  .strict();
+
+// ─── PR-C1b: code-understanding tools ──────────────────────────────────
+
+const GithubSearchBody = z
+  .object({
+    scope: z.enum(["code", "issues", "prs"]).optional(),
+    query: z.string().min(1).max(500),
+    repo: z.string().min(1).max(200).optional(),
+    perPage: z.number().int().min(1).max(30).optional(),
+    page: z.number().int().min(1).max(10).optional(),
+  })
+  .strict();
+
+const GithubTreeBody = z
+  .object({
+    ref: z.string().min(1).max(200).optional(),
+    repo: z.string().min(1).max(200).optional(),
+    recursive: z.boolean().optional(),
+  })
+  .strict();
+
+const GithubDiffBody = z
+  .object({
+    base: z.string().min(1).max(200),
+    head: z.string().min(1).max(200),
+    repo: z.string().min(1).max(200).optional(),
+  })
+  .strict();
+
+const GithubPrsBody = z
+  .object({
+    repo: z.string().min(1).max(200).optional(),
+    state: z.enum(["open", "closed", "all"]).optional(),
+    author: z.string().min(1).max(100).optional(),
+    head: z.string().min(1).max(200).optional(),
+    base: z.string().min(1).max(200).optional(),
+    sort: z
+      .enum(["created", "updated", "popularity", "long-running"])
+      .optional(),
+    direction: z.enum(["asc", "desc"]).optional(),
+    perPage: z.number().int().min(1).max(30).optional(),
+    page: z.number().int().min(1).max(100).optional(),
+  })
+  .strict();
+
+// ─── PR-C1b: SEO env-stub tools ────────────────────────────────────────
+
+const SeoGscQueryBody = z
+  .object({
+    days: z.number().int().min(1).max(90).optional(),
+    dimension: z.enum(["query", "page", "country", "device"]).optional(),
+    siteUrl: z.string().min(1).max(500).optional(),
+    rowLimit: z.number().int().min(1).max(100).optional(),
+  })
+  .strict();
+
+const SeoPsiAuditBody = z
+  .object({
+    url: z.string().url().max(2000),
+    strategy: z.enum(["mobile", "desktop"]).optional(),
+  })
+  .strict();
+
+const SeoSerpLookupBody = z
+  .object({
+    query: z.string().min(1).max(500),
+    hl: z.string().min(2).max(10).optional(),
+    gl: z.string().min(2).max(10).optional(),
+    num: z.number().int().min(1).max(20).optional(),
+  })
+  .strict();
+
+// ─── PR-C1b: reminders ─────────────────────────────────────────────────
+
+const SetReminderBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    reminderText: z.string().min(1).max(4000),
+    /** Local-Tz-aware ISO with offset (`2026-05-15T09:00+03:00`). */
+    dueAtIso: z.string().datetime({ offset: true }),
+    persona: z.string().min(1).max(50).optional(),
+    topic: z.string().min(1).max(100).nullable().optional(),
+    channel: z.enum(["telegram", "whatsapp"]).optional(),
+    sourceInvocationId: z.number().int().positive().nullable().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+const ListDueRemindersBody = z
+  .object({
+    limit: z.number().int().min(1).max(200).optional(),
+    /** Test-only override; production passes nothing → defaults to `NOW()`. */
+    nowIso: z.string().datetime({ offset: true }).optional(),
+  })
+  .strict();
+
+const ReminderMarkBody = z
+  .object({
+    reminderId: z.number().int().positive(),
+    /**
+     * Optional reason for `failed` transitions. Stored under
+     * `metadata.failure_reason`.
+     */
+    reason: z.string().max(500).optional(),
+    /**
+     * Required for `cancelled` — verifies the caller owns the reminder.
+     */
+    founderUserId: z.string().min(1).optional(),
+  })
+  .strict();
+
+const RemindersListBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    statuses: z
+      .array(z.enum(["pending", "sent", "cancelled", "failed"]))
+      .max(4)
+      .optional(),
+    limit: z.number().int().min(1).max(200).optional(),
   })
   .strict();
 
@@ -736,6 +874,245 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.limit ?? 50,
       );
       res.json({ invocations: result });
+    }),
+  );
+
+  // ─── PR-C1b: code-understanding read tools ────────────────────────────
+
+  // ---- github_search ----
+  r.post(
+    "/api/internal/openclaw/github/search",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(GithubSearchBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await githubSearch(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "github_error", message });
+      }
+    }),
+  );
+
+  // ---- github_tree ----
+  r.post(
+    "/api/internal/openclaw/github/tree",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(GithubTreeBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await githubTree(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "github_error", message });
+      }
+    }),
+  );
+
+  // ---- github_diff ----
+  r.post(
+    "/api/internal/openclaw/github/diff",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(GithubDiffBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await githubDiff(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "github_error", message });
+      }
+    }),
+  );
+
+  // ---- github_prs ----
+  r.post(
+    "/api/internal/openclaw/github/prs",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(GithubPrsBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await githubPrs(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "github_error", message });
+      }
+    }),
+  );
+
+  // ─── PR-C1b: SEO env-stub tools ─────────────────────────────────────
+
+  // ---- seo_gsc_query ----
+  r.post(
+    "/api/internal/openclaw/seo/gsc",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SeoGscQueryBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await seoGscQuery(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "seo_error", message });
+      }
+    }),
+  );
+
+  // ---- seo_psi_audit ----
+  r.post(
+    "/api/internal/openclaw/seo/lighthouse",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SeoPsiAuditBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await seoPsiAudit(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "seo_error", message });
+      }
+    }),
+  );
+
+  // ---- seo_serp_lookup ----
+  r.post(
+    "/api/internal/openclaw/seo/serp",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SeoSerpLookupBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await seoSerpLookup(parsed.data);
+        res.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(400).json({ error: "seo_error", message });
+      }
+    }),
+  );
+
+  // ─── PR-C1b: reminders ──────────────────────────────────────────────
+
+  // ---- reminders/set ----
+  r.post(
+    "/api/internal/openclaw/reminders/set",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SetReminderBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const reminder = await setReminder(pool, parsed.data);
+        res.json({ reminder });
+      } catch (err) {
+        if (err instanceof ReminderValidationError) {
+          return asSchemaFailure(res, err);
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- reminders/list-due ----
+  r.post(
+    "/api/internal/openclaw/reminders/list-due",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ListDueRemindersBody, req, res);
+      if (!parsed.ok) return;
+      const opts: { limit?: number; nowIso?: string } = {};
+      if (parsed.data.limit !== undefined) opts.limit = parsed.data.limit;
+      if (parsed.data.nowIso !== undefined) opts.nowIso = parsed.data.nowIso;
+      const reminders = await listDueReminders(pool, opts);
+      res.json({ reminders });
+    }),
+  );
+
+  // ---- reminders/mark-sent (used by cron-poller after delivery) ----
+  r.post(
+    "/api/internal/openclaw/reminders/mark-sent",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ReminderMarkBody, req, res);
+      if (!parsed.ok) return;
+      const reminder = await markReminderSent(pool, parsed.data.reminderId);
+      if (!reminder) {
+        return asNotFound(
+          res,
+          new Error(
+            `reminder ${parsed.data.reminderId} not in 'pending' state`,
+          ),
+        );
+      }
+      res.json({ reminder });
+    }),
+  );
+
+  // ---- reminders/mark-failed (used after attempts exhausted) ----
+  r.post(
+    "/api/internal/openclaw/reminders/mark-failed",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ReminderMarkBody, req, res);
+      if (!parsed.ok) return;
+      const reminder = await markReminderFailed(
+        pool,
+        parsed.data.reminderId,
+        parsed.data.reason,
+      );
+      if (!reminder) {
+        return asNotFound(
+          res,
+          new Error(
+            `reminder ${parsed.data.reminderId} not in 'pending' state`,
+          ),
+        );
+      }
+      res.json({ reminder });
+    }),
+  );
+
+  // ---- reminders/cancel (founder-initiated) ----
+  r.post(
+    "/api/internal/openclaw/reminders/cancel",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ReminderMarkBody, req, res);
+      if (!parsed.ok) return;
+      const founderUserId = parsed.data.founderUserId;
+      if (!founderUserId) {
+        return asSchemaFailure(
+          res,
+          new Error("reminders/cancel: founderUserId required"),
+        );
+      }
+      const reminder = await markReminderCancelled(
+        pool,
+        parsed.data.reminderId,
+        founderUserId,
+      );
+      if (!reminder) {
+        return asNotFound(
+          res,
+          new Error(
+            `reminder ${parsed.data.reminderId} not cancellable (not pending or not owned)`,
+          ),
+        );
+      }
+      res.json({ reminder });
+    }),
+  );
+
+  // ---- reminders/list (founder-scoped) ----
+  r.post(
+    "/api/internal/openclaw/reminders/list",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(RemindersListBody, req, res);
+      if (!parsed.ok) return;
+      const reminders = await listFounderReminders(pool, {
+        founderUserId: parsed.data.founderUserId,
+        statuses: parsed.data.statuses,
+        ...(parsed.data.limit !== undefined
+          ? { limit: parsed.data.limit }
+          : {}),
+      });
+      res.json({ reminders });
     }),
   );
 

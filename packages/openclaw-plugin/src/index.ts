@@ -38,6 +38,14 @@ import { createGetServerStatsTool } from "./tools/get-server-stats.js";
 import { createGetGithubReleasesTool } from "./tools/get-github-releases.js";
 import { createReadTelegramTopicTool } from "./tools/read-telegram-topic.js";
 import { createRecordDecisionTool } from "./tools/record-decision.js";
+import { createGithubSearchTool } from "./tools/github-search.js";
+import { createGithubTreeTool } from "./tools/github-tree.js";
+import { createGithubDiffTool } from "./tools/github-diff.js";
+import { createGithubPrsTool } from "./tools/github-prs.js";
+import { createSeoGscQueryTool } from "./tools/seo-gsc-query.js";
+import { createSeoPsiAuditTool } from "./tools/seo-psi-audit.js";
+import { createSeoSerpLookupTool } from "./tools/seo-serp-lookup.js";
+import { createSetReminderTool } from "./tools/set-reminder.js";
 import { createCreateGithubIssueTool } from "./write-tools/create-github-issue.js";
 import { definePluginEntry, type Plugin, type PluginApi } from "./sdk-types.js";
 
@@ -167,6 +175,22 @@ export function createOpenClawPlugin(
     createRecordDecisionTool({ http, founderUserId: config.founderUserId }),
   );
 
+  // ─── PR-C1b: code-understanding tools ────────────────────────────────
+  api.registerTool(createGithubSearchTool({ http }));
+  api.registerTool(createGithubTreeTool({ http }));
+  api.registerTool(createGithubDiffTool({ http }));
+  api.registerTool(createGithubPrsTool({ http }));
+
+  // ─── PR-C1b: SEO env-stub tools (graceful not_configured) ───────────────
+  api.registerTool(createSeoGscQueryTool({ http }));
+  api.registerTool(createSeoPsiAuditTool({ http }));
+  api.registerTool(createSeoSerpLookupTool({ http }));
+
+  // ─── PR-C1b: set_reminder (write tool, no approval gate — see plan) ──────
+  api.registerTool(
+    createSetReminderTool({ http, founderUserId: config.founderUserId }),
+  );
+
   // ─── Write tool (Phase 0.5 PoC chosen variant) ──────────────────────
   const writeParts = createCreateGithubIssueTool({
     http,
@@ -278,6 +302,46 @@ export {
   RecordDecisionParamsSchema,
   type RecordDecisionParams,
 } from "./tools/record-decision.js";
+export {
+  createGithubSearchTool,
+  GithubSearchParamsSchema,
+  type GithubSearchParams,
+} from "./tools/github-search.js";
+export {
+  createGithubTreeTool,
+  GithubTreeParamsSchema,
+  type GithubTreeParams,
+} from "./tools/github-tree.js";
+export {
+  createGithubDiffTool,
+  GithubDiffParamsSchema,
+  type GithubDiffParams,
+} from "./tools/github-diff.js";
+export {
+  createGithubPrsTool,
+  GithubPrsParamsSchema,
+  type GithubPrsParams,
+} from "./tools/github-prs.js";
+export {
+  createSeoGscQueryTool,
+  SeoGscQueryParamsSchema,
+  type SeoGscQueryParams,
+} from "./tools/seo-gsc-query.js";
+export {
+  createSeoPsiAuditTool,
+  SeoPsiAuditParamsSchema,
+  type SeoPsiAuditParams,
+} from "./tools/seo-psi-audit.js";
+export {
+  createSeoSerpLookupTool,
+  SeoSerpLookupParamsSchema,
+  type SeoSerpLookupParams,
+} from "./tools/seo-serp-lookup.js";
+export {
+  createSetReminderTool,
+  SetReminderParamsSchema,
+  type SetReminderParams,
+} from "./tools/set-reminder.js";
 export {
   createCreateGithubIssueTool,
   CreateGithubIssueParamsSchema,

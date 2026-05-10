@@ -74,6 +74,10 @@ describe("createOpenClawPlugin", () => {
       "get_sentry_issues",
       "get_server_stats",
       "get_stripe_metrics",
+      "github_diff",
+      "github_prs",
+      "github_search",
+      "github_tree",
       "query_app_db",
       "read_github",
       "read_strategy_docs",
@@ -81,6 +85,10 @@ describe("createOpenClawPlugin", () => {
       "read_workflow_logs",
       "recall_memory",
       "record_decision",
+      "seo_gsc_query",
+      "seo_psi_audit",
+      "seo_serp_lookup",
+      "set_reminder",
     ]);
   });
 
