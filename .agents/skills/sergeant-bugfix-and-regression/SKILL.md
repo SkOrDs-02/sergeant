@@ -41,6 +41,10 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - mobile-only поведінка → `sergeant-mobile-expo`
 - chat-tool fail → `sergeant-hubchat`
 
+## Verification gate
+
+Перед claim «fixed» або «done» — обовʼязковий Verification gate з [`sergeant-review-and-merge`](../sergeant-review-and-merge/SKILL.md), секція «Verification gate». Без свіжого evidence (command + вивід) completion claim заборонений.
+
 ## Playbooks
 
 - `docs/playbooks/hotfix-prod-regression.md` — triage і фікс production-регресій.
