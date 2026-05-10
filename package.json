@@ -82,6 +82,7 @@
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
     "lint:patches": "node scripts/check-patches-doc.mjs",
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
+    "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs"
   },
   "devDependencies": {

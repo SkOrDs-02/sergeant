@@ -154,7 +154,20 @@ export default defineConfig(({ mode }) => {
             ],
           },
           injectManifest: {
+            // Explicit allowlist by extension — keeps the precache from
+            // pulling stray binary blobs (sourcemaps, .map.gz, .br) and
+            // sidecar files into the SW. Paired with the build-time
+            // gate `scripts/check-pwa-precache-1st-party.mjs` (PR-38 /
+            // L11) which fails CI if any non-1st-party URL still ends
+            // up in the manifest (e.g. a Vite plugin inlines a CDN
+            // asset into `dist/`).
             globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+            globIgnores: [
+              "**/node_modules/**",
+              "**/*.map",
+              "**/*.map.*",
+              "bundle-report.html",
+            ],
           },
         }),
       analyze &&

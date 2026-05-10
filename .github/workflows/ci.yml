@@ -167,6 +167,15 @@ jobs:
       - name: Format, lint, test, build
         run: pnpm check
 
+      - name: PWA precache 1st-party gate (PR-38 / L11)
+        # Reads `apps/server/dist/sw.js` (produced by the build step
+        # above) and fails CI if any non-1st-party URL ended up in the
+        # PWA precache manifest. Catches the case where a Vite plugin
+        # silently inlines a 3rd-party CDN asset into `dist/`.
+        # Cache-poisoning + CSP-bypass + GDPR risk all in one go;
+        # see docs/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
+        run: pnpm lint:pwa-precache
+
       - name: Bundle size guard (size-limit)
         run: pnpm --filter @sergeant/web exec size-limit
 
