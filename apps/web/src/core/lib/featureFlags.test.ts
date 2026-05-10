@@ -98,12 +98,13 @@ describe("featureFlags", () => {
     expect(setFlag("feature.finyk.sqlite_v2.dual_write", true)).toBe(false);
   });
 
-  it("Finyk Mono mirror увімкнений за замовчуванням для Stage 8 PR #055k1", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(true);
-
-    expect(setFlag("feature.finyk.sqlite_v2.mono_mirror", false)).toBe(true);
+  it("Stage 13 PR #078 drop: feature.finyk.sqlite_v2.mono_mirror більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find((f) => f.id === "feature.finyk.sqlite_v2.mono_mirror"),
+    ).toBeUndefined();
     expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(false);
+    expect(setFlag("feature.finyk.sqlite_v2.mono_mirror", true)).toBe(false);
   });
 
   it("Stage 8 PR #057n drop: feature.nutrition.sqlite_v2.read_sqlite більше не існує у реєстрі", async () => {

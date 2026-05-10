@@ -3,14 +3,14 @@
  *
  * Mirrors `sqliteReadGate.ts` (PR #037) — a tiny in-process pub-sub
  * so consumers (currently `useMonobankWebhook`) re-render after the
- * mirror cache is refreshed. The flag is the user-facing
- * `feature.finyk.sqlite_v2.mono_mirror` toggle.
+ * mirror cache is refreshed.
+ *
+ * Stage 13 PR #078: the `feature.finyk.sqlite_v2.mono_mirror` flag
+ * has been retired. `useFinykMonoMirrorFlag()` now returns `true`
+ * unconditionally so all consumers always run the mirror path.
  */
 
 import { useSyncExternalStore } from "react";
-import { useFlag } from "../../../core/lib/featureFlags";
-
-const MIRROR_FLAG_ID = "feature.finyk.sqlite_v2.mono_mirror";
 
 let cacheTick = 0;
 const listeners = new Set<() => void>();
@@ -34,13 +34,13 @@ export function useFinykMonoMirrorTick(): number {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-/** Flag-gated read-overlay enable. */
+/** Formerly flag-gated; now unconditionally `true` (Stage 13 PR #078). */
 export function useFinykMonoMirrorFlag(): boolean {
-  return useFlag(MIRROR_FLAG_ID);
+  return true;
 }
 
 export interface FinykMonoMirrorGate {
-  /** Current value of `feature.finyk.sqlite_v2.mono_mirror`. */
+  /** Always `true` since Stage 13 PR #078 retired the flag. */
   readonly enabled: boolean;
   /**
    * Tick counter that bumps after every successful mirror refresh —

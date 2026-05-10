@@ -3,8 +3,8 @@
  *
  * Mirrors `apps/web/src/modules/finyk/lib/monoMirrorReader.ts` — same
  * cache shape, same refresh helper. Mobile consumers
- * (`transactionsStore.ts`) overlay their state from this cache when
- * the `feature.finyk.sqlite_v2.mono_mirror` flag is on.
+ * (`transactionsStore.ts`) overlay their state from this cache
+ * unconditionally (Stage 13 PR #078 retired the flag).
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";

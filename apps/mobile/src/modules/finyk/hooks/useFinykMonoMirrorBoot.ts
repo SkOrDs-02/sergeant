@@ -2,11 +2,9 @@
  * React hook that boots the SQLite Mono cache mirror on mobile.
  *
  * PR #038 of `docs/planning/storage-roadmap.md` (mobile parity for
- * web PR #038). When the `feature.finyk.sqlite_v2.mono_mirror` flag
- * is on, this hook runs `bootFinykMonoMirror()` once after mount so
- * `transactionsStore` can overlay reads from the local
- * `finyk_mono_*` tables instead of relying on the MMKV-only Mono
- * cache for cold-start renders.
+ * web PR #038). Stage 13 PR #078 retired the flag — the mirror now
+ * boots unconditionally after mount so `transactionsStore` can overlay
+ * reads from the local `finyk_mono_*` tables.
  *
  * Fire-and-forget — boot failures fall back to MMKV silently
  * (console warning only).
