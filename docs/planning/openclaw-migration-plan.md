@@ -1,6 +1,6 @@
 # OpenClaw Migration Plan: Internal Bot → External OpenClaw Gateway
 
-> **Last validated:** 2026-05-10 by Devin. **Next review:** після Phase 1 завершення.
+> **Last validated:** 2026-05-10 by Devin. **Next review:** після Phase 0.5 PoC.
 > **Status:** Scaffolded
 
 ## Мета
@@ -20,10 +20,37 @@
 
 Переконайся, що ці речі на місці перед початком:
 
-- Node 24 (або 22.16+) для Gateway
-- Anthropic API key (або інший provider)
-- Доступ до Sergeant server API (`/api/internal/openclaw/*`)
-- Telegram Bot Token (новий або існуючий)
+- **Node 24** (або 22.16+) для Gateway
+- **OpenClaw версія — pinned stable** (не beta). Перевірити останній stable tag на release-сторінці і зафіксувати його у `packages/openclaw-plugin/package.json` через `peerDependencies` + у Railway service env-конфігу. Renovate-only PR на апгрейди — без auto-merge.
+- **Anthropic API key** (або інший provider)
+- **Доступ до Sergeant server API** (`/api/internal/openclaw/*`) — endpoint stays internal, plugin звертається через `INTERNAL_API_KEY`.
+- **Telegram Bot Token** — використовуємо існуючий бот (тимчасово паралельно з grammy через test-username) або новий test-bot для Phase 0.5 PoC.
+- **GitHub App credentials** (`OPENCLAW_GITHUB_APP_ID`, `OPENCLAW_GITHUB_APP_PRIVATE_KEY`, `OPENCLAW_GITHUB_APP_INSTALLATION_ID`) — обов'язково для production-instance Gateway. Hard Rule #20 забороняє `OPENCLAW_GITHUB_PAT` / `Git_PAT` у production; `read_github` і `create_github_issue` tools у плагіні ходять через ту саму server-side прокладку, тож саме server-side вже використовує App-flow — plugin має лише не зберігати PAT-и в Railway env.
+
+---
+
+## Інфраструктура та deploy
+
+- **Хостинг Gateway:** окремий Railway service (`sergeant-openclaw-gateway`) у тому ж проекті, що й `apps/server`. Це мінімізує latency на додатковий hop (intra-Railway мережа) і дозволяє ділити private VPC.
+- **Конфігурація:** `~/.openclaw/openclaw.json` всередині контейнера (mounted volume для persistence skills/canvas state).
+- **Secrets:** Railway env, окремий namespace від `apps/server`. Немає `OPENCLAW_GITHUB_PAT` у production — Hard Rule #20.
+- **Webhook vs long-poll:** Telegram через webhook на Gateway public URL (Railway exposes HTTPS). Channels-specific config — у `openclaw.json`.
+- **Networking:** Gateway → server викликає `https://server.internal:3000/api/internal/openclaw/*` через приватний домен Railway.
+
+---
+
+## PR-стратегія
+
+Робота розбита на ~5 PR замість одного великого. Кожен — самостійний, з власним rollback.
+
+| #    | PR / гілка                                | Що включає                                                                                                                                                  | Залежить від             |
+| ---- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| PR-A | `devin/<ts>-openclaw-plan-v2`             | Цей файл — оновлений план. Без коду.                                                                                                                        | —                        |
+| PR-B | `devin/<ts>-openclaw-poc-spike`           | Phase 0.5 PoC: 1 read + 1 write tool, 1 hook, parity-харнес. Гілка не мерджиться у main без зеленої перевірки PoC, але живе у репі для review.              | PR-A                     |
+| PR-C | `devin/<ts>-openclaw-plugin-readonly`     | Phase 1 (read-only tools) + Phase 2 (personas як skills + allowlist) + Phase 3 (strategic modes).                                                           | PR-B                     |
+| PR-D | `devin/<ts>-openclaw-plugin-write-tools`  | Phase 4 (approval flow для write-tools) + Phase 6 (audit/invocation lifecycle hooks).                                                                       | PR-C                     |
+| PR-E | `devin/<ts>-openclaw-council-roundtable`  | Phase 5 (council orchestration).                                                                                                                            | PR-D                     |
+| PR-F | `devin/<ts>-openclaw-cutover-and-cleanup` | Phase 6.5 (parallel run + feature flag) → Phase 7 (вимкнення grammy bootstrap, ADR superseded, env cleanup). Grammy код **залишається** у репо як fallback. | PR-E + ≥1 тиждень parity |
 
 ---
 
@@ -56,18 +83,18 @@ apps/server /api/internal/openclaw/*
 ### Після (зовнішній OpenClaw Gateway)
 
 ```
-Founder (Telegram / WhatsApp / Slack / Discord / Signal / …)
+Founder (Telegram / WhatsApp / …)
       │
       ▼
-OpenClaw Gateway (self-hosted, port 18789)
+OpenClaw Gateway (Railway service, port 18789)
   ├── Anthropic / OpenAI / інший provider
   ├── Skills (SKILL.md)
-  │   ├── sergeant-cofounder/    ← personas, tone-mode, strategic modes
-  │   ├── sergeant-ops/
-  │   ├── sergeant-growth/
-  │   ├── sergeant-eng/
-  │   └── sergeant-finance/
-  └── Plugin: @sergeant/openclaw-tools
+  │   ├── sergeant-cofounder/    ← default persona, full tool-set
+  │   ├── sergeant-ops/          ← agent config: tools allowlist
+  │   ├── sergeant-growth/       ← agent config: tools allowlist
+  │   ├── sergeant-eng/          ← agent config: tools allowlist
+  │   └── sergeant-finance/      ← agent config: tools allowlist
+  └── Plugin: @sergeant/openclaw-plugin
       ├── registerTool("recall_memory")
       ├── registerTool("read_strategy_docs")
       ├── registerTool("query_app_db")
@@ -80,11 +107,15 @@ OpenClaw Gateway (self-hosted, port 18789)
       ├── registerTool("get_github_releases")
       ├── registerTool("read_telegram_topic_history")
       ├── registerTool("record_decision")
-      ├── registerTool("commit_to_strategy_doc")   ← gated
-      ├── registerTool("create_github_issue")       ← gated
-      ├── registerTool("post_to_topic")             ← gated
-      ├── registerTool("pause_workflow")             ← gated
-      └── registerTool("mute_alert")                 ← gated
+      ├── registerTool("commit_to_strategy_doc")   ← gated, optional:true
+      ├── registerTool("create_github_issue")       ← gated, optional:true
+      ├── registerTool("post_to_topic")             ← gated, optional:true
+      ├── registerTool("pause_workflow")             ← gated, optional:true
+      ├── registerTool("mute_alert")                 ← gated, optional:true
+      ├── registerHook("llm_input")                  ← budget pre-check + invocation/open
+      ├── registerHook("tool_call_pre")              ← write-tool approval gate
+      ├── registerHook("tool_call_post")             ← write-audit log
+      └── registerHook("agent_turn_end")             ← invocation/finalize + cost rollup
       │
       ▼ HTTP (той самий контракт)
 apps/server /api/internal/openclaw/*
@@ -99,39 +130,41 @@ apps/server /api/internal/openclaw/*
 
 ### Env змінні (tools/console)
 
-| Змінна | Опис | Що робити |
-|--------|------|-----------|
-| `OPENCLAW_BOT_TOKEN` | Telegram Bot API token | Замінюється на OpenClaw Telegram channel config |
-| `OPENCLAW_FOUNDER_USER_ID` | Better Auth user ID | Переноситься в plugin config |
-| `OPENCLAW_FOUNDER_TG_USER_ID` | Telegram user ID для allowlist | Замінюється на OpenClaw DM pairing policy |
-| `OPENCLAW_MAX_ITERATIONS` | Agent loop iteration cap | Переноситься в skill/config |
-| `OPENCLAW_RATE_LIMIT_PER_MIN` | Rate limiter | OpenClaw має вбудований rate limiting |
-| `OPENCLAW_MAX_PER_CALL_USD` | Per-call USD cap | Переноситься в plugin config |
-| `OPENCLAW_COUNCIL_USD_BUDGET` | Council session headroom | Переноситься в plugin config |
-| `OPENCLAW_USE_WEBHOOK` | Webhook vs long-poll | Не потрібен — OpenClaw сам handles delivery |
-| `OPENCLAW_WEBHOOK_URL` | Webhook endpoint | Не потрібен |
-| `OPENCLAW_WEBHOOK_SECRET` | Webhook secret | Не потрібен |
-| `OPENCLAW_WEBHOOK_PATH` | Webhook path | Не потрібен |
-| `OPENCLAW_WEBHOOK_PORT` | Webhook port | Не потрібен |
-| `OPENCLAW_AGENT_STATUS_CALLBACK_URL` | Status callback | Переноситься в plugin hook |
-| `SERVER_INTERNAL_URL` | Sergeant server URL | Переноситься в plugin config |
-| `INTERNAL_API_KEY` | Internal API auth | Переноситься в plugin config |
-| `ANTHROPIC_API_KEY` | Anthropic API key | Переноситься в OpenClaw model config |
+| Змінна                               | Опис                                 | Що робити                                                                                                       |
+| ------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `OPENCLAW_BOT_TOKEN`                 | Telegram Bot API token               | Замінюється на OpenClaw Telegram channel config                                                                 |
+| `OPENCLAW_FOUNDER_USER_ID`           | Better Auth user ID                  | Переноситься в plugin config                                                                                    |
+| `OPENCLAW_FOUNDER_TG_USER_ID`        | Telegram user ID для allowlist       | Замінюється на OpenClaw DM pairing policy                                                                       |
+| `OPENCLAW_MAX_ITERATIONS`            | Agent loop iteration cap             | Переноситься в skill/config                                                                                     |
+| `OPENCLAW_RATE_LIMIT_PER_MIN`        | Rate limiter                         | OpenClaw має вбудований rate limiting                                                                           |
+| `OPENCLAW_MAX_PER_CALL_USD`          | Per-call USD cap                     | Переноситься в plugin config + enforced через `llm_input` hook (server-side `/budget` лишається authoritative). |
+| `OPENCLAW_COUNCIL_USD_BUDGET`        | Council session headroom             | Переноситься в plugin config (council-skill)                                                                    |
+| `OPENCLAW_USE_WEBHOOK`               | Webhook vs long-poll                 | Не потрібен — OpenClaw сам handles delivery                                                                     |
+| `OPENCLAW_WEBHOOK_URL`               | Webhook endpoint                     | Не потрібен                                                                                                     |
+| `OPENCLAW_WEBHOOK_SECRET`            | Webhook secret                       | Не потрібен                                                                                                     |
+| `OPENCLAW_WEBHOOK_PATH`              | Webhook path                         | Не потрібен                                                                                                     |
+| `OPENCLAW_WEBHOOK_PORT`              | Webhook port                         | Не потрібен                                                                                                     |
+| `OPENCLAW_AGENT_STATUS_CALLBACK_URL` | Status callback                      | Переноситься в plugin hook                                                                                      |
+| `SERVER_INTERNAL_URL`                | Sergeant server URL                  | Переноситься в plugin config                                                                                    |
+| `INTERNAL_API_KEY`                   | Internal API auth                    | Переноситься в plugin config                                                                                    |
+| `ANTHROPIC_API_KEY`                  | Anthropic API key                    | Переноситься в OpenClaw model config                                                                            |
+| `OPENCLAW_GATEWAY_ENABLED`           | **Новий feature flag** для Phase 6.5 | `false` за замовч., `true` вмикає Gateway-routing у grammy bootstrap                                            |
 
 ### DB таблиці (apps/server — залишаються)
 
-| Таблиця | Міграція | Опис |
-|---------|----------|------|
-| `openclaw_invocations` | 028 | Audit log усіх викликів (trigger, tool_calls, cost, status) |
-| `openclaw_decisions` | 028 | Decision log (topic, context, decision, rationale, git_pr_url) |
-| `openclaw_write_audit` | 030 | Write-tool approve/executed/rejected transitions |
-| `ai_memories` (source='cofounder') | 028 | Cofounder memory namespace |
+| Таблиця                            | Міграція | Опис                                                           |
+| ---------------------------------- | -------- | -------------------------------------------------------------- |
+| `openclaw_invocations`             | 028      | Audit log усіх викликів (trigger, tool_calls, cost, status)    |
+| `openclaw_decisions`               | 028      | Decision log (topic, context, decision, rationale, git_pr_url) |
+| `openclaw_write_audit`             | 030      | Write-tool approve/executed/rejected transitions               |
+| `ai_memories` (source='cofounder') | 028      | Cofounder memory namespace                                     |
 
 **Всі таблиці залишаються** — plugin буде ходити в ті самі server endpoints, які пишуть/читають ці таблиці.
 
 ### Server API endpoints (залишаються без змін)
 
 **Read-only tools:**
+
 - `POST /api/internal/openclaw/recall` — recall cofounder memory
 - `POST /api/internal/openclaw/strategy` — read strategy docs
 - `POST /api/internal/openclaw/query` — query app DB (allowlisted tables)
@@ -147,6 +180,7 @@ apps/server /api/internal/openclaw/*
 - `POST /api/internal/openclaw/decisions/list` — list decisions
 
 **Write tools (gated):**
+
 - `POST /api/internal/openclaw/write/strategy-doc` — commit strategy doc PR
 - `POST /api/internal/openclaw/write/github-issue` — create GitHub issue
 - `POST /api/internal/openclaw/write/post-to-topic` — post to Telegram topic
@@ -154,6 +188,7 @@ apps/server /api/internal/openclaw/*
 - `POST /api/internal/openclaw/write/mute-alert` — mute Sentry alert
 
 **Budget & Audit:**
+
 - `POST /api/internal/openclaw/budget` — check daily budget
 - `POST /api/internal/openclaw/invocations/open` — open invocation
 - `POST /api/internal/openclaw/invocations/finalize` — finalize invocation
@@ -161,18 +196,18 @@ apps/server /api/internal/openclaw/*
 - `POST /api/internal/openclaw/write-audit/log` — log write-audit event
 - `POST /api/internal/openclaw/write-audit/list` — list write-audit events
 
-### Console-side код (що видаляємо)
+### Console-side код (що **відключаємо**, не видаляємо)
 
-| Шлях | Файли | Опис |
-|------|-------|------|
-| `tools/console/src/openclaw/` | 16 файлів (*.ts) | Handler, session, approval, audit, security, bootstrap, webhook, commands, policy |
-| `tools/console/src/agents/openclaw.ts` | 1 | Agent loop + tool execution |
-| `tools/console/src/agents/personas.ts` | 1 | 5 personas + tool filters |
-| `tools/console/src/agents/strategic-modes.ts` | 1 | /plan, /analyze, /okr modes |
-| `tools/console/src/agents/dispatcher.ts` | 1 | Agent network delegation |
-| `tools/console/src/index.ts` | часткове | OpenClaw bootstrap code |
+| Шлях                                          | Файли             | Опис                                                                              |
+| --------------------------------------------- | ----------------- | --------------------------------------------------------------------------------- |
+| `tools/console/src/openclaw/`                 | 16 файлів (\*.ts) | Handler, session, approval, audit, security, bootstrap, webhook, commands, policy |
+| `tools/console/src/agents/openclaw.ts`        | 1                 | Agent loop + tool execution                                                       |
+| `tools/console/src/agents/personas.ts`        | 1                 | 5 personas + tool filters                                                         |
+| `tools/console/src/agents/strategic-modes.ts` | 1                 | /plan, /analyze, /okr modes                                                       |
+| `tools/console/src/agents/dispatcher.ts`      | 1                 | Agent network delegation                                                          |
+| `tools/console/src/index.ts`                  | часткове          | OpenClaw bootstrap code                                                           |
 
-**Разом: ~20 файлів + ~30 тестів** до видалення (після того, як plugin повністю працює).
+**Стратегія:** ~20 файлів + ~30 тестів **залишаються в репо як fallback** після cutover. У Phase 7 ми лише вимикаємо bootstrap (через `OPENCLAW_GATEWAY_ENABLED=true` + `OPENCLAW_BOT_TOKEN` unset на console deploy) і помічаємо ADR як superseded. Видалення коду — окрема ініціатива не раніше ніж через 4 тижні стабільної роботи Gateway, окремим PR з власним rollback-планом.
 
 ---
 
@@ -180,28 +215,45 @@ apps/server /api/internal/openclaw/*
 
 ### Phase 0: Підготовка (1 день)
 
-1. **Встановити OpenClaw Gateway** на dev-машину (або Railway staging):
-   ```bash
-   npm install -g openclaw@latest
-   openclaw onboard --install-daemon
-   ```
-2. **Підключити Telegram канал** — той самий бот або новий test-bot.
+1. **Підняти OpenClaw Gateway** як Railway service:
+   - `Dockerfile` з pinned stable OpenClaw version
+   - Persistent volume на `/root/.openclaw`
+   - Healthcheck на `:18789/healthz`
+2. **Підключити Telegram канал** — test-bot з власним username, **не** production `@sergeant_cofounder`. Production-бот пейримо лише в Phase 6.5.
 3. **Переконатися**, що Gateway стартує, відповідає на DM, і Telegram channel працює.
-4. **Зберегти конфігурацію** у `~/.openclaw/config.json`.
+4. **Зберегти конфігурацію** у Railway-env + `~/.openclaw/openclaw.json` (через volume).
 
-### Phase 1: Sergeant Tools Plugin (3-4 дні)
+### Phase 0.5: Spike PoC (1–2 дні)
 
-Створити TypeScript plugin `@sergeant/openclaw-tools`, який реєструє всі Sergeant tools через `api.registerTool(...)`.
+**Мета:** до планування Phase 1 переконатися, що critical-path рішення дійсно лягають на OpenClaw Plugin SDK. Без цього оцінки нижче — спекуляція.
+
+PoC plugin реєструє:
+
+- 1 read tool (`recall_memory`) — перевіряє HTTP-клієнт + типи + serialization tool result.
+- 1 write tool (`create_github_issue`) — перевіряє approval flow (native OpenClaw `requiresConfirmation` АБО custom `tool_call_pre` hook). **Це development gate**: якщо native не годиться — фіксуємо custom hook як baseline для Phase 4 і коригуємо estimate.
+- 1 hook `llm_input` — перевіряє, що `/budget` cap працює і блокує LLM-call коли budget вичерпано.
+- 1 hook `agent_turn_end` — перевіряє, що `invocation_id` корелює з OpenClaw `agent_run_id` для audit.
+- Parity-харнес — мінімум 3 golden conversations, прогнані на старому grammy bot і новому plugin: tool-calls, cost, response shape мають збігатися (з толерантністю на формулювання).
+
+**Вихід Phase 0.5:** короткий note `docs/notes/spikes/openclaw-poc.md` з висновками + go/no-go для Phase 1. Якщо критичні gap-и — оновлюємо план перед стартом Phase 1.
+
+### Phase 1: Sergeant Tools Plugin (5–7 днів)
+
+Створити TypeScript plugin `@sergeant/openclaw-plugin`, який реєструє всі Sergeant tools через `api.registerTool(...)`.
 
 **Структура:**
+
 ```
 packages/openclaw-plugin/
 ├── package.json
 ├── openclaw.plugin.json
+├── tsconfig.json
 ├── src/
-│   ├── index.ts           ← definePluginEntry + registerTool calls
-│   ├── config.ts          ← plugin config schema (serverUrl, apiKey, founderUserId)
+│   ├── index.ts           ← definePluginEntry + registerTool/registerHook calls
+│   ├── config.ts          ← plugin config schema (serverUrl, apiKey, founderUserId, perCallUsdCap)
 │   ├── http-client.ts     ← thin HTTP wrapper for /api/internal/openclaw/*
+│   ├── budget.ts          ← shared budget gate, used by llm_input hook
+│   ├── audit.ts           ← invocation lifecycle helpers
 │   ├── tools/
 │   │   ├── recall-memory.ts
 │   │   ├── read-strategy-docs.ts
@@ -214,8 +266,7 @@ packages/openclaw-plugin/
 │   │   ├── get-server-stats.ts
 │   │   ├── get-github-releases.ts
 │   │   ├── read-telegram-topic.ts
-│   │   ├── record-decision.ts
-│   │   └── budget.ts
+│   │   └── record-decision.ts
 │   └── write-tools/
 │       ├── commit-strategy-doc.ts
 │       ├── create-github-issue.ts
@@ -228,6 +279,7 @@ packages/openclaw-plugin/
 ```
 
 **Кожен tool — thin HTTP proxy:**
+
 ```typescript
 // Приклад: recall-memory.ts
 api.registerTool({
@@ -235,7 +287,9 @@ api.registerTool({
   description: "Recall cofounder memory from Sergeant AI memory store",
   parameters: Type.Object({
     query: Type.String({ description: "Semantic search query" }),
-    topK: Type.Optional(Type.Number({ description: "Max results (default 5)" })),
+    topK: Type.Optional(
+      Type.Number({ description: "Max results (default 5)" }),
+    ),
   }),
   async execute(_id, params) {
     const res = await httpClient.post("/api/internal/openclaw/recall", {
@@ -248,20 +302,17 @@ api.registerTool({
 });
 ```
 
-**Budget guard** — реалізувати як pre-execute hook:
-```typescript
-// Перед кожним tool-call — перевіряємо budget
-async function checkBudget(): Promise<boolean> {
-  const res = await httpClient.post("/api/internal/openclaw/budget", {
-    founderUserId: config.founderUserId,
-  });
-  return res.data.allowed;
-}
-```
+**Workspace package governance** — без цього CI не зелений:
 
-### Phase 2: Personas як Skills (1-2 дні)
+- Додати `packages/openclaw-plugin/**` до `CODEOWNERS` (Owner: `@Skords-01`, Secondary: `TBD (backend-engineer)`); `pnpm lint:codeowners` валідовує.
+- Підключити до `turbo.json` pipeline (build/test/typecheck/lint).
+- Додати ESLint/TypeScript конфіги через shared presets (`@sergeant/eslint-config`, base tsconfig).
+- Hard Rule #18 (max-lines: 600) діє на TS файли — кожен tool у власному файлі.
+- Якщо bundling — врахувати у `size-limit` (швидше за все плагін не bundled, бо завантажується в Node-runtime Gateway, тож skip).
 
-Перенести 5 personas як окремі OpenClaw skills:
+### Phase 2: Personas як Skills + tool allowlist (1–2 дні)
+
+Перенести 5 personas як окремі OpenClaw skills + жорсткий allowlist на рівні agent config.
 
 ```
 ~/.openclaw/workspace/skills/
@@ -272,7 +323,14 @@ async function checkBudget(): Promise<boolean> {
 └── sergeant-finance/SKILL.md     ← finance primer + restricted tools
 ```
 
+**Важливо:** SKILL.md — це prompt, він **не** enforcement. LLM може проігнорувати фразу «використовуй ТІЛЬКИ ці tools». Tool restriction робиться через:
+
+- Реєстрація write-tools з `{ optional: true }` — тоді вони не доступні без явного allowlist.
+- Per-agent (per-skill) `tools` allowlist у `openclaw.json` → `agents.<persona>.tools`.
+- `cofounder` — full set; `ops/growth/eng/finance` — обмежений підсет (як у `tools/console/src/agents/personas.ts`).
+
 **Приклад `sergeant-ops/SKILL.md`:**
+
 ```markdown
 ---
 name: sergeant-ops
@@ -289,6 +347,7 @@ execution traces. Reply у тоні reliability eng (короткі recommendati
 ## Доступні tools
 
 Використовуй ТІЛЬКИ ці tools:
+
 - read_workflow_logs
 - get_sentry_issues
 - get_server_stats
@@ -306,108 +365,193 @@ sergeant-cofounder.
 ### Phase 3: Strategic Modes (1 день)
 
 Перенести `/plan`, `/analyze`, `/okr` як:
+
 - **Skills** з structured-thinking primers
 - **Або** custom slash-commands через OpenClaw command system
 
 Primers з `strategic-modes.ts` стають частиною відповідного SKILL.md.
 
-### Phase 4: Approval Flow для Write-Tools (2 дні)
+### Phase 4: Approval Flow для Write-Tools (3–5 днів)
 
-Це найскладніша частина. Внутрішній OpenClaw мав inline-keyboard approve/reject у Telegram. Варіанти:
+Найскладніша частина. Внутрішній OpenClaw мав inline-keyboard approve/reject у Telegram. Дизайн фіксується у Phase 0.5 PoC; нижче — варіанти, з яких PoC обере один.
 
-**Варіант A: OpenClaw native gated tools**
-OpenClaw має вбудований механізм approval — перевірити чи підходить для наших потреб.
+**Варіант A: OpenClaw native gated tools.**
+OpenClaw має вбудований механізм approval (перевірити у PoC чи підтримується inline-keyboard у Telegram channel + persistence декларації approval).
 
-**Варіант B: Custom approval через plugin hooks**
-Plugin реєструє pre-execute hook, який:
+**Варіант B: Custom approval через `tool_call_pre` hook.**
+Plugin реєструє `tool_call_pre` hook, який:
+
 1. Перехоплює write-tool call
-2. Надсилає повідомлення founder-у з describe tool + input
+2. Надсилає повідомлення founder-у з describe tool + input (через `api.services.messaging`)
 3. Чекає на confirmation (callback або reply)
 4. Виконує або відхиляє
+5. Логує `approved/rejected/executed` через `/api/internal/openclaw/write-audit/log`
 
-**Варіант C: Hybrid — write-tools як окремий "approval agent"**
-Write-tools реєструються з `requiresConfirmation: true` (якщо OpenClaw це підтримує).
+**Варіант C: Hybrid** — native approval + custom audit hook.
 
-**Рекомендація:** почати з Варіанту A, перевірити можливості. Якщо недостатньо — Варіант B.
+**Рекомендація:** PoC у Phase 0.5 фіксує конкретний варіант перед оцінкою. Якщо native (A) — 2-3 дні; custom (B) — 4-5 днів.
 
-### Phase 5: Council Round-Table (1-2 дні)
+### Phase 5: Council Round-Table (3–4 дні)
 
 `/council` запускав sequential personas (ops → growth → eng → finance → cofounder synthesis). Реалізація:
 
-**Варіант A: Multi-agent orchestration**
+**Варіант A: Multi-agent orchestration.**
 OpenClaw підтримує multi-agent setups. Кожна persona — окремий agent. Створити orchestrator-skill, який послідовно викликає кожного.
 
-**Варіант B: Single-agent з tool**
+**Варіант B: Single-agent з tool.**
 Один agent з custom `council_roundtable` tool, який послідовно змінює persona context і збирає відповіді.
 
-### Phase 6: Audit & Invocation Tracking (1 день)
+**Council budget cap** (`OPENCLAW_COUNCIL_USD_BUDGET`) — окрема перевірка перед запуском, через `/budget` endpoint з `kind: "council"`.
 
-Зберегти audit logging через ті самі server endpoints:
-- Plugin lifecycle hooks: on agent turn start → `POST /invocations/open`
-- On agent turn end → `POST /invocations/finalize`
-- On write-tool approve/reject → `POST /write-audit/log`
+### Phase 6: Audit, Invocation Tracking & Observability (1–2 дні)
 
-### Phase 7: Cleanup (1 день)
+Зберегти audit logging через ті самі server endpoints + додати observability instrumentation:
 
-1. **Видалити** `tools/console/src/openclaw/` (16 файлів)
-2. **Видалити** openclaw-specific код з `tools/console/src/agents/` (4 файли)
-3. **Очистити** `tools/console/src/index.ts` від openclaw bootstrap
-4. **Видалити** непотрібні env vars з Railway/deploy configs
-5. **Оновити** документацію:
-   - `AGENTS.md` — прибрати згадки внутрішнього OpenClaw
-   - `docs/adr/0031-*` — позначити як superseded
-   - Hard Rule #20 — оновити контекст
-6. **НЕ видаляти:**
-   - `apps/server/src/modules/openclaw/` — server API залишається
-   - `apps/server/src/routes/internal/openclaw.ts` — endpoints залишаються
-   - DB таблиці — дані залишаються
+- Plugin lifecycle hooks: на `agent_turn_start` → `POST /invocations/open` (зберегти `agent_run_id` ↔ `invocation_id` мапу).
+- На `agent_turn_end` → `POST /invocations/finalize` з cost rollup.
+- На `tool_call_post` (write-tools) → `POST /write-audit/log` з approve/reject/executed transition.
+- **Sentry:** обернути `execute()` кожного tool у `Sentry.startSpan`, помістити `agent_run_id` у `tags`. Errors з tool execute → `Sentry.captureException` з `extra: { tool, params }`.
+- **PostHog:** capture `openclaw_tool_invoked`, `openclaw_write_approved`, `openclaw_council_started` events з `distinct_id = founderUserId`.
+
+### Phase 6.5: Parallel Run + Feature Flag (мінімум 1 тиждень)
+
+Не cutover до Phase 7 поки немає parity-доказу.
+
+1. Додати feature flag `OPENCLAW_GATEWAY_ENABLED` (env у `tools/console`).
+2. Коли `false` (default) — bootstrap піднімає grammy bot як зараз.
+3. Коли `true` — bootstrap **не** реєструє Telegram webhook на grammy; production-бот пейриться у Gateway.
+4. Дозволяємо паралельно: grammy на test-username, Gateway на production-username (чи навпаки), founder перевіряє реальні взаємодії.
+5. Метрики, що моніторимо щодня:
+   - кількість invocations у Gateway vs grammy за добу
+   - p50/p95 latency tool execute
+   - cost rollup
+   - кількість approved/rejected write-tools
+   - Sentry error rate
+6. **Gate to Phase 7:** ≥7 днів без regressions, всі 5 personas exercised, ≥3 successful write-tool approval цикли, council запущено хоча б раз.
+
+### Phase 7: Cutover та Cleanup (1–2 дні)
+
+**Що робимо:**
+
+1. Виставити `OPENCLAW_GATEWAY_ENABLED=true` на production console deploy (Railway).
+2. **Не видаляти** код — `tools/console/src/openclaw/` і `tools/console/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts` залишаються в репо. Bootstrap у `index.ts` обмортує їхню реєстрацію через flag.
+3. Прибрати з Railway env-конфігу `OPENCLAW_BOT_TOKEN` (тимчасово невикористовуваний; зберігається у secret manager на випадок rollback).
+4. **Документація:**
+   - `AGENTS.md` — додати посилання на новий `packages/openclaw-plugin/AGENTS.md` (якщо створимо), оновити Module ownership map.
+   - ADR-0031 (`docs/adr/0031-openclaw-v0-telegram-cofounder.md`) → Status: Superseded by ADR-XXXX.
+   - ADR-0036 (`docs/adr/0036-openclaw-write-tools-with-approval.md`) → Status: Superseded.
+   - ADR-0037 (`docs/adr/0037-openclaw-write-audit-persistence.md`) — лишається Active (server-side).
+   - ADR-0041 (`docs/adr/0041-openclaw-telegram-webhook.md`) → Status: Superseded.
+   - Новий ADR `docs/adr/00XX-openclaw-external-gateway.md` — фіксує кінцеву архітектуру.
+   - Hard Rule #20 — оновити «Why» секцію, що Gateway теж не зберігає PAT-и.
+   - `docs/launch/tech/openclaw-roadmap.md` — позначити завершені віхи.
+   - `docs/playbooks/rotate-openclaw-credentials.md` — оновити список secrets.
+5. **Залишається без змін:**
+   - `apps/server/src/modules/openclaw/` — server API
+   - `apps/server/src/routes/internal/openclaw.ts` — endpoints
+   - DB таблиці — дані
    - Міграції — immutable
+   - Hard Rule #20 enforcement — `assertStartupEnv()`
+   - **Grammy fallback** — код у `tools/console/src/openclaw/` та `agents/`
 
-### Phase 8: Додаткові канали (за бажанням)
+### Phase 8: Додаткові канали (in-scope: WhatsApp; решта — за бажанням)
 
-Після стабілізації Telegram — підключити додаткові канали:
-- WhatsApp (Baileys QR pairing)
-- Slack (Bolt workspace app)
-- Discord (server + DMs)
+Після стабілізації Telegram у Phase 6.5/7 — підключити WhatsApp як підтверджений in-scope канал, плюс опційні.
+
+**WhatsApp (1–2 дні):**
+
+- Виділена WhatsApp business-лінія (друга SIM/eSIM/препейд) — рекомендований two-phone setup з документації OpenClaw.
+- Pairing через QR (`openclaw channels login` всередині Railway shell або одноразовий локальний пейринг з ре-аплоадом auth.json до volume).
+- `channels.whatsapp.allowFrom` — лише founder's number.
+- Tone selector у persona prompts враховує медіум (короткі WhatsApp DM-style replies).
+
+**Опційні канали (поза цим планом, окремі ініціативи):**
+
+- Slack (Bolt workspace app + OAuth)
+- Discord (server + DMs + bot intents)
 - Signal
 - iMessage (macOS only)
 
-Кожен канал — просто конфіг у OpenClaw, нічого кодити не треба.
+Для кожного — окремий micro-ADR з security review (allowlist, identity mapping → `founderUserId`, rate limits per channel). «Просто конфіг» — це лише після того, як identity-pipeline для каналу готовий.
+
+---
+
+## Per-call USD cap і budget enforcement
+
+- **Source of truth:** server-side `apps/server/src/modules/openclaw/budget.ts` + `POST /api/internal/openclaw/budget`. Не дублюємо логіку у плагіні.
+- **Plugin** перевіряє budget у `llm_input` hook (перед кожним LLM-call) і у `tool_call_pre` (перед write-tool, якщо підвищує cost).
+- Якщо `/budget` повертає `{ allowed: false, reason }` — plugin перериває turn з користувацьким message-ом (через `api.services.messaging.send`), пише `invocation finalize` зі `status: "budget_exceeded"`.
+- `OPENCLAW_MAX_PER_CALL_USD` зберігається як plugin config; перевірка локальна (швидко, без HTTP) на оцінку cost перед `model.complete`.
+- `OPENCLAW_COUNCIL_USD_BUDGET` — Phase 5 council orchestrator перевіряє через `/budget` з `kind: "council"`.
+
+---
+
+## GitHub App credentials у production
+
+- Hard Rule #20 забороняє `OPENCLAW_GITHUB_PAT` і `Git_PAT` у production. `assertStartupEnv()` блокує запуск `apps/server`, якщо ці змінні присутні.
+- `read_github` і `create_github_issue` tools у плагіні **не** ходять у GitHub напряму. Вони викликають `POST /api/internal/openclaw/github` і `POST /api/internal/openclaw/write/github-issue`, де server-side вже використовує GitHub App-flow (`OPENCLAW_GITHUB_APP_ID` + `_PRIVATE_KEY` + `_INSTALLATION_ID`).
+- Railway service `sergeant-openclaw-gateway` **не повинен** мати у env жодного з `OPENCLAW_GITHUB_PAT`/`Git_PAT`/`GITHUB_TOKEN`. Це закріплюється у `docs/playbooks/rotate-openclaw-credentials.md` як обов'язковий чек.
+- Smoke-тест у Phase 0 / 0.5: спроба викликати `read_github` з Gateway → має пройти (через server) без жодного PAT-у в Gateway env.
+
+---
+
+## Workspace package governance
+
+Новий `packages/openclaw-plugin/`:
+
+- **CODEOWNERS:** `packages/openclaw-plugin/ @Skords-01` + secondary placeholder (TBD backend-engineer). Без цього `pnpm lint:codeowners` падає.
+- **Module ownership map** (`docs/architecture/module-ownership.md` + AGENTS.md) — додати рядок про новий пакет.
+- **Turbo pipeline:** build/test/typecheck/lint підключений через `turbo.json` (workspace pattern matching).
+- **ESLint:** використовує shared `eslint.config.mjs` через extends.
+- **TypeScript:** окремий `tsconfig.json`, що extends-ить root config; `noUncheckedIndexedAccess: true` (Hard Rule #19).
+- **Pre-commit:** lint-staged ESLint/Prettier + staged-typecheck покриває новий шлях автоматично.
+- **Tests:** Vitest, тести `*.test.ts` поряд з кодом.
+- **`pnpm lint:plugins`** (новий?) — якщо ні, додаємо у Phase 1, що валідовує `openclaw.plugin.json` schema.
 
 ---
 
 ## Оцінка зусиль
 
-| Phase | Опис | Оцінка |
-|-------|------|--------|
-| 0 | Підготовка + встановлення Gateway | 1 день |
-| 1 | Sergeant Tools Plugin | 3-4 дні |
-| 2 | Personas як Skills | 1-2 дні |
-| 3 | Strategic Modes | 1 день |
-| 4 | Approval Flow | 2 дні |
-| 5 | Council Round-Table | 1-2 дні |
-| 6 | Audit & Invocation Tracking | 1 день |
-| 7 | Cleanup | 1 день |
-| **Загалом** | | **~10-14 днів** |
+| Phase                       | Опис                                                                       | Оцінка          |
+| --------------------------- | -------------------------------------------------------------------------- | --------------- |
+| 0                           | Підготовка + встановлення Gateway на Railway                               | 1 день          |
+| 0.5                         | Spike PoC (approval + budget + audit + parity-харнес)                      | 1–2 дні         |
+| 1                           | Sergeant Tools Plugin (13 read tools + 5 write tools + hooks + governance) | 5–7 днів        |
+| 2                           | Personas як Skills + agent allowlist                                       | 1–2 дні         |
+| 3                           | Strategic Modes                                                            | 1 день          |
+| 4                           | Approval Flow (variant locked у 0.5)                                       | 3–5 днів        |
+| 5                           | Council Round-Table                                                        | 3–4 дні         |
+| 6                           | Audit + Sentry/PostHog instrumentation                                     | 1–2 дні         |
+| 6.5                         | Parallel run + feature flag (calendar wait)                                | ≥7 днів         |
+| 7                           | Cutover (вимкнення grammy, ADR superseded, env cleanup)                    | 1–2 дні         |
+| 8                           | WhatsApp channel                                                           | 1–2 дні         |
+| **Загалом (engineering)**   |                                                                            | **~18–28 днів** |
+| **Загалом з parity-window** |                                                                            | **~25–35 днів** |
 
 ---
 
 ## Ризики та мітигація
 
-| Ризик | Імовірність | Мітигація |
-|-------|-------------|-----------|
-| OpenClaw approval flow недостатній для наших потреб | Середня | Варіант B (custom plugin hooks) як fallback |
-| Breaking changes у OpenClaw API | Низька | Pin версію, моніторити changelog |
-| Latency збільшується (додатковий hop через Gateway) | Низька | Gateway на тій же машині що й server |
-| Council orchestration складна в multi-agent | Середня | Fallback на single-agent + tool підхід |
-| Втрата edge cases з approval-store | Середня | Ретельне тестування Phase 4, E2E тести |
+| Ризик                                                | Імовірність                                                 | Мітигація                                                                                                                                                                                      |
+| ---------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OpenClaw approval flow недостатній для наших потреб  | Середня                                                     | Phase 0.5 PoC фіксує варіант (native vs custom hook) до старту Phase 1; Варіант B як fallback.                                                                                                 |
+| Breaking changes у OpenClaw API                      | **Середня-Висока** (141 реліз за ~6 місяців, активний beta) | Pin exact stable version у `package.json` + Railway lock; CI smoke-test plugin проти pinned SDK; renovate-only PR на апгрейди без auto-merge; інтеграційний тест-харнес з PoC переїжджає у CI. |
+| Latency збільшується (додатковий hop через Gateway)  | Низька                                                      | Gateway на Railway у тому ж проєкті, що й server (intra-VPC). Phase 6.5 фіксує p95 baseline.                                                                                                   |
+| Council orchestration складна в multi-agent          | Середня                                                     | Fallback на single-agent + tool підхід; PoC можна провалідувати у Phase 0.5 (опційно).                                                                                                         |
+| Втрата edge cases з approval-store                   | Середня                                                     | Phase 4 інтеграційні тести покривають всі п'ять write-tools; Phase 6.5 parity-window фіксує реальні approval-сесії.                                                                            |
+| **Витік PAT у Gateway env (Hard Rule #20)**          | Середня                                                     | Pre-deploy чек у Railway (script у `docs/playbooks/rotate-openclaw-credentials.md`); smoke-test у Phase 0 ловить наявність PAT-змінних.                                                        |
+| **Parity gap (Gateway поводиться інакше за grammy)** | Середня                                                     | Golden-conversation харнес у Phase 0.5 + щоденний моніторинг у Phase 6.5; gate to Phase 7 — ≥7 днів без regressions.                                                                           |
+| Persona tool-leakage (LLM ігнорує SKILL allowlist)   | Середня                                                     | Allowlist через `agents.<persona>.tools` config + `optional: true` write-tools; SKILL текст лишається hint-ом, не enforcement.                                                                 |
+| WhatsApp pairing губиться при rebuild Railway image  | Низька                                                      | Persistent volume для `~/.openclaw`; backup auth-state у secret manager.                                                                                                                       |
 
 ---
 
 ## Rollback план
 
-1. `tools/console/src/openclaw/` залишається у git history — `git revert` відновить
-2. Server API не змінюється — internal endpoints працюють для обох клієнтів
-3. DB таблиці не змінюються — дані compatible
-4. Env vars — повернути у Railway config
-5. **Рекомендація:** тримати Phase 7 (cleanup) як окремий PR, щоб rollback був простим
+Завдяки тому, що grammy лишається у репо як fallback, rollback — це переключення feature flag, не code revert.
+
+1. **Швидкий rollback (ad hoc):** `OPENCLAW_GATEWAY_ENABLED=false` на console Railway service → grammy bot піднімається наступним рестартом. Виставити назад `OPENCLAW_BOT_TOKEN`.
+2. Server API не змінюється — internal endpoints працюють для обох клієнтів одночасно (Phase 6.5 саме це і робить).
+3. DB таблиці не змінюються — дані compatible.
+4. Якщо проблема в plugin — Gateway відключаємо у Railway (suspend service), grammy продовжує.
+5. **Видалення коду grammy** — окрема ініціатива, не раніше ніж через 4 тижні стабільної роботи Gateway, окремим PR з власним rollback-планом.
