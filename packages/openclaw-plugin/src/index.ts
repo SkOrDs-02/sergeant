@@ -1,11 +1,12 @@
 /**
  * `@sergeant/openclaw-plugin` entry point.
  *
- * Phase 0.5 PoC scope:
- *   - 1 read tool (recall_memory)
- *   - 1 write tool (create_github_issue) — обкатує A/B/C approval variants
- *   - 1 hook llm_input (budget gate)
- *   - 1 hook agent_turn_start + 1 hook agent_turn_end (audit)
+ * Phase 1 (PR-C1a) scope:
+ *   - 12 read tools (1 from PoC + 11 new HTTP-proxy tools)
+ *   - 1 write tool (create_github_issue) from PoC
+ *   - 3 hooks: llm_input (budget gate), agent_turn_start, agent_turn_end (audit)
+ *   - 1 hook: tool_call_pre (write-tool approval gate from PoC)
+ *   - 1 hook: tool_call_post (write-audit from PoC)
  *
  * Default export — `definePluginEntry((api, raw) => ...)`. OpenClaw runtime
  * викликає його з actual SDK API + JSON config string.
@@ -23,6 +24,17 @@ import {
   createAgentTurnEndHook,
 } from "./audit.js";
 import { createRecallMemoryTool } from "./tools/recall-memory.js";
+import { createReadStrategyDocsTool } from "./tools/read-strategy-docs.js";
+import { createQueryAppDbTool } from "./tools/query-app-db.js";
+import { createReadGithubTool } from "./tools/read-github.js";
+import { createGetStripeMetricsTool } from "./tools/get-stripe-metrics.js";
+import { createGetSentryIssuesTool } from "./tools/get-sentry-issues.js";
+import { createGetPostHogStatsTool } from "./tools/get-posthog-stats.js";
+import { createReadWorkflowLogsTool } from "./tools/read-workflow-logs.js";
+import { createGetServerStatsTool } from "./tools/get-server-stats.js";
+import { createGetGithubReleasesTool } from "./tools/get-github-releases.js";
+import { createReadTelegramTopicTool } from "./tools/read-telegram-topic.js";
+import { createRecordDecisionTool } from "./tools/record-decision.js";
 import { createCreateGithubIssueTool } from "./write-tools/create-github-issue.js";
 import { definePluginEntry, type Plugin, type PluginApi } from "./sdk-types.js";
 
@@ -83,12 +95,26 @@ export function createOpenClawPlugin(
     }),
   );
 
-  // ─── Read tool ───────────────────────────────────────────────────────
+  // ─── Read tools ─────────────────────────────────────────────────────
   api.registerTool(
     createRecallMemoryTool({
       http,
       founderUserId: config.founderUserId,
     }),
+  );
+
+  api.registerTool(createReadStrategyDocsTool({ http }));
+  api.registerTool(createQueryAppDbTool({ http }));
+  api.registerTool(createReadGithubTool({ http }));
+  api.registerTool(createGetStripeMetricsTool({ http }));
+  api.registerTool(createGetSentryIssuesTool({ http }));
+  api.registerTool(createGetPostHogStatsTool({ http }));
+  api.registerTool(createReadWorkflowLogsTool({ http }));
+  api.registerTool(createGetServerStatsTool({ http }));
+  api.registerTool(createGetGithubReleasesTool({ http }));
+  api.registerTool(createReadTelegramTopicTool({ http }));
+  api.registerTool(
+    createRecordDecisionTool({ http, founderUserId: config.founderUserId }),
   );
 
   // ─── Write tool (Phase 0.5 PoC chosen variant) ──────────────────────
@@ -147,6 +173,61 @@ export {
   RecallMemoryParamsSchema,
   type RecallMemoryParams,
 } from "./tools/recall-memory.js";
+export {
+  createReadStrategyDocsTool,
+  ReadStrategyDocsParamsSchema,
+  type ReadStrategyDocsParams,
+} from "./tools/read-strategy-docs.js";
+export {
+  createQueryAppDbTool,
+  QueryAppDbParamsSchema,
+  type QueryAppDbParams,
+} from "./tools/query-app-db.js";
+export {
+  createReadGithubTool,
+  ReadGithubParamsSchema,
+  type ReadGithubParams,
+} from "./tools/read-github.js";
+export {
+  createGetStripeMetricsTool,
+  GetStripeMetricsParamsSchema,
+  type GetStripeMetricsParams,
+} from "./tools/get-stripe-metrics.js";
+export {
+  createGetSentryIssuesTool,
+  GetSentryIssuesParamsSchema,
+  type GetSentryIssuesParams,
+} from "./tools/get-sentry-issues.js";
+export {
+  createGetPostHogStatsTool,
+  GetPostHogStatsParamsSchema,
+  type GetPostHogStatsParams,
+} from "./tools/get-posthog-stats.js";
+export {
+  createReadWorkflowLogsTool,
+  ReadWorkflowLogsParamsSchema,
+  type ReadWorkflowLogsParams,
+} from "./tools/read-workflow-logs.js";
+export {
+  createGetServerStatsTool,
+  GetServerStatsParamsSchema,
+  type GetServerStatsParams,
+} from "./tools/get-server-stats.js";
+export {
+  createGetGithubReleasesTool,
+  GetGithubReleasesParamsSchema,
+  type GetGithubReleasesParams,
+} from "./tools/get-github-releases.js";
+export {
+  createReadTelegramTopicTool,
+  ReadTelegramTopicParamsSchema,
+  type ReadTelegramTopicParams,
+} from "./tools/read-telegram-topic.js";
+export {
+  createRecordDecisionTool,
+  RecordDecisionParamsSchema,
+  type RecordDecisionParams,
+} from "./tools/record-decision.js";
 export {
   createCreateGithubIssueTool,
   CreateGithubIssueParamsSchema,

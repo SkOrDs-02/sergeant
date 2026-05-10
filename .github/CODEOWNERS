@@ -83,3 +83,4 @@ scripts/check-tsconfig-strict.mjs       @Skords-01
 /packages/nutrition-domain/              @Skords-01
 /packages/routine-domain/               @Skords-01
 /packages/shared/                        @Skords-01
+/packages/openclaw-plugin/               @Skords-01

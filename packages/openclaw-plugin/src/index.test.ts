@@ -67,7 +67,21 @@ describe("createOpenClawPlugin", () => {
     expect(plugin.name).toBe("@sergeant/openclaw-plugin");
 
     const names = api.registeredTools.map((t) => t.name).sort();
-    expect(names).toEqual(["create_github_issue", "recall_memory"]);
+    expect(names).toEqual([
+      "create_github_issue",
+      "get_github_releases",
+      "get_posthog_stats",
+      "get_sentry_issues",
+      "get_server_stats",
+      "get_stripe_metrics",
+      "query_app_db",
+      "read_github",
+      "read_strategy_docs",
+      "read_telegram_topic",
+      "read_workflow_logs",
+      "recall_memory",
+      "record_decision",
+    ]);
   });
 
   it("registers llm_input + agent_turn_start + agent_turn_end + tool_call_post hooks (Variant B default)", () => {

@@ -1,6 +1,6 @@
 {
   "name": "@sergeant/openclaw-plugin",
-  "version": "0.0.1-poc",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Sergeant OpenClaw Gateway plugin (Phase 0.5 PoC). Тонкий TypeScript-плагін, що реєструє Sergeant tools у OpenClaw runtime через HTTP-проксі до /api/internal/openclaw/*.",
