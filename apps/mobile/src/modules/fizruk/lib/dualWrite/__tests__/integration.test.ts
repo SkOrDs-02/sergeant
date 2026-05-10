@@ -51,6 +51,9 @@ const EMPTY: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  programs: null,
+  planTemplate: null,
+  wellbeing: [],
 };
 
 describe("dualWriteFizrukState orchestrator (mobile, Stage 12)", () => {
@@ -202,5 +205,38 @@ describe("dualWriteFizrukState orchestrator (mobile, Stage 12)", () => {
 
     const telemetry = __peekDualWriteTelemetryForTests("fizruk");
     expect(telemetry.parityMismatch).toBeGreaterThanOrEqual(1);
+  });
+
+  // --- Stage 12.5 -----------------------------------------------------
+
+  it("applies Stage 12.5 ops end-to-end and ticks parity match", async () => {
+    registerFizrukDualWriteContext(makeContext());
+    const next: FizrukDualWriteState = {
+      ...EMPTY,
+      programs: { activeProgramId: "prog-1" },
+      planTemplate: { dataJson: '{"id":"t1"}' },
+      wellbeing: [
+        {
+          dateKey: "2026-05-01",
+          mood: 4,
+          energy: 4,
+          sleepQuality: 4,
+          sleepHours: 7.5,
+          notes: "",
+          updatedAt: TS1,
+        },
+      ],
+    };
+    const outcome = await dualWriteFizrukState(EMPTY, next);
+    expect(outcome.status).toBe("applied");
+    if (outcome.status === "applied") {
+      expect(outcome.result.applied).toBe(3);
+      expect(outcome.result.errored).toBe(0);
+    }
+
+    const telemetry = __peekDualWriteTelemetryForTests("fizruk");
+    expect(telemetry.applied).toBe(1);
+    expect(telemetry.parityMatch).toBe(1);
+    expect(telemetry.parityMismatch).toBe(0);
   });
 });

@@ -19,9 +19,21 @@
  *   - `workout-template-upsert` / `workout-template-delete` —
  *     top-level `fizruk_workout_templates` rows (per-template).
  *
+ * **Stage 12.5 / PR #070f2-mobile-dualwrite** — extends the mobile
+ * snapshot + op set to the three remaining mobile-only Fizruk hook
+ * surfaces (`usePrograms`, `usePlanTemplate`, `useWellbeing`):
+ *
+ *   - `programs-set` — singleton `fizruk_programs` row holding the
+ *     active-program id (or `null` when no program is active).
+ *   - `plan-template-set` — singleton `fizruk_plan_templates` blob
+ *     (free-form JSON document, mirrors the monthly-plan shape).
+ *   - `wellbeing-upsert` / `wellbeing-delete` — composite-PK
+ *     `fizruk_wellbeing` rows keyed by `(user_id, date_key)`.
+ *
  * The diff order is stable: workouts → custom exercises →
- * measurements → daily-log → monthly-plan → workout-templates.
- * See the web copy for the full mapping rules and design notes.
+ * measurements → daily-log → monthly-plan → workout-templates →
+ * programs → plan-template → wellbeing. See the web copy for the
+ * full mapping rules and design notes.
  */
 
 // -----------------------------------------------------------------------
@@ -84,6 +96,27 @@ export interface WorkoutTemplateDeleteOp {
   readonly templateId: string;
 }
 
+// Stage 12.5 / PR #070f2-mobile-dualwrite -------------------------------
+export interface ProgramsSetOp {
+  readonly kind: "programs-set";
+  readonly programs: FizrukProgramsSnapshot;
+}
+
+export interface PlanTemplateSetOp {
+  readonly kind: "plan-template-set";
+  readonly planTemplate: FizrukPlanTemplateSnapshot;
+}
+
+export interface WellbeingUpsertOp {
+  readonly kind: "wellbeing-upsert";
+  readonly entry: FizrukWellbeingSnapshot;
+}
+
+export interface WellbeingDeleteOp {
+  readonly kind: "wellbeing-delete";
+  readonly dateKey: string;
+}
+
 export type FizrukDualWriteOp =
   | WorkoutUpsertOp
   | WorkoutDeleteOp
@@ -95,7 +128,11 @@ export type FizrukDualWriteOp =
   | DailyLogDeleteOp
   | MonthlyPlanSetOp
   | WorkoutTemplateUpsertOp
-  | WorkoutTemplateDeleteOp;
+  | WorkoutTemplateDeleteOp
+  | ProgramsSetOp
+  | PlanTemplateSetOp
+  | WellbeingUpsertOp
+  | WellbeingDeleteOp;
 
 // -----------------------------------------------------------------------
 // Snapshot shapes
@@ -192,6 +229,44 @@ export interface FizrukWorkoutTemplateSnapshot {
   readonly lastUsedAt?: string | null;
 }
 
+/**
+ * Stage 12.5 / PR #070f2-mobile-dualwrite — programs singleton.
+ * Mirrors the SQLite `fizruk_programs` row: just the active-program
+ * id (or `null` when no program is active). The diff treats the
+ * singleton as set-or-no-op (no delete op).
+ */
+export interface FizrukProgramsSnapshot {
+  readonly activeProgramId: string | null;
+}
+
+/**
+ * Stage 12.5 / PR #070f2-mobile-dualwrite — plan-template singleton.
+ * The whole document (or `null` when the slot is empty) is
+ * serialised to a JSON string so the diff can compare two payloads
+ * by byte-equality. The adapter writes `dataJson` straight into
+ * `fizruk_plan_templates.data_json` (default `'null'` for the
+ * empty slot — keeping the row present for LWW timestamping).
+ */
+export interface FizrukPlanTemplateSnapshot {
+  readonly dataJson: string;
+}
+
+/**
+ * Stage 12.5 / PR #070f2-mobile-dualwrite — wellbeing entry.
+ * Keyed by `dateKey` (`YYYY-MM-DD`); the SQLite primary key is the
+ * composite `(user_id, date_key)`. Mood / energy / sleepQuality are
+ * 1–5 integers; sleepHours is REAL (form supports half-hour ticks).
+ */
+export interface FizrukWellbeingSnapshot {
+  readonly dateKey: string;
+  readonly mood: number | null;
+  readonly energy: number | null;
+  readonly sleepQuality: number | null;
+  readonly sleepHours: number | null;
+  readonly notes: string;
+  readonly updatedAt: string;
+}
+
 // -----------------------------------------------------------------------
 // State shape
 // -----------------------------------------------------------------------
@@ -209,6 +284,14 @@ export interface FizrukDualWriteState {
   readonly monthlyPlan?: FizrukMonthlyPlanSnapshot | null;
   /** Stage 12 / PR #070f-mobile-dualwrite. */
   readonly workoutTemplates?: readonly FizrukWorkoutTemplateSnapshot[];
+  /** Stage 12.5 / PR #070f2-mobile-dualwrite. `null` ≡ "no programs
+   * row exists for the user yet" (cold cache). */
+  readonly programs?: FizrukProgramsSnapshot | null;
+  /** Stage 12.5 / PR #070f2-mobile-dualwrite. `null` ≡ cold cache;
+   * a present-but-empty document is encoded with `dataJson === 'null'`. */
+  readonly planTemplate?: FizrukPlanTemplateSnapshot | null;
+  /** Stage 12.5 / PR #070f2-mobile-dualwrite. */
+  readonly wellbeing?: readonly FizrukWellbeingSnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -274,6 +357,26 @@ export function diffFizrukDualWriteOps(
     (id) => ops.push({ kind: "workout-template-delete", templateId: id }),
   );
 
+  // --- Programs (Stage 12.5) ---
+  diffProgramsOps(prev, next, ops);
+
+  // --- Plan template (Stage 12.5) ---
+  diffPlanTemplateOps(prev, next, ops);
+
+  // --- Wellbeing (Stage 12.5) — composite-PK array ---
+  diffArray(
+    (prev.wellbeing ?? []).map(toWellbeingDiffItem),
+    (next.wellbeing ?? []).map(toWellbeingDiffItem),
+    (e) => e.id,
+    wellbeingChanged,
+    (e) =>
+      ops.push({
+        kind: "wellbeing-upsert",
+        entry: e.snapshot,
+      }),
+    (id) => ops.push({ kind: "wellbeing-delete", dateKey: id }),
+  );
+
   return ops;
 }
 
@@ -298,6 +401,46 @@ function diffMonthlyPlanOps(
   }
   if (prevPlan && prevPlan.dataJson === nextPlan.dataJson) return;
   ops.push({ kind: "monthly-plan-set", monthlyPlan: nextPlan });
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 — programs / plan-template singleton diffs
+// -----------------------------------------------------------------------
+
+function diffProgramsOps(
+  prev: FizrukDualWriteState,
+  next: FizrukDualWriteState,
+  ops: FizrukDualWriteOp[],
+): void {
+  const prevPrograms = prev.programs ?? null;
+  const nextPrograms = next.programs ?? null;
+  // `null` on `next` is treated as cold cache (no-op). A registered
+  // hook that explicitly clears the active program emits a snapshot
+  // with `activeProgramId === null` rather than `programs === null`.
+  if (nextPrograms === null) return;
+  if (
+    prevPrograms &&
+    prevPrograms.activeProgramId === nextPrograms.activeProgramId
+  ) {
+    return;
+  }
+  ops.push({ kind: "programs-set", programs: nextPrograms });
+}
+
+function diffPlanTemplateOps(
+  prev: FizrukDualWriteState,
+  next: FizrukDualWriteState,
+  ops: FizrukDualWriteOp[],
+): void {
+  const prevPlan = prev.planTemplate ?? null;
+  const nextPlan = next.planTemplate ?? null;
+  // `null` on `next` ≡ cold cache; the hook emits an explicit
+  // `dataJson === 'null'` payload when clearing the slot, and that
+  // round-trips through `fizruk_plan_templates.data_json` (default
+  // `'null'`) without triggering a delete op.
+  if (nextPlan === null) return;
+  if (prevPlan && prevPlan.dataJson === nextPlan.dataJson) return;
+  ops.push({ kind: "plan-template-set", planTemplate: nextPlan });
 }
 
 // -----------------------------------------------------------------------
@@ -389,5 +532,39 @@ function workoutTemplateChanged(
     prev.groups !== next.groups ||
     prev.updatedAt !== next.updatedAt ||
     (prev.lastUsedAt ?? null) !== (next.lastUsedAt ?? null)
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 — wellbeing diff helpers
+// -----------------------------------------------------------------------
+
+/** Diff key wrapper so `diffArray` can key wellbeing rows by
+ * `dateKey` while still carrying the full snapshot through to the
+ * upsert op. */
+interface WellbeingDiffItem {
+  readonly id: string;
+  readonly snapshot: FizrukWellbeingSnapshot;
+}
+
+function toWellbeingDiffItem(
+  snapshot: FizrukWellbeingSnapshot,
+): WellbeingDiffItem {
+  return { id: snapshot.dateKey, snapshot };
+}
+
+function wellbeingChanged(
+  prev: WellbeingDiffItem,
+  next: WellbeingDiffItem,
+): boolean {
+  const a = prev.snapshot;
+  const b = next.snapshot;
+  return (
+    a.mood !== b.mood ||
+    a.energy !== b.energy ||
+    a.sleepQuality !== b.sleepQuality ||
+    a.sleepHours !== b.sleepHours ||
+    a.notes !== b.notes ||
+    a.updatedAt !== b.updatedAt
   );
 }

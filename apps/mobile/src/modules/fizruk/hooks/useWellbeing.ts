@@ -18,6 +18,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractWellbeingSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_WELLBEING;
 
@@ -93,6 +99,13 @@ export function useWellbeing(): UseWellbeingResult {
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
       setEntries(next);
+      // Stage 12.5 / PR #070f2-mobile-dualwrite — mirror to SQLite.
+      const baseState =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      triggerFizrukDualWrite(
+        { ...baseState, wellbeing: extractWellbeingSnapshots(prev) },
+        { ...baseState, wellbeing: extractWellbeingSnapshots(next) },
+      );
     },
     [],
   );

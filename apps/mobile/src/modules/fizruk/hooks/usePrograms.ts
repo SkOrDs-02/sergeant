@@ -16,7 +16,7 @@
  * shim around those selectors + MMKV.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   PROGRAM_CATALOGUE,
@@ -31,6 +31,12 @@ import {
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractProgramsSnapshot,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM;
 
@@ -74,6 +80,10 @@ export function usePrograms(
   const [state, setState] = useState<ActiveProgramState>(() =>
     normalizeActiveProgramState(safeReadLS<unknown>(STORAGE_KEY, null)),
   );
+  // Mirror the latest persisted state in a ref so the imperative
+  // setters can build the dual-write `prev → next` pair without
+  // depending on a stale closure of `state`.
+  const stateRef = useRef<ActiveProgramState>(state);
 
   // React to out-of-band writes to the same MMKV slot so the page
   // re-renders if anything else in the app touches this key.
@@ -81,16 +91,30 @@ export function usePrograms(
     const mmkv = _getMMKVInstance();
     const sub = mmkv.addOnValueChangedListener((changedKey) => {
       if (changedKey !== STORAGE_KEY) return;
-      setState(
-        normalizeActiveProgramState(safeReadLS<unknown>(STORAGE_KEY, null)),
+      const fresh = normalizeActiveProgramState(
+        safeReadLS<unknown>(STORAGE_KEY, null),
       );
+      stateRef.current = fresh;
+      setState(fresh);
     });
     return () => sub.remove();
   }, []);
 
   const persist = useCallback((next: ActiveProgramState) => {
+    const prev = stateRef.current;
+    if (prev.activeProgramId === next.activeProgramId) return;
+    stateRef.current = next;
     setState(next);
     safeWriteLS(STORAGE_KEY, next);
+    // Stage 12.5 / PR #070f2-mobile-dualwrite — mirror to SQLite.
+    // The cache-backed state seeds the dual-write input so the diff
+    // sees the full Fizruk shape; only the `programs` slot moves.
+    const baseState =
+      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+    triggerFizrukDualWrite(
+      { ...baseState, programs: extractProgramsSnapshot(prev) },
+      { ...baseState, programs: extractProgramsSnapshot(next) },
+    );
   }, []);
 
   const activateProgram = useCallback(

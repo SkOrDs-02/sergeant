@@ -358,3 +358,358 @@ describe("applyFizrukDualWriteOps — Stage 12 ops (mobile, better-sqlite3)", ()
     expect(rows[0]!.name).toBe("Newer");
   });
 });
+
+describe("applyFizrukDualWriteOps — Stage 12.5 ops (mobile, better-sqlite3)", () => {
+  let db: ReturnType<typeof Database>;
+  let client: SqliteMigrationClient;
+
+  beforeEach(async () => {
+    db = new Database(":memory:");
+    client = syncClient(db);
+    await migrateFizruk(client);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  // --- Programs ---------------------------------------------------------
+
+  it("upserts a programs singleton row with the active id", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "programs-set",
+        programs: { activeProgramId: "prog-1" },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_programs WHERE user_id = ?",
+      [UID],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.active_program_id).toBe("prog-1");
+    expect(rows[0]!.updated_at).toBe(TS1);
+  });
+
+  it("upserts a programs row with null active id (cleared slot)", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "programs-set", programs: { activeProgramId: "prog-1" } }],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "programs-set", programs: { activeProgramId: null } }],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT active_program_id, updated_at FROM fizruk_programs WHERE user_id = ?",
+      [UID],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.active_program_id).toBeNull();
+    expect(rows[0]!.updated_at).toBe(TS2);
+  });
+
+  it("LWW guard: stale programs-set is a no-op", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "programs-set", programs: { activeProgramId: "newer" } }],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "programs-set", programs: { activeProgramId: "stale" } }],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT active_program_id FROM fizruk_programs WHERE user_id = ?",
+      [UID],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.active_program_id).toBe("newer");
+  });
+
+  // --- Plan template ----------------------------------------------------
+
+  it("upserts a plan-template singleton row with a non-null blob", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "plan-template-set",
+        planTemplate: { dataJson: '{"id":"t1","name":"Push"}' },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT data_json, updated_at FROM fizruk_plan_templates WHERE user_id = ?",
+      [UID],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.data_json).toBe('{"id":"t1","name":"Push"}');
+    expect(rows[0]!.updated_at).toBe(TS1);
+  });
+
+  it("upserts a plan-template row with the JSON literal 'null' (cleared slot)", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "plan-template-set",
+          planTemplate: { dataJson: '{"id":"t1"}' },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "plan-template-set", planTemplate: { dataJson: "null" } }],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT data_json, updated_at FROM fizruk_plan_templates WHERE user_id = ?",
+      [UID],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.data_json).toBe("null");
+    expect(rows[0]!.updated_at).toBe(TS2);
+  });
+
+  it("LWW guard: stale plan-template-set is a no-op", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "plan-template-set",
+          planTemplate: { dataJson: '{"k":"newer"}' },
+        },
+      ],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "plan-template-set",
+          planTemplate: { dataJson: '{"k":"stale"}' },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT data_json FROM fizruk_plan_templates WHERE user_id = ?",
+      [UID],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.data_json).toBe('{"k":"newer"}');
+  });
+
+  // --- Wellbeing --------------------------------------------------------
+
+  it("upserts a wellbeing entry keyed by (user_id, date_key)", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "wellbeing-upsert",
+        entry: {
+          dateKey: "2026-05-01",
+          mood: 4,
+          energy: 3,
+          sleepQuality: 4,
+          sleepHours: 7.5,
+          notes: "good day",
+          updatedAt: TS1,
+        },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_wellbeing WHERE user_id = ? AND date_key = ?",
+      [UID, "2026-05-01"],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.mood).toBe(4);
+    expect(rows[0]!.energy).toBe(3);
+    expect(rows[0]!.sleep_quality).toBe(4);
+    expect(rows[0]!.sleep_hours).toBe(7.5);
+    expect(rows[0]!.notes).toBe("good day");
+    expect(rows[0]!.deleted_at).toBeNull();
+  });
+
+  it("upserts a wellbeing entry with all optional fields null", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "wellbeing-upsert",
+        entry: {
+          dateKey: "2026-05-02",
+          mood: null,
+          energy: null,
+          sleepQuality: null,
+          sleepHours: null,
+          notes: "",
+          updatedAt: TS1,
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT mood, energy, sleep_quality, sleep_hours, notes FROM fizruk_wellbeing WHERE user_id = ? AND date_key = ?",
+      [UID, "2026-05-02"],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.mood).toBeNull();
+    expect(rows[0]!.energy).toBeNull();
+    expect(rows[0]!.sleep_quality).toBeNull();
+    expect(rows[0]!.sleep_hours).toBeNull();
+    expect(rows[0]!.notes).toBe("");
+  });
+
+  it("soft-deletes a wellbeing entry by date_key", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "wellbeing-upsert",
+          entry: {
+            dateKey: "2026-05-01",
+            mood: 5,
+            energy: 5,
+            sleepQuality: 5,
+            sleepHours: 8,
+            notes: "best day",
+            updatedAt: TS1,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    const result = await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "wellbeing-delete", dateKey: "2026-05-01" }],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    expect(result.applied).toBe(1);
+
+    const after = client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_wellbeing WHERE user_id = ? AND date_key = ?",
+      [UID, "2026-05-01"],
+    ) as unknown as Record<string, unknown>[];
+    expect(after[0]!.deleted_at).toBe(TS2);
+  });
+
+  it("LWW guard: stale wellbeing upsert does not overwrite newer row", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "wellbeing-upsert",
+          entry: {
+            dateKey: "2026-05-01",
+            mood: 5,
+            energy: 5,
+            sleepQuality: 5,
+            sleepHours: 8,
+            notes: "newer",
+            updatedAt: TS2,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "wellbeing-upsert",
+          entry: {
+            dateKey: "2026-05-01",
+            mood: 1,
+            energy: 1,
+            sleepQuality: 1,
+            sleepHours: 4,
+            notes: "stale",
+            updatedAt: TS1,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT notes, mood FROM fizruk_wellbeing WHERE user_id = ? AND date_key = ?",
+      [UID, "2026-05-01"],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.notes).toBe("newer");
+    expect(rows[0]!.mood).toBe(5);
+  });
+
+  it("upsert after delete clears deleted_at", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "wellbeing-upsert",
+          entry: {
+            dateKey: "2026-05-01",
+            mood: 4,
+            energy: 4,
+            sleepQuality: 4,
+            sleepHours: 8,
+            notes: "first",
+            updatedAt: TS1,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "wellbeing-delete", dateKey: "2026-05-01" }],
+      { userId: UID, clientTs: TS2, logger: silentLogger },
+    );
+    // Re-upsert with newer timestamp must clear deleted_at.
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "wellbeing-upsert",
+          entry: {
+            dateKey: "2026-05-01",
+            mood: 5,
+            energy: 5,
+            sleepQuality: 5,
+            sleepHours: 9,
+            notes: "rehydrated",
+            updatedAt: "2026-05-01T12:00:00.000Z",
+          },
+        },
+      ],
+      {
+        userId: UID,
+        clientTs: "2026-05-01T12:00:00.000Z",
+        logger: silentLogger,
+      },
+    );
+    const rows = client.all<Record<string, unknown>>(
+      "SELECT notes, deleted_at FROM fizruk_wellbeing WHERE user_id = ? AND date_key = ?",
+      [UID, "2026-05-01"],
+    ) as unknown as Record<string, unknown>[];
+    expect(rows[0]!.notes).toBe("rehydrated");
+    expect(rows[0]!.deleted_at).toBeNull();
+  });
+});
