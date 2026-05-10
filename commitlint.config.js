@@ -21,6 +21,7 @@ const SCOPES = [
   "config",
   "db-schema",
   "eslint-plugins",
+  "openclaw-plugin",
   "migrations",
   "agents",
   "deps",
