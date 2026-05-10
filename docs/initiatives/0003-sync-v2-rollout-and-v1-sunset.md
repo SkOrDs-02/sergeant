@@ -1,7 +1,7 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
-> **Status:** In progress (server sunset done; client v1 cleanup in progress)
+> **Last validated:** 2026-05-10 by @Skords-01 (Phase 6 audit refresh — was "Pending", actually all bullets done since #2118 + migration 046; see Phase 6 below). **Next review:** 2026-08-04.
+> **Status:** In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 weeks (rollout — 2 sprints, sunset v1 — третій спринт)
@@ -234,11 +234,37 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
   `/api/sync/push`, `/api/sync/pull`, `/api/sync/push-all`, or
   `/api/sync/pull-all`.
 
-### Phase 6 — Remaining server/data cleanup — Pending
+### Phase 6 — Remaining server/data cleanup — ✅ Done (2026-05-10 audit refresh)
 
 Видалення dead-code (Stage 7 / PR #052):
 
-- `apps/web/src/core/cloudSync/` — 35 файлів, 5+ тисяч LOC.
-- `apps/mobile/src/sync/` — 30 файлів.
-- `apps/server/src/modules/sync/sync.ts` — `syncPush*`/`syncPull*` handler-и.
-- Drop column `module_data` (Stage 7 / PR #051) — окремою міграцією у наступному release-cycle після того, як цей PR landed (per AGENTS.md hard rule #4 — двофазний DROP).
+- `apps/web/src/core/cloudSync/` — ✅ Done. 35 файлів → 2: `hook/useSyncStatus.ts` + `index.ts`. Барелл expose-ить тільки `useSyncStatus` для `OfflineBanner` (читає v2 metrics).
+- `apps/mobile/src/sync/` — ✅ Done. 30 файлів → 3 dirs (`hook/` + `persister/` + `index.ts`).
+- `apps/server/src/modules/sync/sync.ts` — ✅ Done. Файл видалено разом з backing-таблицею (`module_data`). Залишилися sunset/audit модулі: `sunsetGone.ts`, `sunsetHeaders.ts`, `clientSurvey.ts`, `audit.ts`, `syncV2*.ts`.
+- Drop column `module_data` — ✅ Done (migration 046 — Stage 7 final, dropped per AGENTS.md hard rule #4 двофазного DROP).
+
+**Storage roadmap Stage 13 follow-ups (не блокують Phase 6, але закривають audit findings):**
+
+- Audit виявив що OpenAPI registry все ще декларує v1 sync schemas (`SyncPushSchema`, `SyncPullSchema`, `SyncPushAllSchema`) як живі — drop у Stage 13 PR #076.
+- `useSyncStatus.dirtyCount`/`queuedCount` perpetually 0 на web — drop у Stage 13 PR #077.
+- 10 dead `STORAGE_KEYS.{SYNC,MOBILE_SYNC}_*` entries (тільки в тестах) — drop у Stage 13 PR #077.
+- `syncedKV.ts` 0 production imports — drop у Stage 13 PR #076.
+- `SYNC_EVENT`/`SYNC_STATUS_EVENT` — listener живий, диспатчер 0 callsites — drop у Stage 13 PR #076.
+
+### Phase 7 — Sunset routes final removal — Proposed
+
+> Mounted with 410 Gone since T₀ = 2026-05-06. Sunset/audit/headers middleware running on top.
+
+**Exit-criteria для final removal of `/api/sync/{push,pull,pull-all,push-all}` + sunset middleware:**
+
+- `sync_v1_legacy_clients_total` Prometheus counter = 0 для **8 consecutive weeks**, **OR**
+- 2026-08-04 (T₀ + 90 днів) — whichever comes first.
+
+**Що видалити після exit-criteria met:**
+
+- `apps/server/src/modules/sync/sunsetGone.ts` + `sunsetHeaders.ts` + `clientSurvey.ts` (audit lookup лишається — `audit.ts` для read-only access).
+- `apps/server/src/routes/sync.ts:62-66` — drop `respondV1Gone` route handlers.
+- `packages/shared/src/schemas/api.ts:505-552` — drop `SyncModuleEnum`, `SyncPushSchema`, `SyncPullSchema`, `SyncPushAllSchema`, `ClientUpdatedAtSchema` (також у Stage 13 PR #076 scope).
+- `packages/shared/src/openapi/registry.ts:99-110` — drop entries.
+
+**Risk.** Якщо клієнт усе ще встромляє v1 запити після removal — отримує 404 (raw Express), а не 410 Gone. Acceptable після 8-week zero signal або 90-day deprecation window.

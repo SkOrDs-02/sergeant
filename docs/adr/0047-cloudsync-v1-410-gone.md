@@ -1,6 +1,6 @@
 # ADR-0047: CloudSync v1 — T₀ executed (410 Gone)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -110,3 +110,22 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
   push/pull controls. Server-side 410/audit compatibility remains by design.
 - Production env vars (`CLOUDSYNC_V1_GONE_SINCE`, `CLOUDSYNC_V1_SUNSET_AT`) — Дмитро виставить у Railway після merge.
 - Initiative 0003 status оновлений: Phase 5 server-side complete; Phase 6 client cleanup complete; remaining work is server/data cleanup.
+
+## Amendment (2026-05-10): Final removal exit-criteria
+
+`410 Gone` handler + sunset/audit/headers middleware зараз mounted **indefinitely** для legacy-client decay. Original ADR не зафіксував exit-criteria для finального removal, що ризикувало permanent debt. Додаємо:
+
+**Exit-criteria для final removal of `/api/sync/{push,pull,pull-all,push-all}` + `sunsetGone.ts` + `sunsetHeaders.ts` + `clientSurvey.ts`:**
+
+- `sync_v1_legacy_clients_total` Prometheus counter = 0 для **8 consecutive weeks**, **OR**
+- 2026-08-04 (T₀ + 90 днів — стандартний deprecation window) — whichever first.
+
+**Telemetry source.** `clientSurvey.ts` middleware вже tracks unique client agents hitting v1 — використати цю саму metric для zero-signal detection. Якщо у телеметрії з'являється сплеск після 8-week window — продовжити ще 4 тижні і re-evaluate.
+
+**Removal scope** (винесено у Initiative 0003 Phase 7):
+
+- Server: `apps/server/src/modules/sync/sunset*.ts`, `clientSurvey.ts`, `respondV1Gone` route handlers (audit lookup лишається через `audit.ts`).
+- Shared: drop `SyncModuleEnum`, `SyncPushSchema`, `SyncPullSchema`, `SyncPushAllSchema`, `ClientUpdatedAtSchema` (також у Stage 13 PR #076 storage-roadmap scope — раніше можна).
+- OpenAPI: `packages/shared/src/openapi/registry.ts:99-110` entries.
+
+**Risk after removal.** Late v1 client → 404 (raw Express), не 410 Gone. Acceptable trade-off після 8-week zero signal або 90-day deprecation window. Якщо клієнт критичний — додавати explicit `respondV1Gone` route на endpoint without middleware overhead.
