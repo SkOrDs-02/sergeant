@@ -39,12 +39,14 @@ export const STORAGE_KEYS = {
   PWA_PENDING_ACTION: "pwa_pending_action",
   IOS_BANNER_DISMISSED: "ios_install_banner_dismissed",
 
-  // Cloud sync metadata
-  SYNC_VERSIONS: "hub_sync_versions",
-  SYNC_DIRTY_MODULES: "hub_sync_dirty_modules",
-  SYNC_MODULE_MODIFIED: "hub_sync_module_modified",
-  SYNC_OFFLINE_QUEUE: "hub_sync_offline_queue",
-  SYNC_MIGRATION_DONE: "hub_sync_migrated_users",
+  // Cloud sync metadata — 5 web keys dropped in Stage 13 PR #077.
+  // Historically: SYNC_VERSIONS ("hub_sync_versions"),
+  // SYNC_DIRTY_MODULES ("hub_sync_dirty_modules"),
+  // SYNC_MODULE_MODIFIED ("hub_sync_module_modified"),
+  // SYNC_OFFLINE_QUEUE ("hub_sync_offline_queue"),
+  // SYNC_MIGRATION_DONE ("hub_sync_migrated_users").
+  // All were dead since PR #052b (cloudSync v1 engine drop). See
+  // docs/planning/storage-roadmap.md § Stage 13 PR #077.
 
   // ─── Finyk ────────────────────────────────────────────────────────────
   // Mono API cache keys — NOT dual-write-covered, kept as-is.
@@ -165,24 +167,15 @@ export const STORAGE_KEYS = {
   WEEKLY_DIGEST_MONDAY_AUTO: "hub_weekly_digest_monday_auto_v1",
 
   // ─── Mobile: cloud sync metadata ──────────────────────────────────────
-  // Mobile-only sync-subsystem keys. Prefixed with `mobile:` to avoid
-  // colliding with web keys in shared tests / fixtures, and to make it
-  // obvious at a glance that these live in MMKV (not localStorage).
-  // See `docs/mobile/react-native-migration.md` § 6.1.
-  MOBILE_SYNC_VERSIONS: "mobile:sync_versions",
-  MOBILE_SYNC_DIRTY_MODULES: "mobile:sync_dirty_modules",
-  MOBILE_SYNC_MODULE_MODIFIED: "mobile:sync_module_modified",
-  MOBILE_SYNC_OFFLINE_QUEUE: "mobile:sync_offline_queue",
-  /**
-   * PR #040 — mobile dead-letter store. Lives next to
-   * `MOBILE_SYNC_OFFLINE_QUEUE` in MMKV; entries that have failed
-   * `MAX_QUEUE_ATTEMPTS` consecutive replay batches move out of the
-   * live queue into here. Same shape as the web IDB
-   * `dead_letter_queue` row so cross-platform sync diagnostics stay
-   * apples-to-apples.
-   */
-  MOBILE_SYNC_DEAD_LETTER_QUEUE: "mobile:sync_dead_letter_queue",
-  MOBILE_SYNC_MIGRATION_DONE: "mobile:sync_migrated_users",
+  // 6 mobile sync-metadata keys dropped in Stage 13 PR #077.
+  // Historically: MOBILE_SYNC_VERSIONS ("mobile:sync_versions"),
+  // MOBILE_SYNC_DIRTY_MODULES ("mobile:sync_dirty_modules"),
+  // MOBILE_SYNC_MODULE_MODIFIED ("mobile:sync_module_modified"),
+  // MOBILE_SYNC_OFFLINE_QUEUE ("mobile:sync_offline_queue"),
+  // MOBILE_SYNC_DEAD_LETTER_QUEUE ("mobile:sync_dead_letter_queue"),
+  // MOBILE_SYNC_MIGRATION_DONE ("mobile:sync_migrated_users").
+  // All were dead since PR #052b (cloudSync v1 engine drop).
+  // See docs/planning/storage-roadmap.md § Stage 13 PR #077.
   MOBILE_QUERY_CACHE: "mobile:query_cache_v1",
 
   // ─── Web: React Query persisted cache ────────────────────────────────

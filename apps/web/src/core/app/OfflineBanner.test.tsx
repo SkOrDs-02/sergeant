@@ -8,13 +8,11 @@ import { render, cleanup, act } from "@testing-library/react";
 const onlineRef: { value: boolean } = { value: true };
 const retrySyncV2DeadLetters = vi.fn();
 const syncStatusRef: {
-  dirtyCount: number;
-  queuedCount: number;
+  syncV2PendingCount: number;
   syncV2DeadLetterCount: number;
   retrySyncV2DeadLetters: () => Promise<void>;
 } = {
-  dirtyCount: 0,
-  queuedCount: 0,
+  syncV2PendingCount: 0,
   syncV2DeadLetterCount: 0,
   retrySyncV2DeadLetters,
 };
@@ -31,8 +29,7 @@ import { OfflineBanner } from "./OfflineBanner";
 
 beforeEach(() => {
   onlineRef.value = true;
-  syncStatusRef.dirtyCount = 0;
-  syncStatusRef.queuedCount = 0;
+  syncStatusRef.syncV2PendingCount = 0;
   syncStatusRef.syncV2DeadLetterCount = 0;
   retrySyncV2DeadLetters.mockReset();
 });
@@ -41,8 +38,7 @@ afterEach(cleanup);
 describe("OfflineBanner", () => {
   it("renders nothing when online and nothing pending (happy path)", () => {
     onlineRef.value = true;
-    syncStatusRef.dirtyCount = 0;
-    syncStatusRef.queuedCount = 0;
+    syncStatusRef.syncV2PendingCount = 0;
     const { queryByTestId } = render(<OfflineBanner />);
     expect(queryByTestId("offline-banner")).toBeNull();
   });
@@ -61,7 +57,7 @@ describe("OfflineBanner", () => {
 
   it("includes the queue count in the offline label when items are pending", () => {
     onlineRef.value = false;
-    syncStatusRef.queuedCount = 3;
+    syncStatusRef.syncV2PendingCount = 3;
     const { getByTestId } = render(<OfflineBanner />);
     const pill = getByTestId("offline-banner");
     expect(pill.getAttribute("data-state")).toBe("offline");
@@ -72,9 +68,7 @@ describe("OfflineBanner", () => {
 
   it("renders a 'syncing' pill when online with pending changes", () => {
     onlineRef.value = true;
-    // Take the max of dirty/queued — exercise the dirty branch too.
-    syncStatusRef.dirtyCount = 5;
-    syncStatusRef.queuedCount = 2;
+    syncStatusRef.syncV2PendingCount = 5;
     const { getByTestId } = render(<OfflineBanner />);
     const pill = getByTestId("offline-banner");
     expect(pill.getAttribute("data-state")).toBe("syncing");
@@ -94,7 +88,7 @@ describe("OfflineBanner", () => {
     // Reconnect, but with pending queue.
     act(() => {
       onlineRef.value = true;
-      syncStatusRef.queuedCount = 1;
+      syncStatusRef.syncV2PendingCount = 1;
     });
     rerender(<OfflineBanner />);
     expect(queryByTestId("offline-banner")?.getAttribute("data-state")).toBe(
@@ -103,7 +97,7 @@ describe("OfflineBanner", () => {
 
     // Queue drains.
     act(() => {
-      syncStatusRef.queuedCount = 0;
+      syncStatusRef.syncV2PendingCount = 0;
     });
     rerender(<OfflineBanner />);
     expect(queryByTestId("offline-banner")).toBeNull();

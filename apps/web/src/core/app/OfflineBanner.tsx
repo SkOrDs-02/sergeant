@@ -21,13 +21,11 @@ import { messages } from "@shared/i18n/uk";
 export function OfflineBanner() {
   const online = useOnlineStatus();
   const {
-    queuedCount,
-    dirtyCount,
     syncV2PendingCount = 0,
     syncV2DeadLetterCount = 0,
     retrySyncV2DeadLetters,
   } = useSyncStatus();
-  const pending = Math.max(queuedCount, dirtyCount, syncV2PendingCount);
+  const pending = syncV2PendingCount;
 
   if (syncV2DeadLetterCount > 0) {
     return (

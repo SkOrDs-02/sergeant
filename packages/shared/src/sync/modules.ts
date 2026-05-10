@@ -21,9 +21,9 @@
  * lossless from the other platform's perspective).
  *
  * Storage keys themselves live in `../lib/storageKeys`. Platform
- * sync-bookkeeping keys (e.g. `SYNC_VERSIONS`, `MOBILE_SYNC_VERSIONS`)
- * are intentionally NOT in this registry — they are metadata, not
- * payload, and live in each platform's `config.ts`.
+ * sync-bookkeeping keys (formerly `SYNC_VERSIONS`, `MOBILE_SYNC_VERSIONS`
+ * etc. — dropped from `STORAGE_KEYS` in Stage 13 PR #077) were never in
+ * this registry — they were metadata, not payload.
  */
 import { STORAGE_KEYS } from "../lib/storageKeys";
 

@@ -100,20 +100,10 @@ describe("SYNC_MODULES registry", () => {
     ]);
   });
 
-  it("does NOT include sync-bookkeeping keys (those are metadata, not payload)", () => {
-    const trackedValues = ALL_TRACKED_KEYS;
-    expect(trackedValues.has(STORAGE_KEYS.SYNC_VERSIONS)).toBe(false);
-    expect(trackedValues.has(STORAGE_KEYS.SYNC_DIRTY_MODULES)).toBe(false);
-    expect(trackedValues.has(STORAGE_KEYS.SYNC_OFFLINE_QUEUE)).toBe(false);
-    expect(trackedValues.has(STORAGE_KEYS.SYNC_MIGRATION_DONE)).toBe(false);
-    expect(trackedValues.has(STORAGE_KEYS.MOBILE_SYNC_VERSIONS)).toBe(false);
-    expect(trackedValues.has(STORAGE_KEYS.MOBILE_SYNC_DIRTY_MODULES)).toBe(
-      false,
-    );
-    expect(trackedValues.has(STORAGE_KEYS.MOBILE_SYNC_OFFLINE_QUEUE)).toBe(
-      false,
-    );
-  });
+  // Stage 13 PR #077: sync-bookkeeping keys (SYNC_VERSIONS, SYNC_DIRTY_MODULES,
+  // SYNC_OFFLINE_QUEUE, SYNC_MIGRATION_DONE + 6 MOBILE_SYNC_* twins) have been
+  // dropped from STORAGE_KEYS entirely. No "not tracked" assertion needed — the
+  // constants no longer exist.
 
   it("does NOT include the Monobank token (server-only — see PR #002)", () => {
     expect(ALL_TRACKED_KEYS.has(STORAGE_KEYS.FINYK_TOKEN)).toBe(false);
@@ -153,10 +143,10 @@ describe("SYNC_MODULES registry", () => {
       expect(keyToModule("")).toBeNull();
     });
 
-    it("returns null for sync metadata keys (they are not payload)", () => {
-      expect(keyToModule(STORAGE_KEYS.SYNC_VERSIONS)).toBeNull();
-      expect(keyToModule(STORAGE_KEYS.SYNC_DIRTY_MODULES)).toBeNull();
-      expect(keyToModule(STORAGE_KEYS.MOBILE_SYNC_VERSIONS)).toBeNull();
+    it("returns null for former sync metadata keys (dropped in PR #077)", () => {
+      expect(keyToModule("hub_sync_versions")).toBeNull();
+      expect(keyToModule("hub_sync_dirty_modules")).toBeNull();
+      expect(keyToModule("mobile:sync_versions")).toBeNull();
     });
 
     it("ModuleName covers every literal key of SYNC_MODULES", () => {

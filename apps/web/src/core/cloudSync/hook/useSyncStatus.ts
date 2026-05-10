@@ -7,18 +7,11 @@ import { getSyncEngineWriter } from "../../syncEngine/singleton";
  * into React state so `OfflineBanner.tsx` can render a "blocked /
  * syncing / offline" pill without owning the full sync lifecycle.
  *
- * Pre-PR-#052b this hook also read v1's `dirtyModules` map and
- * `offlineQueue` length. Both stores were dropped together with the v1
- * engine in PR #052b — `dirtyCount` and `queuedCount` are kept on the
- * return shape (always `0`) so `OfflineBanner` can stay agnostic about
- * which channel actually fed the value. The historical
- * `hub-cloud-sync-dirty` / `hub-cloud-sync-status` window events were
- * dropped together with the v1 engine in PR #076 — only `online` /
- * `offline` and the v2 status subscription remain.
+ * Stage 13 PR #077: `dirtyCount` and `queuedCount` (always `0` since
+ * the v1 engine drop in PR #052b) removed from the return shape.
+ * `OfflineBanner` now reads `syncV2PendingCount` directly.
  */
 interface SyncStatusState {
-  dirtyCount: number;
-  queuedCount: number;
   isOnline: boolean;
   syncV2PendingCount: number;
   syncV2RejectedCount: number;
@@ -32,8 +25,6 @@ const retrySyncV2DeadLetters = async (): Promise<void> => {
 
 function readBaseStatus(): SyncStatusState {
   return {
-    dirtyCount: 0,
-    queuedCount: 0,
     isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
     syncV2PendingCount: 0,
     syncV2RejectedCount: 0,
