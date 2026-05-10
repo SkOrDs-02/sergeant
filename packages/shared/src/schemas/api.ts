@@ -499,59 +499,16 @@ export const CoachMemoryPostSchema = z.object({
     .optional(),
 });
 
-// ────────────────────── Sync ──────────────────────
-// Повторюємо константу `VALID_MODULES` з `server/modules/sync.js` у zod-enum:
-// єдина SSOT — той Set; тут лише back-compat перелік для 400 з деталями поля.
-const SyncModuleEnum = z.enum([
-  "finyk",
-  "fizruk",
-  "routine",
-  "nutrition",
-  "profile",
-]);
-
-// `clientUpdatedAt` — обов'язковий last-write-wins guard. Без нього
-// `module_data.client_updated_at <= $4` зі сторожовою умовою у
-// `syncPush`/`syncPushAll` завжди матчить (handler підставляв `new Date()`),
-// тому push старого клієнта мовчки перезаписував свіжіший запис з іншого
-// пристрою. Тепер клієнт, що не надсилає поле, отримує 400 замість
-// тихої втрати даних.
-//
-// `.min(1)` / `.finite()` + refine на валідність `new Date(v)` — потрібні,
-// бо інакше `""`, `NaN`, `"garbage"` проходили zod і ставали `Invalid Date`
-// у хендлері: `pg` при серіалізації викидав `RangeError: Invalid time
-// value`, і замість чистого 400 клієнт отримував 500 з внутрішнім стектрейсом.
-const ClientUpdatedAtSchema = z
-  .union([z.string().min(1), z.number().finite(), z.date()])
-  .refine((v) => !Number.isNaN(new Date(v).getTime()), {
-    message: "Invalid date",
-  });
-
-export const SyncPushSchema = z.object({
-  module: SyncModuleEnum,
-  // Клієнт може слати будь-який JSON всередині `data` (зашифрований blob),
-  // тому глибоко не валідуємо — розмір обмежується у handler-і (5 MB).
-  data: z.unknown().refine((v) => v !== undefined && v !== null, {
-    message: "Missing data",
-  }),
-  clientUpdatedAt: ClientUpdatedAtSchema,
-});
-
-export const SyncPullSchema = z.object({
-  module: SyncModuleEnum,
-});
-
-export const SyncPushAllSchema = z.object({
-  modules: z.record(
-    z.string(),
-    z.object({
-      data: z.unknown(),
-      clientUpdatedAt: ClientUpdatedAtSchema,
-    }),
-  ),
-});
-
 // ────────────────────── Sync v2 (op-log) ──────────────────────
+//
+// V1 module-data sync schemas (`SyncPushSchema` / `SyncPullSchema` /
+// `SyncPushAllSchema` + `SyncModuleEnum` + `ClientUpdatedAtSchema`)
+// were dropped together with their OpenAPI registrations in PR #076
+// (storage-roadmap Stage 13). The corresponding routes return 410
+// Gone since 2026-05-06 (T₀ in ADR-0047) and the schemas had no
+// other callers, so the sunset middleware no longer needs them for
+// payload validation.
+//
 // Stage 2 / PR #021 із `docs/planning/storage-roadmap.md`. v2 — per-row
 // op-log замість whole-blob LWW v1. Ці схеми валідують HTTP-payload
 // до того, як handler звертається до `sync_op_log`. Серверний whitelist

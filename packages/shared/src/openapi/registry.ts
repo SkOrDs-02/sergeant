@@ -96,18 +96,11 @@ const CoachMemoryPost = schemas.CoachMemoryPostSchema.meta({
   id: "CoachMemoryPost",
   description: "POST /api/coach/memory.",
 });
-const SyncPush = schemas.SyncPushSchema.meta({
-  id: "SyncPush",
-  description: "POST /api/sync/push (per-module LWW).",
-});
-const SyncPull = schemas.SyncPullSchema.meta({
-  id: "SyncPull",
-  description: "POST /api/sync/pull (per-module).",
-});
-const SyncPushAll = schemas.SyncPushAllSchema.meta({
-  id: "SyncPushAll",
-  description: "POST /api/sync/push-all (bulk).",
-});
+// V1 sync component registrations (`SyncPush` / `SyncPull` /
+// `SyncPushAll`) were dropped in PR #076 (storage-roadmap Stage 13)
+// — the underlying routes return 410 Gone since 2026-05-06
+// (ADR-0047) so advertising the schemas as live endpoint payloads
+// was misleading.
 const PrivatQuery = schemas.PrivatQuerySchema.meta({
   id: "PrivatQuery",
   description: "Query для GET /api/privat.",
@@ -282,9 +275,6 @@ export const namedSchemas = {
   WeeklyDigest,
   CoachInsight,
   CoachMemoryPost,
-  SyncPush,
-  SyncPull,
-  SyncPushAll,
   PrivatQuery,
   PushSubscribe,
   PushUnsubscribe,
