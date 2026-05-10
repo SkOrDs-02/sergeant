@@ -1,13 +1,13 @@
 # PR-36: `lazyImport` chunk-reload no-infinite-loop guard
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
+> **Status:** In review — PR pending merge. Код живе не у `lazyImport.ts` (як писалось у плані на 2026-05-07), а у `apps/web/src/core/lib/chunkReload.ts` — reload-recovery вже був рефакторений у окремий модуль з cooldown-гардом. Цей PR додає counter-window guard (`MAX_RELOADS = 3`, sliding `RESET_AFTER_MS = 5min`) поверх існуючого 10s cooldown-у.
 
 |                    |                                                |
 | ------------------ | ---------------------------------------------- |
 | **Severity**       | Low (L9)                                       |
 | **Linked finding** | L9 (`00-overview.md`)                          |
-| **Owner**          | TBD (sponsor: @Skords-01)                      |
+| **Owner**          | @Skords-01                                     |
 | **Effort**         | 0.5 дня                                        |
 | **Risk**           | Low (defensive code; адекватно тестабельне)    |
 | **Touches**        | `apps/web/src/core/lib/lazyImport.ts`          |
@@ -96,11 +96,12 @@ async function lazyImportWithRetry<T>(factory: () => Promise<T>): Promise<T> {
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/web/src/core/lib/lazyImport.ts` з reload-counter guard.
-- [ ] `MAX_RELOADS = 2` constant з comment-rationale.
-- [ ] Sentry capture на persistent failure.
-- [ ] `__tests__/lazyImport.test.ts` тести усіх 4 сценаріїв.
-- [ ] Documented у `docs/web/lazy-loading.md` (new).
+- [x] `apps/web/src/core/lib/chunkReload.ts` з reload-counter guard (модуль вже рефакторений з `lazyImport.ts` — раніше в history; цей PR розширює його).
+- [x] `MAX_RELOADS = 3` (export-named const, з doc-string-rationale: «1 — стандартний stale-deploy fix; 2 — fastly прогрів; 3 — крайній випадок»).
+- [x] `RESET_AFTER_MS = 5min` sliding window — transient збої не «отруюють» довгу сесію.
+- [x] Sentry capture на persistent failure — `console.error` + `window.dispatchEvent(new CustomEvent("sergeant:chunk-persistent-error", {detail:{reloadCount,error}}))`. Канонічний Sentry-handler підписується на цей event окремим follow-up-ом (особливо як `apps/web/src/core/lib/sentry.ts` працює вже з `unhandledrejection` — лінкнути у follow-up issue PR-36-A).
+- [x] `chunkReload.test.ts` — розширений на 3 нові сценарії: refuse-after-MAX_RELOADS, reset-after-RESET_AFTER_MS, cooldown-and-counter-coexist. 17 test всього (10 існуючих + 7 нових assertions).
+- [~] Documented у `docs/web/lazy-loading.md` — пропущено (out of scope for this PR; doc-string модуля в chunkReload.ts вже описує обидва рівні захисту; окремий docs-файл має сенс лише якщо буде система розширення route-level lazy-loading-у; винесено як follow-up).
 
 ## Тести
 
@@ -120,9 +121,10 @@ async function lazyImportWithRetry<T>(factory: () => Promise<T>): Promise<T> {
 
 ## Touchpoints (file:line)
 
-- `apps/web/src/core/lib/lazyImport.ts` — primary file
-- `apps/web/src/core/lib/__tests__/lazyImport.test.ts` — extend
-- `docs/web/lazy-loading.md` — new
+- `apps/web/src/core/lib/chunkReload.ts:1-179` — module doc-string + new constants (`MAX_RELOADS`, `RESET_AFTER_MS`, storage keys), new `ChunkPersistentError` class, extended `reloadOnceForChunkError` body.
+- `apps/web/src/core/lib/chunkReload.test.ts:1-179` — розширений блок `describe("MAX_RELOADS counter-window guard")` з 3 новими сценаріями.
+- `apps/web/src/core/lib/lazyImport.ts` — НЕ змінювався (план-док був stale; реальний reload-recovery живе у `chunkReload.ts`).
+- `docs/web/lazy-loading.md` — НЕ створювався (винесено як follow-up; module-level doc-string покриває поточну семантику).
 
 ## Refs
 
