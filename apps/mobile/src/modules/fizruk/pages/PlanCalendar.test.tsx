@@ -13,16 +13,39 @@
 
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain/constants";
-import {
-  serializeMonthlyPlanState,
-  type PlannedWorkoutLike,
-} from "@sergeant/fizruk-domain/domain/plan/index";
+import { type PlannedWorkoutLike } from "@sergeant/fizruk-domain/domain/plan/index";
 import type { WorkoutTemplate } from "@sergeant/fizruk-domain/domain/types";
 
 import { _getMMKVInstance } from "@/lib/storage";
 
+import {
+  clearFizrukSqliteCache,
+  getCachedFizrukSqliteState,
+  type CachedMonthlyPlanState,
+} from "../lib/sqliteReader";
+import { __resetFizrukSqliteReadGateForTests } from "../lib/sqliteReadGate";
+
 import { PlanCalendar } from "./PlanCalendar";
+
+/**
+ * Stage 12 / PR #057f-tombstone-mobile-stage12 — force the SQLite
+ * cache into a warm state with the given monthly-plan singleton. The
+ * `useMonthlyPlan` hook reads from this cache (no MMKV reads/writes
+ * any more), so seeding it is how we set up plan fixtures in tests.
+ */
+function seedMonthlyPlanCache(plan: CachedMonthlyPlanState | null): void {
+  const live = getCachedFizrukSqliteState() as {
+    workouts: unknown[];
+    customExercises: unknown[];
+    measurements: unknown[];
+    dailyLog: unknown[];
+    monthlyPlan: CachedMonthlyPlanState | null;
+    workoutTemplates: unknown[];
+    refreshedAt: string | null;
+  };
+  live.monthlyPlan = plan;
+  live.refreshedAt = new Date().toISOString();
+}
 
 jest.mock("expo-router", () => ({
   router: { push: jest.fn() },
@@ -85,6 +108,8 @@ const SAMPLE_WORKOUTS: PlannedWorkoutLike[] = [
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearFizrukSqliteCache();
+  __resetFizrukSqliteReadGateForTests();
   (router.push as jest.Mock).mockClear();
 });
 
@@ -132,11 +157,12 @@ describe("PlanCalendar (mobile)", () => {
 
     fireEvent.press(getByText("Груди + трицепс"));
 
-    // The template id for 2025-03-15 was written to MMKV.
-    const raw = _getMMKVInstance().getString(MONTHLY_PLAN_STORAGE_KEY);
-    expect(raw).toBeTruthy();
-    const parsed = JSON.parse(raw || "{}");
-    expect(parsed.days?.["2025-03-15"]?.templateId).toBe("tpl_a");
+    // Stage 12 / PR #057f-tombstone-mobile-stage12: the hook no longer
+    // writes to MMKV — persistence flows through the dual-write
+    // pipeline. Asserting the rendered cell label is the canonical
+    // behavioural check (was a template assigned to 2025-03-15?).
+    fireEvent.press(getByLabelText(/^День 15/));
+    expect(getByText("Груди + трицепс")).toBeTruthy();
   });
 
   it("navigates between months via the ‹ / › chevrons", () => {
@@ -261,16 +287,16 @@ describe("PlanCalendar (mobile)", () => {
     });
   });
 
-  it("preserves state loaded from MMKV on mount", () => {
-    _getMMKVInstance().set(
-      MONTHLY_PLAN_STORAGE_KEY,
-      serializeMonthlyPlanState({
-        reminderEnabled: true,
-        reminderHour: 18,
-        reminderMinute: 0,
-        days: { "2025-03-15": { templateId: "tpl_b" } },
-      }),
-    );
+  it("preserves state loaded from the SQLite cache on mount", () => {
+    // Stage 12 / PR #057f-tombstone-mobile-stage12: the hook reads
+    // from the SQLite warm cache. Seeding it here is the post-tombstone
+    // analogue of the previous "seed MMKV before mount" pattern.
+    seedMonthlyPlanCache({
+      reminderEnabled: true,
+      reminderHour: 18,
+      reminderMinute: 0,
+      days: { "2025-03-15": { templateId: "tpl_b" } },
+    });
 
     const { getByText } = render(
       <PlanCalendar

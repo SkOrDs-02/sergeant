@@ -1,13 +1,23 @@
 /**
  * Boot-time residual-import helper for the mobile Fizruk MMKV keys.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`
- * (mobile parity for `apps/web/src/modules/fizruk/lib/residualImport.ts`).
- * Reads any leftover values from the now-deprecated MMKV keys
- * (`fizruk_workouts_v1`, `fizruk_custom_exercises_v1`,
- * `fizruk_measurements_v1`), imports them into the local `fizruk_*`
- * SQLite tables (idempotent + LWW-safe), and then deletes the MMKV
- * entries. Subsequent boots no-op because the MMKV keys are gone.
+ * Stage 8 PR #057f-tombstone (workouts / custom-exercises /
+ * measurements) and Stage 12 PR #057f-tombstone-mobile-stage12
+ * (daily-log / monthly-plan / workout-templates) of
+ * `docs/planning/storage-roadmap.md`.
+ *
+ * Reads any leftover values from the now-deprecated MMKV keys,
+ * imports them into the local `fizruk_*` SQLite tables (idempotent +
+ * LWW-safe), and then deletes the MMKV entries. Subsequent boots
+ * no-op because the MMKV keys are gone.
+ *
+ * MMKV keys covered:
+ *   - `fizruk_workouts_v1`
+ *   - `fizruk_custom_exercises_v1`
+ *   - `fizruk_measurements_v1`
+ *   - `fizruk_daily_log_v1`              ← Stage 12
+ *   - `fizruk_monthly_plan_v1`           ← Stage 12
+ *   - `fizruk_workout_templates_v1`      ← Stage 12
  *
  * The import uses a deliberately stale `clientTs` (epoch zero) so the
  * adapter's LWW guard always lets existing SQLite rows win — we never
@@ -16,8 +26,14 @@
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { STORAGE_KEYS } from "@sergeant/shared";
+import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain/constants";
+import {
+  normalizeMonthlyPlanState,
+  type MonthlyPlanState,
+} from "@sergeant/fizruk-domain/domain/plan/index";
 import type {
   ChecklistItem,
+  DailyLogEntry,
   FizrukData,
   MeasurementEntry,
   Workout,
@@ -32,12 +48,15 @@ import { applyFizrukDualWriteOps } from "./dualWrite/adapter";
 import {
   diffFizrukDualWriteOps,
   type FizrukCustomExerciseSnapshot,
+  type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
+  type FizrukWorkoutTemplateSnapshot,
 } from "./dualWrite/diff";
+import { extractMonthlyPlanSnapshot } from "./fizrukDualWriteState";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
@@ -47,7 +66,22 @@ const EMPTY_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
   measurements: [],
+  dailyLog: [],
+  monthlyPlan: null,
+  workoutTemplates: [],
 };
+
+/** Hook-side workout-template shape (mirror of `WorkoutTemplate` in
+ *  `apps/mobile/src/modules/fizruk/hooks/useWorkoutTemplates.ts`). Kept
+ *  local so this module stays hook-free. */
+interface ResidualWorkoutTemplate {
+  id?: string | null;
+  name?: string | null;
+  exerciseIds?: readonly unknown[];
+  groups?: readonly unknown[];
+  updatedAt?: string | null;
+  lastUsedAt?: string | null;
+}
 
 export interface ResidualImportResult {
   /** `true` when at least one MMKV key had data that produced ops. */
@@ -68,9 +102,18 @@ export async function importFizrukResidualFromMmkv(
   const workouts = readWorkoutsFromMmkv();
   const customExercises = readCustomExercisesFromMmkv();
   const measurements = readMeasurementsFromMmkv();
+  // Stage 12 / PR #057f-tombstone-mobile-stage12 -----------------------
+  const dailyLog = readDailyLogFromMmkv();
+  const monthlyPlan = readMonthlyPlanFromMmkv();
+  const workoutTemplates = readWorkoutTemplatesFromMmkv();
 
   const hasAny =
-    workouts !== null || customExercises !== null || measurements !== null;
+    workouts !== null ||
+    customExercises !== null ||
+    measurements !== null ||
+    dailyLog !== null ||
+    monthlyPlan !== null ||
+    workoutTemplates !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   const next: FizrukDualWriteState = {
@@ -79,6 +122,11 @@ export async function importFizrukResidualFromMmkv(
       ? extractCustomExerciseSnapshots(customExercises)
       : [],
     measurements: measurements ? extractMeasurementSnapshots(measurements) : [],
+    dailyLog: dailyLog ? extractDailyLogSnapshots(dailyLog) : [],
+    monthlyPlan: monthlyPlan ? extractMonthlyPlanSnapshot(monthlyPlan) : null,
+    workoutTemplates: workoutTemplates
+      ? extractWorkoutTemplateSnapshots(workoutTemplates)
+      : [],
   };
 
   const ops = diffFizrukDualWriteOps(EMPTY_STATE, next);
@@ -104,6 +152,10 @@ export async function importFizrukResidualFromMmkv(
   safeRemoveLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
   safeRemoveLS(STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES);
   safeRemoveLS(STORAGE_KEYS.FIZRUK_MEASUREMENTS);
+  // Stage 12 / PR #057f-tombstone-mobile-stage12 -----------------------
+  safeRemoveLS(STORAGE_KEYS.FIZRUK_DAILY_LOG);
+  safeRemoveLS(MONTHLY_PLAN_STORAGE_KEY);
+  safeRemoveLS(STORAGE_KEYS.FIZRUK_TEMPLATES);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -143,6 +195,39 @@ function readMeasurementsFromMmkv(): MeasurementEntry[] | null {
     const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_MEASUREMENTS, null);
     if (raw === null || raw === undefined) return null;
     return Array.isArray(raw) ? (raw as MeasurementEntry[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+// Stage 12 / PR #057f-tombstone-mobile-stage12 -------------------------
+
+function readDailyLogFromMmkv(): DailyLogEntry[] | null {
+  try {
+    const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_DAILY_LOG, null);
+    if (raw === null || raw === undefined) return null;
+    return Array.isArray(raw) ? (raw as DailyLogEntry[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+function readMonthlyPlanFromMmkv(): MonthlyPlanState | null {
+  try {
+    const raw = safeReadLS<unknown>(MONTHLY_PLAN_STORAGE_KEY, null);
+    if (raw === null || raw === undefined) return null;
+    // Always normalise so partial / legacy payloads heal centrally.
+    return normalizeMonthlyPlanState(raw);
+  } catch {
+    return null;
+  }
+}
+
+function readWorkoutTemplatesFromMmkv(): ResidualWorkoutTemplate[] | null {
+  try {
+    const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_TEMPLATES, null);
+    if (raw === null || raw === undefined) return null;
+    return Array.isArray(raw) ? (raw as ResidualWorkoutTemplate[]) : [];
   } catch {
     return null;
   }
@@ -274,6 +359,57 @@ function toWellbeingSnapshot(w: WorkoutWellbeing): {
   if (w.energy !== undefined) out.energy = w.energy;
   if (w.mood !== undefined) out.mood = w.mood;
   return out;
+}
+
+// Stage 12 / PR #057f-tombstone-mobile-stage12 extractors --------------
+
+function extractDailyLogSnapshots(
+  entries: readonly DailyLogEntry[],
+): FizrukDailyLogSnapshot[] {
+  const out: FizrukDailyLogSnapshot[] = [];
+  for (const e of entries) {
+    if (!e || typeof e !== "object" || !e.id || !e.at) continue;
+    out.push({
+      id: String(e.id),
+      at: String(e.at),
+      weightKg: numericOrNull(e.weightKg),
+      sleepHours: numericOrNull(e.sleepHours),
+      energyLevel: numericOrNull(e.energyLevel),
+      mood: numericOrNull(e.mood),
+      note: typeof e.note === "string" ? e.note : "",
+    });
+  }
+  return out;
+}
+
+function extractWorkoutTemplateSnapshots(
+  templates: readonly ResidualWorkoutTemplate[],
+): FizrukWorkoutTemplateSnapshot[] {
+  const out: FizrukWorkoutTemplateSnapshot[] = [];
+  for (const t of templates) {
+    if (!t || typeof t !== "object" || !t.id) continue;
+    const exerciseIds: string[] = Array.isArray(t.exerciseIds)
+      ? (t.exerciseIds as readonly unknown[]).filter(
+          (id: unknown): id is string => typeof id === "string",
+        )
+      : [];
+    const groups = Array.isArray(t.groups) ? [...t.groups] : [];
+    out.push({
+      id: String(t.id),
+      name: typeof t.name === "string" ? t.name : "",
+      exerciseIds,
+      groups,
+      updatedAt: typeof t.updatedAt === "string" ? t.updatedAt : "",
+      lastUsedAt: typeof t.lastUsedAt === "string" ? t.lastUsedAt : null,
+    });
+  }
+  return out;
+}
+
+function numericOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 // Internal exports for tests.

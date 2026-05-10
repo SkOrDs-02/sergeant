@@ -1,33 +1,33 @@
 /**
  * `useWorkoutTemplates` — mobile hook for Fizruk workout templates.
  *
- * Persists under `STORAGE_KEYS.FIZRUK_TEMPLATES`
- * (`fizruk_workout_templates_v1`), the same slot the web hook
- * `apps/web/src/modules/fizruk/hooks/useWorkoutTemplates.ts` writes to.
+ * Stage 12 / PR #057f-tombstone-mobile-stage12 of
+ * `docs/planning/storage-roadmap.md` (mobile parity for Stage 8
+ * `#057f-tombstone` extended to the new Stage 12
+ * workout-templates slot). Reads from the SQLite warm cache
+ * (`getCachedFizrukSqliteState`) and persists exclusively through
+ * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy
+ * MMKV slot `STORAGE_KEYS.FIZRUK_TEMPLATES` is drained on first
+ * boot via `importFizrukResidualFromMmkv` and removed.
  *
  * Templates carry `{ id, name, exerciseIds, groups, updatedAt,
- * lastUsedAt? }`. Mutators no-op (skip the MMKV write) when invoked
- * with an unknown id (`update`, `remove`, `markUsed`) or when restoring
- * a template whose id is already present.
- *
- * Stage 12 / PR #070f-mobile-dualwrite — wires the dual-write
- * trigger so each MMKV write is mirrored into local SQLite via
- * `triggerFizrukDualWrite`. Fire-and-forget; the trigger is a
- * no-op when the dual-write context is not registered (pre-auth).
+ * lastUsedAt? }`. Mutators are no-op-guarded: passing an unknown id
+ * to `update` / `remove` / `markUsed` keeps state referentially
+ * identical and skips the dual-write trigger entirely.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { triggerFizrukDualWrite } from "../lib/dualWrite";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWorkoutTemplateSnapshots,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
-
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_TEMPLATES;
+import {
+  getCachedFizrukSqliteState,
+  type CachedWorkoutTemplate,
+} from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface WorkoutTemplateGroup {
   id: string;
@@ -47,9 +47,37 @@ function uid(): string {
   return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function readList(): WorkoutTemplate[] {
-  const raw = safeReadLS<unknown>(STORAGE_KEY, []);
-  return Array.isArray(raw) ? (raw as WorkoutTemplate[]) : [];
+/** Project a cache row onto the loose hook shape. */
+function projectFromCache(row: CachedWorkoutTemplate): WorkoutTemplate {
+  const out: WorkoutTemplate = {
+    id: row.id,
+    name: row.name,
+    exerciseIds: [...row.exerciseIds],
+    groups: Array.isArray(row.groups)
+      ? row.groups
+          .filter(
+            (g): g is { id: unknown; itemIds: unknown } =>
+              !!g && typeof g === "object",
+          )
+          .map((g) => ({
+            id: typeof g.id === "string" ? g.id : "",
+            itemIds: Array.isArray(g.itemIds)
+              ? (g.itemIds as readonly unknown[]).filter(
+                  (x: unknown): x is string => typeof x === "string",
+                )
+              : [],
+          }))
+      : [],
+    updatedAt: row.updatedAt,
+  };
+  if (row.lastUsedAt) out.lastUsedAt = row.lastUsedAt;
+  return out;
+}
+
+function readInitialFromCache(): WorkoutTemplate[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return [];
+  return cache.workoutTemplates.map(projectFromCache);
 }
 
 export interface UseWorkoutTemplatesResult {
@@ -67,20 +95,21 @@ export interface UseWorkoutTemplatesResult {
 }
 
 export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>(readList);
+  const [templates, setTemplates] =
+    useState<WorkoutTemplate[]>(readInitialFromCache);
   // See `useFizrukWorkouts` for why we mirror state in a ref.
   const stateRef = useRef<WorkoutTemplate[]>(templates);
 
+  // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay templates
+  // from the SQLite warm cache once it's available.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey !== STORAGE_KEY) return;
-      const fresh = readList();
-      stateRef.current = fresh;
-      setTemplates(fresh);
-    });
-    return () => sub.remove();
-  }, []);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    const overlay = cache.workoutTemplates.map(projectFromCache);
+    stateRef.current = overlay;
+    setTemplates(overlay);
+  }, [sqliteCacheTick]);
 
   const persist = useCallback(
     (updater: (prev: WorkoutTemplate[]) => WorkoutTemplate[]) => {
@@ -88,10 +117,7 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
       const next = updater(prev);
       if (next === prev) return;
       stateRef.current = next;
-      safeWriteLS(STORAGE_KEY, next);
-      setTemplates(next);
-      // Stage 12 / PR #070f-mobile-dualwrite — mirror MMKV write into
-      // SQLite. Fire-and-forget; never propagate trigger errors.
+
       const prevDualWrite =
         peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
       const nextDualWrite = {
@@ -101,8 +127,10 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
       try {
         triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
       } catch {
-        /* trigger is fire-and-forget */
+        /* trigger is fire-and-forget — never propagate */
       }
+
+      setTemplates(next);
     },
     [],
   );

@@ -7,8 +7,7 @@
  */
 import { renderHook } from "@testing-library/react-native";
 
-import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { _getMMKVInstance } from "@/lib/storage";
 
 import type { Workout } from "@sergeant/fizruk-domain";
 
@@ -104,19 +103,22 @@ describe("useRecovery", () => {
   });
 
   it("wellbeing multiplier reflects poor sleep", () => {
-    const dailyLog = [
-      {
-        id: "dl1",
-        at: new Date().toISOString(),
-        sleepHours: 4,
-        energyLevel: 2,
-        weightKg: null,
-        mood: null,
-        note: "",
-      },
-    ];
-
-    safeWriteLS(STORAGE_KEYS.FIZRUK_DAILY_LOG, dailyLog);
+    // Stage 12 / PR #057f-tombstone-mobile-stage12: `useDailyLog`
+    // reads from the SQLite warm cache, not MMKV. Seed the cache
+    // directly the same way the workout overlay does above.
+    __setFizrukSqliteCacheForTests({
+      dailyLog: [
+        {
+          id: "dl1",
+          at: new Date().toISOString(),
+          sleepHours: 4,
+          energyLevel: 2,
+          weightKg: null,
+          mood: null,
+          note: "",
+        },
+      ],
+    });
 
     const { result } = renderHook(() => useRecovery());
 

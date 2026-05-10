@@ -26,16 +26,18 @@
  *    `reminderMinute`) — the hook surfaces the state but the UI lands
  *    with the Fizruk settings PR.
  *
- * Workouts / templates are read directly from MMKV under the shared
- * fizruk storage keys (`WORKOUTS_STORAGE_KEY`, `TEMPLATES_STORAGE_KEY`)
- * — there is no `useWorkouts` / `useWorkoutTemplates` hook on mobile
- * yet and landing them here would balloon the PR. The aggregation
- * remains pure (`aggregatePlannedByDate` from `@sergeant/fizruk-domain`)
- * so swapping to a typed hook later is a one-line change. Imports use
- * the package's subpath entrypoints (`/constants`, `/domain/plan/index`,
- * `/domain/types`) to avoid pulling in the non-strict `lib/*` JS files
- * through the top-level barrel — same pattern as `Workouts.tsx` /
- * `Atlas.tsx`.
+ * Workouts are still read directly from MMKV under the shared fizruk
+ * `WORKOUTS_STORAGE_KEY` because the workouts overlay path on mobile
+ * uses the `useFizrukWorkouts` hook from a different surface. Workout
+ * templates were migrated to SQLite in Stage 12 PR
+ * #057f-tombstone-mobile-stage12 — reads now flow through the
+ * `useWorkoutTemplates` hook (which overlays from the SQLite warm
+ * cache). The aggregation remains pure (`aggregatePlannedByDate` from
+ * `@sergeant/fizruk-domain`) so swapping to a typed hook later is a
+ * one-line change. Imports use the package's subpath entrypoints
+ * (`/constants`, `/domain/plan/index`, `/domain/types`) to avoid
+ * pulling in the non-strict `lib/*` JS files through the top-level
+ * barrel — same pattern as `Workouts.tsx` / `Atlas.tsx`.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -43,10 +45,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-import {
-  TEMPLATES_STORAGE_KEY,
-  WORKOUTS_STORAGE_KEY,
-} from "@sergeant/fizruk-domain/constants";
+import { WORKOUTS_STORAGE_KEY } from "@sergeant/fizruk-domain/constants";
 import {
   aggregatePlannedByDate,
   computeRecoveryForecast,
@@ -79,34 +78,9 @@ import { _getMMKVInstance, safeReadLS } from "@/lib/storage";
 
 import { fizrukRouteFor } from "../shell/fizrukRoute";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
+import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"] as const;
-
-/** Narrow the raw MMKV payload into `WorkoutTemplate[]`. */
-function readTemplates(): WorkoutTemplate[] {
-  const raw = safeReadLS<unknown>(TEMPLATES_STORAGE_KEY, []);
-  if (!Array.isArray(raw)) return [];
-  const out: WorkoutTemplate[] = [];
-  for (const entry of raw) {
-    if (!entry || typeof entry !== "object") continue;
-    const { id, name, exerciseIds, groups, updatedAt } = entry as Partial<
-      Record<keyof WorkoutTemplate, unknown>
-    >;
-    if (typeof id !== "string" || typeof name !== "string") continue;
-    out.push({
-      id,
-      name,
-      exerciseIds: Array.isArray(exerciseIds)
-        ? exerciseIds.filter((x): x is string => typeof x === "string")
-        : [],
-      groups: Array.isArray(groups)
-        ? (groups as WorkoutTemplate["groups"])
-        : [],
-      updatedAt: typeof updatedAt === "string" ? updatedAt : "",
-    });
-  }
-  return out;
-}
 
 /** Narrow the raw MMKV payload into `PlannedWorkoutLike[]`. */
 function readWorkouts(): PlannedWorkoutLike[] {
@@ -240,13 +214,22 @@ export function PlanCalendar({
 
   const { days, getTemplateForDate, setDayTemplate } = useMonthlyPlan();
 
-  // Templates + workouts are read synchronously from MMKV (no async
-  // network hop). We re-read on mount + whenever the MMKV key changes
-  // so edits from the Workouts screen reflect here without a full
-  // navigation cycle.
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>(() =>
-    injectedTemplates ? [...injectedTemplates] : readTemplates(),
-  );
+  // Stage 12 / PR #057f-tombstone-mobile-stage12: workout templates
+  // come from the `useWorkoutTemplates` hook (SQLite cache + dual-write
+  // overlay). When the screen is rendered with explicitly injected
+  // templates we still respect them (test/preview path).
+  const hookTemplates = useWorkoutTemplates().templates;
+  const templates = useMemo<WorkoutTemplate[]>(() => {
+    if (injectedTemplates) return [...injectedTemplates];
+    return hookTemplates as readonly WorkoutTemplate[] as WorkoutTemplate[];
+  }, [injectedTemplates, hookTemplates]);
+
+  // Workouts + daily-log are still read synchronously from MMKV here:
+  // workouts have their own SQLite overlay via `useFizrukWorkouts`
+  // surfaces elsewhere, and wiring them through this screen is out of
+  // scope for the tombstone PR. We re-read on mount + whenever the MMKV
+  // key changes so edits from the Workouts screen reflect here without
+  // a full navigation cycle.
   const [workouts, setWorkouts] = useState<PlannedWorkoutLike[]>(() =>
     injectedWorkouts ? [...injectedWorkouts] : readWorkouts(),
   );
@@ -255,19 +238,17 @@ export function PlanCalendar({
   >(() => (injectedDailyLog ? [...injectedDailyLog] : readDailyLog()));
 
   useEffect(() => {
-    if (injectedTemplates && injectedWorkouts && injectedDailyLog) return;
+    if (injectedWorkouts && injectedDailyLog) return;
     const mmkv = _getMMKVInstance();
     const sub = mmkv.addOnValueChangedListener((key) => {
-      if (!injectedTemplates && key === TEMPLATES_STORAGE_KEY) {
-        setTemplates(readTemplates());
-      } else if (!injectedWorkouts && key === WORKOUTS_STORAGE_KEY) {
+      if (!injectedWorkouts && key === WORKOUTS_STORAGE_KEY) {
         setWorkouts(readWorkouts());
       } else if (!injectedDailyLog && key === STORAGE_KEYS.FIZRUK_WELLBEING) {
         setDailyLog(readDailyLog());
       }
     });
     return () => sub.remove();
-  }, [injectedTemplates, injectedWorkouts, injectedDailyLog]);
+  }, [injectedWorkouts, injectedDailyLog]);
 
   const plannedByDate = useMemo(
     () => aggregatePlannedByDate(workouts),

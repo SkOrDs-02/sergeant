@@ -3101,7 +3101,7 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
 
 [#2274]: https://github.com/Skords-01/Sergeant/pull/2274
 
-##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 🚧 IN PROGRESS (3/4)
+##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** ✅ LANDED (4/4) for daily-log / monthly-plan / workout-templates
 
 > **Why this is its own stage:** найбільший залишковий schema gap у tail.
 > Поточний Fizruk dual-write covers лише workouts / custom-exercises /
@@ -3157,8 +3157,25 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
     `triggerFizrukDualWrite` після кожного MMKV write. Test rig:
     `apps/mobile/src/modules/fizruk/lib/dualWrite/__tests__/{diff,adapter,parity,integration}.test.ts`
     (Jest + `better-sqlite3`, mirror Stage 10 routine pattern).
-- **PR #057f-tombstone-mobile** 📋 PROPOSED — drop MMKV writes у 7 hooks +
-  add residual-import drain.
+- **PR #057f-tombstone-mobile-stage12** ✅ LANDED — drop MMKV writes
+  у 3 hooks (`useDailyLog`, `useMonthlyPlan`, `useWorkoutTemplates`)
+  shipped у `#070f-mobile-dualwrite`. Hooks тепер читають з
+  `getCachedFizrukSqliteState()` (cold-cache safe) + subscribe до
+  `useFizrukSqliteReadTick`; persist веде через `triggerFizrukDualWrite`
+  only (no `safeWriteLS`). `apps/mobile/.../residualImport.ts`
+  розширений з 3 → 6 entity classes (драйнить `FIZRUK_DAILY_LOG` /
+  `MONTHLY_PLAN_STORAGE_KEY` / `FIZRUK_TEMPLATES` на boot з
+  epoch-zero `clientTs`, LWW guard завжди дає SQLite перемогти).
+  `STORAGE_KEYS.FIZRUK_DAILY_LOG`, `STORAGE_KEYS.FIZRUK_TEMPLATES`,
+  `MONTHLY_PLAN_STORAGE_KEY` помічені `@deprecated`. `PlanCalendar.tsx`
+  переключений з direct-MMKV `readTemplates()` на `useWorkoutTemplates`
+  hook (cache overlay). Tests: 3 hook overlay suites
+  (`useDailyLog.sqliteOverlay.test.tsx` + `useMonthlyPlan…` +
+  `useWorkoutTemplates…`) + 6 нових кейсів у
+  `lib/__tests__/residualImport.test.ts` — всі mobile fizruk suites
+  зелені (157/157). Залишкові 4 hooks (`usePlanTemplate`, `usePrograms`,
+  `useWellbeing`, `useActiveFizrukWorkout`) ще не виведені з MMKV
+  (потребують окремого `#070f-mobile-dualwrite` extension).
 
 **Done criteria.**
 

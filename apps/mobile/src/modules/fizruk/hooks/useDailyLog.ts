@@ -2,38 +2,57 @@
  * `useDailyLog` — mobile hook for Fizruk daily log entries
  * (weight, sleep, energy, mood).
  *
- * Port of `apps/web/src/modules/fizruk/hooks/useDailyLog.ts`.
- * Uses MMKV (via `@/lib/storage`) instead of localStorage.
- * Every mutator routes through `persist()` so writes share a single
- * code path.
+ * Stage 12 / PR #057f-tombstone-mobile-stage12 of
+ * `docs/planning/storage-roadmap.md` (mobile parity for Stage 8
+ * `#057f-tombstone` extended to the new Stage 12 daily-log slot).
+ * Reads from the SQLite warm cache (`getCachedFizrukSqliteState`)
+ * and persists exclusively through the dual-write pipeline
+ * (`triggerFizrukDualWrite`). The legacy MMKV slot
+ * `STORAGE_KEYS.FIZRUK_DAILY_LOG` is drained on first boot via
+ * `importFizrukResidualFromMmkv` and removed.
  *
- * Stage 12 / PR #070f-mobile-dualwrite — wires the dual-write
- * trigger so each MMKV write is mirrored into local SQLite via
- * `triggerFizrukDualWrite`. Fire-and-forget; the trigger is a
- * no-op when the dual-write context is not registered (pre-auth).
+ * Pre-boot / pre-auth (cache cold, `refreshedAt === null`) the hook
+ * starts empty and overlays once `useFizrukSqliteReadTick` fires.
+ * No-op guards: `deleteEntry` on an unknown id keeps state
+ * referentially identical and skips the dual-write trigger entirely.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
 import type { DailyLogEntry } from "@sergeant/fizruk-domain";
 
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { triggerFizrukDualWrite } from "../lib/dualWrite";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractDailyLogSnapshots,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
-
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
+import {
+  getCachedFizrukSqliteState,
+  type CachedDailyLogEntry,
+} from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 function uid(): string {
   return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function readEntries(): DailyLogEntry[] {
-  const raw = safeReadLS<unknown>(STORAGE_KEY, []);
-  return Array.isArray(raw) ? (raw as DailyLogEntry[]) : [];
+/** Project a cache row onto the loose `DailyLogEntry` hook shape. */
+function projectFromCache(row: CachedDailyLogEntry): DailyLogEntry {
+  return {
+    id: row.id,
+    at: row.at,
+    weightKg: row.weightKg,
+    sleepHours: row.sleepHours,
+    energyLevel: row.energyLevel,
+    mood: row.mood,
+    note: row.note,
+  };
+}
+
+function readInitialFromCache(): DailyLogEntry[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return [];
+  return cache.dailyLog.map(projectFromCache);
 }
 
 export interface UseDailyLogResult {
@@ -45,19 +64,19 @@ export interface UseDailyLogResult {
 }
 
 export function useDailyLog(): UseDailyLogResult {
-  const [entries, setEntries] = useState<DailyLogEntry[]>(readEntries);
+  const [entries, setEntries] = useState<DailyLogEntry[]>(readInitialFromCache);
   const stateRef = useRef<DailyLogEntry[]>(entries);
 
+  // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay daily-log
+  // entries from the SQLite warm cache once it's available.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey !== STORAGE_KEY) return;
-      const fresh = readEntries();
-      stateRef.current = fresh;
-      setEntries(fresh);
-    });
-    return () => sub.remove();
-  }, []);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    const overlay = cache.dailyLog.map(projectFromCache);
+    stateRef.current = overlay;
+    setEntries(overlay);
+  }, [sqliteCacheTick]);
 
   const persist = useCallback(
     (updater: (prev: DailyLogEntry[]) => DailyLogEntry[]) => {
@@ -65,10 +84,7 @@ export function useDailyLog(): UseDailyLogResult {
       const next = updater(prev);
       if (next === prev) return;
       stateRef.current = next;
-      safeWriteLS(STORAGE_KEY, next);
-      setEntries(next);
-      // Stage 12 / PR #070f-mobile-dualwrite — mirror MMKV write into
-      // SQLite. Fire-and-forget; never propagate trigger errors.
+
       const prevDualWrite =
         peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
       const nextDualWrite = {
@@ -78,8 +94,10 @@ export function useDailyLog(): UseDailyLogResult {
       try {
         triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
       } catch {
-        /* trigger is fire-and-forget */
+        /* trigger is fire-and-forget — never propagate */
       }
+
+      setEntries(next);
     },
     [],
   );

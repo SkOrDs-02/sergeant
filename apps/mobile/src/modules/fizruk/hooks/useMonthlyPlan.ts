@@ -1,22 +1,23 @@
 /**
- * MMKV-backed monthly plan hook for the Fizruk mobile module.
+ * `useMonthlyPlan` — mobile hook for the Fizruk monthly plan
+ * (singleton document with reminder + per-day template assignments).
  *
- * Mirrors the shape of `apps/web/src/modules/fizruk/hooks/useMonthlyPlan.ts`
- * (Phase 6 / PR-G) but on top of MMKV via `@/lib/storage`. Delegates
- * all normalization / reducer logic to `@sergeant/fizruk-domain` so
- * mobile and web share the exact same `MonthlyPlanState` semantics.
+ * Stage 12 / PR #057f-tombstone-mobile-stage12 of
+ * `docs/planning/storage-roadmap.md` (mobile parity for Stage 8
+ * `#057f-tombstone` extended to the new Stage 12 monthly-plan slot).
+ * Reads from the SQLite warm cache (`getCachedFizrukSqliteState`)
+ * and persists exclusively through the dual-write pipeline
+ * (`triggerFizrukDualWrite`). The legacy MMKV slot
+ * `MONTHLY_PLAN_STORAGE_KEY` is drained on first boot via
+ * `importFizrukResidualFromMmkv` and removed.
  *
- * Scope of this file (Phase 6 / PR-G — PlanCalendar):
- *  - Raw MMKV I/O for the shared `MONTHLY_PLAN_STORAGE_KEY`.
- *  - React hook returning the current state + a minimum set of action
- *    callbacks the PlanCalendar screen needs. Reminder-related
- *    mutations (enable / time) are plumbed through as well so follow-up
- *    settings UIs can reuse the hook without another refactor.
+ * Pre-boot / pre-auth (cache cold) the hook starts on
+ * `defaultMonthlyPlanState()` and overlays once
+ * `useFizrukSqliteReadTick` fires.
  */
 
 import { useCallback, useEffect, useState } from "react";
 
-import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain/constants";
 import {
   applySetDayTemplate,
   applySetReminder,
@@ -30,30 +31,48 @@ import {
   type MonthlyPlanState,
 } from "@sergeant/fizruk-domain/domain/plan/index";
 
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { triggerFizrukDualWrite } from "../lib/dualWrite";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractMonthlyPlanSnapshot,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
+import {
+  getCachedFizrukSqliteState,
+  type CachedMonthlyPlanState,
+} from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
-/** Read and normalise the monthly plan state from MMKV. */
+/**
+ * Project the cached monthly-plan singleton onto the
+ * `MonthlyPlanState` shape consumers expect. `null` (= "no row yet")
+ * collapses onto `defaultMonthlyPlanState()`.
+ */
+function projectFromCache(
+  row: CachedMonthlyPlanState | null,
+): MonthlyPlanState {
+  if (row === null) return defaultMonthlyPlanState();
+  // Round-trip through `normalizeMonthlyPlanState` so any drift
+  // between cache shape and domain shape is healed centrally.
+  return normalizeMonthlyPlanState(row);
+}
+
+/** Read the initial state from the warm cache, or the default if cold. */
 export function loadMonthlyPlanState(): MonthlyPlanState {
-  const raw = safeReadLS<unknown>(MONTHLY_PLAN_STORAGE_KEY, null);
-  return normalizeMonthlyPlanState(raw);
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return defaultMonthlyPlanState();
+  return projectFromCache(cache.monthlyPlan);
 }
 
 /**
- * Persist the monthly plan state to MMKV.
+ * Persist the monthly plan state via the dual-write pipeline only.
  *
- * Stage 12 / PR #070f-mobile-dualwrite — also mirrors the singleton
- * monthly-plan doc into local SQLite via the dual-write pipeline.
- * Fire-and-forget; the trigger is a no-op when no dual-write context
- * is registered (pre-auth).
+ * Stage 12 / PR #057f-tombstone-mobile-stage12 — no MMKV write.
+ * Fire-and-forget: the trigger is a no-op when no dual-write context
+ * is registered (pre-auth) so the in-memory hook state stays the
+ * source of truth until boot wires the SQLite client.
  */
 export function saveMonthlyPlanState(next: MonthlyPlanState): boolean {
-  const ok = safeWriteLS(MONTHLY_PLAN_STORAGE_KEY, next);
   const prevDualWrite =
     peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
   const nextDualWrite = {
@@ -63,9 +82,9 @@ export function saveMonthlyPlanState(next: MonthlyPlanState): boolean {
   try {
     triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
   } catch {
-    /* trigger is fire-and-forget */
+    /* trigger is fire-and-forget — never propagate */
   }
-  return ok;
+  return true;
 }
 
 export interface UseMonthlyPlanReturn {
@@ -93,15 +112,15 @@ export interface UseMonthlyPlanReturn {
   setReminder: (hour: number, minute: number) => void;
   /** Toggle the daily plan reminder. */
   setReminderEnabled: (enabled: boolean) => void;
-  /** Re-read state from MMKV (useful after external writes, e.g. backup apply). */
+  /** Re-read state from the SQLite cache (useful after external writes). */
   refresh: () => void;
 }
 
 /**
- * React hook over MMKV that returns the current monthly plan state +
- * action callbacks. Subscribes to MMKV value-change events on
- * `MONTHLY_PLAN_STORAGE_KEY` so writes from other consumers in the
- * same app re-hydrate this hook's copy.
+ * React hook over the SQLite cache that returns the current monthly
+ * plan state + action callbacks. Subscribes to the cache refresh
+ * tick so external writes (incoming sync, residual-import) re-render
+ * this hook's copy.
  */
 export function useMonthlyPlan(): UseMonthlyPlanReturn {
   const [state, setState] = useState<MonthlyPlanState>(loadMonthlyPlanState);
@@ -110,13 +129,14 @@ export function useMonthlyPlan(): UseMonthlyPlanReturn {
     setState(loadMonthlyPlanState());
   }, []);
 
+  // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay monthly-plan
+  // from the SQLite warm cache once it's available.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey === MONTHLY_PLAN_STORAGE_KEY) refresh();
-    });
-    return () => sub.remove();
-  }, [refresh]);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    setState(projectFromCache(cache.monthlyPlan));
+  }, [sqliteCacheTick]);
 
   const setDayTemplate = useCallback<UseMonthlyPlanReturn["setDayTemplate"]>(
     (dateKey, templateId) => {

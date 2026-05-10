@@ -99,6 +99,7 @@ export const STORAGE_KEYS = {
   FIZRUK_EXERCISES: "fizruk_exercises_v1",
   /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_custom_exercises`. */
   FIZRUK_CUSTOM_EXERCISES: "fizruk_custom_exercises_v1",
+  /** @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_workout_templates`. */
   FIZRUK_TEMPLATES: "fizruk_workout_templates_v1",
   FIZRUK_PLAN: "fizruk-storage-monthly-plan",
   FIZRUK_MONTHLY_PLAN: "fizruk_monthly_plan_v1",
@@ -109,6 +110,7 @@ export const STORAGE_KEYS = {
   FIZRUK_SELECTED_TEMPLATE: "fizruk_selected_template_id_v1",
   FIZRUK_ACTIVE_WORKOUT: "fizruk_active_workout_id_v1",
   FIZRUK_ACTIVE_PROGRAM: "fizruk_active_program_id_v1",
+  /** @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_daily_log`. */
   FIZRUK_DAILY_LOG: "fizruk_daily_log_v1",
   FIZRUK_REST_SETTINGS: "fizruk_rest_settings_v1",
 

@@ -13,6 +13,7 @@ export const SELECTED_TEMPLATE_STORAGE_KEY = "fizruk_selected_template_id_v1";
 export const ACTIVE_WORKOUT_KEY = "fizruk_active_workout_id_v1";
 export const ACTIVE_PROGRAM_KEY = "fizruk_active_program_id_v1";
 export const PLAN_TEMPLATE_STORAGE_KEY = "fizruk_plan_template_v1";
+/** @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_monthly_plan`. */
 export const MONTHLY_PLAN_STORAGE_KEY = "fizruk_monthly_plan_v1";
 
 export const WORKOUTS_SCHEMA_VERSION = 1;
