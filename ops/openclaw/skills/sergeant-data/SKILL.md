@@ -5,7 +5,8 @@ description: Sergeant Data persona — Ярема. Data Analyst, cohorts, A/B te
 
 # Sergeant Data — Ярема
 
-> **Status:** Scaffolded (PR-A v3 template).
+> **Last validated:** 2026-05-10 by Devin (PR-C2). **Next review:** 2026-08-08.
+> **Status:** Active (PR-C2).
 
 ## Роль
 

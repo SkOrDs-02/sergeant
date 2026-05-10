@@ -107,32 +107,28 @@
         "read_strategy_docs",
         "query_app_db",
         "read_github",
-        "search_code",
-        "read_github_tree",
-        "read_github_diff",
-        "list_open_prs",
+        "github_search",
+        "github_tree",
+        "github_diff",
+        "github_prs",
         "get_stripe_metrics",
         "get_sentry_issues",
         "get_posthog_stats",
         "read_workflow_logs",
-        "list_n8n_workflows",
-        "describe_n8n_workflow",
+        "n8n_list",
+        "n8n_describe",
         "get_server_stats",
         "get_github_releases",
-        "read_telegram_topic_history",
-        "get_search_console_metrics",
-        "get_lighthouse_score",
-        "read_competitor_serp",
+        "read_telegram_topic",
+        "seo_gsc_query",
+        "seo_psi_audit",
+        "seo_serp_lookup",
         "record_decision",
         "set_reminder",
         "refresh_business_snapshot",
-        "commit_to_strategy_doc",
         "create_github_issue",
-        "post_to_topic",
-        "pause_workflow",
-        "activate_workflow",
-        "trigger_n8n_workflow",
-        "mute_alert"
+        "n8n_trigger",
+        "n8n_activate"
       ]
     },
     "eng": {
@@ -143,10 +139,10 @@
       "model_for_thinking": "claude-opus-4-latest",
       "tools": [
         "read_github",
-        "search_code",
-        "read_github_tree",
-        "read_github_diff",
-        "list_open_prs",
+        "github_search",
+        "github_tree",
+        "github_diff",
+        "github_prs",
         "query_app_db",
         "recall_memory",
         "record_decision",
@@ -161,12 +157,10 @@
       "model_for_thinking": "claude-3-7-sonnet-latest",
       "tools": [
         "read_workflow_logs",
-        "list_n8n_workflows",
-        "describe_n8n_workflow",
-        "trigger_n8n_workflow",
-        "activate_workflow",
-        "pause_workflow",
-        "mute_alert",
+        "n8n_list",
+        "n8n_describe",
+        "n8n_trigger",
+        "n8n_activate",
         "get_sentry_issues",
         "get_server_stats",
         "recall_memory"
@@ -184,8 +178,7 @@
         "query_app_db",
         "recall_memory",
         "record_decision",
-        "create_github_issue",
-        "commit_to_strategy_doc"
+        "create_github_issue"
       ]
     },
     "growth": {
@@ -200,8 +193,7 @@
         "query_app_db",
         "read_github",
         "get_github_releases",
-        "recall_memory",
-        "post_to_topic"
+        "recall_memory"
       ]
     },
     "seo": {
@@ -211,9 +203,9 @@
       "model_default": "claude-3-7-sonnet-latest",
       "model_for_thinking": "claude-3-7-sonnet-latest",
       "tools": [
-        "get_search_console_metrics",
-        "get_lighthouse_score",
-        "read_competitor_serp",
+        "seo_gsc_query",
+        "seo_psi_audit",
+        "seo_serp_lookup",
         "read_strategy_docs",
         "read_github",
         "get_posthog_stats",
@@ -226,13 +218,7 @@
       "aliases": ["/Софія", "/content", "/copy"],
       "model_default": "claude-3-7-sonnet-latest",
       "model_for_thinking": "claude-opus-4-latest",
-      "tools": [
-        "read_strategy_docs",
-        "recall_memory",
-        "read_github",
-        "commit_to_strategy_doc",
-        "post_to_topic"
-      ]
+      "tools": ["read_strategy_docs", "recall_memory", "read_github"]
     },
     "data": {
       "skill": "sergeant-data",
@@ -255,11 +241,10 @@
       "model_default": "claude-3-5-haiku-latest",
       "model_for_thinking": "claude-3-7-sonnet-latest",
       "tools": [
-        "read_telegram_topic_history",
+        "read_telegram_topic",
         "query_app_db",
         "get_posthog_stats",
-        "recall_memory",
-        "post_to_topic"
+        "recall_memory"
       ]
     },
     "finance": {
