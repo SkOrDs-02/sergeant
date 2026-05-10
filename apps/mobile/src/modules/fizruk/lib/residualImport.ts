@@ -2,9 +2,10 @@
  * Boot-time residual-import helper for the mobile Fizruk MMKV keys.
  *
  * Stage 8 PR #057f-tombstone (workouts / custom-exercises /
- * measurements) and Stage 12 PR #057f-tombstone-mobile-stage12
- * (daily-log / monthly-plan / workout-templates) of
- * `docs/planning/storage-roadmap.md`.
+ * measurements), Stage 12 PR #057f-tombstone-mobile-stage12 (daily-log /
+ * monthly-plan / workout-templates), and Stage 12.5 PR
+ * #057f2-tombstone-mobile-stage12-5 (programs / plan-template /
+ * wellbeing) of `docs/planning/storage-roadmap.md`.
  *
  * Reads any leftover values from the now-deprecated MMKV keys,
  * imports them into the local `fizruk_*` SQLite tables (idempotent +
@@ -18,6 +19,9 @@
  *   - `fizruk_daily_log_v1`              ← Stage 12
  *   - `fizruk_monthly_plan_v1`           ← Stage 12
  *   - `fizruk_workout_templates_v1`      ← Stage 12
+ *   - `fizruk_active_program_id_v1`      ← Stage 12.5
+ *   - `fizruk_plan_template_v1`          ← Stage 12.5
+ *   - `fizruk_wellbeing_v1`              ← Stage 12.5
  *
  * The import uses a deliberately stale `clientTs` (epoch zero) so the
  * adapter's LWW guard always lets existing SQLite rows win — we never
@@ -41,6 +45,10 @@ import type {
   WorkoutItem,
   WorkoutWellbeing,
 } from "@sergeant/fizruk-domain";
+import {
+  normalizeActiveProgramState,
+  type ActiveProgramState,
+} from "@sergeant/fizruk-domain/domain";
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
@@ -56,7 +64,14 @@ import {
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
 } from "./dualWrite/diff";
-import { extractMonthlyPlanSnapshot } from "./fizrukDualWriteState";
+import {
+  extractMonthlyPlanSnapshot,
+  extractPlanTemplateSnapshot,
+  extractProgramsSnapshot,
+  extractWellbeingSnapshots,
+  type FizrukPlanTemplateLike,
+  type FizrukWellbeingEntryLike,
+} from "./fizrukDualWriteState";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
@@ -69,6 +84,10 @@ const EMPTY_STATE: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 ----------------
+  programs: null,
+  planTemplate: null,
+  wellbeing: [],
 };
 
 /** Hook-side workout-template shape (mirror of `WorkoutTemplate` in
@@ -106,6 +125,10 @@ export async function importFizrukResidualFromMmkv(
   const dailyLog = readDailyLogFromMmkv();
   const monthlyPlan = readMonthlyPlanFromMmkv();
   const workoutTemplates = readWorkoutTemplatesFromMmkv();
+  // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 -----------------
+  const programs = readProgramsFromMmkv();
+  const planTemplateRead = readPlanTemplateFromMmkv();
+  const wellbeing = readWellbeingFromMmkv();
 
   const hasAny =
     workouts !== null ||
@@ -113,7 +136,10 @@ export async function importFizrukResidualFromMmkv(
     measurements !== null ||
     dailyLog !== null ||
     monthlyPlan !== null ||
-    workoutTemplates !== null;
+    workoutTemplates !== null ||
+    programs !== null ||
+    planTemplateRead !== null ||
+    wellbeing !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   const next: FizrukDualWriteState = {
@@ -127,6 +153,14 @@ export async function importFizrukResidualFromMmkv(
     workoutTemplates: workoutTemplates
       ? extractWorkoutTemplateSnapshots(workoutTemplates)
       : [],
+    // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 ---------------
+    programs: programs
+      ? (extractProgramsSnapshot(programs) ?? { activeProgramId: null })
+      : null,
+    planTemplate: planTemplateRead
+      ? extractPlanTemplateSnapshot(planTemplateRead.value)
+      : null,
+    wellbeing: wellbeing ? extractWellbeingSnapshots(wellbeing) : [],
   };
 
   const ops = diffFizrukDualWriteOps(EMPTY_STATE, next);
@@ -156,6 +190,10 @@ export async function importFizrukResidualFromMmkv(
   safeRemoveLS(STORAGE_KEYS.FIZRUK_DAILY_LOG);
   safeRemoveLS(MONTHLY_PLAN_STORAGE_KEY);
   safeRemoveLS(STORAGE_KEYS.FIZRUK_TEMPLATES);
+  // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 -----------------
+  safeRemoveLS(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM);
+  safeRemoveLS(STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE);
+  safeRemoveLS(STORAGE_KEYS.FIZRUK_WELLBEING);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -228,6 +266,64 @@ function readWorkoutTemplatesFromMmkv(): ResidualWorkoutTemplate[] | null {
     const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_TEMPLATES, null);
     if (raw === null || raw === undefined) return null;
     return Array.isArray(raw) ? (raw as ResidualWorkoutTemplate[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+// Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 -------------------
+
+/**
+ * Read the legacy active-program slot. Pre-Stage-12.5 the hook stored
+ * either the bare id string or the `{ activeProgramId }` object — we
+ * normalise both shapes through `normalizeActiveProgramState` so the
+ * extractor downstream sees a consistent payload.
+ */
+function readProgramsFromMmkv(): ActiveProgramState | null {
+  try {
+    const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM, null);
+    if (raw === null || raw === undefined) return null;
+    return normalizeActiveProgramState(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the legacy plan-template slot. Returns `null` when no MMKV
+ * key exists, or `{ value }` when one does. The hook stored an
+ * arbitrary object (or `null`); we narrow it to the loose
+ * `FizrukPlanTemplateLike` shape and let
+ * `extractPlanTemplateSnapshot` serialise it. Non-object payloads
+ * collapse onto `null` so the extractor returns the `'null'` JSON
+ * sentinel — the row is still upserted (LWW timestamping) and the
+ * MMKV key is still cleaned.
+ */
+function readPlanTemplateFromMmkv(): {
+  value: FizrukPlanTemplateLike | null;
+} | null {
+  try {
+    const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE, null);
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw === "object") {
+      return { value: raw as FizrukPlanTemplateLike };
+    }
+    return { value: null };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the legacy wellbeing array. Each entry is loose-typed (mood,
+ * energy, sleep* may be missing) — the extractor filters out invalid
+ * shapes.
+ */
+function readWellbeingFromMmkv(): FizrukWellbeingEntryLike[] | null {
+  try {
+    const raw = safeReadLS<unknown>(STORAGE_KEYS.FIZRUK_WELLBEING, null);
+    if (raw === null || raw === undefined) return null;
+    return Array.isArray(raw) ? (raw as FizrukWellbeingEntryLike[]) : [];
   } catch {
     return null;
   }

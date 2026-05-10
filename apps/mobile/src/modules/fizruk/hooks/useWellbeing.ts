@@ -2,30 +2,36 @@
  * `useWellbeing` — mobile hook for Fizruk daily wellbeing entries
  * (mood, energy, sleep, recovery notes).
  *
- * Persists under `STORAGE_KEYS.FIZRUK_WELLBEING`
- * (`fizruk_wellbeing_v1`) — one entry per `YYYY-MM-DD` day. The
- * `WellbeingChart` component on web reads the same shape, so the
- * mobile port can later mount it directly.
+ * Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 of
+ * `docs/planning/storage-roadmap.md`. Reads from the SQLite warm cache
+ * (`getCachedFizrukSqliteState`) and persists exclusively through the
+ * dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV slot
+ * `STORAGE_KEYS.FIZRUK_WELLBEING` is drained on first boot via
+ * `importFizrukResidualFromMmkv` and removed.
+ *
+ * One entry per `YYYY-MM-DD` day (composite PK `(user_id, date_key)`
+ * in SQLite). The `WellbeingChart` component on web reads the same
+ * shape, so the mobile port can later mount it directly.
  *
  * `upsertForDate` is no-op-guarded by deep equality: when the patch
  * leaves every persisted field unchanged (e.g. the form was reopened
  * and resaved without edits), the in-memory list stays referentially
- * identical and the MMKV write is skipped. `removeForDate` is silent
- * when no entry exists for the given date.
+ * identical and the dual-write trigger is skipped. `removeForDate`
+ * is silent when no entry exists for the given date.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { triggerFizrukDualWrite } from "../lib/dualWrite";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWellbeingSnapshots,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
-
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_WELLBEING;
+import {
+  getCachedFizrukSqliteState,
+  type CachedWellbeingEntry,
+} from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface WellbeingEntry {
   /** `YYYY-MM-DD` — primary key; one entry per calendar day. */
@@ -44,9 +50,24 @@ export interface WellbeingEntry {
   [extra: string]: unknown;
 }
 
-function readList(): WellbeingEntry[] {
-  const raw = safeReadLS<unknown>(STORAGE_KEY, []);
-  return Array.isArray(raw) ? (raw as WellbeingEntry[]) : [];
+/** Project a cache row onto the loose `WellbeingEntry` hook shape. */
+function projectFromCache(row: CachedWellbeingEntry): WellbeingEntry {
+  return {
+    date: row.date,
+    mood: row.mood,
+    energy: row.energy,
+    sleepQuality: row.sleepQuality,
+    sleepHours: row.sleepHours,
+    notes: row.notes,
+    updatedAt: row.updatedAt,
+  };
+}
+
+/** Read the initial entries from the warm cache, or [] if cold. */
+function loadInitialFromCache(): WellbeingEntry[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return [];
+  return cache.wellbeing.map(projectFromCache);
 }
 
 function deepEqual(a: unknown, b: unknown): boolean {
@@ -76,20 +97,20 @@ export interface UseWellbeingResult {
 }
 
 export function useWellbeing(): UseWellbeingResult {
-  const [entries, setEntries] = useState<WellbeingEntry[]>(readList);
-  // See `useFizrukWorkouts` for why we mirror state in a ref.
+  const [entries, setEntries] =
+    useState<WellbeingEntry[]>(loadInitialFromCache);
   const stateRef = useRef<WellbeingEntry[]>(entries);
 
+  // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5: overlay
+  // wellbeing entries from the SQLite warm cache once it's available.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey !== STORAGE_KEY) return;
-      const fresh = readList();
-      stateRef.current = fresh;
-      setEntries(fresh);
-    });
-    return () => sub.remove();
-  }, []);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    const overlay = cache.wellbeing.map(projectFromCache);
+    stateRef.current = overlay;
+    setEntries(overlay);
+  }, [sqliteCacheTick]);
 
   const persist = useCallback(
     (updater: (prev: WellbeingEntry[]) => WellbeingEntry[]) => {
@@ -97,15 +118,19 @@ export function useWellbeing(): UseWellbeingResult {
       const next = updater(prev);
       if (next === prev) return;
       stateRef.current = next;
-      safeWriteLS(STORAGE_KEY, next);
       setEntries(next);
-      // Stage 12.5 / PR #070f2-mobile-dualwrite — mirror to SQLite.
+      // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 — mirror to
+      // SQLite via the dual-write pipeline only (no MMKV write).
       const baseState =
         peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      triggerFizrukDualWrite(
-        { ...baseState, wellbeing: extractWellbeingSnapshots(prev) },
-        { ...baseState, wellbeing: extractWellbeingSnapshots(next) },
-      );
+      try {
+        triggerFizrukDualWrite(
+          { ...baseState, wellbeing: extractWellbeingSnapshots(prev) },
+          { ...baseState, wellbeing: extractWellbeingSnapshots(next) },
+        );
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
     },
     [],
   );
@@ -122,7 +147,7 @@ export function useWellbeing(): UseWellbeingResult {
       }
       const merged: WellbeingEntry = { ...prev[idx]!, ...patch, date };
       // Skip the timestamp bump and the write entirely when nothing
-      // user-visible changed — keeps the MMKV slot stable on idempotent
+      // user-visible changed — keeps the slot stable on idempotent
       // re-saves of the daily sheet.
       const { updatedAt: _prevTs, ...prevSansTs } = prev[idx]!;
       const { updatedAt: _mergedTs, ...mergedSansTs } = merged;

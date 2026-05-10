@@ -3,30 +3,30 @@
  * (a single reusable schedule the monthly-plan screen can stamp onto
  * arbitrary date ranges).
  *
- * Persists under `STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE`
- * (`fizruk_plan_template_v1`). The slot stores a single object (or
- * `null` when no template is set).
+ * Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 of
+ * `docs/planning/storage-roadmap.md`. Reads from the SQLite warm cache
+ * (`getCachedFizrukSqliteState`) and persists exclusively through the
+ * dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV slot
+ * `STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE` is drained on first boot via
+ * `importFizrukResidualFromMmkv` and removed.
  *
  * `setPlanTemplate(next)` is no-op-guarded by deep equality (same
- * `JSON.stringify` pattern used by `routine-domain` `applyUpdateHabit`,
- * see Task #5): if `next` round-trips to the same JSON as the current
- * value, the in-memory state stays referentially identical and the
- * MMKV write is skipped. This keeps the slot stable on idempotent
+ * `JSON.stringify` pattern used by `routine-domain` `applyUpdateHabit`):
+ * if `next` round-trips to the same JSON as the current value, the
+ * in-memory state stays referentially identical and the dual-write
+ * trigger is skipped. This keeps the slot stable on idempotent
  * re-saves of the same form.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { triggerFizrukDualWrite } from "../lib/dualWrite";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractPlanTemplateSnapshot,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
-
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE;
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface PlanTemplate {
   id?: string;
@@ -39,10 +39,30 @@ export interface PlanTemplate {
   [extra: string]: unknown;
 }
 
-function readPlan(): PlanTemplate | null {
-  const raw = safeReadLS<unknown>(STORAGE_KEY, null);
-  if (raw && typeof raw === "object") return raw as PlanTemplate;
-  return null;
+/**
+ * Project the cached plan-template singleton onto the hook shape.
+ * `null` (= "no row yet") and the JSON literal `'null'` both collapse
+ * onto `null`. Malformed JSON / non-object payloads collapse onto
+ * `null` so the hook never surfaces invalid data.
+ */
+function projectFromCache(
+  row: { dataJson: string } | null,
+): PlanTemplate | null {
+  if (row === null) return null;
+  try {
+    const parsed = JSON.parse(row.dataJson);
+    if (parsed && typeof parsed === "object") return parsed as PlanTemplate;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Read the initial state from the warm cache, or `null` if cold. */
+function loadInitialPlan(): PlanTemplate | null {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return null;
+  return projectFromCache(cache.planTemplate);
 }
 
 function deepEqual(a: unknown, b: unknown): boolean {
@@ -67,38 +87,41 @@ export interface UsePlanTemplateResult {
 }
 
 export function usePlanTemplate(): UsePlanTemplateResult {
-  const [plan, setPlan] = useState<PlanTemplate | null>(readPlan);
-  // See `useFizrukWorkouts` for why we mirror state in a ref.
+  const [plan, setPlan] = useState<PlanTemplate | null>(loadInitialPlan);
+  // Mirror state in a ref so the imperative setter sees the latest
+  // cache-derived state without a stale closure.
   const stateRef = useRef<PlanTemplate | null>(plan);
 
+  // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5: overlay the
+  // plan-template singleton from the SQLite warm cache once it's
+  // available.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey !== STORAGE_KEY) return;
-      const fresh = readPlan();
-      stateRef.current = fresh;
-      setPlan(fresh);
-    });
-    return () => sub.remove();
-  }, []);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    const overlay = projectFromCache(cache.planTemplate);
+    stateRef.current = overlay;
+    setPlan(overlay);
+  }, [sqliteCacheTick]);
 
   const setPlanTemplate = useCallback<UsePlanTemplateResult["setPlanTemplate"]>(
     (next) => {
       const prev = stateRef.current;
       if (deepEqual(prev, next)) return false;
       stateRef.current = next;
-      // Mirror the convention used by `useActiveFizrukWorkout` when
-      // clearing — write `null` rather than removing the key, so the
-      // cross-source listener still fires consistently.
-      safeWriteLS(STORAGE_KEY, next);
       setPlan(next);
-      // Stage 12.5 / PR #070f2-mobile-dualwrite — mirror to SQLite.
+      // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 — mirror to
+      // SQLite via the dual-write pipeline only (no MMKV write).
       const baseState =
         peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      triggerFizrukDualWrite(
-        { ...baseState, planTemplate: extractPlanTemplateSnapshot(prev) },
-        { ...baseState, planTemplate: extractPlanTemplateSnapshot(next) },
-      );
+      try {
+        triggerFizrukDualWrite(
+          { ...baseState, planTemplate: extractPlanTemplateSnapshot(prev) },
+          { ...baseState, planTemplate: extractPlanTemplateSnapshot(next) },
+        );
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
       return true;
     },
     [],

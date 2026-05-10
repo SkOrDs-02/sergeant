@@ -5,15 +5,19 @@
  * Mirrors the public surface of the web hook at
  * `apps/web/src/modules/fizruk/hooks/useTrainingProgram.ts` — a
  * read-only list of catalogue entries plus an active-program slot
- * that can be activated / deactivated / toggled. The active-program
- * id is persisted in the shared MMKV slot
- * `STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM` so the same CloudSync entry
- * the web app writes to is reused verbatim.
+ * that can be activated / deactivated / toggled.
  *
- * All pure logic (catalogue, today-session resolution, state
- * normalisation) lives in `@sergeant/fizruk-domain/domain/programs`
- * and is covered by vitest in isolation. This file is a thin React
- * shim around those selectors + MMKV.
+ * Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 of
+ * `docs/planning/storage-roadmap.md`. The active-program id is now
+ * read from the SQLite warm cache (`getCachedFizrukSqliteState`) and
+ * persisted exclusively through the dual-write pipeline
+ * (`triggerFizrukDualWrite`). The legacy MMKV slot
+ * `STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM` is drained on first boot via
+ * `importFizrukResidualFromMmkv` and removed.
+ *
+ * Pre-boot / pre-auth (cache cold, `refreshedAt === null`) the hook
+ * starts on `defaultActiveProgramState()` and overlays once
+ * `useFizrukSqliteReadTick` fires.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,24 +25,37 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   PROGRAM_CATALOGUE,
   defaultActiveProgramState,
-  normalizeActiveProgramState,
   resolveActiveProgram,
   resolveTodaySession,
   type ActiveProgramState,
   type TodayProgramSession,
   type TrainingProgramDef,
 } from "@sergeant/fizruk-domain/domain";
-import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { triggerFizrukDualWrite } from "../lib/dualWrite";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractProgramsSnapshot,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
-const STORAGE_KEY = STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM;
+/** Project the cached programs singleton onto the hook state shape.
+ *  `null` (= "no row yet") collapses onto `defaultActiveProgramState()`. */
+function projectFromCache(
+  row: { activeProgramId: string | null } | null,
+): ActiveProgramState {
+  if (row === null) return defaultActiveProgramState();
+  return { activeProgramId: row.activeProgramId };
+}
+
+/** Read the initial state from the warm cache, or the default if cold. */
+function loadInitialState(): ActiveProgramState {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return defaultActiveProgramState();
+  return projectFromCache(cache.programs);
+}
 
 export interface UseProgramsResult {
   /** Full built-in catalogue, in display order. */
@@ -63,10 +80,11 @@ export interface UseProgramsResult {
 }
 
 /**
- * Reads the persisted active-program id from MMKV, reacts to
- * cross-consumer writes (e.g. a parallel-ported web hook running in
- * the same process during Expo dev), and exposes imperative
- * activate/deactivate handlers.
+ * Reads the persisted active-program id from the SQLite warm cache,
+ * subscribes to refresh ticks so external writes (incoming sync,
+ * residual-import) re-render this hook's copy, and exposes
+ * imperative activate/deactivate handlers that persist exclusively
+ * via the dual-write pipeline.
  */
 export function usePrograms(
   /**
@@ -77,44 +95,40 @@ export function usePrograms(
   /** Override for unit tests — defaults to the real wall clock. */
   now: () => Date = () => new Date(),
 ): UseProgramsResult {
-  const [state, setState] = useState<ActiveProgramState>(() =>
-    normalizeActiveProgramState(safeReadLS<unknown>(STORAGE_KEY, null)),
-  );
-  // Mirror the latest persisted state in a ref so the imperative
+  const [state, setState] = useState<ActiveProgramState>(loadInitialState);
+  // Mirror the latest cache-derived state in a ref so the imperative
   // setters can build the dual-write `prev → next` pair without
   // depending on a stale closure of `state`.
   const stateRef = useRef<ActiveProgramState>(state);
 
-  // React to out-of-band writes to the same MMKV slot so the page
-  // re-renders if anything else in the app touches this key.
+  // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5: overlay
+  // programs from the SQLite warm cache once it's available.
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   useEffect(() => {
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey !== STORAGE_KEY) return;
-      const fresh = normalizeActiveProgramState(
-        safeReadLS<unknown>(STORAGE_KEY, null),
-      );
-      stateRef.current = fresh;
-      setState(fresh);
-    });
-    return () => sub.remove();
-  }, []);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    const overlay = projectFromCache(cache.programs);
+    stateRef.current = overlay;
+    setState(overlay);
+  }, [sqliteCacheTick]);
 
   const persist = useCallback((next: ActiveProgramState) => {
     const prev = stateRef.current;
     if (prev.activeProgramId === next.activeProgramId) return;
     stateRef.current = next;
     setState(next);
-    safeWriteLS(STORAGE_KEY, next);
-    // Stage 12.5 / PR #070f2-mobile-dualwrite — mirror to SQLite.
-    // The cache-backed state seeds the dual-write input so the diff
-    // sees the full Fizruk shape; only the `programs` slot moves.
+    // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 — mirror to
+    // SQLite via the dual-write pipeline only (no MMKV write).
     const baseState =
       peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    triggerFizrukDualWrite(
-      { ...baseState, programs: extractProgramsSnapshot(prev) },
-      { ...baseState, programs: extractProgramsSnapshot(next) },
-    );
+    try {
+      triggerFizrukDualWrite(
+        { ...baseState, programs: extractProgramsSnapshot(prev) },
+        { ...baseState, programs: extractProgramsSnapshot(next) },
+      );
+    } catch {
+      /* trigger is fire-and-forget — never propagate */
+    }
   }, []);
 
   const activateProgram = useCallback(
