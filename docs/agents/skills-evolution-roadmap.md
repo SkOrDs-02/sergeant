@@ -44,7 +44,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 > **Drift policy.** Якщо план відстає реальності, фіксуй це errata-блоком у цій секції з датою і коротким поясненням, як у `docs/initiatives/0011-…md`. Не переписуй мовчки, не видаляй "невзяті" пункти.
 
-### PR 1 — Pushy descriptions audit (≈30 хв, S)
+### PR 1 — Pushy descriptions audit (≈30 хв, S) ✅ (merged: #2374, 2026-05-10)
 
 **Проблема.** Claude і інші LLM-агенти undertrigger-ять скіли, якщо `description:` стримане. У `anthropics/skill-creator` явно сказано: опис має містити "Make sure to use this skill whenever the user mentions X, Y, Z, **even if they don't explicitly ask**".
 
@@ -75,7 +75,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 2 — Verification-before-completion gate в `sergeant-review-and-merge` (≈2 год, S)
+### PR 2 — Verification-before-completion gate в `sergeant-review-and-merge` (≈2 год, S) ✅ (merged: #2373, 2026-05-10)
 
 **Проблема.** Жоден з 12 Sergeant skill-ів не містить explicit-гейту "не клейми completion без свіжого verification-evidence". `sergeant-review-and-merge` фокусується на contract-checks і scope, але не на **дисципліні language-у** ("Should pass now", "I'm confident"). Це — найдешевший quality bump з усього roadmap-у.
 
@@ -321,7 +321,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 9 — `verification-before-completion` як cross-link з PR template (≈30 хв, S)
+### PR 9 — `verification-before-completion` як cross-link з PR template (≈30 хв, S) ✅ (merged: #2375, 2026-05-10)
 
 **Проблема.** PR 2 додає Iron Law у `sergeant-review-and-merge`. Але людина-контриб'ютор не обов'язково читає skill-и. PR template вже має чек-лист "Verification" з командами — треба явно лінкувати на skill-секцію.
 
@@ -344,17 +344,17 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ## Priority matrix
 
-| #   | PR                                | Effort | Value-per-hour | Dependencies        |
-| --- | --------------------------------- | ------ | -------------- | ------------------- |
-| 1   | Pushy descriptions audit          | S      | High           | none                |
-| 2   | Verification gate in review skill | S      | **Highest**    | none                |
-| 3   | Postgres references               | M      | High           | (no hard dep)       |
-| 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       |
-| 5   | Security body-scan in lint:skills | M      | High           | none                |
-| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |
-| 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |
-| 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |
-| 9   | PR template cross-link            | S      | High           | depends on PR 2     |
+| #   | PR                                | Effort | Value-per-hour | Dependencies        | Status   |
+| --- | --------------------------------- | ------ | -------------- | ------------------- | -------- |
+| 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374 |
+| 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373 |
+| 3   | Postgres references               | M      | High           | (no hard dep)       |          |
+| 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       |          |
+| 5   | Security body-scan in lint:skills | M      | High           | none                |          |
+| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |          |
+| 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |          |
+| 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |          |
+| 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375 |
 
 **Recommended starting order:** PR 2 → PR 1 → PR 5 → PR 9 → PR 3 → PR 6 → PR 4 → PR 7 → PR 8.
 
