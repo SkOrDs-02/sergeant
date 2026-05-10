@@ -1,6 +1,6 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
-> **Last validated:** 2026-05-10 by @Skords-01 (Phase 6 audit refresh — was "Pending", actually all bullets done since #2118 + migration 046; see Phase 6 below). **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-10 by @Skords-01 (Phase 6 audit refresh — Phase 2 PR placeholder resolved; Phase 6 bullets now carry explicit commit/PR refs; Phase 7 exit-criteria pointer added per Stage 13 PR #079). **Next review:** 2026-08-04.
 > **Status:** In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
@@ -189,7 +189,7 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
   - `sli:sync_v1_legacy:rate1h_by_appversion`
 - **Out of scope vs original plan**: `sync_v1_v2_dual_writes_total`, `sync_v2_pull_lag_ms` histogram, `sync_v2_queue_depth` gauge — derivable з існуючих labels (`sync_operations_total{module=...}`) і `sync_duration_ms`. Дублювання counter-ів забило б vmagent backpressure без додаткового signal-у. Conflict-rate / queue-depth alerts — defer-ed до Phase 3, коли буде baseline-week-data.
 
-### Phase 2 — Sunset header + ADR — Done (PR #TBD link after merge)
+### Phase 2 — Sunset header + ADR — Done (commit [`3e10d799`](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../adr/0043-cloudsync-v1-sunset.md))
 
 - **ADR-0043** [CloudSync v1 sunset](../adr/0043-cloudsync-v1-sunset.md) — Accepted 2026-05-04. Фіксує: RFC 8594/8288 deprecation contract; 6-фазний rollout-план; T₀ controlled через env var `CLOUDSYNC_V1_SUNSET_AT` (ISO 8601), не code-constant.
 - **HTTP headers на `/api/sync/*`** ([`apps/server/src/modules/sync/sunsetHeaders.ts`](../../apps/server/src/modules/sync/sunsetHeaders.ts) + 20 тестів):
@@ -238,10 +238,10 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 
 Видалення dead-code (Stage 7 / PR #052):
 
-- `apps/web/src/core/cloudSync/` — ✅ Done. 35 файлів → 2: `hook/useSyncStatus.ts` + `index.ts`. Барелл expose-ить тільки `useSyncStatus` для `OfflineBanner` (читає v2 metrics).
-- `apps/mobile/src/sync/` — ✅ Done. 30 файлів → 3 dirs (`hook/` + `persister/` + `index.ts`).
-- `apps/server/src/modules/sync/sync.ts` — ✅ Done. Файл видалено разом з backing-таблицею (`module_data`). Залишилися sunset/audit модулі: `sunsetGone.ts`, `sunsetHeaders.ts`, `clientSurvey.ts`, `audit.ts`, `syncV2*.ts`.
-- Drop column `module_data` — ✅ Done (migration 046 — Stage 7 final, dropped per AGENTS.md hard rule #4 двофазного DROP).
+- `apps/web/src/core/cloudSync/` — ✅ Done (Stage 7 PR #052b, commit [`24bfda9e`](https://github.com/Skords-01/Sergeant/commit/24bfda9eefd9c030a2e3dd873235c0ba5ea37666)). 35 файлів → 2: `hook/useSyncStatus.ts` + `index.ts`. Барелл expose-ить тільки `useSyncStatus` для `OfflineBanner` (читає v2 metrics).
+- `apps/mobile/src/sync/` — ✅ Done (Stage 7 PR #052c, commit [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb2df6eeaea6d4c246642d111fd7c2e7b0); follow-up shim cleanup PR #053c, commit [`40169cba`](https://github.com/Skords-01/Sergeant/commit/40169cba89092d7e0973684a4b47ee890ba4b18f)). 30 файлів → 3 dirs (`hook/` + `persister/` + `index.ts`).
+- `apps/server/src/modules/sync/sync.ts` — ✅ Done (Stage 7 PR #051 + #052a, commit [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5cd724e9692f0a6a37a732cee6c7e23a54)). Файл видалено разом з backing-таблицею (`module_data`). Залишилися sunset/audit модулі: `sunsetGone.ts`, `sunsetHeaders.ts`, `clientSurvey.ts`, `audit.ts`, `syncV2*.ts`.
+- Drop column `module_data` — ✅ Done (migration `046_drop_module_data.sql`, commit [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5cd724e9692f0a6a37a732cee6c7e23a54) — Stage 7 final, dropped per AGENTS.md hard rule #4 двофазного DROP).
 
 **Storage roadmap Stage 13 follow-ups (не блокують Phase 6, але закривають audit findings):**
 
