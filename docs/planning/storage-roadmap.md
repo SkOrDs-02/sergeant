@@ -1184,8 +1184,9 @@ show_balance, updated_at, deleted_at)` — об'єднує
 > із `@sergeant/api-client` поверх `drainSyncOpOutbox` / `mark*` / `recoverDeadLetter`
 > із `@sergeant/db-schema/sqlite`, проводить tick/flush у Sentry breadcrumbs,
 > опційно показує dead-letter count в `OfflineBanner` + retry-action через
-> `useSyncStatus`. Stage 7 cleanup лишається ⏳ blocked до завершення burn-in
-> у проді.
+> `useSyncStatus`. Stage 7 cleanup ✅ COMPLETE (9/9) — burn-in завершено,
+> `module_data` колонка дропнута, v1 cloudSync engine видалено з web/mobile,
+> KVStore syncedKV shim знесено.
 >
 > **2026-05-06 mobile parity note.** Mobile boot отримав той самий
 > writer-runtime: `apps/mobile/src/core/syncEngine/{syncEngineWriter,singleton,netInfoEventTarget}.ts`
@@ -1201,8 +1202,8 @@ show_balance, updated_at, deleted_at)` — об'єднує
 > (`apps/mobile/src/sync/hook/useSyncStatus.ts`) бридж-ить `runtime.getStatus()`
 > на існуючий shape `{queuedCount, dirtyCount, isOnline}`, який споживає
 > `SyncStatusIndicator`/`SyncStatusOverlay`. Stage 7 mobile-cleanup
-> (`useCloudSync` stub-shim, `CloudSyncProvider`) лишається ⏳ — burn-in
-> після writer-runtime-boot, потім deprecate і видалити.
+> (`useCloudSync` stub-shim, `CloudSyncProvider`) ✅ COMPLETE — landed у
+> PR #052c ([`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb)).
 
 #### **PR #040 — `feat(migrations): persistent op-log retry policy in SQLite`** ✅ LANDED — [#1717](https://github.com/Skords-01/Sergeant/pull/1717)
 
@@ -2100,7 +2101,7 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
     будуть прив'язані SLO-алерти. PromQL рецепти оновлені в
     `docs/observability/metrics.md` §4 і `docs/observability/dashboards.md`.
 
-#### **PR #049 — `feat(ops): backup/restore runbook + weekly verify CI`** 🚧 split into PR #049 (docs) + PR #049b (CI)
+#### **PR #049 — `feat(ops): backup/restore runbook + weekly verify CI`** ✅ LANDED — split into PR #049 (docs) + PR #049b (CI)
 
 - Scope. Документувати full-restore-from-backup для Railway Postgres.
   GitHub Action раз на тиждень: restore latest dump на staging + smoke-test
@@ -2293,7 +2294,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
 - Не належить до storage-roadmap-у scope-у строго, але блокував
   governance-sync на PR #054c (#2072), тому залендив окремо паралельно.
 
-#### **PR #053 — `chore: deprecate KVStore in favor of SQLite-backed cache`** ⏳ IN PROGRESS
+#### **PR #053 — `chore: deprecate KVStore in favor of SQLite-backed cache`** ✅ LANDED — закрита трилогією [#053a (#2078)](https://github.com/Skords-01/Sergeant/pull/2078) + [#053b (#2082)](https://github.com/Skords-01/Sergeant/pull/2082) + [#053c (#2091)](https://github.com/Skords-01/Sergeant/pull/2091)
 
 > **Audit (2026-05-06, main `077c738f`).**
 >
@@ -2332,7 +2333,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   4. tech-debt docs (`docs/tech-debt/{frontend,mobile}.md` §2) оновлено — KVStore не блокує SQLite-engine-as-single-storage definition-of-done (§0.2).
   5. governance-sync + ADR graph + lint + typecheck зелені.
 
-#### **PR #053a — `chore(web): drop KVStore syncedKV shim + 5 onboarding/profile callsites`** ⏳ IN PR
+#### **PR #053a — `chore(web): drop KVStore syncedKV shim + 5 onboarding/profile callsites`** ✅ LANDED ([#2078](https://github.com/Skords-01/Sergeant/pull/2078))
 
 - **Scope.** Web phase of PR #053 KVStore deprecate. Видаляє no-op
   `enqueueChange` shim + web `syncedKV` singleton-фасад, мігрує
@@ -2384,7 +2385,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   5. ADR graph + governance-sync зелені (нічого не зачіпає, але CI має
      підтвердити).
 
-#### **PR #053b — `chore(mobile): drop enqueueChange callsites in fizruk hooks`** ⏳ IN PR
+#### **PR #053b — `chore(mobile): drop enqueueChange callsites in fizruk hooks`** ✅ LANDED ([#2082](https://github.com/Skords-01/Sergeant/pull/2082))
 
 - **Scope.** Mobile fizruk wave of PR #053 KVStore deprecate. Видаляє
   10 fizruk-hook call-sites `enqueueChange(STORAGE_KEY)` (no-op після
@@ -2439,7 +2440,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
     `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` shim
     deletion + `apps/mobile/src/lib/storage.ts` allowlist budget.
 
-#### **PR #053c — `chore(mobile): drop remaining enqueueChange callsites + delete sync shim`** ⏳ IN PR
+#### **PR #053c — `chore(mobile): drop remaining enqueueChange callsites + delete sync shim`** ✅ LANDED ([#2091](https://github.com/Skords-01/Sergeant/pull/2091))
 
 - **Scope.** Mobile wave 2 of PR #053 KVStore deprecate. Завершує
   mobile-side cleanup: видаляє решту `enqueueChange` call-sites у
@@ -2721,7 +2722,7 @@ value JSON)`)». Та редакція об'єднувала **дві** орто
 
 ### Stage 8 — SQLite cut-over rollout
 
-> **Status:** 🚧 IN PROGRESS (14/17). Stage 7 закрив **boundary** (eslint
+> **Status:** ✅ COMPLETE (21/21). Stage 7 закрив **boundary** (eslint
 > allowlist = [], 6 storage-primitive-ів делегують у `webKVStore`,
 > KVStore interface повний). Stage 8 — це **operational rollout**:
 > переводимо 8 `feature.{routine,fizruk,nutrition,finyk}.sqlite_v2.*`
@@ -3198,7 +3199,7 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
     не потрібно. Tests: extend `diff.test.ts` (+18 cases),
     `adapter.test.ts` (+11), `parity.test.ts` (+6), `integration.test.ts`
     (+1) — всі mobile fizruk suites зелені (192/192).
-- **PR #057f2-tombstone-mobile-stage12-5** 🚧 IN-FLIGHT — drop MMKV
+- **PR #057f2-tombstone-mobile-stage12-5** ✅ LANDED ([#2315](https://github.com/Skords-01/Sergeant/pull/2315), `ec5653f2`) — drop MMKV
   writes у 3 hooks shipped у `#070f2` (`usePrograms`, `usePlanTemplate`,
   `useWellbeing`). Hooks тепер читають з `getCachedFizrukSqliteState()`
   (cold-cache safe) + subscribe до `useFizrukSqliteReadTick`; persist веде
@@ -3604,7 +3605,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
 
 **PR plan.**
 
-#### **PR #060 — `feat(db-schema): add kv_store SQLite table + client migration`** 🚧 IN FLIGHT ([#2155](https://github.com/Skords-01/Sergeant/pull/2155))
+#### **PR #060 — `feat(db-schema): add kv_store SQLite table + client migration`** ✅ LANDED ([#2155](https://github.com/Skords-01/Sergeant/pull/2155))
 
 - Drizzle SQLite schema у `packages/db-schema/src/sqlite/kvStore.ts`:
   ```ts
@@ -3627,7 +3628,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
 - **Out-of-scope.** Жодних змін у `webKVStore` impl-ації — це
   схема-only PR.
 
-#### **PR #061 — `feat(shared): add createSqliteKVStore + warm-cache`** 🚧 IN FLIGHT ([#2157](https://github.com/Skords-01/Sergeant/pull/2157))
+#### **PR #061 — `feat(shared): add createSqliteKVStore + warm-cache`** ✅ LANDED ([#2157](https://github.com/Skords-01/Sergeant/pull/2157))
 
 - New KVStore adapter у `packages/shared/src/storage/kv.ts` (поряд
   з `createMemoryKVStore`/`createWebKVStore`/`createMmkvKVStore`):
@@ -3650,7 +3651,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
   fallback на init failure, write-coalesce, BC stress test.
 - **Dep.** PR #060.
 
-#### **PR #062 — `feat(web): bootstrap warm-cache + LS→kv_store one-time migration`** 🚧 IN FLIGHT ([#2159](https://github.com/Skords-01/Sergeant/pull/2159))
+#### **PR #062 — `feat(web): bootstrap warm-cache + LS→kv_store one-time migration`** ✅ LANDED ([#2159](https://github.com/Skords-01/Sergeant/pull/2159))
 
 - New `apps/web/src/core/db/kvStoreBoot.ts`:
   ```ts
@@ -3673,7 +3674,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
 webLsKv`).
 - **Dep.** PR #061.
 
-#### **PR #063 — `feat(web): swap webKVStore impl from localStorage to SQLite-backed kv_store`** 🚧 IN FLIGHT ([#2165](https://github.com/Skords-01/Sergeant/pull/2165))
+#### **PR #063 — `feat(web): swap webKVStore impl from localStorage to SQLite-backed kv_store`** ✅ LANDED ([#2165](https://github.com/Skords-01/Sergeant/pull/2165))
 
 - Refactor `apps/web/src/shared/lib/storage/storage.ts ::
 resolveStore()` — пріоритет 1: SQLite warm-cache (якщо
@@ -3852,7 +3853,7 @@ strengthen the same swap rather than extending it. Tracked у audit
    PR #004 (query-cache excludes). Це security-quick-wins, низький ризик.~~
 2. ~~**Тиждень 2:** PR #003 (webhook rotation) + PR #005 (sync_audit) +
    review Stage 0.~~
-3. ~~**Тиждень 3-6:** Stage 1 (Consolidation). PR #006 → #013.~~ ⏳ Майже готово — закриті: #006, #007, #009, #010 (open у #1543), #011, #012, #013. **Лишився тільки PR #008** (storagePatch → `useSyncedKVStore`).
+3. ~~**Тиждень 3-6:** Stage 1 (Consolidation). PR #006 → #013.~~ ✅ COMPLETE — усі 8 PR-ів залендили: #006, #007, #008 (`ff217246`), #009, #010 ([#1543](https://github.com/Skords-01/Sergeant/pull/1543)), #011, #012, #013.
 4. ~~**Тиждень 7:** Перший draft RFC у `docs/rfcs/2026-q3-sqlite-migration.md`
    з фіксованими decision criteria для SPIKE.~~
 5. ~~**Тиждень 8-9:** Stage 2 (Foundation) — найризикованіша частина в плані
