@@ -85,8 +85,8 @@ pnpm test --filter @sergeant/server
 ```
 
 CI freshness-guard для drift між docker-compose і workflows-ами наразі немає
-(out of scope для PR-37); якщо drift трапляється часто — додати
-`scripts/check-pgvector-sha-sync.mjs` у backlog.
+(out of scope для PR-37). Якщо drift трапляється часто — додавай у backlog
+окремий freshness-script (по аналогії з рештою `scripts/check-*.mjs`).
 
 ## Troubleshooting
 
