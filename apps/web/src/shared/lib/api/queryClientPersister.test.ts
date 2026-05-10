@@ -101,7 +101,7 @@ describe("createWebPersistOptions", () => {
     expect(typeof options.persister.removeClient).toBe("function");
   });
 
-  it("buster — стабільний string (для DCE-літерала __APP_BUILD_ID__ у unit-тестах буде 'dev')", () => {
+  it("buster — стабільний string (для `import.meta.env.VITE_BUILD_ID` у unit-тестах буде 'dev')", () => {
     const options = createWebPersistOptions();
     expect(typeof options.buster).toBe("string");
     expect(options.buster.length).toBeGreaterThan(0);

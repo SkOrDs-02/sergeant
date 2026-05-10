@@ -12,8 +12,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "types": []
+    "types": ["vite/client"]
   },
-  "include": ["src/sw.ts", "src/sw/**/*.ts"],
+  "include": ["src/sw.ts", "src/sw/**/*.ts", "src/vite-env.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

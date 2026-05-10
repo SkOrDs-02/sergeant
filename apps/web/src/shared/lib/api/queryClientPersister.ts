@@ -28,8 +28,8 @@
  *
  * ## Cache busting
  *
- * `buster` дорівнює `__APP_BUILD_ID__` — той самий build identifier,
- * що йде у service-worker. На кожному новому деплої buster змінюється,
+ * `buster` дорівнює `import.meta.env.VITE_BUILD_ID` — той самий build
+ * identifier, що йде у service-worker. На кожному новому деплої buster змінюється,
  * `PersistQueryClientProvider` бачить mismatch і викидає старий
  * snapshot. Це захищає від ситуації, коли формат відповіді API
  * змінився між релізами, а застарілий кеш на диску досі думає, що
@@ -80,8 +80,6 @@ import {
   migrateLegacyDbOnce,
 } from "../idb/sergeantDb";
 
-declare const __APP_BUILD_ID__: string;
-
 /**
  * 7 днів — горизонт warm-start.
  * Збігається з мобільним `PERSIST_MAX_AGE_MS`.
@@ -89,16 +87,18 @@ declare const __APP_BUILD_ID__: string;
 export const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
 /**
- * Build-id, доступний у бандлі через `define` у vite.config.js.
- * Фолбек `"dev"` потрібен для unit-тестів (vitest), де define-літерал
- * не підставляється — тести підкидають persister без проходу через
- * Vite-pipeline.
+ * Build-id, доступний у бандлі через `define` у vite.config.js
+ * (`import.meta.env.VITE_BUILD_ID`). Фолбек `"dev"` потрібен для
+ * unit-тестів (vitest), де `define`-літерал не підставляється —
+ * тести підкидають persister без проходу через Vite-pipeline.
+ *
+ * Раніше тут був ambient global `__APP_BUILD_ID__`, мігровано на
+ * стандартний Vite `import.meta.env.VITE_*` pattern у PR-28
+ * (stack-pulse 2026-05 / L1) — типи живуть у
+ * `apps/web/src/vite-env.d.ts`.
  */
 function getBuildBuster(): string {
-  if (typeof __APP_BUILD_ID__ !== "undefined" && __APP_BUILD_ID__) {
-    return __APP_BUILD_ID__;
-  }
-  return "dev";
+  return import.meta.env.VITE_BUILD_ID || "dev";
 }
 
 /**

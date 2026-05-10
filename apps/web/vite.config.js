@@ -66,14 +66,16 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_TARGET": JSON.stringify(
         isCapacitorBuild ? "capacitor" : "web",
       ),
-      __SW_BUILD_ID__: JSON.stringify(buildId),
-      // Той самий buildId, доступний у головному бандлі (а не лише у
-      // SW). Persister React Query (`queryClientPersister.ts`)
-      // використовує його як `buster`, щоб новий деплой автоматично
-      // інвалідовував старий IDB-snapshot — інакше при changed
-      // response-shape (Hard Rule #3) кеш на диску ламає UI до
-      // наступного revalidate.
-      __APP_BUILD_ID__: JSON.stringify(buildId),
+      // BuildId доступний (1) у Service Worker через `apps/web/src/sw/version.ts`,
+      // (2) у головному бандлі через persister React Query
+      // (`apps/web/src/shared/lib/api/queryClientPersister.ts` як `buster`)
+      // — щоб новий деплой автоматично інвалідовував старий IDB-snapshot,
+      // інакше при changed response-shape (Hard Rule #3) кеш на диску
+      // ламає UI до наступного revalidate. PR-28 (stack-pulse 2026-05 / L1)
+      // переніс це з legacy ambient `__SW_BUILD_ID__` / `__APP_BUILD_ID__`
+      // глобалів на стандартний Vite `import.meta.env.VITE_*` pattern,
+      // типізований через `apps/web/src/vite-env.d.ts`.
+      "import.meta.env.VITE_BUILD_ID": JSON.stringify(buildId),
     },
     plugins: [
       tailwindcss(),
