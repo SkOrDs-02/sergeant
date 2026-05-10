@@ -1,0 +1,34 @@
+{
+  "name": "@sergeant/openclaw-plugin",
+  "version": "0.0.1-poc",
+  "private": true,
+  "type": "module",
+  "description": "Sergeant OpenClaw Gateway plugin (Phase 0.5 PoC). Тонкий TypeScript-плагін, що реєструє Sergeant tools у OpenClaw runtime через HTTP-проксі до /api/internal/openclaw/*.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config.ts",
+    "./http-client": "./src/http-client.ts",
+    "./sdk-types": "./src/sdk-types.ts",
+    "./parity": "./src/parity/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@sergeant/shared": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@sergeant/config": "workspace:*",
+    "@types/node": "^20.19.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}

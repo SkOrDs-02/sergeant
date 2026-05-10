@@ -1,0 +1,42 @@
+{
+  "$schema": "https://openclaw.ai/schema/plugin.json",
+  "name": "@sergeant/openclaw-plugin",
+  "version": "0.0.1-poc",
+  "description": "Sergeant OpenClaw Gateway plugin (Phase 0.5 PoC). Тонкий проксі-плагін, що реєструє Sergeant tools у OpenClaw runtime через HTTP-проксі до /api/internal/openclaw/*.",
+  "entry": "./src/index.ts",
+  "phase": "0.5-poc",
+
+  "tools": {
+    "read": [
+      {
+        "name": "recall_memory",
+        "endpoint": "/api/internal/openclaw/recall",
+        "description": "Top-k semantic recall з founder cofounder-namespace memory."
+      }
+    ],
+    "write": [
+      {
+        "name": "create_github_issue",
+        "endpoint": "/api/internal/openclaw/write/create-github-issue",
+        "description": "Створює GitHub issue. Gated approval flow (variant A/B/C — конфіг).",
+        "gated": true,
+        "approvalDefault": "B"
+      }
+    ]
+  },
+
+  "hooks": {
+    "llm_input": "Per-call budget gate (cap $0.5 USD; fail-closed на server-error).",
+    "agent_turn_start": "Опен invocation-row у openclaw_invocations + correlator agent_run_id ↔ id.",
+    "agent_turn_end": "Фіналізує invocation з cost rollup + final status.",
+    "tool_call_pre": "[Variant B] Approval flow: send DM → waitForCallback → set state.",
+    "tool_call_post": "[Variant A/C] Audit log запис у openclaw_write_audit."
+  },
+
+  "configSchemaRef": "./src/config.ts",
+
+  "_notes": [
+    "PR-B Phase 0.5 PoC manifest. Phase 1 (PR-C) додасть решту 12 read tools + 4 code/n8n/SEO tools + set_reminder + refresh_business_snapshot + 17 shortcuts.",
+    "Phase 4 (PR-D) розширить write tools tools до 7 і fixнe approval default за результатом цього PoC."
+  ]
+}

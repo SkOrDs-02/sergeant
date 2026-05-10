@@ -10,6 +10,7 @@
 ## Що таке OpenClaw?
 
 OpenClaw — це AI-асистент, який:
+
 - **Працює у тебе** — ти встановлюєш його на свій комп'ютер або сервер
 - **Відповідає в месенджерах** — Telegram, WhatsApp, Slack, Discord, Signal, iMessage та ще 20+
 - **Вміє говорити** — голосовий ввід/вивід на macOS, iOS, Android
@@ -21,15 +22,18 @@ OpenClaw — це AI-асистент, який:
 ## Крок 1: Перевір вимоги
 
 Тобі потрібно:
+
 - **Node.js** версії 24 (рекомендовано) або 22.16+
 - **API ключ** від AI-провайдера (Anthropic, OpenAI, або Google)
 
 Перевір версію Node:
+
 ```bash
 node --version
 ```
 
 Якщо Node не встановлений або стара версія:
+
 ```bash
 # macOS/Linux — встановити Node через nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
@@ -47,16 +51,19 @@ nvm install 24
 ## Крок 2: Встанови OpenClaw
 
 ### macOS / Linux
+
 ```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
 ### Windows (PowerShell)
+
 ```powershell
 iwr -useb https://openclaw.ai/install.ps1 | iex
 ```
 
 ### Або через npm/pnpm
+
 ```bash
 npm install -g openclaw@latest
 # або
@@ -72,6 +79,7 @@ openclaw onboard --install-daemon
 ```
 
 Це інтерактивний wizard, який за ~2 хвилини:
+
 1. Запитає, який AI-провайдер ти хочеш використовувати (Anthropic / OpenAI / Google)
 2. Попросить API ключ
 3. Налаштує Gateway (це "серверна" частина, яка працює у фоні)
@@ -79,11 +87,11 @@ openclaw onboard --install-daemon
 
 ### Де взяти API ключ?
 
-| Провайдер | Де отримати | Модель |
-|-----------|-------------|--------|
+| Провайдер                     | Де отримати                                                                        | Модель          |
+| ----------------------------- | ---------------------------------------------------------------------------------- | --------------- |
 | **Anthropic** (рекомендовано) | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) | Claude Sonnet 4 |
-| **OpenAI** | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | GPT-4o |
-| **Google** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Gemini 2.5 Pro |
+| **OpenAI**                    | [platform.openai.com/api-keys](https://platform.openai.com/api-keys)               | GPT-4o          |
+| **Google**                    | [aistudio.google.com/apikey](https://aistudio.google.com/apikey)                   | Gemini 2.5 Pro  |
 
 ---
 
@@ -124,6 +132,7 @@ openclaw setup telegram
 ```
 
 Wizard попросить Bot Token — встав його. Після цього:
+
 1. Знайди свого бота в Telegram
 2. Натисни "Start"
 3. Напиши повідомлення — бот відповість!
@@ -145,29 +154,37 @@ openclaw pairing approve <код>
 ## Крок 6: Підключи інші канали (опціонально)
 
 ### WhatsApp
+
 ```bash
 openclaw setup whatsapp
 ```
+
 Тобі покажуть QR-код — скануй його камерою WhatsApp (як WhatsApp Web).
 
 ### Slack
+
 ```bash
 openclaw setup slack
 ```
+
 Потрібно створити Slack App — wizard проведе через процес.
 
 ### Discord
+
 ```bash
 openclaw setup discord
 ```
+
 Потрібен Discord Bot Token — wizard покаже де його взяти.
 
 ### Signal
+
 ```bash
 openclaw setup signal
 ```
 
 ### iMessage (тільки macOS)
+
 ```bash
 openclaw setup imessage
 ```
@@ -191,11 +208,13 @@ openclaw plugins install @sergeant/openclaw-tools
 ### 7.2 Налаштуй plugin
 
 Відкрий конфіг:
+
 ```bash
 openclaw config edit
 ```
 
 Додай:
+
 ```json
 {
   "plugins": {
@@ -214,6 +233,7 @@ openclaw config edit
 ```
 
 **Де взяти ці значення:**
+
 - `serverUrl` — URL вашого Sergeant backend (Railway dashboard → Settings → Domains)
 - `internalApiKey` — значення `INTERNAL_API_KEY` з Railway env vars
 - `founderUserId` — ваш user ID з бази даних Sergeant
@@ -221,6 +241,7 @@ openclaw config edit
 ### 7.3 Додай skills (personas)
 
 Скопіюй skills у workspace:
+
 ```bash
 mkdir -p ~/.openclaw/workspace/skills
 
@@ -230,6 +251,7 @@ cp -r ~/.openclaw/skills/sergeant-cofounder ~/.openclaw/workspace/skills/
 ```
 
 ### 7.4 Перезапусти Gateway
+
 ```bash
 openclaw gateway restart
 ```
@@ -237,6 +259,7 @@ openclaw gateway restart
 ### 7.5 Перевір, що все працює
 
 Напиши боту в Telegram:
+
 - `/help` — повинен показати Sergeant-специфічні команди
 - "Покажи метрики за тиждень" — повинен отримати дані з Stripe/PostHog/Sentry
 - "Що ми вирішували минулого тижня?" — повинен показати decisions
@@ -245,16 +268,16 @@ openclaw gateway restart
 
 ## Корисні команди
 
-| Команда | Що робить |
-|---------|-----------|
-| `openclaw gateway status` | Перевірити статус Gateway |
-| `openclaw gateway restart` | Перезапустити Gateway |
-| `openclaw gateway stop` | Зупинити Gateway |
-| `openclaw dashboard` | Відкрити веб-інтерфейс |
-| `openclaw config edit` | Редагувати конфіг |
-| `openclaw skills list` | Показати активні skills |
-| `openclaw plugins list` | Показати встановлені plugins |
-| `openclaw doctor` | Діагностика проблем |
+| Команда                          | Що робить                     |
+| -------------------------------- | ----------------------------- |
+| `openclaw gateway status`        | Перевірити статус Gateway     |
+| `openclaw gateway restart`       | Перезапустити Gateway         |
+| `openclaw gateway stop`          | Зупинити Gateway              |
+| `openclaw dashboard`             | Відкрити веб-інтерфейс        |
+| `openclaw config edit`           | Редагувати конфіг             |
+| `openclaw skills list`           | Показати активні skills       |
+| `openclaw plugins list`          | Показати встановлені plugins  |
+| `openclaw doctor`                | Діагностика проблем           |
 | `openclaw agent --message "..."` | Відправити повідомлення з CLI |
 
 ---
@@ -273,6 +296,7 @@ npm update -g openclaw@latest
 ```
 
 Після оновлення:
+
 ```bash
 openclaw doctor       # перевірити, що все ОК
 openclaw gateway restart  # перезапустити Gateway
@@ -283,23 +307,27 @@ openclaw gateway restart  # перезапустити Gateway
 ## Troubleshooting
 
 ### Gateway не стартує
+
 ```bash
 openclaw doctor
 openclaw gateway --verbose  # запустити з детальним логом
 ```
 
 ### Бот не відповідає в Telegram
+
 1. Перевір, що Gateway запущений: `openclaw gateway status`
 2. Перевір Telegram channel: `openclaw channels status`
 3. Перевір логи: `openclaw gateway --verbose`
 
 ### API key не працює
+
 ```bash
 openclaw config edit
 # Знайди секцію з provider і перевір ключ
 ```
 
 ### Plugin не працює
+
 ```bash
 openclaw plugins list         # чи встановлений?
 openclaw plugins diagnose     # діагностика
@@ -307,6 +335,7 @@ openclaw gateway --verbose    # дивись логи
 ```
 
 ### Потрібна допомога
+
 - Документація: [docs.openclaw.ai](https://docs.openclaw.ai)
 - Discord спільнота: [discord.gg/clawd](https://discord.gg/clawd)
 - FAQ: [docs.openclaw.ai/help/faq](https://docs.openclaw.ai/help/faq)
@@ -315,13 +344,13 @@ openclaw gateway --verbose    # дивись логи
 
 ## Словник
 
-| Термін | Що це |
-|--------|-------|
-| **Gateway** | "Сервер" OpenClaw, який працює у фоні на твоєму комп'ютері. Він з'єднує AI-модель з каналами (Telegram, WhatsApp, тощо). |
-| **Channel** | Канал зв'язку — Telegram, WhatsApp, Slack, Discord, тощо. |
-| **Skill** | Набір інструкцій для AI, як робити конкретну задачу. Це текстовий файл (SKILL.md). |
-| **Plugin** | Розширення, яке додає нові можливості — наприклад, підключення до Sergeant API. |
-| **Workspace** | Робоча директорія OpenClaw — тут живуть твої skills, конфіги, дані. |
-| **Dashboard** | Веб-інтерфейс для чату з асистентом та моніторингу. |
-| **DM Pairing** | Механізм безпеки — новий користувач повинен підтвердити свою особу через код. |
-| **ClawHub** | Публічний реєстр plugins і skills (як npm для OpenClaw). |
+| Термін         | Що це                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Gateway**    | "Сервер" OpenClaw, який працює у фоні на твоєму комп'ютері. Він з'єднує AI-модель з каналами (Telegram, WhatsApp, тощо). |
+| **Channel**    | Канал зв'язку — Telegram, WhatsApp, Slack, Discord, тощо.                                                                |
+| **Skill**      | Набір інструкцій для AI, як робити конкретну задачу. Це текстовий файл (SKILL.md).                                       |
+| **Plugin**     | Розширення, яке додає нові можливості — наприклад, підключення до Sergeant API.                                          |
+| **Workspace**  | Робоча директорія OpenClaw — тут живуть твої skills, конфіги, дані.                                                      |
+| **Dashboard**  | Веб-інтерфейс для чату з асистентом та моніторингу.                                                                      |
+| **DM Pairing** | Механізм безпеки — новий користувач повинен підтвердити свою особу через код.                                            |
+| **ClawHub**    | Публічний реєстр plugins і skills (як npm для OpenClaw).                                                                 |
