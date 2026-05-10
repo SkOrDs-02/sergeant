@@ -57,7 +57,15 @@ export const STORAGE_KEYS = {
   // era (PR #035–#039 split it into per-key slots + per-table SQLite
   // mirror) had no writers since 2026 and only a pair of lying
   // `monthlyBudget` readers in `useWeeklyDigest` / `weeklyDigestAggregates`.
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_prefs.show_balance`. */
+  /**
+   * @deprecated Stage 13 PR #074 — UI читає через `useFinykStorageSlots`
+   * slot bundle (`storage.showBalance`), який overlay-ить
+   * `finyk_prefs.show_balance` із SQLite кеша. LS лишається лише як
+   * synchronous first-paint fallback (`useState` initializer у
+   * `useFinykStorageSlots.ts`); dual-write pipeline writes до
+   * `finyk_prefs.show_balance` — production callsite-ів `setItem` для
+   * `finyk_show_balance_v1` більше нема.
+   */
   FINYK_SHOW_BALANCE: "finyk_show_balance_v1",
   /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_accounts`. */
   FINYK_HIDDEN: "finyk_hidden",

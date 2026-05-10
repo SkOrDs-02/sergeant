@@ -99,6 +99,8 @@ export function useStorage({
     manualExpenses,
     setManualExpenses,
     dismissedRecurring,
+    showBalance,
+    setShowBalance,
     networthSnapshotRef,
   } = slots;
 
@@ -192,5 +194,7 @@ export function useStorage({
     addManualExpense: mutations.addManualExpense,
     editManualExpense: mutations.editManualExpense,
     removeManualExpense: mutations.removeManualExpense,
+    showBalance,
+    setShowBalance,
   };
 }

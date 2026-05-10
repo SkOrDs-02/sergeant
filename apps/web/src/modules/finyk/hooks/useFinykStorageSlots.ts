@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { DEFAULT_SUBSCRIPTIONS } from "../constants";
-import { readJSON, finykStorageManager } from "../lib/finykStorage";
+import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
 import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
@@ -66,6 +66,13 @@ export interface FinykStorageSlots {
   setExcludedStatTxIds: Dispatch<SetStateAction<string[]>>;
   dismissedRecurring: string[];
   setDismissedRecurring: Dispatch<SetStateAction<string[]>>;
+  /**
+   * Balance-visibility flag (Stage 13 PR #074). LS first-paint fallback,
+   * SQLite-overlay once warm. Mutations flow through dual-write —
+   * `setShowBalance` does NOT write LS.
+   */
+  showBalance: boolean;
+  setShowBalance: Dispatch<SetStateAction<boolean>>;
   networthSnapshotRef: React.MutableRefObject<NetworthSnap>;
 }
 
@@ -137,6 +144,13 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   const [dismissedRecurring, setDismissedRecurring] = useReadonlyPersist<
     string[]
   >("finyk_rec_dismissed", []);
+  // Stage 13 PR #074 — `finyk_show_balance_v1` slot. Default `true`
+  // (UI shows balances unless user toggled off). Raw-string LS shape
+  // (`"0"` / `"1"`), не JSON, тож беремо ручну useState + readRaw
+  // замість useReadonlyPersist (який readJSON-ить).
+  const [showBalance, setShowBalance] = useState<boolean>(
+    () => readRaw("finyk_show_balance_v1", "1") !== "0",
+  );
   const networthSnapshotRef = useRef<NetworthSnap>(
     readJSON<NetworthSnap>("finyk_networth_last_snap", {
       date: null,
@@ -178,6 +192,12 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     if (cache.dismissedRecurring !== null) {
       setDismissedRecurring(cache.dismissedRecurring);
     }
+    // Stage 13 PR #074 — `finyk_prefs.show_balance` overlay.
+    // `null` means prefs row ще не існує або колонка NULL —
+    // лишаємо LS first-paint value (`true` by default).
+    if (cache.showBalance !== null) {
+      setShowBalance(cache.showBalance);
+    }
     // `networth_last_snap` ref slot is intentionally NOT mirrored to
     // SQLite — it's a per-device dashboard hint, not part of the
     // dual-write contract.
@@ -217,6 +237,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setExcludedStatTxIds,
     dismissedRecurring,
     setDismissedRecurring,
+    showBalance,
+    setShowBalance,
     networthSnapshotRef,
   };
 }

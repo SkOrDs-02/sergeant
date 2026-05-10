@@ -30,15 +30,15 @@ import {
   type FinykDualWriteState,
 } from "../lib/dualWrite/index.js";
 import { extractFinykDualWriteState } from "../lib/dualWrite/extract.js";
-import { readRaw } from "../lib/finykStorage";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
 
-function readShowBalance(): boolean {
-  return readRaw("finyk_show_balance_v1", "1") !== "0";
-}
-
 export function useFinykDualWriteSync(slots: FinykStorageSlots): void {
-  const showBalance = readShowBalance();
+  // Stage 13 PR #074 — `showBalance` живе в slot bundle (з SQLite
+  // overlay), більше не читаємо LS напрямую тут. Lint-gate
+  // (`no-restricted-syntax`) блокує LS-write на `finyk_show_balance_v1`,
+  // отже єдиний шлях persist — друга-режим через dual-write
+  // вниз.
+  const showBalance = slots.showBalance;
   const prevRef = useRef<FinykDualWriteState>(EMPTY_FINYK_STATE);
   const initialisedRef = useRef(false);
 

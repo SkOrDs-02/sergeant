@@ -4,7 +4,7 @@ import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
-import { readRaw, writeRaw } from "./lib/finykStorage";
+import { readRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import {
@@ -103,9 +103,12 @@ export default function App({
   const [tokenInput, setTokenInput] = useState("");
   const [showToken, setShowToken] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [showBalance, setShowBalance] = useState(
-    () => readRaw("finyk_show_balance_v1", "1") !== "0",
-  );
+  // Stage 13 PR #074 — `showBalance` тепер живе в storage slot bundle
+  // (`useFinykStorageSlots`) з SQLite-overlay (`finyk_prefs.show_balance`)
+  // і LS first-paint fallback. Мутації проходять через dual-write
+  // (`useFinykDualWriteSync`) — LS-write більше не потрібний.
+  const showBalance = storage.showBalance;
+  const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   // Inline Mono-token entry overlay. Triggered from the no-bank banner —
   // replaces the previous full-screen `FinykLoginScreen` gate so users
@@ -131,10 +134,6 @@ export default function App({
   const [manualOnly, setManualOnly] = useState(
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
-
-  useEffect(() => {
-    writeRaw("finyk_show_balance_v1", showBalance ? "1" : "0");
-  }, [showBalance]);
 
   useEffect(() => {
     if (window.location.search.includes("sync=")) {
