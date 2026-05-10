@@ -3,17 +3,16 @@
  *
  * Mirrors `apps/web/src/modules/finyk/lib/monoMirrorGate.ts`. The
  * mobile Finyk module exposes Mono transactions through
- * `transactionsStore.ts` (MMKV-backed) — when the
- * `feature.finyk.sqlite_v2.mono_mirror` flag is on we overlay the
- * stored slice from the SQLite cache. The pub-sub here lets that
- * overlay re-render after every refresh.
+ * `transactionsStore.ts` (MMKV-backed) — the SQLite cache overlay
+ * fires unconditionally. The pub-sub here lets that overlay re-render
+ * after every refresh.
+ *
+ * Stage 13 PR #078: the `feature.finyk.sqlite_v2.mono_mirror` flag
+ * has been retired. `useFinykMonoMirrorFlag()` now returns `true`
+ * unconditionally.
  */
 
 import { useSyncExternalStore } from "react";
-
-import { useFlag } from "@/core/lib/featureFlags";
-
-const MIRROR_FLAG_ID = "feature.finyk.sqlite_v2.mono_mirror";
 
 let cacheTick = 0;
 const listeners = new Set<() => void>();
@@ -34,13 +33,13 @@ export function useFinykMonoMirrorTick(): number {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-/** Flag-gated read-overlay enable. */
+/** Formerly flag-gated; now unconditionally `true` (Stage 13 PR #078). */
 export function useFinykMonoMirrorFlag(): boolean {
-  return useFlag(MIRROR_FLAG_ID);
+  return true;
 }
 
 export interface FinykMonoMirrorGate {
-  /** Current value of `feature.finyk.sqlite_v2.mono_mirror`. */
+  /** Always `true` since Stage 13 PR #078 retired the flag. */
   readonly enabled: boolean;
   /**
    * Tick counter that bumps after every successful mirror refresh —

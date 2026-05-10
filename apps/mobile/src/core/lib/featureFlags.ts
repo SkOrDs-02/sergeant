@@ -54,13 +54,9 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
       "Глобальний пошук і дії через клавіатуру. Ранній preview — може не працювати у деяких PWA-кейсах.",
     defaultValue: false,
   },
-  {
-    id: "feature.finyk.sqlite_v2.mono_mirror",
-    label: "Finyk — Mono cache mirror",
-    description:
-      "Mono транзакції / акаунти / balance-snapshots мирорять у локальну SQLite (`finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`) на кожен Mono fetch. Reads у `transactionsStore.realTx` оверлеять з SQLite до прильоту наступного MMKV-снапшота. MMKV-write (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`) залишається як safety net. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Default: on.",
-    defaultValue: true,
-  },
+  // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
+  // Previously defaultValue: true. Mono mirror now triggers
+  // unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.
 ] as const;
 
 const DEFAULTS: FlagValues = Object.freeze(

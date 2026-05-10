@@ -33,13 +33,12 @@ describe("mobile featureFlags", () => {
     expect(flag).toBeUndefined();
   });
 
-  it("keeps Finyk Mono mirror default-on for Stage 8 PR #055k1", () => {
+  it("Stage 13 PR #078 drop: feature.finyk.sqlite_v2.mono_mirror більше не існує у реєстрі", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.finyk.sqlite_v2.mono_mirror",
     );
 
-    expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag).toBeUndefined();
   });
 
   it("Stage 8 PR #057r drop: feature.routine.sqlite_v2.read_sqlite більше не існує у реєстрі", () => {

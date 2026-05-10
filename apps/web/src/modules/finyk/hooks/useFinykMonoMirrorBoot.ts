@@ -1,14 +1,13 @@
 /**
  * React hook that boots the SQLite Mono cache mirror.
  *
- * PR #038 of `docs/planning/storage-roadmap.md`. When the
- * `feature.finyk.sqlite_v2.mono_mirror` flag is on, this hook runs
- * `bootFinykMonoMirror()` once after mount so `useMonobankWebhook`
- * can overlay reads from the local `finyk_mono_*` tables instead of
- * blocking on the API fetch for cold-start renders.
+ * PR #038 of `docs/planning/storage-roadmap.md`. Stage 13 PR #078
+ * retired the `feature.finyk.sqlite_v2.mono_mirror` flag — the mirror
+ * now boots unconditionally after mount so `useMonobankWebhook` can
+ * overlay reads from the local `finyk_mono_*` tables.
  *
  * Fire-and-forget — boot failures fall back to LS silently (console
- * warning only). Render-time gating is the consumer's responsibility.
+ * warning only).
  */
 
 import { useEffect, useRef } from "react";

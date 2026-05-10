@@ -3,28 +3,27 @@
  *
  * Mirrors `sqliteReadBoot.ts` (PR #037). Called once from
  * `useFinykMonoMirrorBoot()` after the auth `me` query and the
- * sqlite-wasm singleton are available. Evaluates
- * `feature.finyk.sqlite_v2.mono_mirror` and, when enabled:
+ * sqlite-wasm singleton are available.
+ *
+ * Stage 13 PR #078: the `feature.finyk.sqlite_v2.mono_mirror` flag
+ * has been retired — the mirror now boots unconditionally.
  *
  *  1. Runs the finyk SQLite migrations (002 ships the mono mirror
  *     tables — see `packages/db-schema/src/sqlite/migrations`).
  *  2. Performs the initial `refreshFinykMonoMirrorState()` so the
  *     cache is warm before the first overlay read.
  *
- * Idempotent — calling it twice with the same flag value is a no-op.
+ * Idempotent — calling it twice is a no-op.
  */
 
-import { getFlag } from "../../../core/lib/featureFlags.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
 import { refreshFinykMonoMirrorState } from "./monoMirrorReader.js";
 
-const FLAG_ID = "feature.finyk.sqlite_v2.mono_mirror";
-
 let booted = false;
 
 /**
- * Initialise the Mono mirror cache if the flag is on.
+ * Initialise the Mono mirror cache.
  *
  * @param userId - The authenticated user's id (from the `me` query).
  *   When `null` the boot is skipped (pre-auth window).
@@ -34,9 +33,7 @@ export async function bootFinykMonoMirror(
   userId: string | null,
 ): Promise<boolean> {
   if (booted) return false;
-
-  const enabled = getFlag(FLAG_ID);
-  if (!enabled || !userId) return false;
+  if (!userId) return false;
 
   try {
     const handle = await getSqliteDb();
