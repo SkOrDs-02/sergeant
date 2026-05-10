@@ -13,7 +13,9 @@ import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
+import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
 
@@ -146,10 +148,28 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     .slice(0, 5)
     .map(([name, amount]) => ({ name, amount }));
 
-  const finykStorage = safeReadLS<{
-    monthlyPlan?: { expense?: number };
-  } | null>("finyk_storage_v2", null);
-  const monthlyBudget = finykStorage?.monthlyPlan?.expense ?? null;
+  // PR #072 (storage-roadmap Stage 13) — read SQLite `finyk_prefs.monthly_plan_json`
+  // (canonical, written by `useFinykDualWriteSync`) with a one-step LS fallback
+  // for boot-cycles when the SQLite cache is still cold. The previous
+  // `safeReadLS("finyk_storage_v2", ...)` blob was never written to after
+  // PR #035–#039 (Stage 4 per-key split), so `monthlyBudget` was always
+  // `null` on fresh installs and `Insights.budgetRemaining` silently
+  // degraded.
+  const sqliteMonthlyPlan = getCachedFinykSqliteState().monthlyPlan;
+  const lsMonthlyPlan = safeReadLS<MonthlyPlan | null>(
+    "finyk_monthly_plan",
+    null,
+  );
+  const monthlyPlan = sqliteMonthlyPlan ?? lsMonthlyPlan;
+  // `MonthlyPlan.expense` is `string | number` (the dual-write extractor
+  // accepts both shapes) — coerce to number for the digest payload, and
+  // collapse blank strings + NaN to `null`.
+  const expenseRaw = monthlyPlan?.expense;
+  const expenseNum =
+    expenseRaw === undefined || expenseRaw === ""
+      ? Number.NaN
+      : Number(expenseRaw);
+  const monthlyBudget = Number.isFinite(expenseNum) ? expenseNum : null;
 
   return {
     totalSpent: aggregate.totalSpent,
