@@ -3790,29 +3790,31 @@ strengthen the same swap rather than extending it. Tracked у audit
 
 ### Stage 13 — Audit findings & post-migration cleanup
 
-> **Status:** 🔄 IN PROGRESS (6/9 LANDED, 3 PROPOSED) — last updated 2026-05-10.
+> **Status:** ✅ COMPLETE (9/9 LANDED) — last updated 2026-05-10.
 >
-> **Landed (6/9):** PR #071 ✅ ([#2322](https://github.com/Skords-01/Sergeant/pull/2322)
+> **Landed (9/9):** PR #071 ✅ ([#2322](https://github.com/Skords-01/Sergeant/pull/2322)
 > — mobile `hubBackup` delegates to module-level apply, 4 new module-level
 > backup helpers + integration test); PR #072 ✅ ([#2320](https://github.com/Skords-01/Sergeant/pull/2320)
-> — weekly-digest SQLite `finyk_prefs.monthly_plan_json` reader); PR #074
-> ✅ ([#2325](https://github.com/Skords-01/Sergeant/pull/2325) — finyk
-> `showBalance` slot bundle із SQLite-overlay `finyk_prefs.show_balance` +
-> LS first-paint fallback; closes audit finding A4); PR #075
-> ✅ ([#2321](https://github.com/Skords-01/Sergeant/pull/2321) — finyk
-> LS-only slots `excluded_stat_txs` + `dismissed_recurring` migrated to
-> SQLite cross-device sync); PR #076 ✅ ([#2319](https://github.com/Skords-01/Sergeant/pull/2319)
-> — dropped dead `syncedKV.ts` + `SYNC_EVENT/SYNC_STATUS_EVENT` + lying
-> OpenAPI registrations); PR #079 ✅ ([#2324](https://github.com/Skords-01/Sergeant/pull/2324)
-> — doc drift refresh: Initiative 0003 Phase 2 PR placeholder resolved +
-> Phase 6 bullets carry explicit commit/PR refs; ADR-0047 amendment +
-> Phase 7 exit-criteria already in-tree from audit-prep commit
-> `37bcba1c`).
->
-> **Still proposed (3/9):** PR #073 (mobile `NUTRITION_SAVED_RECIPES`
-> tombstone), PR #077 (drop dead sync-metadata STORAGE_KEYS +
-> `dirtyCount/queuedCount` from `useSyncStatus`), PR #078 (retire
-> `feature.finyk.sqlite_v2.mono_mirror` flag).
+> — weekly-digest SQLite `finyk_prefs.monthly_plan_json` reader); PR #073
+> ✅ ([#2366](https://github.com/Skords-01/Sergeant/pull/2366) — mobile
+> `NUTRITION_SAVED_RECIPES` MMKV-write tombstone + residualImport drain);
+> PR #074 ✅ ([#2325](https://github.com/Skords-01/Sergeant/pull/2325)
+> — finyk `showBalance` slot bundle із SQLite-overlay
+> `finyk_prefs.show_balance` + LS first-paint fallback; closes audit
+> finding A4); PR #075 ✅ ([#2321](https://github.com/Skords-01/Sergeant/pull/2321)
+> — finyk LS-only slots `excluded_stat_txs` + `dismissed_recurring`
+> migrated to SQLite cross-device sync); PR #076
+> ✅ ([#2319](https://github.com/Skords-01/Sergeant/pull/2319) — dropped
+> dead `syncedKV.ts` + `SYNC_EVENT/SYNC_STATUS_EVENT` + lying OpenAPI
+> registrations); PR #077 ✅ ([#2367](https://github.com/Skords-01/Sergeant/pull/2367)
+> — drop 11 dead `STORAGE_KEYS.{SYNC,MOBILE_SYNC}_*` entries + web
+> `dirtyCount`/`queuedCount` from `useSyncStatus`); PR #078 ✅ (retire
+> `feature.finyk.sqlite_v2.mono_mirror` flag — last sqlite_v2 flag;
+> mono mirror boots unconditionally); PR #079
+> ✅ ([#2324](https://github.com/Skords-01/Sergeant/pull/2324) — doc drift
+> refresh: Initiative 0003 Phase 2 PR placeholder resolved + Phase 6
+> bullets carry explicit commit/PR refs; ADR-0047 amendment + Phase 7
+> exit-criteria already in-tree from audit-prep commit `37bcba1c`).
 >
 > Post-Stage-12.5 audit (read-only review всіх `safeWriteLS`/`safeReadLS`
 > callsites + `STORAGE_KEYS` references + sync-engine exports + OpenAPI
@@ -3910,7 +3912,7 @@ strengthen the same swap rather than extending it. Tracked у audit
 
 **Group B — Partial tombstones (MEDIUM).**
 
-#### **PR #073 — `chore(mobile,nutrition): drop NUTRITION_SAVED_RECIPES MMKV write + extend residualImport`** 📋 PROPOSED — MEDIUM
+#### **PR #073 — `chore(mobile,nutrition): drop NUTRITION_SAVED_RECIPES MMKV write + extend residualImport`** ✅ LANDED ([#2366](https://github.com/Skords-01/Sergeant/pull/2366), 2026-05-10) — MEDIUM
 
 - **Symptom.** `apps/mobile/src/modules/nutrition/lib/recipeBookStore.ts:88-107`
   усе ще робить `safeReadLS(NUTRITION_SAVED_RECIPES)` для read-path і
@@ -4008,7 +4010,7 @@ strengthen the same swap rather than extending it. Tracked у audit
   consumers.
 - **Dep.** None.
 
-#### **PR #077 — `chore(shared): drop dead sync-metadata STORAGE_KEYS + web useSyncStatus dirtyCount/queuedCount`** 📋 PROPOSED — MEDIUM (~50 LOC)
+#### **PR #077 — `chore(shared): drop dead sync-metadata STORAGE_KEYS + web useSyncStatus dirtyCount/queuedCount`** ✅ LANDED ([#2367](https://github.com/Skords-01/Sergeant/pull/2367), 2026-05-10) — MEDIUM (~50 LOC)
 
 - **B3 — Web `useSyncStatus.dirtyCount` / `queuedCount` perpetually 0.**
   `apps/web/src/core/cloudSync/hook/useSyncStatus.ts:33-34` returns
@@ -4034,7 +4036,7 @@ strengthen the same swap rather than extending it. Tracked у audit
   проти dropped names.
 - **Dep.** None — все це stale-references.
 
-#### **PR #078 — `chore(finyk): retire feature.finyk.sqlite_v2.mono_mirror flag`** 📋 PROPOSED — LOW (mirror #057k-flag pattern)
+#### **PR #078 — `chore(finyk): retire feature.finyk.sqlite_v2.mono_mirror flag`** ✅ LANDED (2026-05-10) — LOW (mirror #057k-flag pattern)
 
 - **Symptom.** Останній sqlite_v2 flag still gated. `defaultValue:
 true, experimental: true` у `featureFlags.ts:62-69`. Усі інші
@@ -4122,25 +4124,26 @@ true, experimental: true` у `featureFlags.ts:62-69`. Усі інші
 7. **Тиждень 7+:** PR #078 (mono_mirror flag retire) — після burn-in
    window.
 
-**Done criteria для Stage 13.**
+**Done criteria для Stage 13.** All met as of 2026-05-10.
 
-- 0 production reads/writes для `STORAGE_KEYS.{SYNC,MOBILE_SYNC}_*`
-  (10 dropped entries).
-- 0 production imports `createSyncedKVStore` /
-  `SYNC_EVENT` / `SYNC_STATUS_EVENT`.
-- OpenAPI generated spec не показує v1 sync endpoints як живі.
-- Mobile hubBackup round-trip post-tombstone — passes integration
-  test.
-- Weekly-digest на web + mobile reads `finyk_prefs.monthly_plan_json`
-  (SQLite) для `monthlyBudget`.
-- Initiative 0003 Phase 6 → Done з посиланнями.
-- ADR-0047 містить exit-criteria для sunset routes (8-week clean
-  signal або 2026-08-04 — whichever first).
-- (Optional) `feature.finyk.sqlite_v2.mono_mirror` retired (last
-  sqlite_v2 flag).
+- ✅ 0 production reads/writes для `STORAGE_KEYS.{SYNC,MOBILE_SYNC}_*`
+  (11 dropped entries — PR #077).
+- ✅ 0 production imports `createSyncedKVStore` /
+  `SYNC_EVENT` / `SYNC_STATUS_EVENT` (PR #076).
+- ✅ OpenAPI generated spec не показує v1 sync endpoints як живі
+  (PR #076).
+- ✅ Mobile hubBackup round-trip post-tombstone — passes integration
+  test (PR #071).
+- ✅ Weekly-digest на web + mobile reads `finyk_prefs.monthly_plan_json`
+  (SQLite) для `monthlyBudget` (PR #072).
+- ✅ Initiative 0003 Phase 6 → Done з посиланнями (PR #079).
+- ✅ ADR-0047 містить exit-criteria для sunset routes (8-week clean
+  signal або 2026-08-04 — whichever first) (PR #079).
+- ✅ `feature.finyk.sqlite_v2.mono_mirror` retired (last sqlite_v2
+  flag) — PR #078.
 
-**Calendar (early-stage dev, без canary):** ~3 тижні coding на 0.5
-FTE (≈8 PR-ів, переважно small) + 4 тижні burn-in для PR #078.
+**Calendar (actual):** 9 PRs landed across 2026-05-10 — early-stage
+dev cadence, burn-in window for PR #078 waived per user decision.
 
 ---
 
