@@ -41,6 +41,7 @@ Format: `<type>(<scope>): <subject>`. Allowed types: `feat`, `fix`, `docs`, `cho
 | `config`           | `packages/config/**`                                                |
 | `db-schema`        | `packages/db-schema/**`                                             |
 | `eslint-plugins`   | `packages/eslint-plugin-sergeant-design/**`                         |
+| `openclaw-plugin`  | `packages/openclaw-plugin/**`                                       |
 | `migrations`       | `apps/server/src/migrations/**` only                                |
 | `agents`           | `.agents/**`, `tools/console/src/agents/**`, `ops/n8n-workflows/**` |
 | `deps`             | Renovate / dependency-only PRs                                      |
