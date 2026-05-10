@@ -1,12 +1,13 @@
 # SPIKE — OpenClaw Plugin PoC (Phase 0.5)
 
-> **Last validated:** 2026-05-10. **Status:** Active (PoC complete; PR-B [#2385](https://github.com/Skords-01/Sergeant/pull/2385) merged 2026-05-10).
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Active (PoC complete; PR-B [#2385](https://github.com/Skords-01/Sergeant/pull/2385) merged 2026-05-10).
 > **Owner:** @Skords-01 · **Created:** 2026-05-10
 > **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § PR-B / Phase 0.5](../../planning/openclaw-migration-plan.md)
 > **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385)).
 
 Цей spike — обов'язковий вихід-артефакт PR-B (Phase 0.5), що блокує
-Phase 1 (PR-C1) планування. Plan §522:
+Phase 1 (PR-C1a) планування. Plan §522:
 
 > "Вихід Phase 0.5: короткий note `docs/notes/spikes/openclaw-poc.md` з
 > висновками + go/no-go для Phase 1."
@@ -189,7 +190,7 @@ mode, але PoC-form достатній для single-instance.
 
 ## Go / No-go decision
 
-**🟢 GO для Phase 1 (PR-C1).**
+**🟢 GO для Phase 1 (PR-C1a).**
 
 Підтверджено:
 
@@ -199,7 +200,7 @@ mode, але PoC-form достатній для single-instance.
 4. Budget gate, audit correlator — функціонально valid.
 5. 2 міграції — Testcontainers round-trip green.
 
-## Phase 1 → next steps (PR-C1 scope)
+## Phase 1 → next steps (PR-C1a / C1b / C1c / C1d scope)
 
 Із Phase 0.5 PoC scaffold-у Phase 1 розширює:
 
@@ -236,7 +237,7 @@ Phase 4 (PR-D) — extends `create_github_issue` PoC на 6+ write-tools
    `openclaw_write_audit` write-state так, що `tool_call_pre` checks
    persisted decision first.
 4. **`recall_memory` shape delta:** grammy-side bot треба оновити, щоб
-   повертати `text` + `structured` блоки (PR-C1 scope).
+   повертати `text` + `structured` блоки (PR-C1a scope).
 
 ## Test results summary
 

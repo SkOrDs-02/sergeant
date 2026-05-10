@@ -273,6 +273,10 @@ function checkDanglingRefs() {
     // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
     // that don't exist until the corresponding migration phase lands.
     if (relPath.startsWith("docs/i18n/")) return true;
+    // `docs/agents/<topic>-roadmap.md` are forward-looking initiative
+    // roadmaps describing scripts/files that will be created in upcoming
+    // PRs. Treat refs as planned, not current.
+    if (/^docs\/agents\/[^/]+-roadmap\.md$/.test(relPath)) return true;
     // `docs/notes/spikes/` are exploratory spike walkthroughs (PR-04
     // bus-factor knowledge transfer). Inline file refs describe the
     // module structure as the spike author imagined / mapped it; if
