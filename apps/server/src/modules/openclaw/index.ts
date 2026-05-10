@@ -41,6 +41,38 @@ export {
 } from "./tools.js";
 export { selectToneMode, buildSystemPrompt } from "./prompts.js";
 
+// Phase 1 (PR-C1c): n8n delegation surface + refresh_business_snapshot.
+export {
+  listN8nWorkflows,
+  describeN8nWorkflow,
+  triggerN8nWorkflow,
+  activateN8nWorkflow,
+  refreshBusinessSnapshot,
+  loadN8nAllowlist,
+  N8nAllowlistError,
+  __resetN8nAllowlistCacheForTests,
+  __setN8nAllowlistForTests,
+} from "./n8n.js";
+export type {
+  N8nTier,
+  N8nAllowlist,
+  N8nAllowlistEntry,
+  ListN8nWorkflowsInput,
+  ListN8nWorkflowsOutput,
+  ListN8nWorkflowsRow,
+  DescribeN8nWorkflowInput,
+  DescribeN8nWorkflowOutput,
+  TriggerN8nWorkflowInput,
+  TriggerN8nWorkflowOutput,
+  TriggerN8nWorkflowStatus,
+  ActivateN8nWorkflowInput,
+  ActivateN8nWorkflowOutput,
+  ActivateN8nWorkflowStatus,
+  RefreshBusinessSnapshotInput,
+  RefreshBusinessSnapshotOutput,
+  RefreshBusinessSnapshotResult,
+} from "./n8n.js";
+
 // Phase 4 (ADR-0036): write-tools (approval-gated on console side).
 export {
   commitToStrategyDoc,

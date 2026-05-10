@@ -63,6 +63,13 @@ import {
   // ADR-0037 (Phase 4.5): persistent write-audit log helpers.
   recordWriteAudit,
   listRecentWriteAudits,
+  // PR-C1c (Phase 1): n8n delegation surface + refresh_business_snapshot.
+  listN8nWorkflows,
+  describeN8nWorkflow,
+  triggerN8nWorkflow,
+  activateN8nWorkflow,
+  refreshBusinessSnapshot,
+  N8nAllowlistError,
   // PR-C1b: code-understanding tools.
   githubSearch,
   githubTree,
@@ -279,6 +286,38 @@ const WriteAuditLogBody = z
   })
   .strict();
 
+// PR-C1c: n8n delegation bodies. Workflow IDs are opaque 16-char base62
+// strings (e.g. `OhDtiheODIp5nNLa`); we cap at 64 to leave headroom for
+// future variants without becoming a Zod-only validation cliff.
+
+const N8N_TIER_VALUES = ["A", "B", "C", "D"] as const;
+
+const N8nListBody = z
+  .object({
+    tiers: z.array(z.enum(N8N_TIER_VALUES)).max(4).optional(),
+    limit: z.number().int().min(1).max(250).optional(),
+  })
+  .strict();
+
+const N8nWorkflowIdBody = z
+  .object({
+    workflowId: z.string().min(1).max(64),
+  })
+  .strict();
+
+const N8nActivateBody = z
+  .object({
+    workflowId: z.string().min(1).max(64),
+    active: z.boolean(),
+  })
+  .strict();
+
+const SnapshotRefreshBody = z
+  .object({
+    workflowIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  })
+  .strict();
+
 const WriteAuditListBody = z
   .object({
     founderUserId: z.string().min(1),
@@ -427,6 +466,19 @@ function asAllowlistFailure(
 ): void {
   const message = err instanceof Error ? err.message : String(err);
   res.status(400).json({ error: "allowlist_fail", message });
+}
+
+function asN8nAllowlistFailure(
+  res: import("express").Response,
+  err: N8nAllowlistError,
+): void {
+  res.status(400).json({
+    error: "allowlist_fail",
+    op: err.op,
+    workflowId: err.workflowId,
+    tier: err.tier,
+    message: err.message,
+  });
 }
 
 function asNotFound(res: import("express").Response, err: unknown): void {
@@ -861,6 +913,91 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   // Sanity touch — keep `POST_TO_TOPIC_ALLOWLIST` import live (it's also used
   // for documentation in the OpenAPI exporter, kept here for tree-shake).
   void POST_TO_TOPIC_ALLOWLIST;
+
+  // ─────────────────────────────────────────────────────────────────────
+  // PR-C1c (Phase 1): n8n delegation surface
+  // ─────────────────────────────────────────────────────────────────────
+
+  // ---- n8n: list workflows ----
+  r.post(
+    "/api/internal/openclaw/n8n/list",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(N8nListBody, req, res);
+      if (!parsed.ok) return;
+      const result = await listN8nWorkflows({
+        tiers: parsed.data.tiers,
+        limit: parsed.data.limit,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- n8n: describe a single workflow ----
+  r.post(
+    "/api/internal/openclaw/n8n/describe",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(N8nWorkflowIdBody, req, res);
+      if (!parsed.ok) return;
+      const result = await describeN8nWorkflow({
+        workflowId: parsed.data.workflowId,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- n8n: trigger (Tier A auto / Tier C gated; Tier B/D + unknown refused) ----
+  r.post(
+    "/api/internal/openclaw/n8n/trigger",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(N8nWorkflowIdBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await triggerN8nWorkflow({
+          workflowId: parsed.data.workflowId,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof N8nAllowlistError) {
+          return asN8nAllowlistFailure(res, err);
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- n8n: activate / deactivate (Tier A/C only; Tier B/D + unknown refused) ----
+  r.post(
+    "/api/internal/openclaw/n8n/activate",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(N8nActivateBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await activateN8nWorkflow({
+          workflowId: parsed.data.workflowId,
+          active: parsed.data.active,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof N8nAllowlistError) {
+          return asN8nAllowlistFailure(res, err);
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- snapshot/refresh: fires every Tier A workflow in parallel ----
+  r.post(
+    "/api/internal/openclaw/snapshot/refresh",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SnapshotRefreshBody, req, res);
+      if (!parsed.ok) return;
+      const result = await refreshBusinessSnapshot({
+        workflowIds: parsed.data.workflowIds,
+      });
+      res.json(result);
+    }),
+  );
 
   // ---- invocations: list (observability) ----
   r.post(

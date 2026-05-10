@@ -12,6 +12,21 @@
         "name": "recall_memory",
         "endpoint": "/api/internal/openclaw/recall",
         "description": "Top-k semantic recall з founder cofounder-namespace memory."
+      },
+      {
+        "name": "n8n_list",
+        "endpoint": "/api/internal/openclaw/n8n/list",
+        "description": "Перелік n8n workflows із tier-класифікацією (A/B/C/D)."
+      },
+      {
+        "name": "n8n_describe",
+        "endpoint": "/api/internal/openclaw/n8n/describe",
+        "description": "Опис workflow: nodes, triggers, tier, approvalRequired."
+      },
+      {
+        "name": "refresh_business_snapshot",
+        "endpoint": "/api/internal/openclaw/snapshot/refresh",
+        "description": "Меta-tool: фаєрить усі Tier A workflows паралельно."
       }
     ],
     "write": [
@@ -21,6 +36,22 @@
         "description": "Створює GitHub issue. Gated approval flow (variant A/B/C — конфіг).",
         "gated": true,
         "approvalDefault": "B"
+      },
+      {
+        "name": "n8n_trigger",
+        "endpoint": "/api/internal/openclaw/n8n/trigger",
+        "description": "Тригерить workflow. Tier A auto / Tier C approval-gated; Tier B+D refused server-side.",
+        "gated": true,
+        "approvalDefault": "B",
+        "tier": "A|C"
+      },
+      {
+        "name": "n8n_activate",
+        "endpoint": "/api/internal/openclaw/n8n/activate",
+        "description": "Активує/деактивує workflow. Always approval-gated (Tier A/C only).",
+        "gated": true,
+        "approvalDefault": "B",
+        "tier": "A|C"
       }
     ]
   },
