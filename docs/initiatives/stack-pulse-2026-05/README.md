@@ -1,6 +1,6 @@
 # Stack pulse — 2026-05
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
 > **Status:** Active
 
 Серія планів-PR-ів для виправлення слабких місць стеку Sergeant, виявлених
@@ -83,25 +83,25 @@ incident і т.д.).
 | 23  | [OpenAPI contract tests + drift-check](./pr-23-openapi-contract-tests.md)                    | M7, MS3        | 3–5 днів | при першому contract-bug                                                                                                            |
 | 24  | [Embedding-vendor abstraction (provider interface)](./pr-24-embedding-vendor-abstraction.md) | M8             | 2–3 дні  | при появі quality regression                                                                                                        |
 | 25  | [Consolidate two production origins](./pr-25-two-production-origins.md)                      | M9             | 2 дні    | next CSP/CORS-related incident                                                                                                      |
-| 26  | [CSP `report-uri` / `report-to` endpoint](./pr-26-csp-report-uri.md)                         | M11            | 1 день   | при першому unknown CSP-bug                                                                                                         |
+| 26  | [CSP `report-uri` / `report-to` endpoint](./pr-26-csp-report-uri.md)                         | M11            | 0.5 дня  | Partially closed — legacy `report-uri` live (`apps/web/vercel.json`); pending = modern Reporting API + body-cap + monitoring doc    |
 | 27  | [`INTERNAL_API_KEY` rotation mechanism](./pr-27-internal-api-key-rotation.md)                | M12            | 2–3 дні  | next security audit / leak                                                                                                          |
 
 ## Low (PR-28..39, поліровка)
 
-| PR  | План                                                                                    | Linked finding | Effort     |
-| --- | --------------------------------------------------------------------------------------- | -------------- | ---------- |
-| 28  | [`__SW_BUILD_ID__` → `import.meta.env`](./pr-28-sw-build-id-import-meta.md)             | L1             | 0.5 дня    |
-| 29  | [Shell-navigate global → BroadcastChannel](./pr-29-shell-navigate-broadcast-channel.md) | L2             | 1 день     |
-| 30  | [Dockerfile cleanup → distroless multi-stage](./pr-30-dockerfile-cleanup-cve.md)        | L3             | 1 день     |
-| 31  | [ESLint config split per-app](./pr-31-eslint-config-split.md)                           | L4             | 1–2 дні    |
-| 32  | [`pnpm.overrides` cleanup + audit-script](./pr-32-pnpm-overrides-cleanup.md)            | L5             | 0.5 дня    |
-| 33  | [Hard rules — categorize у 5 areas](./pr-33-hard-rules-categorization.md)               | L6, R9         | 0.5–1 день |
-| 34  | [Demo seed/cleanup lazy-gate](./pr-34-demo-seed-cleanup-gate.md)                        | L7             | 0.5 дня    |
-| 35  | [`LOG_LEVEL` debug-window CLI toggle](./pr-35-log-level-debug-window.md)                | L8             | 0.5 дня    |
-| 36  | [`lazyImport` chunk-reload guard](./pr-36-lazy-import-chunk-reload-guard.md)            | L9             | 0.5 дня    |
-| 37  | [Postgres image SHA-pin + Renovate](./pr-37-postgres-image-sha-pin.md)                  | L10            | 0.5 дня    |
-| 38  | [PWA precache 1st-party verify](./pr-38-pwa-precache-first-party.md)                    | L11            | 0.5 дня    |
-| 39  | [`tools/console` Anthropic SDK 0.36 → 1.x](./pr-39-tools-console-anthropic-sdk.md)      | L12            | 0.5–1 день |
+| PR  | План                                                                                    | Linked finding | Effort     | Status                                                                                                                                                                                                                         |
+| --- | --------------------------------------------------------------------------------------- | -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 28  | [`__SW_BUILD_ID__` → `import.meta.env`](./pr-28-sw-build-id-import-meta.md)             | L1             | 0.5 дня    | Closed — merged [#2309](https://github.com/Skords-01/Sergeant/pull/2309) (`apps/web/src/sw/version.ts` + `apps/web/vite-env.d.ts` + `apps/web/tsconfig.sw.json` use `import.meta.env.VITE_BUILD_ID`)                           |
+| 29  | [Shell-navigate global → BroadcastChannel](./pr-29-shell-navigate-broadcast-channel.md) | L2             | 1 день     | Planned                                                                                                                                                                                                                        |
+| 30  | [Dockerfile cleanup → distroless multi-stage](./pr-30-dockerfile-cleanup-cve.md)        | L3             | 1 день     | Planned                                                                                                                                                                                                                        |
+| 31  | [ESLint config split per-app](./pr-31-eslint-config-split.md)                           | L4             | 1–2 дні    | Planned                                                                                                                                                                                                                        |
+| 32  | [`pnpm.overrides` cleanup + audit-script](./pr-32-pnpm-overrides-cleanup.md)            | L5             | 0.5 дня    | Planned                                                                                                                                                                                                                        |
+| 33  | [Hard rules — categorize](./pr-33-hard-rules-categorization.md)                         | L6, R9         | 0.5–1 день | Closed — implemented via 3 enforcement-categories ([ADR-0045](../../adr/0045-hard-rules-taxonomy.md), `hard-rules.json` `category` field, `hard-rules-matrix.md`, `pnpm lint:hard-rules-registry`)                             |
+| 34  | [Demo seed/cleanup lazy-gate](./pr-34-demo-seed-cleanup-gate.md)                        | L7             | 0.5 дня    | Planned                                                                                                                                                                                                                        |
+| 35  | [`LOG_LEVEL` debug-window CLI toggle](./pr-35-log-level-debug-window.md)                | L8             | 0.5 дня    | Planned                                                                                                                                                                                                                        |
+| 36  | [`lazyImport` chunk-reload guard](./pr-36-lazy-import-chunk-reload-guard.md)            | L9             | 0.5 дня    | Closed — merged [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (`MAX_RELOADS=3` counter-window guard у `apps/web/src/core/lib/chunkReload.ts`)                                                                       |
+| 37  | [Postgres image SHA-pin + Renovate](./pr-37-postgres-image-sha-pin.md)                  | L10            | 0.5 дня    | Closed — merged [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (`docker-compose.yml` SHA-pin + Renovate `pinDigests` rule + [`docs/development/local-postgres-setup.md`](../../development/local-postgres-setup.md)) |
+| 38  | [PWA precache 1st-party verify](./pr-38-pwa-precache-first-party.md)                    | L11            | 0.5 дня    | Closed — merged [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (`scripts/check-pwa-precache-1st-party.mjs` build-time gate + CI step + `globIgnores` for `*.map`)                                                    |
+| 39  | [`tools/console` Anthropic SDK 0.36 → 1.x](./pr-39-tools-console-anthropic-sdk.md)      | L12            | 0.5–1 день | Planned                                                                                                                                                                                                                        |
 
 ---
 

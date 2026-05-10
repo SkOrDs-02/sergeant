@@ -1,7 +1,7 @@
 # PR-21: SW `prompt`-mode auto-update on inactivity
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Planned (refresh: build-id rename — `__SW_BUILD_ID__` → `import.meta.env.VITE_BUILD_ID` post PR-28 merge, [#2309](https://github.com/Skords-01/Sergeant/pull/2309))
 
 |                    |                                                                          |
 | ------------------ | ------------------------------------------------------------------------ |
@@ -61,9 +61,9 @@ document.addEventListener("visibilitychange", async () => {
 });
 ```
 
-### 3. Hard-floor: `__SW_BUILD_ID__` mismatch
+### 3. Hard-floor: build-id mismatch
 
-При API-call → server повертає `X-Server-Build-Id` header. Якщо `client_build_id !== server_build_id` >1 година — force-prompt незалежно від idle-time.
+При API-call → server повертає `X-Server-Build-Id` header. Якщо `client_build_id !== server_build_id` >1 година — force-prompt незалежно від idle-time. Client-side build-id живе у `import.meta.env.VITE_BUILD_ID` (див. `apps/web/src/sw/version.ts` + `apps/web/vite-env.d.ts` після PR-28 #2309).
 
 ### 4. Documentation
 

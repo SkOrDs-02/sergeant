@@ -1,29 +1,35 @@
 # PR-26: CSP `report-uri` / `report-to` endpoint
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Partially closed — legacy `report-uri https://api.sergeant.app/api/csp-report` уже live (`apps/web/vercel.json` § `Content-Security-Policy`); endpoint + handler + monitoring allowlist test також готові. **Pending у scope:** modern Reporting API (`Reporting-Endpoints` header + `report-to` directive), rate-limit + 16KB body cap на `/api/csp-report`, `docs/observability/csp-monitoring.md` (цей файл ще не існує — створити при наступному pickup-і).
 
 |                    |                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | **Severity**       | Medium (M11)                                                                          |
 | **Linked finding** | M11 (`00-overview.md`)                                                                |
 | **Owner**          | TBD (sponsor: @Skords-01)                                                             |
-| **Effort**         | 0.5–1 день                                                                            |
+| **Effort**         | 0.5 дня (lишилось — modern API + monitoring doc; legacy `report-uri` уже мерджнуто)   |
 | **Risk**           | Low (additive — додаємо reporting; реальна CSP policy не міняється)                   |
 | **Touches**        | `apps/web/index.html`, `apps/web/vercel.json`, `apps/server/src/routes/csp-report.ts` |
 | **Trigger**        | next CSP-violation incident у production (зараз — silent unless dev-tools open)       |
 
 ## Контекст
 
-`apps/web/vercel.json` визначає CSP header без `report-uri` / `report-to`. Існуючий код:
+(Refresh 2026-05-10 — частина scope-у вже мерджнута.)
+
+`apps/web/vercel.json` тепер містить `report-uri https://api.sergeant.app/api/csp-report` всередині `Content-Security-Policy` header (legacy, але широко-підтримуваний). Серверна частина теж готова:
 
 - `apps/server/src/modules/observability/csp-report.ts` — handler **існує**.
 - `apps/server/src/routes/csp-report.ts` — route **існує**.
-- `apps/web/src/test/cspMonitoringAllowlist.test.ts` — тест **існує**.
+- `apps/web/src/test/cspMonitoringAllowlist.test.ts` — тест **існує** (allowlist baseline).
 
-Але CSP-header у production **не** вказує endpoint, куди репортити. Тобто infra готова, але directive відсутній.
+Те, що **lишилось у scope** PR-26:
 
-Поточний state: CSP violations лишають невидимими, аж доки користувач не відкриє DevTools.
+1. Modern Reporting API: `Reporting-Endpoints` header + `report-to` directive в CSP (необов'язково, але future-proof; Chrome 130+ deprecate-ить старий `Report-To` header у favor of `Reporting-Endpoints`).
+2. Rate-limit + 16KB body cap на `/api/csp-report` (DoS-resistance — зараз endpoint прийматиме arbitrary payload).
+3. `docs/observability/csp-monitoring.md` — operations doc із dashboard-link, alert-thresholds, allowlist-update-runbook.
+
+Поточний state: CSP violations надсилаються на endpoint, але немає formal monitoring playbook + DoS-cap.
 
 ## Scope
 
@@ -81,11 +87,12 @@
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/web/vercel.json` (або `middleware.ts`) додає `report-uri` + `Reporting-Endpoints`.
-- [ ] `apps/server/src/routes/csp-report.ts` має rate-limit + 16KB body cap.
-- [ ] CSP report при load-і `/dummy-violation-page.html` (E2E test) → endpoint receives + Sentry breadcrumb.
-- [ ] `docs/observability/csp-monitoring.md` з alert YAML + dashboard reference.
-- [ ] `apps/web/src/test/cspMonitoringAllowlist.test.ts` updated з actual baseline.
+- [x] `apps/web/vercel.json` додає legacy `report-uri https://api.sergeant.app/api/csp-report` (live).
+- [ ] `apps/web/vercel.json` (або `middleware.ts`) додає modern `Reporting-Endpoints` header + `report-to csp-endpoint` directive (pending).
+- [ ] `apps/server/src/routes/csp-report.ts` має rate-limit + 16KB body cap (pending — наразі endpoint приймає arbitrary payload).
+- [ ] CSP report при load-і `/dummy-violation-page.html` (E2E test) → endpoint receives + Sentry breadcrumb (pending — endpoint існує, E2E немає).
+- [ ] `docs/observability/csp-monitoring.md` з alert YAML + dashboard reference (pending — file ще не створений).
+- [x] `apps/web/src/test/cspMonitoringAllowlist.test.ts` живе у репо як baseline-тест.
 
 ## Тести
 

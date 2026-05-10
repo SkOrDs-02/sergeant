@@ -1,17 +1,17 @@
-# PR-33: 21 hard rules → 5 categorized "Hard Areas"
+# PR-33: 21 hard rules — categorize
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.
 
-|                    |                                                                               |
-| ------------------ | ----------------------------------------------------------------------------- |
-| **Severity**       | Low (L6) — також закриває R9 redundancy                                       |
-| **Linked finding** | L6, R9 (`00-overview.md`)                                                     |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                     |
-| **Effort**         | 0.5–1 день                                                                    |
-| **Risk**           | None (pure docs / governance reorganization)                                  |
-| **Touches**        | `docs/governance/hard-rules.json`, `docs/governance/hard-rules.md`, AGENTS.md |
-| **Trigger**        | next time someone додає 22-ге правило і doc стає harder-to-skim               |
+|                    |                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| **Severity**       | Low (L6) — також закриває R9 redundancy                                               |
+| **Linked finding** | L6, R9 (`00-overview.md`)                                                             |
+| **Owner**          | @Skords-01                                                                            |
+| **Effort**         | 0.5–1 день                                                                            |
+| **Risk**           | None (pure docs / governance reorganization)                                          |
+| **Touches**        | `docs/governance/hard-rules.json`, `docs/governance/hard-rules-matrix.md`, AGENTS.md  |
+| **Trigger**        | (resolved) categorization landed pre-22nd rule; new rules додаються через схему JSON. |
 
 ## Контекст
 
@@ -81,11 +81,13 @@ Full list → [`docs/governance/hard-rules.md`](./docs/governance/hard-rules.md)
 
 ## Acceptance criteria (DoD)
 
-- [ ] `hard-rules.schema.json` має `category` field required.
-- [ ] `hard-rules.json` всі 21 entry мають `category`.
-- [ ] `hard-rules.md` rendering з 5 sections + summary table.
-- [ ] AGENTS.md categorized navigation.
-- [ ] `scripts/check-hard-rules-doc.mjs` (existing або new) валідує schema.
+- [x] `hard-rules.schema.json` має `category` field required (`required: ["id", "title", "scope", "severity", "category", "enforced_by"]`).
+- [x] `hard-rules.json` всі 21 entry мають `category` (8 `blocker-invariant` + 11 `lint-enforced-convention` + 2 `active-initiative`).
+- [x] Per-rule canonical bodies живуть у [`docs/governance/rules/`](../../governance/rules/) (з BAD/GOOD прикладами); за-rule машино-читабельна матриця — [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md).
+- [x] AGENTS.md `Hard rules` section містить таксономію + per-rule таблицю (`#`, `Rule`, `Category`, `Per-rule file`).
+- [x] 3-way sync gate (`pnpm lint:hard-rules-registry` через `scripts/check-hard-rules-registry-sync.mjs`) валідує що `AGENTS.md ↔ hard-rules.json ↔ docs/governance/rules/*` не дрейфують.
+
+> **Implementation note:** Реалізовано як **3 enforcement-категорії**, не 5 subject-категорій. Категорії описують _як_ правило enforcing-ається (runtime invariant / linter / sunset-allowlist), не _яку_ область покриває (engineering / security / etc.). Логіку рішення зафіксовано в [ADR-0045](../../adr/0045-hard-rules-taxonomy.md) — subject-домен явно винесено за scope (`scope` field у `hard-rules.json` його несе окремо).
 
 ## Тести
 
