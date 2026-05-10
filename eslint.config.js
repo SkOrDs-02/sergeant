@@ -896,9 +896,6 @@ export default [
       // MMKV payload into SQLite via the dual-write pipeline (with a
       // stale LWW timestamp) and then deletes the MMKV key.
       "apps/mobile/src/modules/routine/lib/residualImport.ts",
-      // Mobile backup still reads ROUTINE for full-state export/import
-      // (migration planned for a future PR).
-      "apps/mobile/src/core/hub/hubBackup.ts",
     ],
     rules: {
       "no-restricted-syntax": [
@@ -1011,10 +1008,6 @@ export default [
       // canonical finyk SQLite reader is tracked in a follow-up
       // under storage-roadmap Stage 5 alongside the insights engine.
       "apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts",
-      // Mobile backup still reads the fizruk + nutrition + finyk LS
-      // keys for full-state export/import (parity with hubBackup
-      // ROUTINE carve-out).
-      "apps/mobile/src/core/hub/hubBackup.ts",
     ],
     rules: {
       "no-restricted-syntax": [

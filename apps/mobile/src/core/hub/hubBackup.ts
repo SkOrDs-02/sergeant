@@ -1,25 +1,48 @@
 /**
  * Mobile hub backup — build / apply a cross-platform JSON payload.
  *
- * Mirrors `apps/web/src/core/hub/hubBackup.ts` but reads/writes MMKV
- * via `@/lib/storage` instead of `localStorage`. The on-disk format is
- * identical so a file exported from mobile can be imported on web and
- * vice versa.
+ * Stage 13 PR #071 of `docs/planning/storage-roadmap.md` rewrote this
+ * module to mirror the web pattern (`apps/web/src/core/hub/hubBackup.ts`):
+ * each module's reads come from its SQLite warm cache via the
+ * canonical `loadXxxState` / `buildXxxBackupPayload` helpers, and each
+ * module's writes go through the dual-write trigger via
+ * `applyXxxBackupPayload`. The on-disk file format is unchanged so
+ * a backup file from web and one from mobile are byte-compatible.
+ *
+ * Why this matters: after Stage 8 PR #057{r,f,n,k}-tombstone-mobile
+ * and Stage 12 / 12.5 fizruk tombstones, the MMKV slots this module
+ * used to read are empty. Any direct `safeReadLS(STORAGE_KEYS.…)`
+ * call returned stale data on export and any `safeWriteLS(…)`
+ * never reached the SQLite tables hooks consume — round-trip
+ * export → import → reboot lost every Routine / Fizruk / Nutrition /
+ * Finyk row. The delegating pattern keeps SQLite the source of truth
+ * end-to-end.
  */
 
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { FIZRUK_FULL_BACKUP_KEYS } from "@sergeant/fizruk-domain";
 import {
-  FINYK_FIELD_TO_STORAGE_KEY,
   normalizeFinykBackup,
   type FinykBackup,
 } from "@sergeant/finyk-domain/backup";
-import {
-  normalizeRoutineState,
-  ensureHabitOrder,
-} from "@sergeant/routine-domain";
 
-import { safeReadLS, safeWriteLS, safeReadStringLS } from "@/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@/lib/storage";
+
+import {
+  persistFinykNormalizedToStorage,
+  readFinykBackupFromCache,
+} from "@/modules/finyk/lib/finykBackup";
+import {
+  applyFizrukFullBackupPayload,
+  buildFizrukFullBackupPayload,
+} from "@/modules/fizruk/lib/fizrukBackup";
+import {
+  applyNutritionBackupPayload,
+  buildNutritionBackupPayload,
+} from "@/modules/nutrition/lib/nutritionBackup";
+import {
+  applyRoutineBackupPayload,
+  buildRoutineBackupPayload,
+} from "@/modules/routine/lib/routineBackup";
 
 export const HUB_BACKUP_KIND = "hub-backup";
 export const HUB_BACKUP_SCHEMA_VERSION = 1;
@@ -35,66 +58,14 @@ interface HubBackupPayload {
   hub?: { lastModule?: string };
 }
 
-function readFinykFromMMKV(): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [field, storageKey] of Object.entries(
-    FINYK_FIELD_TO_STORAGE_KEY,
-  )) {
-    const raw = safeReadLS<unknown>(storageKey, undefined);
-    if (raw !== undefined) result[field] = raw;
-  }
-  return result;
-}
-
 export function buildHubBackupPayload(): HubBackupPayload {
-  // Routine
-  const routineRaw = safeReadLS<unknown>(STORAGE_KEYS.ROUTINE, null);
-  const routine = routineRaw
-    ? {
-        kind: "hub-routine-backup" as const,
-        schemaVersion: 3,
-        exportedAt: new Date().toISOString(),
-        data: routineRaw,
-      }
-    : {};
-
-  // Fizruk
-  const fizrukData: Record<string, string | null> = {};
-  for (const k of FIZRUK_FULL_BACKUP_KEYS) {
-    fizrukData[k] = safeReadStringLS(k, null);
-  }
-  const fizruk = {
-    kind: "fizruk-full-backup" as const,
-    schemaVersion: 1,
-    exportedAt: new Date().toISOString(),
-    data: fizrukData,
-  };
-
-  // Nutrition
-  const nutrition = {
-    kind: "hub-nutrition-backup" as const,
-    schemaVersion: 1,
-    exportedAt: new Date().toISOString(),
-    data: {
-      stateSchemaVersion: 1,
-      pantries: safeReadLS<unknown>(STORAGE_KEYS.NUTRITION_PANTRIES, []),
-      activePantryId:
-        safeReadStringLS(STORAGE_KEYS.NUTRITION_ACTIVE_PANTRY, null) || "home",
-      prefs: safeReadLS<unknown>(STORAGE_KEYS.NUTRITION_PREFS, {}),
-      log: safeReadLS<unknown>(STORAGE_KEYS.NUTRITION_LOG, {}),
-    },
-  };
-
-  // Finyk
-  const finykRaw = readFinykFromMMKV();
   let finyk: unknown;
   try {
-    finyk = normalizeFinykBackup({ ...finykRaw, version: 2 });
+    finyk = normalizeFinykBackup(readFinykBackupFromCache());
   } catch {
-    finyk = finykRaw;
+    finyk = readFinykBackupFromCache();
   }
 
-  // Hub meta
   const hub: Record<string, string> = {};
   const lastModule = safeReadStringLS(STORAGE_KEYS.LAST_MODULE, null);
   if (lastModule) hub.lastModule = lastModule;
@@ -104,9 +75,9 @@ export function buildHubBackupPayload(): HubBackupPayload {
     schemaVersion: HUB_BACKUP_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     finyk,
-    fizruk,
-    routine,
-    nutrition,
+    fizruk: buildFizrukFullBackupPayload(),
+    routine: buildRoutineBackupPayload(),
+    nutrition: buildNutritionBackupPayload(),
     hub: Object.keys(hub).length ? hub : undefined,
   };
 }
@@ -128,61 +99,65 @@ export function applyHubBackupPayload(parsed: unknown): void {
     throw new Error("Некоректний файл резервної копії Hub.");
   }
 
-  // Finyk
+  // Finyk — normalize then dual-write through the canonical slice helpers.
   if (parsed.finyk && typeof parsed.finyk === "object") {
     try {
       const normalized = normalizeFinykBackup(parsed.finyk) as FinykBackup;
-      for (const [field, storageKey] of Object.entries(
-        FINYK_FIELD_TO_STORAGE_KEY,
-      )) {
-        const value = (normalized as Record<string, unknown>)[field];
-        if (value !== undefined) safeWriteLS(storageKey, value);
-      }
+      persistFinykNormalizedToStorage(normalized);
     } catch {
-      // Best-effort: write any raw finyk keys present
+      // Backup payload not parseable as Finyk shape — skip. Other
+      // modules still apply.
     }
   }
 
-  // Routine
+  // Routine — module-level apply normalises + persists via SQLite
+  // dual-write. Wrapped in try/catch so a malformed routine slice
+  // doesn't abort the whole hub-import path.
   if (
     parsed.routine &&
     typeof parsed.routine === "object" &&
-    (parsed.routine as Record<string, unknown>).data
+    (parsed.routine as Record<string, unknown>).kind === "hub-routine-backup"
   ) {
-    const d = (parsed.routine as Record<string, unknown>).data;
-    const merged = normalizeRoutineState(d);
-    const { state } = ensureHabitOrder(merged);
-    safeWriteLS(STORAGE_KEYS.ROUTINE, state);
-  }
-
-  // Fizruk
-  if (parsed.fizruk && typeof parsed.fizruk === "object") {
-    const d = (parsed.fizruk as Record<string, unknown>).data;
-    if (d && typeof d === "object") {
-      for (const k of FIZRUK_FULL_BACKUP_KEYS) {
-        const v = (d as Record<string, unknown>)[k];
-        if (v !== undefined) safeWriteLS(k, v);
-      }
+    try {
+      applyRoutineBackupPayload(parsed.routine);
+    } catch {
+      /* skip — partial hub apply is intentional */
     }
   }
 
-  // Nutrition
-  if (parsed.nutrition && typeof parsed.nutrition === "object") {
-    const d = (parsed.nutrition as Record<string, unknown>).data;
-    if (d && typeof d === "object") {
-      const data = d as Record<string, unknown>;
-      if (data.pantries !== undefined)
-        safeWriteLS(STORAGE_KEYS.NUTRITION_PANTRIES, data.pantries);
-      if (data.activePantryId !== undefined)
-        safeWriteLS(STORAGE_KEYS.NUTRITION_ACTIVE_PANTRY, data.activePantryId);
-      if (data.prefs !== undefined)
-        safeWriteLS(STORAGE_KEYS.NUTRITION_PREFS, data.prefs);
-      if (data.log !== undefined)
-        safeWriteLS(STORAGE_KEYS.NUTRITION_LOG, data.log);
+  // Fizruk — module-level apply parses each slot and triggers a single
+  // dual-write batch covering workouts / measurements / custom-exercises
+  // / templates / monthly-plan; the still-MMKV-only selected-template
+  // slot is also restored.
+  if (
+    parsed.fizruk &&
+    typeof parsed.fizruk === "object" &&
+    (parsed.fizruk as Record<string, unknown>).kind === "fizruk-full-backup"
+  ) {
+    try {
+      applyFizrukFullBackupPayload(parsed.fizruk);
+    } catch {
+      /* skip — partial hub apply is intentional */
     }
   }
 
-  // Hub meta
+  // Nutrition — module-level apply routes each slice through dual-write
+  // (`savePantries` / `saveActivePantryId` / `saveNutritionPrefs` /
+  // `saveNutritionLog`).
+  if (
+    parsed.nutrition &&
+    typeof parsed.nutrition === "object" &&
+    (parsed.nutrition as Record<string, unknown>).kind ===
+      "hub-nutrition-backup"
+  ) {
+    try {
+      applyNutritionBackupPayload(parsed.nutrition);
+    } catch {
+      /* skip — partial hub apply is intentional */
+    }
+  }
+
+  // Hub meta — `lastModule` is still a regular MMKV slot.
   if (parsed.hub && typeof parsed.hub === "object") {
     const h = parsed.hub;
     if (h.lastModule) {
