@@ -3,13 +3,17 @@
  *
  * Stage 8 PR #057n-tombstone of `docs/planning/storage-roadmap.md`
  * (mobile parity for `apps/web/src/modules/nutrition/lib/residualImport.ts`).
+ * Stage 13 PR #073 extended this drain to also cover the saved-recipes
+ * MMKV blob (`nutrition_recipe_book_v1`).
+ *
  * Reads any leftover values from the now-deprecated MMKV keys
  * (`nutrition_log_v1`, `nutrition_pantries_v1`,
  * `nutrition_active_pantry_v1`, `nutrition_prefs_v1`,
- * `nutrition_water_v1`, `nutrition_shopping_list_v1`), imports them
- * into the local `nutrition_*` SQLite tables (idempotent + LWW-safe),
- * and then deletes the MMKV entries. Subsequent boots no-op because
- * the MMKV keys are gone.
+ * `nutrition_water_v1`, `nutrition_shopping_list_v1`,
+ * `nutrition_recipe_book_v1`), imports them into the local
+ * `nutrition_*` SQLite tables (idempotent + LWW-safe), and then
+ * deletes the MMKV entries. Subsequent boots no-op because the MMKV
+ * keys are gone.
  *
  * The import uses a deliberately stale `clientTs` (epoch zero) so the
  * adapter's LWW guard always lets existing SQLite rows win — we never
@@ -34,6 +38,7 @@ import {
   type NutritionPrefs,
   type Pantry,
 } from "@sergeant/nutrition-domain";
+import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadLS, safeReadStringLS, safeRemoveLS } from "@/lib/storage";
 
@@ -43,7 +48,9 @@ import {
   type NutritionDualWriteState,
   type NutritionMealSnapshot,
   type NutritionPantrySnapshot,
+  type NutritionRecipeSnapshot,
 } from "./dualWrite/diff";
+import { normalizeSavedRecipe, type SavedRecipe } from "./recipeBookStore";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 
@@ -78,6 +85,7 @@ export async function importNutritionResidualFromMmkv(
   const prefs = readPrefsFromMmkv();
   const waterLog = readWaterLogFromMmkv();
   const shoppingList = readShoppingListFromMmkv();
+  const recipes = readRecipesFromMmkv();
 
   const hasAny =
     log !== null ||
@@ -85,7 +93,8 @@ export async function importNutritionResidualFromMmkv(
     activePantryId !== null ||
     prefs !== null ||
     waterLog !== null ||
-    shoppingList !== null;
+    shoppingList !== null ||
+    recipes !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   // Build a NutritionDualWriteState from whatever was found in MMKV.
@@ -108,7 +117,14 @@ export async function importNutritionResidualFromMmkv(
             activePantryId,
           }
         : null,
-    recipes: [],
+    // Stage 13 PR #073 — drain the saved-recipe blob. Each recipe is
+    // normalized against `SavedRecipe` and serialized into
+    // `nutrition_recipes.data_json`. The MMKV blob shape was
+    // `{ recipes: SavedRecipe[] }` (or a bare array on legacy builds);
+    // both layouts collapse via `extractRecipesFromMmkvBlob`.
+    recipes: recipes
+      ? extractRecipeSnapshots(extractRecipesFromMmkvBlob(recipes))
+      : [],
     // Stage 11 / PR #057n-tombstone-mobile — also drain the water-log
     // and shopping-list slices. Empty MMKV maps yield empty SQLite rows
     // (the diff emits no ops for `{} → {}`), so this is a free no-op
@@ -146,6 +162,7 @@ export async function importNutritionResidualFromMmkv(
   safeRemoveLS(NUTRITION_PREFS_KEY);
   safeRemoveLS(WATER_LOG_KEY);
   safeRemoveLS(SHOPPING_LIST_KEY);
+  safeRemoveLS(STORAGE_KEYS.NUTRITION_SAVED_RECIPES);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -204,6 +221,14 @@ function readShoppingListFromMmkv(): unknown | null {
   }
 }
 
+function readRecipesFromMmkv(): unknown | null {
+  try {
+    return safeReadLS<unknown>(STORAGE_KEYS.NUTRITION_SAVED_RECIPES, null);
+  } catch {
+    return null;
+  }
+}
+
 // -----------------------------------------------------------------------
 // Snapshot extractors — copies of the helpers that previously lived in
 // `dualWriteState.ts` (private). The MMKV-read path that owned them is
@@ -253,11 +278,40 @@ function extractPantrySnapshots(
   }));
 }
 
+function extractRecipesFromMmkvBlob(raw: unknown): SavedRecipe[] {
+  let list: unknown[] = [];
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (
+    raw &&
+    typeof raw === "object" &&
+    "recipes" in raw &&
+    Array.isArray((raw as { recipes: unknown }).recipes)
+  ) {
+    list = (raw as { recipes: unknown[] }).recipes;
+  } else {
+    return [];
+  }
+  return list.map((item) => normalizeSavedRecipe(item));
+}
+
+function extractRecipeSnapshots(
+  recipes: readonly SavedRecipe[],
+): NutritionRecipeSnapshot[] {
+  return recipes.map((r) => ({
+    id: r.id,
+    title: r.title,
+    dataJson: JSON.stringify(r),
+  }));
+}
+
 // Internal exports for tests.
 export const __testing = {
   STALE_TIMESTAMP,
   extractMealSnapshots,
   extractPantrySnapshots,
+  extractRecipesFromMmkvBlob,
+  extractRecipeSnapshots,
 };
 
 // Tell TS we use NutritionPrefs in the doc comment scope.
