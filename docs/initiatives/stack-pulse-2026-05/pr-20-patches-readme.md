@@ -1,13 +1,13 @@
 # PR-20: `patches/` debt без README
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
+> **Status:** Closed — `patches/README.md` schema + `scripts/check-patches-doc.mjs` + `pnpm lint:patches` CI gate landed in [#2193](https://github.com/Skords-01/Sergeant/pull/2193) (`fix(docs): restore patches/README Status badge + prettier --write 33 stale docs`). All 4 DoD items shipped: README table з 1 row на `@expo__cli@0.22.28.patch`, `scripts/check-patches-doc.mjs` (10 KB), 6-fixture node:test у `scripts/__tests__/check-patches-doc.test.mjs`, та `lint:patches` step у `.github/workflows/ci.yml` (line 130) — закриває M4 у `00-overview.md`.
 
 |                    |                                                                |
 | ------------------ | -------------------------------------------------------------- |
 | **Severity**       | Medium (M4)                                                    |
 | **Linked finding** | M4 (`00-overview.md`)                                          |
-| **Owner**          | TBD (sponsor: @Skords-01)                                      |
+| **Owner**          | @Skords-01                                                     |
 | **Effort**         | 0.5 дня                                                        |
 | **Risk**           | None (pure documentation)                                      |
 | **Touches**        | `patches/`, `package.json`                                     |
@@ -66,10 +66,10 @@ Hook in `pnpm lint:patches` + CI step.
 
 ## Acceptance criteria (DoD)
 
-- [ ] `patches/README.md` з заповненою таблицею (≥1 row на існуючий patch).
-- [ ] `scripts/check-patches-doc.mjs` + `pnpm lint:patches`.
-- [ ] CI step `lint:patches` у `.github/workflows/ci.yml`.
-- [ ] Тест: `scripts/__tests__/check-patches-doc.test.mjs` з 3 fixture-ами (valid / missing-row / empty-owner).
+- [x] `patches/README.md` з заповненою таблицею (≥1 row на існуючий patch). Шипилось у [#2193](https://github.com/Skords-01/Sergeant/pull/2193).
+- [x] `scripts/check-patches-doc.mjs` + `pnpm lint:patches` (npm-script у `package.json:83`).
+- [x] CI step `lint:patches` у `.github/workflows/ci.yml:130` («patches/ freshness gate (PR-20 / M4)»).
+- [x] Тест: `scripts/__tests__/check-patches-doc.test.mjs` (21 `it()`-кейсів у 6 `describe()` блоках — valid / missing-row / empty-owner / pnpm-mismatch / dangling-row / pnpm-sync і helper-юніти).
 
 ## Тести
 
