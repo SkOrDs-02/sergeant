@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { _getMMKVInstance } from "@/lib/storage";
-
 import { getRecipeById, type SavedRecipe } from "../lib/recipeBookStore";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 export function useSavedRecipeById(id: string | string[] | undefined): {
   recipe: SavedRecipe | undefined;
@@ -15,21 +12,14 @@ export function useSavedRecipeById(id: string | string[] | undefined): {
     recipeId ? getRecipeById(String(recipeId)) : undefined,
   );
 
+  // Stage 13 PR #073 of `docs/planning/storage-roadmap.md` — recipes
+  // live exclusively in the SQLite warm cache after the MMKV-write
+  // tombstone. The cache tick is the only re-render signal.
+  const sqliteCacheTick = useNutritionSqliteReadTick();
   useEffect(() => {
     const key = String(recipeId || "").trim();
-    if (!key) {
-      setRecipe(undefined);
-      return;
-    }
-    setRecipe(getRecipeById(key));
-    const mmkv = _getMMKVInstance();
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
-      if (changedKey === STORAGE_KEYS.NUTRITION_SAVED_RECIPES) {
-        setRecipe(getRecipeById(key));
-      }
-    });
-    return () => sub.remove();
-  }, [recipeId]);
+    setRecipe(key ? getRecipeById(key) : undefined);
+  }, [recipeId, sqliteCacheTick]);
 
   return { recipe, recipeId: String(recipeId) };
 }

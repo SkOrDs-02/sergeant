@@ -1,16 +1,25 @@
 /**
- * Локальна книга рецептів (MMKV), формат узгоджений з web `recipeBook.ts` (SavedRecipe + JSON blob).
+ * Локальна книга рецептів (mobile).
+ *
+ * Stage 13 PR #073 of `docs/planning/storage-roadmap.md` —
+ * `loadSavedRecipes` reads recipes з SQLite warm cache (`nutrition_recipes`),
+ * `saveRecipeBook` диспатчить через `triggerNutritionDualWrite` без
+ * MMKV-write. Boot-time `residualImport.ts` дренує старі MMKV-блоби
+ * `nutrition_recipe_book_v1` у SQLite і видаляє ключ.
+ *
+ * Mirror того ж pattern, що Stage 11 / PR #057n-tombstone-mobile
+ * розгорнув для water-log + shopping-list.
  */
+import { normalizeMacrosNullable, type NullableMacros } from "@sergeant/shared";
+
 import {
-  STORAGE_KEYS,
-  normalizeMacrosNullable,
-  type NullableMacros,
-} from "@sergeant/shared";
-
-import { safeReadLS, safeWriteLS } from "@/lib/storage";
-
-import { triggerNutritionDualWrite } from "./dualWrite";
+  isNutritionDualWriteRegistered,
+  triggerNutritionDualWrite,
+  type NutritionDualWriteState,
+} from "./dualWrite";
+import type { NutritionRecipeSnapshot } from "./dualWrite/diff";
 import { peekNutritionDualWriteState } from "./dualWriteState";
+import { getCachedNutritionSqliteState } from "./sqliteReader";
 
 export interface SavedRecipe {
   id: string;
@@ -72,24 +81,11 @@ export function normalizeSavedRecipe(raw: unknown): SavedRecipe {
   };
 }
 
-type RecipeBookV1 = { recipes: SavedRecipe[] };
-
-function asBook(raw: unknown): RecipeBookV1 {
-  if (Array.isArray(raw)) {
-    return { recipes: raw.map((x) => normalizeSavedRecipe(x)) };
-  }
-  const o =
-    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-  const arr = Array.isArray(o.recipes) ? o.recipes : [];
-  return { recipes: arr.map((x) => normalizeSavedRecipe(x)) };
-}
-
 export function loadSavedRecipes(): SavedRecipe[] {
-  const parsed = asBook(
-    safeReadLS<unknown>(STORAGE_KEYS.NUTRITION_SAVED_RECIPES, null),
+  const cache = getCachedNutritionSqliteState();
+  return [...cache.recipes].sort(
+    (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
   );
-  const list = Array.isArray(parsed.recipes) ? parsed.recipes : [];
-  return [...list].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
 export function getRecipeById(id: string): SavedRecipe | undefined {
@@ -97,14 +93,26 @@ export function getRecipeById(id: string): SavedRecipe | undefined {
   return loadSavedRecipes().find((r) => r.id === id);
 }
 
+export function extractRecipeSnapshots(
+  recipes: readonly SavedRecipe[],
+): NutritionRecipeSnapshot[] {
+  return recipes.map((r) => ({
+    id: r.id,
+    title: r.title,
+    dataJson: JSON.stringify(r),
+  }));
+}
+
 export function saveRecipeBook(recipes: readonly SavedRecipe[]): boolean {
+  if (!isNutritionDualWriteRegistered()) return true;
   const prev = peekNutritionDualWriteState();
-  const book: RecipeBookV1 = { recipes: [...recipes] };
-  const ok = safeWriteLS(STORAGE_KEYS.NUTRITION_SAVED_RECIPES, book);
-  if (ok && prev !== null) {
-    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
-  }
-  return ok;
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    recipes: extractRecipeSnapshots(recipes),
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
 }
 
 /** Оновити або додати рецепт (для майбутнього збереження з UI / AI). */
@@ -127,7 +135,9 @@ export function removeSavedRecipe(id: string): boolean {
 
 /**
  * Імпорт з експорту web (JSON) / масиву / об'єкта { recipes: [...] }.
- * Кожен елемент нормалізується; існуючі id перезаписуються.
+ * Кожен елемент нормалізується; існуючі id перезаписуються. Усі updates
+ * батчаться в один `saveRecipeBook` щоб уникнути race-у з SQLite cache
+ * refresh-ом між послідовними викликами.
  */
 export function importRecipesFromJson(
   raw: string,
@@ -159,8 +169,13 @@ export function importRecipesFromJson(
     return { ok: false, error: "Порожній список" };
   }
 
+  const byId = new Map<string, SavedRecipe>(
+    loadSavedRecipes().map((r) => [r.id, r]),
+  );
   for (const item of list) {
-    upsertSavedRecipe(item);
+    const next = normalizeSavedRecipe(item);
+    byId.set(next.id, { ...next, updatedAt: Date.now() });
   }
+  saveRecipeBook([...byId.values()]);
   return { ok: true, count: list.length };
 }

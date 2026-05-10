@@ -149,7 +149,11 @@ export const STORAGE_KEYS = {
   NUTRITION_PREFS: "nutrition_prefs_v1",
   /**
    * Локальна книга збережених рецептів (mobile MMKV; web — IndexedDB).
-   * @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_recipes`.
+   * Mobile MMKV-write path tombstoned by Stage 13 PR #073; reads now
+   * come from the SQLite warm cache. Web copy lives in the
+   * `nutrition_recipes` IndexedDB store inside `sergeant-db` and uses
+   * its own dual-write/residual-import path.
+   * @deprecated Stage 13 PR #073 — use SQLite `nutrition_recipes`.
    */
   NUTRITION_SAVED_RECIPES: "nutrition_recipe_book_v1",
 
