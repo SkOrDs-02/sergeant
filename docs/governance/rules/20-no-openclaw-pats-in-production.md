@@ -29,7 +29,7 @@
 - `OPENCLAW_GITHUB_PAT`
 - `Git_PAT`
 
-— не має бути виставлене у production-середовищі. Якщо виставлене — `assertStartupEnv()` (див. [`apps/server/src/env/env.ts`](./apps/server/src/env/env.ts)) кидає `Hard Rule #20 violated: …`, сервер не стартує, операторові видно misconfig до того, як він стане інцидентом.
+— не має бути виставлене у production-середовищі. Якщо виставлене — `assertStartupEnv()` (див. [`apps/server/src/env/env.ts`](../../../apps/server/src/env/env.ts)) кидає `Hard Rule #20 violated: …`, сервер не стартує, операторові видно misconfig до того, як він стане інцидентом.
 
 **Що блокує:**
 
@@ -43,7 +43,7 @@
 - `OPENCLAW_GITHUB_PAT` у `NODE_ENV=development` / `NODE_ENV=test` — локальні dev-сервери і CI можуть мати legacy токен у `process.env`, hard-block спрацьовує лише у prod.
 - Відсутність `OPENCLAW_GITHUB_APP_*` змінних — це окрема failure mode (`getOpenclawGithubAuth()` повертає null, caller бачить `status: 'not_configured'`), не violation цього правила.
 
-Procedure для ротації / емержансі — [`docs/playbooks/rotate-openclaw-credentials.md`](./docs/playbooks/rotate-openclaw-credentials.md). Migration-план — [`docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](./docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
+Procedure для ротації / емержансі — [`docs/playbooks/rotate-openclaw-credentials.md`](../../playbooks/rotate-openclaw-credentials.md). Migration-план — [`docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
 
 ## Related
 

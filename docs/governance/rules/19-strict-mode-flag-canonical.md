@@ -25,12 +25,12 @@
 
 **Rule.** Будь-який `apps/{app}/tsconfig.json` або `packages/{pkg}/tsconfig.json`, що задає `false` для одного з 10 strict-family прапорів вище, має бути:
 
-1. зареєстрований у [`tools/tsconfig-guard/allowlist.json`](./tools/tsconfig-guard/allowlist.json) з полями `path` / `option` / `value: false` / `reason` / `expires: YYYY-MM-DD` / `owner`, **АБО**
+1. зареєстрований у [`tools/tsconfig-guard/allowlist.json`](../../../tools/tsconfig-guard/allowlist.json) з полями `path` / `option` / `value: false` / `reason` / `expires: YYYY-MM-DD` / `owner`, **АБО**
 2. видалений (override gone — flag успадковується з `tsconfig.base.json`).
 
 CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint`). Будь-який неавторизований override ламає білд. Allowlist-entries без активної ініціативи — скоро `expires`, після чого CI знов падає.
 
-**Coverage tracking.** [`scripts/strict-coverage.mjs`](./scripts/strict-coverage.mjs) пише markdown-таблицю в `$GITHUB_STEP_SUMMARY` з per-flag-coverage статистикою (12 / 12 = 100% — мета). Status: `noUncheckedIndexedAccess`, `noImplicitReturns`, `noUnusedLocals` = 100%; `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature` = 11 / 12 = 92% (residual `apps/web` deferred to Sprint 5+).
+**Coverage tracking.** [`scripts/strict-coverage.mjs`](../../../scripts/strict-coverage.mjs) пише markdown-таблицю в `$GITHUB_STEP_SUMMARY` з per-flag-coverage статистикою (12 / 12 = 100% — мета). Status: `noUncheckedIndexedAccess`, `noImplicitReturns`, `noUnusedLocals` = 100%; `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature` = 11 / 12 = 92% (residual `apps/web` deferred to Sprint 5+).
 
 **Що блокує:**
 
@@ -43,7 +43,7 @@ CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint
 - Інші TS-прапори, які не входять у `GUARDED_OPTIONS` (e.g. `noImplicitOverride`, `useDefineForClassFields`).
 - Allowlist-entries з активним `expires` у майбутньому — це temporary debt, і саме для цього існує allowlist.
 
-Tracked у [Initiative 0012 — Perfect TS strictness rollout](./docs/initiatives/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](./docs/tech-debt/frontend.md).
+Tracked у [Initiative 0012 — Perfect TS strictness rollout](../../initiatives/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md).
 
 ## Related
 

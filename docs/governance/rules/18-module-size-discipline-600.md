@@ -42,14 +42,14 @@
 }
 ```
 
-**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/_0001-module-decomposition.md`](docs/initiatives/_0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
+**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/_0001-module-decomposition.md`](../../initiatives/_0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
 
-**Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (раніше моноліт `agent.ts`): `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/<domain>/`. Для web cookbook див. опис фази 2 в [`docs/initiatives/_0001-module-decomposition.md`](docs/initiatives/_0001-module-decomposition.md).
+**Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (раніше моноліт `agent.ts`): `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/<domain>/`. Для web cookbook див. опис фази 2 в [`docs/initiatives/_0001-module-decomposition.md`](../../initiatives/_0001-module-decomposition.md).
 
 **Scope rationale.**
 
 - `apps/server/src/**` — поза правилом (моноліти вже розкладено, нові не з'являються).
-- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/initiatives/0002-mobile-platform-decision.md`](docs/initiatives/0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
+- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/initiatives/0002-mobile-platform-decision.md`](../../initiatives/0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
 - `packages/**/src/**` — поза правилом (бібліотечні файли — публічний API, поріг для них інший; зачепимо в окремій ініціативі).
 
 **Що блокує:**
