@@ -1,6 +1,6 @@
 # Agents
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-10 by @zlupa005. **Next review:** 2026-08-08.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant — це **operating system для AI-агентів, які працюють у репо**, а не AI-фічі продукту (HubChat, AI Coach, Mono-classifier тощо живуть під `apps/web` і `apps/server` і документуються в окремих модулях). Тут навігація по repo-owned skills, decision trees для типових flow і design specs.
@@ -16,12 +16,13 @@
 
 ## Підрозділи
 
-| Підрозділ                                              | Призначення                                                                |
-| ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| [`onboarding.md`](./onboarding.md)                     | Перші 30 хвилин агента в Sergeant: секрети, БД, hard-rule навігація, plop. |
-| [`agent-skills-catalog.md`](./agent-skills-catalog.md) | Scenario -> skill -> what it enforces.                                     |
-| [`agent-workflows.md`](./agent-workflows.md)           | Decision trees для feature, bugfix, review, migration, release.            |
-| [`specialists-mapping.md`](./specialists-mapping.md)   | Runtime `SpecialistAgent` ↔ governance skill ↔ primary playbook ↔ ADR.     |
+| Підрозділ                                                      | Призначення                                                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [`onboarding.md`](./onboarding.md)                             | Перші 30 хвилин агента в Sergeant: секрети, БД, hard-rule навігація, plop.                                 |
+| [`agent-skills-catalog.md`](./agent-skills-catalog.md)         | Scenario -> skill -> what it enforces.                                                                     |
+| [`agent-workflows.md`](./agent-workflows.md)                   | Decision trees для feature, bugfix, review, migration, release.                                            |
+| [`specialists-mapping.md`](./specialists-mapping.md)           | Runtime `SpecialistAgent` ↔ governance skill ↔ primary playbook ↔ ADR.                                     |
+| [`skills-evolution-roadmap.md`](./skills-evolution-roadmap.md) | Discovery roadmap: запозичення з agent-skills ecosystem (anthropics, supabase, obra) — 9 PR-послідовність. |
 
 ## Політика skill system
 
