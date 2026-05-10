@@ -52,7 +52,11 @@ export const STORAGE_KEYS = {
   FINYK_TX_CACHE_LAST_GOOD: "finyk_tx_cache_last_good",
   FINYK_INFO_CACHE: "finyk_info_cache",
   FINYK_TOKEN: "finyk_token",
-  FINYK_STORAGE: "finyk_storage_v2",
+  // FINYK_STORAGE (`finyk_storage_v2`) entry was dropped in PR #072
+  // (storage-roadmap Stage 13). The monolithic blob from the pre-Stage-4
+  // era (PR #035–#039 split it into per-key slots + per-table SQLite
+  // mirror) had no writers since 2026 and only a pair of lying
+  // `monthlyBudget` readers in `useWeeklyDigest` / `weeklyDigestAggregates`.
   /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_prefs.show_balance`. */
   FINYK_SHOW_BALANCE: "finyk_show_balance_v1",
   /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_accounts`. */

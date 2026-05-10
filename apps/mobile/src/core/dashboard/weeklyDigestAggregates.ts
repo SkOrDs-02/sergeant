@@ -5,9 +5,11 @@ import {
   MCC_CATEGORIES,
   INCOME_CATEGORIES,
 } from "@sergeant/finyk-domain/constants";
+import type { MonthlyPlan } from "@sergeant/finyk-domain/domain";
 import type { WeeklyDigestPayload } from "@sergeant/api-client";
 
 import { safeReadLS } from "@/lib/storage";
+import { getCachedFinykSqliteState } from "@/modules/finyk/lib/sqliteReader";
 
 const ALL_CATS = [...MCC_CATEGORIES, ...INCOME_CATEGORIES];
 
@@ -118,10 +120,19 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     .slice(0, 5)
     .map(([name, amount]) => ({ name, amount: Math.round(amount) }));
 
-  const finykStorage = safeReadLS<{
-    monthlyPlan?: { expense?: number };
-  } | null>("finyk_storage_v2", null);
-  const monthlyBudget = finykStorage?.monthlyPlan?.expense ?? null;
+  // PR #072 (storage-roadmap Stage 13) — read SQLite `finyk_prefs.monthly_plan_json`
+  // (canonical) with one-step MMKV fallback (`finyk_monthly_plan`) for cold-boot.
+  // The historical `finyk_storage_v2` blob lost its writers in Stage 4 PR
+  // #035–#039, so the previous reader returned `null` on every fresh
+  // install and `Insights.budgetRemaining` silently degraded.
+  const sqliteMonthlyPlan = getCachedFinykSqliteState().monthlyPlan;
+  const lsMonthlyPlan = safeReadLS<MonthlyPlan | null>(
+    "finyk_monthly_plan",
+    null,
+  );
+  const monthlyPlan = sqliteMonthlyPlan ?? lsMonthlyPlan;
+  const expenseNum = Number(monthlyPlan?.expense);
+  const monthlyBudget = Number.isFinite(expenseNum) ? expenseNum : null;
 
   return {
     totalSpent: Math.round(totalSpent),
