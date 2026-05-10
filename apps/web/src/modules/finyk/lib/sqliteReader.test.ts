@@ -215,7 +215,7 @@ describe("refreshFinykSqliteState", () => {
     ]);
   });
 
-  it("hydrates singleton prefs (monthlyPlan + showBalance)", async () => {
+  it("hydrates singleton prefs (monthlyPlan + showBalance + arrays)", async () => {
     await applyOps([
       {
         kind: "prefs-upsert",
@@ -225,6 +225,8 @@ describe("refreshFinykSqliteState", () => {
             expense: "20000",
           }),
           showBalance: false,
+          excludedStatTxIdsJson: JSON.stringify(["tx-1", "tx-2"]),
+          dismissedRecurringJson: JSON.stringify(["banner-x"]),
         },
       },
     ]);
@@ -232,6 +234,8 @@ describe("refreshFinykSqliteState", () => {
     const cache = await refreshFinykSqliteState(handle.client, UID);
     expect(cache.monthlyPlan).toEqual({ income: "30000", expense: "20000" });
     expect(cache.showBalance).toBe(false);
+    expect(cache.excludedStatTxIds).toEqual(["tx-1", "tx-2"]);
+    expect(cache.dismissedRecurring).toEqual(["banner-x"]);
   });
 
   it("filters out other users' rows", async () => {

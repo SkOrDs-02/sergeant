@@ -424,6 +424,12 @@ export const finykPrefs = sqliteTable("finyk_prefs", {
   prefsJson: text("prefs_json").notNull().default("{}"),
   monthlyPlanJson: text("monthly_plan_json").notNull().default("{}"),
   showBalance: integer("show_balance").notNull().default(1),
+  excludedStatTxIdsJson: text("excluded_stat_tx_ids_json")
+    .notNull()
+    .default("[]"),
+  dismissedRecurringJson: text("dismissed_recurring_json")
+    .notNull()
+    .default("[]"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),

@@ -50,6 +50,11 @@ const LS_MONO_DEBT_LINKED = "finyk_mono_debt_linked";
 const LS_NETWORTH_HISTORY = "finyk_networth_history";
 const LS_MONTHLY_PLAN = "finyk_monthly_plan";
 const LS_SHOW_BALANCE = "finyk_show_balance_v1";
+// Stage 13 / PR #075 — два нових prefs slice. Додаємо до residual
+// import щоб LS-залишки не «зависали» на боті, коли їх перенесено
+// у `finyk_prefs.excluded_stat_tx_ids_json` / `dismissed_recurring_json`.
+const LS_EXCLUDED_STAT_TXS = "finyk_excluded_stat_txs";
+const LS_REC_DISMISSED = "finyk_rec_dismissed";
 
 const ALL_KEYS = [
   LS_HIDDEN,
@@ -67,6 +72,8 @@ const ALL_KEYS = [
   LS_NETWORTH_HISTORY,
   LS_MONTHLY_PLAN,
   LS_SHOW_BALANCE,
+  LS_EXCLUDED_STAT_TXS,
+  LS_REC_DISMISSED,
 ];
 
 export interface ResidualImportResult {
@@ -266,7 +273,34 @@ function readPrefsFromLs(): FinykDualWriteState["prefs"] {
   const showBalanceRaw = readRaw(LS_SHOW_BALANCE, "1");
   const showBalance = showBalanceRaw !== "0";
 
-  return { monthlyPlanJson, showBalance };
+  // Stage 13 / PR #075 — обидва масиви тепер їдуть через `finyk_prefs`.
+  // Витягуємо з LS, фільтруємо до `string[]`, серіалізуємо у JSON.
+  // STALE_TIMESTAMP в `applyFinykDualWriteOps` гарантує, що наявні
+  // SQLite-значення завжди виграють у LWW-порівнянні (epoch=0).
+  const excludedStatTxIdsJson =
+    serializeStringArrayFromLs(LS_EXCLUDED_STAT_TXS);
+  const dismissedRecurringJson = serializeStringArrayFromLs(LS_REC_DISMISSED);
+
+  return {
+    monthlyPlanJson,
+    showBalance,
+    excludedStatTxIdsJson,
+    dismissedRecurringJson,
+  };
+}
+
+function serializeStringArrayFromLs(key: string): string {
+  const raw = readJSON<unknown>(key, null);
+  if (!Array.isArray(raw)) return "[]";
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item === "string" && item.length > 0) out.push(item);
+  }
+  try {
+    return JSON.stringify(out);
+  } catch {
+    return "[]";
+  }
 }
 
 export const __testing = {

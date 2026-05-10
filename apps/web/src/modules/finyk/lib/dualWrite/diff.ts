@@ -97,6 +97,20 @@ export interface FinykPrefsSnapshot {
   readonly monthlyPlanJson: string;
   /** `finyk_show_balance_v1` raw boolean state. */
   readonly showBalance: boolean;
+  /**
+   * Mono transaction ids excluded from statistics. JSON-encoded once
+   * by the extractor — diff layer compares strings, adapter writes
+   * verbatim into `finyk_prefs.excluded_stat_tx_ids_json`.
+   * (Stage 13 / PR #075 — was `finyk_excluded_stat_txs` LS-only.)
+   */
+  readonly excludedStatTxIdsJson: string;
+  /**
+   * Recurring-banner ids the user dismissed. Same shape as above —
+   * JSON-encoded array of strings; adapter writes verbatim into
+   * `finyk_prefs.dismissed_recurring_json`.
+   * (Stage 13 / PR #075 — was `finyk_rec_dismissed` LS-only.)
+   */
+  readonly dismissedRecurringJson: string;
 }
 
 // -----------------------------------------------------------------------
@@ -447,6 +461,8 @@ function prefsChanged(
   if (!prev || !next) return prev !== next;
   return (
     prev.monthlyPlanJson !== next.monthlyPlanJson ||
-    prev.showBalance !== next.showBalance
+    prev.showBalance !== next.showBalance ||
+    prev.excludedStatTxIdsJson !== next.excludedStatTxIdsJson ||
+    prev.dismissedRecurringJson !== next.dismissedRecurringJson
   );
 }

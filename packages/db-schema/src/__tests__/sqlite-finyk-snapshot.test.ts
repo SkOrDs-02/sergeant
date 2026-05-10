@@ -251,6 +251,8 @@ describe("sqlite/finykPrefs schema snapshot", () => {
       "prefs_json",
       "monthly_plan_json",
       "show_balance",
+      "excluded_stat_tx_ids_json",
+      "dismissed_recurring_json",
       "created_at",
       "updated_at",
     ]);
@@ -359,10 +361,13 @@ describe("sqlite/finykMonoAccountSnapshots schema snapshot", () => {
 // ---------------------------------------------------------------------
 
 describe("sqlite/finyk migrations exports", () => {
-  it("exports the ordered finyk migrations list (001 + 002)", () => {
-    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(2);
+  it("exports the ordered finyk migrations list (001 + 002 + 003)", () => {
+    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(3);
     expect(FINYK_CLIENT_MIGRATIONS[0]!.name).toBe("001_finyk_tables.sql");
     expect(FINYK_CLIENT_MIGRATIONS[1]!.name).toBe("002_finyk_mono_mirror.sql");
+    expect(FINYK_CLIENT_MIGRATIONS[2]!.name).toBe(
+      "003_finyk_prefs_excluded_dismissed.sql",
+    );
   });
 
   it("001 inline SQL contains every Stage-4 finyk_* table CREATE", () => {

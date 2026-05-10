@@ -2515,8 +2515,11 @@ async function applyFinykNetworthHistory(
  * Apply-шлях для `finyk_prefs` — singleton per-user (PK = user_id).
  *
  * Структурно дзеркало `applyNutritionPrefs`: `delete` відхиляється,
- * `prefs_json`/`monthly_plan_json` серіалізуються через `toJsonbParam`,
- * `show_balance` приходить як boolean / 0|1.
+ * `prefs_json`/`monthly_plan_json`/`excluded_stat_tx_ids`/`dismissed_recurring`
+ * серіалізуються через `toJsonbParam`, `show_balance` приходить як
+ * boolean / 0|1. Stage 13 / PR #075 додав останні два масиви для
+ * cross-device sync UI-фільтрів зі статистики та закритих recurring-
+ * банерів.
  */
 async function applyFinykPrefs(
   client: PoolClient,
@@ -2547,24 +2550,46 @@ async function applyFinykPrefs(
   const monthlyPlanJson = toJsonbParam(row["monthly_plan_json"]) ?? "{}";
   const showBalance =
     row["show_balance"] === false || row["show_balance"] === 0 ? false : true;
+  const excludedStatTxIds = toJsonbParam(row["excluded_stat_tx_ids"]) ?? "[]";
+  const dismissedRecurring = toJsonbParam(row["dismissed_recurring"]) ?? "[]";
 
   if (existing.rows.length === 0) {
     await client.query(
       `INSERT INTO finyk_prefs
          (user_id, prefs_json, monthly_plan_json, show_balance,
+          excluded_stat_tx_ids, dismissed_recurring,
           created_at, updated_at)
-       VALUES ($1, $2::jsonb, $3::jsonb, $4, $5, $6)`,
-      [userId, prefsJson, monthlyPlanJson, showBalance, clientTs, clientTs],
+       VALUES ($1, $2::jsonb, $3::jsonb, $4, $5::jsonb, $6::jsonb, $7, $8)`,
+      [
+        userId,
+        prefsJson,
+        monthlyPlanJson,
+        showBalance,
+        excludedStatTxIds,
+        dismissedRecurring,
+        clientTs,
+        clientTs,
+      ],
     );
   } else {
     await client.query(
       `UPDATE finyk_prefs
-         SET prefs_json        = $1::jsonb,
-             monthly_plan_json = $2::jsonb,
-             show_balance      = $3,
-             updated_at        = $4
-       WHERE user_id = $5`,
-      [prefsJson, monthlyPlanJson, showBalance, clientTs, userId],
+         SET prefs_json           = $1::jsonb,
+             monthly_plan_json    = $2::jsonb,
+             show_balance         = $3,
+             excluded_stat_tx_ids = $4::jsonb,
+             dismissed_recurring  = $5::jsonb,
+             updated_at           = $6
+       WHERE user_id = $7`,
+      [
+        prefsJson,
+        monthlyPlanJson,
+        showBalance,
+        excludedStatTxIds,
+        dismissedRecurring,
+        clientTs,
+        userId,
+      ],
     );
   }
   return { status: "applied" };

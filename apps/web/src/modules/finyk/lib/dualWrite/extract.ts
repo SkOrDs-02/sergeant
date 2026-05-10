@@ -156,6 +156,12 @@ export function extractFinykDualWriteState(
     monthlyPlanJson = "{}";
   }
 
+  // Stage 13 / PR #075 — обидва масиви тепер їдуть через `finyk_prefs`
+  // dual-write замість LS-only. Захищаємось від не-string елементів,
+  // щоб серверний `applyFinykPrefs` отримав чистий `string[]`.
+  const excludedStatTxIdsJson = serializeStringArray(slots.excludedStatTxIds);
+  const dismissedRecurringJson = serializeStringArray(slots.dismissedRecurring);
+
   return {
     hiddenAccounts: idsFromArray(slots.hiddenAccounts),
     hiddenTransactions: idsFromArray(slots.hiddenTxIds),
@@ -195,6 +201,21 @@ export function extractFinykDualWriteState(
     prefs: {
       monthlyPlanJson,
       showBalance,
+      excludedStatTxIdsJson,
+      dismissedRecurringJson,
     },
   };
+}
+
+function serializeStringArray(value: readonly unknown[] | undefined): string {
+  if (!Array.isArray(value)) return "[]";
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item.length > 0) out.push(item);
+  }
+  try {
+    return JSON.stringify(out);
+  } catch {
+    return "[]";
+  }
 }

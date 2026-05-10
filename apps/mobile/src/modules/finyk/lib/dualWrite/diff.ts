@@ -93,6 +93,19 @@ export interface FinykPrefsSnapshot {
   readonly monthlyPlanJson: string;
   /** `finyk_show_balance_v1` raw boolean state. */
   readonly showBalance: boolean;
+  /**
+   * JSON-encoded array of Mono transaction ids excluded from
+   * statistics. Mirror of the web slot — mobile boots empty until the
+   * server pull populates `finyk_prefs.excluded_stat_tx_ids_json`.
+   * (Stage 13 / PR #075.)
+   */
+  readonly excludedStatTxIdsJson: string;
+  /**
+   * JSON-encoded array of recurring-banner ids the user dismissed.
+   * Same shape і cross-device LWW lane as `excludedStatTxIdsJson`.
+   * (Stage 13 / PR #075.)
+   */
+  readonly dismissedRecurringJson: string;
 }
 
 // -----------------------------------------------------------------------
@@ -443,6 +456,8 @@ function prefsChanged(
   if (!prev || !next) return prev !== next;
   return (
     prev.monthlyPlanJson !== next.monthlyPlanJson ||
-    prev.showBalance !== next.showBalance
+    prev.showBalance !== next.showBalance ||
+    prev.excludedStatTxIdsJson !== next.excludedStatTxIdsJson ||
+    prev.dismissedRecurringJson !== next.dismissedRecurringJson
   );
 }

@@ -180,7 +180,14 @@ function readPrefsFromMmkv(): FinykPrefsSnapshot {
   const showBalance =
     typeof showBalanceRaw === "boolean" ? showBalanceRaw : true;
 
-  return { monthlyPlanJson, showBalance };
+  // Stage 13 / PR #075 — мобілка не тримала ці LS-ключі, тож стартує
+  // з порожніми масивами; пуш з вебу пізніше перезапише через LWW.
+  return {
+    monthlyPlanJson,
+    showBalance,
+    excludedStatTxIdsJson: "[]",
+    dismissedRecurringJson: "[]",
+  };
 }
 
 export const __testing = {

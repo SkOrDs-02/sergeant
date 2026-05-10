@@ -396,6 +396,14 @@ export const finykPrefs = pgTable("finyk_prefs", {
   prefsJson: jsonb("prefs_json").notNull().default({}),
   monthlyPlanJson: jsonb("monthly_plan_json").notNull().default({}),
   showBalance: boolean("show_balance").notNull().default(true),
+  excludedStatTxIds: jsonb("excluded_stat_tx_ids")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
+  dismissedRecurring: jsonb("dismissed_recurring")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

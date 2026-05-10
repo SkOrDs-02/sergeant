@@ -159,7 +159,12 @@ describe("Finyk dual-write — applyFinykDualWriteOps", () => {
       [
         {
           kind: "prefs-upsert",
-          prefs: { monthlyPlanJson: '{"income":"10"}', showBalance: false },
+          prefs: {
+            monthlyPlanJson: '{"income":"10"}',
+            showBalance: false,
+            excludedStatTxIdsJson: '["tx-1","tx-2"]',
+            dismissedRecurringJson: '["banner-a"]',
+          },
         },
       ],
       { userId: USER_ID, clientTs: NOW },
@@ -168,12 +173,20 @@ describe("Finyk dual-write — applyFinykDualWriteOps", () => {
       user_id: string;
       monthly_plan_json: string;
       show_balance: number;
-    }>("SELECT user_id, monthly_plan_json, show_balance FROM finyk_prefs");
+      excluded_stat_tx_ids_json: string;
+      dismissed_recurring_json: string;
+    }>(
+      `SELECT user_id, monthly_plan_json, show_balance,
+              excluded_stat_tx_ids_json, dismissed_recurring_json
+         FROM finyk_prefs`,
+    );
     expect(rows).toEqual([
       {
         user_id: USER_ID,
         monthly_plan_json: '{"income":"10"}',
         show_balance: 0,
+        excluded_stat_tx_ids_json: '["tx-1","tx-2"]',
+        dismissed_recurring_json: '["banner-a"]',
       },
     ]);
   });

@@ -345,6 +345,11 @@ describe("039_finyk_tables migration", () => {
         "show_balance",
         "created_at",
         "updated_at",
+        // Stage 13 / PR #075 — додано у міграції 053:
+        // `excluded_stat_tx_ids` (LS → cross-device sync, JSONB array) та
+        // `dismissed_recurring` (LS → cross-device sync, JSONB array).
+        "excluded_stat_tx_ids",
+        "dismissed_recurring",
       ]);
 
       const pkCheck = await pool.query<{ column_name: string }>(
@@ -415,8 +420,13 @@ describe("039_finyk_tables migration", () => {
         networthHistory: await listColumns(pool, "finyk_networth_history"),
       };
 
+      // Stage 13 / PR #075 — 053 додає ALTER TABLE на finyk_prefs;
+      // щоб down→up цикл відновив той самий fingerprint, порядок
+      // важливий: спершу откатити 053 (DROP COLUMN), потім вже 039.
+      await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.down.sql");
       await execSqlFile(pool, "039_finyk_tables.down.sql");
       await execSqlFile(pool, "039_finyk_tables.sql");
+      await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.sql");
 
       const after = {
         tables: await listTables(pool),

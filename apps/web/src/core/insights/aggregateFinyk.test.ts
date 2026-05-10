@@ -44,6 +44,8 @@ const EMPTY_CACHE = {
   networthHistory: [],
   monthlyPlan: null,
   showBalance: null,
+  excludedStatTxIds: null,
+  dismissedRecurring: null,
   refreshedAt: null,
 };
 

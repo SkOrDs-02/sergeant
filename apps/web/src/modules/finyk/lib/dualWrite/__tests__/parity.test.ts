@@ -175,7 +175,12 @@ function makeNetworth(month: string): FinykNetworthEntry {
 }
 
 function makePrefs(): FinykPrefsSnapshot {
-  return { monthlyPlanJson: "{}", showBalance: true };
+  return {
+    monthlyPlanJson: "{}",
+    showBalance: true,
+    excludedStatTxIdsJson: "[]",
+    dismissedRecurringJson: "[]",
+  };
 }
 
 // -------------------- "all-zero" details fixture --------------------
@@ -546,7 +551,12 @@ describe("probeFinykParity", () => {
 
       const next: FinykDualWriteState = {
         ...EMPTY_STATE,
-        prefs: { monthlyPlanJson: "{}", showBalance: false },
+        prefs: {
+          monthlyPlanJson: "{}",
+          showBalance: false,
+          excludedStatTxIdsJson: "[]",
+          dismissedRecurringJson: "[]",
+        },
       };
 
       const out = await probeFinykParity(handle.client, USER_ID, next);

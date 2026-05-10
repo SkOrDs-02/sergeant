@@ -2,11 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { DEFAULT_SUBSCRIPTIONS } from "../constants";
 import { readJSON, finykStorageManager } from "../lib/finykStorage";
-import {
-  usePersist,
-  useReadonlyPersist,
-  reportSilentError,
-} from "./useStorage.persist";
+import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
 import type {
@@ -76,12 +72,12 @@ export interface FinykStorageSlots {
 /**
  * Reader hook: registers all Finyk persisted slots.
  *
- * Stage 8 PR #057k-tombstone: the 14 dual-write-covered keys use
- * `useReadonlyPersist` (LS read for first-paint, no LS write). The
- * SQLite overlay snaps in canonical values once the cache is warm.
- * Mutations persist solely through `useFinykDualWriteSync`.
- * `excludedStatTxIds` and `dismissedRecurring` remain LS-backed via
- * the original `usePersist` until their SQLite columns land.
+ * Stage 8 PR #057k-tombstone + Stage 13 PR #075: усі dual-write-covered
+ * слоти (14 + 2 нових) використовують `useReadonlyPersist` (LS-read
+ * для first-paint, без LS-write). SQLite-overlay вкочує канонічні
+ * значення коли кеш warm. Мутації persist виключно через
+ * `useFinykDualWriteSync`. PR #075 додав `excludedStatTxIds` /
+ * `dismissedRecurring` у `finyk_prefs` як cross-device prefs slice.
  */
 export function useFinykStorageSlots(): FinykStorageSlots {
   const [hiddenAccounts, setHiddenAccounts] = useReadonlyPersist<string[]>(
@@ -135,14 +131,12 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   const [manualExpenses, setManualExpenses] = useReadonlyPersist<
     ManualExpense[]
   >("finyk_manual_expenses_v1", []);
-  const [excludedStatTxIds, setExcludedStatTxIds] = usePersist<string[]>(
-    "finyk_excluded_stat_txs",
-    [],
-  );
-  const [dismissedRecurring, setDismissedRecurring] = usePersist<string[]>(
-    "finyk_rec_dismissed",
-    [],
-  );
+  const [excludedStatTxIds, setExcludedStatTxIds] = useReadonlyPersist<
+    string[]
+  >("finyk_excluded_stat_txs", []);
+  const [dismissedRecurring, setDismissedRecurring] = useReadonlyPersist<
+    string[]
+  >("finyk_rec_dismissed", []);
   const networthSnapshotRef = useRef<NetworthSnap>(
     readJSON<NetworthSnap>("finyk_networth_last_snap", {
       date: null,
@@ -174,10 +168,19 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
     setNetworthHistory(cache.networthHistory);
     if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);
-    // `excludedStatTxIds`, `dismissedRecurring` and the `networth_last_snap`
-    // ref slot are intentionally NOT mirrored to SQLite (yet) — PR #036
-    // dual-write only covers the 14 cloud-sync keys, so the cache has
-    // nothing to overlay for them.
+    // Stage 13 / PR #075 — `excluded_stat_tx_ids_json` /
+    // `dismissed_recurring_json` тепер їдуть через `finyk_prefs`,
+    // тож overlay-имо їх із кеша. `null` означає, що prefs-row ще
+    // не існує — лишаємо локальний first-paint state.
+    if (cache.excludedStatTxIds !== null) {
+      setExcludedStatTxIds(cache.excludedStatTxIds);
+    }
+    if (cache.dismissedRecurring !== null) {
+      setDismissedRecurring(cache.dismissedRecurring);
+    }
+    // `networth_last_snap` ref slot is intentionally NOT mirrored to
+    // SQLite — it's a per-device dashboard hint, not part of the
+    // dual-write contract.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sqliteCacheTick]);
 

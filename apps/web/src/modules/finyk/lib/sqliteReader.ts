@@ -65,6 +65,17 @@ export interface SqliteFinykCache {
   monthlyPlan: MonthlyPlan | null;
   /** Singleton balance-visibility flag from prefs. */
   showBalance: boolean | null;
+  /**
+   * Singleton list of Mono transaction ids excluded from statistics
+   * (parsed from `excluded_stat_tx_ids_json`). `null` until the first
+   * refresh completes — mirrors `monthlyPlan`/`showBalance` semantics.
+   */
+  excludedStatTxIds: string[] | null;
+  /**
+   * Singleton list of recurring-banner ids the user dismissed
+   * (parsed from `dismissed_recurring_json`).
+   */
+  dismissedRecurring: string[] | null;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -85,6 +96,8 @@ const EMPTY_CACHE: SqliteFinykCache = {
   networthHistory: [],
   monthlyPlan: null,
   showBalance: null,
+  excludedStatTxIds: null,
+  dismissedRecurring: null,
   refreshedAt: null,
 };
 
@@ -149,6 +162,8 @@ interface PrefsRow {
   prefs_json: string | null;
   monthly_plan_json: string | null;
   show_balance: number | null;
+  excluded_stat_tx_ids_json: string | null;
+  dismissed_recurring_json: string | null;
   [key: string]: unknown;
 }
 
@@ -306,7 +321,8 @@ export async function refreshFinykSqliteState(
       [userId],
     ),
     client.all<PrefsRow>(
-      `SELECT user_id, prefs_json, monthly_plan_json, show_balance
+      `SELECT user_id, prefs_json, monthly_plan_json, show_balance,
+              excluded_stat_tx_ids_json, dismissed_recurring_json
          FROM finyk_prefs
         WHERE user_id = ?`,
       [userId],
@@ -370,6 +386,12 @@ export async function refreshFinykSqliteState(
       ? null
       : prefsRow.show_balance === 1
     : null;
+  const excludedStatTxIds = prefsRow
+    ? safeStringArray(prefsRow.excluded_stat_tx_ids_json)
+    : null;
+  const dismissedRecurring = prefsRow
+    ? safeStringArray(prefsRow.dismissed_recurring_json)
+    : null;
 
   cache = {
     hiddenAccounts: hiddenAccountRows.map((r) => r.account_id),
@@ -387,9 +409,21 @@ export async function refreshFinykSqliteState(
     networthHistory,
     monthlyPlan,
     showBalance,
+    excludedStatTxIds,
+    dismissedRecurring,
     refreshedAt: new Date().toISOString(),
   };
   return cache;
+}
+
+function safeStringArray(raw: string | null | undefined): string[] {
+  const parsed = safeParseJson<unknown>(raw ?? null, []);
+  if (!Array.isArray(parsed)) return [];
+  const out: string[] = [];
+  for (const item of parsed) {
+    if (typeof item === "string" && item.length > 0) out.push(item);
+  }
+  return out;
 }
 
 /** Reset cache — used by tests and when the flag is toggled off. */

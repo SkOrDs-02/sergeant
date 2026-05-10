@@ -178,23 +178,109 @@ describe("diffFinykDualWriteOps", () => {
   it("emits prefs-upsert when monthlyPlanJson or showBalance change", () => {
     const prev: FinykDualWriteState = {
       ...EMPTY_FINYK_STATE,
-      prefs: { monthlyPlanJson: '{"income":1}', showBalance: true },
+      prefs: {
+        monthlyPlanJson: '{"income":1}',
+        showBalance: true,
+        excludedStatTxIdsJson: "[]",
+        dismissedRecurringJson: "[]",
+      },
     };
     const next: FinykDualWriteState = {
       ...EMPTY_FINYK_STATE,
-      prefs: { monthlyPlanJson: '{"income":1}', showBalance: false },
+      prefs: {
+        monthlyPlanJson: '{"income":1}',
+        showBalance: false,
+        excludedStatTxIdsJson: "[]",
+        dismissedRecurringJson: "[]",
+      },
     };
     const ops = diffFinykDualWriteOps(prev, next);
     expect(ops).toEqual([
       {
         kind: "prefs-upsert",
-        prefs: { monthlyPlanJson: '{"income":1}', showBalance: false },
+        prefs: {
+          monthlyPlanJson: '{"income":1}',
+          showBalance: false,
+          excludedStatTxIdsJson: "[]",
+          dismissedRecurringJson: "[]",
+        },
+      },
+    ]);
+  });
+
+  it("emits prefs-upsert when excludedStatTxIdsJson changes", () => {
+    const prev: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      prefs: {
+        monthlyPlanJson: "{}",
+        showBalance: true,
+        excludedStatTxIdsJson: "[]",
+        dismissedRecurringJson: "[]",
+      },
+    };
+    const next: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      prefs: {
+        monthlyPlanJson: "{}",
+        showBalance: true,
+        excludedStatTxIdsJson: '["tx-1","tx-2"]',
+        dismissedRecurringJson: "[]",
+      },
+    };
+    const ops = diffFinykDualWriteOps(prev, next);
+    expect(ops).toEqual([
+      {
+        kind: "prefs-upsert",
+        prefs: {
+          monthlyPlanJson: "{}",
+          showBalance: true,
+          excludedStatTxIdsJson: '["tx-1","tx-2"]',
+          dismissedRecurringJson: "[]",
+        },
+      },
+    ]);
+  });
+
+  it("emits prefs-upsert when dismissedRecurringJson changes", () => {
+    const prev: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      prefs: {
+        monthlyPlanJson: "{}",
+        showBalance: true,
+        excludedStatTxIdsJson: "[]",
+        dismissedRecurringJson: "[]",
+      },
+    };
+    const next: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      prefs: {
+        monthlyPlanJson: "{}",
+        showBalance: true,
+        excludedStatTxIdsJson: "[]",
+        dismissedRecurringJson: '["banner-a"]',
+      },
+    };
+    const ops = diffFinykDualWriteOps(prev, next);
+    expect(ops).toEqual([
+      {
+        kind: "prefs-upsert",
+        prefs: {
+          monthlyPlanJson: "{}",
+          showBalance: true,
+          excludedStatTxIdsJson: "[]",
+          dismissedRecurringJson: '["banner-a"]',
+        },
       },
     ]);
   });
 
   it("does not emit prefs-upsert when prefs are byte-identical", () => {
-    const prefs = { monthlyPlanJson: "{}", showBalance: true };
+    const prefs = {
+      monthlyPlanJson: "{}",
+      showBalance: true,
+      excludedStatTxIdsJson: "[]",
+      dismissedRecurringJson: "[]",
+    };
     const prev: FinykDualWriteState = { ...EMPTY_FINYK_STATE, prefs };
     const next: FinykDualWriteState = { ...EMPTY_FINYK_STATE, prefs };
     expect(diffFinykDualWriteOps(prev, next)).toEqual([]);
@@ -217,7 +303,12 @@ describe("diffFinykDualWriteOps", () => {
       txSplits: [{ transactionId: "tx-2", splitsJson: "[]" }],
       monoDebtLinks: [{ transactionId: "tx-3", debtIdsJson: "[]" }],
       networthHistory: [{ month: "2026-04", networth: 1 }],
-      prefs: { monthlyPlanJson: "{}", showBalance: true },
+      prefs: {
+        monthlyPlanJson: "{}",
+        showBalance: true,
+        excludedStatTxIdsJson: "[]",
+        dismissedRecurringJson: "[]",
+      },
     };
     const ops = diffFinykDualWriteOps(prev, next);
     const kinds = ops.map((o) => o.kind);

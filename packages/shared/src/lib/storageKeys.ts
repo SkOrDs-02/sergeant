@@ -63,7 +63,7 @@ export const STORAGE_KEYS = {
   FINYK_HIDDEN: "finyk_hidden",
   /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_transactions`. */
   FINYK_HIDDEN_TXS: "finyk_hidden_txs",
-  // Not yet mirrored to SQLite — stays LS-backed.
+  /** @deprecated Stage 13 PR #075 — use SQLite `finyk_prefs.excluded_stat_tx_ids_json`. */
   FINYK_EXCLUDED_STAT_TXS: "finyk_excluded_stat_txs",
   /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_budgets`. */
   FINYK_BUDGETS: "finyk_budgets",

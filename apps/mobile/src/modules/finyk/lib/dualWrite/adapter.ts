@@ -377,17 +377,23 @@ async function upsertPrefs(
 ): Promise<void> {
   await client.run(
     `INSERT INTO finyk_prefs
-       (user_id, monthly_plan_json, show_balance, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)
+       (user_id, monthly_plan_json, show_balance,
+        excluded_stat_tx_ids_json, dismissed_recurring_json,
+        created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET
-       monthly_plan_json = excluded.monthly_plan_json,
-       show_balance      = excluded.show_balance,
-       updated_at        = excluded.updated_at
+       monthly_plan_json         = excluded.monthly_plan_json,
+       show_balance              = excluded.show_balance,
+       excluded_stat_tx_ids_json = excluded.excluded_stat_tx_ids_json,
+       dismissed_recurring_json  = excluded.dismissed_recurring_json,
+       updated_at                = excluded.updated_at
      WHERE excluded.updated_at > finyk_prefs.updated_at`,
     [
       userId,
       prefs.monthlyPlanJson ?? "{}",
       prefs.showBalance ? 1 : 0,
+      prefs.excludedStatTxIdsJson ?? "[]",
+      prefs.dismissedRecurringJson ?? "[]",
       clientTs,
       clientTs,
     ],

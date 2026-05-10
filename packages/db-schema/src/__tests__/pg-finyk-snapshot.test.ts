@@ -301,6 +301,8 @@ describe("pg/finykPrefs schema snapshot", () => {
       "prefs_json",
       "monthly_plan_json",
       "show_balance",
+      "excluded_stat_tx_ids",
+      "dismissed_recurring",
       "created_at",
       "updated_at",
     ]);

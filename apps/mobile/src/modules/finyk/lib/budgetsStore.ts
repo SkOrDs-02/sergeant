@@ -42,7 +42,37 @@ function prefsFrom(plan: MonthlyPlanInput): FinykPrefsSnapshot {
   } catch {
     monthlyPlanJson = "{}";
   }
-  return { monthlyPlanJson, showBalance: readShowBalance() };
+  // Stage 13 / PR #075 — мобілка не пише в `excluded_stat_tx_ids` /
+  // `dismissed_recurring`, але snapshot мусить мати поля, інакше LWW
+  // на server-side затре існуючі значення нулями. Читаємо їх із
+  // локальної SQLite-кеш-таблиці, щоб preserve-нути попередній стан.
+  const cache = readPrefsArraysFromCache();
+  return {
+    monthlyPlanJson,
+    showBalance: readShowBalance(),
+    excludedStatTxIdsJson: cache.excludedStatTxIdsJson,
+    dismissedRecurringJson: cache.dismissedRecurringJson,
+  };
+}
+
+function readPrefsArraysFromCache(): {
+  excludedStatTxIdsJson: string;
+  dismissedRecurringJson: string;
+} {
+  const cache = getCachedFinykSqliteState();
+  return {
+    excludedStatTxIdsJson: serializeArray(cache.excludedStatTxIds),
+    dismissedRecurringJson: serializeArray(cache.dismissedRecurring),
+  };
+}
+
+function serializeArray(value: readonly string[] | null | undefined): string {
+  if (!Array.isArray(value)) return "[]";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "[]";
+  }
 }
 
 /**

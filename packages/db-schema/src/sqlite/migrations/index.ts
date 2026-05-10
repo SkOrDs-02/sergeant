@@ -1030,6 +1030,25 @@ CREATE INDEX IF NOT EXISTS finyk_mono_account_snapshots_account_time_idx_lite
   ON finyk_mono_account_snapshots (user_id, account_id, snapshot_at DESC);
 `;
 
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 13 / PR #075 — extend `finyk_prefs` із двома
+// масивами: `excluded_stat_tx_ids_json` та `dismissed_recurring_json`.
+//
+// Перетягує `finyk_excluded_stat_txs` + `finyk_rec_dismissed` з LS у
+// SQLite-overlay через ту саму singleton-таблицю, що несе
+// `monthly_plan_json` / `show_balance`. Mirror серверної міграції
+// `053_finyk_prefs_excluded_dismissed.sql`. Адитивно — `IF EXISTS` /
+// default `'[]'` на існуючих рядках без backfill-у.
+// ---------------------------------------------------------------------------
+
+const FINYK_003_SQL = `
+ALTER TABLE finyk_prefs
+  ADD COLUMN excluded_stat_tx_ids_json TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE finyk_prefs
+  ADD COLUMN dismissed_recurring_json TEXT NOT NULL DEFAULT '[]';
+`;
+
 /**
  * Ordered list of bundled client migrations for the Finyk module on
  * SQLite. Pass this directly to `runMigrations` from
@@ -1044,6 +1063,7 @@ CREATE INDEX IF NOT EXISTS finyk_mono_account_snapshots_account_time_idx_lite
 export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_finyk_tables.sql", sql: FINYK_001_SQL },
   { name: "002_finyk_mono_mirror.sql", sql: FINYK_002_SQL },
+  { name: "003_finyk_prefs_excluded_dismissed.sql", sql: FINYK_003_SQL },
 ] as const;
 
 /**
