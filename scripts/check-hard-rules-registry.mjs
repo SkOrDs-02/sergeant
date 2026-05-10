@@ -7,9 +7,18 @@
 //      (a minimal schema validator implemented inline — we do not pull AJV
 //      just to check ~10 properties, see DECISION below).
 //   2. `rules[].id` is dense from 1..N with no gaps and no duplicates.
-//   3. Each `id` and `title` matches the corresponding `### N. <title>`
-//      heading in AGENTS.md (the human source of truth).
-//   4. Every rule listed in AGENTS.md also appears in CONTRIBUTING.md
+//   3. Each `id` and `title` matches its row in the AGENTS.md compact rules
+//      table (post-0009 PR 3.2 format) OR the legacy `### N. <title>`
+//      heading (used by small unit-test fixtures). The compact table is
+//      the primary form; heading support is a fallback so older fixtures
+//      and downstream consumers still parse during the migration window.
+//   4. Every rule has a per-rule canonical file at
+//      `docs/governance/rules/NN-<slug>.md` whose H1 reads
+//      `# Rule <id> — <title>`. This is the third leg of the 3-way sync
+//      introduced by initiative 0009 PR 3.2 (AGENTS.md ↔ JSON ↔ per-rule
+//      files). Per-rule directory absence is silently tolerated so legacy
+//      test fixtures without that directory still pass.
+//   5. Every rule listed in AGENTS.md also appears in CONTRIBUTING.md
 //      § Hard rules (`N. **<title-fragment>**`). This duplicates the check
 //      `scripts/check-governance-sync.mjs` does today, but anchored to the
 //      JSON registry rather than AGENTS.md so future tooling can read the
@@ -31,7 +40,7 @@
 //
 // Exit code 1 on any failure.
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +52,7 @@ const REGISTRY_PATH = resolve(ROOT, "docs/governance/hard-rules.json");
 const SCHEMA_PATH = resolve(ROOT, "docs/governance/hard-rules.schema.json");
 const AGENTS_PATH = resolve(ROOT, "AGENTS.md");
 const CONTRIB_PATH = resolve(ROOT, "CONTRIBUTING.md");
+const RULES_DIR = resolve(ROOT, "docs/governance/rules");
 const ESLINT_PLUGIN_PATH = resolve(
   ROOT,
   "packages/eslint-plugin-sergeant-design/index.js",
@@ -164,7 +174,44 @@ function typeOf(v) {
 
 // ── AGENTS.md / CONTRIBUTING.md parsers ──────────────────────────────────────
 
-function parseAgentsRules(text) {
+// AGENTS.md compact rules table row, e.g.
+//   `| 1 | DB types: coerce ... | \`blocker-invariant\` | [\`01-...md\`](./...) |`
+// We only care about the first two cells (id, title). Stripping markdown
+// formatting (`**bold**`, `[text](url)`) from the title cell keeps it
+// comparable with `registry.title`. The third cell is the category and the
+// fourth is the per-rule file link, but neither is parsed here — the schema
+// + per-rule-file checks cover those.
+function stripInlineMarkdown(s) {
+  // Remove `[text](url)` → `text`, then trim only whitespace. We deliberately
+  // do NOT strip backticks or asterisks here — backticks inside the title
+  // (e.g. `\`className\``) are part of the canonical title and must round-trip
+  // exactly to match `registry.title`.
+  return s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
+}
+
+function parseAgentsTableRules(text) {
+  const out = new Map();
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) continue;
+    const cells = trimmed
+      .slice(1, -1)
+      .split("|")
+      .map((c) => c.trim());
+    if (cells.length < 2) continue;
+    // Header: `| #   | Rule ... |` — first cell text is `#`. Skip it and any
+    // alignment/separator row.
+    const idCell = cells[0];
+    if (!/^\d+$/.test(idCell)) continue;
+    const id = Number(idCell);
+    const titleCell = stripInlineMarkdown(cells[1]);
+    if (!titleCell) continue;
+    out.set(id, titleCell);
+  }
+  return out;
+}
+
+function parseAgentsHeadingRules(text) {
   const re = /^### (\d+)\.\s+(.+)$/gm;
   const out = new Map();
   let m;
@@ -172,6 +219,15 @@ function parseAgentsRules(text) {
     out.set(Number(m[1]), m[2].trim());
   }
   return out;
+}
+
+// Primary parser: prefer table rows (post-0009 PR 3.2 format). Fall back to
+// `### N. <title>` headings (legacy / fixture format) so transitional fixtures
+// and downstream tooling don't break. Returns id→title.
+function parseAgentsRules(text) {
+  const tableHits = parseAgentsTableRules(text);
+  if (tableHits.size > 0) return tableHits;
+  return parseAgentsHeadingRules(text);
 }
 
 function parseContribRules(text) {
@@ -363,6 +419,89 @@ function main() {
       if (!contribRules.has(r.id)) {
         errors.push(
           `contrib-sync: rule #${r.id} ('${r.title}') is missing from CONTRIBUTING.md § Hard rules`,
+        );
+      }
+    }
+  }
+
+  // 4b. Per-rule canonical files (initiative 0009 PR 3.2 — 3-way sync)
+  //
+  // For each rule in the registry, expect a file
+  // `docs/governance/rules/NN-<slug>.md` whose H1 is `# Rule <id> — <title>`.
+  // The slug is whatever the file is named — we don't validate it here, only
+  // that exactly one file with the `NN-` prefix exists and its H1 matches.
+  // The directory can be missing entirely (legacy fixtures don't have it),
+  // in which case we skip this check; once it exists, every registry rule
+  // must have a matching file.
+  if (existsSync(RULES_DIR) && Array.isArray(registry.rules)) {
+    let entries = [];
+    try {
+      entries = readdirSync(RULES_DIR);
+    } catch {
+      entries = [];
+    }
+    const filesByPrefix = new Map();
+    for (const name of entries) {
+      const m = name.match(/^(\d{2})-[a-z0-9-]+\.md$/);
+      if (!m) continue;
+      const id = Number(m[1]);
+      if (!filesByPrefix.has(id)) filesByPrefix.set(id, []);
+      filesByPrefix.get(id).push(name);
+    }
+    for (const r of registry.rules) {
+      if (!r || !Number.isInteger(r.id)) continue;
+      const matches = filesByPrefix.get(r.id) ?? [];
+      if (matches.length === 0) {
+        errors.push(
+          `rule-file-sync: rule #${r.id} ('${r.title}') has no matching file in docs/governance/rules/ (expected NN-<slug>.md)`,
+        );
+        continue;
+      }
+      if (matches.length > 1) {
+        errors.push(
+          `rule-file-sync: rule #${r.id} has multiple files with the same NN prefix in docs/governance/rules/: ${matches.join(", ")}`,
+        );
+        continue;
+      }
+      const filePath = resolve(RULES_DIR, matches[0]);
+      let body;
+      try {
+        body = readFileSync(filePath, "utf-8");
+      } catch (err) {
+        errors.push(
+          `rule-file-sync: cannot read docs/governance/rules/${matches[0]} — ${err.message}`,
+        );
+        continue;
+      }
+      const h1Re = /^#\s+Rule\s+(\d+)\s+—\s+(.+)$/m;
+      const h1 = h1Re.exec(body);
+      if (!h1) {
+        errors.push(
+          `rule-file-sync: docs/governance/rules/${matches[0]} has no '# Rule N — <title>' H1`,
+        );
+        continue;
+      }
+      const fileId = Number(h1[1]);
+      const fileTitle = h1[2].trim();
+      if (fileId !== r.id) {
+        errors.push(
+          `rule-file-sync: docs/governance/rules/${matches[0]} H1 says rule #${fileId} but file is named ${matches[0]} (expected #${r.id})`,
+        );
+      }
+      if (fileTitle !== r.title) {
+        errors.push(
+          `rule-file-sync: rule #${r.id} title drift — registry='${r.title}' vs docs/governance/rules/${matches[0]} H1='${fileTitle}'`,
+        );
+      }
+    }
+    // Reverse direction: every NN-prefixed file must correspond to a rule.
+    const knownIds = new Set(
+      registry.rules.filter((r) => r?.id != null).map((r) => r.id),
+    );
+    for (const [id, names] of filesByPrefix) {
+      if (!knownIds.has(id)) {
+        errors.push(
+          `rule-file-sync: docs/governance/rules/${names[0]} numbered #${id} but registry has no such rule`,
         );
       }
     }

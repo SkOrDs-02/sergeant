@@ -18,7 +18,7 @@
 //
 // Exits 1 on `--check` diff or invalid registry.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
@@ -28,6 +28,23 @@ const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const REGISTRY_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
 const MATRIX_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules-matrix.md");
+const RULES_DIR = resolve(REPO_ROOT, "docs/governance/rules");
+
+/**
+ * Build an `id → "NN-slug.md"` map from the per-rule file directory. Returns
+ * an empty map if the directory does not exist (legacy / fixture-only repos
+ * still build a matrix that points back to AGENTS.md anchors).
+ */
+function loadRuleFileMap() {
+  if (!existsSync(RULES_DIR)) return new Map();
+  const out = new Map();
+  for (const name of readdirSync(RULES_DIR)) {
+    const m = name.match(/^(\d{2})-[a-z0-9-]+\.md$/);
+    if (!m) continue;
+    out.set(Number(m[1]), name);
+  }
+  return out;
+}
 
 // ── Registry loading + validation ────────────────────────────────────────────
 
@@ -206,7 +223,10 @@ export async function renderMatrix(registry, opts = {}) {
  * exported so tests can assert on structural output without depending on
  * Prettier's table-alignment behaviour.
  */
-export function renderMatrixRaw(registry, { now = new Date() } = {}) {
+export function renderMatrixRaw(
+  registry,
+  { now = new Date(), ruleFiles = loadRuleFileMap() } = {},
+) {
   const today = now.toISOString().slice(0, 10);
   const nextReview = new Date(now);
   nextReview.setUTCDate(nextReview.getUTCDate() + 90);
@@ -247,10 +267,18 @@ export function renderMatrixRaw(registry, { now = new Date() } = {}) {
     "| --- | ---- | -------- | -------- | ----- | ----------- | ----- |",
   );
   for (const rule of registry.rules) {
+    // Prefer per-rule canonical file; fall back to AGENTS.md anchor.
+    // Per-rule files live at `docs/governance/rules/NN-<slug>.md`; the matrix
+    // sits one directory up at `docs/governance/hard-rules-matrix.md`, so the
+    // relative link is `./rules/<file>`.
+    const ruleFile = ruleFiles.get(rule.id);
+    const titleLink = ruleFile
+      ? `[${escapePipes(rule.title)}](./rules/${ruleFile})`
+      : `[${escapePipes(rule.title)}](../../AGENTS.md#${anchorFromTitle(rule.id, rule.title)})`;
     lines.push(
       [
         `**${rule.id}**`,
-        `[${escapePipes(rule.title)}](../../AGENTS.md#${anchorFromTitle(rule.id, rule.title)})`,
+        titleLink,
         `\`${CATEGORY_LABEL[rule.category] ?? rule.category}\``,
         SEVERITY_BADGE[rule.severity] ?? rule.severity,
         renderScope(rule),

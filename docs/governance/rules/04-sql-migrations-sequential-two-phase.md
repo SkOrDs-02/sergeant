@@ -1,0 +1,46 @@
+# Rule 4 — SQL migrations: sequential, no gaps, two-phase for DROP
+
+> **Category:** `blocker-invariant`
+> **Severity:** `blocker`
+> **Last validated:** 2026-05-09 by @Skords-01
+> **Next review:** 2026-08-07
+> **Status:** Active
+
+> Per-rule canonical body for Hard Rule #4. Compact summary lives in [`AGENTS.md § Hard rules`](../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
+
+## Scope
+
+- `apps/server/src/migrations/**`
+
+## Enforced by
+
+- **ci** — pnpm lint:migrations
+- **codeowners** — .github/CODEOWNERS
+
+## Why / What is enforced
+
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–049). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+
+> **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg16`, not stock `postgres:16-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `visual-regression.yml`) already pin the same image.
+
+- **Adding a column:** single file `NNN_add_foo.sql`. Make it `NULL`-able or `DEFAULT`-ed so old code keeps working.
+- **Renaming/removing a column:** **two phases**, deployed **separately**:
+
+```sql
+-- Phase 1: NNN_add_new_amount.sql (deployed first; old code unaffected)
+ALTER TABLE transactions ADD COLUMN amount_minor BIGINT;
+UPDATE transactions SET amount_minor = (amount * 100)::BIGINT;
+-- Code is updated to write BOTH columns and read the new one.
+
+-- Phase 2: (N+M)_drop_old_amount.sql (deployed only after phase 1 is live)
+ALTER TABLE transactions DROP COLUMN amount;
+```
+
+Never drop a column in the same release as the code that stops writing to it — Railway pre-deploy migrates before the new app starts, so the old version (briefly serving traffic) will crash.
+
+A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollbacks. Production never runs `down.sql`.
+
+## Related
+
+- **issue** — #704
+- **agents** — #4

@@ -68,6 +68,30 @@ function ok(msg) {
   console.log(`✅ ${msg}`);
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Compact rules table parser (post-0009 PR 3.2 canonical AGENTS.md format).
+// Mirrors `scripts/check-hard-rules-registry.mjs` so both gates agree on what
+// "the AGENTS.md rule list" means.
+function parseAgentsTableRules(text) {
+  const out = new Map();
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) continue;
+    const cells = trimmed
+      .slice(1, -1)
+      .split("|")
+      .map((c) => c.trim());
+    if (cells.length < 2) continue;
+    if (!/^\d+$/.test(cells[0])) continue;
+    const id = Number(cells[0]);
+    const title = cells[1].replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
+    if (!title) continue;
+    out.set(id, title);
+  }
+  return out;
+}
+
 // ── Check 1: Hard Rules sync ─────────────────────────────────────────────────
 
 function checkHardRulesSync() {
@@ -81,17 +105,25 @@ function checkHardRulesSync() {
     "utf-8",
   );
 
-  // Extract rule numbers from AGENTS.md (### N. ...)
-  const agentsRuleRe = /^### (\d+)\.\s+(.+)$/gm;
-  const agentsRules = new Map();
-  let match;
-  while ((match = agentsRuleRe.exec(agentsContent)) !== null) {
-    agentsRules.set(parseInt(match[1], 10), match[2].trim());
+  // Extract rule numbers from AGENTS.md. Post-initiative-0009 PR 3.2 the
+  // canonical form is the compact rules table:
+  //   `| 1 | DB types: coerce ... | \`blocker-invariant\` | [...](./...) |`
+  // Fall back to `### N. <title>` headings for backwards compatibility (older
+  // fixtures, downstream tooling) — see scripts/check-hard-rules-registry.mjs
+  // which keeps the same dual parser.
+  const agentsRules = parseAgentsTableRules(agentsContent);
+  if (agentsRules.size === 0) {
+    const headingRe = /^### (\d+)\.\s+(.+)$/gm;
+    let m;
+    while ((m = headingRe.exec(agentsContent)) !== null) {
+      agentsRules.set(parseInt(m[1], 10), m[2].trim());
+    }
   }
 
   // Extract rule numbers from CONTRIBUTING.md (N. **...**)
   const contribRuleRe = /^(\d+)\.\s+\*\*(.+?)\*\*/gm;
   const contribRules = new Set();
+  let match;
   while ((match = contribRuleRe.exec(contribContent)) !== null) {
     contribRules.add(parseInt(match[1], 10));
   }
