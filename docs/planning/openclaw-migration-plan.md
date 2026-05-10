@@ -275,16 +275,33 @@ Skill `morning-digest` (cron всередині OpenClaw scheduler):
 
 ## PR-стратегія
 
-Робота розбита на ~5 PR замість одного великого. Кожен — самостійний, з власним rollback.
+Робота розбита на ~6 PR замість одного великого. Кожен — самостійний, з власним rollback.
+
+**Скоуп per-PR:**
 
 | #    | PR / гілка                                | Що включає                                                                                                                                                                            | Залежить від             |
 | ---- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| PR-A | `devin/<ts>-openclaw-plan-v2`             | Цей файл — оновлений план (v3: 10 персон, 4-tier n8n, 3-layer routing). Без коду.                                                                                                     | —                        |
+| PR-A | `devin/<ts>-openclaw-plan-v2`             | Цей файл — оновлений план (v3.1: 10 персон, 4-tier n8n, 3-layer routing, 18 locked decisions). Без коду.                                                                              | —                        |
 | PR-B | `devin/<ts>-openclaw-poc-spike`           | Phase 0.5 PoC: 1 read + 1 write tool, 1 hook, parity-харнес + **міграції 036/037** (Locked #9). Гілка не мерджиться у main без зеленої перевірки PoC, але живе у репі для review.     | PR-A                     |
 | PR-C | `devin/<ts>-openclaw-plugin-readonly`     | Phase 1 (read-only tools, нові code/n8n/SEO/reminders tools, shortcut router + cheap router) + Phase 2 (10 personas як skills + allowlist + model tiers) + Phase 3 (strategic modes). | PR-B                     |
 | PR-D | `devin/<ts>-openclaw-plugin-write-tools`  | Phase 4 (approval flow для write-tools, n8n Tier C gates; default variant **B**, Locked #5) + Phase 6 (audit/invocation lifecycle hooks).                                             | PR-C                     |
 | PR-E | `devin/<ts>-openclaw-council-roundtable`  | Phase 5 (council orchestration, multi-persona).                                                                                                                                       | PR-D                     |
 | PR-F | `devin/<ts>-openclaw-cutover-and-cleanup` | Phase 6.5 (parallel run + feature flag) → Phase 7 (вимкнення grammy bootstrap, ADR superseded, env cleanup). Grammy код **залишається** у репо як fallback.                           | PR-E + ≥1 тиждень parity |
+
+### Tracker (живий статус)
+
+Оновлюємо у тій же гілці, де відкривається/мерджиться PR. `Status` — одне з: `pending` (ще не відкритий) / `open` (PR існує, тривають review/CI) / `merged` / `blocked` (блокер описано у `Notes`). `PR` — посилання на GitHub-PR коли відкритий.
+
+| #    | Status    | PR                                                       | Branch                                            | Останнє оновлення | Notes                                                                                               |
+| ---- | --------- | -------------------------------------------------------- | ------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------- |
+| PR-A | `open`    | [#2382](https://github.com/Skords-01/Sergeant/pull/2382) | `devin/1778441523-openclaw-plan-locked-decisions` | 2026-05-10        | План v3.1 + 18 locked decisions + цей tracker. CI у роботі.                                         |
+| PR-B | `pending` | —                                                        | —                                                 | —                 | Phase 0.5 PoC: 1 read tool + 1 write tool + budget hook + audit hook + parity харнес + 036/037 mig. |
+| PR-C | `pending` | —                                                        | —                                                 | —                 | Phase 1+2(+3 opt-in): read-only tools, persona skills, allowlist + model tiers.                     |
+| PR-D | `pending` | —                                                        | —                                                 | —                 | Phase 4: approval flow (default variant B) + Phase 6 audit hooks + n8n Tier C gates.                |
+| PR-E | `pending` | —                                                        | —                                                 | —                 | Phase 5: council round-table (default sequence per Locked #8).                                      |
+| PR-F | `pending` | —                                                        | —                                                 | —                 | Phase 6.5 → Phase 7 cutover; flip `OPENCLAW_GATEWAY_ENABLED=true`; reminder для grammy deletion.    |
+
+> **Гайдлайн:** коли відкриваєш новий PR з трека — у тому ж PR онови `Tracker` рядок (status, PR-link, Notes). Це частина PR-checklist-у (Reviewer Notes секція). Якщо PR заблокувався — переведи у `blocked` і коротко опиши чому.
 
 ---
 
