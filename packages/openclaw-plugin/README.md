@@ -19,7 +19,7 @@ PoC scope із `docs/planning/openclaw-migration-plan.md` § Phase 0.5:
 - Parity-харнес — 3 golden conversations, прогнані на старому
   `tools/console` (grammy bot) і новому plugin; асерт shape-parity.
 
-Не входить (винесено у PR-C / PR-D):
+Не входить (винесено у PR-C1 / PR-C2 / PR-C3 / PR-D):
 
 - Решта 12 read-only tools + 4 code/n8n/SEO/reminders tools.
 - Layer 0 shortcut router + Layer 1 cheap router.
@@ -45,7 +45,7 @@ calls.
 `src/sdk-types.ts` — це **локальні type-stubs** OpenClaw plugin SDK (`api.registerTool`,
 `api.registerHook`, hook payload shape). PR-B PoC не залежить від реального
 `@openclaw/plugin-sdk` пакета — він буде додано як npm-залежність у Phase 1
-(PR-C). Наша задача в PR-B — підтвердити, що Sergeant tools лягають на цю
+(PR-C1). Наша задача в PR-B — підтвердити, що Sergeant tools лягають на цю
 форму без deformations.
 
 Коли `@openclaw/plugin-sdk` стане доступним, swap відбувається у одному місці:
@@ -64,7 +64,7 @@ export {
 
 ## Pivot в Phase 1
 
-Phase 1 (PR-C) розширює пакет: 13 read-only tools, 4 code-understanding tools,
+Phase 1 (PR-C1) розширює пакет: 13 read-only tools, 4 code-understanding tools,
 4 n8n delegation tools, 3 SEO env-stub tools, `set_reminder` (потребує
 міграцію `055`), `refresh_business_snapshot` meta-tool, shortcut-router,
 cheap-router, 10 SKILL.md. Всі — поверх scaffold, який цей пакет встановлює.
