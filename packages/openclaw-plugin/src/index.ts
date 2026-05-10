@@ -1,11 +1,12 @@
 /**
  * `@sergeant/openclaw-plugin` entry point.
  *
- * Phase 1 scope (PR-C1a + PR-C1c):
- *   - 15 read/list tools (1 PoC + 11 PR-C1a + n8n_list / n8n_describe /
- *     n8n_trigger / n8n_activate / refresh_business_snapshot from PR-C1c)
+ * Phase 1 scope (PR-C1a + PR-C1b + PR-C1c + PR-C1d):
+ *   - 24 tools (12 C1a + 8 C1b + 5 C1c from n8n delegation)
  *   - 1 write tool (create_github_issue) from PoC
- *   - 3 hooks: llm_input (budget gate), agent_turn_start, agent_turn_end (audit)
+ *   - Layer 0 shortcut router (17 shortcuts, $0 cost)
+ *   - Layer 1 cheap router (Haiku classifier, ~$0.0002)
+ *   - 3 hooks: llm_input (budget + routing), agent_turn_start, agent_turn_end
  *   - 1 hook: tool_call_pre (write-tool approval gate from PoC)
  *   - 1 hook: tool_call_post (write-audit from PoC)
  *
@@ -24,12 +25,13 @@
 
 import { parsePluginConfig, type PluginConfig } from "./config.js";
 import { OpenClawHttpClient } from "./http-client.js";
-import { createBudgetGate } from "./budget.js";
 import {
   InvocationCorrelator,
   createAgentTurnStartHook,
   createAgentTurnEndHook,
 } from "./audit.js";
+import { createRoutingHook, type RoutingHookOptions } from "./routing-hook.js";
+import type { ToolResult } from "./sdk-types.js";
 import { createRecallMemoryTool } from "./tools/recall-memory.js";
 import { createReadStrategyDocsTool } from "./tools/read-strategy-docs.js";
 import { createQueryAppDbTool } from "./tools/query-app-db.js";
@@ -47,12 +49,22 @@ import { createN8nDescribeTool } from "./tools/n8n-describe.js";
 import { createN8nTriggerTool } from "./tools/n8n-trigger.js";
 import { createN8nActivateTool } from "./tools/n8n-activate.js";
 import { createRefreshBusinessSnapshotTool } from "./tools/refresh-business-snapshot.js";
+import { createGithubSearchTool } from "./tools/github-search.js";
+import { createGithubTreeTool } from "./tools/github-tree.js";
+import { createGithubDiffTool } from "./tools/github-diff.js";
+import { createGithubPrsTool } from "./tools/github-prs.js";
+import { createSeoGscQueryTool } from "./tools/seo-gsc-query.js";
+import { createSeoPsiAuditTool } from "./tools/seo-psi-audit.js";
+import { createSeoSerpLookupTool } from "./tools/seo-serp-lookup.js";
+import { createSetReminderTool } from "./tools/set-reminder.js";
 import { createCreateGithubIssueTool } from "./write-tools/create-github-issue.js";
 import { definePluginEntry, type Plugin, type PluginApi } from "./sdk-types.js";
 
 export interface CreatePluginOptions {
   /** Optional fetch override for tests / OpenTelemetry instrumentation. */
   fetchImpl?: typeof globalThis.fetch;
+  /** Optional LLM classifier override for Layer 1 cheap router (tests). */
+  classifyImpl?: RoutingHookOptions["classify"];
 }
 
 /**
@@ -76,16 +88,51 @@ export function createOpenClawPlugin(
   const correlator = new InvocationCorrelator();
   const log = api.services.runtime.log;
 
+  // ─── Tool registry (for shortcut router dispatching) ─────────────────
+  const toolRegistry = new Map<
+    string,
+    (params: Record<string, unknown>) => Promise<ToolResult>
+  >();
+
+  /** Tool executor that dispatches to the internal registry. */
+  const executeTool = async (
+    toolName: string,
+    params: Record<string, unknown>,
+  ): Promise<ToolResult> => {
+    const executor = toolRegistry.get(toolName);
+    if (!executor) {
+      return {
+        content: [
+          { type: "text", text: `(tool "${toolName}" not registered)` },
+        ],
+      };
+    }
+    return executor(params);
+  };
+
+  // ─── Default LLM classifier (Haiku) ─────────────────────────────────
+  const defaultClassify: RoutingHookOptions["classify"] = async (
+    systemPrompt,
+    userMessage,
+  ) => {
+    const response = await http.post<{ text: string; costUsd?: number }>(
+      "/classify",
+      { systemPrompt, userMessage, model: "claude-3-5-haiku-latest" },
+    );
+    return { text: response.text, costUsd: response.costUsd ?? 0.0002 };
+  };
+
   // ─── Hooks ───────────────────────────────────────────────────────────
-  api.registerHook(
-    "llm_input",
-    createBudgetGate({
-      http,
-      founderUserId: config.founderUserId,
-      perCallCapUsd: config.maxPerCallUsd,
-      log,
-    }),
-  );
+  const { hook: routingHook } = createRoutingHook({
+    http,
+    founderUserId: config.founderUserId,
+    perCallCapUsd: config.maxPerCallUsd,
+    classify: options.classifyImpl ?? defaultClassify,
+    executeTool,
+    log,
+  });
+
+  api.registerHook("llm_input", routingHook);
 
   api.registerHook(
     "agent_turn_start",
@@ -108,33 +155,59 @@ export function createOpenClawPlugin(
   );
 
   // ─── Read tools ─────────────────────────────────────────────────────
-  api.registerTool(
+  // Helper: register tool in both SDK API and internal registry.
+  const registerToolWithRegistry = <TParams>(
+    tool: import("./sdk-types.js").ToolDefinition<TParams>,
+  ) => {
+    api.registerTool(tool);
+    toolRegistry.set(tool.name, (params) =>
+      tool.execute("shortcut-dispatch", params as TParams),
+    );
+  };
+
+  registerToolWithRegistry(
     createRecallMemoryTool({
       http,
       founderUserId: config.founderUserId,
     }),
   );
 
-  api.registerTool(createReadStrategyDocsTool({ http }));
-  api.registerTool(createQueryAppDbTool({ http }));
-  api.registerTool(createReadGithubTool({ http }));
-  api.registerTool(createGetStripeMetricsTool({ http }));
-  api.registerTool(createGetSentryIssuesTool({ http }));
-  api.registerTool(createGetPostHogStatsTool({ http }));
-  api.registerTool(createReadWorkflowLogsTool({ http }));
-  api.registerTool(createGetServerStatsTool({ http }));
-  api.registerTool(createGetGithubReleasesTool({ http }));
-  api.registerTool(createReadTelegramTopicTool({ http }));
-  api.registerTool(
+  registerToolWithRegistry(createReadStrategyDocsTool({ http }));
+  registerToolWithRegistry(createQueryAppDbTool({ http }));
+  registerToolWithRegistry(createReadGithubTool({ http }));
+  registerToolWithRegistry(createGetStripeMetricsTool({ http }));
+  registerToolWithRegistry(createGetSentryIssuesTool({ http }));
+  registerToolWithRegistry(createGetPostHogStatsTool({ http }));
+  registerToolWithRegistry(createReadWorkflowLogsTool({ http }));
+  registerToolWithRegistry(createGetServerStatsTool({ http }));
+  registerToolWithRegistry(createGetGithubReleasesTool({ http }));
+  registerToolWithRegistry(createReadTelegramTopicTool({ http }));
+  registerToolWithRegistry(
     createRecordDecisionTool({ http, founderUserId: config.founderUserId }),
   );
 
   // ─── n8n delegation surface (PR-C1c, tier-aware) ────────────────────
-  api.registerTool(createN8nListTool({ http }));
-  api.registerTool(createN8nDescribeTool({ http }));
-  api.registerTool(createN8nTriggerTool({ http }));
-  api.registerTool(createN8nActivateTool({ http }));
-  api.registerTool(createRefreshBusinessSnapshotTool({ http }));
+  registerToolWithRegistry(createN8nListTool({ http }));
+  registerToolWithRegistry(createN8nDescribeTool({ http }));
+  registerToolWithRegistry(createN8nTriggerTool({ http }));
+  registerToolWithRegistry(createN8nActivateTool({ http }));
+  registerToolWithRegistry(createRefreshBusinessSnapshotTool({ http }));
+
+  // ─── PR-C1b: code-understanding tools ────────────────────────────────
+  registerToolWithRegistry(createGithubSearchTool({ http }));
+  registerToolWithRegistry(createGithubTreeTool({ http }));
+  registerToolWithRegistry(createGithubDiffTool({ http }));
+  registerToolWithRegistry(createGithubPrsTool({ http }));
+
+  // ─── PR-C1b: SEO env-stub tools (graceful not_configured) ───────────────
+  registerToolWithRegistry(createSeoGscQueryTool({ http }));
+  registerToolWithRegistry(createSeoPsiAuditTool({ http }));
+  registerToolWithRegistry(createSeoSerpLookupTool({ http }));
+
+  // ─── PR-C1b: set_reminder (write tool, no approval gate — see plan) ──────
+  registerToolWithRegistry(
+    createSetReminderTool({ http, founderUserId: config.founderUserId }),
+  );
 
   // ─── Write tool (Phase 0.5 PoC chosen variant) ──────────────────────
   const writeParts = createCreateGithubIssueTool({
@@ -275,6 +348,46 @@ export {
   type RefreshBusinessSnapshotParams,
 } from "./tools/refresh-business-snapshot.js";
 export {
+  createGithubSearchTool,
+  GithubSearchParamsSchema,
+  type GithubSearchParams,
+} from "./tools/github-search.js";
+export {
+  createGithubTreeTool,
+  GithubTreeParamsSchema,
+  type GithubTreeParams,
+} from "./tools/github-tree.js";
+export {
+  createGithubDiffTool,
+  GithubDiffParamsSchema,
+  type GithubDiffParams,
+} from "./tools/github-diff.js";
+export {
+  createGithubPrsTool,
+  GithubPrsParamsSchema,
+  type GithubPrsParams,
+} from "./tools/github-prs.js";
+export {
+  createSeoGscQueryTool,
+  SeoGscQueryParamsSchema,
+  type SeoGscQueryParams,
+} from "./tools/seo-gsc-query.js";
+export {
+  createSeoPsiAuditTool,
+  SeoPsiAuditParamsSchema,
+  type SeoPsiAuditParams,
+} from "./tools/seo-psi-audit.js";
+export {
+  createSeoSerpLookupTool,
+  SeoSerpLookupParamsSchema,
+  type SeoSerpLookupParams,
+} from "./tools/seo-serp-lookup.js";
+export {
+  createSetReminderTool,
+  SetReminderParamsSchema,
+  type SetReminderParams,
+} from "./tools/set-reminder.js";
+export {
   createCreateGithubIssueTool,
   CreateGithubIssueParamsSchema,
   type CreateGithubIssueParams,
@@ -288,6 +401,35 @@ export {
   decodeApprovalCallback,
   buildApprovalKeyboard,
 } from "./write-tools/approval-variants.js";
+export {
+  ShortcutRouter,
+  extractText,
+  type ShortcutDefinition,
+  type ShortcutMatchResult,
+  type ToolExecutor,
+} from "./shortcut-router.js";
+export {
+  CheapRouter,
+  CheapRouterClassSchema,
+  CheapRouterResponseSchema,
+  CHEAP_ROUTER_SYSTEM_PROMPT,
+  routineToShortcutSlug,
+  isLayer2Escalation,
+  isChatResponse,
+  type CheapRouterClass,
+  type CheapRouterResponse,
+  type CheapRouterResult,
+  type LlmClassifier,
+} from "./cheap-router.js";
+export {
+  createRoutingHook,
+  isRoutedResponse,
+  extractRoutedResponse,
+  ROUTED_RESPONSE_PREFIX,
+  ESCALATE_PREFIX,
+} from "./routing-hook.js";
+export { ALL_SHORTCUTS } from "./shortcuts/index.js";
+export { renderTemplate } from "./canned-templates/index.js";
 export type {
   Plugin,
   PluginApi,

@@ -627,6 +627,24 @@ const envSchema = z.object({
   /** n8n personal API key sent as `X-N8N-API-KEY` header. */
   N8N_API_KEY: stringWithDefault(""),
 
+  // ── PR-C1b — SEO env-stubs (graceful fallback) ─────────────────────
+  /** Google PageSpeed Insights API key. Empty → seo_psi_audit повертає `not_configured`. */
+  OPENCLAW_PSI_API_KEY: stringWithDefault(""),
+  /** Google Search Console API key (read-only). Empty → seo_gsc_query → `not_configured`. */
+  OPENCLAW_GSC_API_KEY: stringWithDefault(""),
+  /** GSC site URL (наприклад `sc-domain:sergeant.app`). Empty → `not_configured`. */
+  OPENCLAW_GSC_SITE_URL: stringWithDefault(""),
+  /** SerpAPI key (читай-only SERP-snapshots). Empty → seo_serp_lookup → `not_configured`. */
+  OPENCLAW_SERP_API_KEY: stringWithDefault(""),
+
+  // ── PR-C1b — Reminder cron-poller (in-process) ─────────────────────
+  /** Інтервал в мілісекундах для poll-а `openclaw_reminders` (default 60s; 0 → off). */
+  OPENCLAW_REMINDER_POLL_INTERVAL_MS: intFromEnv(60_000),
+  /** Max attempts перед позначенням reminder як `failed`. */
+  OPENCLAW_REMINDER_MAX_ATTEMPTS: intFromEnv(3),
+  /** Скільки reminder-ів брати за один poll (batch). */
+  OPENCLAW_REMINDER_POLL_BATCH: intFromEnv(20),
+
   // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
   /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
   RAILWAY_MONTHLY_COST_USD: floatFromEnv(0),
