@@ -1,6 +1,8 @@
 /**
  * Jest render + behaviour tests for the Fizruk Programs page
- * (Phase 6 · PR-F).
+ * (Phase 6 · PR-F; updated for Stage 12.5 / PR
+ * #057f2-tombstone-mobile-stage12-5 — the active-program slot now
+ * lives in the SQLite warm cache, not MMKV).
  *
  * Coverage:
  *  - Empty-state hero card when no program is active AND catalogue is
@@ -8,7 +10,8 @@
  *  - Full catalogue renders one `ProgramCard` per built-in program
  *    with an "Активувати" CTA.
  *  - Activate → card flips to "Деактивувати"; pressing it clears the
- *    slot back to the empty hero state.
+ *    slot back to the empty hero state (in-memory only — no MMKV
+ *    writes after Stage 12.5).
  *  - Hero "Сьогоднішня сесія" renders when today's weekday is in the
  *    active program's schedule; falls back to "Сьогодні — вихідний"
  *    on a rest day.
@@ -22,7 +25,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
+import { _getMMKVInstance } from "@/lib/storage";
+
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../lib/sqliteReader";
+import { __resetFizrukSqliteReadGateForTests } from "../lib/sqliteReadGate";
 
 import { Programs } from "./Programs";
 
@@ -43,6 +52,8 @@ jest.mock("expo-keep-awake", () => ({
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearFizrukSqliteCache();
+  __resetFizrukSqliteReadGateForTests();
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
     .mockResolvedValue(false);
@@ -79,15 +90,11 @@ describe("Fizruk Programs page (mobile)", () => {
       fireEvent.press(screen.getByTestId("fizruk-programs-card-ppl-activate"));
     });
 
-    // MMKV persisted the active id.
-    const raw = _getMMKVInstance().getString(
-      STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM,
-    );
-    expect(raw).toBeTruthy();
-    const parsed = JSON.parse(raw ?? "null") as {
-      activeProgramId: string | null;
-    };
-    expect(parsed?.activeProgramId).toBe("ppl");
+    // Stage 12.5: the slot is in-memory only (SQLite cache + dual-write).
+    // No MMKV write any longer.
+    expect(
+      _getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM),
+    ).toBe(false);
 
     // Card now renders a Деактивувати control.
     expect(
@@ -114,8 +121,8 @@ describe("Fizruk Programs page (mobile)", () => {
     // PPL schedules a Push session on day 1 (Monday).
     const monday = new Date("2026-04-20T12:00:00Z");
     jest.useFakeTimers().setSystemTime(monday);
-    safeWriteLS(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM, {
-      activeProgramId: "ppl",
+    __setFizrukSqliteCacheForTests({
+      programs: { activeProgramId: "ppl" },
     });
 
     render(<Programs />);
@@ -131,8 +138,8 @@ describe("Fizruk Programs page (mobile)", () => {
     // PPL schedules days 1-6 (Mon-Sat). Use a Sunday.
     const sunday = new Date("2026-04-26T12:00:00Z");
     jest.useFakeTimers().setSystemTime(sunday);
-    safeWriteLS(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM, {
-      activeProgramId: "ppl",
+    __setFizrukSqliteCacheForTests({
+      programs: { activeProgramId: "ppl" },
     });
 
     render(<Programs />);
@@ -146,8 +153,8 @@ describe("Fizruk Programs page (mobile)", () => {
   it("wires the 'Почати' button into the shared active-workout MMKV slot", () => {
     const monday = new Date("2026-04-20T12:00:00Z");
     jest.useFakeTimers().setSystemTime(monday);
-    safeWriteLS(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM, {
-      activeProgramId: "ppl",
+    __setFizrukSqliteCacheForTests({
+      programs: { activeProgramId: "ppl" },
     });
 
     render(<Programs />);

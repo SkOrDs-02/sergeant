@@ -1,19 +1,20 @@
 /**
  * Unit tests for `apps/mobile/src/modules/fizruk/lib/residualImport.ts`.
  *
- * Stage 12 / PR #057f-tombstone-mobile-stage12 of
+ * Stage 12 PR #057f-tombstone-mobile-stage12 + Stage 12.5 PR
+ * #057f2-tombstone-mobile-stage12-5 of
  * `docs/planning/storage-roadmap.md`. Mirror coverage of the routine
- * residual-import test slice extended to the 6 fizruk MMKV keys
+ * residual-import test slice extended to the 9 fizruk MMKV keys
  * tombstoned to date (workouts / custom-exercises / measurements +
- * daily-log / monthly-plan / workout-templates).
+ * daily-log / monthly-plan / workout-templates +
+ * active-program / plan-template / wellbeing).
  *
  * Exercises:
  *   - early-return when no fizruk MMKV keys exist (no SQLite calls);
- *   - happy path: each Stage 12 MMKV blob → diff → apply → MMKV
- *     deleted;
+ *   - happy path: each MMKV blob → diff → apply → MMKV deleted;
  *   - LWW guard: residual import does NOT clobber a newer SQLite row
- *     (existing daily-log note wins because the import uses a stale
- *     epoch-zero `clientTs`).
+ *     (existing daily-log/wellbeing rows win because the import uses
+ *     a stale epoch-zero `clientTs`).
  */
 
 import Database from "better-sqlite3";
@@ -282,6 +283,215 @@ describe("importFizrukResidualFromMmkv — Stage 12 keys", () => {
     expect(rows[0]?.note).toBe("FRESH_FROM_SQLITE");
     // …and the MMKV key is still cleaned (table-level idempotency).
     expect(_getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_DAILY_LOG)).toBe(
+      false,
+    );
+  });
+
+  // ─── Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 ────────────
+  it("imports an active-program MMKV slot into SQLite and deletes the MMKV key", async () => {
+    safeWriteLS(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM, {
+      activeProgramId: "ppl-3day",
+    });
+
+    const result = await importFizrukResidualFromMmkv(client, USER_ID);
+
+    expect(result.imported).toBe(true);
+    expect(result.cleaned).toBe(true);
+    expect(
+      _getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM),
+    ).toBe(false);
+
+    const rows = await client.all<{ active_program_id: string | null }>(
+      "SELECT active_program_id FROM fizruk_programs WHERE user_id = ?",
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.active_program_id).toBe("ppl-3day");
+  });
+
+  it("imports a plan-template MMKV slot into SQLite and deletes the MMKV key", async () => {
+    safeWriteLS(STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE, {
+      name: "PPL split",
+      weekday: { "0": "tpl-push", "1": "tpl-pull" },
+    });
+
+    const result = await importFizrukResidualFromMmkv(client, USER_ID);
+
+    expect(result.imported).toBe(true);
+    expect(result.cleaned).toBe(true);
+    expect(_getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE)).toBe(
+      false,
+    );
+
+    const rows = await client.all<{ data_json: string }>(
+      "SELECT data_json FROM fizruk_plan_templates WHERE user_id = ?",
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    const parsed = JSON.parse(rows[0]?.data_json ?? "null");
+    expect(parsed?.name).toBe("PPL split");
+    expect(parsed?.weekday?.["0"]).toBe("tpl-push");
+  });
+
+  it("imports a wellbeing MMKV array into SQLite and deletes the MMKV key", async () => {
+    safeWriteLS(STORAGE_KEYS.FIZRUK_WELLBEING, [
+      {
+        date: "2026-05-09",
+        mood: 4,
+        energy: 3,
+        sleepQuality: 4,
+        sleepHours: 7,
+        notes: "ok day",
+        updatedAt: "2026-05-09T08:00:00.000Z",
+      },
+      {
+        date: "2026-05-10",
+        mood: 5,
+        energy: 5,
+        sleepQuality: null,
+        sleepHours: 8,
+        notes: "",
+        updatedAt: "2026-05-10T08:00:00.000Z",
+      },
+    ]);
+
+    const result = await importFizrukResidualFromMmkv(client, USER_ID);
+
+    expect(result.imported).toBe(true);
+    expect(result.cleaned).toBe(true);
+    expect(_getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_WELLBEING)).toBe(
+      false,
+    );
+
+    const rows = await client.all<{
+      date_key: string;
+      mood: number | null;
+      energy: number | null;
+    }>(
+      "SELECT date_key, mood, energy FROM fizruk_wellbeing WHERE user_id = ? ORDER BY date_key",
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.date_key).toBe("2026-05-09");
+    expect(rows[0]?.mood).toBe(4);
+    expect(rows[1]?.date_key).toBe("2026-05-10");
+    expect(rows[1]?.energy).toBe(5);
+  });
+
+  it("drains all 3 Stage 12.5 keys together in a single boot", async () => {
+    safeWriteLS(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM, {
+      activeProgramId: "ul-2day",
+    });
+    safeWriteLS(STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE, {
+      name: "Upper/Lower",
+      weekday: {},
+    });
+    safeWriteLS(STORAGE_KEYS.FIZRUK_WELLBEING, [
+      {
+        date: "2026-05-09",
+        mood: null,
+        energy: null,
+        sleepQuality: null,
+        sleepHours: null,
+        notes: "",
+        updatedAt: "2026-05-09T08:00:00.000Z",
+      },
+    ]);
+
+    const result = await importFizrukResidualFromMmkv(client, USER_ID);
+
+    expect(result.imported).toBe(true);
+    expect(result.cleaned).toBe(true);
+    expect(
+      _getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM),
+    ).toBe(false);
+    expect(_getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE)).toBe(
+      false,
+    );
+    expect(_getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_WELLBEING)).toBe(
+      false,
+    );
+
+    const programs = await client.all(
+      "SELECT user_id FROM fizruk_programs WHERE user_id = ?",
+      [USER_ID],
+    );
+    const planTemplates = await client.all(
+      "SELECT user_id FROM fizruk_plan_templates WHERE user_id = ?",
+      [USER_ID],
+    );
+    const wellbeing = await client.all(
+      "SELECT date_key FROM fizruk_wellbeing WHERE user_id = ?",
+      [USER_ID],
+    );
+    expect(programs).toHaveLength(1);
+    expect(planTemplates).toHaveLength(1);
+    expect(wellbeing).toHaveLength(1);
+  });
+
+  it("does NOT clobber a newer SQLite wellbeing row (LWW guard)", async () => {
+    // MMKV has a stale entry for date_key 2026-05-09…
+    safeWriteLS(STORAGE_KEYS.FIZRUK_WELLBEING, [
+      {
+        date: "2026-05-09",
+        mood: 1,
+        energy: 1,
+        sleepQuality: null,
+        sleepHours: null,
+        notes: "STALE_FROM_MMKV",
+        updatedAt: "1970-01-01T00:00:00.000Z",
+      },
+    ]);
+
+    // …but SQLite already holds a NEWER row for the same composite PK.
+    const applyResult = await applyFizrukDualWriteOps(
+      client,
+      diffFizrukDualWriteOps(
+        {
+          workouts: [],
+          customExercises: [],
+          measurements: [],
+          dailyLog: [],
+          monthlyPlan: null,
+          workoutTemplates: [],
+          programs: null,
+          planTemplate: null,
+          wellbeing: [],
+        },
+        {
+          workouts: [],
+          customExercises: [],
+          measurements: [],
+          dailyLog: [],
+          monthlyPlan: null,
+          workoutTemplates: [],
+          programs: null,
+          planTemplate: null,
+          wellbeing: [
+            {
+              dateKey: "2026-05-09",
+              mood: 5,
+              energy: 5,
+              sleepQuality: 5,
+              sleepHours: 8,
+              notes: "FRESH_FROM_SQLITE",
+              updatedAt: NEW_TIMESTAMP,
+            },
+          ],
+        },
+      ),
+      { userId: USER_ID, clientTs: NEW_TIMESTAMP },
+    );
+    expect(applyResult.applied).toBeGreaterThan(0);
+
+    await importFizrukResidualFromMmkv(client, USER_ID);
+
+    const rows = await client.all<{ notes: string }>(
+      "SELECT notes FROM fizruk_wellbeing WHERE user_id = ? AND date_key = '2026-05-09'",
+      [USER_ID],
+    );
+    expect(rows[0]?.notes).toBe("FRESH_FROM_SQLITE");
+    expect(_getMMKVInstance().contains(STORAGE_KEYS.FIZRUK_WELLBEING)).toBe(
       false,
     );
   });
