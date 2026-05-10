@@ -191,7 +191,13 @@ test("renderMatrixRaw: matrix has one body row per rule with id + title link", (
     .filter((l) => l.startsWith("| **") && l.includes("AGENTS.md#"));
   assert.equal(bodyRows.length, FIXTURE.rules.length);
   assert.match(bodyRows[0], /\| \*\*1\*\* /);
-  assert.match(bodyRows[0], /AGENTS\.md#1-db-types-coerce-bigint/);
+  // Title link points to the per-rule canonical file in `./rules/`,
+  // and the AGENTS.md backlink uses the general anchor (`#hard-rules-do-not-break`).
+  assert.match(
+    bodyRows[0],
+    /\.\/rules\/01-db-types-coerce-bigint-to-number\.md/,
+  );
+  assert.match(bodyRows[0], /AGENTS\.md#hard-rules-do-not-break/);
   assert.match(bodyRows[1], /\| \*\*2\*\* /);
 });
 
