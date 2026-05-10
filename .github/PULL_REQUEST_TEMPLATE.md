@@ -15,7 +15,10 @@
 
 ## Verification
 
-<!-- Paste the exact commands you ran and the key result. -->
+<!-- Paste the exact commands you ran and the key result.
+     Before claiming "Done" — Iron Law gate: NO COMPLETION CLAIMS WITHOUT
+     FRESH VERIFICATION EVIDENCE. See `sergeant-review-and-merge` SKILL.md
+     § "Verification gate" (.agents/skills/sergeant-review-and-merge/SKILL.md). -->
 
 ```bash
 pnpm lint
