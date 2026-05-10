@@ -1,0 +1,326 @@
+{
+  "$schema": "https://openclaw.ai/schema/openclaw.json",
+  "_note": "Skeleton template for PR-C/D wiring. Live config is copied to ~/.openclaw/openclaw.json on Gateway container start. ${VAR} placeholders resolved from Railway env at runtime.",
+
+  "service": {
+    "name": "sergeant-openclaw-gateway",
+    "port": 18789,
+    "publicUrl": "${OPENCLAW_PUBLIC_URL}",
+    "workspaceDir": "/root/.openclaw"
+  },
+
+  "models": {
+    "providers": {
+      "anthropic": {
+        "apiKey": "${ANTHROPIC_API_KEY}"
+      }
+    },
+    "tiers": {
+      "cheap": "${OPENCLAW_CHEAP_MODEL:-claude-3-5-haiku-latest}",
+      "default": "claude-3-7-sonnet-latest",
+      "thinking": "claude-opus-4-latest"
+    }
+  },
+
+  "routing": {
+    "layers": ["shortcuts", "cheap_router", "full_agent"],
+    "shortcutsRouter": {
+      "enabled": true,
+      "configFile": "shortcuts/catalog.md"
+    },
+    "cheapRouter": {
+      "enabled": true,
+      "model": "${OPENCLAW_CHEAP_MODEL:-claude-3-5-haiku-latest}",
+      "systemPromptFile": "cheap-router.system.md",
+      "maxInputTokens": 2000,
+      "responseFormat": "json_schema",
+      "classes": [
+        "routine_metrics",
+        "routine_recall",
+        "routine_remind",
+        "thinking",
+        "chat"
+      ]
+    },
+    "fullAgentTriggers": {
+      "explicitPersonaPrefix": true,
+      "thinkPrefix": "/think",
+      "councilPrefix": "/council"
+    }
+  },
+
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "mode": "webhook",
+      "botToken": "${OPENCLAW_BOT_TOKEN}",
+      "allowFrom": ["${OPENCLAW_FOUNDER_TG_USER_ID}"],
+      "webhookPath": "/telegram/webhook"
+    },
+    "whatsapp": {
+      "enabled": false,
+      "_note": "Phase 8: enable after Telegram stable in Phase 6.5/7. Two-phone setup, QR pairing.",
+      "allowFrom": ["${OPENCLAW_FOUNDER_WHATSAPP_NUMBER}"]
+    }
+  },
+
+  "voice": {
+    "enabled": true,
+    "stt": { "provider": "openclaw_native" },
+    "ttsDefaultMode": "text",
+    "toggleCommand": "/voice"
+  },
+
+  "canvas": {
+    "enabled": true,
+    "renderChartTypes": ["line", "bar", "funnel", "sparkline"]
+  },
+
+  "plugin": {
+    "name": "@sergeant/openclaw-plugin",
+    "config": {
+      "serverInternalUrl": "${SERVER_INTERNAL_URL}",
+      "internalApiKey": "${INTERNAL_API_KEY}",
+      "founderUserId": "${OPENCLAW_FOUNDER_USER_ID}",
+      "maxPerCallUsd": "${OPENCLAW_MAX_PER_CALL_USD:-0.5}",
+      "councilUsdBudget": "${OPENCLAW_COUNCIL_USD_BUDGET:-2.0}",
+      "n8nApiUrl": "${N8N_API_URL}",
+      "n8nApiKey": "${N8N_API_KEY}",
+      "seo": {
+        "gscServiceAccountKey": "${GSC_SERVICE_ACCOUNT_KEY:-}",
+        "gscPropertyUrl": "${GSC_PROPERTY_URL:-}",
+        "psiApiKey": "${PSI_API_KEY:-}",
+        "serpApiKey": "${SERP_API_KEY:-}"
+      }
+    }
+  },
+
+  "agents": {
+    "cofounder": {
+      "skill": "sergeant-cofounder",
+      "displayName": "Сергій",
+      "aliases": ["/Сергій", "/cofounder", "/co"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-opus-4-latest",
+      "tools": [
+        "recall_memory",
+        "read_strategy_docs",
+        "query_app_db",
+        "read_github",
+        "search_code",
+        "read_github_tree",
+        "read_github_diff",
+        "list_open_prs",
+        "get_stripe_metrics",
+        "get_sentry_issues",
+        "get_posthog_stats",
+        "read_workflow_logs",
+        "list_n8n_workflows",
+        "describe_n8n_workflow",
+        "get_server_stats",
+        "get_github_releases",
+        "read_telegram_topic_history",
+        "get_search_console_metrics",
+        "get_lighthouse_score",
+        "read_competitor_serp",
+        "record_decision",
+        "set_reminder",
+        "refresh_business_snapshot",
+        "commit_to_strategy_doc",
+        "create_github_issue",
+        "post_to_topic",
+        "pause_workflow",
+        "activate_workflow",
+        "trigger_n8n_workflow",
+        "mute_alert"
+      ]
+    },
+    "eng": {
+      "skill": "sergeant-eng",
+      "displayName": "Артем",
+      "aliases": ["/Артем", "/eng", "/cto"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-opus-4-latest",
+      "tools": [
+        "read_github",
+        "search_code",
+        "read_github_tree",
+        "read_github_diff",
+        "list_open_prs",
+        "query_app_db",
+        "recall_memory",
+        "record_decision",
+        "create_github_issue"
+      ]
+    },
+    "devops": {
+      "skill": "sergeant-devops",
+      "displayName": "Олексій",
+      "aliases": ["/Олексій", "/devops", "/sre"],
+      "model_default": "claude-3-5-haiku-latest",
+      "model_for_thinking": "claude-3-7-sonnet-latest",
+      "tools": [
+        "read_workflow_logs",
+        "list_n8n_workflows",
+        "describe_n8n_workflow",
+        "trigger_n8n_workflow",
+        "activate_workflow",
+        "pause_workflow",
+        "mute_alert",
+        "get_sentry_issues",
+        "get_server_stats",
+        "recall_memory"
+      ]
+    },
+    "pm": {
+      "skill": "sergeant-pm",
+      "displayName": "Олена",
+      "aliases": ["/Олена", "/pm", "/product"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-opus-4-latest",
+      "tools": [
+        "read_strategy_docs",
+        "get_posthog_stats",
+        "query_app_db",
+        "recall_memory",
+        "record_decision",
+        "create_github_issue",
+        "commit_to_strategy_doc"
+      ]
+    },
+    "growth": {
+      "skill": "sergeant-growth",
+      "displayName": "Марта",
+      "aliases": ["/Марта", "/growth", "/marketing"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-3-7-sonnet-latest",
+      "tools": [
+        "get_posthog_stats",
+        "get_stripe_metrics",
+        "query_app_db",
+        "read_github",
+        "get_github_releases",
+        "recall_memory",
+        "post_to_topic"
+      ]
+    },
+    "seo": {
+      "skill": "sergeant-seo",
+      "displayName": "Назар",
+      "aliases": ["/Назар", "/seo"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-3-7-sonnet-latest",
+      "tools": [
+        "get_search_console_metrics",
+        "get_lighthouse_score",
+        "read_competitor_serp",
+        "read_strategy_docs",
+        "read_github",
+        "get_posthog_stats",
+        "recall_memory"
+      ]
+    },
+    "content": {
+      "skill": "sergeant-content",
+      "displayName": "Софія",
+      "aliases": ["/Софія", "/content", "/copy"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-opus-4-latest",
+      "tools": [
+        "read_strategy_docs",
+        "recall_memory",
+        "read_github",
+        "commit_to_strategy_doc",
+        "post_to_topic"
+      ]
+    },
+    "data": {
+      "skill": "sergeant-data",
+      "displayName": "Ярема",
+      "aliases": ["/Ярема", "/data", "/analytics"],
+      "model_default": "claude-3-7-sonnet-latest",
+      "model_for_thinking": "claude-3-7-sonnet-latest",
+      "tools": [
+        "query_app_db",
+        "get_posthog_stats",
+        "get_stripe_metrics",
+        "get_server_stats",
+        "recall_memory"
+      ]
+    },
+    "cs": {
+      "skill": "sergeant-cs",
+      "displayName": "Ольга",
+      "aliases": ["/Ольга", "/cs", "/support"],
+      "model_default": "claude-3-5-haiku-latest",
+      "model_for_thinking": "claude-3-7-sonnet-latest",
+      "tools": [
+        "read_telegram_topic_history",
+        "query_app_db",
+        "get_posthog_stats",
+        "recall_memory",
+        "post_to_topic"
+      ]
+    },
+    "finance": {
+      "skill": "sergeant-finance",
+      "displayName": "Ірина",
+      "aliases": ["/Ірина", "/finance"],
+      "model_default": "claude-3-5-haiku-latest",
+      "model_for_thinking": "claude-3-7-sonnet-latest",
+      "tools": [
+        "get_stripe_metrics",
+        "query_app_db",
+        "recall_memory",
+        "record_decision"
+      ]
+    }
+  },
+
+  "council": {
+    "skill": "council-roundtable",
+    "defaultSequence": ["devops", "eng", "growth", "finance", "cofounder"],
+    "synthesisPersona": "cofounder",
+    "model": "claude-opus-4-latest",
+    "usdBudget": "${OPENCLAW_COUNCIL_USD_BUDGET:-2.0}",
+    "trigger": "/council"
+  },
+
+  "schedules": {
+    "morning_digest": {
+      "skill": "morning-digest",
+      "persona": "cofounder",
+      "cron": "${MORNING_DIGEST_CRON:-0 9 * * *}",
+      "timezone": "Europe/Kyiv",
+      "sections": [
+        "stripe_failures_24h",
+        "sentry_top_issues_24h",
+        "open_prs_stale",
+        "open_decisions_no_owner",
+        "posthog_daily_metrics",
+        "n8n_failed_executions_24h"
+      ],
+      "deliveryChannel": "telegram",
+      "inlineKeyboardDetails": true
+    }
+  },
+
+  "memory": {
+    "isolation": {
+      "enabled": true,
+      "cofounderReadsAll": true,
+      "specialistReadsRule": "WHERE persona = $self OR topic = 'shared'",
+      "topics": [
+        "sergeant-mvp",
+        "tacmed-portal",
+        "finyk-launch",
+        "shared",
+        "cross"
+      ]
+    }
+  },
+
+  "n8nAllowlistFile": "n8n-allowlist.json",
+  "shortcutsCatalogFile": "shortcuts/catalog.md",
+  "cheapRouterSystemPromptFile": "cheap-router.system.md"
+}

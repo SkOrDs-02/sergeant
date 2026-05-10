@@ -1,0 +1,179 @@
+{
+  "$schema": "./schema/n8n-allowlist.schema.json",
+  "_note": "4-tier classification for n8n workflows. See plan.md § n8n: 4-tier classification. Tier A = auto-trigger no approval. Tier B = NOT triggerable (agent generates inline). Tier C = approval-gated. Tier D = read-only (webhook-driven externally).",
+  "_n8nApi": "${N8N_API_URL}",
+  "_fetchedAt": "2026-05-10",
+
+  "workflows": {
+    "OhDtiheODIp5nNLa": {
+      "name": "63 — Growth Acquisition Snapshot",
+      "tier": "A",
+      "trigger": "cron 02:35 Kyiv",
+      "category": "growth",
+      "approvalRequired": false,
+      "rationale": "Snapshot writes to internal DB. Safe to refresh on-demand."
+    },
+    "lIz5LybDxnKKUNC0": {
+      "name": "60 — Growth Funnel Snapshot",
+      "tier": "A",
+      "trigger": "cron 02:30 Kyiv",
+      "category": "growth",
+      "approvalRequired": false,
+      "rationale": "Snapshot writes to internal DB. Safe to refresh on-demand."
+    },
+    "L2RZPTbR6RwHPoyB": {
+      "name": "99 — Heartbeat (alive check)",
+      "tier": "A",
+      "trigger": "cron 3h",
+      "category": "ops",
+      "approvalRequired": false,
+      "rationale": "Passive ping, no side effect."
+    },
+
+    "ksN0PfQeKmi9qXOH": {
+      "name": "08 — Weekly Financial Digest",
+      "tier": "B",
+      "trigger": "cron Sun 20:00",
+      "category": "finance",
+      "approvalRequired": null,
+      "rationale": "Posts to Telegram topic. Agent generates digest inline instead of triggering."
+    },
+    "gFd41GXrEFdc2hQo": {
+      "name": "16 — PostHog Daily Metrics",
+      "tier": "B",
+      "trigger": "cron 09:00 Kyiv",
+      "category": "data",
+      "approvalRequired": null,
+      "rationale": "Posts to #metrics Telegram topic. Agent reads PostHog directly."
+    },
+    "ZPODB5HzEMzYUbEY": {
+      "name": "10 — Debt/Receivable Reminder",
+      "tier": "B",
+      "trigger": "cron 10:00",
+      "category": "finance",
+      "approvalRequired": null,
+      "rationale": "Push + Telegram founder. Agent surfaces inline."
+    },
+    "MS9GHZNYY1PLN1Qc": {
+      "name": "04 — Daily Backup Verification",
+      "tier": "B",
+      "trigger": "cron daily",
+      "category": "ops",
+      "approvalRequired": null,
+      "rationale": "Telegram-only output. Agent reads /api/health snapshot."
+    },
+    "ar3BpvEEiPs2d5eT": {
+      "name": "19 — DB Health Report",
+      "tier": "B",
+      "trigger": "cron Mon 07:00 Kyiv",
+      "category": "ops",
+      "approvalRequired": null,
+      "rationale": "Telegram #ops topic. Agent reads pg_stat snapshot."
+    },
+    "pYq2LySdC2cL96Vi": {
+      "name": "18 — Nightly Security Audit",
+      "tier": "B",
+      "trigger": "cron 04:00 UTC",
+      "category": "ops",
+      "approvalRequired": null,
+      "rationale": "Telegram digest. Agent reads audit logs."
+    },
+    "T8qcO9Ku6o6wHO15": {
+      "name": "17 — GitHub PR Stale Alert",
+      "tier": "B",
+      "trigger": "cron 10:00 Kyiv",
+      "category": "eng",
+      "approvalRequired": null,
+      "rationale": "Telegram. Agent reads PR queue via list_open_prs."
+    },
+
+    "cB3RqHdxka7WyVHH": {
+      "name": "07 — Morning Briefing Push",
+      "tier": "C",
+      "trigger": "cron 07:30 Kyiv",
+      "category": "growth",
+      "approvalRequired": true,
+      "rationale": "Broadcasts to ALL subscribers. Founder must approve manual invocation."
+    },
+    "jRbQVcN0MaNajM4N": {
+      "name": "09 — Habit Streak At-Risk Alert",
+      "tier": "C",
+      "trigger": "cron 21:00 Kyiv",
+      "category": "growth",
+      "approvalRequired": true,
+      "rationale": "Pushes to users. Founder must approve manual invocation."
+    },
+
+    "dZYn9scxQWOKaWeF": {
+      "name": "05 — Renovate PR Auto-Handler",
+      "tier": "D",
+      "trigger": "GitHub webhook",
+      "category": "eng",
+      "approvalRequired": null,
+      "rationale": "Webhook-driven. Agent reads executions only."
+    },
+    "fFMToeZXJLUQUl7l": {
+      "name": "02 — Failed Payment Recovery",
+      "tier": "D",
+      "trigger": "Stripe webhook",
+      "category": "finance",
+      "approvalRequired": null,
+      "rationale": "Webhook-driven. Agent reads executions only."
+    },
+    "b0c7OTo5ATcwqdQL": {
+      "name": "03 — Sentry Alert Routing",
+      "tier": "D",
+      "trigger": "Sentry webhook",
+      "category": "ops",
+      "approvalRequired": null,
+      "rationale": "Webhook-driven. Agent reads executions only."
+    },
+    "CygZ4vLxTm2ltuRW": {
+      "name": "15 — Railway Deployment Notify",
+      "tier": "D",
+      "trigger": "Railway webhook",
+      "category": "ops",
+      "approvalRequired": null,
+      "rationale": "Webhook-driven. Agent reads executions only."
+    },
+    "xdYhQTEARYVOeWcl": {
+      "name": "06 — Mono Webhook Enrichment",
+      "tier": "D",
+      "trigger": "Mono webhook",
+      "category": "finance",
+      "approvalRequired": null,
+      "rationale": "Webhook-driven. Agent reads executions only."
+    },
+    "0KTuLE8meOYjcNDw": {
+      "name": "01 — Billing Pipeline",
+      "tier": "D",
+      "trigger": "Stripe webhook",
+      "category": "finance",
+      "approvalRequired": null,
+      "rationale": "Webhook-driven. Agent reads executions only."
+    },
+    "iC82EFJzqBny9kxI": {
+      "name": "98 — Global Error Handler",
+      "tier": "D",
+      "trigger": "dead-letter",
+      "category": "ops",
+      "approvalRequired": null,
+      "rationale": "Dead-letter consumer. Agent reads failed-execution context."
+    }
+  },
+
+  "summary": {
+    "totalActive": 19,
+    "tierA": 3,
+    "tierB": 7,
+    "tierC": 2,
+    "tierD": 7
+  },
+
+  "tierPolicy": {
+    "A": "Auto-trigger via trigger_n8n_workflow. NO approval required. Agent uses for snapshot refresh.",
+    "B": "NOT exposed in trigger_n8n_workflow allowlist. Agent generates digest inline from raw sources.",
+    "C": "Exposed in trigger_n8n_workflow allowlist with approvalRequired=true. Plugin hook tool_call_pre opens founder approval gate.",
+    "D": "NOT exposed in trigger_n8n_workflow allowlist. Agent reads via read_workflow_logs only."
+  }
+}
