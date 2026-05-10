@@ -12,6 +12,8 @@
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
 > Sergeant — це особистий hub для дисциплінованої щоденки: один додаток замість п'яти, з AI-коучем, що бачить весь твій день.
 
+> **AI coding agent or tool?** Read [`AGENTS.md`](./AGENTS.md) — repo policy, hard rules, and the agent operating system (skills, playbooks). Sub-tree quick references: [`apps/web/AGENTS.md`](./apps/web/AGENTS.md), [`apps/server/AGENTS.md`](./apps/server/AGENTS.md), [`apps/mobile/AGENTS.md`](./apps/mobile/AGENTS.md).
+
 <!-- Hero asset slot: replace this comment with `<img src="docs/assets/sergeant-hero.png" alt="Sergeant dashboard preview" width="1280" />` after PR-02b lands the asset (see docs/assets/README.md). -->
 
 <p align="center"><em>(Hero screenshot pending — see <a href="./docs/assets/README.md">docs/assets/</a> capture instructions; PR-02b adds the actual file.)</em></p>

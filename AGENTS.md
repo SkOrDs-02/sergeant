@@ -16,6 +16,22 @@
 
 Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` and `DEVIN.md` only add runtime/tool notes and must not become parallel sources of truth.
 
+## Quick commands
+
+> **One-liner pre-PR check:** `pnpm check` (= `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`). Same matrix runs in CI — full breakdown in [`§ Verification before PR`](#verification-before-pr).
+
+```bash
+pnpm install --frozen-lockfile        # exact deps from lockfile (Hard Rule — see CONTRIBUTING.md)
+pnpm dev:db                           # docker postgres + run migrations
+pnpm dev:server                       # backend  → http://localhost:3000
+pnpm dev:web                          # frontend → http://localhost:5173
+
+pnpm format:check && pnpm lint && pnpm typecheck && pnpm test   # = pnpm check
+pnpm --filter @sergeant/web test      # focus a single workspace
+```
+
+Surface-scoped quick references (commands, gotchas, specialist skill pointer) live in sub-tree AGENTS.md files: [`apps/web/AGENTS.md`](./apps/web/AGENTS.md), [`apps/server/AGENTS.md`](./apps/server/AGENTS.md), [`apps/mobile/AGENTS.md`](./apps/mobile/AGENTS.md).
+
 ## Repo overview
 
 - **pnpm 9** + **Turborepo** monorepo, **Node 20**, **TypeScript 6**.
@@ -115,6 +131,19 @@ If you legitimately need to raise a limit (e.g. a major new dependency), bump th
 - Use path aliases (`@shared/*`, `@finyk/*`, etc.) instead of relative `../../../`.
 - Dependency bumps — separate PRs (don't mix with features).
 - When deleting a file — first `grep` its imports across the entire monorepo.
+
+## Commit and PR conventions
+
+Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `console`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `eslint-plugins`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
+
+Example commit subjects (= squash-merge PR titles):
+
+- `feat(web): add HubChat reset action`
+- `fix(server): coerce bigint balance to number in /sync`
+- `chore(deps): bump react-router-dom 7.1.0 → 7.2.0`
+- `docs(agents): add subproject AGENTS.md for apps/*`
+
+PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMPLATE.md): Summary → Governing Skill → Playbook → Verification → Docs and Governance → Risk and Rollout → Hard Rule #15 acknowledgement. Do **not** force-push to `main`/`master` (Hard Rule #6) and do **not** skip Husky pre-commit hooks (Hard Rule #7).
 
 ## Verification before PR
 
