@@ -617,6 +617,15 @@ const envSchema = z.object({
   OPENCLAW_GITHUB_REPO: stringWithDefault("Skords-01/Sergeant"),
   /** Default branch у repo (для decision PR-ів). */
   OPENCLAW_GITHUB_BASE_BRANCH: stringWithDefault("main"),
+  /**
+   * n8n REST API base URL (e.g. `https://n8n.example.com`). Empty disables
+   * the n8n delegation surface (`n8n_list/describe/trigger/activate`,
+   * `refresh_business_snapshot`); server returns `notConfigured: true` and
+   * the tools surface a friendly "not configured" message.
+   */
+  N8N_API_URL: stringWithDefault(""),
+  /** n8n personal API key sent as `X-N8N-API-KEY` header. */
+  N8N_API_KEY: stringWithDefault(""),
 
   // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
   /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */

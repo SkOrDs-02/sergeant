@@ -1,12 +1,19 @@
 /**
  * `@sergeant/openclaw-plugin` entry point.
  *
- * Phase 1 (PR-C1a) scope:
- *   - 12 read tools (1 from PoC + 11 new HTTP-proxy tools)
+ * Phase 1 scope (PR-C1a + PR-C1c):
+ *   - 15 read/list tools (1 PoC + 11 PR-C1a + n8n_list / n8n_describe /
+ *     n8n_trigger / n8n_activate / refresh_business_snapshot from PR-C1c)
  *   - 1 write tool (create_github_issue) from PoC
  *   - 3 hooks: llm_input (budget gate), agent_turn_start, agent_turn_end (audit)
  *   - 1 hook: tool_call_pre (write-tool approval gate from PoC)
  *   - 1 hook: tool_call_post (write-audit from PoC)
+ *
+ * Note: n8n_trigger / n8n_activate / refresh_business_snapshot delegate
+ * to the server, which enforces the 4-tier allowlist from
+ * `ops/openclaw/n8n-allowlist.json`. Tier C approval gating runs through
+ * the orchestrator's `tool_call_pre` hook (wired in PR-C1d) using the
+ * `approvalRequired` flag surfaced in each server response.
  *
  * Default export — `definePluginEntry((api, raw) => ...)`. OpenClaw runtime
  * викликає його з actual SDK API + JSON config string.
@@ -35,6 +42,11 @@ import { createGetServerStatsTool } from "./tools/get-server-stats.js";
 import { createGetGithubReleasesTool } from "./tools/get-github-releases.js";
 import { createReadTelegramTopicTool } from "./tools/read-telegram-topic.js";
 import { createRecordDecisionTool } from "./tools/record-decision.js";
+import { createN8nListTool } from "./tools/n8n-list.js";
+import { createN8nDescribeTool } from "./tools/n8n-describe.js";
+import { createN8nTriggerTool } from "./tools/n8n-trigger.js";
+import { createN8nActivateTool } from "./tools/n8n-activate.js";
+import { createRefreshBusinessSnapshotTool } from "./tools/refresh-business-snapshot.js";
 import { createCreateGithubIssueTool } from "./write-tools/create-github-issue.js";
 import { definePluginEntry, type Plugin, type PluginApi } from "./sdk-types.js";
 
@@ -116,6 +128,13 @@ export function createOpenClawPlugin(
   api.registerTool(
     createRecordDecisionTool({ http, founderUserId: config.founderUserId }),
   );
+
+  // ─── n8n delegation surface (PR-C1c, tier-aware) ────────────────────
+  api.registerTool(createN8nListTool({ http }));
+  api.registerTool(createN8nDescribeTool({ http }));
+  api.registerTool(createN8nTriggerTool({ http }));
+  api.registerTool(createN8nActivateTool({ http }));
+  api.registerTool(createRefreshBusinessSnapshotTool({ http }));
 
   // ─── Write tool (Phase 0.5 PoC chosen variant) ──────────────────────
   const writeParts = createCreateGithubIssueTool({
@@ -228,6 +247,33 @@ export {
   RecordDecisionParamsSchema,
   type RecordDecisionParams,
 } from "./tools/record-decision.js";
+export {
+  createN8nListTool,
+  N8nListParamsSchema,
+  N8N_TIER_VALUES,
+  type N8nListParams,
+  type N8nTier,
+} from "./tools/n8n-list.js";
+export {
+  createN8nDescribeTool,
+  N8nDescribeParamsSchema,
+  type N8nDescribeParams,
+} from "./tools/n8n-describe.js";
+export {
+  createN8nTriggerTool,
+  N8nTriggerParamsSchema,
+  type N8nTriggerParams,
+} from "./tools/n8n-trigger.js";
+export {
+  createN8nActivateTool,
+  N8nActivateParamsSchema,
+  type N8nActivateParams,
+} from "./tools/n8n-activate.js";
+export {
+  createRefreshBusinessSnapshotTool,
+  RefreshBusinessSnapshotParamsSchema,
+  type RefreshBusinessSnapshotParams,
+} from "./tools/refresh-business-snapshot.js";
 export {
   createCreateGithubIssueTool,
   CreateGithubIssueParamsSchema,

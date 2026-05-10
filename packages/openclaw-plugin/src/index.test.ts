@@ -61,7 +61,7 @@ function makeStubApi(): StubApi {
 }
 
 describe("createOpenClawPlugin", () => {
-  it("registers recall_memory + create_github_issue tools", () => {
+  it("registers PoC + Phase 1 read tools + 5 n8n delegation tools + create_github_issue", () => {
     const api = makeStubApi();
     const plugin = createOpenClawPlugin(api, CONFIG);
     expect(plugin.name).toBe("@sergeant/openclaw-plugin");
@@ -74,6 +74,10 @@ describe("createOpenClawPlugin", () => {
       "get_sentry_issues",
       "get_server_stats",
       "get_stripe_metrics",
+      "n8n_activate",
+      "n8n_describe",
+      "n8n_list",
+      "n8n_trigger",
       "query_app_db",
       "read_github",
       "read_strategy_docs",
@@ -81,6 +85,7 @@ describe("createOpenClawPlugin", () => {
       "read_workflow_logs",
       "recall_memory",
       "record_decision",
+      "refresh_business_snapshot",
     ]);
   });
 
