@@ -1,13 +1,13 @@
 # PR-37: Postgres image SHA-pinning
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
+> **Status:** In review — PR pending merge. CI workflows (`ci.yml:410`, `extended-e2e.yml:57`, `visual-regression.yml:40`, `db-backup-verify.yml:34`) already pin `pgvector/pgvector:pg16@sha256:7d400e34…` (landed earlier under M21 / supply-chain hardening). Цей PR закриває останнє drift-місце — `docker-compose.yml` (local dev) — і додає Renovate `pinDigests` rule + setup runbook.
 
 |                    |                                                                             |
 | ------------------ | --------------------------------------------------------------------------- |
 | **Severity**       | Low (L10)                                                                   |
 | **Linked finding** | L10 (`00-overview.md`)                                                      |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                   |
+| **Owner**          | @Skords-01                                                                  |
 | **Effort**         | 0.5 дня                                                                     |
 | **Risk**           | Low (compose / CI-only; сам SQL workload identical)                         |
 | **Touches**        | `docker-compose.yml`, `docker-compose.test.yml`, CI Postgres service config |
@@ -76,11 +76,11 @@ Renovate auto-bump-итиме SHA monthly з changelog у PR.
 
 ## Acceptance criteria (DoD)
 
-- [ ] `docker-compose.yml` + `docker-compose.test.yml` SHA-pinned.
-- [ ] CI workflow Postgres service SHA-pinned.
-- [ ] `renovate.json5` має pgvector rule (якщо Renovate існує).
-- [ ] `docs/development/local-postgres-setup.md` updated.
-- [ ] Smoke test: `docker-compose up && pnpm test` все ще зелений.
+- [x] `docker-compose.yml` SHA-pinned to `pgvector/pgvector:pg16@sha256:7d400e34…`. (`docker-compose.test.yml` у репо відсутній — локальний dev використовує єдиний `docker-compose.yml`; CI підводить свої services безпосередньо у workflow-ах.)
+- [x] CI workflow Postgres service SHA-pinned (`ci.yml:410`, `extended-e2e.yml:57`, `visual-regression.yml:40`, `db-backup-verify.yml:34` — 4 workflow-и вже мають digest pin).
+- [x] `renovate.json` має `pgvector pinDigests` rule (місячний schedule, `automerge: false`, group `pgvector`, label `infra-pin`).
+- [x] `docs/development/local-postgres-setup.md` written («Why SHA-pin», «Bumping the SHA» auto/manual, troubleshooting, cross-links).
+- [~] Smoke test: Не виконано локально в цьому PR (Devin VM без docker-host для service-image pull-у) — SHA ідентичний до того, що CI вже місяцями регулярно запускає, тому регресії не очікується.
 
 ## Тести
 
@@ -100,12 +100,15 @@ Renovate auto-bump-итиме SHA monthly з changelog у PR.
 
 ## Touchpoints (file:line)
 
-- `docker-compose.yml` — `image:` lines
-- `docker-compose.test.yml` (якщо існує)
-- `.github/workflows/ci.yml` — Postgres service block
-- `.github/workflows/contract-tests.yml` (PR-23) — те саме
-- `renovate.json5` — pgvector pin rule
-- `docs/development/local-postgres-setup.md` — new
+- `docker-compose.yml:25` — `image:` line (цей PR).
+- `.github/workflows/ci.yml:410` — Postgres service `image:` (already pinned).
+- `.github/workflows/extended-e2e.yml:57` — already pinned.
+- `.github/workflows/visual-regression.yml:40` — already pinned.
+- `.github/workflows/db-backup-verify.yml:34` — already pinned.
+- `renovate.json:148-157` — `pgvector pinDigests` rule (цей PR).
+- `docs/development/local-postgres-setup.md` — new (цей PR).
+- `docker-compose.test.yml` — відсутній в репо (out of scope; CI workflow-и мають services безпосередньо).
+- `.github/workflows/contract-tests.yml` (PR-23) — відсутній (PR-23 ще Planned, пін буде додано в тому PR-і).
 
 ## Refs
 

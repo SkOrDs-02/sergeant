@@ -144,6 +144,16 @@
       "matchManagers": ["github-actions"],
       "pinDigests": true,
       "groupName": "github-actions"
+    },
+    {
+      "description": "Postgres + pgvector image — pin to @sha256:* digest (stack-pulse PR-37 / L10). Floating :pg16 tag silently mutates upstream and breaks reproducibility / CI ↔ local parity. Monthly cadence is enough — pgvector minor releases are infrequent, and a security advisory still lands via vulnerabilityAlerts (any time).",
+      "matchManagers": ["docker-compose", "github-actions"],
+      "matchPackageNames": ["pgvector/pgvector"],
+      "pinDigests": true,
+      "schedule": ["before 6am on the first day of the month"],
+      "groupName": "pgvector",
+      "automerge": false,
+      "labels": ["dependencies", "infra-pin"]
     }
   ]
 }

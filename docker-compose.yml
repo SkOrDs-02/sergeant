@@ -6,10 +6,23 @@
 
 services:
   postgres:
-    # pgvector image must match CI (.github/workflows/{ci,extended-e2e,visual-regression}.yml).
+    # pgvector image is SHA-pinned to match CI exactly
+    # (.github/workflows/{ci,extended-e2e,visual-regression,db-backup-verify}.yml).
     # Migration 025_ai_memories_pgvector.sql runs `CREATE EXTENSION vector;`,
     # which the stock postgres:16-alpine image does not ship.
-    image: pgvector/pgvector:pg16
+    #
+    # Why @sha256 instead of :pg16 floating tag (PR-37 / L10):
+    #   - Reproducibility — bug reports older than the next pgvector push
+    #     would otherwise be impossible to reproduce locally bit-for-bit.
+    #   - CVE-trap safety — a freshly broken upstream layer cannot be
+    #     auto-pulled at `docker compose up`.
+    #   - Local dev ↔ CI parity — CI pins `@sha256:7d400e34…` (4 workflows);
+    #     a floating local tag drifts and makes "works on CI / fails locally"
+    #     reports impossible to triage.
+    # How to bump: see docs/development/local-postgres-setup.md § "Bumping the SHA".
+    # Renovate (renovate.json `pgvector pinDigests`) auto-PR's the new digest
+    # on a monthly cadence; manually verify migration tests pass on the bump-PR.
+    image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
     container_name: hub-postgres
     restart: unless-stopped
     environment:
