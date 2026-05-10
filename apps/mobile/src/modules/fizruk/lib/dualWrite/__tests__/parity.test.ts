@@ -43,6 +43,9 @@ const EMPTY: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  programs: null,
+  planTemplate: null,
+  wellbeing: [],
 };
 
 describe("probeFizrukParity (mobile)", () => {
@@ -206,5 +209,166 @@ describe("probeFizrukParity (mobile)", () => {
     const outcome = await probeFizrukParity(client, UID, state);
     const json = JSON.stringify(outcome);
     expect(json).not.toContain("secret-id-leak");
+  });
+
+  // --- Stage 12.5 — programs / plan-template / wellbeing -------------
+
+  it("reports match after a full Stage 12.5 dual-write apply", async () => {
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      programs: { activeProgramId: "prog-1" },
+      planTemplate: { dataJson: '{"id":"t1"}' },
+      wellbeing: [
+        {
+          dateKey: "2026-05-01",
+          mood: 4,
+          energy: 4,
+          sleepQuality: 4,
+          sleepHours: 7.5,
+          notes: "",
+          updatedAt: TS1,
+        },
+      ],
+    };
+
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        { kind: "programs-set", programs: state.programs! },
+        { kind: "plan-template-set", planTemplate: state.planTemplate! },
+        { kind: "wellbeing-upsert", entry: state.wellbeing![0]! },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("match");
+  });
+
+  it("reports mismatch when programs row is missing in SQLite but set in LS", async () => {
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      programs: { activeProgramId: "prog-1" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+    expect(outcome.details).toMatchObject({
+      programs: { ls: true, sqlite: false },
+    });
+  });
+
+  it("reports mismatch when programs active id differs", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [{ kind: "programs-set", programs: { activeProgramId: "prog-A" } }],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      programs: { activeProgramId: "prog-B" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+  });
+
+  it("does not include programs id values in mismatch details", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "programs-set",
+          programs: { activeProgramId: "sqlite-secret" },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      programs: { activeProgramId: "ls-secret" },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    const json = JSON.stringify(outcome);
+    expect(json).not.toContain("sqlite-secret");
+    expect(json).not.toContain("ls-secret");
+  });
+
+  it("reports mismatch when SQLite has a stale plan-template blob", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "plan-template-set",
+          planTemplate: { dataJson: '{"v":"sqlite"}' },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      planTemplate: { dataJson: '{"v":"ls"}' },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+  });
+
+  it("does not include plan-template blob bodies in mismatch details", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "plan-template-set",
+          planTemplate: { dataJson: '{"sqlite":"secret-blob-1"}' },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      planTemplate: { dataJson: '{"ls":"secret-blob-2"}' },
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    const json = JSON.stringify(outcome);
+    expect(json).not.toContain("secret-blob-1");
+    expect(json).not.toContain("secret-blob-2");
+  });
+
+  it("reports mismatch when wellbeing date_key sets diverge", async () => {
+    await applyFizrukDualWriteOps(
+      client,
+      [
+        {
+          kind: "wellbeing-upsert",
+          entry: {
+            dateKey: "2026-05-01",
+            mood: 4,
+            energy: 4,
+            sleepQuality: 4,
+            sleepHours: 8,
+            notes: "",
+            updatedAt: TS1,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    const state: FizrukDualWriteState = {
+      ...EMPTY,
+      wellbeing: [
+        {
+          dateKey: "2026-05-02",
+          mood: 4,
+          energy: 4,
+          sleepQuality: 4,
+          sleepHours: 8,
+          notes: "",
+          updatedAt: TS1,
+        },
+      ],
+    };
+    const outcome = await probeFizrukParity(client, UID, state);
+    expect(outcome.result).toBe("mismatch");
+    expect(outcome.details).toMatchObject({
+      wellbeing: { ls: 1, sqlite: 1, lsOnly: 1, sqliteOnly: 1 },
+    });
   });
 });

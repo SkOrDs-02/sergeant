@@ -13,6 +13,12 @@
  * The cache is consumed by `peekFizrukDualWriteState()` so each
  * dual-write trigger sees the SQLite-backed `prev` state for all
  * six classes.
+ *
+ * **Stage 12.5 / PR #070f2-mobile-dualwrite** — extends the cache to
+ * cover the three remaining mobile-only entity classes
+ * (`fizruk_programs`, `fizruk_plan_templates`, `fizruk_wellbeing`).
+ * The shape mirrors the hook payloads so a later read cutover can
+ * drive the hooks straight from the cache.
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -72,6 +78,37 @@ export interface CachedWorkoutTemplate {
   lastUsedAt: string | null;
 }
 
+/**
+ * Stage 12.5 / PR #070f2-mobile-dualwrite — cached programs row.
+ * Only the active-program id needs to round-trip; the catalogue is
+ * shipped with the bundle.
+ */
+export interface CachedProgramsState {
+  activeProgramId: string | null;
+}
+
+/**
+ * Stage 12.5 / PR #070f2-mobile-dualwrite — cached plan-template
+ * singleton. The hook persists either a free-form object or `null`,
+ * so we keep the JSON blob verbatim and let the consumer parse it.
+ */
+export interface CachedPlanTemplateState {
+  /** Verbatim JSON blob from `fizruk_plan_templates.data_json`
+   * (default `'null'` for the empty slot). */
+  dataJson: string;
+}
+
+/** Stage 12.5 / PR #070f2-mobile-dualwrite — cached wellbeing entry. */
+export interface CachedWellbeingEntry {
+  date: string;
+  mood: number | null;
+  energy: number | null;
+  sleepQuality: number | null;
+  sleepHours: number | null;
+  notes: string;
+  updatedAt: string;
+}
+
 export interface SqliteFizrukCache {
   workouts: Workout[];
   customExercises: RawExerciseDef[];
@@ -82,6 +119,12 @@ export interface SqliteFizrukCache {
   monthlyPlan: CachedMonthlyPlanState | null;
   /** Stage 12 / PR #070f-mobile-dualwrite. */
   workoutTemplates: CachedWorkoutTemplate[];
+  /** Stage 12.5 / PR #070f2-mobile-dualwrite. `null` ≡ "no row yet". */
+  programs: CachedProgramsState | null;
+  /** Stage 12.5 / PR #070f2-mobile-dualwrite. `null` ≡ "no row yet". */
+  planTemplate: CachedPlanTemplateState | null;
+  /** Stage 12.5 / PR #070f2-mobile-dualwrite. */
+  wellbeing: CachedWellbeingEntry[];
   refreshedAt: string | null;
 }
 
@@ -92,6 +135,9 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  programs: null,
+  planTemplate: null,
+  wellbeing: [],
   refreshedAt: null,
 };
 
@@ -181,6 +227,28 @@ interface WorkoutTemplateRow {
   exercise_ids_json: string | null;
   groups_json: string | null;
   last_used_at: string | null;
+  updated_at: string | null;
+  [key: string]: unknown;
+}
+
+// Stage 12.5 / PR #070f2-mobile-dualwrite — row shapes for the new tables.
+interface ProgramsRow {
+  active_program_id: string | null;
+  [key: string]: unknown;
+}
+
+interface PlanTemplateRow {
+  data_json: string | null;
+  [key: string]: unknown;
+}
+
+interface WellbeingRow {
+  date_key: string;
+  mood: number | null;
+  energy: number | null;
+  sleep_quality: number | null;
+  sleep_hours: number | null;
+  notes: string | null;
   updated_at: string | null;
   [key: string]: unknown;
 }
@@ -286,6 +354,40 @@ function rowToWorkoutTemplate(row: WorkoutTemplateRow): CachedWorkoutTemplate {
   };
 }
 
+// Stage 12.5 / PR #070f2-mobile-dualwrite — row mappers ------------------
+
+function rowToPrograms(
+  row: ProgramsRow | undefined,
+): CachedProgramsState | null {
+  if (!row) return null;
+  return {
+    activeProgramId:
+      typeof row.active_program_id === "string" &&
+      row.active_program_id.length > 0
+        ? row.active_program_id
+        : null,
+  };
+}
+
+function rowToPlanTemplate(
+  row: PlanTemplateRow | undefined,
+): CachedPlanTemplateState | null {
+  if (!row) return null;
+  return { dataJson: row.data_json ?? "null" };
+}
+
+function rowToWellbeing(row: WellbeingRow): CachedWellbeingEntry {
+  return {
+    date: String(row.date_key),
+    mood: row.mood ?? null,
+    energy: row.energy ?? null,
+    sleepQuality: row.sleep_quality ?? null,
+    sleepHours: row.sleep_hours ?? null,
+    notes: row.notes ?? "",
+    updatedAt: row.updated_at ?? "",
+  };
+}
+
 function rowToMonthlyPlan(
   row: MonthlyPlanRow | undefined,
 ): CachedMonthlyPlanState | null {
@@ -332,6 +434,9 @@ export async function refreshFizrukSqliteState(
     dailyLogRows,
     monthlyPlanRows,
     workoutTemplateRows,
+    programsRows,
+    planTemplateRows,
+    wellbeingRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
@@ -390,6 +495,22 @@ export async function refreshFizrukSqliteState(
           ORDER BY updated_at DESC, id ASC`,
       [userId],
     ),
+    // Stage 12.5 / PR #070f2-mobile-dualwrite ------------------------
+    client.all<ProgramsRow>(
+      `SELECT active_program_id FROM fizruk_programs WHERE user_id = ?`,
+      [userId],
+    ),
+    client.all<PlanTemplateRow>(
+      `SELECT data_json FROM fizruk_plan_templates WHERE user_id = ?`,
+      [userId],
+    ),
+    client.all<WellbeingRow>(
+      `SELECT date_key, mood, energy, sleep_quality, sleep_hours, notes, updated_at
+           FROM fizruk_wellbeing
+          WHERE user_id = ? AND deleted_at IS NULL
+          ORDER BY date_key DESC`,
+      [userId],
+    ),
   ]);
 
   const setsByItem = new Map<string, WorkoutItem["sets"]>();
@@ -418,6 +539,9 @@ export async function refreshFizrukSqliteState(
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
+  const programs = rowToPrograms(programsRows[0]);
+  const planTemplate = rowToPlanTemplate(planTemplateRows[0]);
+  const wellbeing = wellbeingRows.map(rowToWellbeing);
 
   cache = {
     workouts,
@@ -426,6 +550,9 @@ export async function refreshFizrukSqliteState(
     dailyLog,
     monthlyPlan,
     workoutTemplates,
+    programs,
+    planTemplate,
+    wellbeing,
     refreshedAt: new Date().toISOString(),
   };
   return cache;

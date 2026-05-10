@@ -27,6 +27,17 @@ import type { FizrukDualWriteState } from "./diff";
  *   6. **Workout templates** — top-level rows in
  *      `fizruk_workout_templates`.
  *
+ * **Stage 12.5 / PR #070f2-mobile-dualwrite** — adds three more
+ * mobile-only entity classes:
+ *
+ *   7. **Programs** — singleton `fizruk_programs` row compared by
+ *      `active_program_id` equality (or both-absent).
+ *   8. **Plan template** — singleton `fizruk_plan_templates` blob
+ *      compared by JSON-string equality.
+ *   9. **Wellbeing** — composite-PK `fizruk_wellbeing` rows keyed
+ *      by `(user_id, date_key)`; the probe compares the active
+ *      `date_key` set rather than synthetic ids.
+ *
  * The probe is best-effort: it must NEVER throw, and any read failure
  * is surfaced as a `read.fallback` — distinct from a real parity
  * mismatch — so triage can tell `SELECT failing` apart from `LS and
@@ -76,12 +87,19 @@ export async function probeFizrukParity(
     "fizruk_workout_templates",
     userId,
   );
+  // Stage 12.5 — wellbeing composite-PK active date_key set.
+  const sqliteWellbeingDates = await readActiveWellbeingDateKeys(
+    client,
+    userId,
+  );
 
   const lsWorkouts = buildIdSet(next.workouts);
   const lsCustomExercises = buildIdSet(next.customExercises);
   const lsMeasurements = buildIdSet(next.measurements);
   const lsDailyLog = buildIdSet(next.dailyLog ?? []);
   const lsWorkoutTemplates = buildIdSet(next.workoutTemplates ?? []);
+  // Wellbeing key is `dateKey`, not `id`; build a dedicated set.
+  const lsWellbeingDates = buildWellbeingDateSet(next.wellbeing ?? []);
 
   const workoutsDiff = compareSets(lsWorkouts, sqliteWorkouts);
   const customExercisesDiff = compareSets(
@@ -94,8 +112,12 @@ export async function probeFizrukParity(
     lsWorkoutTemplates,
     sqliteWorkoutTemplates,
   );
+  const wellbeingDiff = compareSets(lsWellbeingDates, sqliteWellbeingDates);
   // Stage 12 — monthly-plan singleton compared by JSON-blob equality.
   const monthlyPlanDiff = await probeMonthlyPlan(client, userId, next);
+  // Stage 12.5 — programs / plan-template singletons.
+  const programsDiff = await probePrograms(client, userId, next);
+  const planTemplateDiff = await probePlanTemplate(client, userId, next);
 
   const allMatch =
     workoutsDiff.match &&
@@ -103,7 +125,10 @@ export async function probeFizrukParity(
     measurementsDiff.match &&
     dailyLogDiff.match &&
     workoutTemplatesDiff.match &&
-    monthlyPlanDiff.match;
+    monthlyPlanDiff.match &&
+    programsDiff.match &&
+    planTemplateDiff.match &&
+    wellbeingDiff.match;
 
   if (allMatch) {
     return {
@@ -124,6 +149,12 @@ export async function probeFizrukParity(
           sqlite: sqliteWorkoutTemplates.size,
         },
         monthlyPlan: monthlyPlanDiff.details,
+        programs: programsDiff.details,
+        planTemplate: planTemplateDiff.details,
+        wellbeing: {
+          ls: lsWellbeingDates.size,
+          sqlite: sqliteWellbeingDates.size,
+        },
       },
     };
   }
@@ -167,6 +198,14 @@ export async function probeFizrukParity(
         sqliteOnly: workoutTemplatesDiff.sqliteOnly,
       },
       monthlyPlan: monthlyPlanDiff.details,
+      programs: programsDiff.details,
+      planTemplate: planTemplateDiff.details,
+      wellbeing: {
+        ls: lsWellbeingDates.size,
+        sqlite: sqliteWellbeingDates.size,
+        lsOnly: wellbeingDiff.lsOnly,
+        sqliteOnly: wellbeingDiff.sqliteOnly,
+      },
     },
   };
 }
@@ -200,6 +239,125 @@ async function readActiveIds(
 interface MonthlyPlanDiffResult {
   match: boolean;
   details: Record<string, unknown>;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 — wellbeing date_key probe + helpers
+// -----------------------------------------------------------------------
+
+async function readActiveWellbeingDateKeys(
+  client: SqliteMigrationClient,
+  userId: string,
+): Promise<Set<string>> {
+  const rows = await client.all<{ date_key: string }>(
+    `SELECT date_key FROM fizruk_wellbeing
+       WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  const out = new Set<string>();
+  for (const row of rows) {
+    if (typeof row.date_key === "string" && row.date_key.length > 0) {
+      out.add(row.date_key);
+    }
+  }
+  return out;
+}
+
+function buildWellbeingDateSet(
+  entries: readonly { dateKey: string }[],
+): Set<string> {
+  const out = new Set<string>();
+  if (!Array.isArray(entries)) return out;
+  for (const e of entries) {
+    if (
+      e &&
+      typeof e === "object" &&
+      typeof e.dateKey === "string" &&
+      e.dateKey.length > 0
+    ) {
+      out.add(e.dateKey);
+    }
+  }
+  return out;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 — programs singleton probe (active id equality)
+// -----------------------------------------------------------------------
+
+interface SingletonDiffResult {
+  match: boolean;
+  details: Record<string, unknown>;
+}
+
+async function probePrograms(
+  client: SqliteMigrationClient,
+  userId: string,
+  next: FizrukDualWriteState,
+): Promise<SingletonDiffResult> {
+  const rows = await client.all<{ active_program_id: string | null }>(
+    `SELECT active_program_id FROM fizruk_programs WHERE user_id = ?`,
+    [userId],
+  );
+  const sqliteHas = rows.length > 0;
+  const lsHas = next.programs !== null && next.programs !== undefined;
+
+  if (!lsHas && !sqliteHas) {
+    return { match: true, details: { ls: false, sqlite: false } };
+  }
+  if (lsHas !== sqliteHas) {
+    return { match: false, details: { ls: lsHas, sqlite: sqliteHas } };
+  }
+  const sqliteId =
+    typeof rows[0]?.active_program_id === "string"
+      ? rows[0].active_program_id
+      : null;
+  const lsId = next.programs?.activeProgramId ?? null;
+  const equal = sqliteId === lsId;
+  return {
+    match: equal,
+    details: equal
+      ? { ls: true, sqlite: true, equal: true }
+      : { ls: true, sqlite: true, equalId: false },
+  };
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 — plan-template singleton probe (JSON-blob equality)
+// -----------------------------------------------------------------------
+
+async function probePlanTemplate(
+  client: SqliteMigrationClient,
+  userId: string,
+  next: FizrukDualWriteState,
+): Promise<SingletonDiffResult> {
+  const rows = await client.all<{ data_json: string }>(
+    `SELECT data_json FROM fizruk_plan_templates WHERE user_id = ?`,
+    [userId],
+  );
+  const sqliteHas = rows.length > 0;
+  const lsHas = next.planTemplate !== null && next.planTemplate !== undefined;
+
+  if (!lsHas && !sqliteHas) {
+    return { match: true, details: { ls: false, sqlite: false } };
+  }
+  if (lsHas !== sqliteHas) {
+    return { match: false, details: { ls: lsHas, sqlite: sqliteHas } };
+  }
+  const sqliteJson = rows[0]?.data_json ?? "null";
+  const lsJson = next.planTemplate?.dataJson ?? "null";
+  const equal = sqliteJson === lsJson;
+  return {
+    match: equal,
+    details: equal
+      ? { ls: true, sqlite: true, equal: true }
+      : {
+          ls: true,
+          sqlite: true,
+          lsLen: lsJson.length,
+          sqliteLen: sqliteJson.length,
+        },
+  };
 }
 
 async function probeMonthlyPlan(

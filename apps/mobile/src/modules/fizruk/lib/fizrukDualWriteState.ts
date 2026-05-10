@@ -67,7 +67,10 @@ import {
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
   type FizrukMonthlyPlanSnapshot,
+  type FizrukPlanTemplateSnapshot,
+  type FizrukProgramsSnapshot,
   type FizrukSetSnapshot,
+  type FizrukWellbeingSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
 } from "./dualWrite/diff";
@@ -110,6 +113,37 @@ export interface FizrukWorkoutTemplateLike {
   lastUsedAt?: string | null;
 }
 
+/**
+ * Stage 12.5 / PR #070f2-mobile-dualwrite — hook-side shapes for the
+ * three remaining mobile-only Fizruk hooks. Kept loose so the
+ * extractor module stays hook-free.
+ */
+export interface FizrukProgramsLike {
+  /** Domain `ActiveProgramState.activeProgramId`. */
+  activeProgramId?: string | null;
+}
+
+/** Mirror of `usePlanTemplate` `PlanTemplate` (allow extra fields). */
+export interface FizrukPlanTemplateLike {
+  id?: string | null;
+  name?: string | null;
+  weekday?: Record<string, string | null>;
+  notes?: string | null;
+  updatedAt?: string | null;
+  [extra: string]: unknown;
+}
+
+export interface FizrukWellbeingEntryLike {
+  /** `YYYY-MM-DD` — primary key. Required (filtered out otherwise). */
+  date?: string | null;
+  mood?: number | null;
+  energy?: number | null;
+  sleepQuality?: number | null;
+  sleepHours?: number | null;
+  notes?: string | null;
+  updatedAt?: string | null;
+}
+
 export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
@@ -117,6 +151,9 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  programs: null,
+  planTemplate: null,
+  wellbeing: [],
 };
 
 /**
@@ -137,6 +174,11 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       workoutTemplates: extractWorkoutTemplateSnapshots(
         cache.workoutTemplates ?? [],
       ),
+      programs: extractProgramsSnapshotFromCache(cache.programs ?? null),
+      planTemplate: extractPlanTemplateSnapshotFromCache(
+        cache.planTemplate ?? null,
+      ),
+      wellbeing: extractWellbeingSnapshots(cache.wellbeing ?? []),
     };
   } catch {
     return null;
@@ -296,6 +338,102 @@ function numericOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
+}
+
+function integerOrNull(v: unknown): number | null {
+  const n = numericOrNull(v);
+  return n === null ? null : Math.round(n);
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 / PR #070f2-mobile-dualwrite — extractors
+// -----------------------------------------------------------------------
+
+/**
+ * Extract a programs snapshot from a hook-shape `ActiveProgramState`
+ * (or any structurally compatible payload). Returns `null` only for
+ * cold cache (`state == null`); a present-but-empty active slot is
+ * encoded as `{ activeProgramId: null }`.
+ */
+export function extractProgramsSnapshot(
+  state: FizrukProgramsLike | null | undefined,
+): FizrukProgramsSnapshot | null {
+  if (state === null || state === undefined) return null;
+  if (typeof state !== "object") return null;
+  const id = state.activeProgramId;
+  return {
+    activeProgramId: typeof id === "string" && id.length > 0 ? id : null,
+  };
+}
+
+/**
+ * Extract a programs snapshot from the cached SQLite row. Mirrors
+ * `extractProgramsSnapshot` but accepts the cache shape directly so
+ * the cache peek path skips redundant transformations.
+ */
+function extractProgramsSnapshotFromCache(
+  cached: { activeProgramId: string | null } | null,
+): FizrukProgramsSnapshot | null {
+  if (cached === null) return null;
+  return { activeProgramId: cached.activeProgramId };
+}
+
+/**
+ * Extract a plan-template snapshot. Mirrors the monthly-plan extractor:
+ * the whole document is serialised to a stable JSON string. The empty
+ * slot (`null`) is encoded as the JSON literal `'null'` so the SQLite
+ * row stays present (and the LWW timestamp valid).
+ */
+export function extractPlanTemplateSnapshot(
+  state: FizrukPlanTemplateLike | null | undefined,
+): FizrukPlanTemplateSnapshot {
+  if (state === null || state === undefined) {
+    return { dataJson: "null" };
+  }
+  if (typeof state !== "object") return { dataJson: "null" };
+  // Trust the hook to keep the document plain-object-serialisable.
+  // `JSON.stringify` of a non-cyclic plain object never throws; if
+  // it does (custom toJSON), fall back to `null` so the row stays
+  // valid.
+  try {
+    return { dataJson: JSON.stringify(state) };
+  } catch {
+    return { dataJson: "null" };
+  }
+}
+
+function extractPlanTemplateSnapshotFromCache(
+  cached: { dataJson: string } | null,
+): FizrukPlanTemplateSnapshot | null {
+  if (cached === null) return null;
+  return { dataJson: cached.dataJson };
+}
+
+/**
+ * Extract wellbeing snapshots. Filters out entries with no `date`
+ * key (the SQLite primary key is `(user_id, date_key)` so the row
+ * is meaningless without a date).
+ */
+export function extractWellbeingSnapshots(
+  entries: readonly FizrukWellbeingEntryLike[],
+): FizrukWellbeingSnapshot[] {
+  const out: FizrukWellbeingSnapshot[] = [];
+  if (!Array.isArray(entries)) return out;
+  for (const e of entries) {
+    if (!e || typeof e !== "object") continue;
+    const date = typeof e.date === "string" ? e.date : null;
+    if (!date) continue;
+    out.push({
+      dateKey: date,
+      mood: integerOrNull(e.mood ?? null),
+      energy: integerOrNull(e.energy ?? null),
+      sleepQuality: integerOrNull(e.sleepQuality ?? null),
+      sleepHours: numericOrNull(e.sleepHours ?? null),
+      notes: typeof e.notes === "string" ? e.notes : "",
+      updatedAt: typeof e.updatedAt === "string" ? e.updatedAt : "",
+    });
+  }
+  return out;
 }
 
 // -----------------------------------------------------------------------

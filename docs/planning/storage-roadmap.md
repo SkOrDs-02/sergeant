@@ -3177,6 +3177,35 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
   `useWellbeing`, `useActiveFizrukWorkout`) ще не виведені з MMKV
   (потребують окремого `#070f-mobile-dualwrite` extension).
 
+**Stage 12.5 — extend mobile dual-write до залишкових hooks (3+1):**
+
+- **PR #070f2-mobile-dualwrite** 🚧 IN-FLIGHT — розширити
+  `apps/mobile/src/modules/fizruk/lib/dualWrite/{diff,adapter,parity}.ts`
+  - `sqliteReader.ts` + `fizrukDualWriteState.ts` extractors на 3
+    залишкові entity classes з виділеними SQLite таблицями:
+    `programs` (singleton, `fizruk_programs`), `plan-template`
+    (singleton JSON-blob, `fizruk_plan_templates`), `wellbeing`
+    (composite-PK array per `(user_id, date_key)`, `fizruk_wellbeing`).
+    Wire `triggerFizrukDualWrite` у `usePrograms` / `usePlanTemplate` /
+    `useWellbeing` (зберігаємо `safeWriteLS` для майбутнього
+    `#057f2-tombstone` PR). 4 нові ops (`programs-set`,
+    `plan-template-set`, `wellbeing-upsert`, `wellbeing-delete`) +
+    LWW guard на upsert (composite-PK для wellbeing).
+    Schemas вже існують з `#070f-schema` (Stage 12) — нових міграцій
+    не потрібно. Tests: extend `diff.test.ts` (+18 cases),
+    `adapter.test.ts` (+11), `parity.test.ts` (+6), `integration.test.ts`
+    (+1) — всі mobile fizruk suites зелені (192/192).
+- **PR #057f2-tombstone-mobile-stage12-5** 📋 PROPOSED — drop MMKV
+  writes у 3 hooks shipped у `#070f2`. Cache-overlay reads через
+  `getCachedFizrukSqliteState()`; `residualImport.ts` extended з
+  6 → 9 entity classes (`FIZRUK_PROGRAMS` / `FIZRUK_PLAN_TEMPLATE` /
+  `FIZRUK_WELLBEING`). `STORAGE_KEYS.FIZRUK_PROGRAMS` /
+  `STORAGE_KEYS.FIZRUK_WELLBEING` помічені `@deprecated`.
+- **PR #070f3-active-workout-dualwrite** 📋 PROPOSED — окремий
+  follow-up для `useActiveFizrukWorkout` (single string id у
+  Stage 9 `kv_store`, інший pipeline ніж 9 виділених таблиць).
+  Smaller PR (kv_store-shape adapter + extractor).
+
 **Done criteria.**
 
 - ~5–6 нових Fizruk таблиць populated в production (web + mobile).

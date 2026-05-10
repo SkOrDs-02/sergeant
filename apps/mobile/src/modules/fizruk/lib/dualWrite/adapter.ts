@@ -7,6 +7,9 @@ import type {
   FizrukItemSnapshot,
   FizrukMeasurementSnapshot,
   FizrukMonthlyPlanSnapshot,
+  FizrukPlanTemplateSnapshot,
+  FizrukProgramsSnapshot,
+  FizrukWellbeingSnapshot,
   FizrukWorkoutSnapshot,
   FizrukWorkoutTemplateSnapshot,
 } from "./diff";
@@ -136,6 +139,23 @@ async function applyOne(
 
     case "workout-template-delete":
       await softDeleteWorkoutTemplate(client, op.templateId, userId, clientTs);
+      return "applied";
+
+    // Stage 12.5 / PR #070f2-mobile-dualwrite ops --------------------
+    case "programs-set":
+      await setPrograms(client, op.programs, userId, clientTs);
+      return "applied";
+
+    case "plan-template-set":
+      await setPlanTemplate(client, op.planTemplate, userId, clientTs);
+      return "applied";
+
+    case "wellbeing-upsert":
+      await upsertWellbeing(client, op.entry, userId, clientTs);
+      return "applied";
+
+    case "wellbeing-delete":
+      await softDeleteWellbeing(client, op.dateKey, userId, clientTs);
       return "applied";
 
     default: {
@@ -595,6 +615,100 @@ async function softDeleteWorkoutTemplate(
         SET deleted_at = ?, updated_at = ?
       WHERE id = ? AND user_id = ? AND updated_at < ?`,
     [clientTs, clientTs, templateId, userId, clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 / PR #070f2-mobile-dualwrite — programs singleton row
+// -----------------------------------------------------------------------
+
+async function setPrograms(
+  client: SqliteMigrationClient,
+  programs: FizrukProgramsSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_programs (user_id, active_program_id, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       active_program_id = excluded.active_program_id,
+       updated_at        = excluded.updated_at
+     WHERE excluded.updated_at > fizruk_programs.updated_at`,
+    [userId, programs.activeProgramId ?? null, clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 / PR #070f2-mobile-dualwrite — plan-template singleton row
+// -----------------------------------------------------------------------
+
+async function setPlanTemplate(
+  client: SqliteMigrationClient,
+  planTemplate: FizrukPlanTemplateSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_plan_templates (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json  = excluded.data_json,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > fizruk_plan_templates.updated_at`,
+    [userId, planTemplate.dataJson ?? "null", clientTs],
+  );
+}
+
+// -----------------------------------------------------------------------
+// Stage 12.5 / PR #070f2-mobile-dualwrite — wellbeing per-(user,date) row
+// -----------------------------------------------------------------------
+
+async function upsertWellbeing(
+  client: SqliteMigrationClient,
+  e: FizrukWellbeingSnapshot,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `INSERT INTO fizruk_wellbeing
+       (user_id, date_key, mood, energy, sleep_quality, sleep_hours,
+        notes, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(user_id, date_key) DO UPDATE SET
+       mood          = excluded.mood,
+       energy        = excluded.energy,
+       sleep_quality = excluded.sleep_quality,
+       sleep_hours   = excluded.sleep_hours,
+       notes         = excluded.notes,
+       updated_at    = excluded.updated_at,
+       deleted_at    = NULL
+     WHERE excluded.updated_at > fizruk_wellbeing.updated_at`,
+    [
+      userId,
+      e.dateKey,
+      toIntOrNull(e.mood),
+      toIntOrNull(e.energy),
+      toIntOrNull(e.sleepQuality),
+      toRealOrNull(e.sleepHours),
+      e.notes ?? "",
+      clientTs,
+      clientTs,
+    ],
+  );
+}
+
+async function softDeleteWellbeing(
+  client: SqliteMigrationClient,
+  dateKey: string,
+  userId: string,
+  clientTs: string,
+): Promise<void> {
+  await client.run(
+    `UPDATE fizruk_wellbeing
+        SET deleted_at = ?, updated_at = ?
+      WHERE user_id = ? AND date_key = ? AND updated_at < ?`,
+    [clientTs, clientTs, userId, dateKey, clientTs],
   );
 }
 

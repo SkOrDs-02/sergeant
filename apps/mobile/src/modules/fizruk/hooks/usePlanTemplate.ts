@@ -19,6 +19,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractPlanTemplateSnapshot,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE;
 
@@ -86,6 +92,13 @@ export function usePlanTemplate(): UsePlanTemplateResult {
       // cross-source listener still fires consistently.
       safeWriteLS(STORAGE_KEY, next);
       setPlan(next);
+      // Stage 12.5 / PR #070f2-mobile-dualwrite — mirror to SQLite.
+      const baseState =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      triggerFizrukDualWrite(
+        { ...baseState, planTemplate: extractPlanTemplateSnapshot(prev) },
+        { ...baseState, planTemplate: extractPlanTemplateSnapshot(next) },
+      );
       return true;
     },
     [],

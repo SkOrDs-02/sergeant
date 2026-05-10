@@ -7,6 +7,10 @@
  * **Stage 12 / PR #070f-mobile-dualwrite** — extends the diff
  * coverage from the original three classes (workouts, custom
  * exercises, measurements) to the full six classes shipped on web.
+ *
+ * **Stage 12.5 / PR #070f2-mobile-dualwrite** — covers the three
+ * remaining mobile-only entity classes (programs, plan-template,
+ * wellbeing) added by the same PR.
  */
 import {
   diffFizrukDualWriteOps,
@@ -15,6 +19,9 @@ import {
   type FizrukDualWriteState,
   type FizrukMeasurementSnapshot,
   type FizrukMonthlyPlanSnapshot,
+  type FizrukPlanTemplateSnapshot,
+  type FizrukProgramsSnapshot,
+  type FizrukWellbeingSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
 } from "../diff";
@@ -26,6 +33,9 @@ const EMPTY: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  programs: null,
+  planTemplate: null,
+  wellbeing: [],
 };
 
 function makeWorkout(
@@ -76,6 +86,21 @@ function makeTemplate(
     exerciseIds: ["bench-press"],
     groups: [],
     updatedAt: "2026-05-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+function makeWellbeing(
+  overrides: Partial<FizrukWellbeingSnapshot> = {},
+): FizrukWellbeingSnapshot {
+  return {
+    dateKey: "2026-05-01",
+    mood: 4,
+    energy: 3,
+    sleepQuality: 4,
+    sleepHours: 7.5,
+    notes: "",
+    updatedAt: "2026-05-01T07:00:00Z",
     ...overrides,
   };
 }
@@ -302,6 +327,193 @@ describe("diffFizrukDualWriteOps (mobile)", () => {
         "daily-log-upsert",
         "measurement-upsert",
         "monthly-plan-set",
+        "workout-template-upsert",
+        "workout-upsert",
+      ].sort(),
+    );
+  });
+
+  // --- Programs (Stage 12.5) ---
+
+  it("emits programs-set when active id changes from null to non-null", () => {
+    const programs: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const next: FizrukDualWriteState = { ...EMPTY, programs };
+    const ops = diffFizrukDualWriteOps(EMPTY, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "programs-set", programs });
+  });
+
+  it("emits programs-set when active id changes", () => {
+    const a: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const b: FizrukProgramsSnapshot = { activeProgramId: "prog-2" };
+    const prev: FizrukDualWriteState = { ...EMPTY, programs: a };
+    const next: FizrukDualWriteState = { ...EMPTY, programs: b };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "programs-set", programs: b });
+  });
+
+  it("emits programs-set when clearing the active program (id → null)", () => {
+    const a: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const b: FizrukProgramsSnapshot = { activeProgramId: null };
+    const prev: FizrukDualWriteState = { ...EMPTY, programs: a };
+    const next: FizrukDualWriteState = { ...EMPTY, programs: b };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "programs-set", programs: b });
+  });
+
+  it("skips programs when active id unchanged across reference change", () => {
+    const a: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const b: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const prev: FizrukDualWriteState = { ...EMPTY, programs: a };
+    const next: FizrukDualWriteState = { ...EMPTY, programs: b };
+    expect(diffFizrukDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  it("does not emit a programs op when next.programs is null (cold cache)", () => {
+    const a: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const prev: FizrukDualWriteState = { ...EMPTY, programs: a };
+    expect(diffFizrukDualWriteOps(prev, EMPTY)).toEqual([]);
+  });
+
+  // --- Plan template (Stage 12.5) ---
+
+  it("emits plan-template-set when blob changes from null to present", () => {
+    const planTemplate: FizrukPlanTemplateSnapshot = {
+      dataJson: '{"id":"t1"}',
+    };
+    const next: FizrukDualWriteState = { ...EMPTY, planTemplate };
+    const ops = diffFizrukDualWriteOps(EMPTY, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "plan-template-set", planTemplate });
+  });
+
+  it("skips plan-template when JSON unchanged across reference change", () => {
+    const a: FizrukPlanTemplateSnapshot = { dataJson: '{"id":"t1"}' };
+    const b: FizrukPlanTemplateSnapshot = { dataJson: '{"id":"t1"}' };
+    const prev: FizrukDualWriteState = { ...EMPTY, planTemplate: a };
+    const next: FizrukDualWriteState = { ...EMPTY, planTemplate: b };
+    expect(diffFizrukDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  it("emits plan-template-set when JSON differs", () => {
+    const a: FizrukPlanTemplateSnapshot = { dataJson: '{"id":"t1"}' };
+    const b: FizrukPlanTemplateSnapshot = { dataJson: '{"id":"t2"}' };
+    const prev: FizrukDualWriteState = { ...EMPTY, planTemplate: a };
+    const next: FizrukDualWriteState = { ...EMPTY, planTemplate: b };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "plan-template-set", planTemplate: b });
+  });
+
+  it("emits plan-template-set when slot is cleared to JSON literal 'null'", () => {
+    const a: FizrukPlanTemplateSnapshot = { dataJson: '{"id":"t1"}' };
+    const b: FizrukPlanTemplateSnapshot = { dataJson: "null" };
+    const prev: FizrukDualWriteState = { ...EMPTY, planTemplate: a };
+    const next: FizrukDualWriteState = { ...EMPTY, planTemplate: b };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "plan-template-set", planTemplate: b });
+  });
+
+  it("does not emit a plan-template op when next is null (cold cache)", () => {
+    const a: FizrukPlanTemplateSnapshot = { dataJson: '{"id":"t1"}' };
+    const prev: FizrukDualWriteState = { ...EMPTY, planTemplate: a };
+    expect(diffFizrukDualWriteOps(prev, EMPTY)).toEqual([]);
+  });
+
+  // --- Wellbeing (Stage 12.5) ---
+
+  it("detects wellbeing add", () => {
+    const e = makeWellbeing();
+    const next: FizrukDualWriteState = { ...EMPTY, wellbeing: [e] };
+    const ops = diffFizrukDualWriteOps(EMPTY, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "wellbeing-upsert", entry: e });
+  });
+
+  it("detects wellbeing delete (keyed by dateKey)", () => {
+    const e = makeWellbeing();
+    const prev: FizrukDualWriteState = { ...EMPTY, wellbeing: [e] };
+    const ops = diffFizrukDualWriteOps(prev, EMPTY);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({
+      kind: "wellbeing-delete",
+      dateKey: "2026-05-01",
+    });
+  });
+
+  it("detects wellbeing update (mood changed)", () => {
+    const e1 = makeWellbeing({ mood: 3 });
+    const e2 = makeWellbeing({ mood: 5, updatedAt: "2026-05-01T08:00:00Z" });
+    const prev: FizrukDualWriteState = { ...EMPTY, wellbeing: [e1] };
+    const next: FizrukDualWriteState = { ...EMPTY, wellbeing: [e2] };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ kind: "wellbeing-upsert", entry: e2 });
+  });
+
+  it("skips wellbeing when fields equal across reference change", () => {
+    const e1 = makeWellbeing();
+    const e2 = makeWellbeing();
+    const prev: FizrukDualWriteState = { ...EMPTY, wellbeing: [e1] };
+    const next: FizrukDualWriteState = { ...EMPTY, wellbeing: [e2] };
+    expect(diffFizrukDualWriteOps(prev, next)).toEqual([]);
+  });
+
+  it("emits an upsert + a delete when one entry is replaced and another removed", () => {
+    const e1 = makeWellbeing({ dateKey: "2026-05-01" });
+    const e2 = makeWellbeing({ dateKey: "2026-05-02", mood: 5 });
+    const prev: FizrukDualWriteState = { ...EMPTY, wellbeing: [e1, e2] };
+    const replaced = makeWellbeing({
+      dateKey: "2026-05-01",
+      mood: 1,
+      updatedAt: "2026-05-01T09:00:00Z",
+    });
+    const next: FizrukDualWriteState = { ...EMPTY, wellbeing: [replaced] };
+    const ops = diffFizrukDualWriteOps(prev, next);
+    expect(ops).toHaveLength(2);
+    const kinds = ops.map((o) => o.kind).sort();
+    expect(kinds).toEqual(["wellbeing-delete", "wellbeing-upsert"]);
+  });
+
+  // --- Mixed (all nine entity classes) ---
+
+  it("handles changes across all nine entity classes in one diff", () => {
+    const w = makeWorkout();
+    const ex = makeExercise();
+    const m = makeMeasurement();
+    const d = makeDailyLog();
+    const monthly: FizrukMonthlyPlanSnapshot = { dataJson: '{"x":1}' };
+    const t = makeTemplate();
+    const programs: FizrukProgramsSnapshot = { activeProgramId: "prog-1" };
+    const planTemplate: FizrukPlanTemplateSnapshot = {
+      dataJson: '{"id":"t1"}',
+    };
+    const wb = makeWellbeing();
+
+    const ops = diffFizrukDualWriteOps(EMPTY, {
+      workouts: [w],
+      customExercises: [ex],
+      measurements: [m],
+      dailyLog: [d],
+      monthlyPlan: monthly,
+      workoutTemplates: [t],
+      programs,
+      planTemplate,
+      wellbeing: [wb],
+    });
+    const kinds = ops.map((o) => o.kind).sort();
+    expect(kinds).toEqual(
+      [
+        "custom-exercise-upsert",
+        "daily-log-upsert",
+        "measurement-upsert",
+        "monthly-plan-set",
+        "plan-template-set",
+        "programs-set",
+        "wellbeing-upsert",
         "workout-template-upsert",
         "workout-upsert",
       ].sort(),
