@@ -1,9 +1,9 @@
 # SPIKE — OpenClaw Plugin PoC (Phase 0.5)
 
-> **Last validated:** 2026-05-10. **Status:** Active (PoC complete, awaiting Phase 1 kickoff).
+> **Last validated:** 2026-05-10. **Status:** Active (PoC complete; PR-B [#2385](https://github.com/Skords-01/Sergeant/pull/2385) merged 2026-05-10).
 > **Owner:** @Skords-01 · **Created:** 2026-05-10
 > **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § PR-B / Phase 0.5](../../planning/openclaw-migration-plan.md)
-> **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/<unix-ts>-openclaw-poc-spike`.
+> **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385)).
 
 Цей spike — обов'язковий вихід-артефакт PR-B (Phase 0.5), що блокує
 Phase 1 (PR-C) планування. Plan §522:
