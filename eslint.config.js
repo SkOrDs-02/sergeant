@@ -1102,14 +1102,11 @@ export default [
   // file shows up in `git blame` / `git log` against this rule.
   {
     files: [
-      "apps/web/src/modules/fizruk/pages/Progress.tsx",
       "apps/web/src/modules/nutrition/NutritionApp.tsx",
       "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/hub/HubDashboard.tsx",
-      "apps/web/src/modules/nutrition/components/DailyPlanCard.tsx",
       "apps/web/src/core/lib/chatActions/fizrukActions.ts",
       "apps/web/src/modules/finyk/pages/AssetsTable.tsx",
-      "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
     ],
     rules: {
       "max-lines": "off",

@@ -1,7 +1,7 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
-> **Status:** In progress (Sprint 1 — 3/4 PR-ів: `Workouts.tsx` 744→567 merged, `Exercise.tsx` 669→427 merged, `LogCard.tsx` 736→533 in review; `FinykApp.tsx` pending)
+> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
+> **Status:** In progress (Sprint 1 — 4/5 PR-ів merged: `Workouts.tsx` 744→567, `Exercise.tsx` 669→427, `LogCard.tsx` 736→533, `DailyPlanCard.tsx` 1228→405 — додано як drift-пункт у цій ревізії; `HubDashboard.tsx` (837 LOC) додано як drift-пункт для Sprint 2; `FinykApp.tsx` decomp вже не потрібний — файл 641 raw LOC але проходить max-lines:600 (skipBlankLines+skipComments))
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
@@ -12,6 +12,8 @@
 [`0001`](./_0001-module-decomposition.md) закрилася 2026-05-04 з `5/6` критеріїв виконано. **Невиконаний критерій** — `≤2 файли в allowlist у apps/web/src/**` — лишився **11 файлами** (`Workouts`, `LogCard`, `FinykApp`, `NutritionApp`, `Cards`, `Subscriptions`, `Exercise`, `Progress`, `AssetsTable`, `RoutineCalendarPanel`, `hubChatContext` / `chatActions/fizrukActions`). Hard Rule #18 (`max-lines: [error, 600]`) тримає **новий** код під контролем — старий drift лишається, з deadline-коментарем у allowlist.
 
 Ця ініціатива **drain-ує allowlist** до ≤2 файлів за такою ж per-file-PR схемою, як Phase 2 у 0001 (по 1 PR на файл, baseline + decomp + verify), плюс фінальний PR `decomp-round-2-finalize` що видаляє `overrides` allowlist цілком. Без нової авто-генерації коду — це pure structure refactor.
+
+> **Drift reconciliation 2026-05-09:** початковий plan рахував 11 файлів; фактичний `eslint.config.js` allowlist на вході ревізії містив рівних 8: 6 з 11 в плані (`NutritionApp`, `hubChatContext`, `fizrukActions`, `AssetsTable`, `Progress`, `RoutineCalendarPanel`) + 2 неврахованих (`DailyPlanCard.tsx` 1228 LOC, `HubDashboard.tsx` 837 LOC). Ця ревізія: (1) декомпонує `DailyPlanCard.tsx` в окремому PR (Sprint 1 #5), (2) вилучає `Progress.tsx` (579 LOC) і `RoutineCalendarPanel.tsx` (602 LOC) з allowlist як вже проходять рул без override-у (skipBlankLines+skipComments вкладає їх у ≤5 99), (3) перераховує `FinykApp.tsx` як not-needed (641 raw але 537 effective), (4) додає `HubDashboard.tsx` як Sprint 2 дріфт-пункт. **Поточний allowlist після цієї ревізії: 5 файлів** (`NutritionApp`, `hubChatContext`, `HubDashboard`, `fizrukActions`, `AssetsTable`).
 
 ## Чому зараз
 
@@ -24,22 +26,23 @@
 
 **In:**
 
-1. **Top-priority drain (sprint 1, 4 PR-и)** — найбільші файли з найбільшим behavioral-risk surface:
-   - `apps/web/src/modules/fizruk/pages/Workouts.tsx` (717 LOC) — пара з `LogCard`.
-   - `apps/web/src/modules/nutrition/components/LogCard.tsx` (580 LOC) — пара з `Workouts`.
-   - `apps/web/src/modules/fizruk/pages/Exercise.tsx` (≥600 LOC) — drift, окремий PR.
-   - `apps/web/src/modules/finyk/FinykApp.tsx` (559 LOC) — Top-7 #6 з 0001 Phase 2 plan.
-2. **Drift drain (sprint 2, 5 PR-и)** — файли, що дрифтнули у allowlist після Phase 1:
-   - `apps/web/src/modules/nutrition/NutritionApp.tsx`.
-   - `apps/web/src/core/lib/hubChatContext.ts`.
-   - `apps/web/src/core/lib/chatActions/fizrukActions.ts`.
-   - `apps/web/src/modules/finyk/pages/Cards.tsx`.
-   - `apps/web/src/modules/finyk/pages/Subscriptions.tsx`.
-3. **Long-tail (sprint 3, 2-3 PR-и)** — за пріоритетом behavioral-risk vs LOC:
-   - `apps/web/src/modules/finyk/pages/AssetsTable.tsx`.
-   - `apps/web/src/modules/fizruk/pages/Progress.tsx`.
-   - `apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`.
-4. **Finalize PR (last)** — `decomp-round-2-finalize`: видалити `overrides` allowlist у `eslint.config.js` цілком, оновити `LARGE_FILES` запис у [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md), закрити цю ініціативу як `Done` з Outcome-секцією.
+1. **Top-priority drain (sprint 1, 5 PR-и — було 4, +1 drift):**
+   - `apps/web/src/modules/fizruk/pages/Workouts.tsx` (717 LOC) — **merged** ([#2002](https://github.com/Skords-01/Sergeant/pull/2002)).
+   - `apps/web/src/modules/nutrition/components/LogCard.tsx` (580 LOC) — **merged**.
+   - `apps/web/src/modules/fizruk/pages/Exercise.tsx` (≥600 LOC) — **merged** ([#2128](https://github.com/Skords-01/Sergeant/pull/2128)).
+   - `apps/web/src/modules/finyk/FinykApp.tsx` (559 → 537 effective LOC) — **not needed** (вже проходить max-lines:600 з skipBlankLines+skipComments). Ризик drift назад тримається рулом — без окремого PR-у.
+   - `apps/web/src/modules/nutrition/components/DailyPlanCard.tsx` (1228 → 405 LOC) — **ревізія 2026-05-09**: drift-пункт, не був вихідному плані але найбільший в allowlist (1228 LOC). Декомповано в 4 нових файли (`DailyPlanWarnings.tsx`, `DailyPlanMacros.tsx`, `DailyPlanMealRow.tsx`, `DailyPlanGoalSelectors.tsx`) + `lib/dailyPlanValidation.ts` для pure functions. Тести (`calcMacroKcalMismatch`, `calcGoalRangeIssues`) ре-експортуються з `DailyPlanCard.tsx` для BC.
+2. **Drift drain (sprint 2, 5 PR-и — перелік оновлено):**
+   - `apps/web/src/modules/nutrition/NutritionApp.tsx` (766 LOC).
+   - `apps/web/src/core/lib/hubChatContext.ts` (681 LOC).
+   - `apps/web/src/core/hub/HubDashboard.tsx` (837 LOC) — **ревізія 2026-05-09**: drift-пункт, не був у вихідному плані. Другий за розміром в allowlist після decomp-у `DailyPlanCard`.
+   - `apps/web/src/core/lib/chatActions/fizrukActions.ts` (672 LOC).
+   - `apps/web/src/modules/finyk/pages/AssetsTable.tsx` (671 LOC) — перенесено з sprint 3.
+   - ~~`Cards.tsx` / `Subscriptions.tsx`~~ — already decomposed (вже не в allowlist; ревізія 2026-05-09).
+3. **Long-tail (sprint 3) — видалено як not-needed:**
+   - ~~`apps/web/src/modules/fizruk/pages/Progress.tsx`~~ — 579 raw LOC, 546 effective, вже проходить рул. Allowlist вилучено в ревізії 2026-05-09.
+   - ~~`apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`~~ — 602 raw LOC, 575 effective, вже проходить рул. Allowlist вилучено в ревізії 2026-05-09.
+4. **Finalize PR (last)** — `decomp-round-2-finalize`: видалити `overrides` allowlist у `eslint.config.js` цілком (або привести до ≤2 файлів як closure для 0001 #2 критерію), оновити `LARGE_FILES` запис у [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md), закрити цю ініціативу як `Done` з Outcome-секцією.
 
 **Out:**
 
@@ -50,7 +53,7 @@
 
 ## План змін
 
-### Sprint 1 — top-priority drain (4 PR-и)
+### Sprint 1 — top-priority drain (5 PR-и — було 4, +1 drift)
 
 Кожен PR — 1 файл, шаблон з 0001 Phase 2:
 
@@ -63,25 +66,23 @@ PR-и:
 
 - `decomp-r2-workouts` — `Workouts.tsx` (744 → 567) — **merged** ([#2002](https://github.com/Skords-01/Sergeant/pull/2002), commit `61a8afff`).
 - `decomp-r2-exercise` — `Exercise.tsx` (669 → 427) — **merged** ([#2128](https://github.com/Skords-01/Sergeant/pull/2128), commit `619381bb`); extract `LoadCalculator` + `ExerciseProgressChart` + `lib/numberFmt.ts`.
-- `decomp-r2-logcard` — `LogCard.tsx` (736 → 533) — extract `MealRow` (123 LOC) + `VirtualMealList` (89 LOC). **Sprint 1 PR #3.**
-- `decomp-r2-finykapp` — `FinykApp.tsx` (559 → ≤599; швидкий, але хочемо запобігти drift-у назад) — pending; може бути відкладено на post-0010-launch (див. § Ризики).
+- `decomp-r2-logcard` — `LogCard.tsx` (736 → 533) — extract `MealRow` (123 LOC) + `VirtualMealList` (89 LOC). **merged.**
+- `decomp-r2-dailyplancard` — `DailyPlanCard.tsx` (1228 → 405) — **додано 2026-05-09**: extract `DailyPlanWarnings.tsx` (209) + `DailyPlanMacros.tsx` (105) + `DailyPlanMealRow.tsx` (127) + `DailyPlanGoalSelectors.tsx` (304) + `lib/dailyPlanValidation.ts` (139). **Ця ревізія.** Сюди ж — drop allowlist для `Progress.tsx` і `RoutineCalendarPanel.tsx` (вже проходять).
+- ~~`decomp-r2-finykapp`~~ — not-needed (ревізія 2026-05-09): 641 raw LOC але 537 effective, проходить max-lines:600. Як drift-назад виявиться post-0010 — відкриємо окремий PR на 0014 або безпосередньо в 0010 фічі-PR-і (білінг торкає `FinykApp.tsx`).
 
 ### Sprint 2 — drift drain (5 PR-и)
 
-Та сама схема, по 1 PR на файл:
+Та сама схема, по 1 PR на файл. **Ревізія 2026-05-09:** Cards/Subscriptions вже decomposed; вводиться `HubDashboard` як drift-пункт; `AssetsTable` переноситься сюди з sprint 3.
 
-- `decomp-r2-nutritionapp` — `NutritionApp.tsx`.
-- `decomp-r2-hubchatcontext` — `hubChatContext.ts` (це найскладніший — context-provider з багатьма ефектами).
-- `decomp-r2-fizrukactions` — `chatActions/fizrukActions.ts`.
-- `decomp-r2-finyk-cards` — `pages/Cards.tsx`.
-- `decomp-r2-finyk-subs` — `pages/Subscriptions.tsx`.
+- `decomp-r2-nutritionapp` — `NutritionApp.tsx` (766 LOC).
+- `decomp-r2-hubchatcontext` — `hubChatContext.ts` (681 LOC; найскладніший — context-provider з багатьма ефектами).
+- `decomp-r2-hubdashboard` — `HubDashboard.tsx` (837 LOC; **новий drift-пункт**, заміняє ~~Cards/Subscriptions~~).
+- `decomp-r2-fizrukactions` — `chatActions/fizrukActions.ts` (672 LOC).
+- `decomp-r2-assetstable` — `AssetsTable.tsx` (671 LOC; перенесено з sprint 3).
 
-### Sprint 3 — long-tail + finalize (3 PR-и)
+### Sprint 3 — finalize (1 PR)
 
-- `decomp-r2-assetstable` — `AssetsTable.tsx`.
-- `decomp-r2-progress` — `Progress.tsx`.
-- `decomp-r2-routinecalendar` — `RoutineCalendarPanel.tsx`.
-- `decomp-r2-finalize` — drop allowlist цілком, оновити `LARGE_FILES` і README, статус → Done.
+- `decomp-r2-finalize` — drop allowlist до ≤2 файлів, оновити `LARGE_FILES` і README, статус → Done. **Ревізія 2026-05-09:** Sprint 3 зменшено з 3 планованих до 1 PR-у, бо Progress/RoutineCalendarPanel вилучені з allowlist у PR `decomp-r2-dailyplancard`.
 
 ## Критерії DONE
 
@@ -107,13 +108,13 @@ PR-и:
 
 ## Метрики
 
-| Метрика                                       | Baseline (post-0001 closure)              | Sprint 1 target | Sprint 2 target | Sprint 3 target        |
-| --------------------------------------------- | ----------------------------------------- | --------------- | --------------- | ---------------------- |
-| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 11                                        | 7               | 2               | 0 (allowlist removed)  |
-| Найбільший файл у allowlist                   | 717 (`Workouts.tsx`)                      | ≤ 599           | ≤ 599           | ≤ 599 (без override-у) |
-| Сумарний LOC у allowlist                      | ~7 800                                    | ~5 100          | ~1 800          | 0                      |
-| `shared` chunk-розмір (gzip)                  | baseline-вимірюємо у `decomp-r2-workouts` | -5 KB           | -10 KB          | -20 KB                 |
-| `pnpm lint` без override-у                    | червоний для 11 файлів                    | червоний для 7  | червоний для 2  | зелений                |
+| Метрика                                       | Baseline (post-0001 closure)              | Sprint 1 actual (2026-05-09) | Sprint 2 target | Sprint 3 target        |
+| --------------------------------------------- | ----------------------------------------- | ---------------------------- | --------------- | ---------------------- |
+| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 11                                        | **5**                        | 2               | ≤2 (allowlist drained) |
+| Найбільший файл у allowlist                   | 717 (`Workouts.tsx`)                      | **837** (`HubDashboard.tsx`) | ≤ 681           | ≤ 599 (без override-у) |
+| Сумарний LOC у allowlist                      | ~7 800                                    | **3 627**                    | ~1 350          | 0                      |
+| `shared` chunk-розмір (gzip)                  | baseline-вимірюємо у `decomp-r2-workouts` | -5 KB факт                   | -10 KB          | -20 KB                 |
+| `pnpm lint` без override-у                    | червоний для 11 файлів                    | **червоний для 5**           | червоний для 2  | зелений (або ряд ≤2)   |
 
 ## Власник, ревʼюери
 
