@@ -62,20 +62,61 @@ export type ExtractableChecklistLike = {
 import { isFizrukDualWriteRegistered } from "./dualWrite/index";
 import {
   type FizrukCustomExerciseSnapshot,
+  type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
+  type FizrukMonthlyPlanSnapshot,
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
+  type FizrukWorkoutTemplateSnapshot,
 } from "./dualWrite/diff";
 import { getCachedFizrukSqliteState } from "./sqliteReader";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — hook-side shapes the
+ * extractors accept. Structurally compatible with the mobile hooks
+ * (`useDailyLog`, `useMonthlyPlan`, `useWorkoutTemplates`) but kept
+ * loose so the extractor module stays hook-free.
+ */
+export interface FizrukDailyLogEntryLike {
+  id?: string | null;
+  at?: string | null;
+  weightKg?: number | null;
+  sleepHours?: number | null;
+  energyLevel?: number | null;
+  /** Mobile / domain-shared field. */
+  mood?: number | null;
+  /** Web hook field — accepted as a fallback for forward-compat. */
+  moodScore?: number | null;
+  note?: string | null;
+}
+
+export interface FizrukMonthlyPlanLike {
+  reminderEnabled?: boolean;
+  reminderHour?: number;
+  reminderMinute?: number;
+  days?: Record<string, { templateId?: string }>;
+}
+
+export interface FizrukWorkoutTemplateLike {
+  id?: string | null;
+  name?: string | null;
+  exerciseIds?: readonly unknown[];
+  groups?: readonly unknown[];
+  updatedAt?: string | null;
+  lastUsedAt?: string | null;
+}
+
 export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
   measurements: [],
+  dailyLog: [],
+  monthlyPlan: null,
+  workoutTemplates: [],
 };
 
 /**
@@ -91,6 +132,11 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       workouts: extractWorkoutSnapshots(cache.workouts),
       customExercises: extractCustomExerciseSnapshots(cache.customExercises),
       measurements: extractMeasurementSnapshots(cache.measurements),
+      dailyLog: extractDailyLogSnapshots(cache.dailyLog ?? []),
+      monthlyPlan: extractMonthlyPlanSnapshot(cache.monthlyPlan ?? null),
+      workoutTemplates: extractWorkoutTemplateSnapshots(
+        cache.workoutTemplates ?? [],
+      ),
     };
   } catch {
     return null;
@@ -146,6 +192,110 @@ export function extractMeasurementSnapshots(
     out.push({ ...m, id: String(m.id), at: String(m.at) });
   }
   return out;
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — daily-log extractor. Mobile
+ * `DailyLogEntry` carries `mood` directly; the `moodScore` fallback
+ * is kept for forward-compat with the web hook shape.
+ */
+export function extractDailyLogSnapshots(
+  entries: readonly FizrukDailyLogEntryLike[],
+): FizrukDailyLogSnapshot[] {
+  const out: FizrukDailyLogSnapshot[] = [];
+  if (!Array.isArray(entries)) return out;
+  for (const e of entries) {
+    if (!e || typeof e !== "object" || !e.id || !e.at) continue;
+    out.push({
+      id: String(e.id),
+      at: String(e.at),
+      weightKg: numericOrNull(e.weightKg),
+      sleepHours: numericOrNull(e.sleepHours),
+      energyLevel: numericOrNull(e.energyLevel),
+      mood: numericOrNull(e.mood ?? e.moodScore ?? null),
+      note: typeof e.note === "string" ? e.note : "",
+    });
+  }
+  return out;
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — monthly-plan singleton
+ * extractor. Serializes the document to a stable JSON blob so the
+ * diff layer can compare two payloads byte-for-byte and the
+ * `fizruk_monthly_plan.data_json` column receives the exact same
+ * string the web copy emits.
+ */
+export function extractMonthlyPlanSnapshot(
+  state: FizrukMonthlyPlanLike | null | undefined,
+): FizrukMonthlyPlanSnapshot | null {
+  if (!state || typeof state !== "object") return null;
+  const safe = {
+    reminderEnabled: state.reminderEnabled !== false,
+    reminderHour: Number.isFinite(state.reminderHour)
+      ? Math.max(0, Math.min(23, state.reminderHour ?? 18))
+      : 18,
+    reminderMinute: Number.isFinite(state.reminderMinute)
+      ? Math.max(0, Math.min(59, state.reminderMinute ?? 0))
+      : 0,
+    days:
+      state.days && typeof state.days === "object"
+        ? Object.fromEntries(
+            Object.entries(state.days)
+              .filter(
+                ([k, v]) =>
+                  typeof k === "string" &&
+                  v != null &&
+                  typeof v === "object" &&
+                  typeof (v as { templateId?: unknown }).templateId ===
+                    "string",
+              )
+              .map(([k, v]) => [
+                k,
+                {
+                  templateId: String((v as { templateId: string }).templateId),
+                },
+              ]),
+          )
+        : {},
+  };
+  return { dataJson: JSON.stringify(safe) };
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — workout-template extractor.
+ * Mirrors the web copy: filters non-string `exerciseIds`, copies
+ * `groups` verbatim, normalises `updatedAt` / `lastUsedAt`.
+ */
+export function extractWorkoutTemplateSnapshots(
+  templates: readonly FizrukWorkoutTemplateLike[],
+): FizrukWorkoutTemplateSnapshot[] {
+  const out: FizrukWorkoutTemplateSnapshot[] = [];
+  if (!Array.isArray(templates)) return out;
+  for (const t of templates) {
+    if (!t || typeof t !== "object" || !t.id) continue;
+    const exerciseIds: string[] = Array.isArray(t.exerciseIds)
+      ? (t.exerciseIds as readonly unknown[]).filter(
+          (id: unknown): id is string => typeof id === "string",
+        )
+      : [];
+    const groups = Array.isArray(t.groups) ? [...t.groups] : [];
+    out.push({
+      id: String(t.id),
+      name: typeof t.name === "string" ? t.name : "",
+      exerciseIds,
+      groups,
+      updatedAt: typeof t.updatedAt === "string" ? t.updatedAt : "",
+      lastUsedAt: typeof t.lastUsedAt === "string" ? t.lastUsedAt : null,
+    });
+  }
+  return out;
+}
+
+function numericOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 // -----------------------------------------------------------------------

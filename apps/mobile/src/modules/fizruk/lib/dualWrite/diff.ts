@@ -8,7 +8,20 @@
  * duplicated until Stage 5 promotes the dual-write helpers into a
  * workspace package.
  *
- * See the web copy for full mapping rules and design notes.
+ * **Stage 12 / PR #070f-mobile-dualwrite** — extends the mobile
+ * snapshot + op set to cover the three additional Fizruk entity
+ * classes shipped on web by PR #070f-dualwrite:
+ *
+ *   - `daily-log-upsert` / `daily-log-delete` — top-level
+ *     `fizruk_daily_log` rows (per-entry).
+ *   - `monthly-plan-set` — singleton `fizruk_monthly_plan` blob
+ *     (no delete op — clearing the document keeps the slot).
+ *   - `workout-template-upsert` / `workout-template-delete` —
+ *     top-level `fizruk_workout_templates` rows (per-template).
+ *
+ * The diff order is stable: workouts → custom exercises →
+ * measurements → daily-log → monthly-plan → workout-templates.
+ * See the web copy for the full mapping rules and design notes.
  */
 
 // -----------------------------------------------------------------------
@@ -45,13 +58,44 @@ export interface MeasurementDeleteOp {
   readonly measurementId: string;
 }
 
+// Stage 12 / PR #070f-mobile-dualwrite -----------------------------------
+export interface DailyLogUpsertOp {
+  readonly kind: "daily-log-upsert";
+  readonly entry: FizrukDailyLogSnapshot;
+}
+
+export interface DailyLogDeleteOp {
+  readonly kind: "daily-log-delete";
+  readonly entryId: string;
+}
+
+export interface MonthlyPlanSetOp {
+  readonly kind: "monthly-plan-set";
+  readonly monthlyPlan: FizrukMonthlyPlanSnapshot;
+}
+
+export interface WorkoutTemplateUpsertOp {
+  readonly kind: "workout-template-upsert";
+  readonly template: FizrukWorkoutTemplateSnapshot;
+}
+
+export interface WorkoutTemplateDeleteOp {
+  readonly kind: "workout-template-delete";
+  readonly templateId: string;
+}
+
 export type FizrukDualWriteOp =
   | WorkoutUpsertOp
   | WorkoutDeleteOp
   | CustomExerciseUpsertOp
   | CustomExerciseDeleteOp
   | MeasurementUpsertOp
-  | MeasurementDeleteOp;
+  | MeasurementDeleteOp
+  | DailyLogUpsertOp
+  | DailyLogDeleteOp
+  | MonthlyPlanSetOp
+  | WorkoutTemplateUpsertOp
+  | WorkoutTemplateDeleteOp;
 
 // -----------------------------------------------------------------------
 // Snapshot shapes
@@ -106,6 +150,48 @@ export interface FizrukMeasurementSnapshot {
   readonly [fieldId: string]: string | number | undefined;
 }
 
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — Daily log entry snapshot.
+ * Mirrors the SQLite `fizruk_daily_log` columns: each row is one
+ * weigh-in / sleep / energy / mood entry. The hook side uses `mood`
+ * directly (the mobile `DailyLogEntry` does not carry `moodScore`).
+ */
+export interface FizrukDailyLogSnapshot {
+  readonly id: string;
+  readonly at: string;
+  readonly weightKg: number | null;
+  readonly sleepHours: number | null;
+  readonly energyLevel: number | null;
+  readonly mood: number | null;
+  readonly note: string;
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — Monthly plan snapshot
+ * (singleton). The whole document is serialised to a JSON string so
+ * the diff can compare two planforms by byte-equality. The adapter
+ * writes `dataJson` straight into `fizruk_monthly_plan.data_json`.
+ */
+export interface FizrukMonthlyPlanSnapshot {
+  readonly dataJson: string;
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — Workout template snapshot.
+ * Mirrors the SQLite `fizruk_workout_templates` row shape; nested
+ * arrays (`exerciseIds`, `groups`) are compared by reference (the
+ * hook always produces fresh arrays on persist), and the LWW guard
+ * uses `updatedAt`.
+ */
+export interface FizrukWorkoutTemplateSnapshot {
+  readonly id: string;
+  readonly name: string;
+  readonly exerciseIds: readonly string[];
+  readonly groups: readonly unknown[];
+  readonly updatedAt: string;
+  readonly lastUsedAt?: string | null;
+}
+
 // -----------------------------------------------------------------------
 // State shape
 // -----------------------------------------------------------------------
@@ -114,6 +200,15 @@ export interface FizrukDualWriteState {
   readonly workouts: readonly FizrukWorkoutSnapshot[];
   readonly customExercises: readonly FizrukCustomExerciseSnapshot[];
   readonly measurements: readonly FizrukMeasurementSnapshot[];
+  /** Stage 12 / PR #070f-mobile-dualwrite. Optional for backwards-compat
+   * with pre-Stage-12 callers that pass a 3-class state object. */
+  readonly dailyLog?: readonly FizrukDailyLogSnapshot[];
+  /** Stage 12 / PR #070f-mobile-dualwrite. `null` ≡ "no monthly-plan
+   * row exists for the user yet". The diff treats the singleton as
+   * upsert-or-no-op (no delete op). */
+  readonly monthlyPlan?: FizrukMonthlyPlanSnapshot | null;
+  /** Stage 12 / PR #070f-mobile-dualwrite. */
+  readonly workoutTemplates?: readonly FizrukWorkoutTemplateSnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -156,7 +251,53 @@ export function diffFizrukDualWriteOps(
     (id) => ops.push({ kind: "measurement-delete", measurementId: id }),
   );
 
+  // --- Daily log (Stage 12) ---
+  diffArray(
+    prev.dailyLog ?? [],
+    next.dailyLog ?? [],
+    (e) => e.id,
+    dailyLogChanged,
+    (e) => ops.push({ kind: "daily-log-upsert", entry: e }),
+    (id) => ops.push({ kind: "daily-log-delete", entryId: id }),
+  );
+
+  // --- Monthly plan (Stage 12) ---
+  diffMonthlyPlanOps(prev, next, ops);
+
+  // --- Workout templates (Stage 12) ---
+  diffArray(
+    prev.workoutTemplates ?? [],
+    next.workoutTemplates ?? [],
+    (t) => t.id,
+    workoutTemplateChanged,
+    (t) => ops.push({ kind: "workout-template-upsert", template: t }),
+    (id) => ops.push({ kind: "workout-template-delete", templateId: id }),
+  );
+
   return ops;
+}
+
+// -----------------------------------------------------------------------
+// Stage 12 — monthly-plan singleton diff
+// -----------------------------------------------------------------------
+
+function diffMonthlyPlanOps(
+  prev: FizrukDualWriteState,
+  next: FizrukDualWriteState,
+  ops: FizrukDualWriteOp[],
+): void {
+  const prevPlan = prev.monthlyPlan ?? null;
+  const nextPlan = next.monthlyPlan ?? null;
+  if (prevPlan === nextPlan) return;
+  if (nextPlan === null) {
+    // The hook never deletes the singleton — clearing days resets
+    // the document but keeps the slot. If a caller sets
+    // `monthlyPlan = null` we no-op rather than emit a delete (the
+    // `fizruk_monthly_plan` table has no soft-delete column).
+    return;
+  }
+  if (prevPlan && prevPlan.dataJson === nextPlan.dataJson) return;
+  ops.push({ kind: "monthly-plan-set", monthlyPlan: nextPlan });
 }
 
 // -----------------------------------------------------------------------
@@ -209,5 +350,44 @@ function workoutChanged(
     prev.warmup !== next.warmup ||
     prev.cooldown !== next.cooldown ||
     prev.wellbeing !== next.wellbeing
+  );
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — daily-log shallow comparison.
+ * The snapshot is flat (no nested arrays) so every scalar field is
+ * part of the equality check.
+ */
+function dailyLogChanged(
+  prev: FizrukDailyLogSnapshot,
+  next: FizrukDailyLogSnapshot,
+): boolean {
+  return (
+    prev.at !== next.at ||
+    prev.weightKg !== next.weightKg ||
+    prev.sleepHours !== next.sleepHours ||
+    prev.energyLevel !== next.energyLevel ||
+    prev.mood !== next.mood ||
+    prev.note !== next.note
+  );
+}
+
+/**
+ * Stage 12 / PR #070f-mobile-dualwrite — workout-template shallow
+ * comparison. `exerciseIds` and `groups` are compared by reference;
+ * mutating them in place won't trigger an op, but the hook always
+ * replaces the arrays on every persist (`persist((prev) => ...)`
+ * returns a fresh shape).
+ */
+function workoutTemplateChanged(
+  prev: FizrukWorkoutTemplateSnapshot,
+  next: FizrukWorkoutTemplateSnapshot,
+): boolean {
+  return (
+    prev.name !== next.name ||
+    prev.exerciseIds !== next.exerciseIds ||
+    prev.groups !== next.groups ||
+    prev.updatedAt !== next.updatedAt ||
+    (prev.lastUsedAt ?? null) !== (next.lastUsedAt ?? null)
   );
 }

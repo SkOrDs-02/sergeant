@@ -31,6 +31,12 @@ import {
 } from "@sergeant/fizruk-domain/domain/plan/index";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractMonthlyPlanSnapshot,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 /** Read and normalise the monthly plan state from MMKV. */
 export function loadMonthlyPlanState(): MonthlyPlanState {
@@ -38,9 +44,28 @@ export function loadMonthlyPlanState(): MonthlyPlanState {
   return normalizeMonthlyPlanState(raw);
 }
 
-/** Persist the monthly plan state to MMKV. */
+/**
+ * Persist the monthly plan state to MMKV.
+ *
+ * Stage 12 / PR #070f-mobile-dualwrite — also mirrors the singleton
+ * monthly-plan doc into local SQLite via the dual-write pipeline.
+ * Fire-and-forget; the trigger is a no-op when no dual-write context
+ * is registered (pre-auth).
+ */
 export function saveMonthlyPlanState(next: MonthlyPlanState): boolean {
-  return safeWriteLS(MONTHLY_PLAN_STORAGE_KEY, next);
+  const ok = safeWriteLS(MONTHLY_PLAN_STORAGE_KEY, next);
+  const prevDualWrite =
+    peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+  const nextDualWrite = {
+    ...prevDualWrite,
+    monthlyPlan: extractMonthlyPlanSnapshot(next),
+  };
+  try {
+    triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+  } catch {
+    /* trigger is fire-and-forget */
+  }
+  return ok;
 }
 
 export interface UseMonthlyPlanReturn {

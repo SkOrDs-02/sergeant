@@ -6,6 +6,11 @@
  * Uses MMKV (via `@/lib/storage`) instead of localStorage.
  * Every mutator routes through `persist()` so writes share a single
  * code path.
+ *
+ * Stage 12 / PR #070f-mobile-dualwrite — wires the dual-write
+ * trigger so each MMKV write is mirrored into local SQLite via
+ * `triggerFizrukDualWrite`. Fire-and-forget; the trigger is a
+ * no-op when the dual-write context is not registered (pre-auth).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -13,6 +18,12 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import type { DailyLogEntry } from "@sergeant/fizruk-domain";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractDailyLogSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
@@ -56,6 +67,19 @@ export function useDailyLog(): UseDailyLogResult {
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
       setEntries(next);
+      // Stage 12 / PR #070f-mobile-dualwrite — mirror MMKV write into
+      // SQLite. Fire-and-forget; never propagate trigger errors.
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        dailyLog: extractDailyLogSnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget */
+      }
     },
     [],
   );

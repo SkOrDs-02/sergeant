@@ -9,12 +9,23 @@
  * lastUsedAt? }`. Mutators no-op (skip the MMKV write) when invoked
  * with an unknown id (`update`, `remove`, `markUsed`) or when restoring
  * a template whose id is already present.
+ *
+ * Stage 12 / PR #070f-mobile-dualwrite — wires the dual-write
+ * trigger so each MMKV write is mirrored into local SQLite via
+ * `triggerFizrukDualWrite`. Fire-and-forget; the trigger is a
+ * no-op when the dual-write context is not registered (pre-auth).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractWorkoutTemplateSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_TEMPLATES;
 
@@ -79,6 +90,19 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
       setTemplates(next);
+      // Stage 12 / PR #070f-mobile-dualwrite — mirror MMKV write into
+      // SQLite. Fire-and-forget; never propagate trigger errors.
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        workoutTemplates: extractWorkoutTemplateSnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget */
+      }
     },
     [],
   );

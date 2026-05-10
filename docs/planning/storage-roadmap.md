@@ -3101,7 +3101,7 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
 
 [#2274]: https://github.com/Skords-01/Sergeant/pull/2274
 
-##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 🚧 IN PROGRESS (2/4)
+##### **Stage 12 — extend Fizruk SQLite schema to full LS coverage** 🚧 IN PROGRESS (3/4)
 
 > **Why this is its own stage:** найбільший залишковий schema gap у tail.
 > Поточний Fizruk dual-write covers лише workouts / custom-exercises /
@@ -3146,9 +3146,17 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
   workout-template-upsert / workout-template-delete / active-workout-set;
   web `parity.ts` extended до 9–10 entity classes; `sqliteReader.ts` full-state
   warm cache; web `adapter.ts` apply-paths.
-- **PR #070f-mobile-dualwrite** 📋 PROPOSED — mirror web Stage 12 на
+- **PR #070f-mobile-dualwrite** ✅ LANDED — mirror web Stage 12 на
   `apps/mobile/src/modules/fizruk/lib/dualWrite/{diff,adapter,parity}.ts`
-  - mobile `sqliteReader.ts`.
+  - mobile `sqliteReader.ts` warm cache extended до 6 entity classes;
+    `fizrukDualWriteState.ts` extractors для `dailyLog` / `monthlyPlan` /
+    `workoutTemplates`; `dualWrite/index.ts` orchestrator wired до
+    shared dual-write telemetry sink (`recordDualWriteOutcome`,
+    `recordParityCheck`, `recordReadFallback`); `useDailyLog` /
+    `useMonthlyPlan` / `useWorkoutTemplates` hook callbacks тригерять
+    `triggerFizrukDualWrite` після кожного MMKV write. Test rig:
+    `apps/mobile/src/modules/fizruk/lib/dualWrite/__tests__/{diff,adapter,parity,integration}.test.ts`
+    (Jest + `better-sqlite3`, mirror Stage 10 routine pattern).
 - **PR #057f-tombstone-mobile** 📋 PROPOSED — drop MMKV writes у 7 hooks +
   add residual-import drain.
 
