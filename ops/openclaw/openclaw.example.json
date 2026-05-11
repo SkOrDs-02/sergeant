@@ -23,6 +23,7 @@
 
   "plugins": {
     "bundledDiscovery": "compat",
+    "allow": ["sergeant"],
     "entries": {
       "anthropic": { "enabled": true },
       "telegram": { "enabled": true },

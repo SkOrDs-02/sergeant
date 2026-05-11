@@ -231,11 +231,22 @@ export interface RuntimeService {
 }
 
 export interface PluginApi {
-  registerTool: <TParams>(tool: ToolDefinition<TParams>) => void;
+  registerTool: <TParams>(tool: ToolDefinition<TParams>, opts?: { optional?: boolean }) => void;
   registerHook: <H extends HookName>(name: H, handler: HookHandler<H>) => void;
-  services: {
-    messaging: MessagingService;
-    runtime: RuntimeService;
+  // Real openclaw 5.7 injected API (api.logger / api.pluginConfig).
+  // Not present in v5.6 stubs or test mocks that only supply services.*.
+  logger?: {
+    debug: (msg: string, fields?: Record<string, unknown>) => void;
+    info: (msg: string, fields?: Record<string, unknown>) => void;
+    warn: (msg: string, fields?: Record<string, unknown>) => void;
+    error: (msg: string, fields?: Record<string, unknown>) => void;
+  };
+  /** Parsed plugin config from openclaw.json plugins.entries.<id>.config (5.7+). */
+  pluginConfig?: unknown;
+  // Legacy stub surface used by tests and v5.6. Not injected by real 5.7 runtime.
+  services?: {
+    messaging?: MessagingService;
+    runtime?: RuntimeService;
   };
 }
 
