@@ -21,7 +21,20 @@
   "session": { "dmScope": "per-channel-peer" },
   "tools": {
     "profile": "coding",
-    "allow": ["sergeant"]
+    "allow": [
+      "group:fs",
+      "group:runtime",
+      "group:web",
+      "group:sessions",
+      "group:memory",
+      "cron",
+      "image",
+      "image_generate",
+      "video_generate",
+      "recall_memory",
+      "query_app_db",
+      "read_github"
+    ]
   },
 
   "plugins": {
