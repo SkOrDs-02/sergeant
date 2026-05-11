@@ -38,3 +38,15 @@ export declare const spacing: Readonly<Record<MobileSpacing, number>>;
 
 /** Mobile border-radius scale, keyed by `MobileRadius`. */
 export declare const radius: Readonly<Record<MobileRadius, number>>;
+
+/**
+ * Module-specific accent colours for StyleSheet consumers.
+ * Re-exported from tokens.js — identical values to the web token source.
+ */
+export declare const moduleColors: {
+  finyk: { primary: string; secondary: string; surface: string; surfaceAlt: string };
+  fizruk: { primary: string; secondary: string; surface: string; accent: string };
+  routine: { primary: string; secondary: string; surface: string; surfaceAlt: string };
+  nutrition: { primary: string; secondary: string; surface: string; surfaceAlt: string };
+};
+
