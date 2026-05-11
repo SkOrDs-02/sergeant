@@ -61,13 +61,14 @@ function makeStubApi(): StubApi {
 }
 
 describe("createOpenClawPlugin", () => {
-  it("registers PoC + Phase 1 read tools + 5 n8n delegation tools + create_github_issue", () => {
+  it("registers PoC + Phase 1 read tools + 5 n8n delegation tools + 5 write tools", () => {
     const api = makeStubApi();
     const plugin = createOpenClawPlugin(api, CONFIG);
     expect(plugin.name).toBe("@sergeant/openclaw-plugin");
 
     const names = api.registeredTools.map((t) => t.name).sort();
     expect(names).toEqual([
+      "commit_to_strategy_doc",
       "create_github_issue",
       "get_github_releases",
       "get_posthog_stats",
@@ -78,10 +79,13 @@ describe("createOpenClawPlugin", () => {
       "github_prs",
       "github_search",
       "github_tree",
+      "mute_alert",
       "n8n_activate",
       "n8n_describe",
       "n8n_list",
       "n8n_trigger",
+      "pause_workflow",
+      "post_to_topic",
       "query_app_db",
       "read_github",
       "read_strategy_docs",
