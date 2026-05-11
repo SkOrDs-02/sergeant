@@ -3,7 +3,7 @@
   "name": "@sergeant/openclaw-plugin",
   "version": "0.5.0",
   "description": "Sergeant OpenClaw Gateway plugin (Phase 1 + Phase 4 + Phase 5). 24 read tools + 5 write tools (Variant B approval) + Layer 0/1 routers + audit lifecycle hooks + n8n Tier C gates + council round-table orchestration helpers.",
-  "entry": "./src/index.ts",
+  "entry": "./dist/index.js",
   "phase": "5",
 
   "tools": {
