@@ -92,6 +92,12 @@ function decryptTokenFields<T>(row: T, ring: KeyRing): T {
             field,
             row_version: String(rowVersion),
           });
+          // TODO(token-reencrypt): lazy rollover relies on user-triggered OAuth
+          // refresh. After a key rotation, watch authTokenLazyReencryptTotal in
+          // Grafana. If the metric stays elevated for > 7 days post-rotation,
+          // consider a one-off migration job that re-reads all account rows and
+          // rewrites stale-version tokens under ring.current so that the old key
+          // can be safely retired without waiting for every user to refresh.
         }
       } catch {
         // readKeyVersion can throw on malformed prefix; ignore — decrypt above already succeeded

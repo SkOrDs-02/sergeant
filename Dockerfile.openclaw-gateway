@@ -49,14 +49,18 @@ RUN pnpm --filter @sergeant/openclaw-plugin build
 FROM --platform=linux/amd64 node:24-alpine
 WORKDIR /app
 
-# OpenClaw runtime — pinned stable (Locked #2). Bump via Renovate PR.
+# Bump via Renovate PR (Locked decision #2 — no auto-merge).
+# Pass `--build-arg OPENCLAW_VERSION=<tag>` to override during testing.
+ARG OPENCLAW_VERSION=2026.5.7
+
+# OpenClaw runtime — pinned stable (Locked #2).
 # Reverted to 2026.5.7 (was briefly 2026.5.6). v5.6's PluginApi does not
 # expose `api.services.runtime`, so the sergeant plugin crashes with
 # `TypeError: Cannot read properties of undefined (reading 'runtime')` at
 # register time. v5.7 ships the runtime services API the plugin relies on;
 # the config-block strip bug is now handled at the plugin level by the
 # env-var fallback in parsePluginConfig (see #2428).
-RUN npm install -g openclaw@2026.5.7
+RUN npm install -g openclaw@${OPENCLAW_VERSION}
 
 # Copy compiled plugin output + plugin manifest (entry → ./dist/index.js).
 COPY --from=plugin-builder /build/packages/openclaw-plugin/dist ./packages/openclaw-plugin/dist
@@ -67,7 +71,7 @@ COPY --from=plugin-builder /build/packages/openclaw-plugin/openclaw.plugin.json 
 # package.json carries `@sergeant/shared` + devDependencies that don't resolve at
 # runtime; openclaw's manifest-dependency scanner walks them and bails on missing
 # symlinks. Keep `openclaw.extensions` and `type: module` aligned with the source.
-RUN cat > ./packages/openclaw-plugin/package.json <<'EOF'
+RUN cat > ./packages/openclaw-plugin/package.json <<EOF
 {
   "name": "@sergeant/openclaw-plugin",
   "version": "1.0.0-stage1",
@@ -76,7 +80,7 @@ RUN cat > ./packages/openclaw-plugin/package.json <<'EOF'
   "main": "./dist/index.js",
   "openclaw": { "extensions": ["./dist/index.js"] },
   "dependencies": {
-    "openclaw": "2026.5.7",
+    "openclaw": "${OPENCLAW_VERSION}",
     "@sinclair/typebox": "^0.34.0",
     "zod": "^4.3.6"
   }
