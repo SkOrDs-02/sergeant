@@ -271,6 +271,28 @@
     "trigger": "/council"
   },
 
+  "strategicModes": {
+    "_note": "Phase 3 strategic modes (PR-C3, opt-in per Locked decision #6). Orthogonal до personas — комбінується з будь-якою persona (default — cofounder). Mode задає framework, persona — права доступу (tool-allowlist).",
+    "plan": {
+      "skill": "sergeant-mode-plan",
+      "trigger": "/plan",
+      "defaultPersona": "cofounder",
+      "auditTrigger": "strategic_plan"
+    },
+    "analyze": {
+      "skill": "sergeant-mode-analyze",
+      "trigger": "/analyze",
+      "defaultPersona": "devops",
+      "auditTrigger": "strategic_analyze"
+    },
+    "okr": {
+      "skill": "sergeant-mode-okr",
+      "trigger": "/okr",
+      "defaultPersona": "cofounder",
+      "auditTrigger": "strategic_okr"
+    }
+  },
+
   "schedules": {
     "morning_digest": {
       "skill": "morning-digest",

@@ -163,7 +163,12 @@ describe("PR-C2 persona allowlist", () => {
 
   it("every shipped persona skill directory is wired in agents.*", () => {
     const skillDirs = readdirSync(SKILLS_DIR, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && d.name.startsWith("sergeant-"))
+      .filter(
+        (d) =>
+          d.isDirectory() &&
+          d.name.startsWith("sergeant-") &&
+          !d.name.startsWith("sergeant-mode-"),
+      )
       .map((d) => d.name)
       .sort();
     const wired = Object.values(config.agents)
