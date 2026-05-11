@@ -20,5 +20,13 @@ cp /app/ops/openclaw/cheap-router.system.md ~/.openclaw/cheap-router.system.md
 # n8n workflow allowlist.
 cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
 
+# Plugin bootstrap: `openclaw start` is owned by the gateway plugin (no built-in
+# `start` command exists in upstream openclaw). The install state lives on the
+# volume under ~/.openclaw/plugins, so this is real work only on first boot
+# (or after a volume reset) and a tolerated no-op on every warm start.
+# `|| true` is intentional: a re-install on already-installed state must not
+# crash-loop the container; the runtime check is the `openclaw start` below.
+openclaw plugin install /app/packages/openclaw-plugin || true
+
 # Hand off to OpenClaw runtime.
 exec openclaw start
