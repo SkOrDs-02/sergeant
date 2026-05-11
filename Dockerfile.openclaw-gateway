@@ -45,13 +45,30 @@ WORKDIR /app
 # OpenClaw runtime — pinned stable (Locked #2). Bump via Renovate PR.
 RUN npm install -g openclaw@2026.5.7
 
-# Copy plugin from builder: dist/ (compiled JS), package.json (manifest),
-# openclaw.plugin.json (plugin metadata), and node_modules (pruned to runtime deps —
-# currently just zod). The dir layout matches what `openclaw plugins install` expects.
+# Copy compiled plugin output + plugin manifest (entry → ./dist/index.js).
 COPY --from=plugin-builder /build/packages/openclaw-plugin/dist ./packages/openclaw-plugin/dist
-COPY --from=plugin-builder /build/packages/openclaw-plugin/package.json ./packages/openclaw-plugin/package.json
 COPY --from=plugin-builder /build/packages/openclaw-plugin/openclaw.plugin.json ./packages/openclaw-plugin/openclaw.plugin.json
-COPY --from=plugin-builder /build/packages/openclaw-plugin/node_modules ./packages/openclaw-plugin/node_modules
+
+# Synthesise a slim runtime package.json so `openclaw plugins install` sees only the
+# deps actually imported by the built dist/ (currently just `zod`). The workspace
+# package.json carries `@sergeant/shared` + devDependencies that don't resolve at
+# runtime; openclaw's manifest-dependency scanner walks them and bails on missing
+# symlinks. Keep `openclaw.extensions` and `type: module` aligned with the source.
+RUN cat > ./packages/openclaw-plugin/package.json <<'EOF'
+{
+  "name": "@sergeant/openclaw-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "openclaw": { "extensions": ["./dist/index.js"] },
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}
+EOF
+
+RUN cd ./packages/openclaw-plugin && npm install --omit=dev --no-audit --no-fund --loglevel=error
 
 # Copy ops config-as-code (openclaw.example.json, skills/, cheap-router.system.md, n8n-allowlist.json).
 COPY ops/openclaw ./ops/openclaw
