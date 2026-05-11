@@ -24,9 +24,12 @@ COPY ops/openclaw ./ops/openclaw
 COPY ops/openclaw/docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Non-root user for runtime security.
-RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app
-USER app
+# Runs as root: OpenClaw runtime is installed globally via `npm install -g` and its
+# canonical config (ops/openclaw/openclaw.example.json) declares `workspaceDir: /root/.openclaw`,
+# matching the Railway persistent volume mount path (Locked decision #1).
+# Container isolation is provided by Railway/Docker; dropping to a non-root user would require
+# either a home-dir-relative `workspaceDir` (deviating from upstream OpenClaw expectations) or
+# extra chown gymnastics for the mounted volume.
 
 # OpenClaw Gateway default port.
 EXPOSE 18789
