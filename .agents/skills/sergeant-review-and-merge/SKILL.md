@@ -9,15 +9,36 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 Спершу — production-safety, потім — поліровка. Ревʼю в Sergeant не вважається завершеним, поки governance-ризики репо не перевірені поряд з якістю коду.
 
-## Чекліст ревʼю
+## Two-stage review
 
-- Для зачепленої поверхні застосовано правильний specialist skill
-- Тести покривають змінену поведінку, а не лише деталі імплементації
-- Зміни API-форми йшли разом із `api-client` і тестами
-- Migration safety явно обговорена, якщо змінювався SQL
-- Доки оновлені лише там, де насправді змінився canonical doc
-- Commit scope відповідає `AGENTS.md`
-- Без `--no-verify`, без skip-hook-ів, без небезпечного порядку деплою
+Ревʼю Sergeant PR розділене на **дві окремі стадії**. Не змішуй їх — спершу переконайся, що diff робить те, що мав, потім оцінюй, чи робить це якісно. Stage 2 без passed Stage 1 — марнування часу: якщо implementation не відповідає spec, code-quality критика буде нерелевантна після переробки.
+
+### Stage 1 — Spec compliance
+
+Питання цієї стадії: **«Чи реалізує diff те, що описано в spec/issue/playbook?»** Без імен змінних, без стилю, без оптимізацій.
+
+- Знайди канонічне джерело істини для зміни:
+  - product-facing: spec у `docs/design/specs/` або issue з acceptance-критеріями;
+  - infra/governance: playbook у `docs/playbooks/` або initiative у `docs/initiatives/`;
+  - bugfix: regression-тест + опис відтворення з `sergeant-bugfix-and-regression`.
+- Звір кожен acceptance-критерій з кодом. Кожен пункт або вкритий diff-ом, або явно out-of-scope з поясненням у PR.
+- Перевір, що зачеплені surfaces покриті правильним specialist skill (тригери merge-готовності нижче).
+- Зміни форми API ↔ `packages/api-client` ↔ contract-тест їдуть разом — Hard Rule #3.
+- Migration safety явно обговорена, якщо змінювався SQL — Hard Rule #4 (two-phase DROP).
+- Доки оновлені лише там, де насправді змінився canonical doc — без changelog-dump-ів.
+
+**Якщо Stage 1 не проходить — відправ на доопрацювання і не починай Stage 2.** Інакше code-quality нотатки втратять контекст після переробки.
+
+### Stage 2 — Code quality
+
+Питання цієї стадії: **«Чи можна підтримувати цей diff наступні 6 місяців без болю?»** Тільки після того, як Stage 1 показав, що diff відповідає spec.
+
+- Тести покривають змінену поведінку, а не лише деталі імплементації; regression-тест дійсно червонів **до** фіксу (див. Red Flags нижче).
+- Boundaries поважаються: де код мав жити в monorepo, там і живе (звір через `sergeant-monorepo-boundaries`).
+- Назви, типи, відсутність `any`/`getattr`/`setattr`, без dead-code, без AI-marker-у `AI-LEGACY` без дедлайну.
+- Commit scope відповідає `commitlint.config.js` enum (Hard Rule #5).
+- Без `--no-verify`, без skip-hook-ів, без небезпечного порядку деплою — Hard Rules #6, #7.
+- Lifecycle markers на місці там, де Knip міг би хибно зловити scaffolded-файл — Hard Rule #10.
 
 ## Тригери merge-готовності
 
@@ -45,6 +66,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | «Build succeeds»                              | Incremental build може не зловити нову помилку                | Прогнати `pnpm build` і вставити exit code      |
 | «Bug fixed»                                   | Без свіжого regression-тесту — це гадання                     | Показати failing → passing тест або curl-вивід  |
 | «Regression test works»                       | Тест може бути green-by-default (не тестує assertion)         | Спочатку зламай assertion — переконайся, що тест справді червоніє |
+| «Test passes, ship it»                        | Якщо ти не бачив RED перед GREEN — тест може не тестувати fix | Прогони тест **до** фіксу, переконайся що він червоний з правильної причини, потім фіксуй і дивись GREEN |
 | «Should pass now» / «Looks correct»           | Лінгвістичний маркер невпевненості — ніколи не є evidence     | Прогони команду, покажи результат              |
 | «Iʼm confident this is right»                 | Впевненість ≠ верифікація — модель/людина помиляється         | Прогони команду, покажи результат              |
 

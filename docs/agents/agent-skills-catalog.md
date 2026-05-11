@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-08-09.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -18,20 +18,21 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 
 ## Active Skills
 
-| Skill                                                                                                  | Use for                                   | Enforces                                                     |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------ |
-| [`sergeant-start-here`](../../.agents/skills/sergeant-start-here/SKILL.md)                             | Будь-який старт роботи в Sergeant         | Routing, repo map, non-negotiable hard rules                 |
-| [`sergeant-feature-delivery`](../../.agents/skills/sergeant-feature-delivery/SKILL.md)                 | Нові фічі, behavior changes               | Spec-first delivery, minimal coherent slices, verification   |
-| [`sergeant-bugfix-and-regression`](../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md)       | Баги, регресії, flaky behavior            | Reproduce-first, failing check first, minimal fix            |
-| [`sergeant-review-and-merge`](../../.agents/skills/sergeant-review-and-merge/SKILL.md)                 | PR review, merge readiness                | Safety review, contract checks, docs freshness, commit scope |
-| [`sergeant-web-ui`](../../.agents/skills/sergeant-web-ui/SKILL.md)                                     | `apps/web`, PWA, Tailwind, a11y           | Opacity scale, `-strong` fills, storage wrappers, query keys |
-| [`sergeant-server-api`](../../.agents/skills/sergeant-server-api/SKILL.md)                             | `apps/server`, `packages/api-client`      | Bigint coercion, contract triplet, Kyiv time rules           |
-| [`sergeant-data-and-migrations`](../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety | Generator usage, sequential numbering, two-phase DROP        |
-| [`sergeant-mobile-expo`](../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`        | Expo Router boundaries, NativeWind, MMKV, no DOM leakage     |
-| [`sergeant-hubchat`](../../.agents/skills/sergeant-hubchat/SKILL.md)                                   | HubChat tools and executors               | Tool/executor coordination, prompt cache, risky actions      |
-| [`sergeant-monorepo-boundaries`](../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                 | App vs package placement, shared logic boundaries            |
-| [`sergeant-deploy-and-observability`](../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n    | Runtime verification, operator docs, release safety          |
-| [`better-auth-best-practices`](../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle    | Better Auth wiring, cross-site cookies, auth env safety      |
+| Skill                                                                                                  | Use for                                   | Enforces                                                       |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------- |
+| [`sergeant-start-here`](../../.agents/skills/sergeant-start-here/SKILL.md)                             | Будь-який старт роботи в Sergeant         | Routing, repo map, non-negotiable hard rules                   |
+| [`sergeant-feature-delivery`](../../.agents/skills/sergeant-feature-delivery/SKILL.md)                 | Нові фічі, behavior changes               | Spec-first delivery, minimal coherent slices, verification     |
+| [`sergeant-bugfix-and-regression`](../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md)       | Баги, регресії, flaky behavior            | Reproduce-first, failing check first, minimal fix              |
+| [`sergeant-review-and-merge`](../../.agents/skills/sergeant-review-and-merge/SKILL.md)                 | PR review, merge readiness                | Safety review, contract checks, docs freshness, commit scope   |
+| [`sergeant-web-ui`](../../.agents/skills/sergeant-web-ui/SKILL.md)                                     | `apps/web`, PWA, Tailwind, a11y           | Opacity scale, `-strong` fills, storage wrappers, query keys   |
+| [`sergeant-server-api`](../../.agents/skills/sergeant-server-api/SKILL.md)                             | `apps/server`, `packages/api-client`      | Bigint coercion, contract triplet, Kyiv time rules             |
+| [`sergeant-data-and-migrations`](../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety | Generator usage, sequential numbering, two-phase DROP          |
+| [`sergeant-mobile-expo`](../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`        | Expo Router boundaries, NativeWind, MMKV, no DOM leakage       |
+| [`sergeant-hubchat`](../../.agents/skills/sergeant-hubchat/SKILL.md)                                   | HubChat tools and executors               | Tool/executor coordination, prompt cache, risky actions        |
+| [`sergeant-monorepo-boundaries`](../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                 | App vs package placement, shared logic boundaries              |
+| [`sergeant-deploy-and-observability`](../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n    | Runtime verification, operator docs, release safety            |
+| [`better-auth-best-practices`](../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle    | Better Auth wiring, cross-site cookies, auth env safety        |
+| [`sergeant-writing-skills`](../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`   | TDD-for-skills, frontmatter shape, lock SHA-256, security scan |
 
 ## Preferred Routing by Scenario
 

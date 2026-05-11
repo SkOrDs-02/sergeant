@@ -39,6 +39,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Railway/Vercel, n8n     | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |
+| Створення / редагування `.agents/skills/**/SKILL.md`             | `sergeant-writing-skills`          |
 
 ## Політика generic-skill-ів
 

@@ -44,7 +44,7 @@
     "sergeant-review-and-merge": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e06e37df9907477f6881635635023859ff907c05a9bc12728bbb4be8a63b4277"
+      "computedHash": "950c98c8d8402a9c5ee167a1f2bad7e440916df61aa8124f4078580d47546a8c"
     },
     "sergeant-server-api": {
       "source": "local",
@@ -54,12 +54,17 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e8b416eab22b628a35c88f881666748c8d781e512dd11d8c5cc5b527893693b4"
+      "computedHash": "bd39951487ed2b6a765a25cce1e49c9930d96cdc1f59d372413afed3e75c745c"
     },
     "sergeant-web-ui": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "d4578839bec3d7e4f43c7b118645903c8b9c184318dccb0941baf52febc95124"
+    },
+    "sergeant-writing-skills": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "abb9cefe7b53cee6a2548f7c95216d7f4a1df9e9f9b7bd6922e40a7b26c068f0"
     }
   }
 }
