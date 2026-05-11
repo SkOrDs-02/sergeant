@@ -31,6 +31,14 @@ cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
 rm -rf ~/.openclaw/plugins ~/.openclaw/extensions/sergeant ~/.openclaw/extensions/@sergeant-openclaw-plugin-* || true
 openclaw plugins install /app/packages/openclaw-plugin --force || true
 
+# After install, patch in the runtime config block under
+# plugins.entries.sergeant.config — kept out of the base config-as-code so the
+# gateway doesn't strip it as a stale entry on the validation pass that
+# precedes install. The plugin's register() hook reads this block as the
+# stringified second argument and would otherwise crash with
+# "OpenClaw plugin config is not valid JSON: 'undefined' is not valid JSON".
+node /app/ops/openclaw/patch-sergeant-config.mjs
+
 # Hand off to OpenClaw runtime. `gateway run` runs the WebSocket Gateway in the
 # foreground (the unqualified `openclaw gateway` would try to install/start a
 # systemd unit, which is unavailable in containers — see `openclaw gateway --help`).
