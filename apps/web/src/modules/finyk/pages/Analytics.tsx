@@ -201,6 +201,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     {},
   );
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const fetchingRef = useRef(new Set<string>());
 
   const monthKey = `${year}-${String(month).padStart(2, "0")}`;
@@ -217,6 +218,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
       if (monthCache[key]) return;
       fetchingRef.current.add(key);
       setLoading(true);
+      setFetchError(null);
       mono
         .fetchMonth(y, m1 - 1)
         .then((txs) => {
@@ -227,6 +229,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
           // disconnected fetch should remain refetchable on the next
           // navigation. Leaving the key absent keeps `comparison`/UI in
           // a "no data yet" state instead of a misleading "0 ₴" state.
+          setFetchError("Не вдалось завантажити транзакції");
         })
         .finally(() => {
           fetchingRef.current.delete(key);
@@ -238,6 +241,15 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     },
     [mono, monthCache],
   );
+
+  const retryCurrentMonth = useCallback(() => {
+    setMonthCache((prev) => {
+      const next = { ...prev };
+      delete next[monthKey];
+      return next;
+    });
+    setFetchError(null);
+  }, [monthKey]);
 
   useEffect(() => {
     if (!isCurrentMonth) ensureMonth(year, month, monthKey);
@@ -305,6 +317,19 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
+
+        {fetchError && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
+            <span>{fetchError}</span>
+            <button
+              type="button"
+              onClick={retryCurrentMonth}
+              className="shrink-0 font-medium underline underline-offset-2 hover:no-underline"
+            >
+              Повторити
+            </button>
+          </div>
+        )}
 
         {/* Summary */}
         <Section title="Підсумок місяця">

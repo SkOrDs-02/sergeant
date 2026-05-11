@@ -221,6 +221,15 @@ export function useChatSend({
       abortRef.current = ac;
       const signal = ac.signal;
 
+      // Auto-abort after 90 s — prevents the UI from hanging forever if
+      // the Anthropic stream stalls mid-response or the server drops the
+      // SSE connection silently.
+      let timedOut = false;
+      const timeoutId = setTimeout(() => {
+        timedOut = true;
+        ac.abort();
+      }, 90_000);
+
       try {
         const context = contextRef.current.text || buildContextMeasured();
         if (!contextRef.current.text) {
@@ -399,16 +408,22 @@ export function useChatSend({
           if (shouldSpeak) maybeSpeak(reply);
         }
       } catch (e) {
-        // Explicit cancel (cancel button or chat close) shouldn't
-        // surface as an error — drop a quiet marker.
-        if (isApiError(e) && e.kind === "aborted") {
-          setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
-        } else if ((e as { name?: string } | null)?.name === "AbortError") {
+        const isAbort =
+          (isApiError(e) && e.kind === "aborted") ||
+          (e as { name?: string } | null)?.name === "AbortError";
+        if (isAbort && timedOut) {
+          setMessages((m) => [
+            ...m,
+            makeAssistantMsg("⏱ Час очікування вичерпано. Спробуй ще раз."),
+          ]);
+        } else if (isAbort) {
+          // Explicit cancel (cancel button or chat close).
           setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
         } else {
           setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
         }
       } finally {
+        clearTimeout(timeoutId);
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
       }

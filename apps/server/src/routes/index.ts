@@ -55,5 +55,5 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createPushRouter());
   app.use(createTranscribeRouter());
   app.use(createWaitlistRouter());
-  app.use(createAiMemoryRouter());
+  app.use(createAiMemoryRouter({ pool }));
 }
