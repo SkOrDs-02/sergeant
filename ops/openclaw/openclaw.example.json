@@ -22,7 +22,7 @@
   "tools": { "profile": "coding" },
 
   "plugins": {
-    "allow": ["sergeant"],
+    "bundledDiscovery": "compat",
     "entries": {
       "anthropic": { "enabled": true },
       "telegram": { "enabled": true },

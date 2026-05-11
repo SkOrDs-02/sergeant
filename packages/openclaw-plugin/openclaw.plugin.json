@@ -98,7 +98,17 @@
 
   "configSchema": {
     "type": "object",
-    "additionalProperties": false
+    "additionalProperties": true,
+    "properties": {
+      "serverInternalUrl": { "type": "string" },
+      "internalApiKey": { "type": "string" },
+      "founderUserId": { "type": "string" },
+      "maxPerCallUsd": { "type": ["string", "number"] },
+      "councilUsdBudget": { "type": ["string", "number"] },
+      "approvalVariant": { "type": "string", "enum": ["A", "B", "C"] },
+      "cheapRouterSystemPromptPath": { "type": "string" }
+    },
+    "required": ["serverInternalUrl", "internalApiKey", "founderUserId"]
   },
 
   "_notes": [
