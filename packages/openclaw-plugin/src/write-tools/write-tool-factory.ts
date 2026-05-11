@@ -19,7 +19,7 @@ import { OpenClawHttpError } from "../http-client.js";
 import type {
   ToolDefinition,
   HookHandler,
-  PluginApi,
+  MessagingService,
   ToolResult,
 } from "../sdk-types.js";
 import {
@@ -95,7 +95,7 @@ export interface WriteToolFactoryOptions {
   http: OpenClawHttpClient;
   founderUserId: string;
   variant: ApprovalVariant;
-  messaging?: PluginApi["services"]["messaging"];
+  messaging?: MessagingService;
   approvalCallbackTimeoutMs: number;
   auditSink?: WriteAuditSink;
   now?: () => number;

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createCreateGithubIssueTool } from "./create-github-issue.js";
 import { OpenClawHttpClient } from "./../http-client.js";
 import type {
-  PluginApi,
+  MessagingService,
   ToolCallPreContext,
   ToolCallPostContext,
 } from "./../sdk-types.js";
@@ -27,7 +27,7 @@ function makeHttp(
 
 function makeMessaging(
   callbackData: string,
-): PluginApi["services"]["messaging"] {
+): MessagingService {
   const sentMessageId = "msg_001";
   return {
     send: vi.fn().mockResolvedValue({ messageId: sentMessageId }),
@@ -214,7 +214,7 @@ describe("create_github_issue — Variant B (custom hook + own UX)", () => {
     const http = makeHttp(() => ({
       body: { url: "https://gh/x", number: 1, title: "t" },
     }));
-    const messaging: PluginApi["services"]["messaging"] = {
+    const messaging: MessagingService = {
       send: vi.fn().mockResolvedValue({ messageId: "msg" }),
       waitForCallback: vi.fn().mockRejectedValue(new Error("timeout")),
     };
