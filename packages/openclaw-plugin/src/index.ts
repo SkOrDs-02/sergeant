@@ -69,10 +69,25 @@ function resolvePluginConfig(candidate: unknown): Record<string, unknown> {
  */
 interface ToolSpec {
   name: string;
+  /**
+   * Optional UI display label. If omitted, auto-derived from `name` at
+   * registration time. openclaw's AgentTool interface (pi-agent-core)
+   * requires `label` — tools without it are silently dropped from the
+   * agent palette.
+   */
+  label?: string;
   description: string;
   params: TSchema;
   endpoint: string;
   formatBody?: (params: Record<string, unknown>) => unknown;
+}
+
+/** Convert snake_case tool name → "Snake Case" Title for fallback `label`. */
+function toLabel(name: string): string {
+  return name
+    .split("_")
+    .map((w) => (w.length === 0 ? w : w[0]!.toUpperCase() + w.slice(1)))
+    .join(" ");
 }
 
 function makeTools(founderUserId: string): ToolSpec[] {
@@ -504,6 +519,7 @@ export default definePluginEntry({
       try {
         api.registerTool({
           name: tool.name,
+          label: tool.label ?? toLabel(tool.name),
           description: tool.description,
           parameters: tool.params,
           async execute(_id, params) {
