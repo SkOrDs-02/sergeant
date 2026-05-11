@@ -61,8 +61,16 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     id: string;
     name: string;
     description: string;
-    /** Called once at plugin load time with the runtime API surface. */
-    register: (api: OpenClawPluginApi) => void | Promise<void>;
+    /**
+     * Called once at plugin load time. Signature is permissive (variadic
+     * rest args) because openclaw 5.x lines have historically passed
+     * additional context (e.g. a stringified config) as a second positional
+     * arg and we want to introspect what we receive.
+     */
+    register: (
+      api: OpenClawPluginApi,
+      ...rest: unknown[]
+    ) => void | Promise<void>;
     /** Optional fields openclaw 5.7 also honours but we don't use yet. */
     kind?: string;
     configSchema?: unknown;

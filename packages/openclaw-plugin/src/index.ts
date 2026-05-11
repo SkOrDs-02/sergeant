@@ -89,15 +89,17 @@ export default definePluginEntry({
 
     // Materialise from env if api-delivered config is missing. This is the
     // same set the patch-script tries to inject as ${VAR} placeholders.
+    // (Bracket notation: process.env has an index signature, dot access
+    // fails under tsc strict mode.)
     const envFallback = {
-      serverInternalUrl: process.env.SERVER_INTERNAL_URL,
-      internalApiKey: process.env.INTERNAL_API_KEY,
-      founderUserId: process.env.OPENCLAW_FOUNDER_USER_ID,
-      maxPerCallUsd: process.env.OPENCLAW_MAX_PER_CALL_USD,
-      councilUsdBudget: process.env.OPENCLAW_COUNCIL_USD_BUDGET,
-      approvalVariant: process.env.OPENCLAW_APPROVAL_VARIANT,
+      serverInternalUrl: process.env["SERVER_INTERNAL_URL"],
+      internalApiKey: process.env["INTERNAL_API_KEY"],
+      founderUserId: process.env["OPENCLAW_FOUNDER_USER_ID"],
+      maxPerCallUsd: process.env["OPENCLAW_MAX_PER_CALL_USD"],
+      councilUsdBudget: process.env["OPENCLAW_COUNCIL_USD_BUDGET"],
+      approvalVariant: process.env["OPENCLAW_APPROVAL_VARIANT"],
       cheapRouterSystemPromptPath:
-        process.env.OPENCLAW_CHEAP_ROUTER_PROMPT_PATH,
+        process.env["OPENCLAW_CHEAP_ROUTER_PROMPT_PATH"],
     };
 
     // Merge: candidate (if present) wins per-key over env fallback — but
