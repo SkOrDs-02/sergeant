@@ -11,11 +11,20 @@ mkdir -p ~/.openclaw/workspace/skills
 # Lay down main config (overwrites on each restart).
 cp /app/ops/openclaw/openclaw.example.json ~/.openclaw/openclaw.json
 
-# Sync supplementary assets (skills, shortcuts, cheap-router prompt, n8n allowlist).
-# These are consumed by @sergeant/openclaw-plugin at runtime via paths under ~/.openclaw.
-cp -r /app/ops/openclaw/skills/. ~/.openclaw/workspace/skills/
-cp /app/ops/openclaw/cheap-router.system.md ~/.openclaw/cheap-router.system.md
-cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
+# Stage 1 MVP: the workspace skills/ + cheap-router prompt + n8n-allowlist
+# were authored for the pre-rewrite plugin and reference 24+ tools that the
+# MVP plugin doesn't register yet (recall_memory, query_app_db, read_github
+# only). Leaving them in place poisons the agent's persona — it reads the
+# SKILL.md docs, believes it's "Sergeant CTO with full tool-set", then can't
+# find the tools it expects and surfaces confusing "I don't have X" answers.
+#
+# Wipe the volume-persisted copies on every start. Re-introduce these assets
+# stage by stage as we migrate tools in Stages 2-4.
+rm -rf ~/.openclaw/workspace/skills/* \
+       ~/.openclaw/cheap-router.system.md \
+       ~/.openclaw/n8n-allowlist.json
+# Re-create empty skills dir to keep the path valid for openclaw.
+mkdir -p ~/.openclaw/workspace/skills
 
 # Plugin bootstrap: @sergeant/openclaw-plugin lives in packages/openclaw-plugin and
 # is loaded into the Gateway as an OpenClaw plugin. Install state lives on the
