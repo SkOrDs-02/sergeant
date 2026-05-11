@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Pool } from "pg";
 
 import {
   asyncHandler,
@@ -6,6 +7,7 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
+import { requirePlan } from "../modules/billing/requirePlan.js";
 import { ingestMemoryHandler } from "../modules/ai-memory/ingestRoute.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 
@@ -24,7 +26,7 @@ import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
  * але тут все одно ставимо stop, щоб один зломаний клієнт не зміг через
  * Redis затопити worker-pool.
  */
-export function createAiMemoryRouter(): Router {
+export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.use("/api/ai-memory", setModule("ai-memory"));
   r.use(
@@ -38,11 +40,13 @@ export function createAiMemoryRouter(): Router {
   r.post(
     "/api/ai-memory/ingest",
     requireSession(),
+    requirePlan(pool, "pro"),
     asyncHandler(ingestMemoryHandler),
   );
   r.post(
     "/api/ai-memory/recall",
     requireSession(),
+    requirePlan(pool, "pro"),
     asyncHandler(recallMemoryHandler),
   );
   return r;

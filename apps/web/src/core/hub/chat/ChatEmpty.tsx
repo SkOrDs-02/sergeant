@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
+import { getActiveModules } from "@sergeant/shared";
+import { localStorageStore } from "../dashboard/dashboardStore";
 
 export interface ChatEmptyProps {
   /**
@@ -66,6 +69,11 @@ const SUGGESTIONS: readonly Suggestion[] = [
  * §A12 з docs/audits/2026-05-06-ux-roast-pr-plan.md.
  */
 export function ChatEmpty({ onPickSuggestion }: ChatEmptyProps) {
+  const visibleSuggestions = useMemo(() => {
+    const active = new Set(getActiveModules(localStorageStore));
+    return SUGGESTIONS.filter((s) => active.size === 0 || active.has(s.id));
+  }, []);
+
   return (
     <div
       data-testid="chat-empty"
@@ -80,7 +88,7 @@ export function ChatEmpty({ onPickSuggestion }: ChatEmptyProps) {
         {messages.hub.chatEmptyDescription}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-        {SUGGESTIONS.map((s) => (
+        {visibleSuggestions.map((s) => (
           <button
             key={s.id}
             type="button"
