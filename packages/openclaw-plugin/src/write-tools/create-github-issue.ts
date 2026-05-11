@@ -42,7 +42,7 @@ import { OpenClawHttpError } from "./../http-client.js";
 import type {
   ToolDefinition,
   HookHandler,
-  PluginApi,
+  MessagingService,
   ToolResult,
 } from "./../sdk-types.js";
 import {
@@ -80,7 +80,7 @@ export interface CreateGithubIssueOptions {
   founderUserId: string;
   variant: ApprovalVariant;
   /** Injected SDK services — for messaging (Variant B). */
-  messaging?: PluginApi["services"]["messaging"];
+  messaging?: MessagingService;
   /** Callback wait timeout (Variant B). */
   approvalCallbackTimeoutMs: number;
   /** Optional injected clock for tests (latency tracking). */
