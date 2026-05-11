@@ -33,7 +33,6 @@ import {
   createAgentTurnEndHook,
 } from "./audit.js";
 import { createRoutingHook, type RoutingHookOptions } from "./routing-hook.js";
-import type { ToolResult } from "./sdk-types.js";
 import { createRecallMemoryTool } from "./tools/recall-memory.js";
 import { createReadStrategyDocsTool } from "./tools/read-strategy-docs.js";
 import { createQueryAppDbTool } from "./tools/query-app-db.js";
@@ -69,7 +68,14 @@ import {
   type WriteToolFactoryOptions,
 } from "./write-tools/write-tool-factory.js";
 import { createN8nTierCPostHook } from "./write-tools/n8n-tier-c-gate.js";
-import { definePluginEntry, type Plugin, type PluginApi } from "./sdk-types.js";
+import {
+  definePluginEntry,
+  type MessagingService,
+  type Plugin,
+  type PluginApi,
+  type RuntimeService,
+  type ToolResult,
+} from "./sdk-types.js";
 
 export interface CreatePluginOptions {
   /** Optional fetch override for tests / OpenTelemetry instrumentation. */
@@ -97,7 +103,25 @@ export function createOpenClawPlugin(
   });
 
   const correlator = new InvocationCorrelator();
-  const log = api.services.runtime.log;
+  // Prefer real openclaw 5.7 api.logger; fall back to legacy services.runtime.log
+  // (test stubs) or console if neither is present.
+  const log: RuntimeService["log"] =
+    api.services?.runtime?.log ??
+    ((level, msg, fields?) => {
+      const fn =
+        api.logger?.[level as keyof NonNullable<PluginApi["logger"]>];
+      if (typeof fn === "function") fn(msg, fields ?? undefined);
+      else
+        (
+          console[
+            level === "error"
+              ? "error"
+              : level === "warn"
+                ? "warn"
+                : "debug"
+          ] as (...args: unknown[]) => void
+        )(`[sergeant] ${msg}`, fields ?? "");
+    });
 
   // ─── Tool registry (for shortcut router dispatching) ─────────────────
   const toolRegistry = new Map<
@@ -231,11 +255,23 @@ export function createOpenClawPlugin(
   // Shared options for all Variant B write-tools: audit sink, messaging,
   // approval timeout.
   const auditSink = createHttpAuditSink(http, 0);
+  // Real openclaw 5.7 runtime does not inject api.services.messaging — fall
+  // back to a stub that logs the unavailability so write-tool approval flows
+  // degrade gracefully instead of crashing the plugin at register time.
+  const messaging: MessagingService = api.services?.messaging ?? {
+    send: async (text) => {
+      log("warn", "[messaging unavailable] " + text);
+      return { messageId: "unavailable" };
+    },
+    waitForCallback: async () => {
+      throw new Error("openclaw runtime did not inject messaging service");
+    },
+  };
   const writeOpts: WriteToolFactoryOptions = {
     http,
     founderUserId: config.founderUserId,
     variant: config.approvalVariant,
-    messaging: api.services.messaging,
+    messaging,
     approvalCallbackTimeoutMs: config.approvalCallbackTimeoutMs,
     auditSink,
     log,
@@ -246,7 +282,7 @@ export function createOpenClawPlugin(
     http,
     founderUserId: config.founderUserId,
     variant: config.approvalVariant,
-    messaging: api.services.messaging,
+    messaging,
     approvalCallbackTimeoutMs: config.approvalCallbackTimeoutMs,
     recordAudit: async (record) => {
       await auditSink({
