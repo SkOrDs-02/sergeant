@@ -16,6 +16,8 @@ import sergeantDesign from "./packages/eslint-plugin-sergeant-design/index.js";
 // Migrate strings → `apps/web/src/shared/i18n/uk.ts` and remove the
 // path from the JSON. When the array is empty, promote the rule from
 // "warn" to "error". See `docs/i18n/readiness.md` § Burndown.
+// TARGET DEADLINE: 2026-Q3 (до 2026-09-30). Поточний розмір: ~30 файлів.
+// Відповідальний: @Skords-01. Прогрес: docs/i18n/readiness.md § Burndown.
 const i18nAllowlist = JSON.parse(
   readFileSync(
     new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),

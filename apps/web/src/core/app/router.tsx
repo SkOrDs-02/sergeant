@@ -32,6 +32,16 @@ import App from "../App";
  * config-tree (масив `RouteObject`-ів). Зберігаємо config-tree у власному
  * файлі, щоб per-domain `route.tsx`-и могли посилатись на ту саму
  * RouteObject-shape без циклів.
+ *
+ * Auth contract: немає guard-компонента на рівні роутера — це навмисно.
+ * Підняти `<AuthProvider>` вище за router і обгорнути всі маршрути в один
+ * `<ProtectedRoute>` зараз неможливо: той самий `<App />` є mount-ом для
+ * авторизованого і неавторизованого стану (sign-in, welcome, app). Тому
+ * захист реалізований на рівні компонент: кожна сторінка, яка рендерить
+ * чутливий UI, зобов'язана викликати `const { status } = useAuth()` і
+ * повернути редирект/заглушку при `status !== "authenticated"`.
+ * Джерело правди: `apps/web/src/core/auth/AuthContext.tsx`.
+ * Phase 5 (cleanup, вище) знімає цей обмеження — тоді guard переїде сюди.
  */
 export const router = createBrowserRouter([
   {
