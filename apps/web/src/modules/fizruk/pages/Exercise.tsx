@@ -16,6 +16,7 @@ import {
   ExerciseProgressChart,
   type ProgressPoint,
 } from "../components/ExerciseProgressChart";
+import { buildStrengthProgressData } from "../lib/exerciseProgress";
 import { fmt } from "../lib/numberFmt";
 
 interface HistoryEntry {
@@ -97,54 +98,7 @@ export function Exercise({ exerciseId }: { exerciseId: string }) {
   }, [ex, musclesUk]);
 
   const progressData = useMemo(() => {
-    interface WeekBucket {
-      maxRm: number;
-      vol: number;
-      date: Date;
-    }
-    const byWeek = new Map<string, WeekBucket>();
-    for (const { workout, item } of history) {
-      if (item?.type !== "strength" || !workout?.startedAt) continue;
-      const d = new Date(workout.startedAt);
-      const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-      weekStart.setHours(0, 0, 0, 0);
-      const key = weekStart.toISOString().slice(0, 10);
-      const sets: WorkoutSet[] = item.sets ?? [];
-      let maxRm = 0;
-      let vol = 0;
-      for (const s of sets) {
-        const rm = epley1rm(s.weightKg, s.reps);
-        if (rm > maxRm) maxRm = rm;
-        vol += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
-      }
-      const existing = byWeek.get(key) ?? { maxRm: 0, vol: 0, date: weekStart };
-      byWeek.set(key, {
-        maxRm: Math.max(existing.maxRm, maxRm),
-        vol: existing.vol + vol,
-        date: existing.date,
-      });
-    }
-
-    const sorted = [...byWeek.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-12);
-
-    const rmPoints = sorted.map(([, v]) => ({
-      value: Math.round(v.maxRm),
-      dateLabel: v.date.toLocaleDateString("uk-UA", {
-        day: "numeric",
-        month: "short",
-      }),
-    }));
-    const volPoints = sorted.map(([, v]) => ({
-      value: Math.round(v.vol),
-      dateLabel: v.date.toLocaleDateString("uk-UA", {
-        day: "numeric",
-        month: "short",
-      }),
-    }));
-    return { rmPoints, volPoints };
+    return buildStrengthProgressData(history);
   }, [history]);
 
   const cardioData = useMemo(() => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { ROUTINE_EVENT } from "../../routine/lib/routineStorage";
 import { buildPushupHistoryFromRoutine } from "../../routine/lib/routinePushupsRead";
 
@@ -31,13 +32,10 @@ export function usePushupActivity(days = 30) {
   }, [syncKey, days]);
 
   const stats = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const weekAgo = new Date(Date.now() - 7 * 86400000)
-      .toISOString()
-      .slice(0, 10);
-    const monthAgo = new Date(Date.now() - 30 * 86400000)
-      .toISOString()
-      .slice(0, 10);
+    const now = new Date();
+    const today = dateKeyFromDate(now);
+    const weekAgo = dateKeyFromDate(addDays(now, -7));
+    const monthAgo = dateKeyFromDate(addDays(now, -30));
     const todayCount = history.find((d) => d.date === today)?.total ?? 0;
     const week = history
       .filter((d) => d.date >= weekAgo)
