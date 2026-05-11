@@ -15,6 +15,7 @@ import {
   webhookSecretHash,
 } from "./crypto.js";
 import type { EncryptedToken } from "./crypto.js";
+import { scheduleHistoryBackfill } from "./historyFetch.js";
 
 /**
  * POST /api/mono/connect  — register Monobank webhook + persist connection.
@@ -251,6 +252,14 @@ export async function connectHandler(
     fingerprint,
     accountsCount: accounts.length,
   });
+
+  // Fire-and-forget: fetch last 30 days of transactions for each account.
+  // Runs after the response is sent so the connect call is never delayed.
+  scheduleHistoryBackfill(
+    userId,
+    accounts.map((a) => a.id),
+    encKey,
+  );
 
   // Validate response against the SSOT (Hard Rule #3) so any drift between
   // server emit and `MonoConnectResponse` z.infer in the api-client throws

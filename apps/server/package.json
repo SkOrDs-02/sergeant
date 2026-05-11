@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --import tsx src/index.js",
+    "dev": "node --env-file=.env --import tsx src/index.js",
     "build": "node build.mjs",
     "start": "node dist-server/index.js",
     "start:replit": "SERVER_MODE=replit node --import tsx src/index.js",
