@@ -29,16 +29,17 @@
 
 Шість initiatives готові до архівації (≥90 днів від Done/Closed):
 
-| Initiative | Done/Closed | Days | Successor / Canonical | Action |
-|-----------|-------------|------|----------------------|--------|
-| **0001** Module decomposition | 2026-05-04 | 90 | Successor: 0013 | → `_0001-module-decomposition.md` |
-| **0004** Server observability | 2026-05-04 | 90 | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) | → `_0004-server-observability.md` |
-| **0005** AI cost (prompt cache) | 2026-05-04 | 90 | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md) | → `_0005-ai-cost-and-prompt-cache.md` |
-| **0008** Platform hardening | 2026-05-04 | 90 | `RATE_LIMIT_POLICIES` registry | → `_0008-platform-hardening.md` |
-| **0012** Perfect TS strictness | 2026-05-04 | 90 | Hard Rule #19 + allowlist | → `_0012-perfect-strictness-rollout.md` |
-| **0007** Design-system tooling | 2026-05-05 | 89 | Storybook live deployment | → `_0007-design-system-tooling.md` (defer to 2026-08-03) |
+| Initiative                      | Done/Closed | Days | Successor / Canonical                                           | Action                                                   |
+| ------------------------------- | ----------- | ---- | --------------------------------------------------------------- | -------------------------------------------------------- |
+| **0001** Module decomposition   | 2026-05-04  | 90   | Successor: 0013                                                 | → `_0001-module-decomposition.md`                        |
+| **0004** Server observability   | 2026-05-04  | 90   | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) | → `_0004-server-observability.md`                        |
+| **0005** AI cost (prompt cache) | 2026-05-04  | 90   | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md)     | → `_0005-ai-cost-and-prompt-cache.md`                    |
+| **0008** Platform hardening     | 2026-05-04  | 90   | `RATE_LIMIT_POLICIES` registry                                  | → `_0008-platform-hardening.md`                          |
+| **0012** Perfect TS strictness  | 2026-05-04  | 90   | Hard Rule #19 + allowlist                                       | → `_0012-perfect-strictness-rollout.md`                  |
+| **0007** Design-system tooling  | 2026-05-05  | 89   | Storybook live deployment                                       | → `_0007-design-system-tooling.md` (defer to 2026-08-03) |
 
 **Prep checklist:**
+
 - [ ] Перевірити, що усі carry-over items закриті / передані successors
 - [ ] Перевірити, що Hard Rules / ADRs / lint-правила вже live у AGENTS.md / docs/governance/
 - [ ] Побудувати batch-PR для одночасного переносу 6 файлів
