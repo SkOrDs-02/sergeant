@@ -63,6 +63,10 @@
       "reason": "Cited в docs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
     },
     {
+      "pattern": "^https?://csrc\\.nist\\.gov/(publications/detail|pubs)/sp/",
+      "reason": "NIST CSRC бот-блокує `sergeant-markdown-link-checker/1.0` UA — повертає 404 для script-ів, 200 для браузерів. SP-документи (e.g. SP 800-38D — GCM) цитуються в docs/security/better-auth-crypto-review.md як іммутабельні криптографічні стандарти. Pattern покриває обидві URL-форми: legacy `/publications/detail/sp/NNN-X/final` і canonical post-2024 `/pubs/sp/NNN/X/Y/final`."
+    },
+    {
       "pattern": "^https?://(www\\.)?npmjs\\.com/package/",
       "reason": "npm package pages return 403 to non-browser User-Agents (anti-scraping). Pages render correctly in browsers; cited у docs/testing/mutation.md та інших як package-reference. Treated-as-ok вже мав би покрити, але listed тут explicit для PR-reviewer audit."
     },
