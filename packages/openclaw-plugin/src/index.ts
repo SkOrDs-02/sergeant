@@ -16,7 +16,11 @@
  */
 
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { Type, type TSchema } from "@sinclair/typebox";
+// openclaw 5.7 bundles `typebox@1.1.x` (the new package by sinclairzx81,
+// successor to @sinclair/typebox). Schemas built with @sinclair/typebox use
+// different internal Symbol keys, so openclaw silently rejects them. Import
+// from the same package openclaw uses.
+import { Type, type TSchema } from "typebox";
 import { OpenClawHttpClient } from "./http-client.js";
 import { parsePluginConfig } from "./config.js";
 
@@ -468,6 +472,16 @@ export default definePluginEntry({
     "Sergeant agent gateway plugin (Stage 2 — 25 read-tools, no hooks yet)",
 
   register(api) {
+    const logger =
+      (api as { logger?: { info: (m: string, f?: unknown) => void; warn: (m: string, f?: unknown) => void } })
+        .logger ??
+      ({
+        info: (m: string, f?: unknown) =>
+          console.log(`[sergeant] ${m}`, f ?? ""),
+        warn: (m: string, f?: unknown) =>
+          console.warn(`[sergeant] ${m}`, f ?? ""),
+      } as { info: (m: string, f?: unknown) => void; warn: (m: string, f?: unknown) => void });
+
     const candidate =
       (api as { pluginConfig?: unknown }).pluginConfig ??
       (api as { config?: unknown }).config ??
@@ -481,39 +495,55 @@ export default definePluginEntry({
     });
 
     const tools = makeTools(config.founderUserId);
+    let ok = 0;
+    let failed = 0;
+    const failures: Array<{ name: string; error: string }> = [];
 
     for (const tool of tools) {
       const buildBody = tool.formatBody ?? ((p: Record<string, unknown>) => p);
-      api.registerTool({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.params,
-        async execute(_id, params) {
-          try {
-            const body = buildBody(params);
-            const response = await http.post<unknown>(tool.endpoint, body);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text:
-                    typeof response === "string"
-                      ? response
-                      : JSON.stringify(response, null, 2),
-                },
-              ],
-            };
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            return {
-              content: [
-                { type: "text", text: `(${tool.name} failed: ${msg})` },
-              ],
-            };
-          }
-        },
-      });
+      try {
+        api.registerTool({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.params,
+          async execute(_id, params) {
+            try {
+              const body = buildBody(params as Record<string, unknown>);
+              const response = await http.post<unknown>(tool.endpoint, body);
+              const text =
+                typeof response === "string"
+                  ? response
+                  : JSON.stringify(response, null, 2);
+              return {
+                content: [{ type: "text", text }],
+                details: response,
+              };
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              return {
+                content: [
+                  { type: "text", text: `(${tool.name} failed: ${msg})` },
+                ],
+              };
+            }
+          },
+        });
+        ok++;
+      } catch (err) {
+        failed++;
+        failures.push({
+          name: tool.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
+
+    logger.info("sergeant.tools.registered", {
+      total: tools.length,
+      ok,
+      failed,
+      failures: failures.length > 0 ? failures : undefined,
+    });
   },
 });
 
