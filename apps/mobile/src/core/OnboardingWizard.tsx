@@ -16,41 +16,23 @@
  *  - Progress is persisted through the shared `KVStore` adapter.
  */
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
-import {
-  AccessibilityInfo,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  Text,
-  View,
-} from "react-native";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { Modal, Pressable, SafeAreaView, Text, View } from "react-native";
 
 import {
   ALL_MODULES,
   buildFinalPicks,
-  DASHBOARD_MODULE_LABELS,
   hapticSuccess,
   hapticTap,
   markFirstActionPending,
   markFirstActionStartedAt,
   markOnboardingDone,
-  ONBOARDING_MODULE_DESCRIPTIONS,
   ONBOARDING_STEPS,
-  ONBOARDING_VIBE_TEASERS,
   saveVibePicks,
   type DashboardModuleId,
   type KVStore,
   type OnboardingStepId,
   EMPTY_GOALS,
-  getGoalQuestions,
   saveOnboardingGoals,
   type OnboardingGoals,
   ONBOARDING_HERO_COPY_EXPERIMENT,
@@ -59,14 +41,18 @@ import {
   getOnboardingHeroCopy,
   isOnboardingDefaultPicksVariant,
   type OnboardingDefaultPicksVariant,
-  type OnboardingHeroCopy,
   type OnboardingHeroCopyVariant,
 } from "@sergeant/shared";
 
 import { mobileKVStore } from "@/lib/storage";
 import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
-import { Button } from "@/components/ui/Button";
+import { GoalsStep } from "./onboarding/GoalsStep";
+import { ModulesStep } from "./onboarding/ModulesStep";
+import { StepIndicator } from "./onboarding/StepIndicator";
+import { useReduceMotion } from "./onboarding/useReduceMotion";
+import { WelcomeStep } from "./onboarding/WelcomeStep";
+import { wizardReducer } from "./onboarding/wizardState";
 
 export function getOnboardingStore(): KVStore {
   return mobileKVStore;
@@ -100,428 +86,6 @@ export interface OnboardingWizardProps {
    */
   mode?: "real" | "tour";
 }
-
-// ---------------------------------------------------------------------------
-// Wizard state
-// ---------------------------------------------------------------------------
-
-interface WizardState {
-  step: OnboardingStepId;
-  picks: DashboardModuleId[];
-  goals: OnboardingGoals;
-}
-
-type WizardAction =
-  | { type: "NEXT" }
-  | { type: "BACK" }
-  | { type: "TOGGLE_PICK"; id: DashboardModuleId }
-  | { type: "SET_GOAL"; key: keyof OnboardingGoals; value: unknown };
-
-function wizardReducer(state: WizardState, action: WizardAction): WizardState {
-  switch (action.type) {
-    case "NEXT": {
-      const idx = ONBOARDING_STEPS.indexOf(state.step);
-      if (idx < ONBOARDING_STEPS.length - 1) {
-        return { ...state, step: ONBOARDING_STEPS[idx + 1]! };
-      }
-      return state;
-    }
-    case "BACK": {
-      const idx = ONBOARDING_STEPS.indexOf(state.step);
-      if (idx > 0) {
-        return { ...state, step: ONBOARDING_STEPS[idx - 1]! };
-      }
-      return state;
-    }
-    case "TOGGLE_PICK": {
-      const picks = state.picks.includes(action.id)
-        ? state.picks.filter((p) => p !== action.id)
-        : [...state.picks, action.id];
-      return { ...state, picks };
-    }
-    case "SET_GOAL":
-      return {
-        ...state,
-        goals: { ...state.goals, [action.key]: action.value },
-      };
-    default:
-      return state;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function useReduceMotion(): boolean {
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((enabled) => {
-        if (mounted) setReduceMotion(enabled);
-      })
-      .catch(() => {});
-    const sub = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      (enabled) => setReduceMotion(enabled),
-    );
-    return () => {
-      mounted = false;
-      sub.remove();
-    };
-  }, []);
-  return reduceMotion;
-}
-
-function cx(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(" ");
-}
-
-const CHIP_GLYPH: Record<DashboardModuleId, string> = {
-  finyk: "💰",
-  fizruk: "🏋",
-  routine: "✅",
-  nutrition: "🍽",
-};
-
-// ---------------------------------------------------------------------------
-// Step indicator
-// ---------------------------------------------------------------------------
-
-function StepIndicator({ current, total }: { current: number; total: number }) {
-  return (
-    <View className="flex-row items-center justify-center gap-1.5">
-      {Array.from({ length: total }, (_, i) => (
-        <View
-          key={i}
-          className={cx(
-            "rounded-full",
-            i === current ? "h-1.5 w-6 bg-brand-500" : "h-1.5 w-1.5 bg-line",
-          )}
-        />
-      ))}
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 1: Welcome
-// ---------------------------------------------------------------------------
-
-function WelcomeStep({
-  onContinue,
-  copy,
-}: {
-  onContinue: () => void;
-  copy: OnboardingHeroCopy;
-}) {
-  return (
-    <View className="items-center gap-5">
-      <View className="h-20 w-20 items-center justify-center rounded-3xl bg-brand-500/10">
-        <Text className="text-4xl">✨</Text>
-      </View>
-      <View className="items-center gap-2">
-        <Text className="text-center text-2xl font-bold text-fg">
-          {copy.title}
-        </Text>
-        <Text className="text-center text-sm leading-relaxed text-fg-muted">
-          {copy.subtitle}
-        </Text>
-      </View>
-      <View className="flex-row items-center gap-3">
-        <Text className="text-xs text-fg-subtle">🔒 {copy.badges[0]}</Text>
-        <Text className="text-xs text-fg-subtle">☁️ {copy.badges[1]}</Text>
-        <Text className="text-xs text-fg-subtle">🚫 {copy.badges[2]}</Text>
-      </View>
-      <Button
-        variant="primary"
-        size="lg"
-        onPress={onContinue}
-        testID="onboarding-next-welcome"
-        className="w-full"
-      >
-        {copy.primaryCta}
-      </Button>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 2: Module selection
-// ---------------------------------------------------------------------------
-
-function ModulesStep({
-  picks,
-  togglePick,
-  onContinue,
-  onBack,
-  defaultPicksVariant,
-}: {
-  picks: DashboardModuleId[];
-  togglePick: (id: DashboardModuleId) => void;
-  onContinue: () => void;
-  onBack: () => void;
-  /**
-   * S6.1: `none` arm disables «Далі» on empty picks and switches the
-   * inline hint to «Обери хоч один модуль». `all` arm keeps the
-   * pre-S6.1 «Без вибору — всі 4 модулі» fallback message.
-   */
-  defaultPicksVariant: OnboardingDefaultPicksVariant;
-}) {
-  const ctaDisabled = defaultPicksVariant === "none" && picks.length === 0;
-  return (
-    <View className="items-center gap-4">
-      <View className="items-center gap-1">
-        <Text className="text-center text-xl font-bold text-fg">
-          Що тобі важливо?
-        </Text>
-        <Text className="text-center text-xs text-fg-muted">
-          Обери модулі — решту легко додати потім.
-        </Text>
-      </View>
-      <View className="w-full gap-2">
-        {ALL_MODULES.map((id) => {
-          const active = picks.includes(id);
-          return (
-            <Pressable
-              key={id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={DASHBOARD_MODULE_LABELS[id]}
-              testID={`onboarding-module-${id}`}
-              onPress={() => {
-                hapticTap();
-                togglePick(id);
-              }}
-              className={cx(
-                "w-full flex-row items-start gap-3 rounded-2xl border p-3.5",
-                "active:opacity-70",
-                active
-                  ? "border-brand-500/60 bg-brand-500/10"
-                  : "border-cream-300 bg-cream-50",
-              )}
-            >
-              {active && (
-                <View className="absolute right-2.5 top-2.5 h-5 w-5 items-center justify-center rounded-full bg-brand-500">
-                  <Text className="text-xs text-white">✓</Text>
-                </View>
-              )}
-              <View
-                className={cx(
-                  "h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                  active ? "bg-brand-500/15" : "bg-cream-100",
-                )}
-              >
-                <Text className="text-lg">{CHIP_GLYPH[id]}</Text>
-              </View>
-              <View className="min-w-0 flex-1 pr-4">
-                <Text className="text-sm font-bold leading-tight text-fg">
-                  {DASHBOARD_MODULE_LABELS[id]}
-                </Text>
-                <Text className="mt-0.5 text-xs leading-snug text-fg-muted">
-                  {ONBOARDING_MODULE_DESCRIPTIONS[id]}
-                </Text>
-                <Text className="mt-1 text-[11px] leading-tight text-fg-subtle">
-                  {ONBOARDING_VIBE_TEASERS[id]}
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-      <View className="w-full flex-row gap-2">
-        <Pressable
-          onPress={onBack}
-          className="items-center justify-center rounded-xl px-4 py-3 active:opacity-70"
-          testID="onboarding-back-modules"
-        >
-          <Text className="text-sm text-fg-muted">←</Text>
-        </Pressable>
-        <Button
-          variant="primary"
-          size="lg"
-          onPress={onContinue}
-          testID="onboarding-next-modules"
-          className="flex-1"
-          disabled={ctaDisabled}
-        >
-          Далі
-        </Button>
-      </View>
-      {picks.length === 0 && defaultPicksVariant === "none" && (
-        <Text
-          accessibilityRole="text"
-          accessibilityLabel="Обери хоч один модуль"
-          testID="onboarding-empty-picks-hint"
-          className="text-center text-[11px] text-fg-muted"
-        >
-          Обери хоч один модуль
-        </Text>
-      )}
-      {picks.length === 0 && defaultPicksVariant === "all" && (
-        <Text className="text-center text-[11px] text-fg-muted">
-          Без вибору — всі 4 модулі.
-        </Text>
-      )}
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 3: Goals
-// ---------------------------------------------------------------------------
-
-const GOAL_KEY_MAP: Record<string, keyof OnboardingGoals> = {
-  finyk_budget: "finykBudget",
-  fizruk_weekly: "fizrukWeeklyGoal",
-  routine_first_habit: "routineFirstHabit",
-  nutrition_goal: "nutritionGoal",
-};
-
-function GoalsStep({
-  picks,
-  goals,
-  onSetGoal,
-  onFinish,
-  onBack,
-}: {
-  picks: DashboardModuleId[];
-  goals: OnboardingGoals;
-  onSetGoal: (key: keyof OnboardingGoals, value: unknown) => void;
-  onFinish: () => void;
-  onBack: () => void;
-}) {
-  const questions = useMemo(() => getGoalQuestions(picks), [picks]);
-  const hasQuestions = questions.length > 0;
-
-  return (
-    <View className="items-center gap-4">
-      <View className="items-center gap-1">
-        <Text className="text-center text-xl font-bold text-fg">
-          {hasQuestions ? "Твої цілі" : "Готово!"}
-        </Text>
-        <Text className="text-center text-xs text-fg-muted">
-          {hasQuestions
-            ? "Необов'язково — можна пропустити."
-            : "Налаштуй деталі потім у кожному модулі."}
-        </Text>
-      </View>
-
-      {hasQuestions && (
-        <View className="w-full gap-4">
-          {questions.map((q) => {
-            const goalKey = GOAL_KEY_MAP[q.id];
-            if (!goalKey) return null;
-            if (q.type === "radio" && q.options) {
-              const currentVal = (goals[goalKey] as string | null) ?? null;
-              return (
-                <View key={q.id} className="gap-1.5">
-                  <Text className="text-sm font-semibold text-fg">
-                    {q.title}
-                  </Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {q.options.map((opt) => (
-                      <Pressable
-                        key={opt.value}
-                        onPress={() => {
-                          hapticTap();
-                          onSetGoal(
-                            goalKey,
-                            q.id === "fizruk_weekly"
-                              ? Number(opt.value)
-                              : opt.value,
-                          );
-                        }}
-                        className={cx(
-                          "rounded-xl border px-3.5 py-2",
-                          "active:opacity-70",
-                          currentVal === opt.value ||
-                            (q.id === "fizruk_weekly" &&
-                              goals[goalKey] === Number(opt.value))
-                            ? "border-brand-500/60 bg-brand-500/10"
-                            : "border-cream-300 bg-cream-50",
-                        )}
-                      >
-                        <Text className="text-sm font-medium text-fg">
-                          {opt.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-              );
-            }
-            if (q.type === "slider" && q.slider) {
-              const currentNum = (goals[goalKey] as number | null) ?? null;
-              const s = q.slider;
-              const presets = [
-                s.min,
-                Math.round((s.min + s.max) / 3),
-                Math.round(((s.min + s.max) * 2) / 3),
-                s.max,
-              ];
-              return (
-                <View key={q.id} className="gap-1.5">
-                  <Text className="text-sm font-semibold text-fg">
-                    {q.title}
-                  </Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {presets.map((preset) => (
-                      <Pressable
-                        key={preset}
-                        onPress={() => {
-                          hapticTap();
-                          onSetGoal(goalKey, preset);
-                        }}
-                        className={cx(
-                          "rounded-xl border px-3.5 py-2",
-                          "active:opacity-70",
-                          currentNum === preset
-                            ? "border-brand-500/60 bg-brand-500/10"
-                            : "border-cream-300 bg-cream-50",
-                        )}
-                      >
-                        <Text className="text-sm font-medium text-fg">
-                          {preset.toLocaleString("uk-UA")}
-                          {s.unit ? ` ${s.unit}` : ""}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-              );
-            }
-            return null;
-          })}
-        </View>
-      )}
-
-      <View className="w-full flex-row gap-2">
-        <Pressable
-          onPress={onBack}
-          className="items-center justify-center rounded-xl px-4 py-3 active:opacity-70"
-          testID="onboarding-back-goals"
-        >
-          <Text className="text-sm text-fg-muted">←</Text>
-        </Pressable>
-        <Button
-          variant="primary"
-          size="lg"
-          onPress={onFinish}
-          testID="onboarding-finish"
-          className="flex-1"
-        >
-          Заповни мій хаб
-        </Button>
-      </View>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main wizard
-// ---------------------------------------------------------------------------
 
 export function OnboardingWizard({
   onDone,

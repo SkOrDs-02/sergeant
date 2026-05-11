@@ -21,26 +21,11 @@ import {
   type DashboardModuleId,
 } from "@sergeant/shared";
 
-/**
- * Emoji glyph per module id. Matches the glyphs used by the mobile
- * tab bar (`app/(tabs)/_layout.tsx`) and `DASHBOARD_MODULE_RENDER` on
- * the hub dashboard so the onboarding splash, tab bar and status row
- * all show the same icon for a given module.
- */
-const CHIP_GLYPH: Record<DashboardModuleId, string> = {
-  finyk: "💰",
-  fizruk: "🏋",
-  routine: "✅",
-  nutrition: "🍽",
-};
+import { CHIP_GLYPH, cx } from "./style";
 
 export interface VibeChipRowProps {
   picks: readonly DashboardModuleId[];
   togglePick: (id: DashboardModuleId) => void;
-}
-
-function cx(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(" ");
 }
 
 export function VibeChipRow({ picks, togglePick }: VibeChipRowProps) {
