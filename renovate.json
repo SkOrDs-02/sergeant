@@ -154,6 +154,26 @@
       "groupName": "pgvector",
       "automerge": false,
       "labels": ["dependencies", "infra-pin"]
+    },
+    {
+      "description": "OpenClaw runtime — weekly PR з manual review (Locked decision #2 у docs/planning/openclaw-migration-plan.md). Pinned у Dockerfile.openclaw-gateway через `npm install -g openclaw@<pin>`; auto-merge заборонено — кожен апгрейд має проходити Phase 6.5 parity-window observation.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["openclaw"],
+      "groupName": "openclaw",
+      "automerge": false,
+      "labels": ["dependencies", "infra-pin"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track `openclaw@<version>` pinned globally in Dockerfile.openclaw-gateway (Locked decision #2).",
+      "fileMatch": ["^Dockerfile\\.openclaw-gateway$"],
+      "matchStrings": [
+        "npm install -g (?<depName>openclaw)@(?<currentValue>[\\w\\.\\-]+)"
+      ],
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
     }
   ]
 }
