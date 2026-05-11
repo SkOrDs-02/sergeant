@@ -59,6 +59,7 @@ const SKIP_DIRS = new Set([
   ".nyc_output",
   "ios",
   "android",
+  "worktrees", // .claude/worktrees — agent scratch space, not repo content
 ]);
 
 // Files the checker skips entirely:
