@@ -19,7 +19,10 @@
   },
 
   "session": { "dmScope": "per-channel-peer" },
-  "tools": { "profile": "coding" },
+  "tools": {
+    "profile": "coding",
+    "allow": ["sergeant"]
+  },
 
   "plugins": {
     "bundledDiscovery": "compat",
