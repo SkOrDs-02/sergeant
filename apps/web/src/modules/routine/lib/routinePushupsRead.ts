@@ -1,3 +1,4 @@
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { loadRoutineState } from "./routineStorage";
 
 /** Для сторінки Прогрес Фізрука — історія відтискань з даних Рутини */
@@ -10,9 +11,7 @@ export function buildPushupHistoryFromRoutine(days = 30) {
   const result: Array<{ date: string; total: number }> = [];
   const now = new Date();
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const str = d.toISOString().slice(0, 10);
+    const str = dateKeyFromDate(addDays(now, -i));
     result.push({ date: str, total: data[str] ?? 0 });
   }
   return result;
