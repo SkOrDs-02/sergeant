@@ -96,8 +96,27 @@ export type PluginConfig = z.infer<typeof PluginConfigSchema>;
 /**
  * Parses `configJson` (рядок з openclaw.json) у валідовану `PluginConfig`.
  * Кидає ZodError при misconfig — caller (entry point) ловить + log-ує.
+ *
+ * Robustness: OpenClaw runtime іноді передає літеральний рядок `"undefined"`,
+ * `"null"` або порожній рядок, коли config block у `plugins.entries.sergeant`
+ * стрипається валідацією gateway (race з patch-as-code; див. ops/openclaw/
+ * patch-sergeant-config.mjs). У такому випадку — fallback на env vars,
+ * які Railway вже надає (`SERVER_INTERNAL_URL`, `INTERNAL_API_KEY`,
+ * `OPENCLAW_FOUNDER_USER_ID`, ...).
  */
-export function parsePluginConfig(configJson: string): PluginConfig {
+export function parsePluginConfig(
+  configJson: string | null | undefined,
+): PluginConfig {
+  const isMissing =
+    configJson == null ||
+    configJson === "" ||
+    configJson === "undefined" ||
+    configJson === "null";
+
+  if (isMissing) {
+    return PluginConfigSchema.parse(buildConfigFromEnv());
+  }
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(configJson);
@@ -109,4 +128,24 @@ export function parsePluginConfig(configJson: string): PluginConfig {
     );
   }
   return PluginConfigSchema.parse(parsed);
+}
+
+function buildConfigFromEnv(): Record<string, unknown> {
+  const env = process.env;
+  const cfg: Record<string, unknown> = {
+    serverInternalUrl: env.SERVER_INTERNAL_URL,
+    internalApiKey: env.INTERNAL_API_KEY,
+    founderUserId: env.OPENCLAW_FOUNDER_USER_ID,
+    approvalVariant: "B",
+    cheapRouterSystemPromptPath: "/root/.openclaw/cheap-router.system.md",
+  };
+  if (env.OPENCLAW_MAX_PER_CALL_USD) {
+    cfg.maxPerCallUsd = env.OPENCLAW_MAX_PER_CALL_USD;
+  }
+  if (env.OPENCLAW_COUNCIL_USD_BUDGET) {
+    cfg.councilUsdBudget = env.OPENCLAW_COUNCIL_USD_BUDGET;
+  }
+  if (env.N8N_API_URL) cfg.n8nApiUrl = env.N8N_API_URL;
+  if (env.N8N_API_KEY) cfg.n8nApiKey = env.N8N_API_KEY;
+  return cfg;
 }
