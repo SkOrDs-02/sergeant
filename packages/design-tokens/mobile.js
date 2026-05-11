@@ -89,3 +89,13 @@ export const radius = Object.freeze({
   lg: 14,
   xl: 20,
 });
+
+/**
+ * Module-specific accent colors for StyleSheet-based consumers that
+ * can't go through NativeWind class-name interop. Matches
+ * `moduleColors` in `./tokens.js` — single source of truth.
+ *
+ * Usage: `StyleSheet.create({ color: moduleColors.finyk.primary })`
+ * NativeWind consumers: use `text-finyk`, `bg-routine`, etc. instead.
+ */
+export { moduleColors } from "./tokens.js";

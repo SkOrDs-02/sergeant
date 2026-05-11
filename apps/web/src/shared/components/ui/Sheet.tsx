@@ -180,7 +180,7 @@ export function Sheet({
             {...swipe.bind}
             role="presentation"
           >
-            <div className="w-12 h-[5px] bg-line/70 rounded-full" aria-hidden />
+            <div className="w-12 h-sheet-handle bg-line/70 rounded-full" aria-hidden />
           </div>
         )}
         <div
