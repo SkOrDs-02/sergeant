@@ -93,12 +93,18 @@ export interface ToolDefinition<TParams = unknown> {
 // ─────────────────────────────────────────────────────────────────────────
 
 export type HookName =
+  // Internal aliases (used by tests + write-tool files)
   | "agent_turn_start"
   | "agent_turn_end"
-  | "llm_input"
-  | "llm_output"
   | "tool_call_pre"
-  | "tool_call_post";
+  | "tool_call_post"
+  // Real openclaw 5.7 hook names (used when calling api.registerHook)
+  | "agent_turn_prepare"  // real name for agent_turn_start
+  | "agent_end"           // real name for agent_turn_end
+  | "before_tool_call"    // real name for tool_call_pre
+  | "after_tool_call"     // real name for tool_call_post
+  | "llm_input"
+  | "llm_output";
 
 export interface HookContextBase {
   invocationId: string;
@@ -151,17 +157,18 @@ export interface ToolCallPostContext extends HookContextBase {
 }
 
 /** Discriminated context type by hook name. */
-export type HookContext<H extends HookName> = H extends "agent_turn_start"
-  ? AgentTurnStartContext
-  : H extends "agent_turn_end"
-    ? AgentTurnEndContext
-    : H extends "llm_input"
-      ? LlmInputContext
-      : H extends "tool_call_pre"
-        ? ToolCallPreContext
-        : H extends "tool_call_post"
-          ? ToolCallPostContext
-          : HookContextBase;
+export type HookContext<H extends HookName> =
+  H extends "agent_turn_start" | "agent_turn_prepare"
+    ? AgentTurnStartContext
+    : H extends "agent_turn_end" | "agent_end"
+      ? AgentTurnEndContext
+      : H extends "llm_input"
+        ? LlmInputContext
+        : H extends "tool_call_pre" | "before_tool_call"
+          ? ToolCallPreContext
+          : H extends "tool_call_post" | "after_tool_call"
+            ? ToolCallPostContext
+            : HookContextBase;
 
 /**
  * Hook handler return shape. Hooks can:

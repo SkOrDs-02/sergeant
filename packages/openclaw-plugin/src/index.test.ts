@@ -101,20 +101,20 @@ describe("createOpenClawPlugin", () => {
     ]);
   });
 
-  it("registers llm_input + agent_turn_start + agent_turn_end + tool_call_post hooks (Variant B default)", () => {
+  it("registers llm_input + agent_turn_prepare + agent_end + after_tool_call hooks (Variant B default)", () => {
     const api = makeStubApi();
     createOpenClawPlugin(api, CONFIG);
 
     const hookNames = Array.from(api.registeredHooks.keys()).sort();
-    // Variant B (default) додає tool_call_pre + tool_call_post.
+    // Variant B (default) додає before_tool_call + after_tool_call.
     expect(hookNames).toContain("llm_input");
-    expect(hookNames).toContain("agent_turn_start");
-    expect(hookNames).toContain("agent_turn_end");
-    expect(hookNames).toContain("tool_call_pre");
-    expect(hookNames).toContain("tool_call_post");
+    expect(hookNames).toContain("agent_turn_prepare");
+    expect(hookNames).toContain("agent_end");
+    expect(hookNames).toContain("before_tool_call");
+    expect(hookNames).toContain("after_tool_call");
   });
 
-  it("uses Variant A → no tool_call_pre, native requiresConfirmation on write tool", () => {
+  it("uses Variant A → no before_tool_call, native requiresConfirmation on write tool", () => {
     const api = makeStubApi();
     const config = JSON.stringify({
       serverInternalUrl: "http://localhost:3000",
@@ -125,8 +125,8 @@ describe("createOpenClawPlugin", () => {
     createOpenClawPlugin(api, config);
 
     const hookNames = Array.from(api.registeredHooks.keys());
-    expect(hookNames).not.toContain("tool_call_pre");
-    expect(hookNames).toContain("tool_call_post");
+    expect(hookNames).not.toContain("before_tool_call");
+    expect(hookNames).toContain("after_tool_call");
 
     const writeTool = api.registeredTools.find(
       (t) => t.name === "create_github_issue",
@@ -134,7 +134,7 @@ describe("createOpenClawPlugin", () => {
     expect(writeTool?.requiresConfirmation).toBe(true);
   });
 
-  it("uses Variant C → native requiresConfirmation, no tool_call_pre, but tool_call_post audit", () => {
+  it("uses Variant C → native requiresConfirmation, no before_tool_call, but after_tool_call audit", () => {
     const api = makeStubApi();
     const config = JSON.stringify({
       serverInternalUrl: "http://localhost:3000",
@@ -149,7 +149,7 @@ describe("createOpenClawPlugin", () => {
     );
     expect(writeTool?.requiresConfirmation).toBe(true);
 
-    expect(Array.from(api.registeredHooks.keys())).toContain("tool_call_post");
+    expect(Array.from(api.registeredHooks.keys())).toContain("after_tool_call");
   });
 
   it("dispose clears in-memory correlator state", () => {
