@@ -46,14 +46,21 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
 
   export interface PluginTool {
     name: string;
+    /**
+     * UI display label — required by openclaw's AgentTool interface
+     * (pi-agent-core). Tools without `label` are silently dropped.
+     */
+    label: string;
     description: string;
-    /** TypeBox schema (or JSON Schema literal). */
+    /** TypeBox schema from the `typebox` package (not `@sinclair/typebox`). */
     parameters: unknown;
     execute: (
       invocationId: string,
       params: Record<string, unknown>,
     ) => Promise<{
       content: Array<{ type: "text"; text: string }>;
+      /** Structured payload — pi-agent-core's AgentToolResult requires this. */
+      details?: unknown;
     }>;
   }
 
