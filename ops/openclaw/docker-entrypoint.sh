@@ -28,7 +28,7 @@ cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
 # the gateway to validate against stale data and crash on "plugin manifest requires
 # id". Clearing the install records + extension dirs is safe — the plugin code
 # ships in the image, not on the volume.
-rm -rf ~/.openclaw/plugins ~/.openclaw/extensions/@sergeant-openclaw-plugin-* || true
+rm -rf ~/.openclaw/plugins ~/.openclaw/extensions/sergeant ~/.openclaw/extensions/@sergeant-openclaw-plugin-* || true
 openclaw plugins install /app/packages/openclaw-plugin --force || true
 
 # Hand off to OpenClaw runtime. `gateway run` runs the WebSocket Gateway in the
