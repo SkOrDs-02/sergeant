@@ -1,7 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
 import type { BillingPlan } from "@sergeant/shared";
-import { getSubscriptionStatus } from "./stripe.js";
+import { getUserPlan } from "./getUserPlan.js";
 
 type AuthedRequest = Request & { user?: { id: string } };
 
@@ -32,11 +32,12 @@ export function requirePlan(
       return;
     }
 
-    const status = await getSubscriptionStatus(pool, userId);
-    const isActive = status.subscription.active;
-    const plan = status.subscription.plan;
+    const planResult = await getUserPlan(pool, userId);
+    const isActive = ["active", "trialing", "past_due"].includes(
+      planResult.status,
+    );
 
-    if (requiredPlan === "pro" && isActive && plan === "pro") {
+    if (requiredPlan === "pro" && planResult.plan === "pro" && isActive) {
       next();
       return;
     }

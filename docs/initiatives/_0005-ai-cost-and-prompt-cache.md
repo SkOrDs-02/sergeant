@@ -1,6 +1,6 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-11 by @claude. **Next review:** 2026-08-09.
 > **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -322,6 +322,6 @@ Manual smoke (потрібен реальний `ANTHROPIC_API_KEY`, не `AI_QU
 ### Carry-over → successor
 
 - [x] **2026-05-12 (≈ +тиждень):** перевірити cache-hit-rate ≥60% (panel #3 у `ai-cost.json` + query #1 вище). Якщо <30% — fixture-чек `SYSTEM_PROMPT_VERSION` drift, перевірити що `system[1]` (context) не йде у `system[0]` (regression-тест `chat.test.ts:673`); за потреби — варіант A (drop cache) per ADR-0039 § 7. — ahead-of-schedule закритий 2026-05-06 з 96.81%/90.64% (див. § [Post-rollout verification](#post-rollout-verification-2026-05-06)).
-- [ ] **Після baseline-week:** cost-based alert `ai_daily_cost_usd > $X` — `X` обираємо з реальних spending-numbers (зараз < $5/day на staging, ставити cap на 50× від baseline передчасно). Додати у `alert_rules.yml` поряд з `AiErrorBudgetBurnFast`.
+- [x] **Після baseline-week:** cost-based alert `ai_daily_cost_usd > $X` — `X` обираємо з реальних spending-numbers (зараз < $5/day на staging, ставити cap на 50× від baseline передчасно). Додати у `alert_rules.yml` поряд з `AiErrorBudgetBurnFast`. — **Закрито 2026-05-11**: `AiDailyCostHigh` alert додано до `docs/observability/prometheus/alert_rules.yml`; threshold $25/day = 5× staging baseline ($5/day), `for: 1h` для уникання false positives.
 - [ ] Per-route hit-rate breakdown — додати `endpoint` label на `anthropic_prompt_cache_hit_total` коли буде incident, що цього вимагає (поки що `aggregated` view достатньо).
 - [ ] OpenAI prompt cache (auto-cache після 1024 токенів) — окремий ADR, якщо/коли перейдемо на OpenAI або multi-provider routing. Тільки метрика, без коду — Anthropic SDK залишається primary.

@@ -32,8 +32,7 @@ import {
 } from "./core/observability/sentry.js";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
-import { runDemoCleanupOnce } from "./core/onboarding/cleanupDemoData.js";
-import { runDemoSeedFromUrl } from "./core/onboarding/seedDemoData.js";
+import { maybeRunOnboarding } from "./core/onboarding/index.js";
 import { isCapacitor } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
@@ -156,9 +155,8 @@ void (async () => {
     console.warn("[main] kvStoreBoot threw (should be unreachable)", err);
   }
 
-  runDemoSeedFromUrl();
+  void maybeRunOnboarding();
   storageManager.runAll();
-  runDemoCleanupOnce();
   void bootSyncEngineWriter({ captureException });
 
   ReactDOM.createRoot(document.getElementById("root")!).render(

@@ -77,6 +77,10 @@
     {
       "pattern": "^https?://platform\\.openai\\.com(/|$)",
       "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/planning/openclaw-user-guide.md (api-keys console)."
+    },
+    {
+      "pattern": "^https?://(www\\.)?codemzy\\.com(/.*)?$",
+      "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
     }
   ]
 }

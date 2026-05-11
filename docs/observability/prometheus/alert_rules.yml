@@ -230,6 +230,23 @@ groups:
             Likely Anthropic-side degradation. Check status.anthropic.com.
           runbook: "docs/observability/runbook.md#ailatencyp95high"
 
+      # Щоденний cost-cap: staging baseline < $5/day (2026-05-06 Post-rollout
+      # verification). Поріг $25 = 5× baseline — консервативний запас; при
+      # зростанні трафіку (Initiative 0010 launch) перегляньмо threshold.
+      # `increase(...[24h])` рахує накопичений USD-spend за ковзне 24-годинне
+      # вікно; `for: 1h` уникає помилкових спрацьовувань від коротких сплесків.
+      - alert: AiDailyCostHigh
+        expr: |
+          sum(increase(ai_cost_estimate_usd_total[24h])) > 25
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "AI daily cost > $25 (threshold: 5× $5/day staging baseline)"
+          description: "Accumulated AI cost {{ $value | humanize }}$ in last 24h. Review Anthropic console."
+          runbook: "Check cache hit rate; if < 60%, see ADR-0039 for remediation."
+
       # Квота зберігається в Postgres; якщо сховище впало — `assertAiQuota`
       # fail-open пропускає запити, тобто ми тимчасово НЕ стримуємо юзерів
       # від перевитрати Anthropic-бюджету. Це не поломка бекенду в сенсі 5xx

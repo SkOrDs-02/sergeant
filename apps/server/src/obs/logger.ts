@@ -15,7 +15,35 @@ import { als } from "./requestContext.js";
  */
 
 const isDev = process.env["NODE_ENV"] !== "production";
-const level = process.env["LOG_LEVEL"] || (isDev ? "debug" : "info");
+const baseLevel = process.env["LOG_LEVEL"] || (isDev ? "debug" : "info");
+
+// Runtime debug-window state. A /debug-window CLI command can temporarily
+// lower the log level to "debug" for a bounded duration without a restart.
+let debugUntilMs: number | null = null;
+const DEBUG_WINDOW_MAX_MS = 30 * 60 * 1000; // 30 minutes hard ceiling
+
+export function enableDebugWindow(
+  durationMs: number,
+  requestedBy: string,
+): void {
+  const capped = Math.min(durationMs, DEBUG_WINDOW_MAX_MS);
+  debugUntilMs = Date.now() + capped;
+  logger.info({ requestedBy, durationMs: capped }, "Debug window enabled");
+}
+
+export function disableDebugWindow(): void {
+  debugUntilMs = null;
+}
+
+export function debugWindowRemainingMs(): number {
+  if (debugUntilMs === null) return 0;
+  return Math.max(0, debugUntilMs - Date.now());
+}
+
+export function currentLogLevel(): string {
+  if (debugUntilMs !== null && Date.now() < debugUntilMs) return "debug";
+  return baseLevel;
+}
 
 // Список шляхів, які pino маскуватиме на `[redacted]`, щоб PII та секрети
 // ніколи не просочувались у JSON-логи. Розширюємо консервативно: email і phone
@@ -167,7 +195,7 @@ export const redactPaths = [
 const usePretty = process.env["LOG_PRETTY"] === "1";
 
 const pinoOptions: LoggerOptions = {
-  level,
+  level: baseLevel,
   base: {
     service: "sergeant-api",
     env: process.env["NODE_ENV"] || "development",
@@ -217,6 +245,13 @@ const pinoOptions: LoggerOptions = {
 };
 
 export const logger: Logger = pino(pinoOptions);
+
+// Sync pino's runtime level with the debug-window state every 5 seconds.
+// Pino supports `logger.level = newLevel` at runtime without restart.
+setInterval(() => {
+  const desired = currentLogLevel();
+  if (logger.level !== desired) logger.level = desired;
+}, 5_000).unref();
 
 /**
  * pino-http middleware — додає `req.log` (child logger, прив'язаний до запиту)

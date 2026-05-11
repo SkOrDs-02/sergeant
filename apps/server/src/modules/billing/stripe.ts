@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import type {
   BillingCheckoutResponse,
@@ -155,17 +155,8 @@ export async function createCheckoutSession(
   input: CheckoutInput,
 ): Promise<BillingCheckoutResponse> {
   const { session, mode } = await createStripeCheckoutSession(input);
-  await input.pool.query(
-    `INSERT INTO billing_subscriptions
-       (user_id, provider, plan, status, stripe_customer_id, stripe_checkout_session_id)
-     VALUES ($1, 'stripe', $2, 'checkout_created', $3, $4)
-     ON CONFLICT (stripe_checkout_session_id) DO UPDATE SET
-       plan = EXCLUDED.plan,
-       stripe_customer_id = COALESCE(EXCLUDED.stripe_customer_id, billing_subscriptions.stripe_customer_id),
-       updated_at = NOW()`,
-    [input.user.id, input.plan, session.customer ?? null, session.id],
-  );
-
+  // Subscription row is created by the checkout.session.completed webhook (idempotent).
+  // No INSERT here — 'incomplete'/'checkout_created' pseudo-status has no place in subscriptions table.
   return { ok: true, mode, sessionId: session.id, url: session.url };
 }
 
@@ -175,7 +166,7 @@ export async function getSubscriptionStatus(
 ): Promise<BillingStatusResponse> {
   const { rows } = await pool.query<BillingRow>(
     `SELECT id, provider, plan, status, current_period_end
-       FROM billing_subscriptions
+       FROM subscriptions
       WHERE user_id = $1
       ORDER BY
         CASE WHEN status IN ('active', 'trialing') THEN 0 ELSE 1 END,
@@ -184,10 +175,6 @@ export async function getSubscriptionStatus(
     [userId],
   );
   return serializeBillingRow(rows[0] ?? null);
-}
-
-function payloadHash(payload: Buffer | string): string {
-  return createHash("sha256").update(payload).digest("hex");
 }
 
 function getStripeObjectString(
@@ -213,8 +200,9 @@ function unixSecondsToDate(value: unknown): Date | null {
     : null;
 }
 
-function normalizePlan(raw: unknown): BillingPlan {
-  return raw === "plus" ? "plus" : "pro";
+function normalizePlan(_raw: unknown): BillingPlan {
+  // Pricing v3 (ADR-0051): Stripe sells Pro only; no 'plus' tier
+  return "pro";
 }
 
 async function insertWebhookEvent(
@@ -222,11 +210,13 @@ async function insertWebhookEvent(
   event: StripeEvent,
   rawPayload: Buffer | string,
 ): Promise<boolean> {
+  // Use dedicated stripe_webhook_events table (migration 057) for idempotency
+  void rawPayload; // payload stored in jsonb column via event object
   const result = await client.query(
-    `INSERT INTO webhook_events (source, event_id, payload_hash)
-     VALUES ('stripe', $1, $2)
-     ON CONFLICT (source, event_id) DO NOTHING`,
-    [event.id, payloadHash(rawPayload)],
+    `INSERT INTO stripe_webhook_events (event_id, event_type, payload)
+     VALUES ($1, $2, $3::jsonb)
+     ON CONFLICT (event_id) DO NOTHING`,
+    [event.id, event.type, JSON.stringify(event)],
   );
   return result.rowCount === 1;
 }
@@ -243,22 +233,21 @@ async function upsertCheckoutCompleted(
   if (!userId || !sessionId) return;
 
   await client.query(
-    `INSERT INTO billing_subscriptions
-       (user_id, provider, plan, status, stripe_customer_id,
-        stripe_subscription_id, stripe_checkout_session_id)
-     VALUES ($1, 'stripe', $2, 'active', $3, $4, $5)
-     ON CONFLICT (stripe_checkout_session_id) DO UPDATE SET
+    `INSERT INTO subscriptions
+       (user_id, provider, plan, status, provider_customer_id, provider_subscription_id)
+     VALUES ($1, 'stripe', $2, 'active', $3, $4)
+     ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
        plan = EXCLUDED.plan,
        status = EXCLUDED.status,
-       stripe_customer_id = COALESCE(EXCLUDED.stripe_customer_id, billing_subscriptions.stripe_customer_id),
-       stripe_subscription_id = COALESCE(EXCLUDED.stripe_subscription_id, billing_subscriptions.stripe_subscription_id),
+       provider = EXCLUDED.provider,
+       provider_customer_id = COALESCE(EXCLUDED.provider_customer_id, subscriptions.provider_customer_id),
+       provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
        updated_at = NOW()`,
     [
       userId,
       normalizePlan(metadata["plan"]),
       getStripeObjectString(object, "customer"),
       getStripeObjectString(object, "subscription"),
-      sessionId,
     ],
   );
 }
@@ -273,24 +262,31 @@ async function upsertSubscriptionEvent(
   const subscriptionId = getStripeObjectString(object, "id");
   if (!userId || !subscriptionId) return;
 
+  const subscriptionStatus =
+    getStripeObjectString(object, "status") ?? "unknown";
+  const cancelAtPeriodEnd = object["cancel_at_period_end"] === true;
+
   await client.query(
-    `INSERT INTO billing_subscriptions
-       (user_id, provider, plan, status, stripe_customer_id,
-        stripe_subscription_id, current_period_end)
-     VALUES ($1, 'stripe', $2, $3, $4, $5, $6)
-     ON CONFLICT (stripe_subscription_id) DO UPDATE SET
+    `INSERT INTO subscriptions
+       (user_id, provider, plan, status, provider_customer_id, provider_subscription_id,
+        current_period_end, cancel_at_period_end)
+     VALUES ($1, 'stripe', $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
        plan = EXCLUDED.plan,
        status = EXCLUDED.status,
-       stripe_customer_id = COALESCE(EXCLUDED.stripe_customer_id, billing_subscriptions.stripe_customer_id),
+       provider_customer_id = COALESCE(EXCLUDED.provider_customer_id, subscriptions.provider_customer_id),
+       provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
        current_period_end = EXCLUDED.current_period_end,
+       cancel_at_period_end = EXCLUDED.cancel_at_period_end,
        updated_at = NOW()`,
     [
       userId,
       normalizePlan(metadata["plan"]),
-      getStripeObjectString(object, "status") ?? "unknown",
+      subscriptionStatus,
       getStripeObjectString(object, "customer"),
       subscriptionId,
       unixSecondsToDate(object["current_period_end"]),
+      cancelAtPeriodEnd,
     ],
   );
 }
