@@ -47,7 +47,7 @@ export default function webVitalsHandler(req: Request, res: Response): void {
       logger.warn({
         msg: "web_vitals_invalid_payload",
         issues: parsed.error.issues?.slice(0, 3),
-        ua_family: normaliseUserAgent(req.headers["user-agent"]),
+        ua_family: normaliseUserAgent(req.headers?.["user-agent"]),
       });
     }
     res.status(204).end();

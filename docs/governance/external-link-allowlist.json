@@ -71,8 +71,8 @@
       "reason": "nivo.rocks returns 402 (Payment Required, anti-bot) to non-browser User-Agents; pages render correctly in browsers. Cited в docs/planning/tools-research-2026-05.md як charting-library reference (Nivo, 13k ⭐)."
     },
     {
-      "pattern": "^https?://platform\\.openai\\.com/docs/guides/embeddings",
-      "reason": "platform.openai.com gates docs behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md як OpenAI embeddings API reference (text-embedding-3-small/large)."
+      "pattern": "^https?://platform\\.openai\\.com(/|$)",
+      "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/planning/openclaw-user-guide.md (api-keys console)."
     }
   ]
 }
