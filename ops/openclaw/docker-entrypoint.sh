@@ -11,26 +11,24 @@ mkdir -p ~/.openclaw/workspace/skills
 # Lay down main config (overwrites on each restart).
 cp /app/ops/openclaw/openclaw.example.json ~/.openclaw/openclaw.json
 
-# Sync skills from image (cp -r copies contents of skills/ into workspace/skills/).
+# Sync supplementary assets (skills, shortcuts, cheap-router prompt, n8n allowlist).
+# These are consumed by @sergeant/openclaw-plugin at runtime via paths under ~/.openclaw.
 cp -r /app/ops/openclaw/skills/. ~/.openclaw/workspace/skills/
-
-# Externalized cheap-router system prompt (referenced by plugin.config.cheapRouterSystemPromptPath).
 cp /app/ops/openclaw/cheap-router.system.md ~/.openclaw/cheap-router.system.md
-
-# n8n workflow allowlist.
 cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
 
-# Plugin bootstrap: the Sergeant runtime adapter lives in packages/openclaw-plugin
-# and is loaded into the Gateway as an OpenClaw plugin. Install state lives on
-# the volume under ~/.openclaw/plugins, so this is real work only on first boot
+# Plugin bootstrap: @sergeant/openclaw-plugin lives in packages/openclaw-plugin and
+# is loaded into the Gateway as an OpenClaw plugin. Install state lives on the
+# volume under ~/.openclaw/plugins, so this is real work only on first boot
 # (or after a volume reset) and a tolerated no-op on every warm start.
 # `--force` overwrites any partial install left by a crashed previous boot;
 # `|| true` prevents crash-loops if the install fails for benign reasons
 # (e.g. plugin already installed and openclaw exits non-zero on idempotent path).
 openclaw plugins install /app/packages/openclaw-plugin --force || true
 
-# Hand off to OpenClaw runtime. `gateway` is the canonical start command
-# (see https://docs.openclaw.ai/cli — `start` is not a built-in subcommand).
-# Port 18789 must match the Railway service public-domain target port and
-# the `targetPort` in railway.openclaw-gateway.toml.
-exec openclaw gateway --port 18789
+# Hand off to OpenClaw runtime. `gateway run` runs the WebSocket Gateway in the
+# foreground (the unqualified `openclaw gateway` would try to install/start a
+# systemd unit, which is unavailable in containers — see `openclaw gateway --help`).
+# Port 18789 must match the Railway service public-domain target port and the
+# HEALTHCHECK in Dockerfile.openclaw-gateway.
+exec openclaw gateway run --port 18789
