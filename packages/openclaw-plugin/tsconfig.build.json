@@ -15,6 +15,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    "src/legacy/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "vitest.config.ts"

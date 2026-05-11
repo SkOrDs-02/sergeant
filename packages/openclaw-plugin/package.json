@@ -9,10 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
-    "./http-client": "./src/http-client.ts",
-    "./sdk-types": "./src/sdk-types.ts",
-    "./council": "./src/council.ts",
-    "./parity": "./src/parity/index.ts"
+    "./http-client": "./src/http-client.ts"
   },
   "openclaw": {
     "extensions": [
