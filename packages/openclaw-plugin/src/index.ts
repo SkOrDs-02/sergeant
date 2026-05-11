@@ -20,22 +20,110 @@ import { Type } from "@sinclair/typebox";
 import { OpenClawHttpClient } from "./http-client.js";
 import { parsePluginConfig } from "./config.js";
 
+function safeJsonParse(s: string): Record<string, unknown> {
+  try {
+    const v = JSON.parse(s);
+    return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export default definePluginEntry({
   id: "sergeant",
   name: "Sergeant",
   description:
     "Sergeant agent gateway plugin (Stage 1 MVP — 3 read tools, no hooks)",
 
-  register(api) {
-    // openclaw 5.7 injects parsed config via api.config. Accept api.pluginConfig
-    // and a raw string as defensive fallbacks (older runtimes / unknowns).
-    const rawConfig =
-      (api as { config?: unknown }).config ??
+  register(api, ...rest) {
+    // DIAGNOSTIC: openclaw 5.7 keeps surfacing the plugin config through an API
+    // we haven't identified. Dump every plausible source so the next deploy
+    // tells us exactly where to read from. Logger may not exist on api, so
+    // double-fall-back to console.
+    const logger =
+      (api as { logger?: { info: (m: string, f?: unknown) => void } })
+        .logger ??
+      ({
+        info: (m: string, f?: unknown) =>
+          console.log(`[sergeant:debug] ${m}`, f ?? ""),
+      } as { info: (m: string, f?: unknown) => void });
+
+    try {
+      logger.info("sergeant.register.api-introspection", {
+        apiKeys: Object.keys(api as object),
+        apiConfigType: typeof (api as { config?: unknown }).config,
+        apiConfigValue: (api as { config?: unknown }).config,
+        apiPluginConfigType: typeof (api as { pluginConfig?: unknown })
+          .pluginConfig,
+        apiPluginConfigValue: (api as { pluginConfig?: unknown }).pluginConfig,
+        restCount: rest.length,
+        restTypes: rest.map((r) => typeof r),
+        rest0: rest[0],
+        rest1: rest[1],
+      });
+    } catch (e) {
+      console.log("[sergeant:debug] introspection error", e);
+    }
+
+    // openclaw 5.7 plugin config delivery (per docs.openclaw.ai/plugins/sdk-setup):
+    // primary surface is `api.pluginConfig`. We fall back through observed
+    // alternates and ultimately to direct process.env — which is what the
+    // patch-sergeant-config.mjs `${VAR}` placeholders intend to materialise
+    // anyway. The env fallback also unblocks us if openclaw silently strips
+    // the plugins.entries.sergeant.config block during one of its 3 startup
+    // config rewrites.
+    const candidate =
       (api as { pluginConfig?: unknown }).pluginConfig ??
-      {};
-    const config = parsePluginConfig(
-      typeof rawConfig === "string" ? rawConfig : JSON.stringify(rawConfig),
-    );
+      (api as { config?: unknown }).config ??
+      rest[0] ??
+      (() => {
+        try {
+          const fn = (api as { getPluginConfig?: () => unknown })
+            .getPluginConfig;
+          return typeof fn === "function" ? fn.call(api) : undefined;
+        } catch {
+          return undefined;
+        }
+      })() ??
+      undefined;
+
+    // Materialise from env if api-delivered config is missing. This is the
+    // same set the patch-script tries to inject as ${VAR} placeholders.
+    const envFallback = {
+      serverInternalUrl: process.env.SERVER_INTERNAL_URL,
+      internalApiKey: process.env.INTERNAL_API_KEY,
+      founderUserId: process.env.OPENCLAW_FOUNDER_USER_ID,
+      maxPerCallUsd: process.env.OPENCLAW_MAX_PER_CALL_USD,
+      councilUsdBudget: process.env.OPENCLAW_COUNCIL_USD_BUDGET,
+      approvalVariant: process.env.OPENCLAW_APPROVAL_VARIANT,
+      cheapRouterSystemPromptPath:
+        process.env.OPENCLAW_CHEAP_ROUTER_PROMPT_PATH,
+    };
+
+    // Merge: candidate (if present) wins per-key over env fallback — but
+    // skip literal `${VAR}` placeholders that openclaw 5.7 may forward
+    // un-substituted (the patch-sergeant-config.mjs script seeds those).
+    const candidateObj =
+      typeof candidate === "string"
+        ? safeJsonParse(candidate)
+        : (candidate as Record<string, unknown> | undefined) ?? {};
+    const merged: Record<string, unknown> = { ...envFallback };
+    const isUnresolvedPlaceholder = (v: unknown): boolean =>
+      typeof v === "string" && /^\$\{[A-Z0-9_:.-]+\}$/.test(v.trim());
+    for (const [k, v] of Object.entries(candidateObj)) {
+      if (v === undefined || v === null || v === "") continue;
+      if (isUnresolvedPlaceholder(v)) continue;
+      merged[k] = v;
+    }
+
+    logger.info("sergeant.register.config-resolved", {
+      candidateSource: candidate === undefined ? "none" : typeof candidate,
+      envHasServerUrl: typeof envFallback.serverInternalUrl === "string",
+      envHasApiKey: typeof envFallback.internalApiKey === "string",
+      envHasFounder: typeof envFallback.founderUserId === "string",
+    });
+
+    const config = parsePluginConfig(JSON.stringify(merged));
 
     const http = new OpenClawHttpClient({
       baseUrl: config.serverInternalUrl,
