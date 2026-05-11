@@ -82,7 +82,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
   export default definePluginEntry;
 }
 
-declare module "@sinclair/typebox" {
+declare module "typebox" {
   // Minimal surface — covers what src/index.ts uses. The runtime values come
   // from the actual @sinclair/typebox install in the runtime stage.
   export interface TSchema {

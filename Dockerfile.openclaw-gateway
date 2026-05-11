@@ -81,7 +81,7 @@ RUN cat > ./packages/openclaw-plugin/package.json <<EOF
   "openclaw": { "extensions": ["./dist/index.js"] },
   "dependencies": {
     "openclaw": "${OPENCLAW_VERSION}",
-    "@sinclair/typebox": "^0.34.0",
+    "typebox": "^1.1.37",
     "zod": "^4.3.6"
   }
 }
