@@ -1,14 +1,15 @@
 /**
  * `@sergeant/openclaw-plugin` entry point.
  *
- * Phase 1 scope (PR-C1a + PR-C1b + PR-C1c + PR-C1d):
- *   - 24 tools (12 C1a + 8 C1b + 5 C1c from n8n delegation)
- *   - 1 write tool (create_github_issue) from PoC
+ * Phase 1 + Phase 4 scope (PR-C1a…C1d + PR-D):
+ *   - 24 read tools (12 C1a + 8 C1b + 5 C1c from n8n delegation)
+ *   - 5 write tools (create_github_issue + commit_to_strategy_doc +
+ *     post_to_topic + pause_workflow + mute_alert) — Variant B approval
  *   - Layer 0 shortcut router (17 shortcuts, $0 cost)
  *   - Layer 1 cheap router (Haiku classifier, ~$0.0002)
  *   - 3 hooks: llm_input (budget + routing), agent_turn_start, agent_turn_end
- *   - 1 hook: tool_call_pre (write-tool approval gate from PoC)
- *   - 1 hook: tool_call_post (write-audit from PoC)
+ *   - N tool_call_pre hooks (Variant B write-tool approval gates)
+ *   - N tool_call_post hooks (write-audit + n8n Tier C gate)
  *
  * Note: n8n_trigger / n8n_activate / refresh_business_snapshot delegate
  * to the server, which enforces the 4-tier allowlist from
@@ -58,6 +59,15 @@ import { createSeoPsiAuditTool } from "./tools/seo-psi-audit.js";
 import { createSeoSerpLookupTool } from "./tools/seo-serp-lookup.js";
 import { createSetReminderTool } from "./tools/set-reminder.js";
 import { createCreateGithubIssueTool } from "./write-tools/create-github-issue.js";
+import { createCommitToStrategyDocTool } from "./write-tools/commit-to-strategy-doc.js";
+import { createPostToTopicTool } from "./write-tools/post-to-topic.js";
+import { createPauseWorkflowTool } from "./write-tools/pause-workflow.js";
+import { createMuteAlertTool } from "./write-tools/mute-alert.js";
+import {
+  createHttpAuditSink,
+  type WriteToolFactoryOptions,
+} from "./write-tools/write-tool-factory.js";
+import { createN8nTierCPostHook } from "./write-tools/n8n-tier-c-gate.js";
 import { definePluginEntry, type Plugin, type PluginApi } from "./sdk-types.js";
 
 export interface CreatePluginOptions {
@@ -209,13 +219,39 @@ export function createOpenClawPlugin(
     createSetReminderTool({ http, founderUserId: config.founderUserId }),
   );
 
-  // ─── Write tool (Phase 0.5 PoC chosen variant) ──────────────────────
+  // ─── Write tools (Phase 0.5 PoC + PR-D Phase 4) ───────────────────
+  //
+  // Shared options for all Variant B write-tools: audit sink, messaging,
+  // approval timeout.
+  const auditSink = createHttpAuditSink(http, 0);
+  const writeOpts: WriteToolFactoryOptions = {
+    http,
+    founderUserId: config.founderUserId,
+    variant: config.approvalVariant,
+    messaging: api.services.messaging,
+    approvalCallbackTimeoutMs: config.approvalCallbackTimeoutMs,
+    auditSink,
+    log,
+  };
+
+  // create_github_issue (PoC — keeps its own factory for backwards compat)
   const writeParts = createCreateGithubIssueTool({
     http,
     founderUserId: config.founderUserId,
     variant: config.approvalVariant,
     messaging: api.services.messaging,
     approvalCallbackTimeoutMs: config.approvalCallbackTimeoutMs,
+    recordAudit: async (record) => {
+      await auditSink({
+        approvalId: record.invocationId,
+        tool: record.toolName,
+        founderUserId: config.founderUserId,
+        invocationId: record.invocationId,
+        action: record.decision.status === "approved" ? "approved" : "rejected",
+        input: record.params,
+        variant: record.variant,
+      });
+    },
     log,
   });
   api.registerTool(writeParts.tool);
@@ -223,6 +259,48 @@ export function createOpenClawPlugin(
     api.registerHook("tool_call_pre", writeParts.toolCallPreHook);
   }
   api.registerHook("tool_call_post", writeParts.toolCallPostHook);
+
+  // commit_to_strategy_doc (PR-D)
+  const strategyDocParts = createCommitToStrategyDocTool(writeOpts);
+  api.registerTool(strategyDocParts.tool);
+  if (strategyDocParts.toolCallPreHook) {
+    api.registerHook("tool_call_pre", strategyDocParts.toolCallPreHook);
+  }
+  api.registerHook("tool_call_post", strategyDocParts.toolCallPostHook);
+
+  // post_to_topic (PR-D)
+  const postToTopicParts = createPostToTopicTool(writeOpts);
+  api.registerTool(postToTopicParts.tool);
+  if (postToTopicParts.toolCallPreHook) {
+    api.registerHook("tool_call_pre", postToTopicParts.toolCallPreHook);
+  }
+  api.registerHook("tool_call_post", postToTopicParts.toolCallPostHook);
+
+  // pause_workflow (PR-D)
+  const pauseWorkflowParts = createPauseWorkflowTool(writeOpts);
+  api.registerTool(pauseWorkflowParts.tool);
+  if (pauseWorkflowParts.toolCallPreHook) {
+    api.registerHook("tool_call_pre", pauseWorkflowParts.toolCallPreHook);
+  }
+  api.registerHook("tool_call_post", pauseWorkflowParts.toolCallPostHook);
+
+  // mute_alert (PR-D)
+  const muteAlertParts = createMuteAlertTool(writeOpts);
+  api.registerTool(muteAlertParts.tool);
+  if (muteAlertParts.toolCallPreHook) {
+    api.registerHook("tool_call_pre", muteAlertParts.toolCallPreHook);
+  }
+  api.registerHook("tool_call_post", muteAlertParts.toolCallPostHook);
+
+  // ─── n8n Tier C audit gate (PR-D Phase 4) ────────────────────────────
+  api.registerHook(
+    "tool_call_post",
+    createN8nTierCPostHook({
+      founderUserId: config.founderUserId,
+      auditSink,
+      log,
+    }),
+  );
 
   return {
     name: "@sergeant/openclaw-plugin",
@@ -392,6 +470,39 @@ export {
   CreateGithubIssueParamsSchema,
   type CreateGithubIssueParams,
 } from "./write-tools/create-github-issue.js";
+export {
+  createCommitToStrategyDocTool,
+  CommitToStrategyDocParamsSchema,
+  type CommitToStrategyDocParams,
+} from "./write-tools/commit-to-strategy-doc.js";
+export {
+  createPostToTopicTool,
+  PostToTopicParamsSchema,
+  type PostToTopicParams,
+} from "./write-tools/post-to-topic.js";
+export {
+  createPauseWorkflowTool,
+  PauseWorkflowParamsSchema,
+  type PauseWorkflowParams,
+} from "./write-tools/pause-workflow.js";
+export {
+  createMuteAlertTool,
+  MuteAlertParamsSchema,
+  type MuteAlertParams,
+} from "./write-tools/mute-alert.js";
+export {
+  createWriteTool,
+  createHttpAuditSink,
+  type WriteToolSpec,
+  type WriteToolFactoryOptions,
+  type WriteToolParts,
+  type WriteAuditRecord,
+  type WriteAuditSink,
+} from "./write-tools/write-tool-factory.js";
+export {
+  createN8nTierCPostHook,
+  isApprovalRequiredResult,
+} from "./write-tools/n8n-tier-c-gate.js";
 export {
   type ApprovalVariant,
   type ApprovalDecision,

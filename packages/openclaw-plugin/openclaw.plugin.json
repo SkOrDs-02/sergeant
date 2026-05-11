@@ -1,10 +1,10 @@
 {
   "$schema": "https://openclaw.ai/schema/plugin.json",
   "name": "@sergeant/openclaw-plugin",
-  "version": "0.0.1-poc",
-  "description": "Sergeant OpenClaw Gateway plugin (Phase 0.5 PoC). Тонкий проксі-плагін, що реєструє Sergeant tools у OpenClaw runtime через HTTP-проксі до /api/internal/openclaw/*.",
+  "version": "0.4.0",
+  "description": "Sergeant OpenClaw Gateway plugin (Phase 1 + Phase 4). 24 read tools + 5 write tools (Variant B approval) + Layer 0/1 routers + audit lifecycle hooks + n8n Tier C gates.",
   "entry": "./src/index.ts",
-  "phase": "0.5-poc",
+  "phase": "4",
 
   "tools": {
     "read": [
@@ -32,8 +32,36 @@
     "write": [
       {
         "name": "create_github_issue",
-        "endpoint": "/api/internal/openclaw/write/create-github-issue",
-        "description": "Створює GitHub issue. Gated approval flow (variant A/B/C — конфіг).",
+        "endpoint": "/api/internal/openclaw/write/github-issue",
+        "description": "Створює GitHub issue. Gated approval flow (variant B).",
+        "gated": true,
+        "approvalDefault": "B"
+      },
+      {
+        "name": "commit_to_strategy_doc",
+        "endpoint": "/api/internal/openclaw/write/strategy-doc",
+        "description": "Комітить файл у strategy-docs repo. Gated approval flow (variant B).",
+        "gated": true,
+        "approvalDefault": "B"
+      },
+      {
+        "name": "post_to_topic",
+        "endpoint": "/api/internal/openclaw/write/post-to-topic",
+        "description": "Постить повідомлення в Telegram topic. Gated approval flow (variant B).",
+        "gated": true,
+        "approvalDefault": "B"
+      },
+      {
+        "name": "pause_workflow",
+        "endpoint": "/api/internal/openclaw/write/pause-workflow",
+        "description": "Призупиняє n8n workflow. Gated approval flow (variant B).",
+        "gated": true,
+        "approvalDefault": "B"
+      },
+      {
+        "name": "mute_alert",
+        "endpoint": "/api/internal/openclaw/write/mute-alert",
+        "description": "Мьютить Sentry issue alert. Gated approval flow (variant B).",
         "gated": true,
         "approvalDefault": "B"
       },
@@ -57,17 +85,17 @@
   },
 
   "hooks": {
-    "llm_input": "Per-call budget gate (cap $0.5 USD; fail-closed на server-error).",
+    "llm_input": "Per-call budget gate (cap $0.5 USD; fail-closed на server-error) + Layer 0/1 routing.",
     "agent_turn_start": "Опен invocation-row у openclaw_invocations + correlator agent_run_id ↔ id.",
     "agent_turn_end": "Фіналізує invocation з cost rollup + final status.",
-    "tool_call_pre": "[Variant B] Approval flow: send DM → waitForCallback → set state.",
-    "tool_call_post": "[Variant A/C] Audit log запис у openclaw_write_audit."
+    "tool_call_pre": "[Variant B] Approval flow для 5 write-tools: send DM → waitForCallback → set state.",
+    "tool_call_post": "Write-audit recording (Variant B executed/rejected) + n8n Tier C audit gate."
   },
 
   "configSchemaRef": "./src/config.ts",
 
   "_notes": [
-    "PR-B Phase 0.5 PoC manifest. Phase 1 (PR-C) додасть решту 12 read tools + 4 code/n8n/SEO tools + set_reminder + refresh_business_snapshot + 17 shortcuts.",
-    "Phase 4 (PR-D) розширить write tools tools до 7 і fixнe approval default за результатом цього PoC."
+    "Phase 4 (PR-D): 5 write tools з Variant B approval + n8n Tier C audit + write-audit integration через /write-audit/log.",
+    "Phase 1 (PR-C1a…C1d): 24 read tools + Layer 0/1 routing + 17 shortcuts + invocation lifecycle hooks."
   ]
 }
