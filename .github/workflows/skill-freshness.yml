@@ -34,10 +34,11 @@ jobs:
         with:
           node-version: "20"
 
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      # Version is read from packageManager in root package.json (pnpm@9.15.1).
       - name: Setup pnpm
-        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
         with:
-          version: 9
           run_install: false
 
       - name: Run skill-shape lint + lock-hash verification
