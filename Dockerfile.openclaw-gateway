@@ -38,12 +38,18 @@ COPY packages/openclaw-plugin ./packages/openclaw-plugin
 
 # Stage 1 rewrite: index.ts imports from `openclaw/plugin-sdk/plugin-entry` and
 # `@sinclair/typebox`. These are NOT in the workspace's pnpm-lock.yaml (would
-# require a `pnpm install` cycle to add). Install them locally via npm so tsc
-# can resolve types; they're also pulled at runtime in the slim package.json.
-RUN cd ./packages/openclaw-plugin && \
-    npm install --no-save --no-audit --no-fund --loglevel=error \
+# require a `pnpm install` cycle to add). We can't `npm install` directly into
+# the plugin dir because its package.json has `"@sergeant/shared": "workspace:*"`
+# which npm refuses (EUNSUPPORTEDPROTOCOL). Workaround: install the type deps
+# into a side dir, then layer them into the plugin's pnpm-managed node_modules.
+RUN mkdir -p /tmp/openclaw-types && \
+    cd /tmp/openclaw-types && \
+    printf '{"name":"openclaw-types","version":"0.0.0","private":true}' > package.json && \
+    npm install --no-audit --no-fund --loglevel=error \
       openclaw@2026.5.7 \
-      @sinclair/typebox@^0.34.0
+      @sinclair/typebox@^0.34.0 && \
+    mkdir -p /build/packages/openclaw-plugin/node_modules && \
+    cp -R /tmp/openclaw-types/node_modules/. /build/packages/openclaw-plugin/node_modules/
 
 RUN pnpm --filter @sergeant/openclaw-plugin build
 
