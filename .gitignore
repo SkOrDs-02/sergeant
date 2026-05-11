@@ -50,3 +50,6 @@ artifacts/
 
 # CI-local caches
 .cache/
+
+# Claude Code agent worktrees (temporary, auto-cleaned)
+.claude/worktrees/
