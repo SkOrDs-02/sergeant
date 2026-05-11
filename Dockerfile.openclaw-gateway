@@ -43,7 +43,13 @@ FROM --platform=linux/amd64 node:24-alpine
 WORKDIR /app
 
 # OpenClaw runtime — pinned stable (Locked #2). Bump via Renovate PR.
-RUN npm install -g openclaw@2026.5.7
+# Downgraded 2026.5.7 → 2026.5.6: v5.7 introduced a config-validation pass
+# that strips `plugins.entries.<custom-id>.config` for non-bundled plugins
+# (races with patch-sergeant-config.mjs), causing the sergeant plugin's
+# register() to crash with `"undefined" is not valid JSON`. v5.6 does not
+# have that pass; combined with the env-var fallback in parsePluginConfig
+# the plugin loads cleanly on every restart.
+RUN npm install -g openclaw@2026.5.6
 
 # Copy compiled plugin output + plugin manifest (entry → ./dist/index.js).
 COPY --from=plugin-builder /build/packages/openclaw-plugin/dist ./packages/openclaw-plugin/dist
