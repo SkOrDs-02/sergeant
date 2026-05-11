@@ -133,19 +133,19 @@ export function parsePluginConfig(
 function buildConfigFromEnv(): Record<string, unknown> {
   const env = process.env;
   const cfg: Record<string, unknown> = {
-    serverInternalUrl: env.SERVER_INTERNAL_URL,
-    internalApiKey: env.INTERNAL_API_KEY,
-    founderUserId: env.OPENCLAW_FOUNDER_USER_ID,
+    serverInternalUrl: env["SERVER_INTERNAL_URL"],
+    internalApiKey: env["INTERNAL_API_KEY"],
+    founderUserId: env["OPENCLAW_FOUNDER_USER_ID"],
     approvalVariant: "B",
     cheapRouterSystemPromptPath: "/root/.openclaw/cheap-router.system.md",
   };
-  if (env.OPENCLAW_MAX_PER_CALL_USD) {
-    cfg.maxPerCallUsd = env.OPENCLAW_MAX_PER_CALL_USD;
+  if (env["OPENCLAW_MAX_PER_CALL_USD"]) {
+    cfg["maxPerCallUsd"] = env["OPENCLAW_MAX_PER_CALL_USD"];
   }
-  if (env.OPENCLAW_COUNCIL_USD_BUDGET) {
-    cfg.councilUsdBudget = env.OPENCLAW_COUNCIL_USD_BUDGET;
+  if (env["OPENCLAW_COUNCIL_USD_BUDGET"]) {
+    cfg["councilUsdBudget"] = env["OPENCLAW_COUNCIL_USD_BUDGET"];
   }
-  if (env.N8N_API_URL) cfg.n8nApiUrl = env.N8N_API_URL;
-  if (env.N8N_API_KEY) cfg.n8nApiKey = env.N8N_API_KEY;
+  if (env["N8N_API_URL"]) cfg["n8nApiUrl"] = env["N8N_API_URL"];
+  if (env["N8N_API_KEY"]) cfg["n8nApiKey"] = env["N8N_API_KEY"];
   return cfg;
 }
