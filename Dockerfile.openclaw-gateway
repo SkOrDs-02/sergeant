@@ -36,6 +36,15 @@ COPY packages/config ./packages/config
 COPY packages/shared ./packages/shared
 COPY packages/openclaw-plugin ./packages/openclaw-plugin
 
+# Stage 1 rewrite: index.ts imports from `openclaw/plugin-sdk/plugin-entry` and
+# `@sinclair/typebox`. These are NOT in the workspace's pnpm-lock.yaml (would
+# require a `pnpm install` cycle to add). Install them locally via npm so tsc
+# can resolve types; they're also pulled at runtime in the slim package.json.
+RUN cd ./packages/openclaw-plugin && \
+    npm install --no-save --no-audit --no-fund --loglevel=error \
+      openclaw@2026.5.7 \
+      @sinclair/typebox@^0.34.0
+
 RUN pnpm --filter @sergeant/openclaw-plugin build
 
 # ---- Runtime stage -----------------------------------------------------------
@@ -63,12 +72,14 @@ COPY --from=plugin-builder /build/packages/openclaw-plugin/openclaw.plugin.json 
 RUN cat > ./packages/openclaw-plugin/package.json <<'EOF'
 {
   "name": "@sergeant/openclaw-plugin",
-  "version": "0.1.0",
+  "version": "1.0.0-stage1",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "openclaw": { "extensions": ["./dist/index.js"] },
   "dependencies": {
+    "openclaw": "2026.5.7",
+    "@sinclair/typebox": "^0.34.0",
     "zod": "^4.3.6"
   }
 }
