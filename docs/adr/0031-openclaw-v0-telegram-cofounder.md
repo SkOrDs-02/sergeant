@@ -1,6 +1,6 @@
 # ADR-0031: OpenClaw v0 — Telegram-only co-founder bot
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
 - **Date:** 2026-05-02
 - **Deciders:** @Skords-01
 - **Supersedes:** —

@@ -1,0 +1,39 @@
+# OpenClaw Gateway container.
+# The @sergeant/openclaw-plugin has no build step — OpenClaw runtime loads TypeScript
+# source directly via "entry": "./src/index.ts" in openclaw.plugin.json.
+# Therefore a single-stage image is sufficient.
+#
+# OpenClaw npm package name: verify on npmjs.com before the first Railway deploy
+# and pin the exact version here (Locked decision #2).
+# TODO: replace `openclaw` below with the verified stable package name/version.
+
+FROM --platform=linux/amd64 node:24-alpine
+
+WORKDIR /app
+
+# Install OpenClaw runtime globally.
+# TODO: pin exact version once confirmed — e.g. `openclaw@1.2.3` or `@openclaw/core@1.2.3`
+RUN npm install -g openclaw
+
+# Copy plugin TypeScript source (entry: ./src/index.ts, no build needed).
+COPY packages/openclaw-plugin ./packages/openclaw-plugin
+
+# Copy ops config-as-code (openclaw.example.json, skills/, cheap-router.system.md, n8n-allowlist.json).
+COPY ops/openclaw ./ops/openclaw
+
+# Copy and set up entrypoint.
+COPY ops/openclaw/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Non-root user for runtime security.
+RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app
+USER app
+
+# OpenClaw Gateway default port.
+EXPOSE 18789
+
+# Verify Gateway is up; give it 15s to initialise on first start.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:18789/healthz || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,6 +1,6 @@
 # ADR-0036: OpenClaw write-tools with founder-approval flow
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
 - **Date:** 2026-05-03
 - **Deciders:** @Skords-01
 - **Supersedes:** —
