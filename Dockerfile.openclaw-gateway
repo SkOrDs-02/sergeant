@@ -60,7 +60,13 @@ ARG OPENCLAW_VERSION=2026.5.7
 # register time. v5.7 ships the runtime services API the plugin relies on;
 # the config-block strip bug is now handled at the plugin level by the
 # env-var fallback in parsePluginConfig (see #2428).
-RUN npm install -g openclaw@${OPENCLAW_VERSION}
+#
+# `--ignore-scripts`: prevents postinstall scripts from running for any of
+# openclaw's transitive deps. Defence-in-depth against the
+# `@mistralai/mistralai@2.2.2-2.2.4` supply-chain incident (see the slim
+# plugin install block below for the full rationale). openclaw and its
+# legitimate deps do not require postinstall hooks at install time.
+RUN npm install -g --ignore-scripts openclaw@${OPENCLAW_VERSION}
 
 # Copy compiled plugin output + plugin manifest (entry → ./dist/index.js).
 COPY --from=plugin-builder /build/packages/openclaw-plugin/dist ./packages/openclaw-plugin/dist
@@ -71,6 +77,16 @@ COPY --from=plugin-builder /build/packages/openclaw-plugin/openclaw.plugin.json 
 # package.json carries `@sergeant/shared` + devDependencies that don't resolve at
 # runtime; openclaw's manifest-dependency scanner walks them and bails on missing
 # symlinks. Keep `openclaw.extensions` and `type: module` aligned with the source.
+#
+# `overrides` pins `@mistralai/mistralai@2.2.1` (last known-good release, 2026-04-21).
+# Versions 2.2.2 / 2.2.3 / 2.2.4 were published in rapid succession on
+# 2026-05-11 (within 8 minutes) carrying a `preinstall: node setup.mjs` that
+# downloads `bun` and tries to execute an obfuscated `router_init.js` /
+# `tanstack_runner.js` — matches the npm "tanstack" malware pattern
+# disclosed 2026-05-04 (gbhackers.com). Even when the script crashes (the
+# `tanstack_runner.js` file is missing from the tarball), it breaks `npm
+# install` and blocks Railway deploys of the gateway. Pin until upstream
+# Mistral confirms a clean release or `openclaw` drops the transitive dep.
 RUN cat > ./packages/openclaw-plugin/package.json <<EOF
 {
   "name": "@sergeant/openclaw-plugin",
@@ -83,11 +99,21 @@ RUN cat > ./packages/openclaw-plugin/package.json <<EOF
     "openclaw": "${OPENCLAW_VERSION}",
     "typebox": "^1.1.37",
     "zod": "^4.3.6"
+  },
+  "overrides": {
+    "@mistralai/mistralai": "2.2.1"
   }
 }
 EOF
 
-RUN cd ./packages/openclaw-plugin && npm install --omit=dev --no-audit --no-fund --loglevel=error
+# `--ignore-scripts`: defence-in-depth alongside the `@mistralai/mistralai`
+# pin above. The slim runtime tree (`openclaw` + `typebox` + `zod` + their
+# transitive deps) ships no native bindings and needs no postinstall hooks,
+# so executing arbitrary scripts from transitive deps at image-build time
+# is pure attack surface. If upstream ever ships a dep that legitimately
+# needs `postinstall`, the runtime image will fail-fast at start (missing
+# binding) rather than silently exfiltrating credentials.
+RUN cd ./packages/openclaw-plugin && npm install --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error
 
 # Copy ops config-as-code (openclaw.example.json, skills/, cheap-router.system.md, n8n-allowlist.json).
 COPY ops/openclaw ./ops/openclaw
