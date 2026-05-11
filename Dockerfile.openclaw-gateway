@@ -3,17 +3,16 @@
 # source directly via "entry": "./src/index.ts" in openclaw.plugin.json.
 # Therefore a single-stage image is sufficient.
 #
-# OpenClaw npm package name: verify on npmjs.com before the first Railway deploy
-# and pin the exact version here (Locked decision #2).
-# TODO: replace `openclaw` below with the verified stable package name/version.
+# OpenClaw npm package: `openclaw` on npmjs.com (publisher steipete, MIT, repo openclaw/openclaw).
+# Version pinned per Locked decision #2 (latest stable tag at merge time of Phase 0).
+# Renovate-only weekly PR for upgrades; no auto-merge.
 
 FROM --platform=linux/amd64 node:24-alpine
 
 WORKDIR /app
 
-# Install OpenClaw runtime globally.
-# TODO: pin exact version once confirmed — e.g. `openclaw@1.2.3` or `@openclaw/core@1.2.3`
-RUN npm install -g openclaw
+# OpenClaw runtime — pinned stable (Locked #2). Bump via Renovate PR.
+RUN npm install -g openclaw@2026.5.7
 
 # Copy plugin TypeScript source (entry: ./src/index.ts, no build needed).
 COPY packages/openclaw-plugin ./packages/openclaw-plugin
