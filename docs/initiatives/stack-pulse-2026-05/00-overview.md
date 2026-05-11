@@ -1,6 +1,6 @@
 # Overview — stack pulse 2026-05
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
 > **Status:** Active
 
 Скорочена картина зрізу стеку, без розгорнутих PR-планів. Деталі — у
@@ -86,20 +86,20 @@ real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, акти
 Після breakdown 2026-05-07 кожен Low-айтем — окремий `pr-NN-*.md`. Не блокують,
 але мають готовий план для активації при availability ownership.
 
-| ID  | Заголовок                                                     | PR-план                                              |
-| --- | ------------------------------------------------------------- | ---------------------------------------------------- |
-| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [PR-28](./pr-28-sw-build-id-import-meta.md)          |
-| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [PR-29](./pr-29-shell-navigate-broadcast-channel.md) |
-| L3  | Dockerfile post-install cleanup для CVE-shrink — крихкий      | [PR-30](./pr-30-dockerfile-cleanup-cve.md)           |
-| L4  | ESLint config 1073 рядки — розділити на per-app               | [PR-31](./pr-31-eslint-config-split.md)              |
-| L5  | `pnpm.overrides` — стара кодова база pinning                  | [PR-32](./pr-32-pnpm-overrides-cleanup.md)           |
-| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [PR-33](./pr-33-hard-rules-categorization.md)        |
-| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [PR-34](./pr-34-demo-seed-cleanup-gate.md)           |
-| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [PR-35](./pr-35-log-level-debug-window.md)           |
-| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [PR-36](./pr-36-lazy-import-chunk-reload-guard.md)   |
-| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [PR-37](./pr-37-postgres-image-sha-pin.md)           |
-| L11 | PWA precache — перевірити що всі assets 1st-party             | [PR-38](./pr-38-pwa-precache-first-party.md)         |
-| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 | [PR-39](./pr-39-tools-console-anthropic-sdk.md)      |
+| ID  | Заголовок                                                     | PR-план                                              | Статус                                                                                           |
+| --- | ------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [PR-28](./pr-28-sw-build-id-import-meta.md)          | **Closed** — merged [#2309](https://github.com/Skords-01/Sergeant/pull/2309) (commit `e8ada9f2`) |
+| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [PR-29](./pr-29-shell-navigate-broadcast-channel.md) | Planned                                                                                          |
+| L3  | Dockerfile post-install cleanup для CVE-shrink — крихкий      | [PR-30](./pr-30-dockerfile-cleanup-cve.md)           | Planned                                                                                          |
+| L4  | ESLint config 1073 рядки — розділити на per-app               | [PR-31](./pr-31-eslint-config-split.md)              | Planned                                                                                          |
+| L5  | `pnpm.overrides` — стара кодова база pinning                  | [PR-32](./pr-32-pnpm-overrides-cleanup.md)           | Planned                                                                                          |
+| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [PR-33](./pr-33-hard-rules-categorization.md)        | Planned                                                                                          |
+| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [PR-34](./pr-34-demo-seed-cleanup-gate.md)           | Planned                                                                                          |
+| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [PR-35](./pr-35-log-level-debug-window.md)           | Planned                                                                                          |
+| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [PR-36](./pr-36-lazy-import-chunk-reload-guard.md)   | **Closed** — merged [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (commit `9bfa006d`) |
+| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [PR-37](./pr-37-postgres-image-sha-pin.md)           | **Closed** — merged [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (commit `348f5773`) |
+| L11 | PWA precache — перевірити що всі assets 1st-party             | [PR-38](./pr-38-pwa-precache-first-party.md)         | **Closed** — merged [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (commit `e227f2b6`) |
+| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 | [PR-39](./pr-39-tools-console-anthropic-sdk.md)      | Planned                                                                                          |
 
 ---
 

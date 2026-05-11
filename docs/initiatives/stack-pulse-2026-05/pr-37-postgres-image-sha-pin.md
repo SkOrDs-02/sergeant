@@ -1,7 +1,7 @@
 # PR-37: Postgres image SHA-pinning
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
-> **Status:** In review — PR pending merge. CI workflows (`ci.yml:410`, `extended-e2e.yml:57`, `visual-regression.yml:40`, `db-backup-verify.yml:34`) already pin `pgvector/pgvector:pg16@sha256:7d400e34…` (landed earlier under M21 / supply-chain hardening). Цей PR закриває останнє drift-місце — `docker-compose.yml` (local dev) — і додає Renovate `pinDigests` rule + setup runbook.
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Closed — merged [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (commit `348f5773`). CI workflows (`ci.yml:410`, `extended-e2e.yml:57`, `visual-regression.yml:40`, `db-backup-verify.yml:34`) already pin `pgvector/pgvector:pg16@sha256:7d400e34…` (landed earlier under M21 / supply-chain hardening). Цей PR закрив останнє drift-місце — `docker-compose.yml` (local dev) — і додав Renovate `pinDigests` rule + setup runbook.
 
 |                    |                                                                             |
 | ------------------ | --------------------------------------------------------------------------- |

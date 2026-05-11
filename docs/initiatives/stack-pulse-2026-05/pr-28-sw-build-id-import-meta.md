@@ -1,7 +1,7 @@
 # PR-28: `__SW_BUILD_ID__` global → `import.meta.env.VITE_BUILD_ID`
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
-> **Status:** In review — PR pending merge. Migration covers всі два ambient global-и (`__SW_BUILD_ID__` у SW + `__APP_BUILD_ID__` у React Query persister), які ділили той самий build-id; після цього PR-у вони живуть як single `import.meta.env.VITE_BUILD_ID` з типами у `apps/web/src/vite-env.d.ts`.
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Closed — merged [#2309](https://github.com/Skords-01/Sergeant/pull/2309) (commit `e8ada9f2`). Migration covers всі два ambient global-и (`__SW_BUILD_ID__` у SW + `__APP_BUILD_ID__` у React Query persister), які ділили той самий build-id; після цього PR-у вони живуть як single `import.meta.env.VITE_BUILD_ID` з типами у `apps/web/src/vite-env.d.ts`.
 
 |                    |                                                                          |
 | ------------------ | ------------------------------------------------------------------------ |

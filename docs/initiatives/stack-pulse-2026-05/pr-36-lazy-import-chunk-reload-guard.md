@@ -1,7 +1,7 @@
 # PR-36: `lazyImport` chunk-reload no-infinite-loop guard
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
-> **Status:** In review — PR pending merge. Код живе не у `lazyImport.ts` (як писалось у плані на 2026-05-07), а у `apps/web/src/core/lib/chunkReload.ts` — reload-recovery вже був рефакторений у окремий модуль з cooldown-гардом. Цей PR додає counter-window guard (`MAX_RELOADS = 3`, sliding `RESET_AFTER_MS = 5min`) поверх існуючого 10s cooldown-у.
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Closed — merged [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (commit `9bfa006d`). Код живе не у `lazyImport.ts` (як писалось у плані на 2026-05-07), а у `apps/web/src/core/lib/chunkReload.ts` — reload-recovery вже був рефакторений у окремий модуль з cooldown-гардом. Цей PR додав counter-window guard (`MAX_RELOADS = 3`, sliding `RESET_AFTER_MS = 5min`) поверх існуючого 10s cooldown-у.
 
 |                    |                                                |
 | ------------------ | ---------------------------------------------- |

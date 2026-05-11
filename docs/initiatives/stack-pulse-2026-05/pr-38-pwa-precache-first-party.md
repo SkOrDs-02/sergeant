@@ -1,7 +1,7 @@
 # PR-38: PWA precache 1st-party verify
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
-> **Status:** In review — PR pending merge. Скрипт живе не у `apps/web/scripts/` (як писалось у плані на 2026-05-07), а у кореневій `scripts/` — всі інші freshness/процес-гейти репо живуть там (`check-patches-doc.mjs`, `check-tech-debt-freshness.mjs`, ін.). Скрипт використовує `apps/server/dist/sw.js` (aп`apps/web` білдить сюди через `outDir`).
+> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Status:** Closed — merged [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (commit `e227f2b6`). Скрипт живе не у `apps/web/scripts/` (як писалось у плані на 2026-05-07), а у кореневій `scripts/` — всі інші freshness/процес-гейти репо живуть там (`check-patches-doc.mjs`, `check-tech-debt-freshness.mjs`, ін.). Скрипт використовує `apps/server/dist/sw.js` (`apps/web` білдить сюди через `outDir`).
 
 |                    |                                                                             |
 | ------------------ | --------------------------------------------------------------------------- |
