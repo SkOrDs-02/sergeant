@@ -437,8 +437,10 @@ const envSchema = z.object({
   SENTRY_RELEASE: z.string().optional(),
   /** `0.0`–`1.0` sampling rate для Sentry performance traces. */
   SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
-  /** Pino log level override (trace, debug, info, warn, error, fatal). */
-  LOG_LEVEL: stringWithDefault("info"),
+  /** Pino log level. Use /debug-window CLI to temporarily lower without restart. */
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace"])
+    .default("info"),
   /** `"1"` — human-readable pino-pretty output. */
   LOG_PRETTY: z.string().optional(),
   /** Bearer token для захисту `GET /metrics`. */
