@@ -384,21 +384,20 @@ export default [
   // adoption — DataState rollout). Phases 2.4–2.8 мігрували існуючі
   // manual-ladder callsite-и у `apps/web/src/modules/**` на
   // `<DataState>` (finyk Mono / fizruk Workouts / nutrition Menu /
-  // routine Timeline / digest). Поки 0 active manual ladders у modules,
-  // rule працює як **warn-only canary**: підсвічує нові callsite-и, де
-  // код повертає JSX рано через `if (X.isLoading|isError|isPending)
-  // return <…/>`, але НЕ блокує. Після того, як 100% modules
-  // підтверджені clean і Storybook + visual regression покрив
-  // `<DataState>` permutations (success-criterion з
+  // routine Timeline / digest). Canary був warn-only від merge PR-#1823
+  // (2026-05-05) — за baseline-вікно 0 hits across 174 модульних
+  // файлів (success-criterion з
   // `docs/initiatives/0011-foundation-adoption-and-process-discipline.md`
-  // § 6 — `<DataState>` adopted), rule піднімається до `error`. Default
-  // allowlist (DataState.tsx сама + `apps/web/src/core/auth/**` для
-  // auth-form patterns) живе у самому правилі
-  // (`packages/eslint-plugin-sergeant-design/index.js` § prefer-data-state).
+  // § 6 — `<DataState>` adopted; carry-over `2026-06-30` Phase 2.9 finalize
+  // закрита 2026-05-10). Severity promoted до `error` — нові manual-ladder
+  // callsite-и блокуються у CI. Default allowlist (DataState.tsx сама +
+  // `apps/web/src/core/auth/**` для auth-form patterns) живе у самому
+  // правилі (`packages/eslint-plugin-sergeant-design/index.js`
+  // § prefer-data-state).
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
-      "sergeant-design/prefer-data-state": "warn",
+      "sergeant-design/prefer-data-state": "error",
     },
   },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
