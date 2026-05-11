@@ -20,13 +20,17 @@ cp /app/ops/openclaw/cheap-router.system.md ~/.openclaw/cheap-router.system.md
 # n8n workflow allowlist.
 cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
 
-# Plugin bootstrap: `openclaw start` is owned by the gateway plugin (no built-in
-# `start` command exists in upstream openclaw). The install state lives on the
-# volume under ~/.openclaw/plugins, so this is real work only on first boot
+# Plugin bootstrap: the Sergeant runtime adapter lives in packages/openclaw-plugin
+# and is loaded into the Gateway as an OpenClaw plugin. Install state lives on
+# the volume under ~/.openclaw/plugins, so this is real work only on first boot
 # (or after a volume reset) and a tolerated no-op on every warm start.
-# `|| true` is intentional: a re-install on already-installed state must not
-# crash-loop the container; the runtime check is the `openclaw start` below.
-openclaw plugin install /app/packages/openclaw-plugin || true
+# `--force` overwrites any partial install left by a crashed previous boot;
+# `|| true` prevents crash-loops if the install fails for benign reasons
+# (e.g. plugin already installed and openclaw exits non-zero on idempotent path).
+openclaw plugins install /app/packages/openclaw-plugin --force || true
 
-# Hand off to OpenClaw runtime.
-exec openclaw start
+# Hand off to OpenClaw runtime. `gateway` is the canonical start command
+# (see https://docs.openclaw.ai/cli — `start` is not a built-in subcommand).
+# Port 18789 must match the Railway service public-domain target port and
+# the `targetPort` in railway.openclaw-gateway.toml.
+exec openclaw gateway --port 18789
