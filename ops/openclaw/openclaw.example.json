@@ -264,7 +264,14 @@
 
   "council": {
     "skill": "council-roundtable",
-    "defaultSequence": ["devops", "eng", "growth", "finance", "cofounder"],
+    "defaultSequence": [
+      "devops",
+      "eng",
+      "pm",
+      "growth",
+      "finance",
+      "cofounder"
+    ],
     "synthesisPersona": "cofounder",
     "model": "claude-opus-4-latest",
     "usdBudget": "${OPENCLAW_COUNCIL_USD_BUDGET:-2.0}",

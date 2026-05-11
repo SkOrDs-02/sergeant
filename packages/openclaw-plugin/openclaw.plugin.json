@@ -1,10 +1,10 @@
 {
   "$schema": "https://openclaw.ai/schema/plugin.json",
   "name": "@sergeant/openclaw-plugin",
-  "version": "0.4.0",
-  "description": "Sergeant OpenClaw Gateway plugin (Phase 1 + Phase 4). 24 read tools + 5 write tools (Variant B approval) + Layer 0/1 routers + audit lifecycle hooks + n8n Tier C gates.",
+  "version": "0.5.0",
+  "description": "Sergeant OpenClaw Gateway plugin (Phase 1 + Phase 4 + Phase 5). 24 read tools + 5 write tools (Variant B approval) + Layer 0/1 routers + audit lifecycle hooks + n8n Tier C gates + council round-table orchestration helpers.",
   "entry": "./src/index.ts",
-  "phase": "4",
+  "phase": "5",
 
   "tools": {
     "read": [
@@ -95,6 +95,7 @@
   "configSchemaRef": "./src/config.ts",
 
   "_notes": [
+    "Phase 5 (PR-E): council round-table orchestration helpers — canonical COUNCIL_DEFAULT_SEQUENCE (Locked #8 — devops → eng → pm → growth → finance → cofounder) + createCouncilBudgetGate (fail-closed precondition vs $2.0 council cap). Actual sequential execution lives in the council-roundtable SKILL — runtime drives the persona loop.",
     "Phase 4 (PR-D): 5 write tools з Variant B approval + n8n Tier C audit + write-audit integration через /write-audit/log.",
     "Phase 1 (PR-C1a…C1d): 24 read tools + Layer 0/1 routing + 17 shortcuts + invocation lifecycle hooks."
   ]

@@ -334,6 +334,16 @@ export {
   type BudgetCheckResponse,
 } from "./budget.js";
 export {
+  COUNCIL_DEFAULT_SEQUENCE,
+  COUNCIL_SYNTHESIS_PERSONA,
+  COUNCIL_SYNTHESIS_STEP_LABEL,
+  createCouncilBudgetGate,
+  type CouncilPersona,
+  type CouncilBudgetResponse,
+  type CouncilGateOutcome,
+  type CouncilBudgetGateOptions,
+} from "./council.js";
+export {
   InvocationCorrelator,
   createAgentTurnStartHook,
   createAgentTurnEndHook,
