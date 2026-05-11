@@ -3,7 +3,8 @@
 > **Last validated:** 2026-05-10 by @Skords-01 / Devin. **Next review:** 2026-08-08.
 > **Status:** Active
 
-- **Status:** accepted (sub-decisions 11.1 / 11.2 / 11.5); **partially superseded** (11.3 / 11.4 — див. amendment нижче).
+- **Status:** accepted
+- **Sub-decision status:** 11.1 / 11.2 / 11.5 — accepted; 11.3 / 11.4 — partially superseded (див. amendment нижче + [ADR-0047](./0047-cloudsync-v1-410-gone.md)).
 - **Date:** 2026-04-27 (амендмент: 2026-05-10)
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
