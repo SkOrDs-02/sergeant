@@ -176,7 +176,7 @@ export function createOpenClawPlugin(
   api.registerHook("llm_input", routingHook);
 
   api.registerHook(
-    "agent_turn_start",
+    "agent_turn_prepare",
     createAgentTurnStartHook({
       http,
       founderUserId: config.founderUserId,
@@ -186,7 +186,7 @@ export function createOpenClawPlugin(
   );
 
   api.registerHook(
-    "agent_turn_end",
+    "agent_end",
     createAgentTurnEndHook({
       http,
       founderUserId: config.founderUserId,
@@ -299,45 +299,45 @@ export function createOpenClawPlugin(
   });
   api.registerTool(writeParts.tool);
   if (writeParts.toolCallPreHook) {
-    api.registerHook("tool_call_pre", writeParts.toolCallPreHook);
+    api.registerHook("before_tool_call", writeParts.toolCallPreHook);
   }
-  api.registerHook("tool_call_post", writeParts.toolCallPostHook);
+  api.registerHook("after_tool_call", writeParts.toolCallPostHook);
 
   // commit_to_strategy_doc (PR-D)
   const strategyDocParts = createCommitToStrategyDocTool(writeOpts);
   api.registerTool(strategyDocParts.tool);
   if (strategyDocParts.toolCallPreHook) {
-    api.registerHook("tool_call_pre", strategyDocParts.toolCallPreHook);
+    api.registerHook("before_tool_call", strategyDocParts.toolCallPreHook);
   }
-  api.registerHook("tool_call_post", strategyDocParts.toolCallPostHook);
+  api.registerHook("after_tool_call", strategyDocParts.toolCallPostHook);
 
   // post_to_topic (PR-D)
   const postToTopicParts = createPostToTopicTool(writeOpts);
   api.registerTool(postToTopicParts.tool);
   if (postToTopicParts.toolCallPreHook) {
-    api.registerHook("tool_call_pre", postToTopicParts.toolCallPreHook);
+    api.registerHook("before_tool_call", postToTopicParts.toolCallPreHook);
   }
-  api.registerHook("tool_call_post", postToTopicParts.toolCallPostHook);
+  api.registerHook("after_tool_call", postToTopicParts.toolCallPostHook);
 
   // pause_workflow (PR-D)
   const pauseWorkflowParts = createPauseWorkflowTool(writeOpts);
   api.registerTool(pauseWorkflowParts.tool);
   if (pauseWorkflowParts.toolCallPreHook) {
-    api.registerHook("tool_call_pre", pauseWorkflowParts.toolCallPreHook);
+    api.registerHook("before_tool_call", pauseWorkflowParts.toolCallPreHook);
   }
-  api.registerHook("tool_call_post", pauseWorkflowParts.toolCallPostHook);
+  api.registerHook("after_tool_call", pauseWorkflowParts.toolCallPostHook);
 
   // mute_alert (PR-D)
   const muteAlertParts = createMuteAlertTool(writeOpts);
   api.registerTool(muteAlertParts.tool);
   if (muteAlertParts.toolCallPreHook) {
-    api.registerHook("tool_call_pre", muteAlertParts.toolCallPreHook);
+    api.registerHook("before_tool_call", muteAlertParts.toolCallPreHook);
   }
-  api.registerHook("tool_call_post", muteAlertParts.toolCallPostHook);
+  api.registerHook("after_tool_call", muteAlertParts.toolCallPostHook);
 
   // ─── n8n Tier C audit gate (PR-D Phase 4) ────────────────────────────
   api.registerHook(
-    "tool_call_post",
+    "after_tool_call",
     createN8nTierCPostHook({
       founderUserId: config.founderUserId,
       auditSink,
