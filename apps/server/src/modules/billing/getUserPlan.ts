@@ -45,7 +45,8 @@ export async function getUserPlan(
     };
   }
 
-  const row = result.rows[0];
+  // noUncheckedIndexedAccess: length-guard above guarantees row exists
+  const row = result.rows[0] as NonNullable<(typeof result.rows)[0]>;
   return {
     plan: row.plan as Plan,
     status: row.status,
