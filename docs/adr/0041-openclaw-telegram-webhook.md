@@ -1,6 +1,6 @@
 # ADR-0041: OpenClaw Telegram delivery via webhook
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
 - **Date:** 2026-05-03
 - **Deciders:** @Skords-01
 - **Supersedes:** —

@@ -1,6 +1,6 @@
 # Playbook: Ротація OpenClaw GitHub credentials
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-11 by @claude. **Next review:** 2026-08-09.
 > **Status:** Active
 
 **Trigger:** ротація будь-якого OpenClaw GitHub credential —
@@ -125,6 +125,28 @@ flowchart TD
 - [ ] Тригерни read-only tool через OpenClaw (наприклад у Telegram: «openclaw, покажи останні 3 PR») і підтверди, що GitHub-відповіді приходять.
 - [ ] Тригерни write-tool з очевидно тривіальним side-effect — наприклад `create_github_issue` відкриває issue `chore: rotation smoke-test`, founder закриває її руками через 2 хвилини. Підтверди, що `actor` на issue — `sergeant-openclaw[bot]` (App-flow). Якщо побачиш user-актора замість бота — десь ще лежить legacy PAT, перевір secret-store і Hard Rule #20.
 - [ ] Додай рядок «rotation completed» у [`access-governance.md`](./access-governance.md) §"Routine review log".
+
+---
+
+## § Gateway Telegram bot token (`OPENCLAW_GATEWAY_BOT_TOKEN`)
+
+**Trigger:** при підозрі компрометації токена Gateway-бота (`@OpenClaw_sergeant_v2_bot`) або при плановій ротації.
+
+> Note: `OPENCLAW_GATEWAY_BOT_TOKEN` — окремий env var від `OPENCLAW_BOT_TOKEN` (grammy fallback бот на `sergeant-openclaw`). Ротуй їх незалежно.
+
+1. **Відклич токен через @BotFather.**
+   - `/revoke` → обери `@OpenClaw_sergeant_v2_bot` → підтверди. Старий токен стає недійсним миттєво.
+2. **Збережи новий токен.**
+   - @BotFather надасть новий токен у тому самому чаті. Скопіюй його.
+3. **Онови Railway env var.**
+   - Railway Dashboard → service `sergeant-openclaw-gateway` → Variables → `OPENCLAW_GATEWAY_BOT_TOKEN` → вклей новий токен.
+4. **Restart Gateway сервісу.**
+   - Railway Dashboard → `sergeant-openclaw-gateway` → Deploy → Restart (або новий deploy автоматично підхопить змінений env).
+5. **Smoke-test.**
+   - Надішли DM до `@OpenClaw_sergeant_v2_bot`: Gateway має відповісти протягом 30 секунд.
+   - Перевір `GET /healthz` Gateway-а — має повернути 200.
+6. **Залогуй у access-governance log.**
+   - Додай рядок згідно з [`access-governance.md`](./access-governance.md) §"Routine review log". Включи: хто ротував, бот-username, причину.
 
 ---
 

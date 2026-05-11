@@ -1,6 +1,6 @@
 # Service Catalog
 
-> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-11 by @claude. **Next review:** 2026-08-09.
 > **Status:** Active
 
 Runtime-oriented inventory for the production surfaces that Sergeant operates today. Use this document to answer four questions fast:
@@ -25,6 +25,7 @@ Runtime-oriented inventory for the production surfaces that Sergeant operates to
 
 | Billing (`apps/server` billing module) | `sergeant-server-api` | Railway service (in-process з API) | Stripe API, PostgreSQL (`billing_subscriptions`, `webhook_events`) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_*` | Webhook delivery success rate; checkout conversion; subscription status in DB | [observability/runbook.md](../observability/runbook.md) | [release.md § Web + API](../playbooks/release.md#1-web--api) | Revert endpoint, disable Stripe webhook in dashboard | Tier 1: billing/payment data |
 | Transcribe (`/api/transcribe`) | `sergeant-server-api` | Railway service (in-process з API) | Whisper provider, `ai_usage_daily` USD-cap ledger | `TRANSCRIBE_PROVIDER_KEY`, `TRANSCRIBE_USD_CAP_DAILY` | 429 rate on cap hit; USD spend gauge у Prometheus | [observability/metrics.md](../observability/metrics.md) | n/a | Disable endpoint via feature flag | Tier 2: audio input, usage metrics |
+| OpenClaw Gateway (`ops/openclaw/`) | `sergeant-hubchat` | Railway service `sergeant-openclaw-gateway` (same project as API; persistent volume 5 GB on `~/.openclaw`) | OpenClaw runtime, `@sergeant/openclaw-plugin`, Telegram Bot API, Anthropic API, `apps/server` internal API (`/api/internal/openclaw/*`) | `ANTHROPIC_API_KEY`, `INTERNAL_API_KEY`, `OPENCLAW_GATEWAY_BOT_TOKEN`, `OPENCLAW_PUBLIC_URL`, `OPENCLAW_FOUNDER_TG_USER_ID`, `SERVER_INTERNAL_URL` | `GET /healthz` → 200; Gateway bot responds to Telegram DM | [observability/runbook.md](../observability/runbook.md) | n/a (Phase 8 — post-cutover runbook to be written) | Suspend Railway service `sergeant-openclaw-gateway`; founder falls back to grammy bot `@OpenClaw_sergeant_bot` on existing `sergeant-openclaw` service | Tier 2: ops and strategic data |
 
 ## Operating rules
 
