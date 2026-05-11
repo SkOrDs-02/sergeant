@@ -96,6 +96,7 @@ declare module "@sinclair/typebox" {
     ) => TSchema;
     String: (opts?: Record<string, unknown>) => TSchema;
     Number: (opts?: Record<string, unknown>) => TSchema;
+    Integer: (opts?: Record<string, unknown>) => TSchema;
     Boolean: (opts?: Record<string, unknown>) => TSchema;
     Array: (items: TSchema, opts?: Record<string, unknown>) => TSchema;
     Record: (key: TSchema, value: TSchema) => TSchema;
