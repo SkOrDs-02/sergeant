@@ -24,6 +24,7 @@
  * що дозволяє інтеграційний тест прокрутити плагін без OpenClaw runtime.
  */
 
+import * as fs from "fs";
 import { parsePluginConfig, type PluginConfig } from "./config.js";
 import { OpenClawHttpClient } from "./http-client.js";
 import {
@@ -132,11 +133,17 @@ export function createOpenClawPlugin(
     return { text: response.text, costUsd: response.costUsd ?? 0.0002 };
   };
 
+  // ─── Cheap-router system prompt (optional external file) ─────────────
+  const cheapRouterSystemPrompt = config.cheapRouterSystemPromptPath
+    ? fs.readFileSync(config.cheapRouterSystemPromptPath, "utf-8")
+    : undefined;
+
   // ─── Hooks ───────────────────────────────────────────────────────────
   const { hook: routingHook } = createRoutingHook({
     http,
     founderUserId: config.founderUserId,
     perCallCapUsd: config.maxPerCallUsd,
+    ...(cheapRouterSystemPrompt ? { cheapRouterSystemPrompt } : {}),
     classify: options.classifyImpl ?? defaultClassify,
     executeTool,
     log,

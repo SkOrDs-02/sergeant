@@ -82,6 +82,8 @@ Rules:
 
 export interface CheapRouterOptions {
   classify: LlmClassifier;
+  /** Override system prompt. If omitted, falls back to CHEAP_ROUTER_SYSTEM_PROMPT. */
+  systemPrompt?: string;
   log?: (
     level: "debug" | "info" | "warn" | "error",
     message: string,
@@ -91,10 +93,12 @@ export interface CheapRouterOptions {
 
 export class CheapRouter {
   private readonly classify: LlmClassifier;
+  private readonly systemPrompt: string;
   private readonly log: NonNullable<CheapRouterOptions["log"]>;
 
   constructor(opts: CheapRouterOptions) {
     this.classify = opts.classify;
+    this.systemPrompt = opts.systemPrompt ?? CHEAP_ROUTER_SYSTEM_PROMPT;
     this.log = opts.log ?? (() => undefined);
   }
 
@@ -105,7 +109,7 @@ export class CheapRouter {
   async route(userMessage: string): Promise<CheapRouterResult> {
     try {
       const { text, costUsd } = await this.classify(
-        CHEAP_ROUTER_SYSTEM_PROMPT,
+        this.systemPrompt,
         userMessage,
       );
 
