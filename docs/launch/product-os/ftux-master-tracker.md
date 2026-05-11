@@ -498,7 +498,7 @@ slos:
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 
-> Джерело: [`docs/audits/2026-05-06-ux-roast.md`](../../audits/2026-05-06-ux-roast.md). Виконавчий план: [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../adr/0054-ux-roast-2026-Q2.md).
+> Джерело: [`docs/audits/2026-05-06-ux-roast.md`](../../audits/2026-05-06-ux-roast.md). Виконавчий план: [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
 

@@ -11,14 +11,14 @@
 
 ## Ініціативи для архівації
 
-| Initiative | Status | Done/Closed | Wait until | Canonical | Notes |
-|-----------|--------|-------------|------------|-----------|-------|
-| **0001** Module decomposition | Closed | 2026-05-04 | 2026-08-02 | Successor: 0013, Hard Rule #18 | max-lines: 600 guard active |
-| **0004** Server observability | Done | 2026-05-04 | 2026-08-02 | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) | Sentry + OTel live; OTLP optional follow-up |
-| **0005** AI cost (prompt cache) | Done | 2026-05-04 | 2026-08-02 | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md) | Prompt cache live; cost-alerts post-baseline |
-| **0008** Platform hardening | Closed | 2026-05-04 | 2026-08-02 | `RATE_LIMIT_POLICIES` registry | RFC-9239 RateLimit-* headers live |
-| **0012** Perfect TS strictness | Closed | 2026-05-04 | 2026-08-02 | Hard Rule #19, allowlist.json | Phase 6a/6c/6e done; 6b/6d residual in allowlist |
-| **0007** Design-system tooling | Done | 2026-05-05 | 2026-08-03 | Storybook live deployment | VRT scope → [ADR-0046](../../adr/0046-storybook-vrt-scope.md) |
+| Initiative                      | Status | Done/Closed | Wait until | Canonical                                                       | Notes                                                         |
+| ------------------------------- | ------ | ----------- | ---------- | --------------------------------------------------------------- | ------------------------------------------------------------- |
+| **0001** Module decomposition   | Closed | 2026-05-04  | 2026-08-02 | Successor: 0013, Hard Rule #18                                  | max-lines: 600 guard active                                   |
+| **0004** Server observability   | Done   | 2026-05-04  | 2026-08-02 | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) | Sentry + OTel live; OTLP optional follow-up                   |
+| **0005** AI cost (prompt cache) | Done   | 2026-05-04  | 2026-08-02 | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md)     | Prompt cache live; cost-alerts post-baseline                  |
+| **0008** Platform hardening     | Closed | 2026-05-04  | 2026-08-02 | `RATE_LIMIT_POLICIES` registry                                  | RFC-9239 RateLimit-\* headers live                            |
+| **0012** Perfect TS strictness  | Closed | 2026-05-04  | 2026-08-02 | Hard Rule #19, allowlist.json                                   | Phase 6a/6c/6e done; 6b/6d residual in allowlist              |
+| **0007** Design-system tooling  | Done   | 2026-05-05  | 2026-08-03 | Storybook live deployment                                       | VRT scope → [ADR-0046](../../adr/0046-storybook-vrt-scope.md) |
 
 ---
 
@@ -50,7 +50,7 @@ Execute day before archival to unblock 2026-08-02 batch-PR:
 ### 0008: Platform hardening
 
 - [ ] Verify: `RATE_LIMIT_POLICIES` registry live in `apps/server/src/`
-- [ ] Check: RFC-9239 `RateLimit-*` headers returned from /api/* endpoints
+- [ ] Check: RFC-9239 `RateLimit-*` headers returned from /api/\* endpoints
 - [ ] Check: `/startupz` + nested probes + health endpoint live
 - [ ] Check: Renovate + Dependabot configured (ADR-0044)
 - [ ] Result: All carry-overs (sigstore, per-route migrations) documented in file § Що НЕ увійшло
@@ -100,12 +100,12 @@ git mv docs/initiatives/0007-design-system-tooling.md \
 Для кожної ініціативи, перенести рядок із `## Нещодавно завершені` → `## Архів`:
 
 ```markdown
-- [archive/_0001-module-decomposition.md](./archive/_0001-module-decomposition.md) — archived 2026-08-02; successor [0013-module-decomposition-round-2.md](./0013-module-decomposition-round-2.md), Hard Rule #18 (`max-lines: 600`) live
-- [archive/_0004-server-observability.md](./archive/_0004-server-observability.md) — archived 2026-08-02; [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) + Sentry production, OTLP optional
-- [archive/_0005-ai-cost-and-prompt-cache.md](./archive/_0005-ai-cost-and-prompt-cache.md) — archived 2026-08-02; [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md) production policy
-- [archive/_0008-platform-hardening.md](./archive/_0008-platform-hardening.md) — archived 2026-08-02; `RATE_LIMIT_POLICIES` registry production, RFC-9239 live
-- [archive/_0012-perfect-strictness-rollout.md](./archive/_0012-perfect-strictness-rollout.md) — archived 2026-08-02; Hard Rule #19 active, allowlist expires 2026-09-30
-- [archive/_0007-design-system-tooling.md](./archive/_0007-design-system-tooling.md) — archived 2026-08-03; Storybook live, [ADR-0046](../adr/0046-storybook-vrt-scope.md) VRT scope
+- [archive/\_0001-module-decomposition.md](./archive/_0001-module-decomposition.md) — archived 2026-08-02; successor [0013-module-decomposition-round-2.md](./0013-module-decomposition-round-2.md), Hard Rule #18 (`max-lines: 600`) live
+- [archive/\_0004-server-observability.md](./archive/_0004-server-observability.md) — archived 2026-08-02; [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) + Sentry production, OTLP optional
+- [archive/\_0005-ai-cost-and-prompt-cache.md](./archive/_0005-ai-cost-and-prompt-cache.md) — archived 2026-08-02; [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md) production policy
+- [archive/\_0008-platform-hardening.md](./archive/_0008-platform-hardening.md) — archived 2026-08-02; `RATE_LIMIT_POLICIES` registry production, RFC-9239 live
+- [archive/\_0012-perfect-strictness-rollout.md](./archive/_0012-perfect-strictness-rollout.md) — archived 2026-08-02; Hard Rule #19 active, allowlist expires 2026-09-30
+- [archive/\_0007-design-system-tooling.md](./archive/_0007-design-system-tooling.md) — archived 2026-08-03; Storybook live, [ADR-0046](../adr/0046-storybook-vrt-scope.md) VRT scope
 ```
 
 ### Step 3: Verification (5 min)
