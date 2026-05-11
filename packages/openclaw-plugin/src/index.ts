@@ -163,6 +163,32 @@ export function createOpenClawPlugin(
     : undefined;
 
   // ─── Hooks ───────────────────────────────────────────────────────────
+  //
+  // openclaw 5.7 requires each handler to have a non-empty fn.name.
+  // Handlers returned from factory functions are anonymous arrow functions
+  // (name = ""). This helper assigns a unique name and wraps registration
+  // in try-catch so a single hook failure doesn't crash the whole plugin.
+  const safeRegisterHook = <H extends HookName>(
+    hookName: H,
+    handler: HookHandler<H>,
+    id?: string,
+  ): void => {
+    if (!handler.name) {
+      Object.defineProperty(handler, "name", {
+        value: `sergeant-${id ?? hookName}`,
+        configurable: true,
+      });
+    }
+    try {
+      api.registerHook(hookName, handler);
+    } catch (e) {
+      log(
+        "warn",
+        `[sergeant] hook registration failed for "${hookName}" (id=${id ?? hookName}): ${String(e)}`,
+      );
+    }
+  };
+
   const { hook: routingHook } = createRoutingHook({
     http,
     founderUserId: config.founderUserId,
@@ -173,9 +199,9 @@ export function createOpenClawPlugin(
     log,
   });
 
-  api.registerHook("llm_input", routingHook);
+  safeRegisterHook("llm_input", routingHook);
 
-  api.registerHook(
+  safeRegisterHook(
     "agent_turn_prepare",
     createAgentTurnStartHook({
       http,
@@ -185,7 +211,7 @@ export function createOpenClawPlugin(
     }),
   );
 
-  api.registerHook(
+  safeRegisterHook(
     "agent_end",
     createAgentTurnEndHook({
       http,
@@ -299,50 +325,51 @@ export function createOpenClawPlugin(
   });
   api.registerTool(writeParts.tool);
   if (writeParts.toolCallPreHook) {
-    api.registerHook("before_tool_call", writeParts.toolCallPreHook);
+    safeRegisterHook("before_tool_call", writeParts.toolCallPreHook, "create-github-issue-pre");
   }
-  api.registerHook("after_tool_call", writeParts.toolCallPostHook);
+  safeRegisterHook("after_tool_call", writeParts.toolCallPostHook, "create-github-issue-post");
 
   // commit_to_strategy_doc (PR-D)
   const strategyDocParts = createCommitToStrategyDocTool(writeOpts);
   api.registerTool(strategyDocParts.tool);
   if (strategyDocParts.toolCallPreHook) {
-    api.registerHook("before_tool_call", strategyDocParts.toolCallPreHook);
+    safeRegisterHook("before_tool_call", strategyDocParts.toolCallPreHook, "commit-strategy-doc-pre");
   }
-  api.registerHook("after_tool_call", strategyDocParts.toolCallPostHook);
+  safeRegisterHook("after_tool_call", strategyDocParts.toolCallPostHook, "commit-strategy-doc-post");
 
   // post_to_topic (PR-D)
   const postToTopicParts = createPostToTopicTool(writeOpts);
   api.registerTool(postToTopicParts.tool);
   if (postToTopicParts.toolCallPreHook) {
-    api.registerHook("before_tool_call", postToTopicParts.toolCallPreHook);
+    safeRegisterHook("before_tool_call", postToTopicParts.toolCallPreHook, "post-to-topic-pre");
   }
-  api.registerHook("after_tool_call", postToTopicParts.toolCallPostHook);
+  safeRegisterHook("after_tool_call", postToTopicParts.toolCallPostHook, "post-to-topic-post");
 
   // pause_workflow (PR-D)
   const pauseWorkflowParts = createPauseWorkflowTool(writeOpts);
   api.registerTool(pauseWorkflowParts.tool);
   if (pauseWorkflowParts.toolCallPreHook) {
-    api.registerHook("before_tool_call", pauseWorkflowParts.toolCallPreHook);
+    safeRegisterHook("before_tool_call", pauseWorkflowParts.toolCallPreHook, "pause-workflow-pre");
   }
-  api.registerHook("after_tool_call", pauseWorkflowParts.toolCallPostHook);
+  safeRegisterHook("after_tool_call", pauseWorkflowParts.toolCallPostHook, "pause-workflow-post");
 
   // mute_alert (PR-D)
   const muteAlertParts = createMuteAlertTool(writeOpts);
   api.registerTool(muteAlertParts.tool);
   if (muteAlertParts.toolCallPreHook) {
-    api.registerHook("before_tool_call", muteAlertParts.toolCallPreHook);
+    safeRegisterHook("before_tool_call", muteAlertParts.toolCallPreHook, "mute-alert-pre");
   }
-  api.registerHook("after_tool_call", muteAlertParts.toolCallPostHook);
+  safeRegisterHook("after_tool_call", muteAlertParts.toolCallPostHook, "mute-alert-post");
 
   // ─── n8n Tier C audit gate (PR-D Phase 4) ────────────────────────────
-  api.registerHook(
+  safeRegisterHook(
     "after_tool_call",
     createN8nTierCPostHook({
       founderUserId: config.founderUserId,
       auditSink,
       log,
     }),
+    "n8n-tier-c-post",
   );
 
   return {
