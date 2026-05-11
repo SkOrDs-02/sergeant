@@ -37,19 +37,11 @@ COPY packages/shared ./packages/shared
 COPY packages/openclaw-plugin ./packages/openclaw-plugin
 
 # Stage 1 rewrite: index.ts imports from `openclaw/plugin-sdk/plugin-entry` and
-# `@sinclair/typebox`. These are NOT in the workspace's pnpm-lock.yaml (would
-# require a `pnpm install` cycle to add). We can't `npm install` directly into
-# the plugin dir because its package.json has `"@sergeant/shared": "workspace:*"`
-# which npm refuses (EUNSUPPORTEDPROTOCOL). Workaround: install the type deps
-# into a side dir, then layer them into the plugin's pnpm-managed node_modules.
-RUN mkdir -p /tmp/openclaw-types && \
-    cd /tmp/openclaw-types && \
-    printf '{"name":"openclaw-types","version":"0.0.0","private":true}' > package.json && \
-    npm install --no-audit --no-fund --loglevel=error \
-      openclaw@2026.5.7 \
-      @sinclair/typebox@^0.34.0 && \
-    mkdir -p /build/packages/openclaw-plugin/node_modules && \
-    cp -R /tmp/openclaw-types/node_modules/. /build/packages/openclaw-plugin/node_modules/
+# `@sinclair/typebox`. These aren't in pnpm-lock.yaml. Rather than fighting with
+# npm-in-pnpm-workspace install issues at build time, the plugin ships an
+# ambient .d.ts (src/types/openclaw-ambient.d.ts) that satisfies tsc. The
+# packages are installed at runtime via the synthesised slim package.json in
+# the runtime stage below.
 
 RUN pnpm --filter @sergeant/openclaw-plugin build
 
