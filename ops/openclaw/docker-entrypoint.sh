@@ -19,11 +19,16 @@ cp /app/ops/openclaw/n8n-allowlist.json ~/.openclaw/n8n-allowlist.json
 
 # Plugin bootstrap: @sergeant/openclaw-plugin lives in packages/openclaw-plugin and
 # is loaded into the Gateway as an OpenClaw plugin. Install state lives on the
-# volume under ~/.openclaw/plugins, so this is real work only on first boot
-# (or after a volume reset) and a tolerated no-op on every warm start.
-# `--force` overwrites any partial install left by a crashed previous boot;
-# `|| true` prevents crash-loops if the install fails for benign reasons
-# (e.g. plugin already installed and openclaw exits non-zero on idempotent path).
+# volume under ~/.openclaw/{plugins,extensions}, so this is real work only on
+# first boot (or after a volume reset) and a tolerated no-op on every warm start.
+#
+# Wipe any prior install state before re-installing: earlier crashed deploys (when
+# the manifest still lacked id / dist output / a slim package.json) wrote partial
+# entries into installs.json that subsequent --force installs preserved, leaving
+# the gateway to validate against stale data and crash on "plugin manifest requires
+# id". Clearing the install records + extension dirs is safe — the plugin code
+# ships in the image, not on the volume.
+rm -rf ~/.openclaw/plugins ~/.openclaw/extensions/@sergeant-openclaw-plugin-* || true
 openclaw plugins install /app/packages/openclaw-plugin --force || true
 
 # Hand off to OpenClaw runtime. `gateway run` runs the WebSocket Gateway in the
