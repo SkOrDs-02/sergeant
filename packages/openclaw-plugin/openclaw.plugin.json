@@ -1,9 +1,11 @@
 {
   "$schema": "https://openclaw.ai/schema/plugin.json",
+  "id": "sergeant",
   "name": "@sergeant/openclaw-plugin",
   "version": "0.5.0",
+  "activation": { "onStartup": true },
   "description": "Sergeant OpenClaw Gateway plugin (Phase 1 + Phase 4 + Phase 5). 24 read tools + 5 write tools (Variant B approval) + Layer 0/1 routers + audit lifecycle hooks + n8n Tier C gates + council round-table orchestration helpers.",
-  "entry": "./src/index.ts",
+  "entry": "./dist/index.js",
   "phase": "5",
 
   "tools": {
@@ -93,6 +95,21 @@
   },
 
   "configSchemaRef": "./src/config.ts",
+
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+      "serverInternalUrl": { "type": "string" },
+      "internalApiKey": { "type": "string" },
+      "founderUserId": { "type": "string" },
+      "maxPerCallUsd": { "type": ["string", "number"] },
+      "councilUsdBudget": { "type": ["string", "number"] },
+      "approvalVariant": { "type": "string", "enum": ["A", "B", "C"] },
+      "cheapRouterSystemPromptPath": { "type": "string" }
+    },
+    "required": ["serverInternalUrl", "internalApiKey", "founderUserId"]
+  },
 
   "_notes": [
     "Phase 5 (PR-E): council round-table orchestration helpers — canonical COUNCIL_DEFAULT_SEQUENCE (Locked #8 — devops → eng → pm → growth → finance → cofounder) + createCouncilBudgetGate (fail-closed precondition vs $2.0 council cap). Actual sequential execution lives in the council-roundtable SKILL — runtime drives the persona loop.",

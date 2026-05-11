@@ -1,21 +1,74 @@
 # OpenClaw Gateway container.
-# The @sergeant/openclaw-plugin has no build step — OpenClaw runtime loads TypeScript
-# source directly via "entry": "./src/index.ts" in openclaw.plugin.json.
-# Therefore a single-stage image is sufficient.
 #
 # OpenClaw npm package: `openclaw` on npmjs.com (publisher steipete, MIT, repo openclaw/openclaw).
 # Version pinned per Locked decision #2 (latest stable tag at merge time of Phase 0).
 # Renovate-only weekly PR for upgrades; no auto-merge.
+#
+# Multi-stage build:
+#   1. plugin-builder — compiles @sergeant/openclaw-plugin TypeScript → ./dist/*.js.
+#      `openclaw plugins install` (v2026.5.7) rejects raw TS entries and demands a
+#      compiled runtime output (dist/index.{js,mjs,cjs}); the upstream snippet that
+#      previously suggested "entry: ./src/index.ts" is outdated for this version.
+#   2. runtime — node:24-alpine with the global openclaw CLI, the built plugin, ops
+#      config-as-code, and the entrypoint script. node 22+ is required by openclaw.
 
+FROM --platform=linux/amd64 node:24-alpine AS plugin-builder
+WORKDIR /build
+
+# Enable pnpm via corepack (lockfile pinned in repo root).
+RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+# Lockfile + workspace manifests first for cache friendliness.
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
+COPY packages/openclaw-plugin/package.json ./packages/openclaw-plugin/package.json
+# @sergeant/openclaw-plugin lists @sergeant/shared as a workspace dep (currently unused
+# in src/) but pnpm install would fail without the package.json file present. Same for
+# the @sergeant/config devDep (used only for tsconfig extends).
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/config/package.json ./packages/config/package.json
+
+RUN pnpm install --frozen-lockfile --ignore-scripts \
+      --filter @sergeant/openclaw-plugin...
+
+# Source files.
+COPY packages/config ./packages/config
+COPY packages/shared ./packages/shared
+COPY packages/openclaw-plugin ./packages/openclaw-plugin
+
+RUN pnpm --filter @sergeant/openclaw-plugin build
+
+# ---- Runtime stage -----------------------------------------------------------
 FROM --platform=linux/amd64 node:24-alpine
-
 WORKDIR /app
 
 # OpenClaw runtime — pinned stable (Locked #2). Bump via Renovate PR.
 RUN npm install -g openclaw@2026.5.7
 
-# Copy plugin TypeScript source (entry: ./src/index.ts, no build needed).
-COPY packages/openclaw-plugin ./packages/openclaw-plugin
+# Copy compiled plugin output + plugin manifest (entry → ./dist/index.js).
+COPY --from=plugin-builder /build/packages/openclaw-plugin/dist ./packages/openclaw-plugin/dist
+COPY --from=plugin-builder /build/packages/openclaw-plugin/openclaw.plugin.json ./packages/openclaw-plugin/openclaw.plugin.json
+
+# Synthesise a slim runtime package.json so `openclaw plugins install` sees only the
+# deps actually imported by the built dist/ (currently just `zod`). The workspace
+# package.json carries `@sergeant/shared` + devDependencies that don't resolve at
+# runtime; openclaw's manifest-dependency scanner walks them and bails on missing
+# symlinks. Keep `openclaw.extensions` and `type: module` aligned with the source.
+RUN cat > ./packages/openclaw-plugin/package.json <<'EOF'
+{
+  "name": "@sergeant/openclaw-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "openclaw": { "extensions": ["./dist/index.js"] },
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}
+EOF
+
+RUN cd ./packages/openclaw-plugin && npm install --omit=dev --no-audit --no-fund --loglevel=error
 
 # Copy ops config-as-code (openclaw.example.json, skills/, cheap-router.system.md, n8n-allowlist.json).
 COPY ops/openclaw ./ops/openclaw
@@ -25,10 +78,10 @@ COPY ops/openclaw/docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Runs as root: OpenClaw runtime is installed globally via `npm install -g` and its
-# canonical config (ops/openclaw/openclaw.example.json) declares `workspaceDir: /root/.openclaw`,
+# canonical config (ops/openclaw/openclaw.example.json) declares workspace /root/.openclaw/workspace,
 # matching the Railway persistent volume mount path (Locked decision #1).
 # Container isolation is provided by Railway/Docker; dropping to a non-root user would require
-# either a home-dir-relative `workspaceDir` (deviating from upstream OpenClaw expectations) or
+# either a home-dir-relative workspace path (deviating from upstream OpenClaw expectations) or
 # extra chown gymnastics for the mounted volume.
 
 # OpenClaw Gateway default port.
