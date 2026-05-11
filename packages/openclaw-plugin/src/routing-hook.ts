@@ -29,6 +29,8 @@ export interface RoutingHookOptions {
   perCallCapUsd: number;
   /** LLM classifier for Layer 1 (Haiku call). */
   classify: LlmClassifier;
+  /** Override cheap-router system prompt (e.g. read from ops/openclaw/cheap-router.system.md). */
+  cheapRouterSystemPrompt?: string;
   /** Tool executor for shortcut tool calls. */
   executeTool: ToolExecutor;
   log?: (
@@ -77,6 +79,9 @@ export function createRoutingHook(opts: RoutingHookOptions): RoutingHookResult {
 
   const cheapRouter = new CheapRouter({
     classify: opts.classify,
+    ...(opts.cheapRouterSystemPrompt
+      ? { systemPrompt: opts.cheapRouterSystemPrompt }
+      : {}),
     log,
   });
 

@@ -80,6 +80,15 @@ export const PluginConfigSchema = z.object({
     .int()
     .positive()
     .default(300_000),
+
+  /**
+   * Абсолютний шлях до файлу system prompt для Layer 1 cheap router.
+   * Якщо задано — plugin читає prompt звідси при ініціалізації (дозволяє
+   * оновити prompt через PR до ops/openclaw/cheap-router.system.md +
+   * container restart, без релізу плагіна).
+   * Якщо не задано — використовується вбудований CHEAP_ROUTER_SYSTEM_PROMPT.
+   */
+  cheapRouterSystemPromptPath: z.string().optional(),
 });
 
 export type PluginConfig = z.infer<typeof PluginConfigSchema>;
