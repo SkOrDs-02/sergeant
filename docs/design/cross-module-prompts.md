@@ -1,6 +1,6 @@
 # Cross-module prompts — pattern, fatigue, anti-nag
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-08-09.
 > **Status:** Active
 
 > Sergeant — це 4 модулі (Finyk · Fizruk · Routine · Nutrition), що

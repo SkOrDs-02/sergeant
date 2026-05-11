@@ -1,6 +1,6 @@
 # Ритм border-radius
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-08-09.
 > **Status:** Active
 
 > **Аудиторія:** усі, хто пише UI у `apps/web` або `apps/mobile`.
