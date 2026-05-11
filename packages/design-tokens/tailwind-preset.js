@@ -439,6 +439,14 @@ const preset = {
       spacing: {
         4.5: "18px",
         13: "52px",
+        // `nav` / `nav-touch` — ModuleBottomNav heights. `nav` is the
+        // default desktop height; `nav-touch` applies on coarse-pointer
+        // (touch) devices for the larger tap-target floor.
+        nav: "60px",
+        "nav-touch": "64px",
+        // `sheet-handle` — the drag-indicator pill inside Sheet.
+        // Named so it can be tokenized and audited independently.
+        "sheet-handle": "5px",
         15: "60px",
         18: "72px",
         22: "88px",

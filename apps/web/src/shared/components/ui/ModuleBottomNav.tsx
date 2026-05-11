@@ -107,7 +107,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-label={ariaLabel}
     >
       <div
-        className="relative flex h-[60px] pointer-coarse:h-[64px]"
+        className="relative flex h-nav pointer-coarse:h-nav-touch"
         role={isTablist ? "tablist" : undefined}
       >
         {/* Sliding pill indicator — single element that translates to active tab */}
