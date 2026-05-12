@@ -5,7 +5,205 @@
     "defaults": {
       "workspace": "/root/.openclaw/workspace",
       "model": { "primary": "anthropic/claude-opus-4-7" },
-      "models": { "anthropic/claude-opus-4-7": {} }
+      "models": { "anthropic/claude-opus-4-7": {} },
+      "tools": {
+        "alsoAllow": ["recall_memory"]
+      }
+    },
+    "cofounder": {
+      "tools": {
+        "alsoAllow": [
+          "recall_memory",
+          "read_strategy_docs",
+          "record_decision",
+          "query_app_db",
+          "get_server_stats",
+          "get_stripe_metrics",
+          "get_posthog_stats",
+          "get_sentry_issues",
+          "read_github",
+          "github_search",
+          "github_tree",
+          "github_diff",
+          "github_prs",
+          "get_github_releases",
+          "n8n_list",
+          "n8n_describe",
+          "n8n_trigger",
+          "n8n_activate",
+          "refresh_business_snapshot",
+          "read_workflow_logs",
+          "read_telegram_topic",
+          "seo_gsc_query",
+          "seo_psi_audit",
+          "seo_serp_lookup",
+          "set_reminder",
+          "create_github_issue",
+          "commit_to_strategy_doc",
+          "post_to_topic",
+          "pause_workflow",
+          "mute_alert"
+        ]
+      }
+    },
+    "eng": {
+      "tools": {
+        "alsoAllow": [
+          "read_github",
+          "github_search",
+          "github_tree",
+          "github_diff",
+          "github_prs",
+          "query_app_db",
+          "recall_memory",
+          "record_decision",
+          "create_github_issue"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "mute_alert",
+          "pause_workflow",
+          "post_to_topic"
+        ]
+      }
+    },
+    "devops": {
+      "tools": {
+        "alsoAllow": [
+          "read_workflow_logs",
+          "n8n_list",
+          "n8n_describe",
+          "n8n_trigger",
+          "n8n_activate",
+          "get_sentry_issues",
+          "get_server_stats",
+          "recall_memory",
+          "mute_alert",
+          "pause_workflow"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "create_github_issue",
+          "post_to_topic"
+        ]
+      }
+    },
+    "pm": {
+      "tools": {
+        "alsoAllow": [
+          "read_strategy_docs",
+          "get_posthog_stats",
+          "query_app_db",
+          "recall_memory",
+          "record_decision",
+          "create_github_issue",
+          "commit_to_strategy_doc"
+        ],
+        "deny": ["mute_alert", "pause_workflow", "post_to_topic"]
+      }
+    },
+    "growth": {
+      "tools": {
+        "alsoAllow": [
+          "get_posthog_stats",
+          "get_stripe_metrics",
+          "query_app_db",
+          "read_github",
+          "get_github_releases",
+          "recall_memory",
+          "post_to_topic"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "create_github_issue",
+          "mute_alert",
+          "pause_workflow"
+        ]
+      }
+    },
+    "finance": {
+      "tools": {
+        "alsoAllow": [
+          "get_stripe_metrics",
+          "query_app_db",
+          "recall_memory",
+          "record_decision"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "create_github_issue",
+          "mute_alert",
+          "pause_workflow",
+          "post_to_topic"
+        ]
+      }
+    },
+    "data": {
+      "tools": {
+        "alsoAllow": [
+          "query_app_db",
+          "get_posthog_stats",
+          "get_stripe_metrics",
+          "get_server_stats",
+          "recall_memory"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "create_github_issue",
+          "mute_alert",
+          "pause_workflow",
+          "post_to_topic"
+        ]
+      }
+    },
+    "cs": {
+      "tools": {
+        "alsoAllow": [
+          "read_telegram_topic",
+          "query_app_db",
+          "get_posthog_stats",
+          "recall_memory",
+          "post_to_topic"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "create_github_issue",
+          "mute_alert",
+          "pause_workflow"
+        ]
+      }
+    },
+    "content": {
+      "tools": {
+        "alsoAllow": [
+          "read_strategy_docs",
+          "recall_memory",
+          "read_github",
+          "commit_to_strategy_doc",
+          "post_to_topic"
+        ],
+        "deny": ["create_github_issue", "mute_alert", "pause_workflow"]
+      }
+    },
+    "seo": {
+      "tools": {
+        "alsoAllow": [
+          "seo_gsc_query",
+          "seo_psi_audit",
+          "seo_serp_lookup",
+          "read_strategy_docs",
+          "read_github",
+          "get_posthog_stats",
+          "recall_memory"
+        ],
+        "deny": [
+          "commit_to_strategy_doc",
+          "create_github_issue",
+          "mute_alert",
+          "pause_workflow",
+          "post_to_topic"
+        ]
+      }
     }
   },
 
@@ -20,39 +218,7 @@
 
   "session": { "dmScope": "per-channel-peer" },
   "tools": {
-    "profile": "coding",
-    "alsoAllow": [
-      "recall_memory",
-      "read_strategy_docs",
-      "record_decision",
-      "query_app_db",
-      "get_server_stats",
-      "get_stripe_metrics",
-      "get_posthog_stats",
-      "get_sentry_issues",
-      "read_github",
-      "github_search",
-      "github_tree",
-      "github_diff",
-      "github_prs",
-      "get_github_releases",
-      "n8n_list",
-      "n8n_describe",
-      "n8n_trigger",
-      "n8n_activate",
-      "refresh_business_snapshot",
-      "read_workflow_logs",
-      "read_telegram_topic",
-      "seo_gsc_query",
-      "seo_psi_audit",
-      "seo_serp_lookup",
-      "set_reminder",
-      "create_github_issue",
-      "commit_to_strategy_doc",
-      "post_to_topic",
-      "pause_workflow",
-      "mute_alert"
-    ]
+    "profile": "coding"
   },
 
   "plugins": {

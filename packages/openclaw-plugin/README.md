@@ -1,12 +1,12 @@
 # `@sergeant/openclaw-plugin`
 
-> **Last validated:** 2026-05-12 by Devin (Stage 4c live-verified — Layer 1 Haiku cheap-router merged PR [#2477](https://github.com/Skords-01/Sergeant/pull/2477) `2ed02f1e`, production smoke **12/12 PASS** через `/classify` endpoint + `@kOPENCLAW_GATEWAY_BOT` Telegram). **Status:** Active — Stage 4c live; 25 read-tools + 5 write-tools + 6 hooks (Layer 0 shortcut router + Layer 1 Haiku cheap-router) на real `openclaw@2026.5.7` SDK.
+> **Last validated:** 2026-05-12 by Devin (Stage 5a merged — per-persona tool allowlist + gate-test в `src/personas/`; Stage 4c live-verified [#2477](https://github.com/Skords-01/Sergeant/pull/2477) `2ed02f1e`, production smoke **12/12 PASS**). **Status:** Active — Stage 5a live; 25 read-tools + 5 write-tools + 6 hooks (Layer 0 shortcut router + Layer 1 Haiku cheap-router) + per-persona `agents.<id>.tools.{alsoAllow,deny}` на real `openclaw@2026.5.7` SDK.
 
 Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
 Source-of-truth для контексту і дорожньої карти: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
 
-## Поточний стан (Stage 4c live-verified; production smoke 12/12)
+## Поточний стан (Stage 5a merged; production smoke 12/12)
 
 `src/index.ts` реєструє **30 tools + 6 hooks (два `before_dispatch` — Layer 0 схорткат + Layer 1 Haiku classifier)** через `api.registerTool` / `api.on` SDK поверх real `openclaw@2026.5.7`.
 
