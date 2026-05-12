@@ -293,23 +293,28 @@ describe("Stage 4a plugin entry — write-tool execute() routing", () => {
   );
 });
 
-describe("Stage 4a/4b/4c/5b plugin entry — hooks registered", () => {
-  it("registers exactly the 7 Stage 4a/4b/4c/5b lifecycle hooks via api.on", async () => {
+describe("Stage 4a/4b/4c/5b/5c plugin entry — hooks registered", () => {
+  it("registers exactly the 9 Stage 4a/4b/4c/5b/5c lifecycle hooks via api.on", async () => {
     await import("./index.js");
     // Stage 4c added a second `before_dispatch` registration (Layer 1
     // cheap-router) AFTER the Layer 0 shortcut router. Stage 5b PR-1
     // adds a second `before_agent_start` registration (strategic-mode
     // hook) AFTER the audit-open hook so the audit row keeps the
-    // founder's verbatim slash command. Both pairs share their event
-    // name; the runtime calls them in registration order and merges
-    // results (`before_agent_start`) or stops at the first claim
-    // (`before_dispatch`).
+    // founder's verbatim slash command. Stage 5c adds a THIRD
+    // `before_dispatch` (council pre-flight budget gate, between
+    // shortcut router and cheap router) AND a THIRD `before_agent_start`
+    // (council primer injection, alongside strategic-mode). All shared
+    // event names run in registration order; `before_dispatch` is a
+    // claiming hook (first `handled: true` wins) and
+    // `before_agent_start` merges all results.
     const events = registeredHooks.map((h) => h.event).sort();
     expect(events).toEqual(
       [
         "agent_end",
         "before_agent_start",
         "before_agent_start",
+        "before_agent_start",
+        "before_dispatch",
         "before_dispatch",
         "before_dispatch",
         "before_tool_call",
@@ -318,14 +323,14 @@ describe("Stage 4a/4b/4c/5b plugin entry — hooks registered", () => {
     );
   });
 
-  it("registers `before_dispatch` and `before_agent_start` twice; other hooks unique", async () => {
+  it("registers `before_dispatch` x3 and `before_agent_start` x3; other hooks unique", async () => {
     await import("./index.js");
     const events = registeredHooks.map((h) => h.event as string);
-    expect(events.length).toBe(7);
+    expect(events.length).toBe(9);
     const counts = new Map<string, number>();
     for (const e of events) counts.set(e, (counts.get(e) ?? 0) + 1);
-    expect(counts.get("before_dispatch")).toBe(2);
-    expect(counts.get("before_agent_start")).toBe(2);
+    expect(counts.get("before_dispatch")).toBe(3);
+    expect(counts.get("before_agent_start")).toBe(3);
     expect(counts.get("llm_input")).toBe(1);
     expect(counts.get("agent_end")).toBe(1);
     expect(counts.get("before_tool_call")).toBe(1);
@@ -460,10 +465,11 @@ describe("Stage 5b PR-1 + PR-2 + PR-4 — strategic-mode hook wired into before_
       (h) => h.event === "before_agent_start",
     );
     // 1st handler = Stage 4a audit-open; 2nd handler = Stage 5b
-    // strategic-mode. Registration order is asserted upstream by the
-    // hook-count tests; here we verify the strategic-mode side returns
-    // a `{ prompt, prependContext }` result on a `/plan` prompt.
-    expect(handlers).toHaveLength(2);
+    // strategic-mode; 3rd handler = Stage 5c council mode. Registration
+    // order is asserted upstream by the hook-count tests; here we
+    // verify the strategic-mode side returns a `{ prompt, prependContext }`
+    // result on a `/plan` prompt.
+    expect(handlers).toHaveLength(3);
     const strategic = handlers[1]!;
 
     const result = (await strategic.handler({
@@ -661,5 +667,150 @@ describe("Stage 4b — Layer 0 shortcut router wired into before_dispatch", () =
 
     expect(result?.handled).toBe(false);
     expect(fetchCalls).toHaveLength(0);
+  });
+});
+
+describe("Stage 5c — council hooks wired into before_dispatch + before_agent_start", () => {
+  it("registers a THIRD before_dispatch handler (council gate) between shortcut + cheap router", async () => {
+    await import("./index.js");
+    const handlers = registeredHooks.filter(
+      (h) => h.event === "before_dispatch",
+    );
+    // Order: [0] shortcut router, [1] council gate, [2] cheap router.
+    // Verified by behaviour below (council gate is the only one that
+    // POSTs `/budget` for a `/council` prompt).
+    expect(handlers).toHaveLength(3);
+  });
+
+  it("registers a THIRD before_agent_start handler (council mode) alongside strategic-mode", async () => {
+    await import("./index.js");
+    const handlers = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    );
+    // Order: [0] audit-open, [1] strategic-mode, [2] council mode.
+    expect(handlers).toHaveLength(3);
+  });
+
+  it("council gate POSTs to /budget and falls through when remainingUsd ≥ $2.0", async () => {
+    await import("./index.js");
+    const councilGate = registeredHooks.filter(
+      (h) => h.event === "before_dispatch",
+    )[1]!;
+
+    fetchCalls.length = 0;
+    const result = (await councilGate.handler({
+      content: "/council чи вводимо B2B в Q3?",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean; text?: string };
+
+    expect(result?.handled).toBe(false);
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0]!.url).toBe(
+      "http://server.local/api/internal/openclaw/budget",
+    );
+    const body = JSON.parse(String(fetchCalls[0]!.init?.body));
+    expect(body).toMatchObject({ founderUserId: "user_test" });
+  });
+
+  it("council gate short-circuits when remainingUsd < councilUsdBudget", async () => {
+    // Override default mock to simulate headroom below the $2.0 cap.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: unknown, init?: unknown) => {
+        fetchCalls.push({
+          url: typeof input === "string" ? input : String(input),
+          init: init as RequestInit | undefined,
+        });
+        return new Response(
+          JSON.stringify({
+            allowed: true,
+            spentUsd: 8.5,
+            budgetUsd: 10,
+            remainingUsd: 1.5,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+    await import("./index.js");
+    const councilGate = registeredHooks.filter(
+      (h) => h.event === "before_dispatch",
+    )[1]!;
+
+    fetchCalls.length = 0;
+    const result = (await councilGate.handler({
+      content: "/council Q3 hiring plan",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean; text?: string };
+
+    expect(result?.handled).toBe(true);
+    expect(result?.text).toContain("Council вимагає");
+    expect(result?.text).toContain("$2.00");
+  });
+
+  it("council gate does NOT call /budget for non-council messages", async () => {
+    await import("./index.js");
+    const councilGate = registeredHooks.filter(
+      (h) => h.event === "before_dispatch",
+    )[1]!;
+
+    fetchCalls.length = 0;
+    // Layer 0 would normally not have claimed `/metrics`, but the gate
+    // is positioned BETWEEN Layer 0 and Layer 1. The point is the gate
+    // must skip cheaply when the content doesn't start with `/council`.
+    const result = (await councilGate.handler({
+      content: "розкажи що ти можеш робити",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean };
+
+    expect(result?.handled).toBe(false);
+    // CRITICAL: no `/budget` round-trip for non-council DMs.
+    expect(fetchCalls).toHaveLength(0);
+  });
+
+  it("council mode injects COUNCIL_PRIMER and topic via before_agent_start", async () => {
+    await import("./index.js");
+    const councilMode = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    )[2]!;
+
+    const result = (await councilMode.handler({
+      prompt: "/council Q3 OKR draft",
+      runId: "run_council_int",
+    })) as { prompt?: string; prependContext?: string } | undefined;
+
+    expect(result).toBeDefined();
+    expect(result?.prompt).toBe("Q3 OKR draft");
+    expect(result?.prependContext).toMatch(/^COUNCIL_MODE: roundtable/);
+    expect(result?.prependContext).toContain("devops → eng → pm → growth");
+    expect(result?.prependContext).toContain("synthesis");
+  });
+
+  it("council mode handler is a pass-through for non-council prompts", async () => {
+    await import("./index.js");
+    const councilMode = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    )[2]!;
+
+    expect(
+      await councilMode.handler({
+        prompt: "/plan churn-reduction-q3",
+        runId: "r1",
+      }),
+    ).toBeUndefined();
+    expect(
+      await councilMode.handler({ prompt: "/okr Q3", runId: "r2" }),
+    ).toBeUndefined();
+    // Bare `/council` falls through so the agent can ask for a topic.
+    expect(
+      await councilMode.handler({ prompt: "/council", runId: "r3" }),
+    ).toBeUndefined();
+    // Word-boundary guard.
+    expect(
+      await councilMode.handler({ prompt: "/councils Q3", runId: "r4" }),
+    ).toBeUndefined();
   });
 });
