@@ -1096,7 +1096,6 @@ export default [
   // file shows up in `git blame` / `git log` against this rule.
   {
     files: [
-      "apps/web/src/modules/nutrition/NutritionApp.tsx",
       "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/hub/HubDashboard.tsx",
       "apps/web/src/core/lib/chatActions/fizrukActions.ts",

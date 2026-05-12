@@ -5,39 +5,26 @@ import {
   SkeletonText,
   Skeleton,
 } from "@shared/components/ui/Skeleton";
-import {
-  DataState,
-  type DataStateQueryLike,
-} from "@shared/components/ui/DataState";
+import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
 import { NutritionBottomNav } from "./components/NutritionBottomNav";
-import { SubTabs } from "./components/SubTabs";
-import { PhotoAnalyzeCard } from "./components/PhotoAnalyzeCard";
-import { NutritionDashboard } from "./components/NutritionDashboard";
-import { PantryCard } from "./components/PantryCard";
-import { RecipesCard } from "./components/RecipesCard";
-import { DailyPlanCard } from "./components/DailyPlanCard";
-import { ShoppingListCard } from "./components/ShoppingListCard";
-import { LogCard } from "./components/LogCard";
 import { NutritionPantrySelector } from "./components/NutritionPantrySelector";
 import { NutritionOverlays } from "./components/NutritionOverlays";
+import { NutritionStartPage } from "./pages/NutritionStartPage";
+import { NutritionPantryPage } from "./pages/NutritionPantryPage";
+import { NutritionLogPage } from "./pages/NutritionLogPage";
+import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Banner } from "@shared/components/ui/Banner";
 import { ModuleAccentProvider } from "@shared/components/layout";
-import { Icon } from "@shared/components/ui/Icon";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useQueryClient } from "@tanstack/react-query";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
-import {
-  loadNutritionPrefs,
-  persistNutritionPrefs,
-} from "./lib/nutritionStorage";
 import { useNutritionPantries } from "./hooks/useNutritionPantries";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
-import { getCachedNutritionSqliteState } from "./lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "./lib/sqliteReadGate";
 import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
@@ -52,13 +39,12 @@ import { useNutritionReminders } from "./hooks/useNutritionReminders";
 import { usePantryBarcodeScan } from "./hooks/usePantryBarcodeScan";
 import { useNutritionCloudBackup } from "./hooks/useNutritionCloudBackup";
 import { useNutritionRemoteActions } from "./hooks/useNutritionRemoteActions";
+import { useNutritionPwaAction } from "./hooks/useNutritionPwaAction";
+import { useNutritionRecipeCache } from "./hooks/useNutritionRecipeCache";
+import { useNutritionPrefsState } from "./hooks/useNutritionPrefsState";
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
-import { stableRecipeId } from "./lib/recipeIds";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/ui/undoToast";
-import { fmtMacro, todayISODate } from "./lib/nutritionFormat";
-import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 
 interface NutritionAppProps {
@@ -79,15 +65,10 @@ export default function NutritionApp({
   const [err, setErr] = useState("");
   const [statusText, setStatusText] = useState("");
 
-  // Stage 4 PR #032: install the dual-write context once the user is
-  // known and the flag is on. Without this the `triggerNutritionDualWrite`
-  // calls from `nutritionStorage.ts` early-out at the
-  // `isNutritionDualWriteRegistered()` gate, leaving SQLite empty.
+  // Stage 4 PR #032 / #033: install the dual-write context and warm
+  // the SQLite read cache once auth is known; both are no-ops when
+  // the corresponding flags are off.
   useNutritionDualWriteBoot();
-
-  // Stage 4 PR #033: warm the SQLite read cache once after auth so the
-  // overlay reads in `useNutritionLog` / `useNutritionPantries` /
-  // saved-recipe consumers can hydrate. No-op when the read flag is off.
   useNutritionSqliteReadBoot();
 
   const {
@@ -167,63 +148,18 @@ export default function NutritionApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount; subsequent edits to firstRun must not retrigger
   }, []);
 
-  useEffect(() => {
-    if (pwaAction === "add_meal") {
-      setActivePageAndHash("log");
-      log.setAddMealSheetOpen(true);
-      onPwaActionConsumed?.();
-      return undefined;
-    }
-    if (pwaAction === "add_meal_photo") {
-      setActivePageAndHash("start");
-      setPhotoCardForceOpen(true);
-      // Defer the file-picker click until after the disclosure has
-      // rendered the `<input ref={fileRef}>`. requestAnimationFrame is
-      // enough on desktop; the 80ms fallback covers mobile browsers
-      // that stall the first frame behind route transitions.
-      const raf = requestAnimationFrame(() => {
-        try {
-          photo.fileRef.current?.click();
-        } catch {
-          /* noop — picker may be blocked without a user gesture */
-        }
-      });
-      const fallback = window.setTimeout(() => {
-        try {
-          photo.fileRef.current?.click();
-        } catch {
-          /* noop */
-        }
-      }, 80);
-      onPwaActionConsumed?.();
-      return () => {
-        cancelAnimationFrame(raf);
-        window.clearTimeout(fallback);
-      };
-    }
-    return undefined;
-    // `photo.fileRef` is a stable ref; `setPhotoCardForceOpen` is a setter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [log, onPwaActionConsumed, pwaAction]);
+  useNutritionPwaAction({
+    pwaAction,
+    log,
+    photo,
+    setActivePageAndHash,
+    setPhotoCardForceOpen,
+    onPwaActionConsumed,
+  });
 
-  const [prefs, setPrefs] = useState(() => loadNutritionPrefs());
-  const [prefsStorageErr, setPrefsStorageErr] = useState("");
   const sqliteCacheTick = useNutritionSqliteReadTick();
-
-  useEffect(() => {
-    setPrefsStorageErr(
-      persistNutritionPrefs(prefs) ? "" : "Не вдалося зберегти налаштування.",
-    );
-  }, [prefs]);
-
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay nutrition prefs from
-  // the SQLite cache once it's warm. The LS read above stays as a
-  // synchronous fallback.
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    if (cache.prefs) setPrefs(cache.prefs);
-  }, [sqliteCacheTick]);
+  const { prefs, setPrefs, prefsStorageErr } =
+    useNutritionPrefsState(sqliteCacheTick);
 
   const {
     editingMeal,
@@ -280,32 +216,14 @@ export default function NutritionApp({
     ],
   );
 
-  useEffect(() => {
-    // Recipes moved to a sub-tab inside the "menu" page (#8). Only read
-    // the cache when the menu page is actually showing the recipes tab.
-    if (activePage !== "menu" || menuSubTab !== "recipes") return;
-    const c = readRecipeCache<Record<string, unknown>>(recipeCacheKey);
-    if (c?.recipes?.length) {
-      setRecipes(
-        c.recipes.map((r) => {
-          const rawId = (r as { id?: unknown })?.id;
-          return {
-            ...r,
-            id: rawId ? String(rawId) : stableRecipeId(r),
-          };
-        }),
-      );
-      setRecipesRaw(c.recipesRaw || "");
-      setRecipesTried(true);
-    }
-  }, [
+  useNutritionRecipeCache({
     activePage,
     menuSubTab,
     recipeCacheKey,
     setRecipes,
     setRecipesRaw,
     setRecipesTried,
-  ]);
+  });
 
   useNutritionReminders(prefs);
 
@@ -499,238 +417,81 @@ export default function NutritionApp({
 
           <div className="grid gap-4">
             {activePage === "start" && (
-              <SectionErrorBoundary
-                key="page-start"
-                title="Не вдалось показати «Харчування»"
-              >
-                <>
-                  <NutritionDashboard
-                    log={log.nutritionLog}
-                    prefs={prefs}
-                    onGoToLog={() => setActivePageAndHash("log")}
-                    onGoToDailyPlan={() => {
-                      setActivePageAndHash("menu");
-                    }}
-                    onFetchDayHint={fetchDayHint}
-                    dayHintText={dayHintText}
-                    dayHintBusy={dayHintBusy}
-                    onAddMeal={() => {
-                      log.setSelectedDate(todayISODate());
-                      setActivePageAndHash("log");
-                      scheduleTransient(() => {
-                        log.setAddMealPhotoResult(null);
-                        log.setAddMealSheetOpen(true);
-                      }, 80);
-                    }}
-                  />
-                  <details
-                    className="group"
-                    open={photoCardForceOpen || undefined}
-                    onToggle={(e) => {
-                      if (!e.currentTarget.open) setPhotoCardForceOpen(false);
-                    }}
-                  >
-                    <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-style-label text-text">
-                      <Icon
-                        name="chevron-right"
-                        size={16}
-                        className="transition-transform group-open:rotate-90"
-                      />
-                      Аналіз фото страви
-                    </summary>
-                    <div className="pt-1">
-                      <PhotoAnalyzeCard
-                        busy={busy}
-                        analyzePhoto={photo.analyzePhoto}
-                        fileRef={photo.fileRef as React.Ref<HTMLInputElement>}
-                        onPickPhoto={photo.onPickPhoto}
-                        photoPreviewUrl={photo.photoPreviewUrl}
-                        photoResult={photo.photoResult}
-                        fmtMacro={fmtMacro}
-                        portionGrams={photo.portionGrams}
-                        setPortionGrams={photo.setPortionGrams}
-                        refinePhoto={photo.refinePhoto}
-                        answers={photo.answers}
-                        setAnswers={photo.setAnswers}
-                        onSaveToLog={
-                          photo.photoResult ? handleSaveToLog : undefined
-                        }
-                      />
-                    </div>
-                  </details>
-                </>
-              </SectionErrorBoundary>
+              <NutritionStartPage
+                log={log}
+                photo={photo}
+                prefs={prefs}
+                busy={busy}
+                setActivePageAndHash={setActivePageAndHash}
+                fetchDayHint={fetchDayHint}
+                dayHintText={dayHintText}
+                dayHintBusy={dayHintBusy}
+                scheduleTransient={scheduleTransient}
+                photoCardForceOpen={photoCardForceOpen}
+                setPhotoCardForceOpen={setPhotoCardForceOpen}
+                onSaveToLog={handleSaveToLog}
+              />
             )}
 
             {activePage === "pantry" && (
-              <SectionErrorBoundary
-                key="page-pantry"
-                title="Не вдалось показати «Комора»"
-              >
-                <>
-                  <SubTabs
-                    value={pantrySubTab}
-                    onChange={(id) => setPantrySubTab(id as PantrySubTab)}
-                    tabs={[
-                      { id: "items", label: "Склад" },
-                      { id: "shopping", label: "Покупки" },
-                    ]}
-                  />
-                  {pantrySubTab === "items" ? (
-                    <>
-                      <PantryCard
-                        busy={busy}
-                        parsePantry={pantry.parsePantry}
-                        newItemName={pantry.newItemName}
-                        setNewItemName={pantry.setNewItemName}
-                        upsertItem={pantry.upsertItem}
-                        pantryText={pantry.pantryText}
-                        setPantryText={pantry.setPantryText}
-                        effectiveItems={pantry.effectiveItems}
-                        editItemAt={pantry.editItemAt}
-                        removeItemAtOrByName={(idx, name) => {
-                          if (pantry.pantryItems.length > 0) {
-                            const removed = pantry.pantryItems[idx];
-                            pantry.removeItemAt(idx);
-                            if (removed) {
-                              showUndoToast(toast, {
-                                msg: `Прибрано «${removed.name}» з комори`,
-                                onUndo: () => pantry.upsertItem(removed),
-                              });
-                            }
-                          } else if (name) {
-                            pantry.removeItem(name);
-                          }
-                        }}
-                        pantryItemsLength={pantry.pantryItems.length}
-                        pantrySummary={pantry.pantrySummary}
-                        onScanBarcode={() => {
-                          setPantryScanStatus("");
-                          setPantryScannerOpen(true);
-                        }}
-                      />
-                      {pantryScanStatus && (
-                        <div className="text-xs text-subtle px-1">
-                          {pantryScanStatus}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <ShoppingListCard
-                      recipes={recipes}
-                      weekPlan={weekPlan}
-                      pantryItems={pantry.effectiveItems}
-                      shoppingList={shopping.shoppingList}
-                      shoppingBusy={shoppingBusy}
-                      onGenerate={generateShoppingList}
-                      onToggleItem={shopping.toggle}
-                      onClearChecked={shopping.clearChecked}
-                      onClearAll={shopping.clearAll}
-                      onAddCheckedToPantry={addCheckedItemsToPantry}
-                      checkedItems={shopping.checkedItems}
-                    />
-                  )}
-                </>
-              </SectionErrorBoundary>
+              <NutritionPantryPage
+                pantry={pantry}
+                shopping={shopping}
+                recipes={recipes}
+                weekPlan={weekPlan}
+                shoppingBusy={shoppingBusy}
+                busy={busy}
+                pantrySubTab={pantrySubTab}
+                setPantrySubTab={(id) => setPantrySubTab(id as PantrySubTab)}
+                pantryScanStatus={pantryScanStatus}
+                setPantryScanStatus={setPantryScanStatus}
+                setPantryScannerOpen={setPantryScannerOpen}
+                toast={toast}
+                generateShoppingList={generateShoppingList}
+                addCheckedItemsToPantry={addCheckedItemsToPantry}
+              />
             )}
 
             {activePage === "log" && (
-              <SectionErrorBoundary
-                key="page-log"
-                title="Не вдалось показати «Щоденник»"
-              >
-                <LogCard
-                  log={log.nutritionLog}
-                  selectedDate={log.selectedDate}
-                  setSelectedDate={log.setSelectedDate}
-                  onAddMeal={() => {
-                    log.setAddMealPhotoResult(null);
-                    log.setAddMealSheetOpen(true);
-                  }}
-                  onAddMealFromSearch={(meal) => {
-                    const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-                    log.handleAddMeal({ ...meal, id });
-                  }}
-                  onRemoveMeal={(date, meal) => {
-                    if (!meal?.id) return;
-                    log.handleRemoveMeal(date, meal);
-                    showUndoToast(toast, {
-                      msg: "Запис видалено",
-                      onUndo: () => log.handleRestoreMeal(date, meal),
-                    });
-                  }}
-                  onEditMeal={(date, meal) => {
-                    setEditingMeal({ date, ...meal });
-                    log.setAddMealPhotoResult(null);
-                    log.setAddMealSheetOpen(true);
-                  }}
-                  onDuplicateYesterday={log.duplicateYesterday}
-                  onTrimLog={log.trimLogToLastDays}
-                />
-              </SectionErrorBoundary>
+              <NutritionLogPage
+                log={log}
+                toast={toast}
+                setEditingMeal={setEditingMeal}
+              />
             )}
 
             {activePage === "menu" && (
-              <SectionErrorBoundary
-                key="page-menu"
-                title="Не вдалось показати «Меню»"
-              >
-                <>
-                  <SubTabs
-                    value={menuSubTab}
-                    onChange={(id) => setMenuSubTab(id as MenuSubTab)}
-                    tabs={[
-                      { id: "plan", label: "План на день" },
-                      { id: "recipes", label: "Рецепти" },
-                    ]}
-                  />
-                  {menuSubTab === "plan" ? (
-                    <DataState
-                      query={dayPlanQuery}
-                      skeleton={dayPlanLoadingSkeleton}
-                    >
-                      {() => (
-                        <DailyPlanCard
-                          prefs={prefs}
-                          setPrefs={setPrefs}
-                          pantryItems={pantry.effectiveItems}
-                          busy={busy}
-                          dayPlan={dayPlan}
-                          dayPlanBusy={dayPlanBusy}
-                          fetchDayPlan={() => fetchDayPlan(null)}
-                          regenMeal={(mealType) => fetchDayPlan(mealType)}
-                          addMealToLog={addMealFromPlan}
-                          weekPlan={weekPlan}
-                          weekPlanRaw={weekPlanRaw}
-                          weekPlanBusy={weekPlanBusy}
-                          fetchWeekPlan={fetchWeekPlan}
-                          firstRunHint={firstRunNutritionActive}
-                          onDismissFirstRunHint={() => {
-                            markNutritionSeen();
-                            setFirstRunNutritionSurface(false);
-                          }}
-                        />
-                      )}
-                    </DataState>
-                  ) : (
-                    <RecipesCard
-                      busy={busy}
-                      activePantry={pantry.activePantry}
-                      prefs={prefs}
-                      setPrefs={setPrefs}
-                      recommendRecipes={recommendRecipes}
-                      recipes={recipes}
-                      recipesTried={recipesTried}
-                      recipesRaw={recipesRaw}
-                      err={err}
-                      fmtMacro={fmtMacro}
-                      recipeCacheEntry={recipeCacheEntry}
-                      addMealToLog={wrappedSaveMeal}
-                      selectedDate={log.selectedDate}
-                    />
-                  )}
-                </>
-              </SectionErrorBoundary>
+              <NutritionMenuPage
+                menuSubTab={menuSubTab}
+                setMenuSubTab={(id) => setMenuSubTab(id as MenuSubTab)}
+                pantry={pantry}
+                prefs={prefs}
+                setPrefs={setPrefs}
+                busy={busy}
+                err={err}
+                dayPlan={dayPlan}
+                dayPlanBusy={dayPlanBusy}
+                dayPlanQuery={dayPlanQuery}
+                dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
+                fetchDayPlan={fetchDayPlan}
+                addMealFromPlan={addMealFromPlan}
+                weekPlan={weekPlan}
+                weekPlanRaw={weekPlanRaw}
+                weekPlanBusy={weekPlanBusy}
+                fetchWeekPlan={fetchWeekPlan}
+                firstRunHint={firstRunNutritionActive}
+                onDismissFirstRunHint={() => {
+                  markNutritionSeen();
+                  setFirstRunNutritionSurface(false);
+                }}
+                recommendRecipes={recommendRecipes}
+                recipes={recipes}
+                recipesTried={recipesTried}
+                recipesRaw={recipesRaw}
+                recipeCacheEntry={recipeCacheEntry}
+                wrappedSaveMeal={wrappedSaveMeal}
+                selectedDate={log.selectedDate}
+              />
             )}
           </div>
         </div>
