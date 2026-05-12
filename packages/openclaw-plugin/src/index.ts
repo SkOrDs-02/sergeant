@@ -75,6 +75,11 @@ import { createShortcutRouterHook } from "./hooks/shortcut-router.js";
 import { createCheapRouterHook } from "./hooks/cheap-router.js";
 import { createStrategicModeHook } from "./hooks/strategic-mode.js";
 import {
+  createCouncilGateHook,
+  createCouncilModeHook,
+} from "./hooks/council.js";
+import { createCouncilBudgetGate } from "./council/index.js";
+import {
   HttpCheapRouterClassifier,
   loadCheapRouterSystemPrompt,
 } from "./cheap-router/index.js";
@@ -916,6 +921,33 @@ export default definePluginEntry({
         log: hookLog,
       });
 
+      // Stage 5c — council round-table orchestration. Two hooks split
+      // across two events (the canonical openclaw 5.7 pattern):
+      //   - `before_dispatch` gate: fail-fast when remainingUsd <
+      //     councilUsdBudget (default $2.0, Locked decision #4). Denial
+      //     short-circuits the channel reply with $0 LLM cost; the
+      //     allowed path falls through to the agent loop so the
+      //     before_agent_start primer hook can mutate the prompt.
+      //   - `before_agent_start` mode: injects `COUNCIL_PRIMER` as
+      //     `prependContext` and rewrites the prompt to just the
+      //     captured topic. Cofounder persona (default) reads the
+      //     primer + the `council-roundtable` SKILL and runs the
+      //     fixed-order round-table (devops → eng → pm → growth →
+      //     finance → cofounder synthesis, Locked decision #8).
+      const councilGate = createCouncilBudgetGate({
+        http,
+        founderUserId: config.founderUserId,
+        councilUsdBudget: config.councilUsdBudget,
+        log: hookLog,
+      });
+      const councilGateHook = createCouncilGateHook({
+        gate: councilGate,
+        log: hookLog,
+      });
+      const councilMode = createCouncilModeHook({
+        log: hookLog,
+      });
+
       // Each entry is one lifecycle hook registered via `api.on`. The
       // OpenClaw runtime emits the event for every inbound message
       // (`before_dispatch`), every LLM call (`llm_input`), every agent
@@ -936,6 +968,17 @@ export default definePluginEntry({
           event: "before_dispatch",
           handler: (event: unknown) =>
             shortcutRouter(event as Parameters<typeof shortcutRouter>[0]),
+        },
+        // Stage 5c — council budget gate runs AFTER Layer 0 shortcut
+        // router (so `/metrics`-style shortcuts still get the $0 path)
+        // but BEFORE Layer 1 cheap-router (so `/council` never spends
+        // a Haiku classifier call). The gate only fires when the
+        // content matches `^/council\b` so non-council DMs incur zero
+        // extra cost.
+        {
+          event: "before_dispatch",
+          handler: (event: unknown) =>
+            councilGateHook(event as Parameters<typeof councilGateHook>[0]),
         },
         // Stage 4c — Layer 1 cheap-router runs AFTER Layer 0 in registration
         // order. `before_dispatch` is a *claiming* hook: if Layer 0 already
@@ -962,6 +1005,15 @@ export default definePluginEntry({
           event: "before_agent_start",
           handler: (event: unknown) =>
             strategicMode(event as Parameters<typeof strategicMode>[0]),
+        },
+        // Stage 5c — council mode hook runs alongside the strategic-mode
+        // hook. Slash prefixes don't overlap, so only one of the two
+        // ever mutates a given turn. Audit hook still wins for the
+        // verbatim invocation row text.
+        {
+          event: "before_agent_start",
+          handler: (event: unknown) =>
+            councilMode(event as Parameters<typeof councilMode>[0]),
         },
         {
           event: "agent_end",
@@ -999,6 +1051,7 @@ export default definePluginEntry({
         writeTools: Array.from(WRITE_TOOLS),
         shortcuts: ALL_SHORTCUTS.map((s) => s.slug),
         strategicModes: ALL_STRATEGIC_MODES.map((m) => m.slug),
+        councilUsdBudget: config.councilUsdBudget,
       });
       // Emit an explicit ERROR-level log per failure so Railway's log
       // forwarder — which strips structured fields from `logger.info`
