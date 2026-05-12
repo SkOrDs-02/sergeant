@@ -842,6 +842,20 @@ export default definePluginEntry({
         log: hookLog,
       });
 
+      // openclaw 5.7 requires every `registerHook` call to provide an
+      // `opts.name` (non-empty trimmed string). The loader otherwise
+      // throws `Error: hook registration missing name`
+      // (`node_modules/openclaw/dist/loader-B-GXgDrk.js:1490`,
+      // `requireRegistrationValue(entry?.hook.name ?? opts?.name?.trim(),
+      //  "hook registration missing name")`). This regressed silently in
+      // the Stage 1 SDK rewrite (commit 14ee42e2) which dropped the
+      // `safeRegisterHook` helper introduced by 305a4a03 — every hook
+      // registration since has been throwing, swallowed by the try/catch
+      // below, and the `failed`/`failures` structured fields stripped by
+      // Railway's log forwarder. Live smoke-test 2026-05-12 (Gateway
+      // deploys 0a648dfd and 92402345) confirmed: zero Stage 4a
+      // invocation rows, zero `openclaw.shortcut.routed` events, full
+      // agent dispatch on every `/metrics`, `/runway`, `Дай метрики`.
       const hookRegistrations: Array<{
         event:
           | "before_dispatch"
@@ -849,30 +863,36 @@ export default definePluginEntry({
           | "before_agent_start"
           | "agent_end"
           | "before_tool_call";
+        name: string;
         handler: (event: unknown) => unknown;
       }> = [
         {
           event: "before_dispatch",
+          name: "sergeant.shortcut-router",
           handler: (event: unknown) =>
             shortcutRouter(event as Parameters<typeof shortcutRouter>[0]),
         },
         {
           event: "llm_input",
+          name: "sergeant.budget-gate",
           handler: (event: unknown) =>
             budgetGate(event as Parameters<typeof budgetGate>[0]),
         },
         {
           event: "before_agent_start",
+          name: "sergeant.audit.before-agent-start",
           handler: (event: unknown) =>
             beforeAgentStart(event as Parameters<typeof beforeAgentStart>[0]),
         },
         {
           event: "agent_end",
+          name: "sergeant.audit.agent-end",
           handler: (event: unknown) =>
             agentEnd(event as Parameters<typeof agentEnd>[0]),
         },
         {
           event: "before_tool_call",
+          name: "sergeant.write-approval",
           handler: (event: unknown) =>
             writeApproval(event as Parameters<typeof writeApproval>[0]),
         },
@@ -880,9 +900,11 @@ export default definePluginEntry({
 
       let hooksOk = 0;
       const hookFailures: Array<{ event: string; error: string }> = [];
-      for (const { event, handler } of hookRegistrations) {
+      for (const { event, name, handler } of hookRegistrations) {
         try {
-          registerHook(event, handler);
+          // Pass `opts.name` per openclaw 5.7 loader contract; without it
+          // every registration throws `hook registration missing name`.
+          registerHook(event, handler, { name });
           hooksOk++;
         } catch (err) {
           hookFailures.push({
@@ -899,6 +921,17 @@ export default definePluginEntry({
         writeTools: Array.from(WRITE_TOOLS),
         shortcuts: ALL_SHORTCUTS.map((s) => s.slug),
       });
+      // Emit an explicit ERROR-level log per failure so Railway's log
+      // forwarder — which strips structured fields from `logger.info`
+      // payloads — still surfaces hook-registration regressions. Without
+      // this, the silent 5/5 failure mode from the original Stage 4a/4b
+      // ship would have been invisible again.
+      for (const failure of hookFailures) {
+        logger.error?.("sergeant.hook.registration_failed", {
+          event: failure.event,
+          error: failure.error,
+        });
+      }
     }
   },
 });
