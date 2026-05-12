@@ -337,10 +337,12 @@ describe("Stage 4a plugin entry — hooks registered", () => {
     const end = registeredHooks.find((h) => h.event === "agent_end")!;
 
     // First open an invocation so the correlator has a row to consume.
+    // Use a non-shortcut user message so the composed Stage 4b router
+    // falls through to the Stage 4a audit-open path.
     await open.handler({
       runId: "run_lifecycle",
       trigger: "dm",
-      userMessage: "ping",
+      userMessage: "Зроби короткий апдейт по тижню",
     });
     fetchCalls.length = 0;
 
@@ -405,4 +407,84 @@ describe("Stage 4a plugin entry — hooks registered", () => {
       expect(result).toBeUndefined();
     },
   );
+});
+
+describe("Stage 4b — Layer 0 shortcut router wired into before_agent_start", () => {
+  it("matches /metrics and short-circuits with ROUTED_RESPONSE_PREFIX", async () => {
+    await import("./index.js");
+    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    fetchCalls.length = 0;
+
+    const result = (await open.handler({
+      runId: "run_short_metrics",
+      trigger: "dm",
+      userMessage: "/metrics",
+    })) as { block?: boolean; blockReason?: string };
+
+    expect(result?.block).toBe(true);
+    expect(result?.blockReason).toMatch(/^__ROUTED__:/);
+    expect(result?.blockReason).toContain("Метрики сьогодні");
+    // Tools fanned out: 3 HTTP calls to PostHog/Stripe/Sentry endpoints,
+    // and explicitly NO invocations/open (shortcut bypassed the audit hook).
+    const postedUrls = fetchCalls.map((c) => c.url);
+    expect(postedUrls).not.toContain(
+      "http://server.local/api/internal/openclaw/invocations/open",
+    );
+    expect(postedUrls.some((u) => u.includes("/posthog"))).toBe(true);
+    expect(postedUrls.some((u) => u.includes("/stripe"))).toBe(true);
+    expect(postedUrls.some((u) => u.includes("/sentry"))).toBe(true);
+  });
+
+  it("Ukrainian phrase 'дай метрики' also routes through the shortcut", async () => {
+    await import("./index.js");
+    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    fetchCalls.length = 0;
+
+    const result = (await open.handler({
+      runId: "run_short_metrics_ua",
+      trigger: "dm",
+      userMessage: "дай метрики",
+    })) as { block?: boolean; blockReason?: string };
+
+    expect(result?.block).toBe(true);
+    expect(result?.blockReason).toMatch(/^__ROUTED__:/);
+  });
+
+  it("/think escalates to Layer 2 (does NOT block)", async () => {
+    await import("./index.js");
+    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    fetchCalls.length = 0;
+
+    const result = await open.handler({
+      runId: "run_think",
+      trigger: "dm",
+      userMessage: "/think скільки коштує одиниця залучення",
+    });
+
+    // /think passes through to the audit-open path. Result is whatever
+    // the Stage 4a hook returns (open invocation), NOT a block.
+    expect((result as { block?: boolean })?.block).toBeFalsy();
+    const postedUrls = fetchCalls.map((c) => c.url);
+    expect(postedUrls).toContain(
+      "http://server.local/api/internal/openclaw/invocations/open",
+    );
+  });
+
+  it("non-shortcut message falls through to the audit-open hook", async () => {
+    await import("./index.js");
+    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    fetchCalls.length = 0;
+
+    const result = await open.handler({
+      runId: "run_pass_through",
+      trigger: "dm",
+      userMessage: "розкажи що ти можеш робити",
+    });
+
+    expect((result as { block?: boolean })?.block).toBeFalsy();
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0]!.url).toBe(
+      "http://server.local/api/internal/openclaw/invocations/open",
+    );
+  });
 });

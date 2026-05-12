@@ -1,14 +1,14 @@
 # `@sergeant/openclaw-plugin`
 
-> **Last validated:** 2026-05-12 by Devin (Stage 4a hooks + native approval). **Status:** Stage 4a — 25 read-tools + 5 write-tools + 4 hooks (`llm_input`, `before_agent_start`, `agent_end`, `before_tool_call`) на real `openclaw@2026.5.7` SDK.
+> **Last validated:** 2026-05-12 by Devin (Stage 4b Layer 0 shortcut router). **Status:** Stage 4b — 25 read-tools + 5 write-tools + 4 hooks + Layer 0 shortcut router (17 shortcuts, $0 LLM cost) на real `openclaw@2026.5.7` SDK.
 
 Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
 Source-of-truth для контексту і дорожньої карти: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
 
-## Поточний стан (Stage 4a)
+## Поточний стан (Stage 4b)
 
-`src/index.ts` реєструє **30 tools + 4 hooks** через `api.registerTool` / `api.registerHook` SDK поверх real `openclaw@2026.5.7`.
+`src/index.ts` реєструє **30 tools + 4 hooks + Layer 0 shortcut router (17 shortcuts)** через `api.registerTool` / `api.registerHook` SDK поверх real `openclaw@2026.5.7`.
 
 **25 read-tools:** `recall_memory`, `read_strategy_docs`, `record_decision`, `query_app_db`, `get_server_stats`, `get_stripe_metrics`, `get_posthog_stats`, `get_sentry_issues`, `read_github`, `github_search`, `github_tree`, `github_diff`, `github_prs`, `get_github_releases`, `n8n_list`, `n8n_describe`, `n8n_trigger`, `n8n_activate`, `refresh_business_snapshot`, `read_workflow_logs`, `read_telegram_topic`, `seo_gsc_query`, `seo_psi_audit`, `seo_serp_lookup`, `set_reminder`.
 
@@ -21,12 +21,39 @@ Source-of-truth для контексту і дорожньої карти: [`do
 - `agent_end` — фіналізує invocation (`POST /invocations/finalize`) з rollup cost/duration/iterations/status; soft-fail якщо корелятор порожній (server fallback'ить за runId).
 - `before_tool_call` — для write-tools повертає `requireApproval` payload, для read-tools `undefined` (пас-тру). [`src/hooks/write-approval.ts`](./src/hooks/write-approval.ts)
 
+**Layer 0 shortcut router (Stage 4b):**
+
+`createShortcutRouterHook` composing on top of Stage 4a `before_agent_start` — виконується **ПЕРШИМ**, fall-through-ить на audit-open якщо match-a нема. 17 shortcuts ([`src/shortcuts/`](./src/shortcuts/)):
+
+| slug              | patterns                                           | tools                                                                               |
+| ----------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `metrics`         | `/metrics`, `дай метрики`, `як справи з метриками` | `get_posthog_stats` + `get_stripe_metrics` + `get_sentry_issues` (parallel)         |
+| `runway`          | `/runway`, `скільки runway`                        | `get_stripe_metrics`                                                                |
+| `status`          | `/status`, `що по системі`                         | `get_server_stats` + `get_sentry_issues`                                            |
+| `sentry`          | `/sentry`, `що по sentry`                          | `get_sentry_issues`                                                                 |
+| `stripe`          | `/stripe`, `що по stripe`                          | `get_stripe_metrics`                                                                |
+| `posthog`         | `/posthog`, `що по posthog`                        | `get_posthog_stats`                                                                 |
+| `prs`             | `/prs`, `pull requestи`                            | `github_prs`                                                                        |
+| `releases`        | `/releases`, `релізи`                              | `get_github_releases`                                                               |
+| `builds`          | `/builds`, `білди`                                 | `read_workflow_logs`                                                                |
+| `workflows`       | `/workflows`, `воркфлоу`                           | `n8n_list`                                                                          |
+| `refresh_metrics` | `/refresh_metrics`, `онови бізнес снапшот`         | `refresh_business_snapshot`                                                         |
+| `heartbeat`       | `/heartbeat`, `/health`, `ping`                    | `get_server_stats`                                                                  |
+| `recall`          | `/recall <query>`                                  | `recall_memory` ($1 — з capture group)                                              |
+| `decisions`       | `/decisions`, `останні рішення`                    | `recall_memory({ source: "decisions" })`                                            |
+| `digest`          | `/digest [day\|week]`, `дай дайджест`              | `refresh_business_snapshot` + `recall_memory({ source: "decisions" })` (sequential) |
+| `remind`          | `/remind <when> <what>`                            | `set_reminder({ when: $1, message: $2 })`                                           |
+| `think`           | `/think <question>`, `подумай <question>`          | — (escalates to Layer 2 via `__ESCALATE_LAYER2__:` sentinel — hook НЕ блокує)       |
+
+Шлях: hook реєструється на `before_agent_start`; якщо regex match → паралельно викликає tool-и через in-process `toolRegistry: Map<name, executor>` (будується пліч-о-пліч з `api.registerTool` loop — zero divergence), рендерить Markdown-template і повертає `{ block: true, blockReason: "__ROUTED__:" + response }`. SDK блокує agent turn, Gateway повинен strip-нути `__ROUTED__:` prefix і post-нути як assistant message. **Cost: $0 LLM для shortcut match-ів** (agent взагалі не стартує). Якщо нема match-а — hook повертає `undefined`, fall-through на Stage 4a audit-open.
+
+Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definition-файлів, `src/hooks/shortcut-router.ts` factory. Helpers `ROUTED_RESPONSE_PREFIX`, `ESCALATE_PREFIX`, `isRoutedResponse`, `extractRoutedResponse` ре-експортуються з пакету для Gateway-side consumer-ів.
+
 Кожен tool — `api.registerTool({ name, label, description, parameters: Type.Object(...), async execute(invocationId, params) { ... } })`. Параметри валідуються `typebox@1.1.x` (не Zod і не `@sinclair/typebox`). Tools проксяться через HTTP до існуючих server endpoints `/api/internal/openclaw/<endpoint>` з `Authorization: Bearer ${INTERNAL_API_KEY}` (server API не змінюється). Для write-tools додатковий server-side гейт — алловліст + `/write-audit/log` (див. `apps/server/src/routes/internal/openclaw.ts`).
 
 ### Чого ще НЕ зареєстровано
 
-- **Layer 0 shortcut router** (17 shortcuts + canned templates) — Stage 4b. Потребує `before_agent_start` payload extension. Legacy reference: `src/legacy/shortcut-router.ts` + `shortcuts/`.
-- **Layer 1 cheap-router** (Haiku JSON-classifier) — Stage 4c. System prompt вже на volume (`ops/openclaw/cheap-router.system.md`). Legacy reference: `src/legacy/cheap-router.ts`.
+- **Layer 1 cheap-router** (Haiku JSON-classifier) — Stage 4c. System prompt вже на volume (`ops/openclaw/cheap-router.system.md`). Legacy reference: `src/legacy/cheap-router.ts`. Re-використає той самий `__ROUTED__:` сентинел + injected `executeTool` зі Stage 4b.
 - **Per-persona tool allowlist** — Stage 5a. Зараз плоский `tools.alsoAllow` (усі 10 personas мають усі 30 tools).
 - **Strategic-modes wiring + council orchestration + morning-digest cron** — Stage 5b/5c/5d. SKILL-и є у `ops/openclaw/skills/`, копіюються на volume через `docker-entrypoint.sh`; plugin-side orchestration і slash-handlers ще не написані.
 
