@@ -7,7 +7,7 @@
  * tools` і з `WRITE_TOOLS` (`src/hooks/write-approval.ts`).
  *
  * Цей модуль НЕ використовується runtime-плагіном — openclaw host робить
- * filter на etapі tool dispatch згідно з `agents.<id>.tools.{alsoAllow,
+ * filter на etapі tool dispatch згідно з `agents.list[].tools.{alsoAllow,
  * deny}` у `ops/openclaw/openclaw.example.json`. Канонічна табличка
  * нижче існує, щоб:
  *
@@ -17,9 +17,17 @@
  * Якщо persona отримує / втрачає tool — змінюй ОДНОЧАСНО:
  *   - SKILL.md секцію «Доступні tools»
  *   - PERSONA_TOOL_ALLOWLIST нижче
- *   - `ops/openclaw/openclaw.example.json` `agents.<id>.tools` block
+ *   - `ops/openclaw/openclaw.example.json` `agents.list[].tools` block
+ *     (entry з `id` що дорівнює persona-id)
  *
  * Gate-test ламається, якщо ці три розходяться.
+ *
+ * AI-CONTEXT: реальний openclaw 5.7 runtime config-schema чекає
+ * `AgentsConfig = { defaults?: AgentDefaultsConfig, list?: AgentConfig[] }`,
+ * де кожен `AgentConfig` має `id: string` (required) + `tools?:
+ * AgentToolsConfig`. Стара форма `agents.<id>.tools` + `agents.defaults.tools`
+ * відкидається валідатором (см. PR-фікс після crash-loop-у 2026-05-12).
+ * Shared baseline на root-level `tools.alsoAllow`, не у `agents.defaults`.
  *
  * AI-NOTE: спайк-доку § 6 (`docs/notes/spikes/openclaw-sdk-5.7-real-api.md`)
  * описує семантику `AgentToolsConfig.alsoAllow` / `deny` у openclaw 5.7.

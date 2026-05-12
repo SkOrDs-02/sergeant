@@ -1,13 +1,25 @@
 /**
  * Stage 5a gate-test — verify `ops/openclaw/openclaw.example.json`
- * matches the canonical `PERSONA_TOOL_ALLOWLIST` mapping.
+ * matches the canonical `PERSONA_TOOL_ALLOWLIST` mapping AND uses the
+ * real openclaw 5.7 runtime config shape (`agents.list[]` array, not
+ * `agents.<persona>` keys; `recall_memory` baseline at root `tools.alsoAllow`,
+ * not `agents.defaults.tools.alsoAllow`).
  *
  * Catches drift between three artifacts that MUST stay in sync:
  *   1. `ops/openclaw/skills/sergeant-<id>/SKILL.md` § Доступні tools
  *   2. `PERSONA_TOOL_ALLOWLIST` (allowlist.ts)
- *   3. `ops/openclaw/openclaw.example.json` `agents.<id>.tools` block
+ *   3. `ops/openclaw/openclaw.example.json` `agents.list[]` entry per persona
  *
  * If you edit one, edit the other two.
+ *
+ * AI-CONTEXT: the prior shape (`agents.<persona>.tools` + `agents.defaults.tools`)
+ * was rejected by openclaw 5.7 runtime schema with
+ * `"Unrecognized key: tools"` under `agents.defaults` and
+ * `"Unrecognized keys: cofounder, eng, ..."` under `agents` — see
+ * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` § Per-persona allowlist.
+ * The real shape is `AgentsConfig = { defaults?: AgentDefaultsConfig, list?: AgentConfig[] }`,
+ * where each `AgentConfig` has `id: string` (required) + optional `tools: AgentToolsConfig`.
+ * Shared baseline tools go at root-level `tools.alsoAllow`, not `agents.defaults.tools`.
  */
 
 import { readFileSync } from "node:fs";
@@ -20,6 +32,7 @@ import {
   ALL_TOOL_NAMES,
   PERSONA_IDS,
   PERSONA_TOOL_ALLOWLIST,
+  type PersonaId,
 } from "./allowlist.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +48,18 @@ interface AgentToolsBlock {
   readonly deny?: readonly string[];
 }
 
+interface AgentListEntry {
+  readonly id: string;
+  readonly tools?: AgentToolsBlock;
+  readonly [extra: string]: unknown;
+}
+
+interface AgentsBlock {
+  readonly defaults?: Record<string, unknown>;
+  readonly list?: readonly AgentListEntry[];
+  readonly [extra: string]: unknown;
+}
+
 interface OpenClawConfig {
   readonly tools?: {
     readonly profile?: string;
@@ -42,7 +67,7 @@ interface OpenClawConfig {
     readonly alsoAllow?: readonly string[];
     readonly deny?: readonly string[];
   };
-  readonly agents?: Record<string, { readonly tools?: AgentToolsBlock }>;
+  readonly agents?: AgentsBlock;
 }
 
 function readConfig(): OpenClawConfig {
@@ -50,36 +75,74 @@ function readConfig(): OpenClawConfig {
   return JSON.parse(raw) as OpenClawConfig;
 }
 
+function findAgent(
+  cfg: OpenClawConfig,
+  personaId: PersonaId,
+): AgentListEntry | undefined {
+  return cfg.agents?.list?.find((entry) => entry.id === personaId);
+}
+
 describe("ops/openclaw/openclaw.example.json — per-persona tool allowlist gate", () => {
   it("loads the config JSON without errors", () => {
     expect(() => readConfig()).not.toThrow();
   });
 
-  it("does NOT carry a flat root tools.alsoAllow (Stage 5a removes the catch-all)", () => {
+  it("uses the runtime `agents.list[]` shape (not `agents.<persona>` keys)", () => {
     const cfg = readConfig();
-    const rootAlsoAllow = cfg.tools?.alsoAllow;
     expect(
-      rootAlsoAllow,
-      "root tools.alsoAllow should be empty/absent — moved to agents.<id>.tools",
-    ).toBeFalsy();
+      Array.isArray(cfg.agents?.list),
+      "agents.list must be an array — `agents.<persona>` keys are rejected by openclaw 5.7 runtime schema",
+    ).toBe(true);
+    const recognisedAgentsKeys = new Set(["defaults", "list"]);
+    const unknown = Object.keys(cfg.agents ?? {}).filter(
+      (k) => !recognisedAgentsKeys.has(k),
+    );
+    expect(
+      unknown,
+      `agents.* has unrecognised keys: ${unknown.join(", ")}. ` +
+        "Per-persona configs must live under agents.list[], not as top-level agents.<id> keys.",
+    ).toEqual([]);
   });
 
-  it("declares an `agents.<id>.tools` block for every persona", () => {
+  it("does NOT carry `tools` under `agents.defaults` (rejected by runtime schema)", () => {
+    const cfg = readConfig();
+    expect(
+      cfg.agents?.defaults?.["tools"],
+      "agents.defaults.tools is not a valid key in openclaw 5.7 AgentDefaultsConfig. " +
+        "Move shared baseline to root-level `tools.alsoAllow`.",
+    ).toBeUndefined();
+  });
+
+  it("declares root-level `tools.alsoAllow` baseline with at least `recall_memory`", () => {
+    const cfg = readConfig();
+    expect(
+      cfg.tools?.alsoAllow,
+      "root tools.alsoAllow should contain the shared baseline " +
+        "(previously lived at agents.defaults.tools.alsoAllow)",
+    ).toBeDefined();
+    expect(new Set(cfg.tools?.alsoAllow ?? [])).toContain("recall_memory");
+  });
+
+  it("declares an `agents.list[]` entry for every persona", () => {
     const cfg = readConfig();
     for (const personaId of PERSONA_IDS) {
-      const agent = cfg.agents?.[personaId];
+      const agent = findAgent(cfg, personaId);
+      expect(
+        agent,
+        `agents.list[].id="${personaId}" entry should exist`,
+      ).toBeDefined();
       expect(
         agent?.tools,
-        `agents.${personaId}.tools should exist`,
+        `agents.list[].id="${personaId}".tools should exist`,
       ).toBeDefined();
     }
   });
 
-  it("agents.<id>.tools.alsoAllow matches canonical mapping (sorted)", () => {
+  it("agents.list[].tools.alsoAllow matches canonical mapping (sorted)", () => {
     const cfg = readConfig();
     for (const personaId of PERSONA_IDS) {
       const fromJson = [
-        ...(cfg.agents?.[personaId]?.tools?.alsoAllow ?? []),
+        ...(findAgent(cfg, personaId)?.tools?.alsoAllow ?? []),
       ].sort();
       const fromCanonical = [
         ...PERSONA_TOOL_ALLOWLIST[personaId].alsoAllow,
@@ -90,10 +153,12 @@ describe("ops/openclaw/openclaw.example.json — per-persona tool allowlist gate
     }
   });
 
-  it("agents.<id>.tools.deny matches canonical mapping (sorted)", () => {
+  it("agents.list[].tools.deny matches canonical mapping (sorted)", () => {
     const cfg = readConfig();
     for (const personaId of PERSONA_IDS) {
-      const fromJson = [...(cfg.agents?.[personaId]?.tools?.deny ?? [])].sort();
+      const fromJson = [
+        ...(findAgent(cfg, personaId)?.tools?.deny ?? []),
+      ].sort();
       const fromCanonical = [...PERSONA_TOOL_ALLOWLIST[personaId].deny].sort();
       expect(fromJson, `mismatch for persona ${personaId} deny`).toEqual(
         fromCanonical,
@@ -105,17 +170,17 @@ describe("ops/openclaw/openclaw.example.json — per-persona tool allowlist gate
     const cfg = readConfig();
     const registered = new Set(ALL_TOOL_NAMES);
     for (const personaId of PERSONA_IDS) {
-      const tools = cfg.agents?.[personaId]?.tools;
+      const tools = findAgent(cfg, personaId)?.tools;
       for (const tool of tools?.alsoAllow ?? []) {
         expect(
           registered.has(tool),
-          `agents.${personaId}.tools.alsoAllow has unknown tool ${tool}`,
+          `agents.list[].id="${personaId}".tools.alsoAllow has unknown tool ${tool}`,
         ).toBe(true);
       }
       for (const tool of tools?.deny ?? []) {
         expect(
           registered.has(tool),
-          `agents.${personaId}.tools.deny has unknown tool ${tool}`,
+          `agents.list[].id="${personaId}".tools.deny has unknown tool ${tool}`,
         ).toBe(true);
       }
     }
@@ -123,19 +188,24 @@ describe("ops/openclaw/openclaw.example.json — per-persona tool allowlist gate
 
   it("cofounder JSON block carries all 30 tools", () => {
     const cfg = readConfig();
-    const cofounder = cfg.agents?.["cofounder"]?.tools;
+    const cofounder = findAgent(cfg, "cofounder")?.tools;
     expect(new Set(cofounder?.alsoAllow ?? [])).toEqual(
       new Set(ALL_TOOL_NAMES),
     );
   });
 
-  it("agents.defaults declares a shared `recall_memory` baseline", () => {
+  it("agents.list[] ids are unique (no duplicate persona entries)", () => {
     const cfg = readConfig();
-    const defaults = cfg.agents?.["defaults"]?.tools;
+    const ids = (cfg.agents?.list ?? []).map((e) => e.id);
+    const seen = new Set<string>();
+    const dupes: string[] = [];
+    for (const id of ids) {
+      if (seen.has(id)) dupes.push(id);
+      seen.add(id);
+    }
     expect(
-      defaults?.alsoAllow,
-      "agents.defaults.tools.alsoAllow should include recall_memory baseline",
-    ).toBeDefined();
-    expect(new Set(defaults?.alsoAllow ?? [])).toContain("recall_memory");
+      dupes,
+      `duplicate ids in agents.list[]: ${dupes.join(", ")}`,
+    ).toEqual([]);
   });
 });
