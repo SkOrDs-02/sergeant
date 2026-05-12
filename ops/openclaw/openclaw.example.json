@@ -21,16 +21,7 @@
   "session": { "dmScope": "per-channel-peer" },
   "tools": {
     "profile": "coding",
-    "allow": [
-      "group:fs",
-      "group:runtime",
-      "group:web",
-      "group:sessions",
-      "group:memory",
-      "cron",
-      "image",
-      "image_generate",
-      "video_generate",
+    "alsoAllow": [
       "recall_memory",
       "read_strategy_docs",
       "record_decision",
