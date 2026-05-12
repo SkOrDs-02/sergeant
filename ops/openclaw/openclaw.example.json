@@ -46,7 +46,12 @@
       "seo_gsc_query",
       "seo_psi_audit",
       "seo_serp_lookup",
-      "set_reminder"
+      "set_reminder",
+      "create_github_issue",
+      "commit_to_strategy_doc",
+      "post_to_topic",
+      "pause_workflow",
+      "mute_alert"
     ]
   },
 

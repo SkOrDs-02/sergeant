@@ -69,6 +69,13 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   // it, `app/_layout.tsx`'s `import "../global.css"` (NativeWind v4)
   // trips TS2882 the moment any sibling .ts(x) file is staged.
   "apps/mobile/tsconfig.json": ["nativewind-env.d.ts", "expo-env.d.ts"],
+  // openclaw-plugin keeps the SDK shape behind ambient `declare module`
+  // statements (`src/types/openclaw-ambient.d.ts`) because both `openclaw`
+  // and `typebox` are installed only inside the Gateway Docker image at
+  // runtime — they're not workspace dependencies. Without the ambient
+  // file, staged typecheck on any plugin .ts fails TS2307 for both
+  // imports + downstream TS7006 implicit-any on `api`/`params`.
+  "packages/openclaw-plugin/tsconfig.json": ["src/types/openclaw-ambient.d.ts"],
 };
 
 function main() {
