@@ -293,14 +293,19 @@ describe("Stage 4a plugin entry — write-tool execute() routing", () => {
   );
 });
 
-describe("Stage 4a/4b plugin entry — hooks registered", () => {
-  it("registers exactly the 5 Stage 4a/4b lifecycle hooks via api.on", async () => {
+describe("Stage 4a/4b/4c plugin entry — hooks registered", () => {
+  it("registers exactly the 6 Stage 4a/4b/4c lifecycle hooks via api.on", async () => {
     await import("./index.js");
+    // Stage 4c added a second `before_dispatch` registration (Layer 1
+    // cheap-router) AFTER the Layer 0 shortcut router. Both share the
+    // same event name; the runtime calls them in registration order and
+    // stops at the first `{ handled: true }`.
     const events = registeredHooks.map((h) => h.event).sort();
     expect(events).toEqual(
       [
         "agent_end",
         "before_agent_start",
+        "before_dispatch",
         "before_dispatch",
         "before_tool_call",
         "llm_input",
@@ -308,11 +313,17 @@ describe("Stage 4a/4b plugin entry — hooks registered", () => {
     );
   });
 
-  it("registers each hook exactly once (no duplicate events)", async () => {
+  it("registers `before_dispatch` twice (Layer 0 + Layer 1); other hooks unique", async () => {
     await import("./index.js");
     const events = registeredHooks.map((h) => h.event as string);
-    expect(new Set(events).size).toBe(events.length);
-    expect(events.length).toBe(5);
+    expect(events.length).toBe(6);
+    const counts = new Map<string, number>();
+    for (const e of events) counts.set(e, (counts.get(e) ?? 0) + 1);
+    expect(counts.get("before_dispatch")).toBe(2);
+    expect(counts.get("llm_input")).toBe(1);
+    expect(counts.get("before_agent_start")).toBe(1);
+    expect(counts.get("agent_end")).toBe(1);
+    expect(counts.get("before_tool_call")).toBe(1);
   });
 
   it("llm_input handler POSTs to /budget and lets allowed calls through", async () => {

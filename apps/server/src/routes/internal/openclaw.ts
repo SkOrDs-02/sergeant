@@ -70,6 +70,8 @@ import {
   activateN8nWorkflow,
   refreshBusinessSnapshot,
   N8nAllowlistError,
+  // PR-Stage4c: Layer 1 cheap-router (Haiku JSON classifier).
+  classifyMessage,
   // PR-C1b: code-understanding tools.
   githubSearch,
   githubTree,
@@ -177,6 +179,18 @@ const BudgetBody = z.object({
   founderUserId: z.string().min(1),
   tzName: z.string().optional(),
 });
+
+// PR-Stage4c: classify body. `systemPrompt` опційний — plugin шле його
+// тільки якщо завантажив prompt з `cheapRouterSystemPromptPath` (canonical
+// file у `ops/openclaw/cheap-router.system.md`); інакше route використовує
+// embedded fallback з `modules/openclaw/classify.ts`. Max length підібрана
+// з запасом: реальні DM-и < 1000 символів, prompt < 4 кБ.
+const ClassifyBody = z
+  .object({
+    userMessage: z.string().min(1).max(8000),
+    systemPrompt: z.string().min(1).max(8000).optional(),
+  })
+  .strict();
 
 const OpenInvocationBody = z.object({
   founderUserId: z.string().min(1),
@@ -630,6 +644,41 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.limit ?? 20,
       );
       res.json({ decisions: result });
+    }),
+  );
+
+  // ---- classify (Stage 4c — Layer 1 Haiku JSON classifier) ----
+  // Один короткий Haiku-call (~$0.0002) повертає `{ class, shortcut?, persona?,
+  // params?, chat_response? }`. Plugin (`hooks/cheap-router.ts`) маршрутизує:
+  // routine_* → Layer 0 shortcut, chat → reply verbatim, thinking → Layer 2.
+  // 503 якщо ANTHROPIC_API_KEY відсутній (deploy-config bug, не runtime);
+  // 502 якщо Haiku фейлить — caller fail-closes до Layer 2 (env env_invoked).
+  r.post(
+    "/api/internal/openclaw/classify",
+    asyncHandler(async (req, res) => {
+      const apiKey = process.env["ANTHROPIC_API_KEY"];
+      if (!apiKey) {
+        res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
+        return;
+      }
+      const parsed = validateBody(ClassifyBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const classification = await classifyMessage(
+          {
+            userMessage: parsed.data.userMessage,
+            ...(parsed.data.systemPrompt
+              ? { systemPrompt: parsed.data.systemPrompt }
+              : {}),
+          },
+          apiKey,
+        );
+        res.json(classification);
+      } catch {
+        // Не leak-аємо Anthropic error message клієнту — plugin
+        // лише знає, що classifier недоступний, і escalates до Layer 2.
+        res.status(502).json({ error: "classify_upstream_error" });
+      }
     }),
   );
 

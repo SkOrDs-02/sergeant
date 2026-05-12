@@ -1,6 +1,7 @@
 /**
- * @sergeant/openclaw-plugin — Stage 4b: 25 read-tools + 5 write-tools +
- *                                       5 hooks + Layer 0 shortcut router
+ * @sergeant/openclaw-plugin — Stage 4c: 25 read-tools + 5 write-tools +
+ *                                       6 hooks (Layer 0 shortcut router
+ *                                       + Layer 1 Haiku cheap-router)
  *
  * Built against the real openclaw@2026.5.7 plugin SDK. Stage 1 (MVP) shipped
  * 3 read tools to prove the entry/registration path works; Stage 2 brought
@@ -11,7 +12,7 @@
  * shortcut router on its OWN event (`before_dispatch`), not composed with
  * the audit hook:
  *
- *   - `before_dispatch`      → Layer 0 shortcut router (Stage 4b). If the
+ *   - `before_dispatch` (1/2) → Layer 0 shortcut router (Stage 4b). If the
  *                              inbound user message matches a regex
  *                              shortcut, dispatch its tools through the
  *                              in-process registry, render the canned
@@ -21,7 +22,15 @@
  *                              channel (Telegram) verbatim AND skips
  *                              agent dispatch entirely. $0 LLM cost.
  *                              `/think` does NOT claim dispatch — falls
- *                              through to Layer 2.
+ *                              through to Layer 1 → Layer 2.
+ *   - `before_dispatch` (2/2) → Layer 1 cheap-router (Stage 4c). One Haiku
+ *                              JSON-classifier call (~$0.0002) when Layer 0
+ *                              missed. routine_* → execute Layer 0 shortcut
+ *                              with Haiku’s suggested slug; chat → reply
+ *                              with Haiku’s own short answer; thinking →
+ *                              fall through to Layer 2 (full Sonnet).
+ *                              Slash commands skip the classifier entirely
+ *                              (Layer 0 already had a shot).
  *   - `llm_input`            → per-call daily budget gate (`POST /budget`)
  *   - `before_agent_start`   → open invocation row
  *                              (`POST /invocations/open`) and cache
@@ -63,6 +72,11 @@ import {
   InvocationCorrelator,
 } from "./hooks/audit.js";
 import { createShortcutRouterHook } from "./hooks/shortcut-router.js";
+import { createCheapRouterHook } from "./hooks/cheap-router.js";
+import {
+  HttpCheapRouterClassifier,
+  loadCheapRouterSystemPrompt,
+} from "./cheap-router/index.js";
 import {
   createWriteApprovalHook,
   WRITE_TOOLS,
@@ -856,6 +870,38 @@ export default definePluginEntry({
         log: hookLog,
       });
 
+      // Stage 4c — Layer 1 Haiku cheap-router. Reads system prompt from
+      // `cheapRouterSystemPromptPath` (mounted volume copy of
+      // `ops/openclaw/cheap-router.system.md`) once at plugin start; if
+      // path is unset OR the file is unreadable, the server falls back
+      // to its embedded default. Classifier itself is HTTP-only —
+      // `ANTHROPIC_API_KEY` lives ONLY on apps/server (Hard Rule #20).
+      const promptLoad = loadCheapRouterSystemPrompt(
+        config.cheapRouterSystemPromptPath,
+      );
+      if (promptLoad.attempted && promptLoad.error) {
+        logger.warn("sergeant.cheap_router.prompt_load_failed", {
+          path: config.cheapRouterSystemPromptPath,
+          error: promptLoad.error,
+        });
+      } else if (promptLoad.attempted) {
+        logger.info("sergeant.cheap_router.prompt_loaded", {
+          path: config.cheapRouterSystemPromptPath,
+          chars: promptLoad.prompt?.length ?? 0,
+        });
+      }
+      const cheapRouterClassifier = new HttpCheapRouterClassifier({
+        http,
+        systemPrompt: promptLoad.prompt,
+        log: hookLog,
+      });
+      const cheapRouter = createCheapRouterHook({
+        classifier: cheapRouterClassifier,
+        shortcuts: ALL_SHORTCUTS,
+        executeTool,
+        log: hookLog,
+      });
+
       // Each entry is one lifecycle hook registered via `api.on`. The
       // OpenClaw runtime emits the event for every inbound message
       // (`before_dispatch`), every LLM call (`llm_input`), every agent
@@ -876,6 +922,15 @@ export default definePluginEntry({
           event: "before_dispatch",
           handler: (event: unknown) =>
             shortcutRouter(event as Parameters<typeof shortcutRouter>[0]),
+        },
+        // Stage 4c — Layer 1 cheap-router runs AFTER Layer 0 in registration
+        // order. `before_dispatch` is a *claiming* hook: if Layer 0 already
+        // returned `{ handled: true }`, the runtime never invokes Layer 1.
+        // The classifier therefore only fires on messages Layer 0 missed.
+        {
+          event: "before_dispatch",
+          handler: (event: unknown) =>
+            cheapRouter(event as Parameters<typeof cheapRouter>[0]),
         },
         {
           event: "llm_input",

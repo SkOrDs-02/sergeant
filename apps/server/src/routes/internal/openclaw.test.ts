@@ -11,7 +11,7 @@
  */
 import express from "express";
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   listRecentWriteAuditsMock,
@@ -22,6 +22,7 @@ const {
   triggerN8nWorkflowMock,
   activateN8nWorkflowMock,
   refreshBusinessSnapshotMock,
+  classifyMessageMock,
 } = vi.hoisted(() => ({
   listRecentWriteAuditsMock: vi.fn(),
   recordWriteAuditMock: vi.fn(),
@@ -31,6 +32,7 @@ const {
   triggerN8nWorkflowMock: vi.fn(),
   activateN8nWorkflowMock: vi.fn(),
   refreshBusinessSnapshotMock: vi.fn(),
+  classifyMessageMock: vi.fn(),
 }));
 
 vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
@@ -46,6 +48,7 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
     triggerN8nWorkflow: triggerN8nWorkflowMock,
     activateN8nWorkflow: activateN8nWorkflowMock,
     refreshBusinessSnapshot: refreshBusinessSnapshotMock,
+    classifyMessage: classifyMessageMock,
   };
 });
 
@@ -426,5 +429,115 @@ describe("/api/internal/openclaw/snapshot/refresh", () => {
 
     expect(res.status).toBe(400);
     expect(refreshBusinessSnapshotMock).not.toHaveBeenCalled();
+  });
+});
+
+// PR-Stage4c: Layer 1 cheap-router classify endpoint. Route отримує
+// `{ userMessage, systemPrompt? }`, кличе `classifyMessage()` (mocked тут),
+// повертає classification JSON. 503 коли ANTHROPIC_API_KEY відсутній;
+// 502 коли Haiku фейлить — щоб plugin escalates до Layer 2 fail-closed.
+describe("/api/internal/openclaw/classify", () => {
+  const originalKey = process.env["ANTHROPIC_API_KEY"];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env["ANTHROPIC_API_KEY"] = "test-key";
+  });
+
+  afterEach(() => {
+    if (originalKey === undefined) {
+      delete process.env["ANTHROPIC_API_KEY"];
+    } else {
+      process.env["ANTHROPIC_API_KEY"] = originalKey;
+    }
+  });
+
+  it("returns classification JSON for a routine_metrics question", async () => {
+    classifyMessageMock.mockResolvedValueOnce({
+      class: "routine_metrics",
+      shortcut: "metrics",
+      persona: null,
+      params: null,
+      chat_response: null,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/classify")
+      .send({ userMessage: "Як у нас з MRR?" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      class: "routine_metrics",
+      shortcut: "metrics",
+      persona: null,
+      params: null,
+      chat_response: null,
+    });
+    expect(classifyMessageMock).toHaveBeenCalledWith(
+      { userMessage: "Як у нас з MRR?" },
+      "test-key",
+    );
+  });
+
+  it("forwards systemPrompt override when provided by the plugin", async () => {
+    classifyMessageMock.mockResolvedValueOnce({ class: "thinking" });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/classify")
+      .send({
+        userMessage: "Як спланувати релізи на квартал?",
+        systemPrompt: "TEST PROMPT",
+      });
+
+    expect(res.status).toBe(200);
+    expect(classifyMessageMock).toHaveBeenCalledWith(
+      {
+        userMessage: "Як спланувати релізи на квартал?",
+        systemPrompt: "TEST PROMPT",
+      },
+      "test-key",
+    );
+  });
+
+  it("returns 503 when ANTHROPIC_API_KEY is not configured", async () => {
+    delete process.env["ANTHROPIC_API_KEY"];
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/classify")
+      .send({ userMessage: "Привіт" });
+
+    expect(res.status).toBe(503);
+    expect(classifyMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 502 when the classifier throws (Haiku upstream error)", async () => {
+    classifyMessageMock.mockRejectedValueOnce(new Error("upstream 503"));
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/classify")
+      .send({ userMessage: "тест" });
+
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "classify_upstream_error" });
+  });
+
+  it("rejects empty userMessage with 400 (Zod min(1))", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/classify")
+      .send({ userMessage: "" });
+
+    expect(res.status).toBe(400);
+    expect(classifyMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown fields with 400 (.strict() schema)", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/classify")
+      .send({ userMessage: "hi", maxTokens: 200 });
+
+    expect(res.status).toBe(400);
+    expect(classifyMessageMock).not.toHaveBeenCalled();
   });
 });

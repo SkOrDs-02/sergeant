@@ -1,22 +1,23 @@
 # `@sergeant/openclaw-plugin`
 
-> **Last validated:** 2026-05-12 by Devin (Stage 4b shortcut router migrated to `before_dispatch`). **Status:** Stage 4b — 25 read-tools + 5 write-tools + 5 hooks + Layer 0 shortcut router (17 shortcuts, $0 LLM cost) на real `openclaw@2026.5.7` SDK.
+> **Last validated:** 2026-05-12 by Devin (Stage 4c Layer 1 Haiku cheap-router в PR). **Status:** Stage 4c (PR-pending) — 25 read-tools + 5 write-tools + 6 hooks (Layer 0 shortcut router + Layer 1 Haiku cheap-router) на real `openclaw@2026.5.7` SDK.
 
 Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
 Source-of-truth для контексту і дорожньої карти: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
 
-## Поточний стан (Stage 4b)
+## Поточний стан (Stage 4c PR-pending; production = Stage 4b)
 
-`src/index.ts` реєструє **30 tools + 5 hooks + Layer 0 shortcut router (17 shortcuts)** через `api.registerTool` / `api.registerHook` SDK поверх real `openclaw@2026.5.7`.
+`src/index.ts` реєструє **30 tools + 6 hooks (два `before_dispatch` — Layer 0 схорткат + Layer 1 Haiku classifier)** через `api.registerTool` / `api.on` SDK поверх real `openclaw@2026.5.7`.
 
 **25 read-tools:** `recall_memory`, `read_strategy_docs`, `record_decision`, `query_app_db`, `get_server_stats`, `get_stripe_metrics`, `get_posthog_stats`, `get_sentry_issues`, `read_github`, `github_search`, `github_tree`, `github_diff`, `github_prs`, `get_github_releases`, `n8n_list`, `n8n_describe`, `n8n_trigger`, `n8n_activate`, `refresh_business_snapshot`, `read_workflow_logs`, `read_telegram_topic`, `seo_gsc_query`, `seo_psi_audit`, `seo_serp_lookup`, `set_reminder`.
 
 **5 write-tools:** `create_github_issue`, `commit_to_strategy_doc`, `post_to_topic`, `pause_workflow`, `mute_alert`. Усі вважаються мутуючими; гейтаються `before_tool_call` hook-ом який повертає `{ requireApproval: {...} }` — host рендерить approval UI, `onResolution` логує рішення в `/write-audit/log`.
 
-**5 hooks:**
+**6 hooks (after Stage 4c):**
 
-- `before_dispatch` — Layer 0 shortcut router (Stage 4b). Див. нижче.
+- `before_dispatch` (1/2) — Layer 0 shortcut router (Stage 4b). Див. нижче.
+- `before_dispatch` (2/2) — Layer 1 Haiku cheap-router (Stage 4c). Стартує тільки якщо Layer 0 не claim-нув повідомлення. Один ~$0.0002 Haiku-call → JSON classification → routine\_\* exec Layer 0 shortcut / chat reply verbatim / thinking fall through до Layer 2. [`src/hooks/cheap-router.ts`](./src/hooks/cheap-router.ts).
 - `llm_input` — per-call USD budget gate (`POST /api/internal/openclaw/budget`); fail-closed (network/5xx → block). [`src/hooks/budget.ts`](./src/hooks/budget.ts)
 - `before_agent_start` — відкриває invocation row (`POST /invocations/open`); кешує `invocationId ↔ runId` у in-memory `InvocationCorrelator` (Map). [`src/hooks/audit.ts`](./src/hooks/audit.ts) **NOTE:** openclaw 5.7 позначив цей hook як `@deprecated` (real event має поле `prompt`, а не `userMessage`, і result type не підтримує `block`). Stage 4a follow-up мігрує на `session_start` / `agent_turn_prepare`.
 - `agent_end` — фіналізує invocation (`POST /invocations/finalize`) з rollup cost/duration/iterations/status; soft-fail якщо корелятор порожній (server fallback'ить за runId).
@@ -56,7 +57,7 @@ Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definitio
 
 ### Чого ще НЕ зареєстровано
 
-- **Layer 1 cheap-router** (Haiku JSON-classifier) — Stage 4c. System prompt вже на volume (`ops/openclaw/cheap-router.system.md`). Legacy reference: `src/legacy/cheap-router.ts`. Re-використає той самий паттерн `{ block: true, blockReason: <rendered response> }` без sentinel-а + injected `executeTool` зі Stage 4b.
+- **Layer 1 cheap-router** (Haiku JSON-classifier) — Stage 4c (цей PR). Один ~$0.0002 Haiku-call на `before_dispatch` ПІСЛЯ Layer 0; класифікує в 5 категорій (routine*metrics / routine_recall / routine_remind / thinking / chat) і роутить: `routine*\*`→ виконати Layer 0 схорткат;`chat`→ повернути Haiku-відповідь verbatim;`thinking` → fall through до Layer 2. System prompt на volume (`ops/openclaw/cheap-router.system.md`) піднято через `OPENCLAW_CHEAP_ROUTER_PROMPT_PATH`; якщо не сконфігуровано — server fallback на embedded дефолт. Anthropic key живе на `apps/server`(Hard Rule #20); plugin POST-ить`/api/internal/openclaw/classify`. Fail-closed: HTTP error → escalate to Layer 2. Код: [`src/hooks/cheap-router.ts`](./src/hooks/cheap-router.ts), [`src/cheap-router/`](./src/cheap-router/).
 - **Per-persona tool allowlist** — Stage 5a. Зараз плоский `tools.alsoAllow` (усі 10 personas мають усі 30 tools).
 - **Strategic-modes wiring + council orchestration + morning-digest cron** — Stage 5b/5c/5d. SKILL-и є у `ops/openclaw/skills/`, копіюються на volume через `docker-entrypoint.sh`; plugin-side orchestration і slash-handlers ще не написані.
 

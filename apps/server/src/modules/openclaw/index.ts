@@ -41,6 +41,21 @@ export {
 } from "./tools.js";
 export { selectToneMode, buildSystemPrompt } from "./prompts.js";
 
+// Stage 4c (PR-Stage4c): Layer 1 cheap-router classifier (Haiku JSON).
+// Lives next to the read-tools so write-audit, budget і classify ділять
+// один module-namespace.
+export {
+  classifyMessage,
+  parseClassification,
+  DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT,
+  CHEAP_ROUTER_CLASSES,
+} from "./classify.js";
+export type {
+  CheapRouterClass,
+  CheapRouterClassification,
+  ClassifyMessageArgs,
+} from "./classify.js";
+
 // Phase 1 (PR-C1c): n8n delegation surface + refresh_business_snapshot.
 export {
   listN8nWorkflows,
