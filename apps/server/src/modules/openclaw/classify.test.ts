@@ -6,6 +6,10 @@
  * fallbacks (parse errors → `{ class: "chat" }`, upstream not-ok → throw).
  */
 
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { anthropicMessagesMock } = vi.hoisted(() => ({
@@ -16,7 +20,22 @@ vi.mock("../../lib/anthropic.js", () => ({
   anthropicMessages: anthropicMessagesMock,
 }));
 
-const { classifyMessage, parseClassification } = await import("./classify.js");
+const {
+  classifyMessage,
+  parseClassification,
+  DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT,
+} = await import("./classify.js");
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "../../../../..");
+const CHEAP_ROUTER_MD_PATH = path.join(
+  REPO_ROOT,
+  "ops/openclaw/cheap-router.system.md",
+);
+
+function stripHtmlComments(text: string): string {
+  return text.replace(/<!--[\s\S]*?-->/g, "");
+}
 
 function makeResponse(text: string, ok = true, status = 200) {
   return {
@@ -128,8 +147,9 @@ describe("classifyMessage", () => {
       model: "claude-haiku-4-5-20251001",
       max_tokens: 200,
     });
-    // Default prompt is the Ukrainian classifier instructions.
-    expect(callArgs?.[1]?.system).toContain("Класифікуй message");
+    // Default prompt is the persona-aware Ukrainian classifier instructions.
+    expect(callArgs?.[1]?.system).toContain("Ти — Сергій");
+    expect(callArgs?.[1]?.system).toContain("класифікуй кожне повідомлення");
   });
 
   it("uses the override system prompt when provided", async () => {
@@ -170,5 +190,24 @@ describe("classifyMessage", () => {
 
     const result = await classifyMessage({ userMessage: "hi" }, "key");
     expect(result).toEqual({ class: "chat" });
+  });
+});
+
+describe("DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT", () => {
+  it("mirrors ops/openclaw/cheap-router.system.md byte-for-byte (drift gate)", () => {
+    const raw = readFileSync(CHEAP_ROUTER_MD_PATH, "utf8");
+    const stripped = stripHtmlComments(raw).trim();
+    expect(stripped).toBe(DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT);
+  });
+
+  it("contains persona preamble + identity-escalation rule", () => {
+    expect(DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT).toContain("Ти — Сергій");
+    expect(DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT).toContain("Identity-питання");
+    expect(DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT).toContain(
+      "class=thinking, persona=cofounder",
+    );
+    expect(DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT).toContain(
+      "НЕ представляйся як Claude / AI / language model / assistant",
+    );
   });
 });
