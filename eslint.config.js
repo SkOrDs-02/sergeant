@@ -1098,7 +1098,6 @@ export default [
     files: [
       "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/hub/HubDashboard.tsx",
-      "apps/web/src/core/lib/chatActions/fizrukActions.ts",
     ],
     rules: {
       "max-lines": "off",
