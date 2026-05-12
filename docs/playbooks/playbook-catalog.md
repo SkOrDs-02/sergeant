@@ -25,6 +25,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Port a web screen to mobile            | [`port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md)         | `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` | Human + agent |
 | Modify or add a console agent          | [`modify-console-agent.md`](./modify-console-agent.md)                   | `sergeant-hubchat`                                      | Human + agent |
 | Modify or add an n8n workflow          | [`modify-n8n-workflow.md`](./modify-n8n-workflow.md)                     | `sergeant-deploy-and-observability`                     | Human + agent |
+| Cutover OpenClaw to external Gateway   | [`cutover-openclaw-gateway.md`](./cutover-openclaw-gateway.md)           | `sergeant-deploy-and-observability`                     | Human + agent |
 | Review / merge gate                    | [`../governance/review-checklist.md`](../governance/review-checklist.md) | `sergeant-review-and-merge`                             | Human + agent |
 
 ## Notes
