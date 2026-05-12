@@ -37,10 +37,22 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
       handler: (event: unknown) => unknown,
       opts?: { priority?: number; timeoutMs?: number },
     ) => void;
+    /**
+     * Register a hook handler. **`opts.name` is REQUIRED** in openclaw
+     * 5.7 — the loader (`node_modules/openclaw/dist/loader-B-GXgDrk.js:1490`)
+     * throws `Error: hook registration missing name` from
+     * `requireRegistrationValue(entry?.hook.name ?? opts?.name?.trim(), …)`
+     * if the caller passes no `name`. Older fix (commit 305a4a03 from
+     * 2026-05-11) wrapped this in a `safeRegisterHook` helper; the Stage 1
+     * SDK rewrite (14ee42e2) dropped that helper and every hook
+     * registration regressed silently — caught by smoke-test on 2026-05-12
+     * (zero `openclaw.shortcut.routed`, zero `openclaw_invocations` rows).
+     * Always pass `{ name: "sergeant.<unique-id>" }` to every call.
+     */
     registerHook?: (
       eventName: PluginHookName | PluginHookName[] | string | string[],
       handler: (event: unknown) => unknown,
-      opts?: { priority?: number; timeoutMs?: number },
+      opts?: { name: string; priority?: number; timeoutMs?: number },
     ) => void;
     /** Parsed plugin config (openclaw injects it before `register` runs). */
     config?: unknown;

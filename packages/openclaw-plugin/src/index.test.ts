@@ -33,6 +33,13 @@ interface MockTool {
 interface RegisteredHook {
   event: string | string[];
   handler: (event: unknown) => unknown;
+  // `name` is REQUIRED by openclaw 5.7 (`loader-B-GXgDrk.js:1490`):
+  // `requireRegistrationValue(entry?.hook.name ?? opts?.name?.trim(),
+  //  "hook registration missing name")`. Without it every hook reg
+  // throws and is swallowed by our try/catch. The test mock captures
+  // the full opts object so we can assert `name` is supplied. The
+  // explicit `| undefined` is needed under `exactOptionalPropertyTypes`.
+  opts: { name?: string; priority?: number; timeoutMs?: number } | undefined;
 }
 
 const registered: MockTool[] = [];
@@ -68,8 +75,9 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
       registerHook: (
         event: string | string[],
         handler: (event: unknown) => unknown,
+        opts?: { name?: string; priority?: number; timeoutMs?: number },
       ) => {
-        registeredHooks.push({ event, handler });
+        registeredHooks.push({ event, handler, opts });
       },
     };
     def.register(api);
@@ -288,6 +296,33 @@ describe("Stage 4a/4b plugin entry — hooks registered", () => {
         "llm_input",
       ].sort(),
     );
+  });
+
+  it("passes a unique non-empty `opts.name` to every registerHook call (openclaw 5.7 loader contract)", async () => {
+    await import("./index.js");
+    // Every hook MUST have a name — `loader-B-GXgDrk.js:1490` throws
+    // `Error: hook registration missing name` otherwise. The Stage 4a/4b
+    // 2026-05-12 live smoke-test regression was 5/5 silent failures here.
+    const names = registeredHooks.map((h) => h.opts?.name);
+    for (const name of names) {
+      expect(typeof name).toBe("string");
+      expect((name ?? "").trim().length).toBeGreaterThan(0);
+    }
+    // Names must be unique — loader's `existingHook` check rejects
+    // duplicates and would push a diagnostic instead of registering.
+    expect(new Set(names).size).toBe(registeredHooks.length);
+    // Sanity-check the expected canonical names so a typo (e.g.
+    // "shortcutrouter" vs "shortcut-router") is caught at PR time.
+    const byEvent = new Map(
+      registeredHooks.map((h) => [h.event as string, h.opts?.name] as const),
+    );
+    expect(byEvent.get("before_dispatch")).toBe("sergeant.shortcut-router");
+    expect(byEvent.get("llm_input")).toBe("sergeant.budget-gate");
+    expect(byEvent.get("before_agent_start")).toBe(
+      "sergeant.audit.before-agent-start",
+    );
+    expect(byEvent.get("agent_end")).toBe("sergeant.audit.agent-end");
+    expect(byEvent.get("before_tool_call")).toBe("sergeant.write-approval");
   });
 
   it("llm_input handler POSTs to /budget and lets allowed calls through", async () => {
