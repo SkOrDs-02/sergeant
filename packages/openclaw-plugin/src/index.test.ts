@@ -293,17 +293,22 @@ describe("Stage 4a plugin entry — write-tool execute() routing", () => {
   );
 });
 
-describe("Stage 4a/4b/4c plugin entry — hooks registered", () => {
-  it("registers exactly the 6 Stage 4a/4b/4c lifecycle hooks via api.on", async () => {
+describe("Stage 4a/4b/4c/5b plugin entry — hooks registered", () => {
+  it("registers exactly the 7 Stage 4a/4b/4c/5b lifecycle hooks via api.on", async () => {
     await import("./index.js");
     // Stage 4c added a second `before_dispatch` registration (Layer 1
-    // cheap-router) AFTER the Layer 0 shortcut router. Both share the
-    // same event name; the runtime calls them in registration order and
-    // stops at the first `{ handled: true }`.
+    // cheap-router) AFTER the Layer 0 shortcut router. Stage 5b PR-1
+    // adds a second `before_agent_start` registration (strategic-mode
+    // hook) AFTER the audit-open hook so the audit row keeps the
+    // founder's verbatim slash command. Both pairs share their event
+    // name; the runtime calls them in registration order and merges
+    // results (`before_agent_start`) or stops at the first claim
+    // (`before_dispatch`).
     const events = registeredHooks.map((h) => h.event).sort();
     expect(events).toEqual(
       [
         "agent_end",
+        "before_agent_start",
         "before_agent_start",
         "before_dispatch",
         "before_dispatch",
@@ -313,15 +318,15 @@ describe("Stage 4a/4b/4c plugin entry — hooks registered", () => {
     );
   });
 
-  it("registers `before_dispatch` twice (Layer 0 + Layer 1); other hooks unique", async () => {
+  it("registers `before_dispatch` and `before_agent_start` twice; other hooks unique", async () => {
     await import("./index.js");
     const events = registeredHooks.map((h) => h.event as string);
-    expect(events.length).toBe(6);
+    expect(events.length).toBe(7);
     const counts = new Map<string, number>();
     for (const e of events) counts.set(e, (counts.get(e) ?? 0) + 1);
     expect(counts.get("before_dispatch")).toBe(2);
+    expect(counts.get("before_agent_start")).toBe(2);
     expect(counts.get("llm_input")).toBe(1);
-    expect(counts.get("before_agent_start")).toBe(1);
     expect(counts.get("agent_end")).toBe(1);
     expect(counts.get("before_tool_call")).toBe(1);
   });
@@ -446,6 +451,52 @@ describe("Stage 4a/4b/4c plugin entry — hooks registered", () => {
       expect(result).toBeUndefined();
     },
   );
+});
+
+describe("Stage 5b PR-1 — strategic-mode hook wired into before_agent_start", () => {
+  it("registers a SECOND before_agent_start handler that activates /plan", async () => {
+    await import("./index.js");
+    const handlers = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    );
+    // 1st handler = Stage 4a audit-open; 2nd handler = Stage 5b
+    // strategic-mode. Registration order is asserted upstream by the
+    // hook-count tests; here we verify the strategic-mode side returns
+    // a `{ prompt, prependContext }` result on a `/plan` prompt.
+    expect(handlers).toHaveLength(2);
+    const strategic = handlers[1]!;
+
+    const result = (await strategic.handler({
+      prompt: "/plan churn-reduction-q3",
+      runId: "run_strategic_1",
+    })) as { prompt?: string; prependContext?: string } | undefined;
+
+    expect(result).toBeDefined();
+    expect(result?.prompt).toBe("churn-reduction-q3");
+    expect(result?.prependContext).toMatch(/^STRATEGIC_MODE: plan\./);
+    expect(result?.prependContext).toContain("1) GOAL");
+    expect(result?.prependContext).toContain("4) DECISION + FOLLOWUP");
+  });
+
+  it("strategic-mode handler is a pass-through for non-/plan prompts", async () => {
+    await import("./index.js");
+    const strategic = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    )[1]!;
+
+    expect(
+      await strategic.handler({
+        prompt: "/metrics",
+        runId: "run_strategic_2",
+      }),
+    ).toBeUndefined();
+    expect(
+      await strategic.handler({
+        prompt: "what's our runway?",
+        runId: "run_strategic_3",
+      }),
+    ).toBeUndefined();
+  });
 });
 
 describe("Stage 4b — Layer 0 shortcut router wired into before_dispatch", () => {

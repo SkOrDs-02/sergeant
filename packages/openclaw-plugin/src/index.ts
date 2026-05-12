@@ -73,6 +73,7 @@ import {
 } from "./hooks/audit.js";
 import { createShortcutRouterHook } from "./hooks/shortcut-router.js";
 import { createCheapRouterHook } from "./hooks/cheap-router.js";
+import { createStrategicModeHook } from "./hooks/strategic-mode.js";
 import {
   HttpCheapRouterClassifier,
   loadCheapRouterSystemPrompt,
@@ -82,6 +83,7 @@ import {
   WRITE_TOOLS,
 } from "./hooks/write-approval.js";
 import { ALL_SHORTCUTS } from "./shortcuts/index.js";
+import { ALL_STRATEGIC_MODES } from "./strategic-modes/index.js";
 import type { ToolExecutor, ToolResult } from "./shortcuts/types.js";
 
 function safeJsonParse(s: string): Record<string, unknown> {
@@ -902,6 +904,18 @@ export default definePluginEntry({
         log: hookLog,
       });
 
+      // Stage 5b PR-1 — strategic-mode hook on `before_agent_start`.
+      // Detects `/plan <topic>` (and, after PR-2/3, `/analyze` and
+      // `/okr`) and returns `{ prompt: <stripped topic>, prependContext:
+      // <primer> }` so the agent runs the structured framework instead
+      // of free-form chat. Registered AFTER the Stage 4a audit hook so
+      // the audit row captures the founder's verbatim slash command
+      // before strategic-mode strips it (handler results merge in
+      // registration order — see `hooks/strategic-mode.ts` header).
+      const strategicMode = createStrategicModeHook({
+        log: hookLog,
+      });
+
       // Each entry is one lifecycle hook registered via `api.on`. The
       // OpenClaw runtime emits the event for every inbound message
       // (`before_dispatch`), every LLM call (`llm_input`), every agent
@@ -942,6 +956,13 @@ export default definePluginEntry({
           handler: (event: unknown) =>
             beforeAgentStart(event as Parameters<typeof beforeAgentStart>[0]),
         },
+        // Stage 5b PR-1 — strategic-mode hook runs after the audit-open
+        // hook so the audit row keeps the original `/plan ...` text.
+        {
+          event: "before_agent_start",
+          handler: (event: unknown) =>
+            strategicMode(event as Parameters<typeof strategicMode>[0]),
+        },
         {
           event: "agent_end",
           handler: (event: unknown) =>
@@ -977,6 +998,7 @@ export default definePluginEntry({
         failures: hookFailures.length > 0 ? hookFailures : undefined,
         writeTools: Array.from(WRITE_TOOLS),
         shortcuts: ALL_SHORTCUTS.map((s) => s.slug),
+        strategicModes: ALL_STRATEGIC_MODES.map((m) => m.slug),
       });
       // Emit an explicit ERROR-level log per failure so Railway's log
       // forwarder — which strips structured fields from `logger.info`
