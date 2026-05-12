@@ -1,7 +1,7 @@
 # SPIKE — openclaw 5.7 plugin SDK reality-check
 
-> **Last validated:** 2026-05-12 by Devin (update 13:30 UTC — Row 1 corrected: lifecycle hooks реєструються через `api.on`, не `api.registerHook`). **Next review:** після Stage 4b live smoke-test після PR #2471 (`api.on` migration).
-> **Status:** Active
+> **Last validated:** 2026-05-12 by Devin (update 14:10 UTC — Row 1 corrected і live-verified після merge PR #2471). **Next review:** 2026-08-10.
+> **Status:** Active — Row 1 (Hook API) тепер відповідає production behavior: `api.on` для lifecycle hooks (`before_dispatch`, `agent_end`, `before_tool_call`, `llm_input`, `before_agent_start`), `api.registerHook` лише для internal command bus. Підтверджено live smoke 17:08–17:09 EEST у [Stage 4b handoff § 11](./openclaw-stage-4b-debugging-handoff-2026-05-12.md#11-live-verification-2026-05-12-170817-09-eest-1408-1409-utc).
 > **Owner:** @Skords-01 · **Created:** 2026-05-12
 > **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../planning/openclaw-migration-plan.md) — Stage спайк рядок (`🔬 Spike`).
 > **Supersedes (for SDK shape claims):** [`docs/notes/spikes/openclaw-poc.md`](./openclaw-poc.md) § "SDK contract type-safely fits". PoC `sdk-types.ts` був локальним guess-ом; цей спайк фіксує реальний SDK.
