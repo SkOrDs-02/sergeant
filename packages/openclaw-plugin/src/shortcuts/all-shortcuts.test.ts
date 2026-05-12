@@ -256,6 +256,65 @@ describe("Ukrainian phrase coverage", () => {
   });
 });
 
+/**
+ * Mirror of `QUERY_APP_DB_TABLE_ALLOWLIST` from
+ * apps/server/src/modules/openclaw/types.ts. Cross-package coupling on
+ * purpose: any new table added to the server-side allowlist must be
+ * appended here too, which is the same governance signal we want every
+ * time a shortcut introduces a new SQL FROM target. The check below
+ * catches the class of bug from 2026-05-12 (handoff doc § 10) where
+ * `runway` queried `business_snapshot` and `decisions` queried
+ * `ai_decisions` — neither of which is a real table.
+ */
+const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
+  "users",
+  "n8n_failure_events",
+  "routine_entries",
+  "routine_streaks",
+  "mono_transaction",
+  "openclaw_decisions",
+  "openclaw_invocations",
+  "openclaw_write_audit",
+  "tg_alert_acks",
+]);
+
+function extractFromTables(sql: string): string[] {
+  // Strip SQL strings + comments before lexing FROM/JOIN targets to keep
+  // identifiers inside quoted literals from being mistaken for tables.
+  const sanitized = sql
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/'[^']*'/g, "''")
+    .replace(/"[^"]*"/g, '""');
+  const matches = sanitized.matchAll(
+    /\b(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi,
+  );
+  return Array.from(matches, (m) => (m[1] ?? "").toLowerCase());
+}
+
+describe("query_app_db SQL targets the server allowlist", () => {
+  const sqlShortcuts = ALL_SHORTCUTS.flatMap((shortcut) =>
+    shortcut.toolCalls
+      .filter((tc) => tc.toolName === "query_app_db")
+      .map((tc) => ({ slug: shortcut.slug, sql: tc.buildParams({})["sql"] })),
+  ).filter(
+    (entry): entry is { slug: string; sql: string } =>
+      typeof entry.sql === "string",
+  );
+
+  it("covers at least one shortcut", () => {
+    expect(sqlShortcuts.length).toBeGreaterThan(0);
+  });
+
+  it.each(sqlShortcuts)("$slug queries only allowlisted tables", ({ sql }) => {
+    const tables = extractFromTables(sql);
+    expect(tables.length).toBeGreaterThan(0);
+    for (const table of tables) {
+      expect(QUERY_APP_DB_TABLE_ALLOWLIST.has(table)).toBe(true);
+    }
+  });
+});
+
 describe("Catalog-wide router integration", () => {
   it("dispatches /metrics through the full ALL_SHORTCUTS list", async () => {
     const calls: string[] = [];
