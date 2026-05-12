@@ -119,6 +119,57 @@ describe("createBeforeAgentStartHook", () => {
     expect(correlator.consume("run_open")).toBe(123);
   });
 
+  it("uses event.prompt (canonical openclaw 5.7 shape) for userMessage", async () => {
+    const { fetchImpl, calls } = makeFetch([{ body: { invocationId: 7 } }]);
+    const correlator = new InvocationCorrelator();
+    const hook = createBeforeAgentStartHook({
+      http: makeClient(fetchImpl),
+      founderUserId: "user_test",
+      founderTgUserId: 42,
+      correlator,
+    });
+
+    // Real event from the live SDK has `prompt`, not `userMessage`.
+    await hook({ runId: "run_prompt", prompt: "Дай метрики за тиждень" });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.body["userMessage"]).toBe("Дай метрики за тиждень");
+  });
+
+  it("prefers event.prompt over legacy event.userMessage when both are present", async () => {
+    const { fetchImpl, calls } = makeFetch([{ body: { invocationId: 8 } }]);
+    const correlator = new InvocationCorrelator();
+    const hook = createBeforeAgentStartHook({
+      http: makeClient(fetchImpl),
+      founderUserId: "user_test",
+      founderTgUserId: 42,
+      correlator,
+    });
+
+    await hook({
+      runId: "run_both",
+      prompt: "real prompt",
+      userMessage: "legacy fixture",
+    });
+
+    expect(calls[0]!.body["userMessage"]).toBe("real prompt");
+  });
+
+  it("records '(empty user message)' when neither prompt nor userMessage is set", async () => {
+    const { fetchImpl, calls } = makeFetch([{ body: { invocationId: 9 } }]);
+    const correlator = new InvocationCorrelator();
+    const hook = createBeforeAgentStartHook({
+      http: makeClient(fetchImpl),
+      founderUserId: "user_test",
+      founderTgUserId: 42,
+      correlator,
+    });
+
+    await hook({ runId: "run_empty" });
+
+    expect(calls[0]!.body["userMessage"]).toBe("(empty user message)");
+  });
+
   it("falls back to trigger=dm when payload trigger is not in enum", async () => {
     const { fetchImpl, calls } = makeFetch([{ body: { invocationId: 1 } }]);
     const correlator = new InvocationCorrelator();
