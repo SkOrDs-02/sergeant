@@ -1,70 +1,65 @@
 # `@sergeant/openclaw-plugin`
 
-> **Last validated:** 2026-05-10 by Devin (Phase 0.5 PoC). **Status:** Scaffolded (PoC).
+> **Last validated:** 2026-05-12 by Devin (Stage 2 rewrite). **Status:** Stage 2 — 25 read-tools на real `openclaw@2026.5.7` SDK; без hooks; без write-tools.
 
-Тонкий TypeScript-плагін, що реєструє Sergeant tools у OpenClaw Gateway runtime
-(зовнішній продукт — `https://openclaw.ai`) через HTTP-проксі до
-`apps/server /api/internal/openclaw/*`.
+Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
-## Що в цьому пакеті (PR-B / Phase 0.5)
+Source-of-truth для контексту і дорожньої карти: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
 
-PoC scope із `docs/planning/openclaw-migration-plan.md` § Phase 0.5:
+## Поточний стан (Stage 2)
 
-- 1 read tool — `recall_memory` (HTTP → `/api/internal/openclaw/recall`).
-- 1 write tool — `create_github_issue` (gated; обкатує усі три approval
-  варіанти A / B / C).
-- 1 hook `llm_input` — pre-call budget gate через `/api/internal/openclaw/budget`.
-- 1 hook `agent_turn_end` — invocation finalize + cost rollup
-  (`/api/internal/openclaw/invocations/finalize`).
-- Parity-харнес — 3 golden conversations, прогнані на старому
-  `tools/console` (grammy bot) і новому plugin; асерт shape-parity.
+`src/index.ts` реєструє **25 read-tools** через `api.registerTool` SDK поверх real `openclaw@2026.5.7`:
 
-Не входить (винесено у PR-C1a / C1b / C1c / C1d / PR-C2 / PR-C3 / PR-D):
+`recall_memory`, `read_strategy_docs`, `record_decision`, `query_app_db`, `get_server_stats`, `get_stripe_metrics`, `get_posthog_stats`, `get_sentry_issues`, `read_github`, `github_search`, `github_tree`, `github_diff`, `github_prs`, `get_github_releases`, `n8n_list`, `n8n_describe`, `n8n_trigger`, `n8n_activate`, `refresh_business_snapshot`, `read_workflow_logs`, `read_telegram_topic`, `seo_gsc_query`, `seo_psi_audit`, `seo_serp_lookup`, `set_reminder`.
 
-- Решта 12 read-only tools + 4 code/n8n/SEO/reminders tools.
-- Layer 0 shortcut router + Layer 1 cheap router.
-- 10 personas / skills / allowlist / strategic modes.
-- Approval flow для всіх write-tools (Phase 4).
+Кожен tool — `api.registerTool({ name, label, description, parameters: Type.Object(...), async run(params, ctx) { ... } })`. Параметри валідуються `typebox@1.1.x` (не Zod і не `@sinclair/typebox`). Tools проксяться через HTTP до існуючих server endpoints `/api/internal/openclaw/<endpoint>` з `Authorization: Bearer ${INTERNAL_API_KEY}` (server API не змінюється).
 
-## Як налаштовано
+### Чого ще НЕ зареєстровано
 
-```ts
-import { definePluginEntry } from "./sdk-types.js";
-import { createOpenClawPlugin } from "./index.js";
+- **5 write-tools** (`create_github_issue`, `commit_to_strategy_doc`, `post_to_topic`, `pause_workflow`, `mute_alert`) — Stage 3 work. Server endpoints `/api/internal/openclaw/write/*` готові; обгортка плагіну — пеnding. Legacy implementations лежать у `src/legacy/write-tools/` як reference.
+- **4 hooks** — Stage 4 work. `llm_input` per-call budget gate (`/budget`), `agent_turn_end` invocation finalize (`/invocations/finalize`), Layer 0 shortcut router (17 shortcuts), Layer 1 cheap router (Haiku JSON-classifier). Legacy implementations — у `src/legacy/{budget,audit,shortcut-router,cheap-router}.ts`.
+- **Per-persona tool allowlist** — Stage 5a. Зараз плоский `tools.alsoAllow` (усі 10 personas мають усі 25 tools).
+- **Strategic-modes wiring + council orchestration + morning-digest cron** — Stage 5b/5c/5d. SKILL-и є у `ops/openclaw/skills/`, копіюються на volume через `docker-entrypoint.sh`; plugin-side orchestration і slash-handlers ще не написані.
 
-export default definePluginEntry((api, raw) => createOpenClawPlugin(api, raw));
-```
+## Чому існує `src/legacy/`
 
-`raw` — JSON-рядок з `openclaw.json` § `plugin.config`. Парситься Zod-схемою
-у `src/config.ts`. Інтегруючий тест моделює виклик через
-`createOpenClawPlugin(stubApi, configJson)` і дивиться на `api.registerTool`
-calls.
+PR-B…PR-F v3.1 plan-у (merged 2026-05-10..11) реалізовував повну функціональність (write-tools, hooks, council, strategic modes, parity harness) на **локально вгаданих** `sdk-types.ts`. При першому деплої на Railway виявилося, що `openclaw@2026.5.7` SDK має іншу форму: `definePluginEntry` приймає об'єкт, а не функцію; параметри — `typebox` (не `@sinclair/typebox`); `label` — required; config — `api.config`; entry-файл — TypeScript source.
 
-## SDK type stubs (важливо)
+Stage 1 rewrite ([PR #2438](https://github.com/Skords-01/Sergeant/pull/2438), `14ee42e2`) перенесло увесь pre-rewrite plugin у `src/legacy/` як reference і написало мінімальний MVP (3 tools) на real SDK. Stage 2 ([PR #2449](https://github.com/Skords-01/Sergeant/pull/2449), `257ca2ef`) долив решту 22 read-tools.
 
-`src/sdk-types.ts` — це **локальні type-stubs** OpenClaw plugin SDK (`api.registerTool`,
-`api.registerHook`, hook payload shape). PR-B PoC не залежить від реального
-`@openclaw/plugin-sdk` пакета — він буде додано як npm-залежність у Phase 1
-(PR-C1a). Наша задача в PR-B — підтвердити, що Sergeant tools лягають на цю
-форму без deformations.
+`src/legacy/` лишається у репі тільки як **довідник** при міграції Stage 3+ (write-tools, hooks, routers, council, parity). Не імпортуй з нього у `src/index.ts`. Не запускай тести у `src/legacy/**` як частину CI — вони можуть посилатися на neexistuyuche `sdk-types.ts` форму.
 
-Коли `@openclaw/plugin-sdk` стане доступним, swap відбувається у одному місці:
+## Як SDK підключений
 
 ```ts
-// src/sdk-types.ts (стане ре-експортом):
-export {
-  definePluginEntry,
-  type PluginApi,
-  type ToolDefinition,
-  type HookDefinition,
-} from "@openclaw/plugin-sdk";
+// src/index.ts (Stage 2)
+import { definePluginEntry } from "openclaw";
+import { Type } from "typebox";
+
+export default definePluginEntry({
+  id: "sergeant",
+  name: "Sergeant",
+  description: "25 read tools, no hooks yet",
+  async register(api) {
+    const config = api.pluginConfig ?? resolveConfigFromEnv();
+    // 25× api.registerTool(...)
+  },
+});
 ```
 
-Решта коду навіть не помічає.
+`api.config` / `api.pluginConfig` зчитується з `openclaw.json § plugin.config` (через env-substitution у `ops/openclaw/openclaw.example.json` під час `docker-entrypoint.sh`).
 
-## Pivot в Phase 1
+## Як запускати локально
 
-Phase 1 (PR-C1a / C1b / C1c / C1d) розширює пакет: 13 read-only tools, 4 code-understanding tools,
-4 n8n delegation tools, 3 SEO env-stub tools, `set_reminder` (потребує
-міграцію `055`), `refresh_business_snapshot` meta-tool, shortcut-router,
-cheap-router, 10 SKILL.md. Всі — поверх scaffold, який цей пакет встановлює.
+`@sergeant/openclaw-plugin` запускається OpenClaw Gateway runtime-ом, не як standalone Node-процес. Для локального теста плагіну:
+
+```bash
+pnpm --filter @sergeant/openclaw-plugin test          # vitest unit tests
+pnpm --filter @sergeant/openclaw-plugin typecheck     # tsc --noEmit
+```
+
+Для повного e2e (Gateway → plugin → server) використовуй `Dockerfile.openclaw-gateway` локально або встановлюй OpenClaw глобально (`npm i -g openclaw`) — див. [`ops/openclaw/README.md`](../../ops/openclaw/README.md).
+
+## Наступні кроки
+
+Послідовність Stages 3a → 8+ описана у [`docs/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). Перш ніж писати Stage 3 / Stage 4 — потрібен **SDK reality-check spike** (`api.registerHook`, approval API, scheduler API). Output → `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` або ADR-0056.

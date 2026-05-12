@@ -1,10 +1,27 @@
 # SPIKE — OpenClaw Plugin PoC (Phase 0.5)
 
-> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
-> **Status:** Active (PoC complete; PR-B [#2385](https://github.com/Skords-01/Sergeant/pull/2385) merged 2026-05-10).
+> **Last validated:** 2026-05-12 by Devin. **Next review:** замінено новим SDK-reality spike (TBD — див. § Postmortem 2026-05-12 нижче).
+> **Status:** **Superseded by Stage 1 rewrite ([#2438](https://github.com/Skords-01/Sergeant/pull/2438))** — основні висновки (зокрема "🟢 GO for Phase 1", "SDK contract type-safely fits") **не справдились** на real `openclaw@2026.5.7` SDK при першому деплої на Railway. Файл лишається як історичний документ; чинна архітектура — `docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12.
 > **Owner:** @Skords-01 · **Created:** 2026-05-10
-> **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § PR-B / Phase 0.5](../../planning/openclaw-migration-plan.md)
-> **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385)).
+> **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../planning/openclaw-migration-plan.md)
+> **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385); код перенесено у `packages/openclaw-plugin/src/legacy/` Stage 1 rewrite-ом).
+
+## Postmortem (2026-05-12)
+
+Висновки нижче треба читати **разом** із наступною reality:
+
+1. **"SDK contract type-safely fits" (§ 1) — частково невірно.** `sdk-types.ts` (267 LOC) виявився **локальними guess-ами**, що не співпадали з real `openclaw@2026.5.7`:
+   - `definePluginEntry` приймає **об'єкт** `{ id, name, register(api) }`, а не функцію `(api, configJson) => Plugin`.
+   - Параметри — `typebox@1.1.x` (не `@sinclair/typebox`); внутрішні Symbol-keys різні → tools мовчки drop-ались.
+   - `label` — required поле на `AgentTool` (pi-agent-core); tools без нього silently зникали з agent palette.
+   - Config — через `api.config` / `api.pluginConfig`, не string-аргумент.
+   - Entry-файл — `./src/index.ts`, OpenClaw runtime завантажує TypeScript source; немає build step.
+2. **"Approval Variant B — recommended" (§ 2) — рішення тримаємо, але без empirical evidence.** PoC прогонив усі 3 варіанти через `sdk-types.ts` стаб; на real SDK ані Variant A (native), ані B (custom hook), ані C (hybrid) ще не випробувано. Stage 4a spike має задокументувати, що real `api.registerHook` дозволяє.
+3. **"Parity харнес — 3+ green" (§ 3) — runner запускається проти legacy stub-ів, не real SDK.** Код парностей лежить у `packages/openclaw-plugin/src/legacy/parity/`; Stage 6a має його реактивувати на real-SDK side.
+4. **"Budget gate fail-closed" / "Audit correlator" (§§ 4, 5) — реалізації лишаються у `src/legacy/`.** Stage 4a має переписати їх як `api.registerHook` під real SDK.
+5. **Migrations 054 + 055 (§ 6) — це єдиний висновок, що 1:1 пережив rewrite.** Міграції застосовані до production DB, server-side `recall_memory` приймає `persona`/`topic`, `openclaw_reminders` table існує. Тести продовжують зеленіти.
+
+**Висновок postmortem:** PoC корисний як reference того, **яку фукнціональність ми хочемо**, але **не яким SDK API** її реалізувати. Наступний artifact, що замінить цей spike, — `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` (TBD): задокументує справжні `api.registerTool`, `api.registerHook`, `tool.requiresApproval`, `api.scheduleSkill` shapes з `node_modules/openclaw/plugin-sdk/*.d.ts` після `npm install openclaw typebox` у Gateway Dockerfile.
 
 Цей spike — обов'язковий вихід-артефакт PR-B (Phase 0.5), що блокує
 Phase 1 (PR-C1a) планування. Plan §522:

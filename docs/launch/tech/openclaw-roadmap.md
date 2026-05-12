@@ -1,7 +1,9 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** Active
+> **Last validated:** 2026-05-12 by Devin. **Next review:** після Stage 4 hook spike.
+> **Status:** Active — **Phase 1 / 1.5 / 2.5 / 4 / 4.5 пeренесено у Gateway-архітектуру (ADR-0055).** Цей файл — історична roadmap внутрішнього grammy-бота `@OpenClaw_sergeant_bot` (Phase 1 → 4.5). Поточний production live на новій Gateway bot-identity з `@sergeant/openclaw-plugin` — single source of truth: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../planning/openclaw-migration-plan.md).
+
+> **2026-05-12 — Reality update.** Phase 1…4.5 нижче описує feature-set, який raніше працював у grammy `tools/console/src/openclaw/` і паралельно живе у Gateway-плагіні. У Gateway-плагіні станом на сьогодні **переписано тільки read-tools** (Stage 2 — 25 tools); write-tools (Phase 4) + hooks (Phase 4.5 audit/budget) + council orchestration (Phase 2.5) + strategic modes (Phase 3) — лежать у `packages/openclaw-plugin/src/legacy/` і чекають Stage 3/4/5 rewrite на real `openclaw@2026.5.7` SDK. У grammy-боті усі ці фічі залишаються активними як fallback до Phase 7 cutover.
 
 > Поетапний план побудови OpenClaw — AI-партнера для founder-а Sergeant-у.
 > **Не assistant** і **не metrics dashboard**. Це co-founder-режим: разом
