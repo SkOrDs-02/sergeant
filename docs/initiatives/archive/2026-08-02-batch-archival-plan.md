@@ -1,5 +1,6 @@
 # Batch Archival Plan — 2026-08-02
 
+> **Last validated:** 2026-05-12 by Devin. **Next review:** 2026-08-02.
 > **Status:** Planned (execute 2026-08-02)
 > **Owner:** @Skords-01
 > **ETA:** 2026-08-02 (3 hours estimated)
