@@ -1,18 +1,27 @@
 /**
- * @sergeant/openclaw-plugin — Stage 2 (PR-B): 25 read-tools
+ * @sergeant/openclaw-plugin — Stage 3 (PR-C): 25 read-tools + 5 write-tools
  *
  * Built against the real openclaw@2026.5.7 plugin SDK. Stage 1 (MVP) shipped
- * 3 read tools to prove the entry/registration path works; this stage brings
- * the remaining 22 read tools across from src/legacy/tools/.
+ * 3 read tools to prove the entry/registration path works; Stage 2 brought
+ * 22 more read tools across from src/legacy/tools/; Stage 3 adds the 5
+ * write-tools (`create_github_issue`, `commit_to_strategy_doc`,
+ * `post_to_topic`, `pause_workflow`, `mute_alert`) — also as thin HTTP
+ * proxies. Approval gating is deferred to Stage 4a (`before_tool_call`
+ * hook + native `requireApproval` return — see
+ * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md`). Until then the
+ * server-side allowlist + write-audit log are the only gates; that's
+ * intentional because the gateway is single-tenant (founder-only) and
+ * config-as-code in `ops/openclaw/openclaw.example.json` decides which
+ * personas see write-tools at all.
  *
  * Scope:
- *   - 25 read tools registered via api.registerTool (TypeBox parameters)
+ *   - 25 read tools + 5 write tools registered via api.registerTool
+ *     (TypeBox parameters)
  *   - NO hooks (Stage 4 / PR-D)
- *   - NO write tools (Stage 3 / PR-C)
  *
  * Each tool is a thin HTTP proxy to `/api/internal/openclaw/<endpoint>` on
  * the Sergeant server — the same surface the legacy plugin used. Server
- * enforces the heavy stuff (allowlists, rate limits, RLS, etc.).
+ * enforces the heavy stuff (allowlists, rate limits, RLS, write-audit).
  */
 
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
@@ -50,7 +59,7 @@ function resolvePluginConfig(candidate: unknown): Record<string, unknown> {
   const candidateObj =
     typeof candidate === "string"
       ? safeJsonParse(candidate)
-      : (candidate as Record<string, unknown> | undefined) ?? {};
+      : ((candidate as Record<string, unknown> | undefined) ?? {});
   const merged: Record<string, unknown> = { ...envFallback };
   for (const [k, v] of Object.entries(candidateObj)) {
     if (v === undefined || v === null || v === "") continue;
@@ -366,9 +375,7 @@ function makeTools(founderUserId: string): ToolSpec[] {
       description:
         "Fire all (or a subset of) Tier A workflows in parallel and return their outputs as the business snapshot.",
       params: Type.Object({
-        workflowIds: Type.Optional(
-          Type.Array(Type.String(), { maxItems: 50 }),
-        ),
+        workflowIds: Type.Optional(Type.Array(Type.String(), { maxItems: 50 })),
       }),
       endpoint: "/snapshot/refresh",
       formatBody: withFounder,
@@ -457,6 +464,133 @@ function makeTools(founderUserId: string): ToolSpec[] {
       endpoint: "/seo/serp",
     },
 
+    // ─── Write tools (Stage 3a + 3b) ────────────────────────────────
+    //
+    // Approval gating is deferred to Stage 4a (`before_tool_call` hook).
+    // Until then, each call is gated server-side by allowlist + audited
+    // via `write-audit/log`. Tool descriptions explicitly state they're
+    // mutating actions so the agent surfaces this in the conversation
+    // before invoking (see `_stage-status` SKILL overlay).
+    {
+      name: "create_github_issue",
+      description:
+        "WRITE — open a GitHub issue in a Sergeant-allowlisted repo (default sergeant-monorepo). Returns issue url + number. Use for: bug reports surfaced in conversation, todo-items the founder asks to track outside Telegram. Mutating action — confirm with the founder before invoking.",
+      params: Type.Object({
+        title: Type.String({
+          description: "Issue title (1–200 chars)",
+          minLength: 1,
+          maxLength: 200,
+        }),
+        body: Type.String({
+          description: "Issue body markdown (1–20000 chars)",
+          minLength: 1,
+          maxLength: 20_000,
+        }),
+        labels: Type.Optional(
+          Type.Array(Type.String({ minLength: 1, maxLength: 50 }), {
+            maxItems: 10,
+            description: "Up to 10 labels",
+          }),
+        ),
+        repo: Type.Optional(
+          Type.String({
+            description:
+              "'owner/repo' slug. Defaults to server-side configured Sergeant repo. Subject to server-side allowlist.",
+          }),
+        ),
+      }),
+      endpoint: "/write/github-issue",
+    },
+    {
+      name: "commit_to_strategy_doc",
+      description:
+        "WRITE — commit content to a Sergeant strategy document (docs/strategy/**, docs/adr/**) in a Sergeant-allowlisted repo. Returns commit sha. Use for: founder-approved decisions that need to land in the strategy log. Mutating action — confirm with the founder before invoking.",
+      params: Type.Object({
+        path: Type.String({
+          description:
+            "Relative repo path (1–500 chars, e.g. docs/strategy/q3-2026.md)",
+          minLength: 1,
+          maxLength: 500,
+        }),
+        content: Type.String({
+          description: "Full new file content (1–80000 chars)",
+          minLength: 1,
+          maxLength: 80_000,
+        }),
+        message: Type.String({
+          description: "Commit message (1–200 chars)",
+          minLength: 1,
+          maxLength: 200,
+        }),
+        repo: Type.Optional(
+          Type.String({
+            description:
+              "'owner/repo' slug. Defaults to server-side configured Sergeant repo. Subject to server-side allowlist.",
+          }),
+        ),
+      }),
+      endpoint: "/write/strategy-doc",
+    },
+    {
+      name: "post_to_topic",
+      description:
+        "WRITE — post a message to a Sergeant-allowlisted Telegram topic (founder-owned forum). Returns posted messageId. Use for: routine status pings (releases, daily heads-ups). Mutating action — confirm with the founder before invoking.",
+      params: Type.Object({
+        topic: Type.String({
+          description:
+            "Topic slug from the server-side topic allowlist (e.g. 'releases', 'analytics-daily').",
+          minLength: 1,
+        }),
+        text: Type.String({
+          description:
+            "Message body (1–4000 chars; Telegram markdown allowed).",
+          minLength: 1,
+          maxLength: 4000,
+        }),
+      }),
+      endpoint: "/write/post-to-topic",
+    },
+    {
+      name: "pause_workflow",
+      description:
+        "WRITE — deactivate a Sergeant-allowlisted n8n workflow. Returns the workflow status after the call. Use for: stopping a noisy or misbehaving automation surfaced via `get_sentry_issues` / `read_workflow_logs`. Mutating action — confirm with the founder before invoking.",
+      params: Type.Object({
+        workflowId: Type.String({
+          description:
+            "n8n workflow id (1–100 chars). Subject to server-side allowlist.",
+          minLength: 1,
+          maxLength: 100,
+        }),
+        reason: Type.Optional(
+          Type.String({
+            description:
+              "Why we're pausing (free-form, ≤ 1000 chars). Logged into write-audit.",
+            maxLength: 1000,
+          }),
+        ),
+      }),
+      endpoint: "/write/pause-workflow",
+    },
+    {
+      name: "mute_alert",
+      description:
+        "WRITE — mute a Sentry issue for the founder org (optionally until a specific ISO-8601 timestamp; otherwise mutes indefinitely). Returns the muted issue state. Use for: silencing a known low-priority Sentry alert during an active incident. Mutating action — confirm with the founder before invoking.",
+      params: Type.Object({
+        issueId: Type.String({
+          description: "Sentry issue id (1–200 chars).",
+          minLength: 1,
+          maxLength: 200,
+        }),
+        untilIso: Type.Optional(
+          Type.String({
+            description:
+              "ISO-8601 timestamp with TZ (e.g. 2026-05-20T09:00+03:00). Omit to mute indefinitely.",
+          }),
+        ),
+      }),
+      endpoint: "/write/mute-alert",
+    },
+
     // ─── Reminders (write but no approval gate) ─────────────────────
     {
       name: "set_reminder",
@@ -484,18 +618,27 @@ export default definePluginEntry({
   id: "sergeant",
   name: "Sergeant",
   description:
-    "Sergeant agent gateway plugin (Stage 2 — 25 read-tools, no hooks yet)",
+    "Sergeant agent gateway plugin (Stage 3 — 25 read-tools + 5 write-tools, no hooks yet)",
 
   register(api) {
     const logger =
-      (api as { logger?: { info: (m: string, f?: unknown) => void; warn: (m: string, f?: unknown) => void } })
-        .logger ??
+      (
+        api as {
+          logger?: {
+            info: (m: string, f?: unknown) => void;
+            warn: (m: string, f?: unknown) => void;
+          };
+        }
+      ).logger ??
       ({
         info: (m: string, f?: unknown) =>
           console.log(`[sergeant] ${m}`, f ?? ""),
         warn: (m: string, f?: unknown) =>
           console.warn(`[sergeant] ${m}`, f ?? ""),
-      } as { info: (m: string, f?: unknown) => void; warn: (m: string, f?: unknown) => void });
+      } as {
+        info: (m: string, f?: unknown) => void;
+        warn: (m: string, f?: unknown) => void;
+      });
 
     const candidate =
       (api as { pluginConfig?: unknown }).pluginConfig ??
