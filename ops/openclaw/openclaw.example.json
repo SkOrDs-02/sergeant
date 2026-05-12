@@ -41,7 +41,8 @@
             "commit_to_strategy_doc",
             "post_to_topic",
             "pause_workflow",
-            "mute_alert"
+            "mute_alert",
+            "canvas"
           ]
         }
       },
@@ -99,7 +100,8 @@
             "recall_memory",
             "record_decision",
             "create_github_issue",
-            "commit_to_strategy_doc"
+            "commit_to_strategy_doc",
+            "canvas"
           ],
           "deny": ["mute_alert", "pause_workflow", "post_to_topic"]
         }
@@ -114,7 +116,8 @@
             "read_github",
             "get_github_releases",
             "recall_memory",
-            "post_to_topic"
+            "post_to_topic",
+            "canvas"
           ],
           "deny": [
             "commit_to_strategy_doc",
@@ -131,7 +134,8 @@
             "get_stripe_metrics",
             "query_app_db",
             "recall_memory",
-            "record_decision"
+            "record_decision",
+            "canvas"
           ],
           "deny": [
             "commit_to_strategy_doc",
@@ -150,7 +154,8 @@
             "get_posthog_stats",
             "get_stripe_metrics",
             "get_server_stats",
-            "recall_memory"
+            "recall_memory",
+            "canvas"
           ],
           "deny": [
             "commit_to_strategy_doc",
@@ -222,13 +227,16 @@
     "port": 18789,
     "controlUi": { "enabled": false, "allowInsecureAuth": false },
     "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_AUTH_TOKEN}" },
-    "tailscale": { "mode": "off", "resetOnExit": false }
+    "tailscale": { "mode": "off", "resetOnExit": false },
+    "canvasHost": {
+      "advertisedUrl": "https://${RAILWAY_PUBLIC_DOMAIN}"
+    }
   },
 
   "session": { "dmScope": "per-channel-peer" },
   "tools": {
     "profile": "coding",
-    "alsoAllow": ["recall_memory"]
+    "alsoAllow": ["recall_memory", "canvas"]
   },
 
   "cron": {
