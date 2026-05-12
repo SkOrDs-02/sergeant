@@ -3,9 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createShortcutRouterHook,
   ESCALATE_PREFIX,
-  ROUTED_RESPONSE_PREFIX,
-  extractRoutedResponse,
-  isRoutedResponse,
 } from "./shortcut-router.js";
 import type {
   ShortcutDefinition,
@@ -62,7 +59,7 @@ describe("createShortcutRouterHook", () => {
     ).toBeUndefined();
   });
 
-  it("blocks with ROUTED_RESPONSE_PREFIX when a shortcut matches", async () => {
+  it("blocks with the rendered response as blockReason when a shortcut matches", async () => {
     const log = vi.fn();
     const hook = createShortcutRouterHook({
       shortcuts: [pingShortcut],
@@ -72,7 +69,7 @@ describe("createShortcutRouterHook", () => {
     const result = await hook({ runId: "r1", userMessage: "/ping" });
     expect(result).toEqual({
       block: true,
-      blockReason: `${ROUTED_RESPONSE_PREFIX}pong`,
+      blockReason: "pong",
     });
     expect(log).toHaveBeenCalledWith(
       "info",
@@ -151,27 +148,8 @@ describe("createShortcutRouterHook", () => {
     const result = await hook({ runId: "r4", userMessage: "/agg" });
     expect(result).toEqual({
       block: true,
-      blockReason: `${ROUTED_RESPONSE_PREFIX}ok`,
+      blockReason: "ok",
     });
     expect(calls.map((c) => c[0]).sort()).toEqual(["a", "b"]);
-  });
-});
-
-describe("isRoutedResponse / extractRoutedResponse", () => {
-  it("isRoutedResponse detects the sentinel prefix", () => {
-    expect(isRoutedResponse(`${ROUTED_RESPONSE_PREFIX}hi`)).toBe(true);
-    expect(isRoutedResponse("regular error")).toBe(false);
-    expect(isRoutedResponse(undefined)).toBe(false);
-    expect(isRoutedResponse(null)).toBe(false);
-  });
-
-  it("extractRoutedResponse strips the sentinel prefix", () => {
-    expect(extractRoutedResponse(`${ROUTED_RESPONSE_PREFIX}hello`)).toBe(
-      "hello",
-    );
-  });
-
-  it("extractRoutedResponse returns the input verbatim if no prefix", () => {
-    expect(extractRoutedResponse("nope")).toBe("nope");
   });
 });

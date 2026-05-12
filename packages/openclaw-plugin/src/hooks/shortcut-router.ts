@@ -5,11 +5,16 @@
  *
  *   1. If the user message matches a shortcut → execute tool calls,
  *      render the canned response, return
- *      `{ block: true, blockReason: "__ROUTED__:" + response }`.
- *      The agent never runs; cost stays at $0 from LLM standpoint.
+ *      `{ block: true, blockReason: <rendered response> }`. The OpenClaw
+ *      runtime renders `blockReason` as the assistant turn, so no
+ *      sentinel prefix or host-side stripping is required. The agent
+ *      never runs; cost stays at $0 from LLM standpoint.
  *
  *   2. If the matched shortcut is `/think` (sentinel `__ESCALATE_LAYER2__:`)
  *      we explicitly do NOT block — let the agent continue to Layer 2.
+ *      Layer 2 escalation still uses the sentinel because it travels
+ *      back into the agent loop via `userMessage` rewrites, not as a
+ *      `blockReason`.
  *
  *   3. If no shortcut matches → return `undefined` (caller falls through
  *      to the Stage 4a audit-open hook).
@@ -20,11 +25,13 @@
  * register the router as a second `before_agent_start` handler — the SDK
  * does not document multi-handler ordering, so composition is safer.
  *
- * Gateway-side contract for `__ROUTED__:` prefix: when the host surfaces
- * the block reason, it should strip the prefix and post the remainder as
- * the assistant turn. The prefix is intentionally a sentinel string that
- * is identical between Stage 4b (shortcut router) and Stage 4c (Haiku
- * cheap-router), so Gateway only needs to learn it once.
+ * History: an earlier iteration prefixed the routed `blockReason` with a
+ * `__ROUTED__:` sentinel so a Gateway-side handler could strip it before
+ * delivery to Telegram. That host-side handler was never built (no plug
+ * point in the upstream OpenClaw runtime, and `apps/server` is not in
+ * the Telegram hot path for the Gateway flow). The sentinel is gone;
+ * `blockReason` carries the rendered Markdown verbatim. See
+ * `docs/planning/openclaw-migration-plan.md` § Stage 4b smoke-test.
  */
 
 import type {
@@ -34,9 +41,6 @@ import type {
 
 import { ShortcutRouter } from "../shortcuts/router.js";
 import type { ShortcutDefinition, ToolExecutor } from "../shortcuts/types.js";
-
-/** Sentinel prefix in `blockReason` marking a routed (canned) response. */
-export const ROUTED_RESPONSE_PREFIX = "__ROUTED__:";
 
 /** Sentinel prefix marking a Layer 2 escalation (e.g. `/think`). */
 export const ESCALATE_PREFIX = "__ESCALATE_LAYER2__:";
@@ -105,21 +109,7 @@ export function createShortcutRouterHook(
 
     return {
       block: true,
-      blockReason: `${ROUTED_RESPONSE_PREFIX}${matchResult.response}`,
+      blockReason: matchResult.response,
     };
   };
-}
-
-/** True iff a `blockReason` carries a Stage 4b/4c routed response. */
-export function isRoutedResponse(reason: string | undefined | null): boolean {
-  return (
-    typeof reason === "string" && reason.startsWith(ROUTED_RESPONSE_PREFIX)
-  );
-}
-
-/** Strip the sentinel prefix and return the user-facing canned response. */
-export function extractRoutedResponse(reason: string): string {
-  return reason.startsWith(ROUTED_RESPONSE_PREFIX)
-    ? reason.slice(ROUTED_RESPONSE_PREFIX.length)
-    : reason;
 }

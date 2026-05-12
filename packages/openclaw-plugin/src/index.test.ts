@@ -410,7 +410,7 @@ describe("Stage 4a plugin entry — hooks registered", () => {
 });
 
 describe("Stage 4b — Layer 0 shortcut router wired into before_agent_start", () => {
-  it("matches /metrics and short-circuits with ROUTED_RESPONSE_PREFIX", async () => {
+  it("matches /metrics and short-circuits with the rendered response as blockReason", async () => {
     await import("./index.js");
     const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
     fetchCalls.length = 0;
@@ -422,7 +422,7 @@ describe("Stage 4b — Layer 0 shortcut router wired into before_agent_start", (
     })) as { block?: boolean; blockReason?: string };
 
     expect(result?.block).toBe(true);
-    expect(result?.blockReason).toMatch(/^__ROUTED__:/);
+    expect(result?.blockReason).not.toMatch(/^__ROUTED__:/);
     expect(result?.blockReason).toContain("Метрики сьогодні");
     // Tools fanned out: 3 HTTP calls to PostHog/Stripe/Sentry endpoints,
     // and explicitly NO invocations/open (shortcut bypassed the audit hook).
@@ -447,7 +447,8 @@ describe("Stage 4b — Layer 0 shortcut router wired into before_agent_start", (
     })) as { block?: boolean; blockReason?: string };
 
     expect(result?.block).toBe(true);
-    expect(result?.blockReason).toMatch(/^__ROUTED__:/);
+    expect(result?.blockReason).not.toMatch(/^__ROUTED__:/);
+    expect(result?.blockReason).toContain("Метрики сьогодні");
   });
 
   it("/think escalates to Layer 2 (does NOT block)", async () => {

@@ -15,9 +15,12 @@
  *                                 the user message matches a regex
  *                                 shortcut, dispatch its tools through the
  *                                 in-process registry, render the canned
- *                                 Markdown response, and block the run with
- *                                 a `__ROUTED__:`-prefixed reason. The
- *                                 agent never starts, LLM cost stays $0.
+ *                                 Markdown response, and block the run
+ *                                 with the rendered response as
+ *                                 `blockReason` (no sentinel prefix — the
+ *                                 OpenClaw runtime surfaces blockReason as
+ *                                 the assistant turn). The agent never
+ *                                 starts, LLM cost stays $0.
  *                              2. If no shortcut matched → open invocation
  *                                 row (`POST /invocations/open`) and cache
  *                                 `invocationId ↔ runId` in the
@@ -905,10 +908,7 @@ export {
 } from "./config.js";
 export {
   ESCALATE_PREFIX,
-  ROUTED_RESPONSE_PREFIX,
   createShortcutRouterHook,
-  extractRoutedResponse,
-  isRoutedResponse,
 } from "./hooks/shortcut-router.js";
 export { ShortcutRouter, extractText } from "./shortcuts/router.js";
 export type {
