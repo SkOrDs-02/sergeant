@@ -1,14 +1,78 @@
 # OpenClaw Stage 4b — Live Debugging Handoff (2026-05-12)
 
-> **Last validated:** 2026-05-12 by Devin. **Next review:** після того, як Gateway отримає реальний redeploy з main та live smoke-test покаже або канонічну поведінку (shortcut router fires) або новий root-cause.
-> **Status:** Active — **Stage 4b НЕ live у production**. Три PR-и (#2467, #2468, #2469) merged у main, але **жоден з них не задеплоєний на Gateway** (див. § 5 нижче — Railway service не watch-ить GitHub repo). Усі три live smoke-test-и 2026-05-12 (10:30, 11:30, 14:00 Kyiv) били по тому ж старому образу від `2026-05-12T10:06:43Z`.
+> **Last validated:** 2026-05-12 by Devin (update 13:30 UTC). **Next review:** після того, як PR #2471 (`api.on` migration) пройде CI, задеплоїться на `sergeant-openclaw-gateway` через GitHub auto-deploy, і live smoke-test покаже canonical поведінку (shortcut router fires ≤2 сек з canned Markdown).
+> **Status:** Active — **Stage 4b досі НЕ live у production**, але root cause переписано. Початкова гіпотеза ("Railway service не watch-ить GitHub") **виявилася неактуальною з моменту переїзду на проект `Sergeant`** (див. § 0.5 — update від 13:30 UTC). Реальна причина — usage of wrong SDK API: `api.registerHook` замість `api.on` для plugin lifecycle hooks. Усі 5 хуків (включно з Stage 4b shortcut router) реєструються у systems, які OpenClaw runtime НЕ викликає для `before_dispatch`, `agent_end`, `before_tool_call`.
 
-## 0. TL;DR (для нової сесії — 30 сек)
+## 0. TL;DR (актуальна версія — 30 сек)
 
-1. **Symptom**: `/metrics`, `/runway`, UA `Дай метрики` у Telegram DM з `@KENT_OPENCLAW_GATEWAY_BOT` повертають Opus-prose ("Тобто я по факту бачу...", "Що пропоную..."), не canned Markdown template ≤2 сек. Live smoke-test 2026-05-12 14:08 Kyiv підтверджує: shortcut router НЕ короткозамикає агент. Усі команди йдуть через повний agent cycle = LLM cost ≠ $0.
-2. **Real root-cause №3 (виявлено 2026-05-12 ~12:10 UTC, ще НЕ виправлене)**: **Railway service `openclaw-gateway` у проекті `openclaw-clean-gateway` НЕ підключений до GitHub.** `service.serviceInstances.source.repo === null`. Auto-deploy на push до `main` **не існує**. Усі 3 PR-и (#2467 sentinel drop, #2468 `before_dispatch` migration, #2469 `opts.name` fix) **merged у main, але НЕ задеплоєні**. Production-Gateway все ще біжить початковий образ із `2026-05-12T10:06:43Z` з `cliMessage: "Initial clean OpenClaw Gateway deploy"`.
-3. **Next action**: trigger redeploy з main вручну (див. § 7 — три варіанти). Після того — повторити smoke-test. Якщо все ще fail — переходити до hypothesis-стеку у § 6.
-4. **Цей doc існує тому**, що 3 ітерації fix-forward (PR #2467/2468/2469) пройшли локальний typecheck+test+lint+build, GitHub CI зелений, merge into main підтверджений, але **усі вони били ту ж саму проблему "симптом не виправлений"** через те, що production-код взагалі не оновлювався. Без redeploy будь-який наступний fix-forward буде такою ж no-op.
+1. **Symptom**: `/metrics`, `/runway`, UA `Дай метрики` у Telegram DM з `@KENT_OPENCLAW_GATEWAY_BOT` повертають Opus-prose, не canned Markdown ≤2 сек. Усі команди йдуть через повний agent cycle = LLM cost ≠ $0.
+2. **Real root-cause №4 (виявлено 2026-05-12 13:15 UTC, fix in flight — PR #2471)**: Sergeant plugin реєструє 5 lifecycle hooks (`before_dispatch`, `llm_input`, `before_agent_start`, `agent_end`, `before_tool_call`) через **`api.registerHook(events, handler, opts)`**. У SDK 2026.5.7 цей метод призначений для **INTERNAL hook bus** (`type: "command" | "session" | "agent" | "gateway" | "message"`) — він пушить хуки у `registry.hooks` + `registerInternalHook()`. `hookRunner.runBeforeDispatch()` читає з **`registry.typedHooks`**, куди потрапляє лише `api.on(hookName, handler, opts?)`. Тому всі наші 5 хуків мовчки зареєстровані в "мертву" систему і ніколи не fires. Лог `sergeant.hooks.registered { ok: 5, failed: 0 }` обманює — реєстрація "успішна" з точки зору `registerHook` (бо `opts.name` валідний), але runtime ніколи їх не зачитує.
+3. **Real root-cause №3 (старий, вже не актуальний)**: ~~Railway service не watch-ить GitHub~~ — застаріле. У поточному проекті `Sergeant` service `sergeant-openclaw-gateway` **підключений до GitHub** і auto-deploy працює. Останній deploy `aa0d5db3` від 10:56 UTC = merge PR #2469. Тобто всі 3 попередні fix-forward (PR #2467/2468/2469) **вже задеплоєні** — і всі вони били не ту проблему (вони фіксили `opts.name` для API, який у нашому випадку всеодно ніколи не виконується runtime-ом).
+4. **Next action**: merge PR #2471 (rename `registerHook` → `api.on` + ambient `.d.ts` + `allowConversationAccess: true` для conversation hooks + tests). Після auto-deploy через `sergeant-openclaw-gateway` (3–5 хв) — live smoke-test 5 команд.
+5. **Цей doc існує тому**, що 4 ітерації fix-forward (PR #2467/2468/2469 — і неpushed-діагностика від 12:10 UTC) пройшли локальний typecheck+test+lint+build, GitHub CI зелений, deploy ✓, але all hits the same "симптом не виправлений" mode. Причина: unit-тести мокали `api.registerHook` і нічого не знали про `api.on`. Real SDK contract (`api-builder.d.ts` + loader source) перевірений у § 4.5 нижче.
+
+---
+
+## 0.5. Update 2026-05-12 13:30 UTC — Real root cause found
+
+**TL;DR:** Бажане API для lifecycle hooks — `api.on(hookName, handler, opts?)`, не `api.registerHook(events, handler, opts)`. Spike doc § "Hook API" (Row 1) спочатку був неправильним.
+
+**Конкретні докази** (з `npm install openclaw@2026.5.7` у scratch-директорії):
+
+- `node_modules/openclaw/dist/plugin-sdk/src/plugins/types.d.ts:1905`
+  ```ts
+  registerHook: (events: string | string[], handler: InternalHookHandler, opts?: OpenClawPluginHookOptions) => void;
+  ```
+  `InternalHookHandler` — це `(event: InternalHookEvent) => void` з `InternalHookEventType = "command" | "session" | "agent" | "gateway" | "message"`. Це **внутрішня шина команд** (`command:new`, `session:reset`, тощо), не plugin lifecycle.
+- `node_modules/openclaw/dist/plugin-sdk/src/plugins/types.d.ts:2052`
+  ```ts
+  on: <K extends PluginHookName>(
+    hookName: K,
+    handler: PluginHookHandlerMap[K],
+    opts?: { priority?: number; timeoutMs?: number },
+  ) => void;
+  ```
+  Це **canonical lifecycle hook registration**. `PluginHookName` enum включає `before_dispatch`, `agent_end`, `before_tool_call` і ще 31 інший.
+- `node_modules/openclaw/dist/loader-B-GXgDrk.js:3137`
+  ```js
+  on: (hookName, handler, opts) => registerTypedHook(record, hookName, handler, opts, params.hookPolicy)
+  ```
+  `registerTypedHook` пушить у `registry.typedHooks`.
+- `node_modules/openclaw/dist/hook-runner-global-CCAcWVdN.js:108`
+  ```js
+  function getHooksForName(registry, hookName) {
+    return registry.typedHooks.filter((h) => h.hookName === hookName).toSorted(...);
+  }
+  ```
+  Це звідки `runBeforeDispatch` бере handlers. Якщо хука немає у `typedHooks` — він **ніколи не fires**.
+- `node_modules/openclaw/dist/loader-B-GXgDrk.js:1487`
+  ```js
+  const registerHook = (record, events, handler, opts, config, pluginConfig) => {
+    // ...
+    registry.hooks.push({...});                  // ← НЕ typedHooks
+    registerInternalHook(event, wrappedHandler); // ← internal command bus
+  };
+  ```
+  Це звідки приходить помилкове відчуття, що `registerHook` працює — він валідує `opts.name`, додає у `registry.hooks` (для metadata), і реєструє у internal bus (де є `triggerInternalHook` для `command`, `command:new` тощо).
+
+**Чому PR #2469 не допоміг.** Він фіксив `opts.name` validation на `registerHook` — але цей method взагалі не той, який потрібно викликати. Loop у `for (... of hookRegistrations) { ... registerHook(event, handler, { name }) }` тепер не кидає exception, всі 5 хуків "OK" — але ніхто з них не доступний runtime-у для firing.
+
+**Додаткова блокіруюча умова для `llm_input` + `agent_end`.** Це conversation hooks (`CONVERSATION_HOOK_NAMES = ["llm_input", "llm_output", "before_agent_finalize", "agent_end"]`). Loader при `registerTypedHook` блокує їх для non-bundled plugins, якщо у конфізі не виставлено `plugins.entries.sergeant.hooks.allowConversationAccess: true`. `before_dispatch`, `before_agent_start`, `before_tool_call` — поза цим списком, тож вільно реєструються.
+
+**Fix shape (PR #2471)**:
+
+1. `packages/openclaw-plugin/src/index.ts` — замінити цикл `for (...) registerHook(event, handler, { name })` на 5 окремих `api.on("before_dispatch", handler)` / `api.on("agent_end", handler)` / тощо. Прибрати `opts.name` (не використовується typed-hook API).
+2. `packages/openclaw-plugin/src/types/openclaw-ambient.d.ts` — додати `on?: <K extends PluginHookName>(hookName, handler, opts?)` як canonical. Залишити `registerHook?` як internal-only, з warning-коментарем що `before_dispatch` etc. через нього не сприймаються.
+3. `ops/openclaw/openclaw.example.json` — додати `"hooks": { "allowConversationAccess": true }` у `plugins.entries.sergeant` для розблокування `llm_input` + `agent_end`.
+4. `packages/openclaw-plugin/src/index.test.ts` — мокати `api.on` (масив `{ event, handler, opts }`); видалити тести на `opts.name` для lifecycle hooks.
+5. `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` — переписати Row 1 (Hook API) — `api.on` canonical, `api.registerHook` лише для internal bus.
+6. Цей doc — додати § 0.5 + оновити § 5 (Railway connection — вже не актуальний root cause), § 6 (мітка hypothesis A — resolved-but-not-helpful), § 8 (додати PR #2471).
+
+**Чому це не зловили раніше**:
+
+- Unit-тести використовували self-consistent mock з `registerHook`. Мок повертав те саме, що збирав, і тести бачили "5 hooks registered". Real SDK contract не перевірявся.
+- Live smoke не давав сигналу про різницю між "hook registered" і "hook called" — обидва завершуються "shortcut не зреагував". Без `triggerInternalHook` callsite-grep ця гіпотеза не з'явилася.
+- Spike doc Row 1 був написаний автором, що подивився на `registerHook` як на canonical API. `api.on` навіть не згаданий — він просто інший metod у `OpenClawPluginApi`.
 
 ---
 
@@ -160,18 +224,33 @@ Service Instance ID: 5f24a020-f02d-4518-acd2-943bb7f31a3c
 URL: https://openclaw-gateway-production-f57e.up.railway.app
 ```
 
-## 6. Hypothesis stack для майбутніх ітерацій
+## 6. Hypothesis stack — статус після 13:30 UTC update
 
-Кожна гіпотеза має preconditions (що має бути виконано перед тим, як її перевіряти), commands (як перевірити), expected outcome (що сигналізує hit / miss).
+### Hypothesis A (старий — "redeploy фіксить все"): **MISS**
 
-### Hypothesis A (HIGHEST PRIORITY): redeploy фіксить все
+- Redeploy відбувся через GitHub auto-deploy на `sergeant-openclaw-gateway` (проект `Sergeant`). Останній deploy `aa0d5db3` від 10:56 UTC включає merge PR #2469.
+- Smoke-test після redeploy — досі fail. Bot робить роздуми на Layer 0.
+- **Висновок**: redeploy зроблений, проблема не у відсутньому deploy. Переходимо нижче.
 
-- **Precondition**: тригернути redeploy з main (див. § 7).
-- **Test**: повторити smoke-test (`/metrics`, `/runway`, `Дай метрики`, `/think`).
-- **Expected (hit)**: перші 3 → canned Markdown ≤2 сек, БЕЗ Opus-style prose. `/think` → повний agent cycle.
-- **Expected (miss)**: смsh-test видає той самий Opus output. Тоді переходимо на B.
+### Hypothesis B (старий — "hook реєструється але не fires"): **HIT (близько до правди, але не повне пояснення)**
 
-### Hypothesis B: hook реєструється (бо `opts.name`) але не fires (бо runtime не emit-ить `before_dispatch` для Telegram channel)
+- Грепом по `dist/loader-B-GXgDrk.js` і `dist/hook-runner-global-*.js` знайдено два паралельні hook-реєстри:
+  - `registry.hooks` + `registerInternalHook(event, wrappedHandler)` — куди пушить `api.registerHook`.
+  - `registry.typedHooks` — куди пушить `api.on`, і звідки читає `hookRunner.runBeforeDispatch`.
+- Hook **реально не fires**, але не тому що runtime не emit-ить event — а тому що handler сидить у іншому registry.
+- Перенесене у root-cause #4 (див. § 0.5). Це і є реальний answer.
+
+### Hypothesis C / D / E (детальний debug): **SKIP** — fix #4 пояснює всі symptoms одним рухом
+
+### Гіпотеза, яка лишається відкритою на майбутнє
+
+- **Audit-open hook (`before_agent_start`) — deprecated у 5.7**. Real event має `prompt` (не `userMessage`), result type не підтримує `block`. Після того, як fix #4 запрацює, `before_agent_start` буде fires, але payload може приходити порожнім / іншої форми → audit row може створюватися з `null` userMessage. Stage 4a follow-up: мігрувати на `session_start` або `agent_turn_prepare`. Цей doc не покриває цю частину.
+
+## 6-archive. Original hypothesis stack (зачищені для історії)
+
+<details><summary>Старі гіпотези B/C/D/E з версії 12:15 UTC. Лишаю для трасування міркувань.</summary>
+
+### Hypothesis B (стара версія): hook реєструється (бо `opts.name`) але не fires (бо runtime не emit-ить `before_dispatch` для Telegram channel)
 
 - **Precondition**: A miss; redeploy успішний; `[plugins] sergeant.hooks.registered` бачимо в Railway logs БЕЗ `sergeant.hook.registration_failed` ERROR-ів.
 - **Test 1**: Grep `dist/dispatch-8E8vi2HV.js` (або еквівалент) у downloaded openclaw 5.7 SDK на `before_dispatch` invocation. Перевірити чи runtime робить `hookRunner.runBeforeDispatch(event)` для Telegram-channel inbound messages специфічно. Можливо event-source `inbound_claim` замість `before_dispatch` для TG.
@@ -197,99 +276,107 @@ URL: https://openclaw-gateway-production-f57e.up.railway.app
 - **Test**: Перевірити `packages/openclaw-plugin/src/index.ts` на наявність `composedBeforeAgentStart` або інших wrap-ів. PR #2468 мав видалити цей wrap, але якщо є залишок — він заглушує shortcut router.
 - **Fix**: Видалити composition; кожен hook реєструється окремо. Перевірити, що `before_dispatch` І `before_agent_start` обидва присутні у hook list.
 
-## 7. Як зробити redeploy
+</details>
 
-> **WARNING**: Перед redeploy переконайся, що `main` чистий і local clone оновлений. Production Gateway після redeploy миттєво отримає новий код. Зворотного шляху без revert немає.
+## 7. Як зробити redeploy (актуальна версія після 13:30 UTC)
 
-### Варіант A (рекомендовано — швидкий fix цієї проблеми)
+> **Update 2026-05-12 13:30 UTC**: `sergeant-openclaw-gateway` у проекті `Sergeant` **вже auto-deploy-ить з GitHub на push до `main`**. Manual `railway up` потрібен тільки якщо auto-deploy не спрацював (build fail, тощо). Останній auto-deploy `aa0d5db3` від 10:56 UTC = merge `52580d06` (PR #2469).
+
+### Стандартний шлях (auto-deploy)
+
+```bash
+# merge PR у main
+# Railway автоматично queue-ить deploy через 1-2 хв
+# Build займає ~3-5 хв. Перевірити статус:
+export RAILWAY_API_TOKEN="$rl"
+railway link --project Sergeant --service sergeant-openclaw-gateway --environment production
+railway status
+railway logs --service sergeant-openclaw-gateway | tail -50
+# Шукати: sergeant.tools.registered, sergeant.hooks.registered, БЕЗ sergeant.hook.registration_failed
+```
+
+### Manual fallback (якщо auto-deploy fail)
 
 ```bash
 cd /home/ubuntu/repos/Sergeant
 git checkout main && git pull
-export RAILWAY_API_TOKEN="$Railway"   # account-scoped token у секретах Devin org
+export RAILWAY_API_TOKEN="$rl"
+railway link --project Sergeant --service sergeant-openclaw-gateway --environment production
+railway up --service sergeant-openclaw-gateway --detach
+```
+
+### Historical (зачищене)
+
+<details><summary>Початкові варіанти A/B/C з 12:15 UTC update — для трасування рішень.</summary>
+
+#### Варіант A (історично — швидкий fix)
+
+```bash
 railway link --project openclaw-clean-gateway
 railway up --service openclaw-gateway --detach
 ```
 
-`railway up` пакує локальну директорію → запускає Docker build per `Dockerfile.openclaw-gateway` → деплоїть. Часу зайде ~3-5 хв. Перевірити статус:
+#### Варіант B (історично — підключити до GitHub)
 
-```bash
-railway deployment list --limit 3
-railway logs --service openclaw-gateway | tail -50
-# Шукати: sergeant.tools.registered, sergeant.hooks.registered, БЕЗ sergeant.hook.registration_failed
-```
+Це вже зроблено для `sergeant-openclaw-gateway` у проекті `Sergeant`.
 
-### Варіант B (довгий, permanent — підключити Railway service до GitHub)
+#### Варіант C (історично — GitHub Action)
 
-Це permanent fix і виключає необхідність manual redeploy для майбутніх PR.
+Не потрібно, бо B зроблено.
 
-1. Railway dashboard → openclaw-clean-gateway → openclaw-gateway service → Settings → Source.
-2. Connect to GitHub → Skords-01/Sergeant → branch `main`.
-3. Verify deploy triggers на push to `main`.
-4. Це створює першу auto-deploy, яка пейка-ну `main` HEAD.
+</details>
 
-Після цього кожен merge у main буде → нова deploy ~3-5 хв пізніше → live smoke-test.
+## 8. PR history (цей session — оновлено 13:30 UTC)
 
-### Варіант C (через CI, найкраще довгостроково)
+| #    | Title                                                                   | Commit                   | Status                                | Real impact                                                                                                                                                                                                                       |
+| ---- | ----------------------------------------------------------------------- | ------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2466 | docs: sync openclaw stage-tracker                                       | `007285f6`               | merged                                | Лише docs. n/a runtime.                                                                                                                                                                                                           |
+| 2467 | drop `__ROUTED__:` sentinel                                             | `bbed022e`               | merged → deployed                     | Sentinel був dead code. Чисто refactor.                                                                                                                                                                                           |
+| 2468 | migrate Stage 4b shortcut router to `before_dispatch`                   | `5cb31858`               | merged → deployed `aa0d5db3` 10:56UTC | Theoretical fix root-cause #1 (deprecated hook). Не дав ефекту, бо real root cause — №4 (`api.on` vs `api.registerHook`), яка існує незалежно від обраного event.                                                                 |
+| 2469 | restore hook registration with mandatory `opts.name`                    | `416eeba0`<br>`8458fa2a` | merged → deployed `aa0d5db3` 10:56UTC | Theoretical fix root-cause #2 (`hook registration missing name`). Не дав ефекту, бо `registerHook` — це не той method, який runtime читає для lifecycle hooks. Без помилки, але без firing-у.                                     |
+| 2470 | docs: handoff after Stage 4b debug                                      | `624a5efe`               | merged                                | Документ із попереднім root cause #3 (Railway не watch-ить GitHub). Цей doc — наступна версія. **Hypothesis A з #2470 — MISS** (auto-deploy на `sergeant-openclaw-gateway` працює, redeploy сам по собі не фіксить).               |
+| 2471 | refactor(openclaw-plugin): migrate lifecycle hooks from `registerHook` to `api.on` | _pending_                | _in flight_                           | **Reality root-cause #4 fix.** Replaces `for (...) registerHook(event, handler, { name })` з 5 явними `api.on(event, handler)`. + `allowConversationAccess: true` для conversation hooks. + Spike doc Row 1 переписаний. + tests. |
 
-GitHub Action у `.github/workflows/` що:
+## 9. Next steps for next session (актуально після 13:30 UTC)
 
-1. На push до `main` з changed-files у `packages/openclaw-plugin/**` або `Dockerfile.openclaw-gateway`,
-2. Запускає `railway up --service openclaw-gateway --detach`,
-3. Wait на deploy success,
-4. Posts back to PR/commit з deploy URL.
+Pre-flight (3 хв):
 
-Це канонічно правильний підхід для monorepo з кількома Railway services (server, gateway, console etc.) — кожен service має свій workflow trigger.
-
-**Recommendation**: Варіант A зараз (швидкий), потім окремий PR — Варіант B або C для майбутнього.
-
-## 8. PR history (цей session)
-
-| #    | Title                                                 | Commit                   | Status                            | Real impact                                                                                                                              |
-| ---- | ----------------------------------------------------- | ------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 2466 | docs: sync openclaw stage-tracker                     | `007285f6`               | merged                            | Лише docs. n/a runtime.                                                                                                                  |
-| 2467 | drop `__ROUTED__:` sentinel                           | `bbed022e`               | merged → manual deploy `74eab839` | Sentinel був dead code (blockReason ніколи не доходив до runtime). Чисто technically-correct refactor. Це baseline-deploy.               |
-| 2468 | migrate Stage 4b shortcut router to `before_dispatch` | `5cb31858`               | merged → **НЕ deployed**          | Theoretical fix root-cause #1 (deprecated hook, wrong event shape, no `block` support). Не задеплоєний, тому не верифікований у runtime. |
-| 2469 | restore hook registration with mandatory `opts.name`  | `416eeba0`<br>`8458fa2a` | merged → **НЕ deployed**          | Theoretical fix root-cause #2 (loader throws `hook registration missing name`). Не задеплоєний, тому не верифікований у runtime.         |
-
-## 9. Next steps for next session
-
-Pre-flight (5 хв):
-
-1. Перевірити що `main` повний:
+1. Перевірити PR #2471 status — merge у main має включати:
+   - `packages/openclaw-plugin/src/index.ts` — `api.on(...)` calls замість `registerHook(..., { name })`.
+   - `packages/openclaw-plugin/src/types/openclaw-ambient.d.ts` — `on?:` додано як canonical.
+   - `ops/openclaw/openclaw.example.json` — `plugins.entries.sergeant.hooks.allowConversationAccess: true`.
+   - `packages/openclaw-plugin/src/index.test.ts` — мок `api.on`.
+2. Перевірити Railway auto-deploy:
    ```bash
-   git log --oneline main -10 | grep -i "registerHook\|opts.name\|before_dispatch"
-   # Маєш бачити 416eeba0 (opts.name fix), 5cb31858 (before_dispatch migration)
-   ```
-2. Перевірити Railway state:
-   ```bash
-   export RAILWAY_API_TOKEN="$Railway"
-   railway link --project openclaw-clean-gateway
+   export RAILWAY_API_TOKEN="$rl"
+   railway link --project Sergeant --service sergeant-openclaw-gateway --environment production
+   railway status
    railway deployment list --limit 3
    ```
-   Якщо all deploys at 2026-05-12T10:06:43Z — fix-forward не deployed.
+   Очікувано: новий deploy після merge PR #2471 з commit hash, що включає `api.on` fix.
 
 Main action (10 хв):
 
-3. Redeploy через Варіант A з § 7. Чекати на `status: SUCCESS`.
-4. Live smoke-test 5 команд: `/metrics`, `/runway`, `Дай метрики`, `/think чи варто піднімати ціну`, `/status`.
+3. Чекати на `status: SUCCESS` нового deploy.
+4. Live smoke-test 5 команд у DM з `@KENT_OPENCLAW_GATEWAY_BOT`:
+   - `/metrics` — очікувано canned Markdown table з PostHog/Stripe/Sentry даними ≤2 сек.
+   - `/runway` — те ж.
+   - `Дай метрики` (UA) — те ж.
+   - `/think чи варто піднімати ціну` — повний agent cycle (Opus prose, ≥15 сек).
+   - `/status` — очікувано канонічний Openclaw status response (через native command, не наш plugin).
 5. Railway logs:
    ```bash
-   railway logs --service openclaw-gateway | grep -E "sergeant\.(tools|hooks|shortcut|hook)\."
+   railway logs --service sergeant-openclaw-gateway | grep -E "sergeant\.(tools|hooks|shortcut|hook)\."
    ```
 
    - `sergeant.tools.registered` — має бути 1 (startup).
    - `sergeant.hooks.registered` — має бути 1 з `ok: 5, failed: 0`.
-   - `sergeant.hook.registration_failed` — **МАЄ бути 0** (якщо є — `opts.name` fix не спрацював).
-   - `sergeant.shortcut.routed` (or whatever logged in shortcut-router handler) — має бути 1 на `/metrics`, 1 на `/runway`, 1 на `Дай метрики`.
+   - `sergeant.hook.registration_failed` — **МАЄ бути 0**.
+   - `openclaw.shortcut.routed` — має бути 1 на кожен з `/metrics`, `/runway`, `Дай метрики`.
 
-Якщо all green → declare Stage 4b live, відкрити Stage 4a follow-up PR (event shape mismatch на audit-open hook — окрема fix-forward задача).
+Якщо all green → declare Stage 4b live, відкрити Stage 4a follow-up PR (audit-open `before_agent_start` event shape mismatch — окрема задача).
 
-Якщо не all green → переходити на Hypothesis B/C/D/E з § 6. **НЕ робити нові PR-и без verify, що попередні deployed.**
-
-Permanent fix (окремий PR, любий час):
-
-6. Connect Railway → GitHub (Варіант B або C з § 7). Це закриває майбутні regression-loops де PR merged ≠ deployed.
+Якщо не all green → grep `registry.typedHooks` у logs ще раз, перевірити, чи loader не block-нув conversation hooks через `allowConversationAccess` flag. Перевірити, що `api.on` дійсно exists на runtime API (з `api-builder.d.ts` має бути).
 
 ## 10. Опаційні findings (можуть бути окремими follow-up PR-ами)
 
