@@ -231,6 +231,24 @@
     "alsoAllow": ["recall_memory"]
   },
 
+  "cron": {
+    "enabled": true,
+    "store": "~/.openclaw/cron/jobs.json",
+    "maxConcurrentRuns": 1,
+    "retry": {
+      "maxAttempts": 3,
+      "backoffMs": [60000, 120000, 300000],
+      "retryOn": ["rate_limit", "overloaded", "network", "server_error"]
+    },
+    "sessionRetention": "24h",
+    "failureAlert": {
+      "enabled": true,
+      "after": 1,
+      "cooldownMs": 3600000,
+      "mode": "announce"
+    }
+  },
+
   "plugins": {
     "bundledDiscovery": "compat",
     "allow": ["sergeant"],
