@@ -1,42 +1,40 @@
 /**
- * Stage 4b — Layer 0 shortcut router hook (`before_agent_start`).
+ * Stage 4b — Layer 0 shortcut router hook (`before_dispatch`).
  *
- * Composed BEFORE the Stage 4a audit-open hook on the same event:
+ * Fires BEFORE the openclaw agent loop starts on an inbound message:
  *
- *   1. If the user message matches a shortcut → execute tool calls,
- *      render the canned response, return
- *      `{ block: true, blockReason: <rendered response> }`. The OpenClaw
- *      runtime renders `blockReason` as the assistant turn, so no
- *      sentinel prefix or host-side stripping is required. The agent
- *      never runs; cost stays at $0 from LLM standpoint.
+ *   1. If the user message matches a shortcut → execute the tool calls,
+ *      render the canned Markdown response, return
+ *      `{ handled: true, text: <rendered response> }`. The runtime sends
+ *      `text` to the originating channel (e.g. Telegram) verbatim AND
+ *      skips agent dispatch entirely. $0 LLM cost.
  *
  *   2. If the matched shortcut is `/think` (sentinel `__ESCALATE_LAYER2__:`)
- *      we explicitly do NOT block — let the agent continue to Layer 2.
- *      Layer 2 escalation still uses the sentinel because it travels
- *      back into the agent loop via `userMessage` rewrites, not as a
- *      `blockReason`.
+ *      we explicitly do NOT claim the message — let the runtime dispatch
+ *      to the agent for Layer 2 reasoning. Layer 2 escalation still uses
+ *      the sentinel because it travels back into the agent loop via the
+ *      `userMessage` channel (handled outside this hook), not as a
+ *      `text` short-circuit.
  *
- *   3. If no shortcut matches → return `undefined` (caller falls through
- *      to the Stage 4a audit-open hook).
+ *   3. If no shortcut matches → return `{ handled: false }` so the
+ *      runtime continues to the agent.
  *
- * Why `before_agent_start`: it fires once per turn AND its event payload
- * exposes `userMessage` (`PluginHookBeforeAgentStartEvent.userMessage`),
- * which is exactly what a shortcut regex needs. We deliberately do not
- * register the router as a second `before_agent_start` handler — the SDK
- * does not document multi-handler ordering, so composition is safer.
+ * Why `before_dispatch`: it is the canonical hook for "intercept a user
+ * message and reply without invoking the agent" in openclaw 2026.5.7
+ * (`hook-types.d.ts:163+`, `PluginHookBeforeDispatchResult.handled`).
  *
- * History: an earlier iteration prefixed the routed `blockReason` with a
- * `__ROUTED__:` sentinel so a Gateway-side handler could strip it before
- * delivery to Telegram. That host-side handler was never built (no plug
- * point in the upstream OpenClaw runtime, and `apps/server` is not in
- * the Telegram hot path for the Gateway flow). The sentinel is gone;
- * `blockReason` carries the rendered Markdown verbatim. See
- * `docs/planning/openclaw-migration-plan.md` § Stage 4b smoke-test.
+ * History: Stage 4b initially registered this router on `before_agent_start`
+ * — but that hook is marked `@deprecated` in real 5.7 and its result type
+ * (`PluginHookBeforeAgentStartResult`) does NOT support short-circuit
+ * blocking. It only allows prompt mutation / model override. Live smoke-
+ * test on Gateway 2026-05-12 confirmed the agent ran in full for every
+ * shortcut command; logs showed no `openclaw.shortcut.routed` events.
+ * See `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` § Stage 4b fix.
  */
 
 import type {
-  PluginHookBeforeAgentStartEvent,
-  PluginHookLlmInputResult,
+  PluginHookBeforeDispatchEvent,
+  PluginHookBeforeDispatchResult,
 } from "openclaw/plugin-sdk/plugin-entry";
 
 import { ShortcutRouter } from "../shortcuts/router.js";
@@ -58,15 +56,15 @@ export interface ShortcutRouterHookOptions {
 }
 
 /**
- * Builds the `before_agent_start` shortcut-router hook. Returns
- * `undefined` for non-matches so the caller can compose with the Stage 4a
- * audit hook (`createBeforeAgentStartHook`) without extra wiring.
+ * Builds the `before_dispatch` shortcut-router hook. Returns
+ * `{ handled: false }` for non-matches so the runtime falls through to
+ * the agent — this is the canonical "did not claim" signal in openclaw.
  */
 export function createShortcutRouterHook(
   opts: ShortcutRouterHookOptions,
 ): (
-  event: PluginHookBeforeAgentStartEvent,
-) => Promise<PluginHookLlmInputResult | undefined> {
+  event: PluginHookBeforeDispatchEvent,
+) => Promise<PluginHookBeforeDispatchResult> {
   const log = opts.log ?? (() => undefined);
   const router = new ShortcutRouter({
     shortcuts: opts.shortcuts,
@@ -74,42 +72,44 @@ export function createShortcutRouterHook(
     log,
   });
 
-  return async (event: PluginHookBeforeAgentStartEvent) => {
-    const userMessage =
-      typeof event.userMessage === "string" ? event.userMessage : undefined;
-    if (!userMessage || userMessage.trim().length === 0) {
-      return undefined;
+  return async (event: PluginHookBeforeDispatchEvent) => {
+    const content =
+      typeof event.content === "string" ? event.content : undefined;
+    if (!content || content.trim().length === 0) {
+      return { handled: false };
     }
 
     let matchResult;
     try {
-      matchResult = await router.match(userMessage);
+      matchResult = await router.match(content);
     } catch (err) {
       log("error", "openclaw.shortcut.router_error", {
         error: err instanceof Error ? err.message : String(err),
       });
-      return undefined;
+      return { handled: false };
     }
-    if (!matchResult) return undefined;
+    if (!matchResult) return { handled: false };
 
     if (matchResult.response.startsWith(ESCALATE_PREFIX)) {
       log("debug", "openclaw.shortcut.escalate_layer2", {
         slug: matchResult.slug,
-        runId: event.runId,
+        channel: event.channel,
+        sessionKey: event.sessionKey,
       });
-      return undefined;
+      return { handled: false };
     }
 
     log("info", "openclaw.shortcut.routed", {
       slug: matchResult.slug,
-      runId: event.runId,
+      channel: event.channel,
+      sessionKey: event.sessionKey,
       responseChars: matchResult.response.length,
       toolCount: matchResult.toolResults.size,
     });
 
     return {
-      block: true,
-      blockReason: matchResult.response,
+      handled: true,
+      text: matchResult.response,
     };
   };
 }

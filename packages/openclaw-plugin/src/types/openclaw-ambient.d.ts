@@ -54,7 +54,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
   }
 
   /**
-   * Subset of the canonical `PluginHookName` enum used in Sergeant Stage 4a.
+   * Subset of the canonical `PluginHookName` enum used in Sergeant Stage 4a/4b.
    * Full 34-name enum + payload + result shapes:
    * `node_modules/openclaw/dist/plugin-sdk/src/plugins/hook-types.d.ts`
    * (see spike doc § "Hook canonical enum"). Wider strings are still
@@ -62,6 +62,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
    * without bumping this list every PR.
    */
   export type PluginHookName =
+    | "before_dispatch"
     | "before_agent_start"
     | "llm_input"
     | "agent_end"
@@ -141,15 +142,74 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
   }
 
   /**
-   * Event payload for `before_agent_start`. Carries enough context to
-   * open an `openclaw_invocations` row (founder id, trigger, first user
-   * message). All fields optional because we read defensively until live
-   * smoke-test on Gateway confirms the runtime shape.
+   * Event payload for `before_dispatch` — fires BEFORE the agent loop
+   * starts on an inbound message. Real shape from
+   * `hook-types.d.ts:163+` (`PluginHookBeforeDispatchEvent`).
+   *
+   * Used by Stage 4b shortcut router: read `content`, match against
+   * regex shortcuts, return `{ handled: true, text: <rendered response> }`
+   * to short-circuit the agent and have the runtime deliver `text` to
+   * the originating channel (Telegram) verbatim. $0 LLM cost.
+   */
+  export interface PluginHookBeforeDispatchEvent {
+    content: string;
+    body?: string;
+    channel?: string;
+    sessionKey?: string;
+    senderId?: string;
+    isGroup?: boolean;
+    timestamp?: number;
+  }
+
+  /**
+   * Result payload for `before_dispatch`. Real source
+   * `hook-types.d.ts:179+` (`PluginHookBeforeDispatchResult`).
+   *
+   *   - `{ handled: true, text }` → runtime sends `text` to the channel
+   *     AND skips the agent dispatch entirely.
+   *   - `{ handled: false }` or `undefined` → fall through to agent.
+   */
+  export interface PluginHookBeforeDispatchResult {
+    handled: boolean;
+    text?: string;
+  }
+
+  /**
+   * Optional second-arg context to `before_dispatch` handlers — not
+   * required for shortcut router, but defines the shape if hooks need
+   * to discriminate by channel / account / session. Real source
+   * `hook-types.d.ts:172+` (`PluginHookBeforeDispatchContext`).
+   */
+  export interface PluginHookBeforeDispatchContext {
+    channelId?: string;
+    accountId?: string;
+    conversationId?: string;
+    sessionKey?: string;
+    senderId?: string;
+  }
+
+  /**
+   * Event payload for `before_agent_start`.
+   *
+   * @deprecated Real openclaw 5.7 marks this hook itself as
+   * `@deprecated Use before_model_resolve and before_prompt_build.`
+   * (`hook-before-agent-start.types.d.ts:38+`). Live smoke-test 2026-05-12
+   * confirmed: legacy compat dispatch still fires, but the real event has
+   * `prompt` (not `userMessage`) and the result type does NOT support
+   * `{ block, blockReason }` — only `prependContext`, `appendContext`,
+   * `systemPrompt`, `modelOverride`, etc. Use `before_dispatch` for
+   * short-circuit blocking; use `before_model_resolve` / `before_prompt_build`
+   * for prompt mutation. Stage 4a audit hook still reads this event but
+   * needs migration to `session_start` or `agent_turn_prepare`.
    */
   export interface PluginHookBeforeAgentStartEvent {
+    prompt?: string;
     runId?: string;
-    trigger?: string;
+    messages?: unknown[];
+    /** Legacy field — NOT present in real openclaw 5.7 payload. Kept for
+     *  defensive reading until Stage 4a audit-hook is migrated. */
     userMessage?: string;
+    trigger?: string;
     sessionKey?: string;
     [key: string]: unknown;
   }

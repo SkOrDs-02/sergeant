@@ -1,6 +1,6 @@
 # `@sergeant/openclaw-plugin`
 
-> **Last validated:** 2026-05-12 by Devin (Stage 4b Layer 0 shortcut router). **Status:** Stage 4b — 25 read-tools + 5 write-tools + 4 hooks + Layer 0 shortcut router (17 shortcuts, $0 LLM cost) на real `openclaw@2026.5.7` SDK.
+> **Last validated:** 2026-05-12 by Devin (Stage 4b shortcut router migrated to `before_dispatch`). **Status:** Stage 4b — 25 read-tools + 5 write-tools + 5 hooks + Layer 0 shortcut router (17 shortcuts, $0 LLM cost) на real `openclaw@2026.5.7` SDK.
 
 Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
@@ -8,22 +8,23 @@ Source-of-truth для контексту і дорожньої карти: [`do
 
 ## Поточний стан (Stage 4b)
 
-`src/index.ts` реєструє **30 tools + 4 hooks + Layer 0 shortcut router (17 shortcuts)** через `api.registerTool` / `api.registerHook` SDK поверх real `openclaw@2026.5.7`.
+`src/index.ts` реєструє **30 tools + 5 hooks + Layer 0 shortcut router (17 shortcuts)** через `api.registerTool` / `api.registerHook` SDK поверх real `openclaw@2026.5.7`.
 
 **25 read-tools:** `recall_memory`, `read_strategy_docs`, `record_decision`, `query_app_db`, `get_server_stats`, `get_stripe_metrics`, `get_posthog_stats`, `get_sentry_issues`, `read_github`, `github_search`, `github_tree`, `github_diff`, `github_prs`, `get_github_releases`, `n8n_list`, `n8n_describe`, `n8n_trigger`, `n8n_activate`, `refresh_business_snapshot`, `read_workflow_logs`, `read_telegram_topic`, `seo_gsc_query`, `seo_psi_audit`, `seo_serp_lookup`, `set_reminder`.
 
 **5 write-tools:** `create_github_issue`, `commit_to_strategy_doc`, `post_to_topic`, `pause_workflow`, `mute_alert`. Усі вважаються мутуючими; гейтаються `before_tool_call` hook-ом який повертає `{ requireApproval: {...} }` — host рендерить approval UI, `onResolution` логує рішення в `/write-audit/log`.
 
-**4 hooks:**
+**5 hooks:**
 
+- `before_dispatch` — Layer 0 shortcut router (Stage 4b). Див. нижче.
 - `llm_input` — per-call USD budget gate (`POST /api/internal/openclaw/budget`); fail-closed (network/5xx → block). [`src/hooks/budget.ts`](./src/hooks/budget.ts)
-- `before_agent_start` — відкриває invocation row (`POST /invocations/open`); кешує `invocationId ↔ runId` у in-memory `InvocationCorrelator` (Map). [`src/hooks/audit.ts`](./src/hooks/audit.ts)
+- `before_agent_start` — відкриває invocation row (`POST /invocations/open`); кешує `invocationId ↔ runId` у in-memory `InvocationCorrelator` (Map). [`src/hooks/audit.ts`](./src/hooks/audit.ts) **NOTE:** openclaw 5.7 позначив цей hook як `@deprecated` (real event має поле `prompt`, а не `userMessage`, і result type не підтримує `block`). Stage 4a follow-up мігрує на `session_start` / `agent_turn_prepare`.
 - `agent_end` — фіналізує invocation (`POST /invocations/finalize`) з rollup cost/duration/iterations/status; soft-fail якщо корелятор порожній (server fallback'ить за runId).
 - `before_tool_call` — для write-tools повертає `requireApproval` payload, для read-tools `undefined` (пас-тру). [`src/hooks/write-approval.ts`](./src/hooks/write-approval.ts)
 
 **Layer 0 shortcut router (Stage 4b):**
 
-`createShortcutRouterHook` composing on top of Stage 4a `before_agent_start` — виконується **ПЕРШИМ**, fall-through-ить на audit-open якщо match-a нема. 17 shortcuts ([`src/shortcuts/`](./src/shortcuts/)):
+`createShortcutRouterHook` реєструється на `before_dispatch` — це канонічний hook для "intercept inbound message + reply without invoking the agent" у `openclaw@2026.5.7`. 17 shortcuts ([`src/shortcuts/`](./src/shortcuts/)):
 
 | slug              | patterns                                           | tools                                                                               |
 | ----------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
@@ -45,9 +46,11 @@ Source-of-truth для контексту і дорожньої карти: [`do
 | `remind`          | `/remind <when> <what>`                            | `set_reminder({ when: $1, message: $2 })`                                           |
 | `think`           | `/think <question>`, `подумай <question>`          | — (escalates to Layer 2 via `__ESCALATE_LAYER2__:` sentinel — hook НЕ блокує)       |
 
-Шлях: hook реєструється на `before_agent_start`; якщо regex match → паралельно викликає tool-и через in-process `toolRegistry: Map<name, executor>` (будується пліч-о-пліч з `api.registerTool` loop — zero divergence), рендерить Markdown-template і повертає `{ block: true, blockReason: <rendered response> }` — без sentinel-prefix-а. OpenClaw runtime surface-ить `blockReason` як assistant turn без додаткової host-side обробки. **Cost: $0 LLM для shortcut match-ів** (agent взагалі не стартує). Якщо нема match-а — hook повертає `undefined`, fall-through на Stage 4a audit-open.
+Шлях: hook реєструється на `before_dispatch`; якщо regex метчить `event.content` → паралельно викликає tool-и через in-process `toolRegistry: Map<name, executor>` (будується пліч-о-пліч з `api.registerTool` loop — zero divergence), рендерить Markdown-template і повертає `{ handled: true, text: <rendered response> }`. OpenClaw runtime шле `text` в оригінальний канал (Telegram) verbatim А НЕ dispatch-ить agent. **Cost: $0 LLM для shortcut match-ів**. Якщо нема match-а — hook повертає `{ handled: false }`, runtime dispatch-ить agent нормально (Stage 4a audit-open відкриється на наступному хуку `before_agent_start`).
 
-Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definition-файлів, `src/hooks/shortcut-router.ts` factory. Експорт `ESCALATE_PREFIX` залишається публічним — він використовується Layer 2 escalation flow-ом через `userMessage` rewrite, а не як `blockReason` prefix. (Історія: попередня ревізія експортувала `ROUTED_RESPONSE_PREFIX` та helpers для гіпотетичного Gateway-side handler-а — видалено як YAGNI: OpenClaw runtime не має plug-point-у для такого стрипання, а `apps/server` не в hot-path-і Gateway-ного Telegram-traffic-у.)
+Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definition-файлів, `src/hooks/shortcut-router.ts` factory. Експорт `ESCALATE_PREFIX` залишається публічним — він використовується Layer 2 escalation flow-ом через `userMessage` rewrite, а не як `text` short-circuit.
+
+Історія: попередні ревізії реєстрували цей роутер на `before_agent_start` з `{ block: true, blockReason }`. Live smoke-test 2026-05-12 підтвердив, що в real `openclaw@2026.5.7` цей підхід не працює: hook `@deprecated`, event має `prompt` (не `userMessage`), result type не підтримує `block`. Див. `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` § Stage 4b fix-forward.
 
 Кожен tool — `api.registerTool({ name, label, description, parameters: Type.Object(...), async execute(invocationId, params) { ... } })`. Параметри валідуються `typebox@1.1.x` (не Zod і не `@sinclair/typebox`). Tools проксяться через HTTP до існуючих server endpoints `/api/internal/openclaw/<endpoint>` з `Authorization: Bearer ${INTERNAL_API_KEY}` (server API не змінюється). Для write-tools додатковий server-side гейт — алловліст + `/write-audit/log` (див. `apps/server/src/routes/internal/openclaw.ts`).
 

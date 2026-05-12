@@ -32,53 +32,61 @@ const thinkShortcut: ShortcutDefinition = {
 };
 
 describe("createShortcutRouterHook", () => {
-  it("returns undefined when userMessage is missing", async () => {
+  it("returns { handled: false } when content is missing", async () => {
     const hook = createShortcutRouterHook({
       shortcuts: [pingShortcut],
       executeTool: exec,
     });
-    const result = await hook({ runId: "r1" });
-    expect(result).toBeUndefined();
+    const result = await hook({ content: "" });
+    expect(result).toEqual({ handled: false });
   });
 
-  it("returns undefined for empty userMessage", async () => {
+  it("returns { handled: false } for whitespace-only content", async () => {
     const hook = createShortcutRouterHook({
       shortcuts: [pingShortcut],
       executeTool: exec,
     });
-    expect(await hook({ runId: "r1", userMessage: "   " })).toBeUndefined();
+    expect(await hook({ content: "   " })).toEqual({ handled: false });
   });
 
-  it("returns undefined when no shortcut matches", async () => {
+  it("returns { handled: false } when no shortcut matches", async () => {
     const hook = createShortcutRouterHook({
       shortcuts: [pingShortcut],
       executeTool: exec,
     });
-    expect(
-      await hook({ runId: "r1", userMessage: "just chatting" }),
-    ).toBeUndefined();
+    expect(await hook({ content: "just chatting" })).toEqual({
+      handled: false,
+    });
   });
 
-  it("blocks with the rendered response as blockReason when a shortcut matches", async () => {
+  it("claims dispatch with the rendered response as `text` when a shortcut matches", async () => {
     const log = vi.fn();
     const hook = createShortcutRouterHook({
       shortcuts: [pingShortcut],
       executeTool: exec,
       log,
     });
-    const result = await hook({ runId: "r1", userMessage: "/ping" });
+    const result = await hook({
+      content: "/ping",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    });
     expect(result).toEqual({
-      block: true,
-      blockReason: "pong",
+      handled: true,
+      text: "pong",
     });
     expect(log).toHaveBeenCalledWith(
       "info",
       "openclaw.shortcut.routed",
-      expect.objectContaining({ slug: "ping", runId: "r1" }),
+      expect.objectContaining({
+        slug: "ping",
+        channel: "telegram",
+        sessionKey: "agent:main:telegram:direct:319824665",
+      }),
     );
   });
 
-  it("does NOT block on /think (passes through to Layer 2)", async () => {
+  it("does NOT claim dispatch on /think (passes through to Layer 2)", async () => {
     const log = vi.fn();
     const hook = createShortcutRouterHook({
       shortcuts: [thinkShortcut],
@@ -86,18 +94,23 @@ describe("createShortcutRouterHook", () => {
       log,
     });
     const result = await hook({
-      runId: "r2",
-      userMessage: "/think how to price",
+      content: "/think how to price",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
     });
-    expect(result).toBeUndefined();
+    expect(result).toEqual({ handled: false });
     expect(log).toHaveBeenCalledWith(
       "debug",
       "openclaw.shortcut.escalate_layer2",
-      expect.objectContaining({ slug: "think", runId: "r2" }),
+      expect.objectContaining({
+        slug: "think",
+        channel: "telegram",
+        sessionKey: "agent:main:telegram:direct:319824665",
+      }),
     );
   });
 
-  it("returns undefined when the router itself throws", async () => {
+  it("returns { handled: false } when the router itself throws", async () => {
     const log = vi.fn();
     const boom: ToolExecutor = async () => {
       throw new Error("ignored — router catches");
@@ -117,8 +130,8 @@ describe("createShortcutRouterHook", () => {
       executeTool: boom,
       log,
     });
-    const result = await hook({ runId: "r3", userMessage: "/boom" });
-    expect(result).toBeUndefined();
+    const result = await hook({ content: "/boom" });
+    expect(result).toEqual({ handled: false });
     expect(log).toHaveBeenCalledWith(
       "error",
       "openclaw.shortcut.router_error",
@@ -145,10 +158,10 @@ describe("createShortcutRouterHook", () => {
       shortcuts: [shortcut],
       executeTool: executor,
     });
-    const result = await hook({ runId: "r4", userMessage: "/agg" });
+    const result = await hook({ content: "/agg" });
     expect(result).toEqual({
-      block: true,
-      blockReason: "ok",
+      handled: true,
+      text: "ok",
     });
     expect(calls.map((c) => c[0]).sort()).toEqual(["a", "b"]);
   });

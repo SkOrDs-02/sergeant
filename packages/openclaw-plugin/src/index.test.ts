@@ -5,8 +5,9 @@
  * lockfile doesn't ship them. We mock both with the minimal surface the
  * entry file uses (`definePluginEntry` passthrough + a TypeBox-like
  * builder that records its arguments) and assert the plugin registers
- * exactly the 30 tools we expect — plus the 4 hooks added in Stage 4a
- * (`llm_input`, `before_agent_start`, `agent_end`, `before_tool_call`).
+ * exactly the 30 tools we expect — plus the 5 hooks added in Stage 4a/4b
+ * (`llm_input`, `before_agent_start`, `agent_end`, `before_tool_call`,
+ * `before_dispatch`).
  *
  * The execute() smoke checks for each write-tool prove that the entry
  * routes params straight to the correct server endpoint without
@@ -274,14 +275,15 @@ describe("Stage 4a plugin entry — write-tool execute() routing", () => {
   );
 });
 
-describe("Stage 4a plugin entry — hooks registered", () => {
-  it("registers exactly the 4 Stage 4a hooks via api.registerHook", async () => {
+describe("Stage 4a/4b plugin entry — hooks registered", () => {
+  it("registers exactly the 5 Stage 4a/4b hooks via api.registerHook", async () => {
     await import("./index.js");
     const events = registeredHooks.map((h) => h.event).sort();
     expect(events).toEqual(
       [
         "agent_end",
         "before_agent_start",
+        "before_dispatch",
         "before_tool_call",
         "llm_input",
       ].sort(),
@@ -337,8 +339,9 @@ describe("Stage 4a plugin entry — hooks registered", () => {
     const end = registeredHooks.find((h) => h.event === "agent_end")!;
 
     // First open an invocation so the correlator has a row to consume.
-    // Use a non-shortcut user message so the composed Stage 4b router
-    // falls through to the Stage 4a audit-open path.
+    // Stage 4b shortcut router lives on a different event (`before_dispatch`),
+    // so the Stage 4a audit-open hook always runs to completion when
+    // `before_agent_start` fires.
     await open.handler({
       runId: "run_lifecycle",
       trigger: "dm",
@@ -409,23 +412,26 @@ describe("Stage 4a plugin entry — hooks registered", () => {
   );
 });
 
-describe("Stage 4b — Layer 0 shortcut router wired into before_agent_start", () => {
-  it("matches /metrics and short-circuits with the rendered response as blockReason", async () => {
+describe("Stage 4b — Layer 0 shortcut router wired into before_dispatch", () => {
+  it("matches /metrics and claims dispatch with the rendered response as `text`", async () => {
     await import("./index.js");
-    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    const dispatch = registeredHooks.find(
+      (h) => h.event === "before_dispatch",
+    )!;
     fetchCalls.length = 0;
 
-    const result = (await open.handler({
-      runId: "run_short_metrics",
-      trigger: "dm",
-      userMessage: "/metrics",
-    })) as { block?: boolean; blockReason?: string };
+    const result = (await dispatch.handler({
+      content: "/metrics",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean; text?: string };
 
-    expect(result?.block).toBe(true);
-    expect(result?.blockReason).not.toMatch(/^__ROUTED__:/);
-    expect(result?.blockReason).toContain("Метрики сьогодні");
-    // Tools fanned out: 3 HTTP calls to PostHog/Stripe/Sentry endpoints,
-    // and explicitly NO invocations/open (shortcut bypassed the audit hook).
+    expect(result?.handled).toBe(true);
+    expect(result?.text).not.toMatch(/^__ROUTED__:/);
+    expect(result?.text).toContain("Метрики сьогодні");
+    // Tools fanned out: HTTP calls to PostHog/Stripe/Sentry endpoints.
+    // Audit-open hook lives on `before_agent_start` (different event)
+    // and is not exercised by this `before_dispatch` invocation.
     const postedUrls = fetchCalls.map((c) => c.url);
     expect(postedUrls).not.toContain(
       "http://server.local/api/internal/openclaw/invocations/open",
@@ -437,55 +443,60 @@ describe("Stage 4b — Layer 0 shortcut router wired into before_agent_start", (
 
   it("Ukrainian phrase 'дай метрики' also routes through the shortcut", async () => {
     await import("./index.js");
-    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    const dispatch = registeredHooks.find(
+      (h) => h.event === "before_dispatch",
+    )!;
     fetchCalls.length = 0;
 
-    const result = (await open.handler({
-      runId: "run_short_metrics_ua",
-      trigger: "dm",
-      userMessage: "дай метрики",
-    })) as { block?: boolean; blockReason?: string };
+    const result = (await dispatch.handler({
+      content: "дай метрики",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean; text?: string };
 
-    expect(result?.block).toBe(true);
-    expect(result?.blockReason).not.toMatch(/^__ROUTED__:/);
-    expect(result?.blockReason).toContain("Метрики сьогодні");
+    expect(result?.handled).toBe(true);
+    expect(result?.text).not.toMatch(/^__ROUTED__:/);
+    expect(result?.text).toContain("Метрики сьогодні");
   });
 
-  it("/think escalates to Layer 2 (does NOT block)", async () => {
+  it("/think escalates to Layer 2 (does NOT claim dispatch)", async () => {
     await import("./index.js");
-    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    const dispatch = registeredHooks.find(
+      (h) => h.event === "before_dispatch",
+    )!;
     fetchCalls.length = 0;
 
-    const result = await open.handler({
-      runId: "run_think",
-      trigger: "dm",
-      userMessage: "/think скільки коштує одиниця залучення",
-    });
+    const result = (await dispatch.handler({
+      content: "/think скільки коштує одиниця залучення",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean };
 
-    // /think passes through to the audit-open path. Result is whatever
-    // the Stage 4a hook returns (open invocation), NOT a block.
-    expect((result as { block?: boolean })?.block).toBeFalsy();
+    // /think falls through to the agent (audit-open will run on
+    // `before_agent_start` once the runtime dispatches the agent).
+    expect(result?.handled).toBe(false);
+    // No /invocations/open fired from this hook — audit-open is wired
+    // to a different event.
     const postedUrls = fetchCalls.map((c) => c.url);
-    expect(postedUrls).toContain(
+    expect(postedUrls).not.toContain(
       "http://server.local/api/internal/openclaw/invocations/open",
     );
   });
 
-  it("non-shortcut message falls through to the audit-open hook", async () => {
+  it("non-shortcut message returns { handled: false } so the runtime dispatches the agent", async () => {
     await import("./index.js");
-    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    const dispatch = registeredHooks.find(
+      (h) => h.event === "before_dispatch",
+    )!;
     fetchCalls.length = 0;
 
-    const result = await open.handler({
-      runId: "run_pass_through",
-      trigger: "dm",
-      userMessage: "розкажи що ти можеш робити",
-    });
+    const result = (await dispatch.handler({
+      content: "розкажи що ти можеш робити",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:direct:319824665",
+    })) as { handled?: boolean };
 
-    expect((result as { block?: boolean })?.block).toBeFalsy();
-    expect(fetchCalls).toHaveLength(1);
-    expect(fetchCalls[0]!.url).toBe(
-      "http://server.local/api/internal/openclaw/invocations/open",
-    );
+    expect(result?.handled).toBe(false);
+    expect(fetchCalls).toHaveLength(0);
   });
 });

@@ -1,30 +1,35 @@
 /**
  * @sergeant/openclaw-plugin — Stage 4b: 25 read-tools + 5 write-tools +
- *                                       4 hooks + Layer 0 shortcut router
+ *                                       5 hooks + Layer 0 shortcut router
  *
  * Built against the real openclaw@2026.5.7 plugin SDK. Stage 1 (MVP) shipped
  * 3 read tools to prove the entry/registration path works; Stage 2 brought
  * 22 more read tools across from src/legacy/tools/; Stage 3 added the 5
  * write-tools (`create_github_issue`, `commit_to_strategy_doc`,
  * `post_to_topic`, `pause_workflow`, `mute_alert`) as thin HTTP proxies.
- * Stage 4a wired the runtime lifecycle hooks; Stage 4b (this revision)
- * stacks the Layer 0 shortcut router on top of `before_agent_start`:
+ * Stage 4a wired the runtime lifecycle hooks; Stage 4b puts the Layer 0
+ * shortcut router on its OWN event (`before_dispatch`), not composed with
+ * the audit hook:
  *
+ *   - `before_dispatch`      → Layer 0 shortcut router (Stage 4b). If the
+ *                              inbound user message matches a regex
+ *                              shortcut, dispatch its tools through the
+ *                              in-process registry, render the canned
+ *                              Markdown response, and return
+ *                              `{ handled: true, text }`. The OpenClaw
+ *                              runtime sends `text` to the originating
+ *                              channel (Telegram) verbatim AND skips
+ *                              agent dispatch entirely. $0 LLM cost.
+ *                              `/think` does NOT claim dispatch — falls
+ *                              through to Layer 2.
  *   - `llm_input`            → per-call daily budget gate (`POST /budget`)
- *   - `before_agent_start`   → 1. Layer 0 shortcut router (Stage 4b) — if
- *                                 the user message matches a regex
- *                                 shortcut, dispatch its tools through the
- *                                 in-process registry, render the canned
- *                                 Markdown response, and block the run
- *                                 with the rendered response as
- *                                 `blockReason` (no sentinel prefix — the
- *                                 OpenClaw runtime surfaces blockReason as
- *                                 the assistant turn). The agent never
- *                                 starts, LLM cost stays $0.
- *                              2. If no shortcut matched → open invocation
- *                                 row (`POST /invocations/open`) and cache
- *                                 `invocationId ↔ runId` in the
- *                                 `InvocationCorrelator`.
+ *   - `before_agent_start`   → open invocation row
+ *                              (`POST /invocations/open`) and cache
+ *                              `invocationId ↔ runId` in the
+ *                              `InvocationCorrelator`. (NOTE: this hook
+ *                              is marked `@deprecated` in real 5.7 SDK;
+ *                              Stage 4a follow-up will migrate to
+ *                              `session_start` / `agent_turn_prepare`.)
  *   - `agent_end`            → finalize invocation (`POST /invocations/finalize`)
  *   - `before_tool_call`     → native approval gate for 5 write-tools
  *                              (returns `{ requireApproval: ... }`; SDK
@@ -651,7 +656,7 @@ export default definePluginEntry({
   id: "sergeant",
   name: "Sergeant",
   description:
-    "Sergeant agent gateway plugin (Stage 4b — 25 read-tools + 5 write-tools + 4 hooks + Layer 0 shortcut router)",
+    "Sergeant agent gateway plugin (Stage 4b — 25 read-tools + 5 write-tools + 5 hooks + Layer 0 shortcut router on before_dispatch)",
 
   register(api) {
     const apiLogger = (
@@ -808,9 +813,8 @@ export default definePluginEntry({
         log: hookLog,
       });
 
-      // Stage 4b — shortcut router composed BEFORE the audit-open hook on
-      // `before_agent_start`. The executor closes over `toolRegistry` so
-      // shortcuts run through the same HTTP-proxy path the agent would use.
+      // Shortcut router executor closes over `toolRegistry` so shortcuts
+      // dispatch through the same HTTP-proxy path the agent would use.
       const executeTool: ToolExecutor = async (name, params) => {
         const fn = toolRegistry.get(name);
         if (!fn) {
@@ -825,27 +829,33 @@ export default definePluginEntry({
         }
         return fn(params);
       };
+      // Stage 4b — shortcut router on `before_dispatch`. Fires BEFORE the
+      // agent loop on an inbound message; `{ handled: true, text }` short-
+      // circuits to the channel verbatim with $0 LLM cost. NOT composed
+      // with `before_agent_start` audit hook (separate event, separate
+      // registration); openclaw 5.7 marked `before_agent_start` as
+      // `@deprecated` and its result type does not support `block` — see
+      // `hooks/shortcut-router.ts` header for the full migration note.
       const shortcutRouter = createShortcutRouterHook({
         shortcuts: ALL_SHORTCUTS,
         executeTool,
         log: hookLog,
       });
-      const composedBeforeAgentStart = async (
-        event: Parameters<typeof beforeAgentStart>[0],
-      ): Promise<unknown> => {
-        const routed = await shortcutRouter(event);
-        if (routed) return routed;
-        return beforeAgentStart(event);
-      };
 
       const hookRegistrations: Array<{
         event:
+          | "before_dispatch"
           | "llm_input"
           | "before_agent_start"
           | "agent_end"
           | "before_tool_call";
         handler: (event: unknown) => unknown;
       }> = [
+        {
+          event: "before_dispatch",
+          handler: (event: unknown) =>
+            shortcutRouter(event as Parameters<typeof shortcutRouter>[0]),
+        },
         {
           event: "llm_input",
           handler: (event: unknown) =>
@@ -854,9 +864,7 @@ export default definePluginEntry({
         {
           event: "before_agent_start",
           handler: (event: unknown) =>
-            composedBeforeAgentStart(
-              event as Parameters<typeof beforeAgentStart>[0],
-            ),
+            beforeAgentStart(event as Parameters<typeof beforeAgentStart>[0]),
         },
         {
           event: "agent_end",
