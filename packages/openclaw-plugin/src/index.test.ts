@@ -1,16 +1,19 @@
 /**
- * Tool-registration shape test for the Stage 3 plugin entry. The real
+ * Tool-registration shape test for the Stage 4a plugin entry. The real
  * `openclaw/plugin-sdk/plugin-entry` and `typebox` modules only live in
  * the runtime stage of `Dockerfile.openclaw-gateway`, so the workspace
  * lockfile doesn't ship them. We mock both with the minimal surface the
  * entry file uses (`definePluginEntry` passthrough + a TypeBox-like
  * builder that records its arguments) and assert the plugin registers
- * exactly the 30 tools we expect — including the 5 write-tools added in
- * Stage 3a/3b.
+ * exactly the 30 tools we expect — plus the 4 hooks added in Stage 4a
+ * (`llm_input`, `before_agent_start`, `agent_end`, `before_tool_call`).
  *
  * The execute() smoke checks for each write-tool prove that the entry
  * routes params straight to the correct server endpoint without
- * accidentally swallowing fields (a Stage 2 regression mode).
+ * accidentally swallowing fields (a Stage 2 regression mode). The hook
+ * smoke checks prove that each hook is wired and that
+ * `before_tool_call` returns the right approval payload shape for the
+ * 5 write-tools / pass-through for the 25 read-tools.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,7 +29,13 @@ interface MockTool {
   ) => Promise<{ content: unknown[]; details: unknown }>;
 }
 
+interface RegisteredHook {
+  event: string | string[];
+  handler: (event: unknown) => unknown;
+}
+
 const registered: MockTool[] = [];
+const registeredHooks: RegisteredHook[] = [];
 const fetchCalls: { url: string; init: RequestInit | undefined }[] = [];
 
 vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
@@ -44,6 +53,7 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
         serverInternalUrl: "http://server.local",
         internalApiKey: "x".repeat(32),
         founderUserId: "user_test",
+        founderTgUserId: 42,
       },
       logger: {
         info: vi.fn(),
@@ -53,6 +63,12 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
       },
       registerTool: (tool: MockTool) => {
         registered.push(tool);
+      },
+      registerHook: (
+        event: string | string[],
+        handler: (event: unknown) => unknown,
+      ) => {
+        registeredHooks.push({ event, handler });
       },
     };
     def.register(api);
@@ -136,6 +152,7 @@ const WRITE_TOOL_ENDPOINTS: Record<(typeof WRITE_TOOL_NAMES)[number], string> =
 
 beforeEach(() => {
   registered.length = 0;
+  registeredHooks.length = 0;
   fetchCalls.length = 0;
   // index.ts runs `definePluginEntry` at module-load time, so we must
   // re-import the module per test to get fresh `registered` entries.
@@ -147,18 +164,26 @@ beforeEach(() => {
         url: typeof input === "string" ? input : String(input),
         init: init as RequestInit | undefined,
       });
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          allowed: true,
+          invocationId: 1,
+          spentUsd: 0,
+          budgetUsd: 5,
+          remainingUsd: 5,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
     }),
   );
   vi.stubEnv("SERVER_INTERNAL_URL", "http://server.local");
   vi.stubEnv("INTERNAL_API_KEY", "x".repeat(32));
   vi.stubEnv("OPENCLAW_FOUNDER_USER_ID", "user_test");
+  vi.stubEnv("OPENCLAW_FOUNDER_TG_USER_ID", "42");
 });
 
-describe("Stage 3 plugin entry — tool catalog", () => {
+describe("Stage 4a plugin entry — tool catalog", () => {
   it("registers exactly the 25 read-tools + 5 write-tools", async () => {
     await import("./index.js");
     const names = registered.map((t) => t.name).sort();
@@ -187,7 +212,7 @@ describe("Stage 3 plugin entry — tool catalog", () => {
   });
 });
 
-describe("Stage 3 plugin entry — write-tool execute() routing", () => {
+describe("Stage 4a plugin entry — write-tool execute() routing", () => {
   it.each([
     [
       "create_github_issue",
@@ -245,6 +270,139 @@ describe("Stage 3 plugin entry — write-tool execute() routing", () => {
       expect(result.content).toEqual([
         expect.objectContaining({ type: "text" }),
       ]);
+    },
+  );
+});
+
+describe("Stage 4a plugin entry — hooks registered", () => {
+  it("registers exactly the 4 Stage 4a hooks via api.registerHook", async () => {
+    await import("./index.js");
+    const events = registeredHooks.map((h) => h.event).sort();
+    expect(events).toEqual(
+      [
+        "agent_end",
+        "before_agent_start",
+        "before_tool_call",
+        "llm_input",
+      ].sort(),
+    );
+  });
+
+  it("llm_input handler POSTs to /budget and lets allowed calls through", async () => {
+    await import("./index.js");
+    const llmInput = registeredHooks.find((h) => h.event === "llm_input");
+    expect(llmInput).toBeDefined();
+
+    fetchCalls.length = 0;
+    const result = await llmInput!.handler({ runId: "run_test" });
+    expect(result).toBeUndefined();
+
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0]!.url).toBe(
+      "http://server.local/api/internal/openclaw/budget",
+    );
+    expect(fetchCalls[0]!.init?.method).toBe("POST");
+    const body = JSON.parse(String(fetchCalls[0]!.init?.body));
+    expect(body).toMatchObject({ founderUserId: "user_test" });
+  });
+
+  it("before_agent_start handler POSTs to /invocations/open", async () => {
+    await import("./index.js");
+    const open = registeredHooks.find((h) => h.event === "before_agent_start");
+    expect(open).toBeDefined();
+
+    fetchCalls.length = 0;
+    await open!.handler({
+      runId: "run_open",
+      trigger: "dm",
+      userMessage: "Привіт",
+    });
+
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0]!.url).toBe(
+      "http://server.local/api/internal/openclaw/invocations/open",
+    );
+    const body = JSON.parse(String(fetchCalls[0]!.init?.body));
+    expect(body).toMatchObject({
+      founderUserId: "user_test",
+      founderTgUserId: 42,
+      trigger: "dm",
+      userMessage: "Привіт",
+    });
+  });
+
+  it("agent_end handler POSTs to /invocations/finalize", async () => {
+    await import("./index.js");
+    const open = registeredHooks.find((h) => h.event === "before_agent_start")!;
+    const end = registeredHooks.find((h) => h.event === "agent_end")!;
+
+    // First open an invocation so the correlator has a row to consume.
+    await open.handler({
+      runId: "run_lifecycle",
+      trigger: "dm",
+      userMessage: "ping",
+    });
+    fetchCalls.length = 0;
+
+    await end.handler({
+      runId: "run_lifecycle",
+      status: "success",
+      costUsd: 0.04,
+      durationMs: 1234,
+      iterations: 2,
+    });
+
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0]!.url).toBe(
+      "http://server.local/api/internal/openclaw/invocations/finalize",
+    );
+    const body = JSON.parse(String(fetchCalls[0]!.init?.body));
+    expect(body).toMatchObject({
+      invocationId: 1,
+      status: "success",
+      costUsd: 0.04,
+      durationMs: 1234,
+      iterations: 2,
+    });
+  });
+
+  it.each(WRITE_TOOL_NAMES)(
+    "before_tool_call returns requireApproval for %s",
+    async (toolName) => {
+      await import("./index.js");
+      const hook = registeredHooks.find((h) => h.event === "before_tool_call")!;
+      const result = (await hook.handler({
+        toolName,
+        params: {
+          title: "x",
+          path: "p",
+          topic: "t",
+          workflowId: "w",
+          issueId: "i",
+          message: "m",
+          text: "T",
+          reason: "R",
+        },
+        toolCallId: `tc_${toolName}`,
+      })) as { requireApproval?: { title: string; description: string } };
+
+      expect(result.requireApproval).toBeDefined();
+      expect(result.requireApproval!.title).toContain(toolName);
+      expect(result.requireApproval!.description.length).toBeGreaterThan(0);
+    },
+  );
+
+  it.each(READ_TOOL_NAMES)(
+    "before_tool_call passes %s through (no approval needed)",
+    async (toolName) => {
+      await import("./index.js");
+      const hook = registeredHooks.find((h) => h.event === "before_tool_call")!;
+      const result = await hook.handler({
+        toolName,
+        params: {},
+        toolCallId: `tc_${toolName}`,
+      });
+      expect(result).toBeUndefined();
     },
   );
 });

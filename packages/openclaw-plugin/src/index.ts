@@ -1,27 +1,29 @@
 /**
- * @sergeant/openclaw-plugin — Stage 3 (PR-C): 25 read-tools + 5 write-tools
+ * @sergeant/openclaw-plugin — Stage 4a: 25 read-tools + 5 write-tools + 4 hooks
  *
  * Built against the real openclaw@2026.5.7 plugin SDK. Stage 1 (MVP) shipped
  * 3 read tools to prove the entry/registration path works; Stage 2 brought
- * 22 more read tools across from src/legacy/tools/; Stage 3 adds the 5
+ * 22 more read tools across from src/legacy/tools/; Stage 3 added the 5
  * write-tools (`create_github_issue`, `commit_to_strategy_doc`,
- * `post_to_topic`, `pause_workflow`, `mute_alert`) — also as thin HTTP
- * proxies. Approval gating is deferred to Stage 4a (`before_tool_call`
- * hook + native `requireApproval` return — see
- * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md`). Until then the
- * server-side allowlist + write-audit log are the only gates; that's
- * intentional because the gateway is single-tenant (founder-only) and
- * config-as-code in `ops/openclaw/openclaw.example.json` decides which
- * personas see write-tools at all.
+ * `post_to_topic`, `pause_workflow`, `mute_alert`) as thin HTTP proxies.
+ * Stage 4a (this revision) wires the runtime lifecycle hooks:
  *
- * Scope:
- *   - 25 read tools + 5 write tools registered via api.registerTool
- *     (TypeBox parameters)
- *   - NO hooks (Stage 4 / PR-D)
+ *   - `llm_input`            → per-call daily budget gate (`POST /budget`)
+ *   - `before_agent_start`   → open invocation (`POST /invocations/open`)
+ *   - `agent_end`            → finalize invocation (`POST /invocations/finalize`)
+ *   - `before_tool_call`     → native approval gate for 5 write-tools
+ *                              (returns `{ requireApproval: ... }`; SDK
+ *                              renders the UI, calls back into
+ *                              `onResolution` which logs to
+ *                              `POST /write-audit/log`)
  *
- * Each tool is a thin HTTP proxy to `/api/internal/openclaw/<endpoint>` on
- * the Sergeant server — the same surface the legacy plugin used. Server
- * enforces the heavy stuff (allowlists, rate limits, RLS, write-audit).
+ * Read the SDK contract used for these signatures in
+ * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md`. The plugin still relies
+ * on the server-side allowlist + write-audit log as the source of truth
+ * for what's allowed; hooks are the runtime UX layer on top.
+ *
+ * Each tool stays a thin HTTP proxy to `/api/internal/openclaw/<endpoint>`
+ * on the Sergeant server — the same surface the legacy plugin used.
  */
 
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
@@ -32,6 +34,16 @@ import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { Type, type TSchema } from "typebox";
 import { OpenClawHttpClient } from "./http-client.js";
 import { parsePluginConfig } from "./config.js";
+import { createBudgetGate } from "./hooks/budget.js";
+import {
+  createAgentEndHook,
+  createBeforeAgentStartHook,
+  InvocationCorrelator,
+} from "./hooks/audit.js";
+import {
+  createWriteApprovalHook,
+  WRITE_TOOLS,
+} from "./hooks/write-approval.js";
 
 function safeJsonParse(s: string): Record<string, unknown> {
   try {
@@ -50,6 +62,7 @@ function resolvePluginConfig(candidate: unknown): Record<string, unknown> {
     serverInternalUrl: process.env["SERVER_INTERNAL_URL"],
     internalApiKey: process.env["INTERNAL_API_KEY"],
     founderUserId: process.env["OPENCLAW_FOUNDER_USER_ID"],
+    founderTgUserId: process.env["OPENCLAW_FOUNDER_TG_USER_ID"],
     maxPerCallUsd: process.env["OPENCLAW_MAX_PER_CALL_USD"],
     councilUsdBudget: process.env["OPENCLAW_COUNCIL_USD_BUDGET"],
     approvalVariant: process.env["OPENCLAW_APPROVAL_VARIANT"],
@@ -618,27 +631,44 @@ export default definePluginEntry({
   id: "sergeant",
   name: "Sergeant",
   description:
-    "Sergeant agent gateway plugin (Stage 3 — 25 read-tools + 5 write-tools, no hooks yet)",
+    "Sergeant agent gateway plugin (Stage 4a — 25 read-tools + 5 write-tools + 4 hooks)",
 
   register(api) {
-    const logger =
-      (
-        api as {
-          logger?: {
-            info: (m: string, f?: unknown) => void;
-            warn: (m: string, f?: unknown) => void;
-          };
-        }
-      ).logger ??
-      ({
-        info: (m: string, f?: unknown) =>
-          console.log(`[sergeant] ${m}`, f ?? ""),
-        warn: (m: string, f?: unknown) =>
-          console.warn(`[sergeant] ${m}`, f ?? ""),
-      } as {
-        info: (m: string, f?: unknown) => void;
-        warn: (m: string, f?: unknown) => void;
-      });
+    const apiLogger = (
+      api as {
+        logger?: {
+          debug?: (m: string, f?: unknown) => void;
+          info: (m: string, f?: unknown) => void;
+          warn: (m: string, f?: unknown) => void;
+          error?: (m: string, f?: unknown) => void;
+        };
+      }
+    ).logger;
+    const logger = apiLogger ?? {
+      debug: (m: string, f?: unknown) =>
+        console.log(`[sergeant] ${m}`, f ?? ""),
+      info: (m: string, f?: unknown) => console.log(`[sergeant] ${m}`, f ?? ""),
+      warn: (m: string, f?: unknown) =>
+        console.warn(`[sergeant] ${m}`, f ?? ""),
+      error: (m: string, f?: unknown) =>
+        console.error(`[sergeant] ${m}`, f ?? ""),
+    };
+    const hookLog = (
+      level: "debug" | "info" | "warn" | "error",
+      message: string,
+      fields?: Record<string, unknown>,
+    ): void => {
+      // `api.logger.debug` is optional in the SDK surface; fall back to info.
+      const fn =
+        level === "debug"
+          ? (logger.debug ?? logger.info)
+          : level === "info"
+            ? logger.info
+            : level === "warn"
+              ? logger.warn
+              : (logger.error ?? logger.warn);
+      fn(message, fields);
+    };
 
     const candidate =
       (api as { pluginConfig?: unknown }).pluginConfig ??
@@ -703,6 +733,98 @@ export default definePluginEntry({
       failed,
       failures: failures.length > 0 ? failures : undefined,
     });
+
+    // -----------------------------------------------------------------
+    // Stage 4a hooks. Registration is best-effort: if `api.registerHook`
+    // is missing (older SDK shim, or local test without runtime) we log
+    // and continue — the tools above still work in pass-through mode.
+    // -----------------------------------------------------------------
+    const registerHook = (api as { registerHook?: typeof api.registerHook })
+      .registerHook;
+    if (typeof registerHook !== "function") {
+      logger.warn("sergeant.hooks.skipped", {
+        reason: "api.registerHook is not a function on this runtime",
+      });
+    } else {
+      const correlator = new InvocationCorrelator();
+      const budgetGate = createBudgetGate({
+        http,
+        founderUserId: config.founderUserId,
+        log: hookLog,
+      });
+      const beforeAgentStart = createBeforeAgentStartHook({
+        http,
+        founderUserId: config.founderUserId,
+        founderTgUserId: config.founderTgUserId,
+        correlator,
+        log: hookLog,
+      });
+      const agentEnd = createAgentEndHook({
+        http,
+        founderUserId: config.founderUserId,
+        founderTgUserId: config.founderTgUserId,
+        correlator,
+        log: hookLog,
+      });
+      const writeApproval = createWriteApprovalHook({
+        http,
+        founderUserId: config.founderUserId,
+        founderTgUserId: config.founderTgUserId,
+        timeoutMs: config.approvalCallbackTimeoutMs,
+        log: hookLog,
+      });
+
+      const hookRegistrations: Array<{
+        event:
+          | "llm_input"
+          | "before_agent_start"
+          | "agent_end"
+          | "before_tool_call";
+        handler: (event: unknown) => unknown;
+      }> = [
+        {
+          event: "llm_input",
+          handler: (event: unknown) =>
+            budgetGate(event as Parameters<typeof budgetGate>[0]),
+        },
+        {
+          event: "before_agent_start",
+          handler: (event: unknown) =>
+            beforeAgentStart(event as Parameters<typeof beforeAgentStart>[0]),
+        },
+        {
+          event: "agent_end",
+          handler: (event: unknown) =>
+            agentEnd(event as Parameters<typeof agentEnd>[0]),
+        },
+        {
+          event: "before_tool_call",
+          handler: (event: unknown) =>
+            writeApproval(event as Parameters<typeof writeApproval>[0]),
+        },
+      ];
+
+      let hooksOk = 0;
+      const hookFailures: Array<{ event: string; error: string }> = [];
+      for (const { event, handler } of hookRegistrations) {
+        try {
+          registerHook(event, handler);
+          hooksOk++;
+        } catch (err) {
+          hookFailures.push({
+            event,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+      logger.info("sergeant.hooks.registered", {
+        total: hookRegistrations.length,
+        ok: hooksOk,
+        failed: hookFailures.length,
+        failures: hookFailures.length > 0 ? hookFailures : undefined,
+        writeTools: Array.from(WRITE_TOOLS),
+      });
+    }
   },
 });
 

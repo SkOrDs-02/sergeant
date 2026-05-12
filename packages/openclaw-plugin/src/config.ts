@@ -29,6 +29,15 @@ export const PluginConfigSchema = z.object({
   founderUserId: z.string().min(1),
 
   /**
+   * Numeric Telegram user id засновника. Stage 4a audit endpoints
+   * (`/invocations/open`, `/write-audit/log`) валідують його як
+   * `z.number().int()`. Опційне — якщо не задано, відповідні hooks
+   * (audit + write-approval onResolution) роблять soft-skip замість
+   * crash. Парсимо `OPENCLAW_FOUNDER_TG_USER_ID` env-substitution.
+   */
+  founderTgUserId: z.coerce.number().int().optional(),
+
+  /**
    * Per-call USD cap (Locked decision #4: `$0.5`). Plugin викликає
    * `/budget` з `kind: "per_call"` для перевірки на старті llm_input
    * hook-а. Парсимо рядок (бо у openclaw.json приходить через
@@ -139,6 +148,9 @@ function buildConfigFromEnv(): Record<string, unknown> {
     approvalVariant: "B",
     cheapRouterSystemPromptPath: "/root/.openclaw/cheap-router.system.md",
   };
+  if (env["OPENCLAW_FOUNDER_TG_USER_ID"]) {
+    cfg["founderTgUserId"] = env["OPENCLAW_FOUNDER_TG_USER_ID"];
+  }
   if (env["OPENCLAW_MAX_PER_CALL_USD"]) {
     cfg["maxPerCallUsd"] = env["OPENCLAW_MAX_PER_CALL_USD"];
   }

@@ -20,6 +20,15 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
    * API surface that exposes `registerTool`, `on` (for hooks), `config`,
    * etc. We type `api` permissively here because openclaw evolves the
    * surface across patch versions and we don't want compile-time coupling.
+   *
+   * Stage 4a (`registerHook` for `llm_input` / `agent_end` /
+   * `before_tool_call` / `before_agent_start`): the SDK exposes
+   * `api.registerHook(event, handler, opts?)` with hook-specific event
+   * payload + return-value shapes. Real shapes are documented in
+   * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md`. We type both
+   * generically as `unknown`-derived records here so the runtime can
+   * ship new payload fields without breaking the workspace typecheck;
+   * hook factories under `src/hooks/` cast defensively before reading.
    */
   export interface OpenClawPluginApi {
     registerTool: (tool: PluginTool, opts?: { optional?: boolean }) => void;
@@ -29,7 +38,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
       opts?: { priority?: number; timeoutMs?: number },
     ) => void;
     registerHook?: (
-      eventName: string | string[],
+      eventName: PluginHookName | PluginHookName[] | string | string[],
       handler: (event: unknown) => unknown,
       opts?: { priority?: number; timeoutMs?: number },
     ) => void;
@@ -42,6 +51,123 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
       warn: (msg: string, fields?: Record<string, unknown>) => void;
       error: (msg: string, fields?: Record<string, unknown>) => void;
     };
+  }
+
+  /**
+   * Subset of the canonical `PluginHookName` enum used in Sergeant Stage 4a.
+   * Full 34-name enum + payload + result shapes:
+   * `node_modules/openclaw/dist/plugin-sdk/src/plugins/hook-types.d.ts`
+   * (see spike doc § "Hook canonical enum"). Wider strings are still
+   * accepted by `registerHook` above so we can extend incrementally
+   * without bumping this list every PR.
+   */
+  export type PluginHookName =
+    | "before_agent_start"
+    | "llm_input"
+    | "agent_end"
+    | "before_tool_call"
+    | "after_tool_call"
+    | "session_start"
+    | "session_end"
+    | "heartbeat_prompt_contribution";
+
+  /**
+   * Resolution values for `before_tool_call.requireApproval`. Real source:
+   * `PluginApprovalResolutions` in `hook-types.d.ts:235+`. Plugin uses
+   * these to discriminate `approved` vs `rejected` write-audit rows.
+   */
+  export type PluginApprovalResolution =
+    | "allow-once"
+    | "allow-always"
+    | "deny"
+    | "timeout"
+    | "cancelled";
+
+  /**
+   * Event payload for `before_tool_call`. Real source:
+   * `PluginHookBeforeToolCallEvent` (`hook-types.d.ts:226+`).
+   * `runId` correlates to the same id used by `agent_end`; `toolCallId`
+   * identifies one specific tool invocation inside the run.
+   */
+  export interface PluginHookBeforeToolCallEvent {
+    toolName: string;
+    params: Record<string, unknown>;
+    runId?: string;
+    toolCallId?: string;
+  }
+
+  /**
+   * Result payload for `before_tool_call`. The host:
+   *   - calls `execute` directly when result is undefined / `{}`,
+   *   - blocks with `blockReason` when `block: true`,
+   *   - shows the approval UI when `requireApproval` is present and
+   *     calls `onResolution(decision)` after the founder picks
+   *     allow / deny / timeout / cancel.
+   */
+  export interface PluginHookBeforeToolCallResult {
+    params?: Record<string, unknown>;
+    block?: boolean;
+    blockReason?: string;
+    requireApproval?: {
+      title: string;
+      description: string;
+      severity?: "info" | "warning" | "critical";
+      timeoutMs?: number;
+      timeoutBehavior?: "allow" | "deny";
+      pluginId?: string;
+      onResolution?: (
+        decision: PluginApprovalResolution,
+      ) => Promise<void> | void;
+    };
+  }
+
+  /**
+   * Event payload for `llm_input`. Real shape evolves across openclaw
+   * patches; we only need defensive access to `runId` (when present) for
+   * log correlation, so the type stays permissive.
+   */
+  export interface PluginHookLlmInputEvent {
+    runId?: string;
+    [key: string]: unknown;
+  }
+
+  /**
+   * Result payload for `llm_input`. Returning `{ block: true,
+   * blockReason }` aborts the LLM call before any token spend.
+   */
+  export interface PluginHookLlmInputResult {
+    block?: boolean;
+    blockReason?: string;
+  }
+
+  /**
+   * Event payload for `before_agent_start`. Carries enough context to
+   * open an `openclaw_invocations` row (founder id, trigger, first user
+   * message). All fields optional because we read defensively until live
+   * smoke-test on Gateway confirms the runtime shape.
+   */
+  export interface PluginHookBeforeAgentStartEvent {
+    runId?: string;
+    trigger?: string;
+    userMessage?: string;
+    sessionKey?: string;
+    [key: string]: unknown;
+  }
+
+  /**
+   * Event payload for `agent_end`. Carries the rollup numbers we need
+   * for `/invocations/finalize` (status, cost, duration, iteration count).
+   * Like the start event, fields stay optional pending live verification.
+   */
+  export interface PluginHookAgentEndEvent {
+    runId?: string;
+    status?: string;
+    costUsd?: number;
+    durationMs?: number;
+    iterations?: number;
+    assistantResponse?: string | null;
+    errorMessage?: string | null;
+    [key: string]: unknown;
   }
 
   export interface PluginTool {
