@@ -227,10 +227,7 @@
     "port": 18789,
     "controlUi": { "enabled": false, "allowInsecureAuth": false },
     "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_AUTH_TOKEN}" },
-    "tailscale": { "mode": "off", "resetOnExit": false },
-    "canvasHost": {
-      "advertisedUrl": "https://${RAILWAY_PUBLIC_DOMAIN}"
-    }
+    "tailscale": { "mode": "off", "resetOnExit": false }
   },
 
   "session": { "dmScope": "per-channel-peer" },
