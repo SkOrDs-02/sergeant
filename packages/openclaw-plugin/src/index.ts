@@ -774,15 +774,29 @@ export default definePluginEntry({
     });
 
     // -----------------------------------------------------------------
-    // Stage 4a hooks. Registration is best-effort: if `api.registerHook`
-    // is missing (older SDK shim, or local test without runtime) we log
-    // and continue — the tools above still work in pass-through mode.
+    // Stage 4a/4b lifecycle hooks. Registration is best-effort: if
+    // `api.on` is missing (older SDK shim, or local test without
+    // runtime) we log and continue — the tools above still work in
+    // pass-through mode.
+    //
+    // `api.on(hookName, handler, opts?)` is the canonical registration
+    // for every event in `PluginHookName` (`before_dispatch`,
+    // `llm_input`, `agent_end`, `before_tool_call`, etc.). The loader
+    // pushes the handler into `registry.typedHooks` and `hookRunner.run<X>`
+    // reads from there. `api.registerHook` is a SEPARATE registration
+    // for an internal command-bus (`command:new` / `session:reset` /
+    // etc.) — handlers registered there will NEVER fire for the
+    // lifecycle hooks we care about. The Stage 4a (#2464) + 4b (#2468,
+    // #2469) work historically called `api.registerHook` for all 5
+    // lifecycle hooks, which meant `before_dispatch` (Stage 4b Layer 0
+    // shortcut router) never short-circuited. Full evidence trail in
+    // `docs/notes/spikes/openclaw-stage-4b-debugging-handoff-2026-05-12.md`
+    // § 0.5.
     // -----------------------------------------------------------------
-    const registerHook = (api as { registerHook?: typeof api.registerHook })
-      .registerHook;
-    if (typeof registerHook !== "function") {
+    const on = (api as { on?: typeof api.on }).on;
+    if (typeof on !== "function") {
       logger.warn("sergeant.hooks.skipped", {
-        reason: "api.registerHook is not a function on this runtime",
+        reason: "api.on is not a function on this runtime",
       });
     } else {
       const correlator = new InvocationCorrelator();
@@ -842,20 +856,13 @@ export default definePluginEntry({
         log: hookLog,
       });
 
-      // openclaw 5.7 requires every `registerHook` call to provide an
-      // `opts.name` (non-empty trimmed string). The loader otherwise
-      // throws `Error: hook registration missing name`
-      // (`node_modules/openclaw/dist/loader-B-GXgDrk.js:1490`,
-      // `requireRegistrationValue(entry?.hook.name ?? opts?.name?.trim(),
-      //  "hook registration missing name")`). This regressed silently in
-      // the Stage 1 SDK rewrite (commit 14ee42e2) which dropped the
-      // `safeRegisterHook` helper introduced by 305a4a03 — every hook
-      // registration since has been throwing, swallowed by the try/catch
-      // below, and the `failed`/`failures` structured fields stripped by
-      // Railway's log forwarder. Live smoke-test 2026-05-12 (Gateway
-      // deploys 0a648dfd and 92402345) confirmed: zero Stage 4a
-      // invocation rows, zero `openclaw.shortcut.routed` events, full
-      // agent dispatch on every `/metrics`, `/runway`, `Дай метрики`.
+      // Each entry is one lifecycle hook registered via `api.on`. The
+      // OpenClaw runtime emits the event for every inbound message
+      // (`before_dispatch`), every LLM call (`llm_input`), every agent
+      // turn (`before_agent_start`, `agent_end`), and every tool
+      // invocation (`before_tool_call`). Handlers run in registration
+      // order; `before_dispatch` is a *claiming* hook — first
+      // `{ handled: true }` wins and the runtime skips agent dispatch.
       const hookRegistrations: Array<{
         event:
           | "before_dispatch"
@@ -863,36 +870,30 @@ export default definePluginEntry({
           | "before_agent_start"
           | "agent_end"
           | "before_tool_call";
-        name: string;
         handler: (event: unknown) => unknown;
       }> = [
         {
           event: "before_dispatch",
-          name: "sergeant.shortcut-router",
           handler: (event: unknown) =>
             shortcutRouter(event as Parameters<typeof shortcutRouter>[0]),
         },
         {
           event: "llm_input",
-          name: "sergeant.budget-gate",
           handler: (event: unknown) =>
             budgetGate(event as Parameters<typeof budgetGate>[0]),
         },
         {
           event: "before_agent_start",
-          name: "sergeant.audit.before-agent-start",
           handler: (event: unknown) =>
             beforeAgentStart(event as Parameters<typeof beforeAgentStart>[0]),
         },
         {
           event: "agent_end",
-          name: "sergeant.audit.agent-end",
           handler: (event: unknown) =>
             agentEnd(event as Parameters<typeof agentEnd>[0]),
         },
         {
           event: "before_tool_call",
-          name: "sergeant.write-approval",
           handler: (event: unknown) =>
             writeApproval(event as Parameters<typeof writeApproval>[0]),
         },
@@ -900,11 +901,12 @@ export default definePluginEntry({
 
       let hooksOk = 0;
       const hookFailures: Array<{ event: string; error: string }> = [];
-      for (const { event, name, handler } of hookRegistrations) {
+      for (const { event, handler } of hookRegistrations) {
         try {
-          // Pass `opts.name` per openclaw 5.7 loader contract; without it
-          // every registration throws `hook registration missing name`.
-          registerHook(event, handler, { name });
+          // `api.on(hookName, handler, opts?)` — typed-hook registration.
+          // `opts.name` is NOT part of this contract; only `priority` and
+          // `timeoutMs` are honoured. Defaults are fine for all 5 hooks.
+          on(event, handler);
           hooksOk++;
         } catch (err) {
           hookFailures.push({

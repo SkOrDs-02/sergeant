@@ -63,6 +63,9 @@
       "telegram": { "enabled": true },
       "sergeant": {
         "enabled": true,
+        "hooks": {
+          "allowConversationAccess": true
+        },
         "config": {
           "serverInternalUrl": "${SERVER_INTERNAL_URL}",
           "internalApiKey": "${INTERNAL_API_KEY}",

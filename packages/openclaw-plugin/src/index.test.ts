@@ -1,13 +1,13 @@
 /**
- * Tool-registration shape test for the Stage 4a plugin entry. The real
+ * Tool-registration shape test for the Stage 4a/4b plugin entry. The real
  * `openclaw/plugin-sdk/plugin-entry` and `typebox` modules only live in
  * the runtime stage of `Dockerfile.openclaw-gateway`, so the workspace
  * lockfile doesn't ship them. We mock both with the minimal surface the
  * entry file uses (`definePluginEntry` passthrough + a TypeBox-like
  * builder that records its arguments) and assert the plugin registers
- * exactly the 30 tools we expect — plus the 5 hooks added in Stage 4a/4b
- * (`llm_input`, `before_agent_start`, `agent_end`, `before_tool_call`,
- * `before_dispatch`).
+ * exactly the 30 tools we expect — plus the 5 lifecycle hooks added in
+ * Stage 4a/4b (`llm_input`, `before_agent_start`, `agent_end`,
+ * `before_tool_call`, `before_dispatch`).
  *
  * The execute() smoke checks for each write-tool prove that the entry
  * routes params straight to the correct server endpoint without
@@ -15,6 +15,13 @@
  * smoke checks prove that each hook is wired and that
  * `before_tool_call` returns the right approval payload shape for the
  * 5 write-tools / pass-through for the 25 read-tools.
+ *
+ * Hooks register via `api.on(hookName, handler, opts?)` — the canonical
+ * lifecycle-hook entrypoint that pushes into `registry.typedHooks` (see
+ * `docs/notes/spikes/openclaw-stage-4b-debugging-handoff-2026-05-12.md`
+ * § 0.5 for why this matters). The pre-existing `api.registerHook` mock
+ * registered for an internal command-bus that does NOT fire for
+ * `before_dispatch` etc., so it was the wrong API.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,15 +38,18 @@ interface MockTool {
 }
 
 interface RegisteredHook {
+  // Lifecycle hooks always register with a single string event name via
+  // `api.on(hookName, handler, opts?)`. We keep the type wide here to
+  // match the underlying `api.on` signature, but the entry only passes
+  // single strings (`"before_dispatch"`, `"llm_input"`, etc.).
   event: string | string[];
   handler: (event: unknown) => unknown;
-  // `name` is REQUIRED by openclaw 5.7 (`loader-B-GXgDrk.js:1490`):
-  // `requireRegistrationValue(entry?.hook.name ?? opts?.name?.trim(),
-  //  "hook registration missing name")`. Without it every hook reg
-  // throws and is swallowed by our try/catch. The test mock captures
-  // the full opts object so we can assert `name` is supplied. The
-  // explicit `| undefined` is needed under `exactOptionalPropertyTypes`.
-  opts: { name?: string; priority?: number; timeoutMs?: number } | undefined;
+  // `api.on` only honours `priority` and `timeoutMs`. `opts.name` is
+  // NOT part of this contract — that field belongs to the internal
+  // command-bus `api.registerHook(events, handler, { name })` API,
+  // which is a separate surface and not used by Sergeant. The explicit
+  // `| undefined` keeps the mock compatible with `exactOptionalPropertyTypes`.
+  opts: { priority?: number; timeoutMs?: number } | undefined;
 }
 
 const registered: MockTool[] = [];
@@ -72,10 +82,10 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
       registerTool: (tool: MockTool) => {
         registered.push(tool);
       },
-      registerHook: (
+      on: (
         event: string | string[],
         handler: (event: unknown) => unknown,
-        opts?: { name?: string; priority?: number; timeoutMs?: number },
+        opts?: { priority?: number; timeoutMs?: number },
       ) => {
         registeredHooks.push({ event, handler, opts });
       },
@@ -284,7 +294,7 @@ describe("Stage 4a plugin entry — write-tool execute() routing", () => {
 });
 
 describe("Stage 4a/4b plugin entry — hooks registered", () => {
-  it("registers exactly the 5 Stage 4a/4b hooks via api.registerHook", async () => {
+  it("registers exactly the 5 Stage 4a/4b lifecycle hooks via api.on", async () => {
     await import("./index.js");
     const events = registeredHooks.map((h) => h.event).sort();
     expect(events).toEqual(
@@ -298,31 +308,11 @@ describe("Stage 4a/4b plugin entry — hooks registered", () => {
     );
   });
 
-  it("passes a unique non-empty `opts.name` to every registerHook call (openclaw 5.7 loader contract)", async () => {
+  it("registers each hook exactly once (no duplicate events)", async () => {
     await import("./index.js");
-    // Every hook MUST have a name — `loader-B-GXgDrk.js:1490` throws
-    // `Error: hook registration missing name` otherwise. The Stage 4a/4b
-    // 2026-05-12 live smoke-test regression was 5/5 silent failures here.
-    const names = registeredHooks.map((h) => h.opts?.name);
-    for (const name of names) {
-      expect(typeof name).toBe("string");
-      expect((name ?? "").trim().length).toBeGreaterThan(0);
-    }
-    // Names must be unique — loader's `existingHook` check rejects
-    // duplicates and would push a diagnostic instead of registering.
-    expect(new Set(names).size).toBe(registeredHooks.length);
-    // Sanity-check the expected canonical names so a typo (e.g.
-    // "shortcutrouter" vs "shortcut-router") is caught at PR time.
-    const byEvent = new Map(
-      registeredHooks.map((h) => [h.event as string, h.opts?.name] as const),
-    );
-    expect(byEvent.get("before_dispatch")).toBe("sergeant.shortcut-router");
-    expect(byEvent.get("llm_input")).toBe("sergeant.budget-gate");
-    expect(byEvent.get("before_agent_start")).toBe(
-      "sergeant.audit.before-agent-start",
-    );
-    expect(byEvent.get("agent_end")).toBe("sergeant.audit.agent-end");
-    expect(byEvent.get("before_tool_call")).toBe("sergeant.write-approval");
+    const events = registeredHooks.map((h) => h.event as string);
+    expect(new Set(events).size).toBe(events.length);
+    expect(events.length).toBe(5);
   });
 
   it("llm_input handler POSTs to /budget and lets allowed calls through", async () => {

@@ -17,40 +17,61 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
   /**
    * Real openclaw 5.7 plugin entry contract — see docs.openclaw.ai/plugin-sdk.
    * The host calls `register(api)` once during plugin load with a runtime
-   * API surface that exposes `registerTool`, `on` (for hooks), `config`,
-   * etc. We type `api` permissively here because openclaw evolves the
-   * surface across patch versions and we don't want compile-time coupling.
+   * API surface that exposes `registerTool`, `on` (for lifecycle hooks),
+   * `config`, etc. We type `api` permissively here because openclaw
+   * evolves the surface across patch versions and we don't want
+   * compile-time coupling.
    *
-   * Stage 4a (`registerHook` for `llm_input` / `agent_end` /
-   * `before_tool_call` / `before_agent_start`): the SDK exposes
-   * `api.registerHook(event, handler, opts?)` with hook-specific event
-   * payload + return-value shapes. Real shapes are documented in
-   * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md`. We type both
-   * generically as `unknown`-derived records here so the runtime can
-   * ship new payload fields without breaking the workspace typecheck;
-   * hook factories under `src/hooks/` cast defensively before reading.
+   * **Lifecycle hooks (`before_dispatch`, `llm_input`, `agent_end`,
+   * `before_tool_call`, etc.) MUST register via `api.on(hookName, handler)`,
+   * NOT `api.registerHook`.** The loader (`loader-B-GXgDrk.js:3137`) wires
+   * `on: (hookName, handler, opts) => registerTypedHook(...)` — pushes
+   * into `registry.typedHooks`, which `hookRunner.runBeforeDispatch()`
+   * etc. read from (`hook-runner-global-CCAcWVdN.js:108`). `registerHook`
+   * (see below) is a DIFFERENT registration that pushes into
+   * `registry.hooks` + `registerInternalHook()` for an internal
+   * command/session/agent/gateway/message event bus — these handlers
+   * will NEVER fire for `before_dispatch`. Full evidence trail in
+   * `docs/notes/spikes/openclaw-stage-4b-debugging-handoff-2026-05-12.md`
+   * § 0.5. Real event payload + result shapes are documented in
+   * `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` § 4.
    */
   export interface OpenClawPluginApi {
     registerTool: (tool: PluginTool, opts?: { optional?: boolean }) => void;
+    /**
+     * Register a **lifecycle hook** handler — canonical entrypoint for
+     * every `PluginHookName` event (`before_dispatch`, `llm_input`,
+     * `agent_end`, `before_tool_call`, etc.). The loader records
+     * `(hookName, handler)` into `registry.typedHooks`, which the
+     * runtime hook-runner reads from when emitting events. `opts.name`
+     * is NOT part of this contract — only `priority` and `timeoutMs`
+     * are honoured. Pass `undefined`/omit `opts` for the default
+     * registration.
+     */
     on?: (
-      eventName: string,
+      eventName: PluginHookName | string,
       handler: (event: unknown) => unknown,
       opts?: { priority?: number; timeoutMs?: number },
     ) => void;
     /**
-     * Register a hook handler. **`opts.name` is REQUIRED** in openclaw
-     * 5.7 — the loader (`node_modules/openclaw/dist/loader-B-GXgDrk.js:1490`)
-     * throws `Error: hook registration missing name` from
+     * Register a handler on the **internal command-bus** (events like
+     * `command:new`, `session:reset`, etc. — `InternalHookEventType` =
+     * `"command" | "session" | "agent" | "gateway" | "message"`). Pushes
+     * into `registry.hooks` + `registerInternalHook()`. **Do NOT use
+     * for lifecycle hooks** like `before_dispatch` — those handlers
+     * will never fire because `hookRunner` only reads `typedHooks`.
+     * Use `api.on(hookName, handler)` instead for any
+     * `PluginHookName` event.
+     *
+     * `opts.name` is required by the loader
+     * (`loader-B-GXgDrk.js:1490` calls
      * `requireRegistrationValue(entry?.hook.name ?? opts?.name?.trim(), …)`
-     * if the caller passes no `name`. Older fix (commit 305a4a03 from
-     * 2026-05-11) wrapped this in a `safeRegisterHook` helper; the Stage 1
-     * SDK rewrite (14ee42e2) dropped that helper and every hook
-     * registration regressed silently — caught by smoke-test on 2026-05-12
-     * (zero `openclaw.shortcut.routed`, zero `openclaw_invocations` rows).
-     * Always pass `{ name: "sergeant.<unique-id>" }` to every call.
+     * and throws `"hook registration missing name"` otherwise) — but
+     * since Sergeant currently has no internal-bus handlers, this is
+     * a thin defensive type only.
      */
     registerHook?: (
-      eventName: PluginHookName | PluginHookName[] | string | string[],
+      eventName: string | string[],
       handler: (event: unknown) => unknown,
       opts?: { name: string; priority?: number; timeoutMs?: number },
     ) => void;
