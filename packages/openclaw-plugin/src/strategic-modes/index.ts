@@ -4,10 +4,10 @@
  * Order matters: the host hook (`hooks/strategic-mode.ts`) iterates this
  * list and the first pattern match wins. Each entry has its own anchored
  * slash prefix so the order is currently irrelevant in practice — PR-1
- * ships only `/plan`, the `/analyze` and `/okr` entries land in their
- * own PRs (Stage 5b PR-2 / PR-3).
+ * shipped `/plan`, PR-2 adds `/analyze`, PR-3 will add `/okr`.
  */
 
+import { analyzeMode } from "./analyze.js";
 import { planMode } from "./plan.js";
 import type {
   StrategicModeDefinition,
@@ -16,7 +16,10 @@ import type {
   StrategicModeTrigger,
 } from "./types.js";
 
-export const ALL_STRATEGIC_MODES: StrategicModeDefinition[] = [planMode];
+export const ALL_STRATEGIC_MODES: StrategicModeDefinition[] = [
+  planMode,
+  analyzeMode,
+];
 
 /**
  * Attempts to match the user message against every registered strategic
@@ -48,7 +51,7 @@ export function matchStrategicMode(
   return null;
 }
 
-export { planMode };
+export { analyzeMode, planMode };
 export type {
   StrategicModeDefinition,
   StrategicModeMatch,

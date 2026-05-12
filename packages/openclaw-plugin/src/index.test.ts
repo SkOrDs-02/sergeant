@@ -453,7 +453,7 @@ describe("Stage 4a/4b/4c/5b plugin entry — hooks registered", () => {
   );
 });
 
-describe("Stage 5b PR-1 — strategic-mode hook wired into before_agent_start", () => {
+describe("Stage 5b PR-1 + PR-2 — strategic-mode hook wired into before_agent_start", () => {
   it("registers a SECOND before_agent_start handler that activates /plan", async () => {
     await import("./index.js");
     const handlers = registeredHooks.filter(
@@ -478,7 +478,25 @@ describe("Stage 5b PR-1 — strategic-mode hook wired into before_agent_start", 
     expect(result?.prependContext).toContain("4) DECISION + FOLLOWUP");
   });
 
-  it("strategic-mode handler is a pass-through for non-/plan prompts", async () => {
+  it("activates /analyze with hypothesis-driven primer (PR-2)", async () => {
+    await import("./index.js");
+    const strategic = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    )[1]!;
+
+    const result = (await strategic.handler({
+      prompt: "/analyze checkout drop from 14:00",
+      runId: "run_strategic_analyze_1",
+    })) as { prompt?: string; prependContext?: string } | undefined;
+
+    expect(result).toBeDefined();
+    expect(result?.prompt).toBe("checkout drop from 14:00");
+    expect(result?.prependContext).toMatch(/^STRATEGIC_MODE: analyze\./);
+    expect(result?.prependContext).toContain("1) ANOMALY");
+    expect(result?.prependContext).toContain("4) RANKED CONCLUSION");
+  });
+
+  it("strategic-mode handler is a pass-through for non-strategic prompts", async () => {
     await import("./index.js");
     const strategic = registeredHooks.filter(
       (h) => h.event === "before_agent_start",
@@ -494,6 +512,14 @@ describe("Stage 5b PR-1 — strategic-mode hook wired into before_agent_start", 
       await strategic.handler({
         prompt: "what's our runway?",
         runId: "run_strategic_3",
+      }),
+    ).toBeUndefined();
+    // Bare `/analyze` (no anomaly) must fall through too — topic is
+    // required.
+    expect(
+      await strategic.handler({
+        prompt: "/analyze",
+        runId: "run_strategic_4",
       }),
     ).toBeUndefined();
   });
