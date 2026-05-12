@@ -453,7 +453,7 @@ describe("Stage 4a/4b/4c/5b plugin entry — hooks registered", () => {
   );
 });
 
-describe("Stage 5b PR-1 + PR-2 — strategic-mode hook wired into before_agent_start", () => {
+describe("Stage 5b PR-1 + PR-2 + PR-4 — strategic-mode hook wired into before_agent_start", () => {
   it("registers a SECOND before_agent_start handler that activates /plan", async () => {
     await import("./index.js");
     const handlers = registeredHooks.filter(
@@ -496,6 +496,43 @@ describe("Stage 5b PR-1 + PR-2 — strategic-mode hook wired into before_agent_s
     expect(result?.prependContext).toContain("4) RANKED CONCLUSION");
   });
 
+  it("activates bare /okr with OKR-review primer and empty prompt (PR-4)", async () => {
+    await import("./index.js");
+    const strategic = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    )[1]!;
+
+    // `/okr` is the only Stage 5b mode where `topicRequired: false` —
+    // a bare invocation must still activate the mode. The agent gets
+    // `prompt: ""` and reads the primer to drive the review.
+    const result = (await strategic.handler({
+      prompt: "/okr",
+      runId: "run_strategic_okr_bare",
+    })) as { prompt?: string; prependContext?: string } | undefined;
+
+    expect(result).toBeDefined();
+    expect(result?.prompt).toBe("");
+    expect(result?.prependContext).toMatch(/^STRATEGIC_MODE: okr\./);
+    expect(result?.prependContext).toContain("1) ACTIVE OKRs");
+    expect(result?.prependContext).toContain("4) NEXT ACTIONS");
+  });
+
+  it("activates /okr with optional topic forwarded as prompt (PR-4)", async () => {
+    await import("./index.js");
+    const strategic = registeredHooks.filter(
+      (h) => h.event === "before_agent_start",
+    )[1]!;
+
+    const result = (await strategic.handler({
+      prompt: "/okr Q3 progress",
+      runId: "run_strategic_okr_topic",
+    })) as { prompt?: string; prependContext?: string } | undefined;
+
+    expect(result).toBeDefined();
+    expect(result?.prompt).toBe("Q3 progress");
+    expect(result?.prependContext).toMatch(/^STRATEGIC_MODE: okr\./);
+  });
+
   it("strategic-mode handler is a pass-through for non-strategic prompts", async () => {
     await import("./index.js");
     const strategic = registeredHooks.filter(
@@ -520,6 +557,19 @@ describe("Stage 5b PR-1 + PR-2 — strategic-mode hook wired into before_agent_s
       await strategic.handler({
         prompt: "/analyze",
         runId: "run_strategic_4",
+      }),
+    ).toBeUndefined();
+    // `/okrs` and `/okrun` must NOT match — word-boundary anchor.
+    expect(
+      await strategic.handler({
+        prompt: "/okrs",
+        runId: "run_strategic_5",
+      }),
+    ).toBeUndefined();
+    expect(
+      await strategic.handler({
+        prompt: "/okrun setup",
+        runId: "run_strategic_6",
       }),
     ).toBeUndefined();
   });
