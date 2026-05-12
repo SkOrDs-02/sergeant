@@ -1,15 +1,27 @@
 /**
- * @sergeant/openclaw-plugin — Stage 4a: 25 read-tools + 5 write-tools + 4 hooks
+ * @sergeant/openclaw-plugin — Stage 4b: 25 read-tools + 5 write-tools +
+ *                                       4 hooks + Layer 0 shortcut router
  *
  * Built against the real openclaw@2026.5.7 plugin SDK. Stage 1 (MVP) shipped
  * 3 read tools to prove the entry/registration path works; Stage 2 brought
  * 22 more read tools across from src/legacy/tools/; Stage 3 added the 5
  * write-tools (`create_github_issue`, `commit_to_strategy_doc`,
  * `post_to_topic`, `pause_workflow`, `mute_alert`) as thin HTTP proxies.
- * Stage 4a (this revision) wires the runtime lifecycle hooks:
+ * Stage 4a wired the runtime lifecycle hooks; Stage 4b (this revision)
+ * stacks the Layer 0 shortcut router on top of `before_agent_start`:
  *
  *   - `llm_input`            → per-call daily budget gate (`POST /budget`)
- *   - `before_agent_start`   → open invocation (`POST /invocations/open`)
+ *   - `before_agent_start`   → 1. Layer 0 shortcut router (Stage 4b) — if
+ *                                 the user message matches a regex
+ *                                 shortcut, dispatch its tools through the
+ *                                 in-process registry, render the canned
+ *                                 Markdown response, and block the run with
+ *                                 a `__ROUTED__:`-prefixed reason. The
+ *                                 agent never starts, LLM cost stays $0.
+ *                              2. If no shortcut matched → open invocation
+ *                                 row (`POST /invocations/open`) and cache
+ *                                 `invocationId ↔ runId` in the
+ *                                 `InvocationCorrelator`.
  *   - `agent_end`            → finalize invocation (`POST /invocations/finalize`)
  *   - `before_tool_call`     → native approval gate for 5 write-tools
  *                              (returns `{ requireApproval: ... }`; SDK
@@ -23,7 +35,9 @@
  * for what's allowed; hooks are the runtime UX layer on top.
  *
  * Each tool stays a thin HTTP proxy to `/api/internal/openclaw/<endpoint>`
- * on the Sergeant server — the same surface the legacy plugin used.
+ * on the Sergeant server — the same surface the legacy plugin used. The
+ * shortcut router dispatches to the same HTTP endpoints through a parallel
+ * `toolRegistry` Map populated during the `api.registerTool` loop.
  */
 
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
@@ -40,10 +54,13 @@ import {
   createBeforeAgentStartHook,
   InvocationCorrelator,
 } from "./hooks/audit.js";
+import { createShortcutRouterHook } from "./hooks/shortcut-router.js";
 import {
   createWriteApprovalHook,
   WRITE_TOOLS,
 } from "./hooks/write-approval.js";
+import { ALL_SHORTCUTS } from "./shortcuts/index.js";
+import type { ToolExecutor, ToolResult } from "./shortcuts/types.js";
 
 function safeJsonParse(s: string): Record<string, unknown> {
   try {
@@ -631,7 +648,7 @@ export default definePluginEntry({
   id: "sergeant",
   name: "Sergeant",
   description:
-    "Sergeant agent gateway plugin (Stage 4a — 25 read-tools + 5 write-tools + 4 hooks)",
+    "Sergeant agent gateway plugin (Stage 4b — 25 read-tools + 5 write-tools + 4 hooks + Layer 0 shortcut router)",
 
   register(api) {
     const apiLogger = (
@@ -687,8 +704,39 @@ export default definePluginEntry({
     let failed = 0;
     const failures: Array<{ name: string; error: string }> = [];
 
+    // Parallel registry built alongside `api.registerTool` so the Stage 4b
+    // shortcut router can dispatch through the same HTTP-proxy path. The
+    // executor wraps thrown errors as text blocks rather than rejecting —
+    // identical to the per-tool `execute` body — so `ShortcutRouter` always
+    // receives a renderable `ToolResult`.
+    const toolRegistry = new Map<
+      string,
+      (params: Record<string, unknown>) => Promise<ToolResult>
+    >();
+
     for (const tool of tools) {
       const buildBody = tool.formatBody ?? ((p: Record<string, unknown>) => p);
+      const execTool = async (
+        params: Record<string, unknown>,
+      ): Promise<ToolResult> => {
+        try {
+          const body = buildBody(params);
+          const response = await http.post<unknown>(tool.endpoint, body);
+          const text =
+            typeof response === "string"
+              ? response
+              : JSON.stringify(response, null, 2);
+          return {
+            content: [{ type: "text", text }],
+            details: response,
+          };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            content: [{ type: "text", text: `(${tool.name} failed: ${msg})` }],
+          };
+        }
+      };
       try {
         api.registerTool({
           name: tool.name,
@@ -696,27 +744,10 @@ export default definePluginEntry({
           description: tool.description,
           parameters: tool.params,
           async execute(_id, params) {
-            try {
-              const body = buildBody(params as Record<string, unknown>);
-              const response = await http.post<unknown>(tool.endpoint, body);
-              const text =
-                typeof response === "string"
-                  ? response
-                  : JSON.stringify(response, null, 2);
-              return {
-                content: [{ type: "text", text }],
-                details: response,
-              };
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              return {
-                content: [
-                  { type: "text", text: `(${tool.name} failed: ${msg})` },
-                ],
-              };
-            }
+            return execTool(params as Record<string, unknown>);
           },
         });
+        toolRegistry.set(tool.name, execTool);
         ok++;
       } catch (err) {
         failed++;
@@ -774,6 +805,36 @@ export default definePluginEntry({
         log: hookLog,
       });
 
+      // Stage 4b — shortcut router composed BEFORE the audit-open hook on
+      // `before_agent_start`. The executor closes over `toolRegistry` so
+      // shortcuts run through the same HTTP-proxy path the agent would use.
+      const executeTool: ToolExecutor = async (name, params) => {
+        const fn = toolRegistry.get(name);
+        if (!fn) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `(shortcut tool '${name}' is not registered)`,
+              },
+            ],
+          };
+        }
+        return fn(params);
+      };
+      const shortcutRouter = createShortcutRouterHook({
+        shortcuts: ALL_SHORTCUTS,
+        executeTool,
+        log: hookLog,
+      });
+      const composedBeforeAgentStart = async (
+        event: Parameters<typeof beforeAgentStart>[0],
+      ): Promise<unknown> => {
+        const routed = await shortcutRouter(event);
+        if (routed) return routed;
+        return beforeAgentStart(event);
+      };
+
       const hookRegistrations: Array<{
         event:
           | "llm_input"
@@ -790,7 +851,9 @@ export default definePluginEntry({
         {
           event: "before_agent_start",
           handler: (event: unknown) =>
-            beforeAgentStart(event as Parameters<typeof beforeAgentStart>[0]),
+            composedBeforeAgentStart(
+              event as Parameters<typeof beforeAgentStart>[0],
+            ),
         },
         {
           event: "agent_end",
@@ -823,6 +886,7 @@ export default definePluginEntry({
         failed: hookFailures.length,
         failures: hookFailures.length > 0 ? hookFailures : undefined,
         writeTools: Array.from(WRITE_TOOLS),
+        shortcuts: ALL_SHORTCUTS.map((s) => s.slug),
       });
     }
   },
@@ -839,3 +903,21 @@ export {
   PluginConfigSchema,
   type PluginConfig,
 } from "./config.js";
+export {
+  ESCALATE_PREFIX,
+  ROUTED_RESPONSE_PREFIX,
+  createShortcutRouterHook,
+  extractRoutedResponse,
+  isRoutedResponse,
+} from "./hooks/shortcut-router.js";
+export { ShortcutRouter, extractText } from "./shortcuts/router.js";
+export type {
+  ShortcutDefinition,
+  ShortcutMatchResult,
+  ShortcutParams,
+  ShortcutToolCall,
+  TemplateRenderer,
+  ToolExecutor,
+  ToolResult,
+} from "./shortcuts/types.js";
+export { ALL_SHORTCUTS } from "./shortcuts/index.js";
