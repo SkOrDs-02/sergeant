@@ -4,10 +4,15 @@
  * Order matters: the host hook (`hooks/strategic-mode.ts`) iterates this
  * list and the first pattern match wins. Each entry has its own anchored
  * slash prefix so the order is currently irrelevant in practice — PR-1
- * shipped `/plan`, PR-2 adds `/analyze`, PR-3 will add `/okr`.
+ * shipped `/plan`, PR-2 added `/analyze`, PR-4 adds `/okr` (the optional
+ * docs-split PR-3 introduced no code change). Once all three modes
+ * register, Stage 5b is complete and the legacy console primers in
+ * `tools/console/src/agents/strategic-modes.ts` can be retired in
+ * Stage 7 alongside the drift-gate tests.
  */
 
 import { analyzeMode } from "./analyze.js";
+import { okrMode } from "./okr.js";
 import { planMode } from "./plan.js";
 import type {
   StrategicModeDefinition,
@@ -19,6 +24,7 @@ import type {
 export const ALL_STRATEGIC_MODES: StrategicModeDefinition[] = [
   planMode,
   analyzeMode,
+  okrMode,
 ];
 
 /**
@@ -51,7 +57,7 @@ export function matchStrategicMode(
   return null;
 }
 
-export { analyzeMode, planMode };
+export { analyzeMode, okrMode, planMode };
 export type {
   StrategicModeDefinition,
   StrategicModeMatch,

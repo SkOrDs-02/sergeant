@@ -1,12 +1,15 @@
 /**
- * Stage 5b PR-1 + PR-2 — unit tests for `matchStrategicMode()` + the
- * `/plan` and `/analyze` mode definitions. Covers per mode:
+ * Stage 5b PR-1 + PR-2 + PR-4 — unit tests for `matchStrategicMode()` +
+ * the `/plan`, `/analyze`, and `/okr` mode definitions. Covers per mode:
  *
  *   - `<slash> <topic>` happy path returns the right slug + trigger +
  *     primer + stripped topic.
  *   - Case-insensitive match.
- *   - Word-boundary anchor (e.g. `/plant`, `/analyzed` must NOT match).
- *   - Topic-required guard — bare slash (no topic) falls through.
+ *   - Word-boundary anchor (e.g. `/plant`, `/analyzed`, `/okrs` must
+ *     NOT match).
+ *   - Topic-required guard — bare slash (no topic) falls through for
+ *     `/plan` and `/analyze` but is a valid match for `/okr` (empty
+ *     `topic`).
  *   - Surrounding whitespace is tolerated.
  *   - Non-slash, non-prefix, non-string inputs fall through.
  *   - Multi-line topics work (Telegram sends `/plan churn\nadditional context`).
@@ -24,15 +27,18 @@ import {
   ALL_STRATEGIC_MODES,
   analyzeMode,
   matchStrategicMode,
+  okrMode,
   planMode,
 } from "./index.js";
+import { OKR_PRIMER } from "./okr.js";
 import { PLAN_PRIMER } from "./plan.js";
 
 describe("ALL_STRATEGIC_MODES", () => {
-  it("includes /plan and /analyze (PR-1 + PR-2) in declaration order", () => {
-    expect(ALL_STRATEGIC_MODES).toHaveLength(2);
+  it("includes /plan, /analyze, and /okr (PR-1 + PR-2 + PR-4) in declaration order", () => {
+    expect(ALL_STRATEGIC_MODES).toHaveLength(3);
     expect(ALL_STRATEGIC_MODES[0]).toBe(planMode);
     expect(ALL_STRATEGIC_MODES[1]).toBe(analyzeMode);
+    expect(ALL_STRATEGIC_MODES[2]).toBe(okrMode);
   });
 
   it("every entry exposes a unique slug + trigger pair", () => {
@@ -169,6 +175,74 @@ describe("matchStrategicMode — /analyze", () => {
   });
 });
 
+describe("matchStrategicMode — /okr", () => {
+  it("matches bare `/okr` (topicRequired: false) and returns empty topic", () => {
+    const result = matchStrategicMode("/okr");
+    expect(result).not.toBeNull();
+    expect(result?.slug).toBe("okr");
+    expect(result?.trigger).toBe("strategic_okr");
+    expect(result?.primer).toBe(OKR_PRIMER);
+    expect(result?.topic).toBe("");
+  });
+
+  it("matches `/okr   ` (trailing whitespace) and returns empty topic", () => {
+    const result = matchStrategicMode("/okr   ");
+    expect(result?.slug).toBe("okr");
+    expect(result?.topic).toBe("");
+  });
+
+  it("matches `/okr <topic>` and returns slug + trigger + primer + topic", () => {
+    const result = matchStrategicMode("/okr Q3 progress");
+    expect(result).not.toBeNull();
+    expect(result?.slug).toBe("okr");
+    expect(result?.trigger).toBe("strategic_okr");
+    expect(result?.primer).toBe(OKR_PRIMER);
+    expect(result?.topic).toBe("Q3 progress");
+  });
+
+  it("is case-insensitive (`/OKR`, `/Okr`)", () => {
+    expect(matchStrategicMode("/OKR")?.slug).toBe("okr");
+    expect(matchStrategicMode("/Okr Q3 review")?.slug).toBe("okr");
+  });
+
+  it("tolerates leading/trailing whitespace + multiple spaces", () => {
+    const result = matchStrategicMode("   /okr   Q3 review  ");
+    expect(result?.topic).toBe("Q3 review");
+  });
+
+  it("supports multi-line topics", () => {
+    const result = matchStrategicMode(
+      "/okr Q3 progress\nrevenue KR is behind\nretention OK",
+    );
+    expect(result?.slug).toBe("okr");
+    expect(result?.topic).toBe(
+      "Q3 progress\nrevenue KR is behind\nretention OK",
+    );
+  });
+
+  it("does NOT match `/okrs`, `/okrun`, `/okrtype` (word-boundary)", () => {
+    expect(matchStrategicMode("/okrs")).toBeNull();
+    expect(matchStrategicMode("/okrun setup")).toBeNull();
+    expect(matchStrategicMode("/okrtype Q3")).toBeNull();
+  });
+
+  it("does NOT match `okr something` (no leading slash)", () => {
+    expect(matchStrategicMode("okr something")).toBeNull();
+    expect(matchStrategicMode("okr")).toBeNull();
+  });
+
+  it("does NOT match when `/okr` appears mid-message", () => {
+    expect(matchStrategicMode("please /okr review")).toBeNull();
+  });
+
+  it("/plan, /analyze, /okr do not cross-match each other", () => {
+    expect(matchStrategicMode("/plan growth strategy")?.slug).toBe("plan");
+    expect(matchStrategicMode("/analyze growth drop")?.slug).toBe("analyze");
+    expect(matchStrategicMode("/okr Q3 progress")?.slug).toBe("okr");
+    expect(matchStrategicMode("/okr")?.slug).toBe("okr");
+  });
+});
+
 describe("PLAN_PRIMER", () => {
   it("contains the STRATEGIC_MODE sentinel and the 4 step markers", () => {
     expect(PLAN_PRIMER).toContain("STRATEGIC_MODE: plan");
@@ -228,5 +302,31 @@ describe("ANALYZE_PRIMER", () => {
       "return (" + (blockMatch?.[1] ?? "''") + ")",
     )() as string;
     expect(ANALYZE_PRIMER).toBe(reconstructed);
+  });
+});
+
+describe("OKR_PRIMER", () => {
+  it("contains the STRATEGIC_MODE sentinel and the 4 step markers", () => {
+    expect(OKR_PRIMER).toContain("STRATEGIC_MODE: okr");
+    expect(OKR_PRIMER).toContain("1) ACTIVE OKRs");
+    expect(OKR_PRIMER).toContain("2) PROGRESS PER KR");
+    expect(OKR_PRIMER).toContain("3) BOTTLENECKS");
+    expect(OKR_PRIMER).toContain("4) NEXT ACTIONS");
+  });
+
+  it("matches the legacy console primer byte-for-byte (drift gate)", () => {
+    const legacyPath = resolve(
+      __dirname,
+      "../../../../tools/console/src/agents/strategic-modes.ts",
+    );
+    const legacySource = readFileSync(legacyPath, "utf8");
+    const blockMatch = legacySource.match(
+      /const OKR_PRIMER =\s*([\s\S]*?);\s*\n/,
+    );
+    expect(blockMatch).not.toBeNull();
+    const reconstructed = Function(
+      "return (" + (blockMatch?.[1] ?? "''") + ")",
+    )() as string;
+    expect(OKR_PRIMER).toBe(reconstructed);
   });
 });
