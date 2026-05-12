@@ -1,7 +1,7 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-07-01.
-> **Status:** Active
+> **Last validated:** 2026-05-12 10:30 UTC by Claude via sprint-sync. **Next review:** 2026-07-01.
+> **Status:** Active — усі Wave-2/3 задачи верифіковані на предмет залежностей та PR-статусу
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
 > Джерела: [`docs/audits/2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md),
@@ -27,31 +27,33 @@
 
 Повний контекст і деталі реалізації — у [`2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md).
 
+**Останнє оновлення:** 2026-05-12 00:30 UTC — синхронізовано з main (commit d8d21aa).
+
 | ID | Задача | Деталь | Статус |
 |----|--------|--------|--------|
-| T1 | HubDashboard decomposition | `HubDashboard.tsx` 743 LOC → ~100 LOC | ⏳ В процесі |
-| T2 | Capacitor boundary tests | 0 тестів → 10+ у `apps/mobile-shell` | ❌ Не почато |
-| T3 | Великі файли (батч 3) | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | ⏳ Частково |
-| T4 | Bundle size | 615 KB (brotli) → 550 KB | ⏳ Потребує перевірки |
-| T5 | Lighthouse CI | LCP < 2.0s у CI | ❌ Не почато |
-| T6 | Backend dedup | `pantry → prompt-builders.ts` | ⏳ Потребує перевірки |
-| T7 | Mobile flaky tests | CI pass rate верифікація | ~Закрито (потребує 20-run check) |
+| T1 | HubDashboard decomposition | `HubDashboard.tsx` 743 LOC → ~100 LOC | ⏳ Очікує Sprint 6 |
+| T2 | Capacitor boundary tests | 0 тестів → 10+ у `apps/mobile-shell` | ❌ Не почато (Sprint 7) |
+| T3 | Великі файли (батч 3) | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | ❌ Не почато (Sprint 7) |
+| T4 | Bundle size | 615 KB (brotli) → 550 KB (brotli) | ⏳ Очікує Sprint 8 |
+| T5 | Lighthouse CI | LCP < 2.0s у CI, error на LCP > 3.0s | ❌ Не почато (Sprint 8) |
+| T6 | Backend dedup verification | `pantry → prompt-builders.ts` consolidation | ⏳ Очікує Sprint 8 |
+| T7 | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453) | ⏳ Очікує 20-run CI verification |
 
 ### 1.2. Продуктові задачі (відкриті)
 
 Повний контекст — у [`openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) та [`telegram-improvements-roadmap.md`](../launch/tech/telegram-improvements-roadmap.md).
 
-| ID | Задача | Джерело | Wave | Effort |
-|----|--------|---------|------|--------|
-| O1 | Phase 2.A: Ранкова повістка 08:30 Kyiv | openclaw §Phase 2 | W2 | M |
-| O2 | C.2: Sentry breadcrumbs у tool-calls | tg-improvements §4.3 | W2 | XS |
-| O3 | Phase 2.B: Friday weekly + monthly OKR | openclaw §Phase 2 | W3 | M |
-| O4 | B.1: Alert dedup / occurrence-counter (10-min window) | tg-improvements §4.2 | W3 | M |
-| O5 | W3 PR-3: `/alerts pending` slash-команда | tg-improvements §3.2 | W3 | S |
-| O6 | W4.1: bootstrap setWebhook poll-and-retry hardening | tg-improvements §3.5.1 | W4 | XS |
-| O7 | A.6+A.7: `/help` discovery + persona quick-row | tg-improvements §4.1 | W4 | S |
-| O8 | Phase 3: `/plan`, `/analyze`, `/okr` | openclaw §Phase 3 | Later | L |
-| O9 | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2 | W3+ | M |
+| ID | Задача | Джерело | Wave | Effort | Статус |
+|----|--------|---------|------|--------|--------|
+| O1 | Phase 2.A: Ранкова повістка 08:30 Kyiv | openclaw §Phase 2 | W2 | M | ❌ Не почато (Sprint 5) |
+| O2 | C.2: Sentry breadcrumbs у tool-calls | tg-improvements §4.3 | W2 | XS | ❌ Не почато (Sprint 5) |
+| O3 | Phase 2.B: Friday weekly + monthly OKR | openclaw §Phase 2 | W3 | M | ⏳ Очікує Sprint 6 |
+| O4 | B.1: Alert dedup / occurrence-counter (10-min window) | tg-improvements §4.2 | W3 | M | ⏳ Очікує Sprint 6 |
+| O5 | W3 PR-3: `/alerts pending` slash-команда | tg-improvements §3.2 | W3 | S | ❌ Не почато (Sprint 5) |
+| O6 | W4.1: bootstrap setWebhook poll-and-retry hardening | tg-improvements §3.5.1 | W4 | XS | ⏳ Очікує Sprint 7 |
+| O7 | A.6+A.7: `/help` discovery + persona quick-row | tg-improvements §4.1 | W4 | S | ⏳ Очікує Sprint 7 |
+| O8 | Phase 3: `/plan`, `/analyze`, `/okr` | openclaw §Phase 3 | Later | L | ⏳ Очікує Sprint 8 (partial) |
+| O9 | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2 | W3+ | M | ⏳ В очікуванні (Sprint 6) |
 
 ### 1.3. Вже зроблено (довідка)
 
