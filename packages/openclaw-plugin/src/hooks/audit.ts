@@ -30,6 +30,17 @@
  * verify `runId` / `trigger` / `userMessage` / `status` are actually
  * populated by the Gateway. Until then we read fields defensively and
  * skip the audit write rather than crash.
+ *
+ * Stage 4a follow-up (2026-05-12): the real `before_agent_start` event
+ * carries `{ prompt, runId?, messages? }` — `userMessage` and `trigger`
+ * are NOT part of the canonical openclaw 5.7 payload (`hook-types.d.ts`
+ * lines 38+ mark the hook `@deprecated`; the live shape is in the
+ * ambient declaration in `src/types/openclaw-ambient.d.ts`). Stage 4b
+ * smoke-test ran with `event.userMessage = undefined` and the hook
+ * wrote "(empty user message)" to every row. We now prefer `event.prompt`
+ * and only fall back to `event.userMessage` for legacy test fixtures.
+ * The audit row therefore captures the model-bound prompt for the turn,
+ * which is what the trail is actually for.
  */
 
 import type {
@@ -145,10 +156,18 @@ export function createBeforeAgentStartHook(
     const trigger = VALID_TRIGGER.has(event.trigger ?? "")
       ? (event.trigger as string)
       : "dm";
+    // Prefer `event.prompt` (canonical openclaw 5.7 shape) before
+    // `event.userMessage` (legacy fixture shape). Either way we cap at
+    // 8000 chars to match the server-side `user_message TEXT NOT NULL`
+    // expectation that nothing huge gets stuffed into an audit row.
+    const rawMessage =
+      typeof event.prompt === "string" && event.prompt.length > 0
+        ? event.prompt
+        : typeof event.userMessage === "string" && event.userMessage.length > 0
+          ? event.userMessage
+          : null;
     const userMessage =
-      typeof event.userMessage === "string" && event.userMessage.length > 0
-        ? event.userMessage.slice(0, 8000)
-        : "(empty user message)";
+      rawMessage !== null ? rawMessage.slice(0, 8000) : "(empty user message)";
 
     try {
       const response = await opts.http.post<OpenInvocationResponse>(
