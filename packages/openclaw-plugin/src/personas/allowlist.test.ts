@@ -144,10 +144,10 @@ describe("PERSONA_TOOL_ALLOWLIST", () => {
     expect(new Set(writers)).toEqual(new Set(["cofounder", "eng", "pm"]));
   });
 
-  it("READ_TOOLS has 25 entries; ALL_TOOL_NAMES has 30 unique entries", () => {
+  it("READ_TOOLS has 25 entries; ALL_TOOL_NAMES has 31 unique entries (25 read + 5 write + 1 host)", () => {
     expect(READ_TOOLS).toHaveLength(25);
     expect(new Set(READ_TOOLS).size).toBe(25);
-    expect(ALL_TOOL_NAMES).toHaveLength(30);
-    expect(new Set(ALL_TOOL_NAMES).size).toBe(30);
+    expect(ALL_TOOL_NAMES).toHaveLength(31);
+    expect(new Set(ALL_TOOL_NAMES).size).toBe(31);
   });
 });

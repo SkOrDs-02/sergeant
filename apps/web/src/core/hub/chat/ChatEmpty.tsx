@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import { getActiveModules } from "@sergeant/shared";
+import { getActiveModules, type DashboardModuleId } from "@sergeant/shared";
 import { localStorageStore } from "../dashboard/dashboardStore";
 
 export interface ChatEmptyProps {
@@ -19,8 +19,12 @@ export interface ChatEmptyProps {
 }
 
 interface Suggestion {
-  /** Стабільний id для key-ів і testid-ів. */
-  readonly id: string;
+  /**
+   * Стабільний id для key-ів і testid-ів — також сходиться з
+   * `DashboardModuleId` так, щоб `active.has(s.id)` отримував
+   * звужений тип і працював без `as`.
+   */
+  readonly id: DashboardModuleId;
   /** Іконка з нашого Icon-каталогу — лінкує до domain-модуля. */
   readonly icon: string;
   /** Tailwind-колір, що відповідає accent-у модуля. */

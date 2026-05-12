@@ -64,10 +64,20 @@ export const READ_TOOLS: readonly string[] = Object.freeze([
   "set_reminder",
 ]);
 
-/** Усі 30 registered tools (25 read + 5 write). */
+/**
+ * Host-side rendering tools — ні read, ні write. Це «inline canvas» для
+ * чартів в /metrics, /runway, /status відповідях (рендериться в openclaw host,
+ * не в плагіні через SDK). Реєструємо як окрему категорію, щоб хоч `canvas`
+ * і не їде в обидва списки — `ALL_TOOL_NAMES` все рівно включає його, і config-gate
+ * тест проходить.
+ */
+export const HOST_TOOLS: readonly string[] = Object.freeze(["canvas"]);
+
+/** Усі 31 registered tools (25 read + 5 write + 1 host). */
 export const ALL_TOOL_NAMES: readonly string[] = Object.freeze([
   ...READ_TOOLS,
   ...Array.from(WRITE_TOOLS),
+  ...HOST_TOOLS,
 ]);
 
 export type PersonaId =
@@ -185,6 +195,7 @@ export const PERSONA_TOOL_ALLOWLIST: Readonly<
       "record_decision",
       "create_github_issue",
       "commit_to_strategy_doc",
+      "canvas",
     ]),
     deny: Object.freeze(
       denyWriteToolsExcept(["create_github_issue", "commit_to_strategy_doc"]),
@@ -203,6 +214,7 @@ export const PERSONA_TOOL_ALLOWLIST: Readonly<
       "get_github_releases",
       "recall_memory",
       "post_to_topic",
+      "canvas",
     ]),
     deny: Object.freeze(denyWriteToolsExcept(["post_to_topic"])),
   },
@@ -216,6 +228,7 @@ export const PERSONA_TOOL_ALLOWLIST: Readonly<
       "query_app_db",
       "recall_memory",
       "record_decision",
+      "canvas",
     ]),
     deny: Object.freeze(denyWriteToolsExcept([])),
   },
@@ -230,6 +243,7 @@ export const PERSONA_TOOL_ALLOWLIST: Readonly<
       "get_stripe_metrics",
       "get_server_stats",
       "recall_memory",
+      "canvas",
     ]),
     deny: Object.freeze(denyWriteToolsExcept([])),
   },
