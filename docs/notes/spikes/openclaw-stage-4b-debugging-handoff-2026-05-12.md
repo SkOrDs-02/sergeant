@@ -35,7 +35,8 @@
   Це **canonical lifecycle hook registration**. `PluginHookName` enum включає `before_dispatch`, `agent_end`, `before_tool_call` і ще 31 інший.
 - `node_modules/openclaw/dist/loader-B-GXgDrk.js:3137`
   ```js
-  on: (hookName, handler, opts) => registerTypedHook(record, hookName, handler, opts, params.hookPolicy)
+  on: (hookName, handler, opts) =>
+    registerTypedHook(record, hookName, handler, opts, params.hookPolicy);
   ```
   `registerTypedHook` пушить у `registry.typedHooks`.
 - `node_modules/openclaw/dist/hook-runner-global-CCAcWVdN.js:108`
@@ -328,13 +329,13 @@ railway up --service openclaw-gateway --detach
 
 ## 8. PR history (цей session — оновлено 13:30 UTC)
 
-| #    | Title                                                                   | Commit                   | Status                                | Real impact                                                                                                                                                                                                                       |
-| ---- | ----------------------------------------------------------------------- | ------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2466 | docs: sync openclaw stage-tracker                                       | `007285f6`               | merged                                | Лише docs. n/a runtime.                                                                                                                                                                                                           |
-| 2467 | drop `__ROUTED__:` sentinel                                             | `bbed022e`               | merged → deployed                     | Sentinel був dead code. Чисто refactor.                                                                                                                                                                                           |
-| 2468 | migrate Stage 4b shortcut router to `before_dispatch`                   | `5cb31858`               | merged → deployed `aa0d5db3` 10:56UTC | Theoretical fix root-cause #1 (deprecated hook). Не дав ефекту, бо real root cause — №4 (`api.on` vs `api.registerHook`), яка існує незалежно від обраного event.                                                                 |
-| 2469 | restore hook registration with mandatory `opts.name`                    | `416eeba0`<br>`8458fa2a` | merged → deployed `aa0d5db3` 10:56UTC | Theoretical fix root-cause #2 (`hook registration missing name`). Не дав ефекту, бо `registerHook` — це не той method, який runtime читає для lifecycle hooks. Без помилки, але без firing-у.                                     |
-| 2470 | docs: handoff after Stage 4b debug                                      | `624a5efe`               | merged                                | Документ із попереднім root cause #3 (Railway не watch-ить GitHub). Цей doc — наступна версія. **Hypothesis A з #2470 — MISS** (auto-deploy на `sergeant-openclaw-gateway` працює, redeploy сам по собі не фіксить).               |
+| #    | Title                                                                              | Commit                   | Status                                | Real impact                                                                                                                                                                                                                       |
+| ---- | ---------------------------------------------------------------------------------- | ------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2466 | docs: sync openclaw stage-tracker                                                  | `007285f6`               | merged                                | Лише docs. n/a runtime.                                                                                                                                                                                                           |
+| 2467 | drop `__ROUTED__:` sentinel                                                        | `bbed022e`               | merged → deployed                     | Sentinel був dead code. Чисто refactor.                                                                                                                                                                                           |
+| 2468 | migrate Stage 4b shortcut router to `before_dispatch`                              | `5cb31858`               | merged → deployed `aa0d5db3` 10:56UTC | Theoretical fix root-cause #1 (deprecated hook). Не дав ефекту, бо real root cause — №4 (`api.on` vs `api.registerHook`), яка існує незалежно від обраного event.                                                                 |
+| 2469 | restore hook registration with mandatory `opts.name`                               | `416eeba0`<br>`8458fa2a` | merged → deployed `aa0d5db3` 10:56UTC | Theoretical fix root-cause #2 (`hook registration missing name`). Не дав ефекту, бо `registerHook` — це не той method, який runtime читає для lifecycle hooks. Без помилки, але без firing-у.                                     |
+| 2470 | docs: handoff after Stage 4b debug                                                 | `624a5efe`               | merged                                | Документ із попереднім root cause #3 (Railway не watch-ить GitHub). Цей doc — наступна версія. **Hypothesis A з #2470 — MISS** (auto-deploy на `sergeant-openclaw-gateway` працює, redeploy сам по собі не фіксить).              |
 | 2471 | refactor(openclaw-plugin): migrate lifecycle hooks from `registerHook` to `api.on` | _pending_                | _in flight_                           | **Reality root-cause #4 fix.** Replaces `for (...) registerHook(event, handler, { name })` з 5 явними `api.on(event, handler)`. + `allowConversationAccess: true` для conversation hooks. + Spike doc Row 1 переписаний. + tests. |
 
 ## 9. Next steps for next session (актуально після 13:30 UTC)
@@ -365,6 +366,7 @@ Main action (10 хв):
    - `/think чи варто піднімати ціну` — повний agent cycle (Opus prose, ≥15 сек).
    - `/status` — очікувано канонічний Openclaw status response (через native command, не наш plugin).
 5. Railway logs:
+
    ```bash
    railway logs --service sergeant-openclaw-gateway | grep -E "sergeant\.(tools|hooks|shortcut|hook)\."
    ```
