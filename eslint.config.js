@@ -1100,7 +1100,6 @@ export default [
       "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/hub/HubDashboard.tsx",
       "apps/web/src/core/lib/chatActions/fizrukActions.ts",
-      "apps/web/src/modules/finyk/pages/AssetsTable.tsx",
     ],
     rules: {
       "max-lines": "off",
