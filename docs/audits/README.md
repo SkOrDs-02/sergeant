@@ -55,13 +55,7 @@
 | [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md)                     | Dead code + hard-rules roast #9/10 (knip / dead-code:files / docs:check-links)                                                 | Active   | 11/13            | 2 ≈           | embedded §6 (knip Unlisted/Unresolved sweep + lighthouse-ci.yml workflow file)                 |
 
 | [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md)                     | Revenue / monetization / paywall roast — follow-up до 2026-05-04                                                               | Active   | 6/18             | 12             | self (Прогрес виконання) + [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) |
-<<<<<<< HEAD
-||||||| parent of fe3d7679 (fix(docs): clean stray conflict markers in audits README)
-<<<<<<< HEAD
-||||||| parent of fe53a980 (docs(docs): add 2026-05-13 revenue & monetization roast)
-=======
-<<<<<<< HEAD
->>>>>>> fe3d7679 (fix(docs): clean stray conflict markers in audits README)
+
 
 
 ||||||| parent of e773597f (docs(docs): add 2026-05-13 revenue & monetization roast)
