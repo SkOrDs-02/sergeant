@@ -66,7 +66,7 @@ export function ModuleShell({
     <div
       style={shellStyle}
       className={cn(
-        "h-dvh flex flex-col bg-bg text-text overflow-hidden",
+        "h-dvh flex flex-col bg-bg text-text overflow-hidden module-bg",
         className,
       )}
     >
