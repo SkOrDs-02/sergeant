@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "./Button";
+import { EmptyState } from "./EmptyState";
 import { SkeletonCard } from "./SkeletonCard";
 import { messages } from "@shared/i18n/uk";
 
@@ -125,9 +126,11 @@ const DEFAULT_EMPTY: <T>(data: T) => boolean = (data) => {
 };
 
 /**
- * Default error fallback — kept intentionally minimal. Pages that
- * want module-tinted or shape-aware errors should pass a custom
- * `error={(err, retry) => ...}` slot.
+ * Default error fallback — delegates to `<EmptyState variant="danger">`
+ * so every untyped error in the app reads with the same eyebrow / title /
+ * retry-CTA pattern (single SR announcement, single focus contract).
+ * Pages that need module-tinted or shape-aware errors keep passing a
+ * custom `error={(err, retry) => ...}` slot.
  */
 function DefaultErrorFallback<TError>({
   error,
@@ -141,18 +144,21 @@ function DefaultErrorFallback<TError>({
       ? error.message
       : typeof error === "string"
         ? error
-        : "Не вдалося завантажити дані.";
+        : messages.errors.generic.unknown;
   return (
-    <div
-      role="alert"
-      className="rounded-2xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger-strong dark:text-red-100"
-    >
-      <p className="font-semibold">{messages.errors.generic.title}</p>
-      <p className="mt-1 text-xs opacity-90">{message}</p>
-      <Button variant="secondary" size="xs" className="mt-3" onClick={onRetry}>
-        {messages.sync.retryCta}
-      </Button>
-    </div>
+    <EmptyState
+      size="sm"
+      variant="danger"
+      eyebrow={messages.errors.generic.title}
+      title={messages.errors.generic.somethingWrong}
+      description={message}
+      ariaLive="polite"
+      primaryAction={
+        <Button variant="secondary" size="sm" onClick={onRetry}>
+          {messages.sync.retryCta}
+        </Button>
+      }
+    />
   );
 }
 

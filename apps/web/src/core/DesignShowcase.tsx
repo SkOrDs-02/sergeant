@@ -17,6 +17,7 @@ import { CelebrationSection } from "./designShowcase/sections/Celebration";
 import { OnboardingSection } from "./designShowcase/sections/Onboarding";
 import { MotionSection } from "./designShowcase/sections/Motion";
 import { ThemingSection } from "./designShowcase/sections/Theming";
+import { EmptyStatesSection } from "./designShowcase/sections/EmptyStates";
 
 export function DesignShowcase() {
   return (
@@ -64,6 +65,7 @@ export function DesignShowcase() {
         <CelebrationSection />
         <OnboardingSection />
         <MotionSection />
+        <EmptyStatesSection />
       </main>
     </div>
   );

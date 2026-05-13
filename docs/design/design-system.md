@@ -710,9 +710,125 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 
 ### EmptyState
 
-- `icon` · `title` · `description` · `action`.
-- `compact` режим для in-card плейсхолдерів.
-- Використовуй для всіх «немає да��их» станів — не роби ad-hoc.
+Канонічний примітив для **порожніх станів і дрібних error/empty карток**
+
+- повноекранних error-сторінок (`/404`, `/500`, `/offline`). Один
+  компонент тримає три розміри (`sm` / `md` / `lg`), п'ять варіантів
+  (`neutral` / `info` / `success` / `warning` / `danger`) і чотири
+  module-accent override-и (`finyk` / `fizruk` / `routine` / `nutrition`)
+  — тож кожна порожня панель в апці пропускається через ту саму tone-
+  палітру, той самий focus-контракт і той самий SR-announce
+  (`role="status"`, `aria-live="polite"`).
+
+**Слоти** (всі необов'язкові, окрім `title`):
+
+- `illustration` — куратований SVG із `apps/web/src/assets/illustrations/`
+  (всі використовують `currentColor` + design-token utilities; жодного
+  inline hex — Hard Rule #11). Якщо `illustration` не задано — fallback
+  на `icon` у бордерованому box-і з tone-фоном.
+- `eyebrow` — короткий caps-чип над title-ом ("404", "OFFLINE", "ERROR").
+- `title` — короткий заголовок (масштабується розміром).
+- `description` — повний абзац підтримки.
+- `primaryAction` / `secondaryAction` — два слоти для CTA-кнопок
+  (зазвичай `<Button variant="primary">` + `<Button variant="secondary">`).
+- `tertiaryLink` — текстовий link під CTA (наприклад, "докладніше у
+  довідці").
+- `hint` — підказка-tip із lightbulb-іконкою (тон `text-subtle`).
+- `examplePreview` — слот для inline-моку реальних даних (показуємо
+  "як це виглядатиме, коли заповниш модуль").
+- `action` (backward-compat alias до `primaryAction`).
+
+**Розміри**:
+
+| size | Коли                                                                                                               |
+| ---- | ------------------------------------------------------------------------------------------------------------------ |
+| `sm` | In-card / in-list плейсхолдери (порожній transactions list, no-results filter). Padding ≈ 16 px, без illustration. |
+| `md` | Sub-page рівень (порожня вкладка, dialog body). Дефолт.                                                            |
+| `lg` | Повноекранні error-сторінки (404 / 500 / offline), top-level empty states.                                         |
+
+**Варіанти** використовують tone-палітру з §3 — `-soft` фон + `-strong`
+текст (Hard Rule #9 для контрасту ≥ 4.5 : 1). Module-accent (якщо
+заданий) **перекриває** variant — модульна семантика сильніша за
+загальну (порожній стан у `/finyk` завжди має finyk-tint, навіть якщо
+лежить у error-state).
+
+**Tone of voice** (з [`docs/design/brandbook.md`](./brandbook.md)):
+
+| Контекст              | Що писати                                                                          | Чого уникати                        |
+| --------------------- | ---------------------------------------------------------------------------------- | ----------------------------------- |
+| Empty list            | "Тут поки нічого немає. Додай першу транзакцію — і Фінік усе порахує."             | "No data."                          |
+| No search results     | "Нічого не знайшли за «{query}». Спробуй інший фільтр."                            | "Empty result set."                 |
+| Offline               | "Немає зʼєднання, але дані не загубляться — синхронізуємо, коли воно повернеться." | "Network error: ENOTCONN."          |
+| 500 / server          | "Щось пішло не так. Спробуй оновити сторінку — зазвичай це допомагає."             | "Internal Server Error (HTTP 500)." |
+| 404 / not found       | "Сторінку не знайдено. Перевір посилання або повернись на головну."                | "Page does not exist."              |
+| Success / celebration | "Готово! +5 KM до тижневого балансу" (емодзі дозволені тут на знак)                | "Operation completed successfully." |
+
+Дві правила-черевики:
+
+1. **Завжди давай шлях назад.** Кожен EmptyState (окрім `sm`-in-card
+   плейсхолдерів) має мати **primaryAction** — кнопку, що повертає
+   користувача в робочий потік. "На головну", "Спробувати ще",
+   "Додати першу транзакцію" — три найчастіші формулювання.
+2. **Уникай blamefulness.** "Ти ввів неправильне посилання" — погано;
+   "Здається, ця адреса вже не існує" — добре. Помилка — це факт
+   стану системи, а не звинувачення користувача.
+
+**Приклади**:
+
+```tsx
+// In-card порожній стан (sm)
+<EmptyState
+  size="sm"
+  icon={<Icon name="receipt" size={20} />}
+  title="Транзакцій немає"
+  description="Підключи картку або додай вручну."
+  primaryAction={<Button size="sm">Додати</Button>}
+/>
+
+// Full-page error (lg + danger variant)
+<EmptyState
+  size="lg"
+  variant="danger"
+  eyebrow="500"
+  illustration={<ServerErrorIllustration size={200} />}
+  title="Щось пішло не так"
+  description="Сервер тимчасово не зміг обробити запит."
+  primaryAction={
+    <Button variant="primary" size="lg" onClick={reload}>
+      <Icon name="refresh-cw" size={16} />
+      Оновити сторінку
+    </Button>
+  }
+/>
+
+// Module-accent (override variant)
+<ModuleEmptyState
+  module="finyk"
+  variant="default"
+  onAction={openCreate}
+/>
+```
+
+**Three canonical error pages** (`apps/web/src/core/errors/`):
+
+| Сторінка              | Variant   | Illustration              | CTA                    |
+| --------------------- | --------- | ------------------------- | ---------------------- |
+| `NotFoundPage` 404    | `info`    | `NotFoundIllustration`    | "На головну" + "Назад" |
+| `ServerErrorPage` 500 | `danger`  | `ServerErrorIllustration` | "Оновити сторінку"     |
+| `OfflinePage`         | `warning` | `OfflineIllustration`     | "Спробувати ще"        |
+
+Всі три — composition над `<EmptyState size="lg">`, тож focus-контракт,
+motion-budget і SR-announce ідентичні. Жодного inline-стилю,
+жодного hex — все через tokens.
+
+**Ілюстрації** (`apps/web/src/assets/illustrations/`):
+`EmptyListIllustration`, `NoResultsIllustration`, `OfflineIllustration`,
+`ServerErrorIllustration`, `NotFoundIllustration`,
+`SuccessCelebrationIllustration` — кожна побудована тільки на
+`currentColor` + token-utility класах (`fill-panelHi`, `stroke-line`,
+`fill-danger-soft`, …), тож автоматично перефарбовується для світлої/
+темної теми та інтегрується в module-accent overrides без додаткового
+коду.
 
 ### Spinner
 
