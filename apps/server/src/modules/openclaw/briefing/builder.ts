@@ -21,6 +21,13 @@
 
 import { logger } from "../../../obs/logger.js";
 import { env } from "../../../env.js";
+import { extractJsonFromText } from "../../../http/jsonSafe.js";
+import {
+  getLLMProvider,
+  invokeLLM,
+  type LLMBreadcrumbFn,
+  type LLMProvider,
+} from "../../../lib/llm/provider.js";
 import {
   getPostHogStats,
   getSentryIssues,
@@ -35,6 +42,7 @@ import type {
   MorningBriefingData,
   MorningBriefingResponse,
   PrQueueBriefingSection,
+  ProposalsBriefingSection,
   SignupsBriefingSection,
   StripeBriefingSection,
   WorkflowsBriefingSection,
@@ -66,17 +74,37 @@ function computeReportingDate(nowMs: number): string {
 }
 
 /**
+ * O1 / Phase 2.A. Опціональні hook-и для тестів: provider override
+ * (підмінити LLMProvider без хак-у env) і breadcrumb-emitter (без Sentry-hub).
+ * Дефолт — `getLLMProvider()` резолвить по env.LLM_PROVIDER /
+ * env.ANTHROPIC_API_KEY.
+ */
+export interface AssembleMorningBriefingOptions {
+  /** Override LLM provider для proposals секції (тести). */
+  llmProvider?: LLMProvider;
+  /** Override Sentry breadcrumb emitter для invokeLLM (тести). */
+  addBreadcrumb?: LLMBreadcrumbFn;
+}
+
+/**
  * Збирає briefing — викликає 5 джерельних функцій паралельно і
  * мапить у структуру `MorningBriefingData`. Не кидає — будь-яка
  * помилка стає секцією-з-`note`.
+ *
+ * O1 / Phase 2.A. Якщо `input.includeProposals` не вимкнено явно
+ * (default `true`) — після збору 5 секцій викликаємо LLM-провайдер
+ * і додаємо секцію `proposals`. Будь-яка помилка LLM — fail-soft
+ * через `note` в секції; briefing ніколи не валиться 5xx.
  */
 export async function assembleMorningBriefing(
   input: AssembleMorningBriefingInput = {},
+  options: AssembleMorningBriefingOptions = {},
 ): Promise<MorningBriefingResponse> {
   const nowMs = input.nowMs ?? Date.now();
   const windowDays = Math.max(1, Math.min(30, input.windowDays ?? 1));
   const sentryLimit = Math.max(1, Math.min(20, input.sentryLimit ?? 3));
   const prLimit = Math.max(1, Math.min(30, input.prLimit ?? 5));
+  const includeProposals = input.includeProposals !== false;
 
   const [
     stripeResult,
@@ -108,7 +136,168 @@ export async function assembleMorningBriefing(
     alerts: mapAlerts(sentryResult),
   };
 
+  if (includeProposals) {
+    data.proposals = await generateProposalsSection(data, options);
+  }
+
   return { markdown: buildMorningBriefing(data), data };
+}
+
+// ────────────────────────────── proposals (LLM) ──────────────────────
+
+/**
+ * Системний prompt для LLM. Phase 2 § Ранковий ритуал «сьогодні
+ * фокусуємо на X через Y»: 3 коротких next-action-и без «co-pilot-водицько»-тону.
+ * Cofounder режим, українська. Без markdown-фенсінгу — парсер сам
+ * витягає JSON через `extractJsonFromText`.
+ */
+const MORNING_BRIEFING_SYSTEM_PROMPT = [
+  "Ти — Сергій, cofounder Sergeant-у і права рука founder-а (Дмитра).",
+  "Українська, прямий tone, без bullshit. Опонент-режим за замовч.",
+  "",
+  "Твоє завдання — на основі ранкових метрик (Stripe / PostHog / GitHub PR-черга / n8n / Sentry) сформулювати 3 короткі next-action-и на сьогодні.",
+  "Кожна пропозиція — одне речення, дієва форма дієслова. Не повторюй метрики вербально — роби висновок, що робити.",
+  "Якщо ситуація спокійна (без фейлів, без відклонень) — все рівно дай 3 фокуси на roadmap-роботу (proposals з розвитку/refactor-у/strategy).",
+  "Додай опціональний 1-2-реченнєвий reasoning — «чому саме ці 3».",
+  "",
+  'Output: JSON `{ "proposals": ["…", "…", "…"], "reasoning": "…" | null }`. Рівно 3 рядки. Без markdown-фенсінгу.',
+].join("\n");
+
+function summarizeForLLM(data: MorningBriefingData): string {
+  const stripe = data.stripe;
+  const signups = data.signups;
+  const pr = data.prQueue;
+  const wf = data.workflows;
+  const alerts = data.alerts;
+  const parts: string[] = [];
+  parts.push(`День звіту: ${data.reportingDate} (Europe/Kyiv).`);
+  if (stripe.notConfigured) {
+    parts.push("Stripe: not configured.");
+  } else {
+    parts.push(
+      `Stripe: успішних ${stripe.successfulCount ?? 0}, failed ${stripe.failedCount ?? 0}, gross ${typeof stripe.grossAmountUah === "number" ? `${stripe.grossAmountUah} UAH` : "—"}.`,
+    );
+  }
+  if (signups.notConfigured) {
+    parts.push("PostHog: not configured.");
+  } else {
+    parts.push(
+      `PostHog: pageviews ${signups.pageviewCount ?? "—"}, subscription_started ${signups.subscriptionStartedCount ?? "—"}.`,
+    );
+  }
+  if (pr.notConfigured) {
+    parts.push("GitHub PR-черга: not configured.");
+  } else {
+    parts.push(
+      `GitHub PR-черга: open ${pr.openCount ?? 0}, needs-review ${pr.needsReviewCount ?? 0}.`,
+    );
+  }
+  if (wf.notConfigured) {
+    parts.push("n8n: not configured.");
+  } else {
+    parts.push(
+      `n8n: total ${wf.totalCount ?? 0}, active ${wf.activeCount ?? 0}, failing ${wf.failingCount ?? 0}.`,
+    );
+  }
+  if (alerts.notConfigured) {
+    parts.push("Sentry: not configured.");
+  } else {
+    parts.push(
+      `Sentry: unresolved ${alerts.level ?? "error"} issues ${alerts.issueCount ?? 0}.`,
+    );
+  }
+  return parts.join("\n");
+}
+
+function parseProposalsResponse(raw: string): {
+  proposals: string[];
+  reasoning?: string;
+} | null {
+  const parsed = extractJsonFromText(raw);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    return null;
+  const obj = parsed as Record<string, unknown>;
+  const items = obj["proposals"];
+  if (!Array.isArray(items)) return null;
+  const proposals = items
+    .filter((x): x is string => typeof x === "string")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .slice(0, 3);
+  if (proposals.length === 0) return null;
+  const reasoningRaw = obj["reasoning"];
+  const out: { proposals: string[]; reasoning?: string } = { proposals };
+  if (typeof reasoningRaw === "string" && reasoningRaw.trim().length > 0) {
+    out.reasoning = reasoningRaw.trim();
+  }
+  return out;
+}
+
+/**
+ * Генерує секцію proposals через LLM-провайдер (PR-23 `LLMProvider`).
+ * Fail-soft: будь-яка помилка — повертаємо секцію з `note` або
+ * `notConfigured: true` (якщо provider явно stub без реальної відповіді).
+ * Ніколи не кидає.
+ */
+export async function generateProposalsSection(
+  data: MorningBriefingData,
+  options: AssembleMorningBriefingOptions = {},
+): Promise<ProposalsBriefingSection> {
+  const provider = options.llmProvider ?? getLLMProvider();
+  // StubProvider в режимі default повертає `'{"ok":true,"stub":true}'`,
+  // що parser-ом вважається невалідним. Абяк-я що провайдер-стаб
+  // — вважаємо як notConfigured.
+  if (provider.name === "stub") {
+    return {
+      notConfigured: true,
+      note: "LLM-провайдер у stub-режимі (incident-fallback або dev).",
+    };
+  }
+  const userMessage = summarizeForLLM(data);
+  const result = await invokeLLM(
+    provider,
+    {
+      // claude-sonnet-4-6 — сильний reasoning model для priority-синтезу;
+      // ~300 вхідних / ~150 вихідних токенів на briefing.
+      model: "claude-sonnet-4-5-20250929",
+      maxTokens: 400,
+      system: MORNING_BRIEFING_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+      endpoint: "internal/openclaw/briefing/morning/proposals",
+      timeoutMs: 30_000,
+      temperature: 0.4,
+    },
+    options.addBreadcrumb ? { addBreadcrumb: options.addBreadcrumb } : {},
+  );
+  if (!result.ok) {
+    logger.warn({
+      msg: "openclaw_briefing_proposals_llm_failed",
+      code: result.code,
+      status: result.status,
+      error: result.error,
+    });
+    return {
+      note:
+        result.code === "rate_limited"
+          ? "LLM rate-limit; фокус — roadmap-задача дня."
+          : result.code === "timeout"
+            ? "LLM timeout; фокус — roadmap-задача дня."
+            : "LLM-пропозиції недоступні (див. Sentry).",
+    };
+  }
+  const parsed = parseProposalsResponse(result.text);
+  if (!parsed) {
+    logger.warn({
+      msg: "openclaw_briefing_proposals_parse_failed",
+      sample: result.text.slice(0, 120),
+    });
+    return {
+      note: "LLM повернув невалідний JSON; фокус — roadmap-задача дня.",
+    };
+  }
+  const out: ProposalsBriefingSection = { proposals: parsed.proposals };
+  if (parsed.reasoning !== undefined) out.reasoning = parsed.reasoning;
+  return out;
 }
 
 // ────────────────────────────── mappers ──────────────────────────────

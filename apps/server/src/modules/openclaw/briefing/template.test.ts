@@ -302,3 +302,98 @@ describe("buildMorningBriefing — formatting edge cases", () => {
     expect(buildMorningBriefing(data)).toEqual(buildMorningBriefing(data));
   });
 });
+
+describe("buildMorningBriefing — O1 / Phase 2.A proposals section", () => {
+  it("omits proposals section entirely when data.proposals is undefined", () => {
+    const md = buildMorningBriefing(makeData());
+    expect(md).not.toContain("🎯 Пропозиції");
+  });
+
+  it("renders 3 numbered proposals above stripe section when present", () => {
+    const md = buildMorningBriefing(
+      makeData({
+        proposals: {
+          proposals: [
+            "Закрити PR #101 (needs-review)",
+            "Перевірити Sentry error spike по chat-stream",
+            "Зустрітися з growth-консультантом по PostHog",
+          ],
+          reasoning: "PR-черга росте, Sentry показав error, growth блокує MRR.",
+        },
+      }),
+    );
+    expect(md).toContain("🎯 Пропозиції на сьогодні");
+    expect(md).toContain("1. Закрити PR #101 (needs-review)");
+    expect(md).toContain("2. Перевірити Sentry error spike по chat-stream");
+    expect(md).toContain("3. Зустрітися з growth-консультантом по PostHog");
+    expect(md).toContain(
+      "_PR-черга росте, Sentry показав error, growth блокує MRR._",
+    );
+    // Proposals must render before MRR section
+    const proposalsIdx = md.indexOf("🎯 Пропозиції");
+    const stripeIdx = md.indexOf("💵 MRR / Stripe");
+    expect(proposalsIdx).toBeGreaterThan(0);
+    expect(stripeIdx).toBeGreaterThan(proposalsIdx);
+  });
+
+  it("shows notConfigured hint when LLM unavailable", () => {
+    const md = buildMorningBriefing(
+      makeData({
+        proposals: {
+          notConfigured: true,
+          note: "LLM-провайдер у stub-режимі (incident-fallback або dev).",
+        },
+      }),
+    );
+    expect(md).toContain("🎯 Пропозиції на сьогодні");
+    expect(md).toContain(
+      "_LLM-провайдер не сконфігурований (`ANTHROPIC_API_KEY` / `LLM_PROVIDER`); next-action-и пропущено._",
+    );
+    expect(md).toContain("- LLM-провайдер у stub-режимі");
+  });
+
+  it("shows empty-proposals fallback with note when LLM returned [] but no error", () => {
+    const md = buildMorningBriefing(
+      makeData({
+        proposals: {
+          proposals: [],
+          note: "LLM повернув невалідний JSON; фокус — roadmap-задача дня.",
+        },
+      }),
+    );
+    expect(md).toContain(
+      "_LLM не повернув жодної пропозиції; фокус — roadmap-задача дня._",
+    );
+    expect(md).toContain("- LLM повернув невалідний JSON");
+  });
+
+  it("renders error-state note when LLM call failed (rate-limit)", () => {
+    const md = buildMorningBriefing(
+      makeData({
+        proposals: {
+          note: "LLM rate-limit; фокус — roadmap-задача дня.",
+        },
+      }),
+    );
+    expect(md).toContain("🎯 Пропозиції на сьогодні");
+    expect(md).toContain("- LLM rate-limit");
+    // Without notConfigured and without proposals, the section still
+    // renders an explanatory fallback line before the note.
+    expect(md).toContain(
+      "_LLM не повернув жодної пропозиції; фокус — roadmap-задача дня._",
+    );
+  });
+
+  it("renders proposals without trailing reasoning when reasoning is absent", () => {
+    const md = buildMorningBriefing(
+      makeData({
+        proposals: {
+          proposals: ["Перше", "Друге", "Третє"],
+        },
+      }),
+    );
+    expect(md).toContain("1. Перше");
+    expect(md).toContain("3. Третє");
+    expect(md).not.toContain("_undefined_");
+  });
+});

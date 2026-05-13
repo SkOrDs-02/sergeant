@@ -5,10 +5,10 @@
  * між `template.ts` (pure) та `builder.ts` (бо орxестратор тягне Stripe /
  * PostHog / n8n / Sentry / GitHub helper-и).
  *
- * AI-CONTEXT: shape стабільна — наступний PR (PR-27) додасть `summary?:
- * string` (LLM-генерований narrative); рендер шаблону додасть його як
- * окрему секцію зверху, а інші 5 sections залишаться, як зараз. Не
- * мінякимо назви полів без consumer-перевірки.
+ * O1 / Phase 2.A — додано опціональну секцію `proposals` (LLM-generated
+ * 3 next-actions). Зберігається обернено-сумісно: попередній споживач,
+ * який знає лише про 5 секцій, отримує той самий shape; нова секція
+ * рендериться зверху briefing-у тільки коли `proposals` присутня.
  */
 
 export interface StripeBriefingSection {
@@ -91,6 +91,31 @@ export interface AlertsBriefingSection {
 }
 
 /**
+ * O1 / Phase 2.A — LLM-генеровані стратегічні пропозиції (3 next-actions
+ * для founder-а). Рендериться як перша секція briefing-у над «холодними»
+ * метричними блоками. Без LLM-ключа / при провайдері-стабі / при
+ * upstream-помилці — fail-soft: секція показує hint, briefing
+ * продовжує постити решту даних.
+ */
+export interface ProposalsBriefingSection {
+  /** True коли LLM-провайдер `stub` / `ANTHROPIC_API_KEY` відсутній. */
+  notConfigured?: boolean;
+  /** Канонічний список з 3 коротких next-action-рядків. */
+  proposals?: string[];
+  /**
+   * Опціональний 1-2-реченнєвий контекст від LLM («чому саме ці
+   * 3 priority-фокуси»). Рендер ставить його під списком.
+   */
+  reasoning?: string;
+  /**
+   * Free-form пояснення помилки/деградації (rate-limit, parse-fail,
+   * provider-error). Не показуємо stack-trace; це короткий ux-string
+   * для founder-DM.
+   */
+  note?: string;
+}
+
+/**
  * Канонічний shape даних, які `buildMorningBriefing(data)` рендерить у
  * markdown. Кожна секція може бути:
  *   - `notConfigured` — env-vars відсутні, рендер показує hint;
@@ -107,6 +132,12 @@ export interface MorningBriefingData {
   prQueue: PrQueueBriefingSection;
   workflows: WorkflowsBriefingSection;
   alerts: AlertsBriefingSection;
+  /**
+   * O1 / Phase 2.A. Присутня лише коли builder викликав
+   * `assembleMorningBriefing({ includeProposals: true })` (default).
+   * Опціональність зберігає shape-сумісність зі споживачами PR-26.
+   */
+  proposals?: ProposalsBriefingSection;
 }
 
 /**
@@ -124,6 +155,13 @@ export interface AssembleMorningBriefingInput {
   sentryLimit?: number;
   /** Cap кількості PR у `topPrs`. Default 5. */
   prLimit?: number;
+  /**
+   * O1 / Phase 2.A. Дефолт `true` — після збору 5 секцій ми викликаємо
+   * LLM-провайдер і додаємо секцію `proposals` (3 next-action-и для
+   * founder-а). Caller (cron / manual probe) може вимкнути LLM-call
+   * щоб отримати чистий 5-секційний briefing без витрат токенів.
+   */
+  includeProposals?: boolean;
 }
 
 /**
