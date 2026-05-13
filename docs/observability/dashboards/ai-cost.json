@@ -36,10 +36,34 @@
       "keepTime": false,
       "tags": [],
       "targetBlank": true,
-      "title": "SLO.md",
-      "tooltip": "Service Level Objectives",
+      "title": "cost-monitoring (всі провайдери)",
+      "tooltip": "PR-33 — Anthropic + Voyage + Railway + Vercel + PostHog + Sentry",
       "type": "link",
-      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/observability/SLO.md"
+      "url": "/d/sergeant-cost-monitoring"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "metrics.md",
+      "tooltip": "Prometheus metrics reference",
+      "type": "link",
+      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/observability/metrics.md"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "env-vars.md (observability cost)",
+      "tooltip": "Env-vars: ANTHROPIC_MONTHLY_BUDGET_USD / VOYAGE_MONTHLY_BUDGET_USD / ANTHROPIC_BUDGET_*_USD",
+      "type": "link",
+      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/observability/env-vars.md"
     },
     {
       "asDropdown": false,
@@ -49,18 +73,19 @@
       "tags": [],
       "targetBlank": true,
       "title": "runbook.md",
-      "tooltip": "Incident Runbook",
+      "tooltip": "Incident runbook (cost alerts → response)",
       "type": "link",
       "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/observability/runbook.md"
     }
   ],
   "panels": [
     {
-      "title": "Token rate by model (prompt + completion)",
-      "type": "timeseries",
+      "title": "Anthropic — 30d cost",
+      "description": "Sum of ai_cost_estimate_usd_total{provider=\"anthropic\"} over last 30d (Sonnet + Haiku + Opus, всі endpoint-и).",
+      "type": "stat",
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 4,
+        "w": 6,
         "x": 0,
         "y": 0
       },
@@ -71,69 +96,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "stacking": {
-              "mode": "normal"
-            },
-            "lineWidth": 1
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["mean", "max"]
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum by (model, kind) (rate(ai_tokens_total{kind=~\"prompt|completion\"}[5m]))",
-          "legendFormat": "{{model}} — {{kind}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "Estimated daily spend (USD)",
-      "description": "Estimated daily cost. Adjust $usd_per_1m_tokens variable to match your Anthropic pricing tier.",
-      "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 2,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
           "unit": "currencyUSD",
+          "decimals": 2,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 20
-              }
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 200 }
             ]
           }
         },
@@ -144,27 +114,441 @@
           "calcs": ["lastNotNull"]
         },
         "textMode": "value_and_name",
-        "colorMode": "background"
+        "colorMode": "background",
+        "graphMode": "area"
       },
       "targets": [
         {
-          "expr": "sum(increase(ai_tokens_total{kind=~\"prompt|completion\"}[24h])) / 1e6 * $usd_per_1m_tokens",
-          "legendFormat": "daily spend estimate",
+          "expr": "sum(increase(ai_cost_estimate_usd_total{provider=\"anthropic\"}[30d]))",
+          "legendFormat": "Anthropic (30d)",
           "refId": "A"
         }
       ]
     },
     {
-      "title": "Cache-hit ratio (1h window)",
-      "description": "Anthropic prompt cache hit ratio. Target line at 0.5 per PR-12.A.",
+      "title": "Voyage — 30d cost",
+      "description": "Sum of ai_cost_estimate_usd_total{provider=\"voyage\"} over last 30d (всі embedding-моделі).",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_cost_estimate_usd_total{provider=\"voyage\"}[30d]))",
+          "legendFormat": "Voyage (30d)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Anthropic — projected EOM spend",
+      "description": "Linear projection: current 24h-burn rate extrapolated to 30 days. Якщо темпи зберігаються, скільки витратимо за повний місяць. Порівнюй з ANTHROPIC_MONTHLY_BUDGET_USD на нижньому bargauge.",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 150 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(ai_cost_estimate_usd_total{provider=\"anthropic\"}[24h])) * 86400 * 30",
+          "legendFormat": "Anthropic EOM projection",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Voyage — projected EOM spend",
+      "description": "Linear projection: current 24h-burn rate × 30 days. Порівнюй з VOYAGE_MONTHLY_BUDGET_USD на нижньому bargauge.",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 15 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(ai_cost_estimate_usd_total{provider=\"voyage\"}[24h])) * 86400 * 30",
+          "legendFormat": "Voyage EOM projection",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Hourly burn rate (USD/hour, stacked by provider)",
+      "description": "rate(ai_cost_estimate_usd_total[5m]) × 3600 — USD-витрати на годину, stack-нуто по провайдеру. Helps spot bursts in real time (e.g. одна сесія chat-у спалила 30¢ за хвилину).",
       "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "stacking": {
+              "mode": "normal"
+            },
+            "lineWidth": 1
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max", "sum"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(ai_cost_estimate_usd_total[5m])) * 3600",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Anthropic — daily burn by model (24h, USD)",
+      "description": "increase(ai_cost_estimate_usd_total{provider=\"anthropic\"}[24h]) — модель-breakdown за добу. Sonnet 4 vs Haiku — куди йдуть гроші.",
+      "type": "barchart",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 12
       },
-      "id": 3,
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "groupWidth": 0.7,
+        "barWidth": 0.85,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(sum by (model) (increase(ai_cost_estimate_usd_total{provider=\"anthropic\"}[24h])))",
+          "legendFormat": "{{model}}",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Voyage — daily burn by model (24h, USD)",
+      "description": "increase(ai_cost_estimate_usd_total{provider=\"voyage\"}[24h]) — embedding-моделі. Зазвичай майже все на voyage-3-large (default за PR-33).",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "groupWidth": 0.7,
+        "barWidth": 0.85,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sort_desc(sum by (model) (increase(ai_cost_estimate_usd_total{provider=\"voyage\"}[24h])))",
+          "legendFormat": "{{model}}",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Top-10 endpoints by cost (30d, USD)",
+      "description": "topk(10, sum by (endpoint, provider) (increase(ai_cost_estimate_usd_total[30d]))) — котрі endpoint-и (`chat`, `coach`, `embed`, `weekly-digest`, `analyze-photo`, ...) спалюють бюджет. Sort desc — найдорожчий зверху.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 20
+      },
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              { "id": "unit", "value": "currencyUSD" },
+              { "id": "decimals", "value": 4 },
+              { "id": "custom.displayMode", "value": "gradient-gauge" },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "gauge", "mode": "gradient" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Value", "desc": true }]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "USD (30d)",
+              "endpoint": "Endpoint",
+              "provider": "Provider"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "topk(10, sum by (endpoint, provider) (increase(ai_cost_estimate_usd_total[30d])))",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Run-rate vs budget envelopes",
+      "description": "Bargauge: фактичний run-rate за 30d (`increase(ai_cost_estimate_usd_total[30d])`) versus `*_MONTHLY_BUDGET_USD` envelope (з `infra_monthly_cost_usd{provider=\"anthropic|voyage\"}`). Yellow ≥ 50%, red ≥ 90% — алертова зона.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 20
+      },
+      "id": 9,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (increase(ai_cost_estimate_usd_total{provider=~\"anthropic|voyage\"}[30d]))",
+          "legendFormat": "{{provider}} run-rate (30d)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (provider) (infra_monthly_cost_usd{provider=~\"anthropic|voyage\"})",
+          "legendFormat": "{{provider}} budget",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Anthropic — prompt cache hit ratio (1h)",
+      "description": "Cache-hit-и зменшують вартість input-токенів ~10×. Target ≥ 0.5 (PR-12.A). Нижче — Sonnet/Opus burn росте.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 10,
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -189,22 +573,13 @@
             "properties": [
               {
                 "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
+                "value": { "fixedColor": "green", "mode": "fixed" }
               },
               {
                 "id": "custom.lineStyle",
-                "value": {
-                  "fill": "dash",
-                  "dash": [10, 10]
-                }
+                "value": { "fill": "dash", "dash": [10, 10] }
               },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
+              { "id": "custom.fillOpacity", "value": 0 }
             ]
           }
         ]
@@ -232,16 +607,16 @@
       ]
     },
     {
-      "title": "AI quota blocks",
-      "description": "Requests refused by AI quota. Any value > 0 means users are being rate-limited.",
+      "title": "AI quota fail-open (CRITICAL — billing risk)",
+      "description": "Quota store unavailable, requests passing through without limit check. Any value > 0 is a billing risk — investigate immediately. Mirrored from cost-monitoring dashboard для cost-context awareness.",
       "type": "stat",
       "gridPos": {
-        "h": 8,
-        "w": 6,
+        "h": 6,
+        "w": 12,
         "x": 12,
-        "y": 8
+        "y": 28
       },
-      "id": 4,
+      "id": 11,
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -252,64 +627,8 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        },
-        "textMode": "value_and_name",
-        "colorMode": "background",
-        "graphMode": "area"
-      },
-      "targets": [
-        {
-          "expr": "sum(increase(ai_quota_blocks_total[1h]))",
-          "legendFormat": "quota blocks (1h)",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "AI quota fail-open (CRITICAL)",
-      "description": "Quota store unavailable, requests passing through without limit check. Any value > 0 is a billing risk.",
-      "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 8
-      },
-      "id": 5,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
             ]
           }
         },
@@ -330,117 +649,11 @@
           "refId": "A"
         }
       ]
-    },
-    {
-      "title": "AI request outcomes",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "id": 6,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "stacking": {
-              "mode": "normal"
-            },
-            "lineWidth": 1
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["sum"]
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum by (endpoint, outcome) (rate(ai_requests_total[5m]))",
-          "legendFormat": "{{endpoint}} — {{outcome}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "AI p95 latency by endpoint",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "id": 7,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1
-          },
-          "unit": "ms",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 10000
-              },
-              {
-                "color": "red",
-                "value": 30000
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["mean", "max"]
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(ai_request_duration_ms_bucket[5m])))",
-          "legendFormat": "{{endpoint}}",
-          "refId": "A"
-        }
-      ]
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["sergeant", "ai"],
+  "tags": ["sergeant", "ai", "cost"],
   "templating": {
     "list": [
       {
@@ -453,35 +666,16 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "3.00",
-          "value": "3.00"
-        },
-        "hide": 0,
-        "name": "usd_per_1m_tokens",
-        "options": [
-          {
-            "selected": true,
-            "text": "3.00",
-            "value": "3.00"
-          }
-        ],
-        "query": "3.00",
-        "type": "textbox",
-        "label": "USD per 1M tokens"
       }
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "Europe/Kyiv",
-  "title": "Sergeant — AI Cost",
+  "title": "Sergeant — AI Cost (Anthropic + Voyage)",
   "uid": "sergeant-ai-cost",
-  "version": 1
+  "version": 2
 }

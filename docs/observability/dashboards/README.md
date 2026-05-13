@@ -1,18 +1,19 @@
 # Дашборди Grafana
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 JSON-файли дашбордів Grafana для observability сервера Sergeant — готові до імпорту.
 
 ## Дашборди
 
-| Файл                   | Опис                                                                                                                                                 |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `http-red.json`        | HTTP RED-метрики — rate, errors, duration (p50/p95/p99). Фільтрує за `module` і `path`.                                                              |
-| `db-use.json`          | Postgres pool USE — utilization, saturation (waiting clients), помилки за кодом, повільні запити, тривалості.                                        |
-| `slo-burn-rate.json`   | Multi-window multi-burn-rate SLO-огляд — HTTP, Sync, Auth, AI, External HTTP, health процесу.                                                        |
-| `cost-monitoring.json` | PR-33 — agregовані витрати з 6 провайдерів (Anthropic + Voyage + Railway + Vercel + PostHog + Sentry): пай-чарти, daily AI burn, run-rate vs budget. |
+| Файл                   | Опис                                                                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http-red.json`        | HTTP RED-метрики — rate, errors, duration (p50/p95/p99). Фільтрує за `module` і `path`.                                                                        |
+| `db-use.json`          | Postgres pool USE — utilization, saturation (waiting clients), помилки за кодом, повільні запити, тривалості.                                                  |
+| `slo-burn-rate.json`   | Multi-window multi-burn-rate SLO-огляд — HTTP, Sync, Auth, AI, External HTTP, health процесу.                                                                  |
+| `cost-monitoring.json` | PR-33 — agregовані витрати з 6 провайдерів (Anthropic + Voyage + Railway + Vercel + PostHog + Sentry): пай-чарти, daily AI burn, run-rate vs budget.           |
+| `ai-cost.json`         | PR-13 — focused AI-cost (Anthropic + Voyage): 30d cost, hourly burn, per-model daily bar, top-10 endpoints, projected EOM, run-rate vs `*_MONTHLY_BUDGET_USD`. |
 
 ## Як імпортувати
 

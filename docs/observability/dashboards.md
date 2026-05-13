@@ -97,15 +97,15 @@
 
 Готові до імпорту JSON-dashboard-и лежать у [`dashboards/`](./dashboards/). Деталі про datasource-variable-и й очікувані label-и див. у [`dashboards/README.md`](./dashboards/README.md).
 
-| Файл                                                    | Скоуп                                                                                               |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| [`http-red.json`](./dashboards/http-red.json)           | HTTP RED (rate, errors, duration p50/p95/p99) з фільтром по module/path                             |
-| [`db-use.json`](./dashboards/db-use.json)               | Postgres pool USE, тривалість запитів, slow-запити, DB-помилки                                      |
-| [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json) | Multi-window multi-burn-rate SLO-огляд (усі домени)                                                 |
-| [`sync.json`](./dashboards/sync.json)                   | Результати sync по op/module/outcome, p95 тривалості, p95 payload, conflict ratio, SLO burn-rate    |
-| [`auth.json`](./dashboards/auth.json)                   | Результати auth, p95 session-lookup, rate-limit-hit-и, sign-in success-rate                         |
-| [`ai-cost.json`](./dashboards/ai-cost.json)             | AI token-rate по моделі, daily spend, cache-hit ratio, quota blocks/fail-open, результати й latency |
-| [`hubchat.json`](./dashboards/hubchat.json)             | HubChat tool-invocation leaderboard, executed/proposed-співвідношення, unknown_tool, truncation-и   |
-| [`frontend-cwv.json`](./dashboards/frontend-cwv.json)   | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor-ratio + p75 (baseline-режим)     |
+| Файл                                                    | Скоуп                                                                                                                                                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`http-red.json`](./dashboards/http-red.json)           | HTTP RED (rate, errors, duration p50/p95/p99) з фільтром по module/path                                                                                                                                            |
+| [`db-use.json`](./dashboards/db-use.json)               | Postgres pool USE, тривалість запитів, slow-запити, DB-помилки                                                                                                                                                     |
+| [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json) | Multi-window multi-burn-rate SLO-огляд (усі домени)                                                                                                                                                                |
+| [`sync.json`](./dashboards/sync.json)                   | Результати sync по op/module/outcome, p95 тривалості, p95 payload, conflict ratio, SLO burn-rate                                                                                                                   |
+| [`auth.json`](./dashboards/auth.json)                   | Результати auth, p95 session-lookup, rate-limit-hit-и, sign-in success-rate                                                                                                                                        |
+| [`ai-cost.json`](./dashboards/ai-cost.json)             | PR-13 — focused AI-cost (Anthropic + Voyage): 30d-стати, hourly burn, per-model daily breakdown, top-10 endpoints, run-rate vs `*_MONTHLY_BUDGET_USD`, projected EOM spend, cache-hit ratio, quota fail-open guard |
+| [`hubchat.json`](./dashboards/hubchat.json)             | HubChat tool-invocation leaderboard, executed/proposed-співвідношення, unknown_tool, truncation-и                                                                                                                  |
+| [`frontend-cwv.json`](./dashboards/frontend-cwv.json)   | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor-ratio + p75 (baseline-режим)                                                                                                                    |
 
 Імпорт через Grafana UI: **Dashboards → Import → Upload JSON**.
