@@ -27,6 +27,7 @@
 | Scheme                             | Куди веде                                           |
 | ---------------------------------- | --------------------------------------------------- |
 | `sergeant://`                      | Головний хаб (equivalent to tab root)               |
+| `sergeant://hub-chat`              | AI-асистент чат (HubChat, modal route `/hub-chat`)  |
 | `sergeant://workout/{id}`          | Екран конкретного тренування (fizruk)               |
 | `sergeant://workout/new`           | Створення тренування                                |
 | `sergeant://food/log`              | Щоденник їжі (nutrition, поточний день)             |

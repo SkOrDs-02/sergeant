@@ -27,6 +27,24 @@ describe("parseSergeantUrl", () => {
     });
   });
 
+  describe("hub-chat", () => {
+    it("parses /hub-chat", () => {
+      expect(parseSergeantUrl("sergeant://hub-chat")).toEqual({
+        type: "hub-chat",
+      });
+    });
+
+    it("normalises trailing slash on /hub-chat", () => {
+      expect(parseSergeantUrl("sergeant://hub-chat/")).toEqual({
+        type: "hub-chat",
+      });
+    });
+
+    it("rejects unexpected sub-segments under hub-chat", () => {
+      expect(parseSergeantUrl("sergeant://hub-chat/foo")).toBeNull();
+    });
+  });
+
   describe("workout", () => {
     it("parses workout/new (specific before dynamic)", () => {
       expect(parseSergeantUrl("sergeant://workout/new")).toEqual({
@@ -236,6 +254,7 @@ describe("buildSergeantUrl", () => {
   it("round-trips every non-auth link", () => {
     const cases: SergeantDeepLink[] = [
       { type: "hub" },
+      { type: "hub-chat" },
       { type: "workout-new" },
       { type: "workout", id: "123" },
       { type: "food-log" },
@@ -284,6 +303,7 @@ describe("hrefForDeepLink", () => {
     expect(hrefForDeepLink({ type: "routine" })).toBe("/(tabs)/routine");
     expect(hrefForDeepLink({ type: "food-log" })).toBe("/(tabs)/nutrition");
     expect(hrefForDeepLink({ type: "settings" })).toBe("/settings");
+    expect(hrefForDeepLink({ type: "hub-chat" })).toBe("/hub-chat");
     expect(hrefForDeepLink({ type: "workout-new" })).toBe(
       "/(tabs)/fizruk/workout/new",
     );

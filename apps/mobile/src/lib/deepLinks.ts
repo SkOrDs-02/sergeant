@@ -42,6 +42,7 @@ export const UNIVERSAL_LINK_HOSTS: readonly string[] = Object.freeze([
  */
 export type SergeantDeepLink =
   | { type: "hub" }
+  | { type: "hub-chat" }
   | { type: "workout-new" }
   | { type: "workout"; id: string }
   | { type: "food-log" }
@@ -103,6 +104,12 @@ export function parseSergeantUrl(
   const [a, b, c, ...rest4] = tokens;
 
   switch (a) {
+    case "hub-chat": {
+      if (b === undefined && c === undefined && rest4.length === 0) {
+        return { type: "hub-chat" };
+      }
+      return null;
+    }
     case "workout": {
       if (rest4.length > 0) return null;
       if (b === "new" && c === undefined) return { type: "workout-new" };
@@ -160,6 +167,8 @@ export function buildSergeantUrl(link: SergeantDeepLink): string {
   switch (link.type) {
     case "hub":
       return "sergeant://";
+    case "hub-chat":
+      return "sergeant://hub-chat";
     case "workout-new":
       return "sergeant://workout/new";
     case "workout":
@@ -209,6 +218,8 @@ export function hrefForDeepLink(link: SergeantDeepLink): Href | null {
   switch (link.type) {
     case "hub":
       return "/(tabs)";
+    case "hub-chat":
+      return "/hub-chat";
     case "workout-new":
       return "/(tabs)/fizruk/workout/new";
     case "workout":
