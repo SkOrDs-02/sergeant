@@ -17,6 +17,12 @@
 // `package.json -> pnpm.overrides` it runs `pnpm why <name> -r --json`
 // and asserts that exactly one major is resolved across the workspace.
 //
+// Override key syntax: plain `pkg` or pnpm's selector form
+// `pkg@<source-range>` (e.g. `protobufjs@>=8.0.0 <8.0.2`) which scopes
+// the override to a specific sub-range of the dependency graph. For
+// selector overrides the single-major check doesn't apply — instead we
+// verify the override eliminated the targeted sub-range from the tree.
+//
 // Run from CI (`pnpm lint:pnpm-overrides`) and locally before opening a
 // PR that changes `pnpm.overrides` or bumps a package whose major is
 // pinned here.
@@ -24,6 +30,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { execFileSync } from "node:child_process";
+import semver from "semver";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pkgPath = join(repoRoot, "package.json");
@@ -58,9 +65,22 @@ function majorOf(v) {
   return m ? m[1] : v;
 }
 
+/**
+ * Parse override key into `{ name, sourceRange }`. Override keys may be
+ * plain (`pkg`, `@scope/pkg`) or pnpm's selector form (`pkg@<range>`,
+ * `@scope/pkg@<range>`) — see https://pnpm.io/package_json#pnpmoverrides.
+ */
+function parseOverrideKey(key) {
+  const scoped = key.startsWith("@");
+  const atIdx = scoped ? key.indexOf("@", 1) : key.indexOf("@");
+  if (atIdx === -1) return { name: key, sourceRange: null };
+  return { name: key.slice(0, atIdx), sourceRange: key.slice(atIdx + 1) };
+}
+
 const failures = [];
-for (const name of overrideNames) {
-  const range = overrides[name];
+for (const key of overrideNames) {
+  const range = overrides[key];
+  const { name, sourceRange } = parseOverrideKey(key);
   let raw;
   try {
     raw = execFileSync("pnpm", ["why", name, "-r", "--json"], {
@@ -76,7 +96,7 @@ for (const name of overrideNames) {
     const stderr = /** @type {{stderr?: Buffer | string}} */ (err).stderr;
     const stderrStr = stderr ? String(stderr) : "";
     failures.push(
-      `${name}: override "${range}" but no package depends on ${name} — drop the override.\n  pnpm output: ${stderrStr.trim().slice(0, 200)}`,
+      `${key}: override "${range}" but no package depends on ${name} — drop the override.\n  pnpm output: ${stderrStr.trim().slice(0, 200)}`,
     );
     continue;
   }
@@ -84,7 +104,7 @@ for (const name of overrideNames) {
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    failures.push(`${name}: failed to parse pnpm-why output: ${String(err)}`);
+    failures.push(`${key}: failed to parse pnpm-why output: ${String(err)}`);
     continue;
   }
   const versions = new Set();
@@ -102,20 +122,41 @@ for (const name of overrideNames) {
   }
   if (versions.size === 0) {
     failures.push(
-      `${name}: override "${range}" resolved to NO version — the pin is unsatisfiable.`,
+      `${key}: override "${range}" resolved to NO version — the pin is unsatisfiable.`,
+    );
+    continue;
+  }
+  if (sourceRange) {
+    // Selector form: the override only targets versions matching
+    // `sourceRange`. Success means the override eliminated them.
+    const stillMatching = Array.from(versions).filter((v) => {
+      try {
+        return semver.satisfies(v, sourceRange, { includePrerelease: true });
+      } catch {
+        return false;
+      }
+    });
+    if (stillMatching.length > 0) {
+      failures.push(
+        `${key}: selector override "${range}" did NOT eliminate targeted versions; still in tree: ${stillMatching.sort().join(", ")}.`,
+      );
+      continue;
+    }
+    console.log(
+      `[check-pnpm-overrides] ${key}: selector override "${range}" eliminated targeted sub-range; remaining: ${Array.from(versions).sort().join(", ")}. OK.`,
     );
     continue;
   }
   const majors = new Set(Array.from(versions, majorOf));
   if (majors.size > 1) {
     failures.push(
-      `${name}: override "${range}" still allows multiple majors in the tree: ${Array.from(versions).sort().join(", ")}.`,
+      `${key}: override "${range}" still allows multiple majors in the tree: ${Array.from(versions).sort().join(", ")}.`,
     );
     continue;
   }
   const onlyVersion = Array.from(versions)[0];
   console.log(
-    `[check-pnpm-overrides] ${name}: override "${range}" → 1 major (${onlyVersion}). OK.`,
+    `[check-pnpm-overrides] ${key}: override "${range}" → 1 major (${onlyVersion}). OK.`,
   );
 }
 
@@ -129,5 +170,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `\n[check-pnpm-overrides] OK — ${overrideNames.length} override(s) resolve to a single major each.`,
+  `\n[check-pnpm-overrides] OK — all ${overrideNames.length} override(s) validated.`,
 );
