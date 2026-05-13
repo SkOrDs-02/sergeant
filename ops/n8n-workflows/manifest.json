@@ -178,7 +178,7 @@
     },
     "16-posthog-daily-metrics.json": {
       "owner": "growth",
-      "status": "experimental",
+      "status": "prod-ready",
       "riskTier": "P2",
       "telegramTopic": "growth",
       "audienceTier": "P2",
@@ -190,7 +190,7 @@
         "TELEGRAM_TOPIC_GROWTH"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily 09:00 Kyiv → PostHog HogQL (count pageviews + uniq distinct_id) for yesterday → Telegram. POSTHOG_HOST defaults to https://eu.i.posthog.com when unset; POSTHOG_API_KEY must be a Personal API key (phx_…) with project read access. Until env vars are set on n8n Railway the workflow sends a graceful Telegram alert pointing at the missing config."
+      "notes": "Daily 09:00 Kyiv → PostHog HogQL (count pageviews + uniq distinct_id) for yesterday → Telegram #growth. POSTHOG_HOST defaults to https://eu.i.posthog.com when unset; POSTHOG_API_KEY must be a Personal API key (phx_…) with project read access. Activated by PR-11 (`docs/planning/pr-plan-2026-05.md`); env vars must be set on n8n Railway (Settings → Environment Variables) before flipping the workflow active in the n8n UI. If env is missing the workflow still sends a graceful Telegram alert pointing at the missing config instead of crashing."
     },
     "17-github-pr-stale-alert.json": {
       "owner": "devex",
