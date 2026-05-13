@@ -303,6 +303,82 @@ Status-code mapping:
 2. **Alert "mono enrichment lag":** перевір `monoEnrichment.queueDepth.pending` + `processing`. Якщо pending росте, але processing=0 — worker не стартував у одній з replic-ів. Перевір `MONO_ENRICHMENT_WORKER_ENABLED` env у Railway.
 3. **Reproduce CI flakiness:** `aiMemoryIngest.fallbackMode=true` означає Redis недоступний — у CI це норма, у production sign of disaster.
 
+## AI memory activation & Day-30 decision-point
+
+> **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/launch/tech/ai-memory-activation.md`](../launch/tech/ai-memory-activation.md), [`docs/governance/feature-flags.md`](../governance/feature-flags.md), [ADR-0028](../adr/0028-pgvector-ai-memory.md).
+
+### Контекст
+
+AI memory (pgvector + Voyage embeddings) — Phase 2 feature з kill-switch-ом за бюджетом. PR-plan-2026-05 §Decision points фіксує: якщо за **30 днів** після активації `ai_memories` накопичила < 100 rows за останні 7 днів — модуль не виправдовує operational cost (Voyage квота + pgvector storage + maintenance) і **kill-имо**.
+
+### Стейн прапорців (production)
+
+| Flag                            | Default (code) | Activation                      | Назначення                                                                              |
+| ------------------------------- | -------------- | ------------------------------- | --------------------------------------------------------------------------------------- |
+| `AI_MEMORY_ENABLED`             | `false`        | Railway env → `true`            | Master kill-switch для всього модуля (remember/recall/RAG/ingestion).                   |
+| `MONO_AI_MEMORY_INGEST_ENABLED` | `true`         | Без дії — стартує з master-flag | Per-source гейт для `finyk` source. Виставити `false` тільки як selective kill (PR-19). |
+
+Subordinate-логіка: `MONO_AI_MEMORY_INGEST_ENABLED` має значення лише при `AI_MEMORY_ENABLED=true`. Master `false` → всі source-и no-op (`mode="disabled"` метрика), per-source-flag ігнорується.
+
+### Activation procedure
+
+Канонічний runbook — [`docs/launch/tech/ai-memory-activation.md`](../launch/tech/ai-memory-activation.md). TL;DR:
+
+1. **Pre-flight (Railway):** `VOYAGE_API_KEY` provisioned, БД-міграція 025 застосована, `pgvector` extension доступний.
+2. **Step 2** — `AI_MEMORY_ENABLED=true` у Railway → автоматичний redeploy.
+3. **Step 3** — finyk-ingest вмикається автоматично (sub-flag default `true`). Перші writes у `ai_memories` мають зʼявитись протягом ~5–30s після першого mono-webhook.
+4. **Step 4** — end-to-end smoke test через HubChat (див. activation runbook).
+
+### Що моніторити (T+0 ... T+30 днів)
+
+| Сигнал                                                                           | Норма                | Action при відхиленні                                                                                                              |
+| -------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_memory_ingest_enqueued_total{mode="queued"}` rate                            | > 0 при mono-traffic | Якщо =0 при non-zero mono-traffic → master або per-source flag вимкнений; перевір Railway env.                                     |
+| `ai_memory_ingest_enqueued_total{mode="source_disabled"}` rate                   | 0                    | > 0 означає `MONO_AI_MEMORY_INGEST_ENABLED=false` у Railway env; підтвердь, що це навмисний kill, інакше реверт.                   |
+| `ai_memory_ingest_processed_total{outcome="ok"}` rate                            | ≈ enqueue rate       | `outcome="retry"`/`permanent_fail` spike → Voyage/pgvector incident, дивись [`docs/launch/tech/ai-memory-activation.md` § Outage]. |
+| `ai_memory_ingest_queue_depth`                                                   | < 100 jobs steady    | Росте → Voyage rate-limit; знизити `AI_MEMORY_INGEST_CONCURRENCY` 4 → 2.                                                           |
+| `SELECT count(*) FROM ai_memories WHERE inserted_at > now() - interval '7 days'` | ≥ 100 на T+30        | **< 100 на Day 30 → kill module** (див. нижче).                                                                                    |
+
+### Day-30 decision-point query
+
+Запускай раз на тиждень починаючи з Day 14 (forecast trend) і офіційно на Day 30:
+
+```sql
+-- Total rows за останні 7 днів — за source breakdown
+SELECT
+  source,
+  count(*) AS rows_7d
+FROM ai_memories
+WHERE inserted_at >= now() - interval '7 days'
+GROUP BY source
+ORDER BY rows_7d DESC;
+
+-- Глобальне число для decision-rule
+SELECT count(*) AS rows_7d_total
+FROM ai_memories
+WHERE inserted_at >= now() - interval '7 days';
+```
+
+**Decision rule (PR-plan §Decision points):**
+
+- `rows_7d_total >= 100` → **continue** — модуль виправдовує бюджет, переходимо у Phase 3 (recall optimisation, eval suite).
+- `rows_7d_total < 100` → **kill** — виконати kill-procedure нижче.
+
+### Kill procedure
+
+Якщо Day-30 рішення — kill:
+
+1. **Швидкий kill (≤30s):** `AI_MEMORY_ENABLED=false` у Railway → redeploy. `recall_memory` tool, RAG-injection і ingest все no-op-ять; existing data у `ai_memories` залишається.
+2. **Видалення коду:** окремий PR `revert(server): rollback AI memory module (PR-19 Day-30 decision)`. Drop migrations НЕ робити одразу — лишити schema на місці ≥30 днів на випадок реверсу рішення.
+3. **Документація:** позначити `AI_MEMORY_ENABLED` і `MONO_AI_MEMORY_INGEST_ENABLED` як `Killed YYYY-MM-DD` у [`docs/governance/feature-flags.md`](../governance/feature-flags.md); архівувати activation runbook у `docs/launch/tech/archive/`.
+4. **Постмортем:** короткий `docs/learnings/ai-memory-kill-postmortem.md` із сигналами (`rows_7d` timeline, Voyage USD spend, top reasons for low adoption).
+
+### Edge cases
+
+- **Master `false`, sub-flag `true`:** найчастіший стан до активації; ingest no-op-ить, метрика `mode="disabled"`. **Не паніч** — це expected.
+- **Master `true`, sub-flag `false`:** intentional selective kill. Метрика `mode="source_disabled"` росте, `mode="queued"`=0. Підтверди у Railway, що sub-flag навмисно вимкнено.
+- **Spike у `mode="enqueue_error"`:** Redis incident або invalid source enum. Подивись pino-лог `ai_memory_ingest_enqueue_failed` / `ai_memory_ingest_invalid_source`.
+
 ## Як обробити Renovate PR із breaking change
 
 Per [ADR-0044](../adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:

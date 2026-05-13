@@ -316,3 +316,114 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
     expect(remember).toHaveBeenCalledTimes(1);
   });
 });
+
+// PR-19 — per-source kill-switch `MONO_AI_MEMORY_INGEST_ENABLED`.
+// Default `true` (finyk-ingest активний при master-flag=true), але `false`
+// має селективно глушити саме `finyk`-source без впливу на digest/chat.
+describe("enqueueMemoryIngest — MONO_AI_MEMORY_INGEST_ENABLED (PR-19)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __resetMemoryIngestQueueForTesting();
+    process.env["AI_MEMORY_ENABLED"] = "true";
+  });
+
+  afterEach(() => {
+    __resetMemoryIngestQueueForTesting();
+    delete process.env["AI_MEMORY_ENABLED"];
+    delete process.env["MONO_AI_MEMORY_INGEST_ENABLED"];
+  });
+
+  it("happy: MONO_AI_MEMORY_INGEST_ENABLED=true + finyk → remember викликається", async () => {
+    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
+    vi.resetModules();
+    const remember = vi.fn().mockResolvedValue(undefined);
+    const mod = await import("./ingestQueue.js");
+    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await mod.enqueueMemoryIngest(samplePayload);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(remember).toHaveBeenCalledTimes(1);
+    const { aiMemoryIngestEnqueuedTotal: inc } =
+      await import("../../obs/metrics.js");
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).toHaveBeenCalledWith({ mode: "fallback", source: "finyk" });
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "source_disabled" }),
+    );
+  });
+
+  it("skip: MONO_AI_MEMORY_INGEST_ENABLED=false + finyk → remember НЕ викликається, source_disabled-метрика", async () => {
+    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "false";
+    vi.resetModules();
+    const remember = vi.fn().mockResolvedValue(undefined);
+    const mod = await import("./ingestQueue.js");
+    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await mod.enqueueMemoryIngest(samplePayload);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(remember).not.toHaveBeenCalled();
+    const { aiMemoryIngestEnqueuedTotal: inc } =
+      await import("../../obs/metrics.js");
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).toHaveBeenCalledWith({ mode: "source_disabled", source: "finyk" });
+  });
+
+  it("non-finyk source (digest) НЕ gate-ний MONO_AI_MEMORY_INGEST_ENABLED=false", async () => {
+    // Sub-flag — finyk-only. digest/chat/тощо контролюються лише master.
+    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "false";
+    vi.resetModules();
+    const remember = vi.fn().mockResolvedValue(undefined);
+    const mod = await import("./ingestQueue.js");
+    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await mod.enqueueMemoryIngest({
+      ...samplePayload,
+      source: "digest",
+      sourceRef: "u1:2026-W03",
+    });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(remember).toHaveBeenCalledTimes(1);
+    const { aiMemoryIngestEnqueuedTotal: inc } =
+      await import("../../obs/metrics.js");
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).toHaveBeenCalledWith({ mode: "fallback", source: "digest" });
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "source_disabled" }),
+    );
+  });
+
+  it("master AI_MEMORY_ENABLED=false виграє у MONO_AI_MEMORY_INGEST_ENABLED=true (disabled-mode trumps)", async () => {
+    process.env["AI_MEMORY_ENABLED"] = "false";
+    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
+    vi.resetModules();
+    const remember = vi.fn().mockResolvedValue(undefined);
+    const mod = await import("./ingestQueue.js");
+    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await mod.enqueueMemoryIngest(samplePayload);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(remember).not.toHaveBeenCalled();
+    const { aiMemoryIngestEnqueuedTotal: inc } =
+      await import("../../obs/metrics.js");
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).toHaveBeenCalledWith({ mode: "disabled", source: "finyk" });
+    // `source_disabled` має НЕ виставитись — master-gate спрацював раніше.
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "source_disabled" }),
+    );
+  });
+});

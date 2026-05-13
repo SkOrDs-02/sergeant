@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Як перевести pgvector AI memory підсистему з dormant у production-active після
@@ -76,21 +76,27 @@ ADR — [`docs/adr/0028-pgvector-ai-memory.md`](../../adr/0028-pgvector-ai-memor
 Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не починає писати у
 `ai_memories`. Producer-и керуються окремими прапорцями:
 
-| Producer                                                             | Flag                             | Default | Що робити                                                  |
-| -------------------------------------------------------------------- | -------------------------------- | ------- | ---------------------------------------------------------- |
-| `mono/webhook`                                                       | `MONO_AI_MEMORY_INGEST_ENABLED`  | `false` | Виставити `true` коли готові індексувати транзакції        |
-| `weekly-digest`                                                      | _no flag_ — auto-on після master | —       | Перший digest-cron запише через ~24h                       |
-| `POST /api/ai-memory/ingest` (chat/fizruk/nutrition/routine/journal) | _no flag_ — клієнт-driven        | —       | Web-/mobile-клієнти будуть викликати, як зараз заплановано |
+| Producer                                                             | Flag                             | Default | Що робити                                                                                                                  |
+| -------------------------------------------------------------------- | -------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `mono/webhook`                                                       | `MONO_AI_MEMORY_INGEST_ENABLED`  | `true`  | Залишити default — після `AI_MEMORY_ENABLED=true` finyk-ingest стартує автоматично. Виставити `false` лише як kill-switch. |
+| `weekly-digest`                                                      | _no flag_ — auto-on після master | —       | Перший digest-cron запише через ~24h                                                                                       |
+| `POST /api/ai-memory/ingest` (chat/fizruk/nutrition/routine/journal) | _no flag_ — клієнт-driven        | —       | Web-/mobile-клієнти будуть викликати, як зараз заплановано                                                                 |
 
 **Рекомендований порядок (дні 1–7 після Step 2):**
 
 - **День 1.** Тільки master-flag. `recall()` працює (через `recall_memory`
   HubChat tool + RAG-injection), але `ai_memories` порожня → жодних
   results. Це **safe rollout** — перевіряємо латенцію Voyage embed без
-  write-навантаження на БД.
-- **День 2–3.** Увімкнути `MONO_AI_MEMORY_INGEST_ENABLED=true`. Спостерігати
+  write-навантаження на БД. `MONO_AI_MEMORY_INGEST_ENABLED` залишається на
+  default `true`, але без master-flag-у запит у Mono-webhook все одно
+  no-op-ить (`mode=disabled` метрика, не `source_disabled`).
+- **День 2–3.** finyk-ingest вмикається автоматично після master-flag-у
+  (PR-19, sub-flag default `true`). Спостерігати
   `ai_memory_ingest_processed_total{source="finyk", outcome=...}` — має
-  ростити `ok` метрику на кожній mono-webhook-транзакції.
+  ростити `ok` метрику на кожній mono-webhook-транзакції. Selective kill —
+  виставити `MONO_AI_MEMORY_INGEST_ENABLED=false`, тоді
+  `ai_memory_ingest_enqueued_total{mode="source_disabled", source="finyk"}`
+  розкручується замість enqueue.
 - **День 4–7.** Спостерігати `ai_memory_ingest_queue_depth` — має триматися
   низькою (< 100 jobs). Якщо росте → Voyage rate-limit-ить (`429`) →
   знизити `AI_MEMORY_INGEST_CONCURRENCY` з 4 до 2.
@@ -126,7 +132,7 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
    no-op-лять негайно. Existing data у `ai_memories` лишається — нема
    destructive truncate.
 2. **Selective ingestion kill:** залишити master-flag, виставити
-   `MONO_AI_MEMORY_INGEST_ENABLED=false` — finyk-source перестає писати,
+   `MONO_AI_MEMORY_INGEST_ENABLED=false` (default `true` — PR-19) — finyk-source перестає писати,
    решта продовжує. Корисно якщо Mono-webhook генерує 429 на Voyage.
 3. **Voyage outage:** circuit-breaker сам розмикається після 3 послідовних
    5xx. Метрика `voyage_external_http_breaker_state` = `open` → ingestion

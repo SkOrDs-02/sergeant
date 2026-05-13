@@ -612,6 +612,25 @@ const envSchema = z.object({
   AI_MEMORY_INGEST_MAX_CONTENT_LEN: intFromEnv(4_000),
   /** Per-job BullMQ-attempt count для AI memory ingestion. */
   AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
+  /**
+   * Per-source kill-switch для AI memory ingestion з Mono webhook
+   * (`source=finyk`). Default `true` — при активації master-flag
+   * `AI_MEMORY_ENABLED=true` finyk-ingest починає працювати без
+   * додаткового toggle-а. Виставити `false` щоб селективно вимкнути
+   * Mono-ingestion (Voyage rate-limit / Mono back-fill) без зачіпання
+   * digest/chat producer-ів.
+   *
+   * Subordinate до `AI_MEMORY_ENABLED` — якщо master `false`, цей flag
+   * ігнорується. Інші source-и (`digest`, `chat`, `fizruk`, `nutrition`,
+   * `routine`, `journal`) не gate-нуті цим flag-ом — вони контролюються
+   * виключно master-вимикачем.
+   *
+   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
+   * Decision-point Day 30: якщо `ai_memories < 100 rows` за 7 днів після
+   * активації — kill module (див. `docs/observability/runbook.md`
+   * § "AI memory activation & Day-30 decision-point").
+   */
+  MONO_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
 
   // ── OpenClaw v0 — Telegram-only co-founder bot (ADR-0031) ──────────
   /** Better Auth user.id founder-а. */

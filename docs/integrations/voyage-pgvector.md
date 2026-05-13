@@ -1,6 +1,6 @@
 # Voyage AI + pgvector — AI memory
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active (foundation + ingestion + retrieval; повний цикл готовий)
 
 AI memory підсистема. ADR — [`0028-pgvector-ai-memory.md`](../adr/0028-pgvector-ai-memory.md).
@@ -129,11 +129,11 @@ Producer-и → BullMQ-черга `ai-memory-ingest` (Redis-keys під `sergean
 
 ### Producer-и
 
-| Producer                                                                           | Source                                              | sourceRef                  | Коли                                                                         |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------- |
-| [`mono/webhook.ts`](../../apps/server/src/modules/mono/webhook.ts)                 | `finyk`                                             | `mono_tx_id`               | Після успішного COMMIT транзакції; gate-нуто `MONO_AI_MEMORY_INGEST_ENABLED` |
-| [`digest/weekly-digest.ts`](../../apps/server/src/modules/digest/weekly-digest.ts) | `digest`                                            | `userId:weekKey`           | Після генерації AI-summary тижня                                             |
-| `POST /api/ai-memory/ingest`                                                       | `chat`, `fizruk`, `nutrition`, `routine`, `journal` | client-supplied (optional) | Клієнт вирішує "це варто памʼятати"                                          |
+| Producer                                                                           | Source                                              | sourceRef                  | Коли                                                                                                                         |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [`mono/webhook.ts`](../../apps/server/src/modules/mono/webhook.ts)                 | `finyk`                                             | `mono_tx_id`               | Після успішного COMMIT транзакції; gate-нуто `MONO_AI_MEMORY_INGEST_ENABLED` (default `true` після PR-19) у `ingestQueue.ts` |
+| [`digest/weekly-digest.ts`](../../apps/server/src/modules/digest/weekly-digest.ts) | `digest`                                            | `userId:weekKey`           | Після генерації AI-summary тижня                                                                                             |
+| `POST /api/ai-memory/ingest`                                                       | `chat`, `fizruk`, `nutrition`, `routine`, `journal` | client-supplied (optional) | Клієнт вирішує "це варто памʼятати"                                                                                          |
 
 `finyk` і `digest` навмисно ВИКЛЮЧЕНІ з client-driven endpoint-у — для них є server-side hooks з повноціннішим payload-ом (item, weekRange).
 
