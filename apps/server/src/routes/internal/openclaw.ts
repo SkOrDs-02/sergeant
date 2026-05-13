@@ -249,12 +249,16 @@ const ServerStatsBody = z.object({}).strict();
 
 // PR-26: morning briefing payload — всі поля optional, бо консумер (cron
 // dispatcher / manual probe) може приймати дефолти.
+// O1 / Phase 2.A: додано `includeProposals` (default true) — вимикає
+// LLM-call для proposals-секції коли caller хоче чистий 5-секційний
+// briefing без витрат токенів (наприклад, retry після Anthropic outage).
 const MorningBriefingBody = z
   .object({
     windowDays: z.number().int().min(1).max(30).optional(),
     githubRepo: z.string().min(3).max(140).optional(),
     sentryLimit: z.number().int().min(1).max(20).optional(),
     prLimit: z.number().int().min(1).max(30).optional(),
+    includeProposals: z.boolean().optional(),
   })
   .strict();
 
@@ -829,6 +833,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         input.sentryLimit = parsed.data.sentryLimit;
       if (parsed.data.prLimit !== undefined)
         input.prLimit = parsed.data.prLimit;
+      if (parsed.data.includeProposals !== undefined)
+        input.includeProposals = parsed.data.includeProposals;
       const result = await assembleMorningBriefing(input);
       res.json(result);
     }),
