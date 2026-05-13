@@ -1,6 +1,6 @@
 # Міграція на React Native (Expo)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Source-of-truth трекер по перенесенню Sergeant із PWA-клієнта (`apps/web`,
@@ -223,8 +223,15 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
   [#474](https://github.com/Skords-01/Sergeant/pull/474),
   [#477](https://github.com/Skords-01/Sergeant/pull/477)). Detox iOS-сьют
   `finyk-manual-expense.e2e.ts`
-  ([#490](https://github.com/Skords-01/Sergeant/pull/490)). Android CI
-  workflow + `finyk-transactions` / `routine-smoke` сьюти — in-flight.
+  ([#490](https://github.com/Skords-01/Sergeant/pull/490)) + Android CI
+  лейн
+  ([`.github/workflows/detox-android.yml`](../../.github/workflows/detox-android.yml),
+  `ubuntu-latest` + `reactivecircus/android-emulator-runner` на API 34
+  `google_apis`, nightly cron + per-PR на `apps/mobile/**`,
+  `apps/mobile-shell/**`, mobile-shared packages). Suite-и:
+  `finyk-manual-expense`, `finyk-transactions` (period-filter:
+  prev/next-month chevrons + custom date-range sheet),
+  `routine-smoke`, `hub-ux-smoke` — усі зелені на обох платформах.
 - **Рутина** (`apps/mobile/src/modules/routine/*`): весь функціонал
   портовано — shell + 3-tab nav, pure-домен у
   `@sergeant/routine-domain`, habits-редактор з drag-reorder, heatmap,
@@ -397,8 +404,17 @@ Per module — які файли `apps/web` переносяться і в що 
 - Pure-домен — у `@sergeant/finyk-domain` (R3): `constants`, `utils`,
   `domain/*`, `lib/*`, `storageKeys`, `backup`, `assets`. Web імпортує
   з пакета напряму (без шімів).
-- Detox iOS-сьют `finyk-manual-expense.e2e.ts`. Android CI workflow +
-  `finyk-transactions.e2e.ts` period-filter сьют — in-flight.
+- Detox iOS + Android e2e:
+  - `finyk-manual-expense.e2e.ts` — Overview → Transactions → manual
+    expense flow.
+  - `finyk-transactions.e2e.ts` — period-filter: prev/next-month
+    chevrons на `TransactionsHeader` + custom date-range через
+    `DateRangeFilterSheet` (apply / clear).
+  - Android CI лейн
+    ([`.github/workflows/detox-android.yml`](../../.github/workflows/detox-android.yml))
+    запускає той самий `pnpm e2e:test:android:ci` через AVD
+    `Pixel_5_API_34` + `reactivecircus/android-emulator-runner` —
+    nightly cron (`15 3 * * *` UTC) + per-PR на mobile-scoped paths.
 
 ### 5.3 `modules/fizruk` — ✅ Майже всі сторінки портовано
 
