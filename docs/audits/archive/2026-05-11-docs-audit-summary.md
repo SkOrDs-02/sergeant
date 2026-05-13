@@ -1,6 +1,6 @@
 # Документаційний аудит — 2026-05-11
 
-> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-08-09.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Completed — Actions in progress
 
 Комплексний аудит документації (planning, tech-debt, initiatives, governance) виконаний 2026-05-11. Перевірено свіжість, дріфти, архівні кандидати, та carry-over items. **Всі CRITICAL дії завершено.**
@@ -194,7 +194,7 @@
 **New documents:**
 
 - `docs/initiatives/archive/2026-08-02-batch-archival-plan.md`
-- `docs/audits/2026-05-11-docs-audit-summary.md` (цей файл)
+- `docs/audits/archive/2026-05-11-docs-audit-summary.md` (цей файл)
 
 **Updated documents:**
 

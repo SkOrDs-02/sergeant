@@ -11,7 +11,7 @@
 >
 > **Оновлено 2026-05-03.** Перша версія registry: інвентаризація mobile-частини
 > монорепо, що раніше трекалась лише фрагментарно у `frontend.md` та audit-у
-> `docs/audits/2026-04-28-sergeant-comprehensive-audit.md`. Цей файл — living
+> `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`. Цей файл — living
 > burndown для `apps/mobile/**` (Expo 52 + RN 0.76) та `apps/mobile-shell/**`
 > (Capacitor wrapper навколо `apps/web`).
 

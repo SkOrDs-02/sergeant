@@ -13,7 +13,7 @@
 
 Перший paywall-контакт нового юзера = **post-first-real-entry sheet** (sheet, не модал, не повноекранна wall) з offering 14-day Pro trial, БЕЗ payment method, з очевидним «Залишитись на free» secondary CTA. Тригер — той самий момент, який зараз стріляє `first_real_entry` PostHog event ([`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../apps/web/src/core/onboarding/firstRealEntry.ts)) і відкриває [`CelebrationModal`](../../../apps/web/src/core/onboarding/CelebrationModal.tsx). Sheet з'являється **після** celebration-аніма­ції (4 sec delay), не замість. FF-gated за `paywall_post_ftux_v1` (default OFF до 0010 phase 3).
 
-**Чому не «у момент signup»:** [audit-roast 2026-05-03 §B-1](../../audits/2026-05-03-ftux-onboarding-roast.md) і вся `disciplined-helper` рамка PR-04 — paywall до першої цінності = бренд-самогубство. Чекаємо на `first_real_entry` як proof-of-fit signal.
+**Чому не «у момент signup»:** [audit-roast 2026-05-03 §B-1](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) і вся `disciplined-helper` рамка PR-04 — paywall до першої цінності = бренд-самогубство. Чекаємо на `first_real_entry` як proof-of-fit signal.
 
 ---
 
@@ -274,7 +274,7 @@ PR-20 НЕ merge-ається без:
 - [01 Монетизація і ціноутворення](../business/01-monetization-and-pricing.md) — pricing strategy, що годує copy-варіанти §6.
 - [FTUX master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr) — PR-19/PR-20 положення у sprint-плані.
 - [FTUX master-tracker §7 Decisions log → «Paywall»](./ftux-master-tracker.md#7-decisions-log) — sketch-session decision.
-- [Audit roast 2026-05-03 §B-1](../../audits/2026-05-03-ftux-onboarding-roast.md) — чому НЕ paywall у signup.
+- [Audit roast 2026-05-03 §B-1](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — чому НЕ paywall у signup.
 - [`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../apps/web/src/core/onboarding/firstRealEntry.ts) — trigger event source.
 - [`apps/web/src/core/onboarding/CelebrationModal.tsx`](../../../apps/web/src/core/onboarding/CelebrationModal.tsx) — hand-off modal перед sheet.
 

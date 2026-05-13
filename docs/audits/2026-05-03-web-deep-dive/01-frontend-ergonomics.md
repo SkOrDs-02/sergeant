@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** Forms, loading/empty/error states, Toast, Modal, mobile safe-area, PWA install banner, auth error translation, i18n readiness, feature-reveal pattern.
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/2026-04-28-ux-ui-audit.md`, `docs/audits/2026-04-28-ux-improvement-plan.md`.
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/audits/2026-04-28-ux-improvement-plan.md`.
 
 Це найбільш недоінвестований шар системи. Архітектура й сервер — на 8.5/10, форм-стек — десь 6/10. Нижче — точкова прожарка з конкретними fix points.
 

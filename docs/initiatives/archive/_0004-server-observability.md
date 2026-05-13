@@ -13,7 +13,7 @@
 
 ## Чому зараз
 
-- У [audit 2026-04-28](../../audits/2026-04-28-sergeant-comprehensive-audit.md) і design-review 2026-05-03 окремо позначено: **server errors only in Pino**, тобто розбираємось вручну.
+- У [audit 2026-04-28](../../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) і design-review 2026-05-03 окремо позначено: **server errors only in Pino**, тобто розбираємось вручну.
 - Helmet, CSP, AES-GCM token encryption — все є; але `apps/server/src/index.ts` не має `Sentry.init`, відповідно error-events не прокидаються на dashboard, alert-and-tracing pipeline відсутній.
 - Anthropic-/OpenAI-таймаути, retry-loops і циркулярні tool-calls (chatActions) часто видно тільки коли користувач скаржиться. Distributed traces закривають це — кожен AI-call із `aiSpan` + `model`, `prompt_cache_hit`, `tokens_in/out`, `latency_ms`.
 - Без сервер-spans неможливо нормально відлагодити sync v2 (ініціатива 0003) — там же і LWW conflicts, і dual-mode diverge, і queue-lag.

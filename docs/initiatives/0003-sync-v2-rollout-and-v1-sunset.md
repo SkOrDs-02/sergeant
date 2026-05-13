@@ -20,7 +20,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 ## Чому зараз
 
 - v1 (LWW-blob) і v2 (op-log) **обоє в production**, обидва пишуть у БД (`module_data` blob ↔ `sync_op_log` rows). Замикається тільки на client-side merge — жоден сервер не валідує, що домен пише в один канал.
-- Аудит [`docs/audits/2026-04-28-sergeant-comprehensive-audit.md`](../audits/2026-04-28-sergeant-comprehensive-audit.md) і design-review від 2026-05-03 окремо позначили це як високопріоритетний ризик.
+- Аудит [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) і design-review від 2026-05-03 окремо позначили це як високопріоритетний ризик.
 - v2 уже працює **для routine + fizruk + nutrition (новий цикл)**, але v1 не має дедлайну на видалення. Кожна нова фіча має приймати рішення «v1 чи v2» — drift накопичується.
 - Серверний `module_data` blob — найшвидший спосіб втратити дані при write-skew (два клієнти пишуть з різних девайсів).
 

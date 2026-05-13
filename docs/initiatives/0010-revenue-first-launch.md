@@ -1,11 +1,11 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-07 by @claude. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
-> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md)
+> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
 
 ## TL;DR
 
@@ -382,7 +382,7 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 - **Поточна pricing-модель (буде оновлена):** [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md).
 - **GTM (буде звужений):** [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md).
 - **Технічний skeleton білінгу:** [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md).
-- **FTUX carry-over:** [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md), [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md).
+- **FTUX carry-over:** [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md).
 - **Mobile picks:** [`docs/initiatives/0002-mobile-platform-decision.md`](./0002-mobile-platform-decision.md).
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md).
 - **OpenClaw roadmap (active parallel, not in scope):** [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md).

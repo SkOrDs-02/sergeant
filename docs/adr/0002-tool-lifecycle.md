@@ -7,7 +7,7 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/audits/2026-04-26-sergeant-audit-devin.md`](../audits/2026-04-26-sergeant-audit-devin.md) — пункт `PR-12.D`.
+  - [`docs/audits/archive/2026-04-26-sergeant-audit-devin.md`](../audits/archive/2026-04-26-sergeant-audit-devin.md) — пункт `PR-12.D`.
   - [`apps/server/src/modules/chat/tools.ts`](../../apps/server/src/modules/chat/tools.ts) — реєстр Anthropic tools.
   - [`apps/server/src/modules/chat/toolMetrics.ts`](../../apps/server/src/modules/chat/toolMetrics.ts) — `chat_tool_invocations_total{tool, outcome}` (PR-12.C, [#924](https://github.com/Skords-01/Sergeant/pull/924)).
   - [`apps/web/src/core/lib/chatActions/`](../../apps/web/src/core/lib/chatActions/) — клієнтські handler-и tool-call-ів.

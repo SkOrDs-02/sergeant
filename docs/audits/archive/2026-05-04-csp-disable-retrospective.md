@@ -1,6 +1,6 @@
 # CSP_DISABLE runtime kill-switch — retrospective audit (2026-05-04)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-06 — A1–A5 resolved, див. §Resolution log)
 
 > **Що це.** Це не postmortem справжнього incident-у. Це **retrospective audit / near-miss**, який закриває [`docs/initiatives/0011-foundation-adoption-and-process-discipline.md`](../initiatives/0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.4. Питання, на яке цей документ відповідає: **«Чи був прапорець `CSP_DISABLE=1` коли-небудь увімкнений у production-Railway env-var-ах за 16 днів існування?»** Code-side cleanup завершений у [PR #1631](https://github.com/Skords-01/Sergeant/pull/1631); цей файл закриває operational boundary.

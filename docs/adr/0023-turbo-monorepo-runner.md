@@ -123,7 +123,7 @@ turbo тихо переключається на local-only cache (`.turbo/`). C
 (codegen, project graph visualization, plugin ecosystem) — overkill, а
 вартість (другий конфіг-файл per-package, vendored CLI, vendor lock-in)
 реальна. Turbo дає 90% потрібного при 10% складності. Audit ([2026-04-26
-Devin audit](../audits/2026-04-26-sergeant-audit-devin.md), пункт 10)
+Devin audit](../audits/archive/2026-04-26-sergeant-audit-devin.md), пункт 10)
 явно фіксує: "Power-up monorepo на Nx — Turbo вже добре працює на цьому
 масштабі."
 
@@ -203,4 +203,4 @@ file-based incremental cache: повторні `pnpm typecheck` або `pnpm tes
 
 - [Turborepo docs — task graph](https://turbo.build/repo/docs/crafting-your-repository/configuring-tasks)
 - [Turborepo docs — remote caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [`docs/audits/2026-04-26-sergeant-audit-devin.md`](../audits/2026-04-26-sergeant-audit-devin.md) — пункт 10 ("Turbo вже добре працює на цьому масштабі").
+- [`docs/audits/archive/2026-04-26-sergeant-audit-devin.md`](../audits/archive/2026-04-26-sergeant-audit-devin.md) — пункт 10 ("Turbo вже добре працює на цьому масштабі").

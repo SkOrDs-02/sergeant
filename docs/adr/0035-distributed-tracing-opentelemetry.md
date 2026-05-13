@@ -8,7 +8,7 @@
   - [ADR-0015](./0015-observability-stack.md) — observability stack (Pino + Prometheus + Sentry); цей ADR розширює його traces-шаром.
   - [`docs/observability/frontend.md`](../observability/frontend.md) §7 «Sentry-події не з'єднані» — поточний gap.
   - [`apps/server/src/obs/requestContext.ts`](../../apps/server/src/obs/requestContext.ts) — ALS-based request context (вже є `requestId`, але без trace propagation).
-  - [`docs/audits/2026-04-28-sergeant-comprehensive-audit.md`](../audits/2026-04-28-sergeant-comprehensive-audit.md) §P3-2 — audit row.
+  - [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2 — audit row.
 
 ---
 
@@ -171,7 +171,7 @@ Total: ~3 working days (замість оригінальних 5) — секо�
 
 ## 8. Links
 
-- Audit row: [`docs/audits/2026-04-28-sergeant-comprehensive-audit.md`](../audits/2026-04-28-sergeant-comprehensive-audit.md) §P3-2.
+- Audit row: [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2.
 - OTel JS docs: <https://opentelemetry.io/docs/languages/js/>.
 - Honeycomb OTLP: <https://docs.honeycomb.io/getting-data-in/otel-collector/>.
 - W3C Trace Context: <https://www.w3.org/TR/trace-context/>.

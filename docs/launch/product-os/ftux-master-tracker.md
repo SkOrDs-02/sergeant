@@ -7,7 +7,7 @@
 >
 > **Замінює (як SSOT для FTUX):**
 >
-> - [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
+> - [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
 > - [`docs/launch/ftux-sprint-plan.md`](./ftux-sprint-plan.md) — sprint-roadmap (історія, frozen).
 > - Зовнішня прожарка 2026-05-05 (`reports/sergeant-onboarding-ux-roast-2026-05-05.md`) — новий зріз, **інкорпорований** сюди.
 >
@@ -524,7 +524,7 @@ slos:
 
 > **Frozen references** (NE редагуємо вище ↑ — вищі відмітки оновлюються тут).
 
-- [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
+- [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
 - [`docs/launch/ftux-sprint-plan.md`](./ftux-sprint-plan.md) — оригінальний sprint-plan з повним PR-розписом (Sprint 0-5 + 6 cleanup batch). Деталі implementation per sprint-item — там. Має redirect-banner на цей master tracker.
 - `reports/sergeant-onboarding-ux-roast-2026-05-05.md` (поза репо) — мега-прожарка 2026-05-05. Інкорпорована в §8.4.
 - `reports/sergeant-pr-plan-2026-05-05.md` (поза репо) — PR-план. Інкорпорований в §3.
@@ -536,7 +536,7 @@ slos:
 ## Editing rules (для майбутніх агентів)
 
 1. **Редагуй тут** — оновлення статусів, нові findings (post-freeze), нові decisions.
-2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](./ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
+2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](./ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
 3. **Status legend:**
    - ✅ Closed — shipped to `main`
    - 🚧 Partial / Mitigation — частково або в роботі
