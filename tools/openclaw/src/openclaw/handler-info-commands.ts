@@ -11,6 +11,7 @@
  */
 
 import { InputFile } from "grammy";
+import { Sentry } from "../obs/sentry.js";
 import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
 import { parseDuration } from "./duration.js";
 import { parseFounderTgUserId } from "./security.js";
@@ -19,6 +20,7 @@ import {
   parseAlertsCommand,
   type PendingAlertItem,
 } from "./alerts-format.js";
+import { executeRitualCommand } from "./ritual-runner.js";
 import type { HandlerContext } from "./handler-context.js";
 import {
   HELP_TEXT,
@@ -366,5 +368,65 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     }
 
     await c.reply(reply);
+  });
+
+  // O5 / WF-25 (PR-26 #2613 + PR-27 #2659 + O1 #2689): manual-trigger
+  // ranok / weekly / monthly ritual-у. Defaults to morning, mirroring
+  // 07:00 Kyiv cron. Useful for testing-у і ad-hoc після-launch invocations.
+  //
+  // Implementation: всі fetch+audit гілки живуть у pure `executeRitualCommand`
+  // (ritual-runner.ts) щоб handler лишався thin shim над grammy.
+  bot.command("ritual", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (c.match ?? "").toString();
+    const founderTgUserId =
+      parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
+      c.from?.id ??
+      0;
+
+    const result = await executeRitualCommand({
+      rawArgument: argument,
+      founderUserId,
+      founderTgUserId,
+      ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+      fetcher: {
+        async postMorningBriefing() {
+          const r = await postJson<{ markdown?: unknown; data?: unknown }>(
+            `${serverUrl}/api/internal/openclaw/briefing/morning`,
+            internalApiKey,
+            {},
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async openInvocation(input) {
+          const r = await postJson<OpenInvocationResponse>(
+            `${serverUrl}/api/internal/openclaw/invocations/open`,
+            internalApiKey,
+            input,
+          );
+          return {
+            ok: r.ok,
+            status: r.status,
+            invocationId: r.data?.invocationId ?? null,
+          };
+        },
+        async finalizeInvocation(input) {
+          const r = await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status };
+        },
+      },
+      addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+    });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
   });
 }

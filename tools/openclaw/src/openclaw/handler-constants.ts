@@ -174,6 +174,7 @@ export const HELP_TEXT = [
   "/alerts pending [p0|p1] [topic] [since=15m] — unacked Sergeant_alert_bot броадкасти;",
   "       без аргументів — топ-20 unacked, newest-first.",
   "/budget — поточний денний spend",
+  "/ritual [morning|weekly|monthly|help] — ad-hoc ritual trigger (WF-25 mirror)",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",

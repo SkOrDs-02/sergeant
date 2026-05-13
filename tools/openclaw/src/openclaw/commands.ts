@@ -96,6 +96,10 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
   },
   { command: "decisions", description: "Last recorded cofounder decisions" },
   { command: "budget", description: "Today's OpenClaw spend vs daily cap" },
+  {
+    command: "ritual",
+    description: "Run morning/weekly/monthly briefing on demand",
+  },
   { command: "reset", description: "Start a new cofounder session" },
 ];
 
