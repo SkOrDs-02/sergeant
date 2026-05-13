@@ -271,3 +271,54 @@ describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
     expect(() => assertStartupEnv()).not.toThrow();
   });
 });
+
+describe("assertStartupEnv — HTTPS scheme hard-fail (T2 audit #6)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  const HTTPS_BASELINE = {
+    ...PROD_BASELINE,
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when BETTER_AUTH_URL uses http://", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...HTTPS_BASELINE,
+      BETTER_AUTH_URL: "http://api.example.com",
+    });
+    expect(() => assertStartupEnv()).toThrow(/BETTER_AUTH_URL/);
+  });
+
+  it("throws in production when PUBLIC_API_BASE_URL uses http://", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...HTTPS_BASELINE,
+      PUBLIC_API_BASE_URL: "http://api.example.com",
+    });
+    expect(() => assertStartupEnv()).toThrow(/PUBLIC_API_BASE_URL/);
+  });
+
+  it("does NOT throw in production when both URLs use https://", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...HTTPS_BASELINE,
+      BETTER_AUTH_URL: "https://api.example.com",
+      PUBLIC_API_BASE_URL: "https://api.example.com",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in production when both URLs are unset (Better Auth derives them)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(HTTPS_BASELINE);
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when BETTER_AUTH_URL uses http://localhost", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      BETTER_AUTH_URL: "http://localhost:3000",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});

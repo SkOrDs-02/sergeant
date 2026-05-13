@@ -43,7 +43,6 @@ export function createSyncRouter(): Router {
     "/api/sync",
     rateLimitExpress({ key: "api:sync", limit: 30, windowMs: 60_000 }),
   );
-  r.use("/api/sync", requireSession());
   // v1 sunset survey: emit `sync_v1_legacy_clients_total` per push/pull.
   // Initiative 0003 Phase 1 — див. `clientSurvey.ts`.
   r.use("/api/sync", v1ClientSurveyMiddleware());
@@ -59,11 +58,22 @@ export function createSyncRouter(): Router {
   // Handler-и `syncPush*`/`syncPull*` видалено разом із backing-таблицею
   // `module_data` (Stage 7 final, цей PR). Лишився тільки 410-stub з
   // sunset/deprecation headers.
+  //
+  // T2 audit finding #7 — v1 410-stubs ARE mounted BEFORE `requireSession()`.
+  // The whole point of RFC 8594 Sunset / RFC 8288 Link headers is to let
+  // legacy clients (mobile builds with expired sessions, anonymous probes)
+  // discover "stop calling permanently" without first authenticating —
+  // otherwise unauth-ed/expired clients get 401 and silently keep retrying
+  // until their device is uninstalled. The 410-stubs are intentionally
+  // public read-only deprecation announcements; they read no user state
+  // and have no business logic. `/api/sync/audit` (read-only audit log)
+  // stays behind auth (mounted AFTER `requireSession()` below).
   r.post("/api/sync/push", asyncHandler(respondV1Gone));
   r.post("/api/sync/pull", asyncHandler(respondV1Gone));
   r.get("/api/sync/pull-all", asyncHandler(respondV1Gone));
   r.post("/api/sync/pull-all", asyncHandler(respondV1Gone));
   r.post("/api/sync/push-all", asyncHandler(respondV1Gone));
+  r.use("/api/sync", requireSession());
   r.get("/api/sync/audit", asyncHandler(listSyncAudit));
 
   r.use("/api/v2/sync", setModule("syncV2"));
