@@ -13,6 +13,7 @@ export const NAV_SECTIONS = [
   { id: "data", label: "Дані" },
   { id: "navigation", label: "Навігація" },
   { id: "overlays", label: "Overlays" },
+  { id: "primitives", label: "Tooltip & Popover" },
   { id: "feedback", label: "Фідбек" },
   { id: "celebration", label: "Святкування" },
   { id: "onboarding", label: "Онбординг" },

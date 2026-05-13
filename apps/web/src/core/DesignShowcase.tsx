@@ -11,6 +11,7 @@ import { FormsSection } from "./designShowcase/sections/Forms";
 import { DataDisplaySection } from "./designShowcase/sections/DataDisplay";
 import { NavigationSection } from "./designShowcase/sections/Navigation";
 import { OverlaysSection } from "./designShowcase/sections/Overlays";
+import { PrimitivesSection } from "./designShowcase/sections/Primitives";
 import { FeedbackSection } from "./designShowcase/sections/Feedback";
 import { CelebrationSection } from "./designShowcase/sections/Celebration";
 import { OnboardingSection } from "./designShowcase/sections/Onboarding";
@@ -64,6 +65,7 @@ export function DesignShowcase() {
         <DataDisplaySection />
         <NavigationSection />
         <OverlaysSection />
+        <PrimitivesSection />
         <FeedbackSection />
         <CelebrationSection />
         <OnboardingSection />

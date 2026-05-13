@@ -2,68 +2,95 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
+import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import {
+  computeFloatingPosition,
+  type FloatingPlacement,
+} from "./floatingPosition";
 
 /**
  * Sergeant Design System — Popover
  *
- * Lightweight dropdown/popover surface for menus, filters, and contextual
- * actions on desktop. On mobile (< md) prefer Sheet.
+ * Click-triggered floating surface for menus, filters, info-cards and
+ * contextual forms on desktop. On mobile (< md) prefer `Sheet`.
  *
- * Features:
- * - Click-toggle with outside-click & Escape dismiss
- * - Focus-trap-lite: first focusable child receives focus on open
- * - Accessible: aria-expanded, aria-controls, aria-haspopup
- * - Placement: bottom-start (default), bottom-end, top-start, top-end
- * - Portal-free (renders inline) — works inside overflow:hidden parents
- *   because the popover uses `position: fixed` via the `fixed` utility.
+ * Behaviour contract:
+ * - Click-toggle with outside-click & `Escape` dismiss.
+ * - Tab cycles inside the panel (`useDialogFocusTrap`); the first
+ *   focusable child receives focus on open; focus is restored to the
+ *   trigger when the panel closes.
+ * - `aria-haspopup="true"`, `aria-expanded`, and `aria-controls` are
+ *   wired on the trigger wrapper. When a `header` is supplied the
+ *   panel also receives `aria-labelledby` pointing at the header.
+ * - Portaled to `document.body` so the panel escapes transformed /
+ *   `overflow: hidden` ancestors (same precedent as Modal — PR #2227).
+ * - Placement: 12-direction grid (`top|right|bottom|left` +
+ *   `*-start|*-end`). Default `bottom-start`.
+ * - Optional `header` / `footer` slots — when present the panel uses
+ *   `role="dialog"`; otherwise it keeps `role="menu"` for the
+ *   PopoverItem / arrow-key navigation flow.
+ *
+ * For a menu use-case, compose with `PopoverItem` / `PopoverDivider`;
+ * for an info-card or form-in-popover, pass arbitrary children with
+ * optional `header` / `footer`.
  */
 
-export type PopoverPlacement =
-  | "bottom-start"
-  | "bottom-end"
-  | "top-start"
-  | "top-end";
+export type PopoverPlacement = FloatingPlacement;
 
-const placementClasses: Record<PopoverPlacement, string> = {
-  "bottom-start": "top-full left-0 mt-2",
-  "bottom-end": "top-full right-0 mt-2",
-  "top-start": "bottom-full left-0 mb-2",
-  "top-end": "bottom-full right-0 mb-2",
-};
+export type PopoverRole = "menu" | "dialog";
+
+const PANEL_OFFSET = 8;
+const MIN_PANEL_WIDTH_PX = 200;
 
 export interface PopoverProps {
-  /** The trigger element (rendered as-is). */
+  /** The trigger element. Wrapped in a `role="button"` host so the
+   * Popover owns activation semantics. Pass non-interactive content
+   * (e.g. `<span>`, `<Icon … />`, or a Sergeant `<Button>`). */
   trigger: ReactNode;
   /** Popover body. */
   children: ReactNode;
+  /** Optional header slot — rendered above `children` and used for
+   * `aria-labelledby` wiring. Forces `role="dialog"` unless
+   * overridden via `role`. */
+  header?: ReactNode;
+  /** Optional footer slot (e.g. action buttons). */
+  footer?: ReactNode;
   placement?: PopoverPlacement;
   /** Additional className on the floating panel. */
   className?: string;
   /** Additional className on the wrapper. */
   wrapperClassName?: string;
-  /**
-   * Controlled open state. When provided, the popover becomes a
-   * controlled component and `onOpenChange` must be wired up. Useful
-   * when the parent needs to close the popover after an item action
-   * (e.g. opening a sibling drawer).
-   */
+  /** Controlled open state. When provided, the popover becomes a
+   * controlled component and `onOpenChange` must be wired up. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Accessible label for the panel when no `header` is present.
+   * Maps to `aria-label`. */
+  label?: string;
+  /** Override the panel role. Defaults to `"dialog"` when `header` is
+   * set, `"menu"` otherwise. */
+  role?: PopoverRole;
 }
 
 export function Popover({
   trigger,
   children,
+  header,
+  footer,
   placement = "bottom-start",
   className,
   wrapperClassName,
   open: controlledOpen,
   onOpenChange,
+  label,
+  role,
 }: PopoverProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -72,7 +99,13 @@ export function Popover({
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  const headerId = useId();
   const prevOpenRef = useRef(open);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+
+  const effectiveRole: PopoverRole = role ?? (header ? "dialog" : "menu");
 
   const setOpen = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -85,53 +118,182 @@ export function Popover({
 
   const close = useCallback(() => setOpen(false), [setOpen]);
 
-  // Close on outside click
+  // Outside-click dismiss. Mousedown is intentional: matches existing
+  // contract tests and avoids double-firing when the user releases
+  // over a sibling element.
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
-        close();
-      }
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (wrapperRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      close();
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, close]);
 
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        close();
-      }
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, close]);
+  // Focus-trap + Escape via the same hook the rest of the design system
+  // uses for dialogs (Modal, Sheet). Tab cycles inside the panel; the
+  // hook also restores focus to whatever was focused before open —
+  // which in our case is the trigger wrapper because the user just
+  // clicked it. We still keep the manual `triggerRef.current?.focus()`
+  // below as a belt-and-braces fallback for the case where the
+  // previously focused element has unmounted.
+  useDialogFocusTrap(open, panelRef, { onEscape: close });
 
-  // Focus first focusable child on open; restore focus to trigger on close
+  // Focus first focusable child on open; restore focus to trigger on close.
   useEffect(() => {
     if (open && panelRef.current) {
       const focusable = panelRef.current.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
       );
-      focusable?.focus();
+      // Defer one microtask: the panel is just mounted and the
+      // useDialogFocusTrap snapshot of `document.activeElement`
+      // happens first — we want our focus call to win.
+      Promise.resolve().then(() => focusable?.focus());
     } else if (prevOpenRef.current && !open) {
       triggerRef.current?.focus();
     }
     prevOpenRef.current = open;
   }, [open]);
 
+  // Position the panel after layout so the first paint already has
+  // the correct coordinates.
+  useLayoutEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return;
+    }
+    const trig = triggerRef.current;
+    const panel = panelRef.current;
+    if (!trig || !panel) return;
+    const tRect = trig.getBoundingClientRect();
+    const pRect = panel.getBoundingClientRect();
+    const pos = computeFloatingPosition(
+      {
+        top: tRect.top,
+        left: tRect.left,
+        width: tRect.width,
+        height: tRect.height,
+      },
+      { width: pRect.width, height: pRect.height },
+      placement,
+      PANEL_OFFSET,
+    );
+    setCoords({ top: pos.top, left: pos.left });
+  }, [open, placement, children, header, footer]);
+
+  // Track the page reflowing under an open popover (scroll, resize,
+  // soft-keyboard show on iOS). Capture-phase scroll listener catches
+  // scrolls inside any ancestor.
+  useEffect(() => {
+    if (!open) return;
+    const reposition = () => {
+      const trig = triggerRef.current;
+      const panel = panelRef.current;
+      if (!trig || !panel) return;
+      const tRect = trig.getBoundingClientRect();
+      const pRect = panel.getBoundingClientRect();
+      const pos = computeFloatingPosition(
+        {
+          top: tRect.top,
+          left: tRect.left,
+          width: tRect.width,
+          height: tRect.height,
+        },
+        { width: pRect.width, height: pRect.height },
+        placement,
+        PANEL_OFFSET,
+      );
+      setCoords({ top: pos.top, left: pos.left });
+    };
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open, placement]);
+
+  const panel = open ? (
+    <div
+      ref={panelRef}
+      id={panelId}
+      role={effectiveRole}
+      aria-labelledby={header ? headerId : undefined}
+      aria-label={!header && label ? label : undefined}
+      aria-modal={effectiveRole === "dialog" ? true : undefined}
+      tabIndex={-1}
+      style={{
+        position: "fixed",
+        // Before the first measurement we park the panel off-screen
+        // (instead of toggling visibility:hidden) so the accessibility
+        // tree still sees the role and aria-* wiring. `useLayoutEffect`
+        // updates coords synchronously before paint — the user never
+        // sees the off-screen placeholder.
+        top: coords?.top ?? -9999,
+        left: coords?.left ?? -9999,
+        minWidth: MIN_PANEL_WIDTH_PX,
+        zIndex: 1000,
+      }}
+      className={cn(
+        "bg-panel border border-line rounded-2xl shadow-float",
+        "motion-safe:animate-fade-in",
+        // Default padding only when no header/footer; with slots the
+        // sections own their own padding for tighter alignment.
+        !header && !footer && "py-1.5",
+        className,
+      )}
+      onKeyDown={(e) => {
+        // Arrow-key roving focus for menu items (preserved from
+        // original implementation — keeps PopoverItem keyboard UX).
+        const items = Array.from(
+          panelRef.current?.querySelectorAll<HTMLElement>(
+            '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])',
+          ) ?? [],
+        );
+        if (!items.length) return;
+        const idx = items.indexOf(document.activeElement as HTMLElement);
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          items[(idx + 1) % items.length]?.focus();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          items[(idx - 1 + items.length) % items.length]?.focus();
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          items[0]?.focus();
+        } else if (e.key === "End") {
+          e.preventDefault();
+          items[items.length - 1]?.focus();
+        }
+      }}
+    >
+      {header && (
+        <div id={headerId} className="px-4 pt-3 pb-2 text-style-label text-fg">
+          {header}
+        </div>
+      )}
+      {header || footer ? (
+        <div className="px-2 py-1.5">{children}</div>
+      ) : (
+        children
+      )}
+      {footer && (
+        <div className="px-4 py-3 border-t border-line bg-surface-muted/40 rounded-b-2xl">
+          {footer}
+        </div>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div
       ref={wrapperRef}
       className={cn("relative inline-block", wrapperClassName)}
     >
-      {/* Trigger — wrapped in a button-like click handler */}
       <div
         ref={triggerRef}
         role="button"
@@ -150,52 +312,17 @@ export function Popover({
         {trigger}
       </div>
 
-      {open && (
-        <div
-          ref={panelRef}
-          id={panelId}
-          role="menu"
-          tabIndex={-1}
-          className={cn(
-            "absolute z-50 min-w-[180px]",
-            "bg-panel border border-line rounded-2xl shadow-float",
-            "motion-safe:animate-fade-in",
-            "py-1.5",
-            placementClasses[placement],
-            className,
-          )}
-          onKeyDown={(e) => {
-            const items = Array.from(
-              panelRef.current?.querySelectorAll<HTMLElement>(
-                '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])',
-              ) ?? [],
-            );
-            if (!items.length) return;
-            const idx = items.indexOf(document.activeElement as HTMLElement);
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              items[(idx + 1) % items.length]?.focus();
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              items[(idx - 1 + items.length) % items.length]?.focus();
-            } else if (e.key === "Home") {
-              e.preventDefault();
-              items[0]?.focus();
-            } else if (e.key === "End") {
-              e.preventDefault();
-              items[items.length - 1]?.focus();
-            }
-          }}
-        >
-          {children}
-        </div>
-      )}
+      {panel && typeof document !== "undefined"
+        ? createPortal(panel, document.body)
+        : null}
     </div>
   );
 }
 
 /**
- * PopoverItem — Single action row inside a Popover.
+ * PopoverItem — Single action row inside a `Popover` menu. Use with
+ * the default (`role="menu"`) panel; arrow-key navigation is wired by
+ * the parent.
  */
 export interface PopoverItemProps {
   children: ReactNode;

@@ -130,7 +130,7 @@ describe("Popover", () => {
     expect(screen.getByRole("menu")).toBeTruthy();
   });
 
-  it("applies placement class — bottom-end puts panel on the right", () => {
+  it("positions the floating panel via inline style after open", () => {
     render(
       <Popover trigger={<span>Menu</span>} placement="bottom-end">
         <button>Item</button>
@@ -138,6 +138,25 @@ describe("Popover", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /menu/i }));
     const menu = screen.getByRole("menu");
-    expect(menu.className).toContain("right-0");
+    // The portaled panel uses position:fixed with computed inline
+    // top/left — these may be the offscreen placeholder until layout
+    // measurement runs in JSDOM, but the contract is that styles are
+    // set rather than relying on Tailwind position classes.
+    expect(menu.style.position).toBe("fixed");
+  });
+
+  it("switches to role='dialog' + aria-labelledby when `header` is supplied", () => {
+    render(
+      <Popover trigger={<span>Filter</span>} header="Налаштування фільтрів">
+        <p>body</p>
+      </Popover>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /filter/i }));
+    const dialog = screen.getByRole("dialog");
+    const labelId = dialog.getAttribute("aria-labelledby");
+    expect(labelId).toBeTruthy();
+    expect(document.getElementById(labelId!)?.textContent).toBe(
+      "Налаштування фільтрів",
+    );
   });
 });

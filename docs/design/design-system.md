@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -583,6 +583,130 @@ Home/End, `role="tablist"`.
 Перед `tone` уникай `text-nutrition/70` / `text-nutrition/80` /
 `text-nutrition/90` драфту — усі branded eyebrow'и нормалізовані до
 `/70`.
+
+### Tooltip
+
+Доступний замінник native `title="..."` (який не читається скрін-рідерами і
+не дотискається з клавіатури). Хінт для контролів, у яких іконка/коротка
+лейба не дає повного контексту: «зберегти», «синхронізувати»,
+«дізнатися більше».
+
+```tsx
+import { Tooltip } from "@shared/components/ui";
+
+<Tooltip content="Зберегти зміни (Ctrl+S)" placement="top">
+  <Button variant="primary" iconOnly aria-label="Зберегти">
+    <Icon name="save" />
+  </Button>
+</Tooltip>;
+```
+
+**Контракт:**
+
+- **Тригер** — рівно один React-елемент. Має форвардити
+  `onMouseEnter` / `onMouseLeave` / `onFocus` / `onBlur` /
+  `aria-describedby` (Sergeant `Button` / `IconButton` / `Badge` — ок).
+- **Розкривається** на `mouseenter` АБО `focus-visible` після
+  `openDelay` (typ. 150 мс).
+- **Закривається** на `mouseleave` / `focusout` / `Escape` / outside-click.
+- **`role="tooltip"`** на панелі, `aria-describedby` — на тригері (автоматично).
+- **`size`** — `sm` (дефолт, compact caption) або `md` (multi-line copy).
+- **`placement`** — 12-точкова решітка:
+  `top|right|bottom|left` + `*-start|*-end`. Legacy-аліаси
+  (`top-center`, …) теж приймаються — нормалізуються всередині.
+- **Portaled to `document.body`** — панель не клипається transformed /
+  `overflow: hidden`-ancestor-ами (containing-block-фікс; той самий мотив, що
+  в Modal — PR #2227).
+- **`motion-safe:animate-fade-in`** — реагує на `prefers-reduced-motion: reduce`.
+- **Toggle off:** `disabled` — тригер далі рендериться, але tooltip
+  ніколи не з'являється.
+
+**Do:**
+
+- Використовуй для icon-only кнопок без візуальної лейби.
+- Тримай copy ≤ 1–2 рядки в `sm`; для довшого пояснення — `size="md"`.
+
+**Don't:**
+
+- Не клади інтерактивний контент (кнопки, лінки) у tooltip — це не
+  модал. Для інтерактиву потрібен `Popover`.
+- Не дублюй native `title="..."` — призводить до подвійних спливаючих хінтів.
+- Не привʼязуй критично-важливу інфу лише до tooltip — користувачі
+  на тач-пристроях можуть не побачити hover-стан.
+
+### Popover
+
+Click-driven floating-surface для меню, фільтрів, info-карток і форм-у-
+попапі. На мобільному (< md) — використовуй `Sheet` замість Popover-а.
+
+```tsx
+import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
+
+// Меню дій
+<Popover trigger={<Button>Опції</Button>}>
+  <PopoverItem onClick={onEdit}>Редагувати</PopoverItem>
+  <PopoverDivider />
+  <PopoverItem destructive onClick={onDelete}>
+    Видалити
+  </PopoverItem>
+</Popover>;
+
+// Форма-в-попапі — header + body + footer слоти
+<Popover
+  trigger={<Button>Фільтри</Button>}
+  header="Фільтри транзакцій"
+  footer={<ActionButtons />}
+>
+  <FilterForm />
+</Popover>;
+```
+
+**Контракт:**
+
+- **Click-toggle** на тригер; ESC + outside-click + Tab-trap, коли відкритий.
+  Focus повертається на тригер при закритті (`useDialogFocusTrap`).
+- **ARIA**: `aria-haspopup="true"`, `aria-expanded`, `aria-controls` на
+  тригер-обгортці; коли передаєш `header` — додатково `aria-labelledby`
+  на панель + автоматичний `role="dialog"` (інакше `role="menu"` для
+  класичних item-меню).
+- **Portaled to `document.body`** — той самий containing-block-фікс, що й
+  у Tooltip / Modal.
+- **`placement`** — та сама 12-точкова решітка (`top|right|bottom|left`
+  - `*-start|*-end`). Дефолт — `bottom-start`.
+- **Слоти**: `header` (string | JSX) і `footer` (JSX) додають візуальні
+  розділювачі + padding; без них panel — компактна menu-смуга з `py-1.5`.
+- **Sub-components**: `PopoverItem` (`role="menuitem"` + arrow-нав з parent)
+  і `PopoverDivider` (`<hr>`).
+- **Controlled mode**: `open` + `onOpenChange` (як на формі-в-попапі, де
+  треба «Apply → закрити»).
+- **`motion-safe:animate-fade-in`** на панелі.
+
+**Keyboard:**
+
+| Клавіша           | Дія                                                       |
+| ----------------- | --------------------------------------------------------- |
+| `Enter` / `Space` | Toggle на тригері                                         |
+| `Tab`             | Cycle всередині панелі (focus-trap)                       |
+| `ArrowDown / Up`  | Roving focus між `PopoverItem`-ами (тільки `role="menu"`) |
+| `Home / End`      | Перший / останній item у menu-режимі                      |
+| `Escape`          | Закрити панель + повернути фокус на тригер                |
+
+**Do:**
+
+- Використовуй для меню дій з 3-7 опцій, info-карток, фільтрів і легких
+  форм (1-3 поля).
+- Для меню — `PopoverItem` + `PopoverDivider` (підхоплять стрілкову
+  навігацію + `role="menuitem"`).
+- Для info-card / form — `header` / `footer` слоти; роль панелі автоматично
+  перейде у `"dialog"`.
+
+**Don't:**
+
+- Не клади важкі форми (> 4-5 полів) — це Sheet/Modal.
+- Не вкладай `Popover` всередину `Popover` без сильного юзкейса — кілька
+  трапів конфліктують.
+- Не запихай destructive multi-step дії — попап може закритися outside-click-ом
+  до підтвердження. Для destructive → `ConfirmDialog`.
 
 ### EmptyState
 
