@@ -142,6 +142,7 @@ function makeZeroedCounts(): { [Status in SyncOpOutboxStatus]: number } {
     pending: 0,
     rejected: 0,
     dead_letter: 0,
+    quarantined: 0,
   };
   // Belt-and-suspenders: assert at runtime that the literal above
   // covers every status in the const tuple. If a new status is added
