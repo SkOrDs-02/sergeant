@@ -1,0 +1,357 @@
+{
+  "version": "1.0",
+  "comment": "Golden-set для RAG quality gate (PR-22 / WF-30). 50 queries, synthetic seed; PR-20 замінить на real-data eval. Кожна query має `expected` — `<source>:<sourceRef>` IDs, які мають бути у топ-4 retrieval. `domain` — для breakdown-метрик per-source.",
+  "embeddingModel": "voyage-3.5-lite",
+  "embeddingVersion": "1",
+  "topK": 4,
+  "queries": [
+    {
+      "id": "finyk-001",
+      "domain": "finyk",
+      "query": "Скільки я витратив на каву минулого тижня?",
+      "expected": [
+        "finyk:tx-coffee-w17-001",
+        "finyk:tx-coffee-w17-002",
+        "finyk:tx-coffee-w17-003"
+      ]
+    },
+    {
+      "id": "finyk-002",
+      "domain": "finyk",
+      "query": "Топ-3 категорії витрат за квітень",
+      "expected": [
+        "finyk:digest-2026-04-spending",
+        "finyk:tx-groceries-apr-001",
+        "finyk:tx-restaurants-apr-001"
+      ]
+    },
+    {
+      "id": "finyk-003",
+      "domain": "finyk",
+      "query": "Чи перевищив я бюджет на ресторани?",
+      "expected": [
+        "finyk:budget-restaurants-2026-04",
+        "finyk:tx-restaurants-apr-001"
+      ]
+    },
+    {
+      "id": "finyk-004",
+      "domain": "finyk",
+      "query": "Покажи останні транзакції з картки",
+      "expected": [
+        "finyk:tx-recent-001",
+        "finyk:tx-recent-002",
+        "finyk:tx-recent-003"
+      ]
+    },
+    {
+      "id": "finyk-005",
+      "domain": "finyk",
+      "query": "Які мої regular subscription-и?",
+      "expected": [
+        "finyk:sub-spotify",
+        "finyk:sub-icloud",
+        "finyk:sub-anthropic"
+      ]
+    },
+    {
+      "id": "finyk-006",
+      "domain": "finyk",
+      "query": "Скільки я витрачаю на пальне на місяць?",
+      "expected": [
+        "finyk:tx-fuel-mar-001",
+        "finyk:tx-fuel-mar-002",
+        "finyk:digest-2026-03-fuel"
+      ]
+    },
+    {
+      "id": "finyk-007",
+      "domain": "finyk",
+      "query": "Покажи доходи за останній квартал",
+      "expected": ["finyk:income-q1-salary", "finyk:income-q1-freelance"]
+    },
+    {
+      "id": "finyk-008",
+      "domain": "finyk",
+      "query": "Чи були cash withdrawal-и більше 5000 грн?",
+      "expected": ["finyk:tx-cash-large-001"]
+    },
+    {
+      "id": "fizruk-001",
+      "domain": "fizruk",
+      "query": "Який мій PR у жимі лежачи?",
+      "expected": ["fizruk:lift-bench-pr-001"]
+    },
+    {
+      "id": "fizruk-002",
+      "domain": "fizruk",
+      "query": "Скільки кілометрів я набігав минулого місяця?",
+      "expected": [
+        "fizruk:cardio-running-apr-summary",
+        "fizruk:cardio-running-apr-week3"
+      ]
+    },
+    {
+      "id": "fizruk-003",
+      "domain": "fizruk",
+      "query": "Який обʼєм тренувань на тиждень?",
+      "expected": [
+        "fizruk:digest-weekly-volume-w17",
+        "fizruk:digest-weekly-volume-w18"
+      ]
+    },
+    {
+      "id": "fizruk-004",
+      "domain": "fizruk",
+      "query": "Чи прогресую я в присіданнях?",
+      "expected": ["fizruk:lift-squat-trend", "fizruk:lift-squat-pr-001"]
+    },
+    {
+      "id": "fizruk-005",
+      "domain": "fizruk",
+      "query": "Які групи мʼязів я тренував цього тижня?",
+      "expected": ["fizruk:digest-weekly-w18-muscle-split"]
+    },
+    {
+      "id": "fizruk-006",
+      "domain": "fizruk",
+      "query": "Скільки днів поспіль я тренуюсь без пропусків?",
+      "expected": ["fizruk:streak-current"]
+    },
+    {
+      "id": "fizruk-007",
+      "domain": "fizruk",
+      "query": "Покажи мій програмний split (push/pull/legs)",
+      "expected": ["fizruk:program-current-split"]
+    },
+    {
+      "id": "fizruk-008",
+      "domain": "fizruk",
+      "query": "Який середній RPE на робочих сетах?",
+      "expected": [
+        "fizruk:digest-weekly-rpe-w17",
+        "fizruk:digest-weekly-rpe-w18"
+      ]
+    },
+    {
+      "id": "nutrition-001",
+      "domain": "nutrition",
+      "query": "Скільки калорій я зʼїв сьогодні?",
+      "expected": [
+        "nutrition:meal-today-breakfast",
+        "nutrition:meal-today-lunch",
+        "nutrition:meal-today-dinner"
+      ]
+    },
+    {
+      "id": "nutrition-002",
+      "domain": "nutrition",
+      "query": "Який середній протеїн на день за тиждень?",
+      "expected": ["nutrition:digest-weekly-macros-w18"]
+    },
+    {
+      "id": "nutrition-003",
+      "domain": "nutrition",
+      "query": "Які найчастіші продукти у моєму раціоні?",
+      "expected": ["nutrition:favorite-products-top10"]
+    },
+    {
+      "id": "nutrition-004",
+      "domain": "nutrition",
+      "query": "Чи укладаюсь я у calorie deficit?",
+      "expected": [
+        "nutrition:digest-weekly-deficit-w17",
+        "nutrition:digest-weekly-deficit-w18"
+      ]
+    },
+    {
+      "id": "nutrition-005",
+      "domain": "nutrition",
+      "query": "Покажи макроси сніданку",
+      "expected": ["nutrition:meal-today-breakfast"]
+    },
+    {
+      "id": "nutrition-006",
+      "domain": "nutrition",
+      "query": "Скільки води я випив сьогодні?",
+      "expected": ["nutrition:hydration-today"]
+    },
+    {
+      "id": "nutrition-007",
+      "domain": "nutrition",
+      "query": "Як часто я їв фастфуд за місяць?",
+      "expected": ["nutrition:fastfood-frequency-apr"]
+    },
+    {
+      "id": "nutrition-008",
+      "domain": "nutrition",
+      "query": "Які мої pantry staples?",
+      "expected": ["nutrition:pantry-staples"]
+    },
+    {
+      "id": "routine-001",
+      "domain": "routine",
+      "query": "Чи виконав я ранкову routine сьогодні?",
+      "expected": ["routine:morning-today-checkin"]
+    },
+    {
+      "id": "routine-002",
+      "domain": "routine",
+      "query": "Скільки днів поспіль я медитую?",
+      "expected": ["routine:meditation-streak"]
+    },
+    {
+      "id": "routine-003",
+      "domain": "routine",
+      "query": "Які habit-и я найчастіше пропускаю?",
+      "expected": [
+        "routine:digest-weekly-misses-w18",
+        "routine:digest-weekly-misses-w17"
+      ]
+    },
+    {
+      "id": "routine-004",
+      "domain": "routine",
+      "query": "Чи дотримуюсь я sleep schedule?",
+      "expected": ["routine:sleep-schedule-w18", "routine:sleep-quality-trend"]
+    },
+    {
+      "id": "routine-005",
+      "domain": "routine",
+      "query": "Покажи мої active streak-и",
+      "expected": ["routine:streaks-active-summary"]
+    },
+    {
+      "id": "routine-006",
+      "domain": "routine",
+      "query": "Як часто я читаю книги?",
+      "expected": ["routine:reading-frequency-apr"]
+    },
+    {
+      "id": "routine-007",
+      "domain": "routine",
+      "query": "Які мої вечірні routine items?",
+      "expected": ["routine:evening-template"]
+    },
+    {
+      "id": "routine-008",
+      "domain": "routine",
+      "query": "Скільки часу я витрачаю на screens перед сном?",
+      "expected": ["routine:screen-time-pre-sleep-w18"]
+    },
+    {
+      "id": "journal-001",
+      "domain": "journal",
+      "query": "Про що я писав минулого тижня?",
+      "expected": [
+        "journal:entry-2026-04-w17-001",
+        "journal:entry-2026-04-w17-002"
+      ]
+    },
+    {
+      "id": "journal-002",
+      "domain": "journal",
+      "query": "Які теми зʼявляються частіше у моїх записах?",
+      "expected": ["journal:themes-monthly-apr"]
+    },
+    {
+      "id": "journal-003",
+      "domain": "journal",
+      "query": "Чи був я тривожним цього тижня?",
+      "expected": ["journal:mood-anxiety-w18-trend"]
+    },
+    {
+      "id": "journal-004",
+      "domain": "journal",
+      "query": "Покажи останній запис про роботу",
+      "expected": ["journal:entry-work-latest"]
+    },
+    {
+      "id": "journal-005",
+      "domain": "journal",
+      "query": "Які цілі я ставив на цей рік?",
+      "expected": ["journal:goals-2026-yearly"]
+    },
+    {
+      "id": "journal-006",
+      "domain": "journal",
+      "query": "Які gratitude items частіше повторюються?",
+      "expected": ["journal:gratitude-themes-monthly-apr"]
+    },
+    {
+      "id": "journal-007",
+      "domain": "journal",
+      "query": "Що змінилось у моєму mindset за квартал?",
+      "expected": ["journal:reflection-q1-2026"]
+    },
+    {
+      "id": "journal-008",
+      "domain": "journal",
+      "query": "Які reflection-питання я пропускаю?",
+      "expected": ["journal:reflection-misses-w18"]
+    },
+    {
+      "id": "digest-001",
+      "domain": "digest",
+      "query": "Підсумок минулого тижня",
+      "expected": ["digest:weekly-2026-w18", "digest:weekly-2026-w17"]
+    },
+    {
+      "id": "digest-002",
+      "domain": "digest",
+      "query": "Покажи monthly digest за квітень",
+      "expected": ["digest:monthly-2026-04"]
+    },
+    {
+      "id": "digest-003",
+      "domain": "digest",
+      "query": "Топ wins цього тижня",
+      "expected": ["digest:weekly-2026-w18-wins"]
+    },
+    {
+      "id": "digest-004",
+      "domain": "digest",
+      "query": "Що пішло не так минулого тижня?",
+      "expected": ["digest:weekly-2026-w17-misses"]
+    },
+    {
+      "id": "digest-005",
+      "domain": "digest",
+      "query": "Як змінилось моє самопочуття за місяць?",
+      "expected": ["digest:monthly-2026-04-mood-trend"]
+    },
+    {
+      "id": "chat-001",
+      "domain": "chat",
+      "query": "Що ми обговорювали з coach-ем щодо progress-у?",
+      "expected": ["chat:coach-progress-001", "chat:coach-progress-002"]
+    },
+    {
+      "id": "chat-002",
+      "domain": "chat",
+      "query": "Який план тренувань мені порадили?",
+      "expected": ["chat:coach-training-plan-001"]
+    },
+    {
+      "id": "chat-003",
+      "domain": "chat",
+      "query": "Чи давали мені поради щодо сну?",
+      "expected": ["chat:coach-sleep-advice-001"]
+    },
+    {
+      "id": "cofounder-001",
+      "domain": "cofounder",
+      "query": "Які стратегічні рішення я приймав за квартал?",
+      "expected": [
+        "cofounder:decision-q1-2026-001",
+        "cofounder:decision-q1-2026-002"
+      ]
+    },
+    {
+      "id": "cofounder-002",
+      "domain": "cofounder",
+      "query": "Покажи останній strategic review",
+      "expected": ["cofounder:review-monthly-apr-2026"]
+    }
+  ]
+}
