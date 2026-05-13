@@ -18,6 +18,9 @@ import {
   checkSequentialNumbers,
   findCrossBranchCollisions,
   filterNewMigrationFiles,
+  parseTwoPhaseDropHeader,
+  validateTwoPhaseDropHeader,
+  MIN_DEPRECATION_DAYS,
   run,
 } from "../lint-migrations.mjs";
 
@@ -146,6 +149,152 @@ describe("hasNoRollbackEscapeHatch", () => {
       hasNoRollbackEscapeHatch("SELECT 'NO_ROLLBACK: not real';"),
       false,
     );
+  });
+});
+
+// ── parseTwoPhaseDropHeader ──────────────────────────────────────
+
+describe("parseTwoPhaseDropHeader", () => {
+  it("returns kind:'valid' for a well-formed header", () => {
+    const content =
+      "-- TWO-PHASE-DROP: introduced 2026-04-01 as deprecation; safe to drop after 2026-04-15\n" +
+      "DROP TABLE legacy_thing;\n";
+    const parsed = parseTwoPhaseDropHeader(content);
+    assert.equal(parsed.kind, "valid");
+    assert.equal(parsed.introduced, "2026-04-01");
+    assert.equal(parsed.safeAfter, "2026-04-15");
+  });
+
+  it("is case-insensitive and tolerant of extra whitespace", () => {
+    const content =
+      "--    two-phase-drop:   INTRODUCED   2026-04-01    AS  DEPRECATION ;  Safe TO Drop After   2026-04-20\n";
+    const parsed = parseTwoPhaseDropHeader(content);
+    assert.equal(parsed.kind, "valid");
+    assert.equal(parsed.introduced, "2026-04-01");
+    assert.equal(parsed.safeAfter, "2026-04-20");
+  });
+
+  it("matches the header anywhere in the file, not only line 1", () => {
+    const content =
+      "-- 042: drop legacy table\n" +
+      "-- context paragraph\n" +
+      "\n" +
+      "-- TWO-PHASE-DROP: introduced 2026-04-01 as deprecation; safe to drop after 2026-04-20\n" +
+      "DROP TABLE legacy;\n";
+    assert.equal(parseTwoPhaseDropHeader(content).kind, "valid");
+  });
+
+  it("returns kind:'absent' when no TWO-PHASE-DROP line exists", () => {
+    assert.equal(parseTwoPhaseDropHeader("DROP TABLE foo;\n").kind, "absent");
+    assert.equal(parseTwoPhaseDropHeader("").kind, "absent");
+  });
+
+  it("returns kind:'malformed' when the prefix matches but the body does not", () => {
+    const malformed = [
+      // Missing safe-after date
+      "-- TWO-PHASE-DROP: introduced 2026-04-01 as deprecation\n",
+      // Wrong date format
+      "-- TWO-PHASE-DROP: introduced 04/01/2026 as deprecation; safe to drop after 04/15/2026\n",
+      // Missing "as deprecation" keyword
+      "-- TWO-PHASE-DROP: introduced 2026-04-01; safe to drop after 2026-04-15\n",
+      // Reason text instead of structured shape
+      "-- TWO-PHASE-DROP: column unused since PR #500\n",
+    ];
+    for (const content of malformed) {
+      const parsed = parseTwoPhaseDropHeader(content);
+      assert.equal(
+        parsed.kind,
+        "malformed",
+        `expected malformed for: ${content.trim()}`,
+      );
+      assert.ok(
+        typeof parsed.reason === "string" && parsed.reason.length > 0,
+        "malformed result must carry a reason",
+      );
+    }
+  });
+
+  it("does not match a TWO-PHASE-DROP reference inside a SQL string literal", () => {
+    const content =
+      "INSERT INTO audit (kind) VALUES ('TWO-PHASE-DROP: introduced 2026-04-01 as deprecation; safe to drop after 2026-04-15');\n";
+    assert.equal(parseTwoPhaseDropHeader(content).kind, "absent");
+  });
+});
+
+// ── validateTwoPhaseDropHeader ──────────────────────────────────
+
+describe("validateTwoPhaseDropHeader", () => {
+  const validOn = (introduced, safeAfter) => ({
+    kind: "valid",
+    introduced,
+    safeAfter,
+  });
+
+  it("accepts a header with a >=14-day gap and an elapsed safe-after date", () => {
+    const parsed = validOn("2026-04-01", "2026-04-15");
+    const { ok } = validateTwoPhaseDropHeader(parsed, {
+      now: new Date("2026-05-01T00:00:00Z"),
+    });
+    assert.equal(ok, true);
+  });
+
+  it("rejects a gap shorter than MIN_DEPRECATION_DAYS", () => {
+    const parsed = validOn("2026-04-01", "2026-04-10");
+    const { ok, reason } = validateTwoPhaseDropHeader(parsed, {
+      now: new Date("2026-05-01T00:00:00Z"),
+    });
+    assert.equal(ok, false);
+    assert.ok(reason.includes("soak window"));
+    assert.ok(reason.includes(`≥ ${MIN_DEPRECATION_DAYS} days`));
+  });
+
+  it("rejects a header whose safe-after date is still in the future", () => {
+    const parsed = validOn("2026-04-01", "2026-04-20");
+    const { ok, reason } = validateTwoPhaseDropHeader(parsed, {
+      now: new Date("2026-04-10T00:00:00Z"),
+    });
+    assert.equal(ok, false);
+    assert.ok(reason.includes("still in the future"));
+  });
+
+  it("rejects a header with an invalid `introduced` date", () => {
+    const parsed = validOn("2026-13-99", "2026-04-30");
+    const { ok, reason } = validateTwoPhaseDropHeader(parsed);
+    assert.equal(ok, false);
+    assert.ok(reason.includes("introduced"));
+  });
+
+  it("rejects a header with an invalid `safe to drop after` date", () => {
+    const parsed = validOn("2026-04-01", "2026-02-30");
+    const { ok, reason } = validateTwoPhaseDropHeader(parsed);
+    assert.equal(ok, false);
+    assert.ok(reason.includes("safe to drop after"));
+  });
+
+  it("accepts a longer-than-required gap", () => {
+    const parsed = validOn("2026-01-01", "2026-03-01");
+    const { ok } = validateTwoPhaseDropHeader(parsed, {
+      now: new Date("2026-05-01T00:00:00Z"),
+    });
+    assert.equal(ok, true);
+  });
+
+  it("honours a custom minGapDays override (useful for tightening in the future)", () => {
+    const parsed = validOn("2026-04-01", "2026-04-20");
+    const { ok, reason } = validateTwoPhaseDropHeader(parsed, {
+      now: new Date("2026-05-01T00:00:00Z"),
+      minGapDays: 30,
+    });
+    assert.equal(ok, false);
+    assert.ok(reason.includes("≥ 30 days"));
+  });
+
+  it("refuses to validate a non-'valid' parse result", () => {
+    const { ok } = validateTwoPhaseDropHeader({
+      kind: "malformed",
+      reason: "x",
+    });
+    assert.equal(ok, false);
   });
 });
 
@@ -281,8 +430,16 @@ describe("run() — integration", () => {
       changedFiles: [join(tmpDir, "002_drop_foo.sql")],
     });
     assert.equal(ok, false);
-    assert.ok(errors.some((e) => e.includes("DROP TABLE")));
-    assert.ok(errors.some((e) => e.includes("AGENTS.md rule #4")));
+    assert.ok(
+      errors.some((e) =>
+        e.includes("contains destructive DROP without two-phase header"),
+      ),
+      `expected canonical missing-header error, got: ${errors.join(" | ")}`,
+    );
+    assert.ok(
+      errors.some((e) => e.includes("DROP TABLE foo;")),
+      "error must surface the offending DROP line",
+    );
   });
 
   it("fails when DROP COLUMN found without escape-hatch", () => {
@@ -300,10 +457,10 @@ describe("run() — integration", () => {
       changedFiles: [join(tmpDir, "002_drop_col.sql")],
     });
     assert.equal(ok, false);
-    assert.ok(errors.some((e) => e.includes("DROP COLUMN")));
+    assert.ok(errors.some((e) => e.includes("DROP COLUMN bar")));
   });
 
-  it("passes when DROP has ALLOW_DROP escape-hatch", () => {
+  it("passes when DROP has ALLOW_DROP escape-hatch (legacy)", () => {
     writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
     writeFileSync(
       join(tmpDir, "002_drop_foo.sql"),
@@ -315,6 +472,131 @@ describe("run() — integration", () => {
       changedFiles: [join(tmpDir, "002_drop_foo.sql")],
     });
     assert.equal(ok, true);
+  });
+
+  it("passes when DROP has a valid TWO-PHASE-DROP header with elapsed soak window", () => {
+    // The validator compares `safe to drop after` to `new Date()` (now), so
+    // we use dates far in the past to guarantee the soak window has elapsed
+    // regardless of when the test runs.
+    writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "002_drop_foo.sql"),
+      "-- TWO-PHASE-DROP: introduced 2020-04-01 as deprecation; safe to drop after 2020-04-20\n" +
+        "DROP TABLE foo;\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_drop_foo.sql")],
+    });
+    assert.equal(ok, true, `expected pass, got errors: ${errors.join(" | ")}`);
+  });
+
+  it("fails when TWO-PHASE-DROP header has a soak window <14 days", () => {
+    writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "002_drop_foo.sql"),
+      "-- TWO-PHASE-DROP: introduced 2020-04-01 as deprecation; safe to drop after 2020-04-10\n" +
+        "DROP TABLE foo;\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_drop_foo.sql")],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) => e.includes("validation failed")),
+      `expected validation-failed error, got: ${errors.join(" | ")}`,
+    );
+    assert.ok(errors.some((e) => e.includes("soak window")));
+  });
+
+  it("fails when TWO-PHASE-DROP header is malformed", () => {
+    writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "002_drop_foo.sql"),
+      "-- TWO-PHASE-DROP: column unused since PR #500\nDROP TABLE foo;\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_drop_foo.sql")],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) => e.includes("malformed")),
+      `expected malformed error, got: ${errors.join(" | ")}`,
+    );
+    assert.ok(
+      errors.some((e) => e.includes("TWO-PHASE-DROP: introduced")),
+      "error must show the expected header shape",
+    );
+  });
+
+  it("emits the canonical 'without two-phase header' message when no header is present", () => {
+    writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(join(tmpDir, "046_drop_foo.sql"), "DROP TABLE foo;\n");
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "046_drop_foo.sql")],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) =>
+        e.includes(
+          "046_drop_foo.sql contains destructive DROP without two-phase header",
+        ),
+      ),
+      `expected canonical message, got: ${errors.join(" | ")}`,
+    );
+    assert.ok(
+      errors.some((e) => e.includes("operations-runbook.md § 8.2")),
+      "error must point at runbook § 8.2",
+    );
+  });
+
+  it("allows DROP INDEX without any header (reversible by re-issuing CREATE INDEX)", () => {
+    writeFileSync(
+      join(tmpDir, "001_init.sql"),
+      "CREATE TABLE foo (id INT);\nCREATE INDEX foo_id_idx ON foo (id);\n",
+    );
+    writeFileSync(
+      join(tmpDir, "002_drop_idx.sql"),
+      "DROP INDEX IF EXISTS foo_id_idx;\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_drop_idx.sql")],
+    });
+    assert.equal(
+      ok,
+      true,
+      `DROP INDEX should pass without a header; got: ${errors.join(" | ")}`,
+    );
+  });
+
+  it("allows DROP FUNCTION without any header (re-creatable from the migration body)", () => {
+    writeFileSync(
+      join(tmpDir, "001_init.sql"),
+      "CREATE FUNCTION noop() RETURNS void AS $$ BEGIN END $$ LANGUAGE plpgsql;\n",
+    );
+    writeFileSync(
+      join(tmpDir, "002_drop_fn.sql"),
+      "DROP FUNCTION IF EXISTS noop();\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_drop_fn.sql")],
+    });
+    assert.equal(
+      ok,
+      true,
+      `DROP FUNCTION should pass without a header; got: ${errors.join(" | ")}`,
+    );
   });
 
   it("allows DROP in .down.sql files", () => {

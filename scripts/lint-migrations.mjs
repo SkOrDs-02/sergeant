@@ -29,6 +29,20 @@ const DOWN_PLACEHOLDER_RE = /TODO:\s*write\s+your\s+DOWN/i;
 // Same shape as `ALLOW_DROP:` — a reason after the colon is mandatory.
 const NO_ROLLBACK_RE = /^--[ \t]*NO_ROLLBACK:[ \t]*\S.*/m;
 
+// `-- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD`
+// — структурований header, що проявляє Hard Rule #4 two-phase contract:
+// Phase 1 PR deprecates the column/table (deploy date = `introduced`); Phase 2
+// PR (this one) drops it after the 14-day soak. Both dates must parse, gap
+// must be ≥ MIN_DEPRECATION_DAYS, and `safe to drop after` must already be
+// in the past so we don't merge a DROP whose soak window has not elapsed.
+const TWO_PHASE_DROP_RE =
+  /^--[ \t]*TWO-PHASE-DROP:[ \t]*introduced[ \t]+(\d{4}-\d{2}-\d{2})[ \t]+as[ \t]+deprecation[ \t]*;[ \t]*safe[ \t]+to[ \t]+drop[ \t]+after[ \t]+(\d{4}-\d{2}-\d{2})[ \t]*$/im;
+// Loose probe — detects a `TWO-PHASE-DROP:` header even when malformed so we
+// can return a more useful error than "header missing".
+const TWO_PHASE_DROP_PROBE_RE = /^--[ \t]*TWO-PHASE-DROP:/im;
+
+export const MIN_DEPRECATION_DAYS = 14;
+
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
 /** True when the trimmed line is a SQL single-line comment (`-- …`). */
@@ -49,10 +63,146 @@ export function findDropLines(content) {
 
 /**
  * Returns `true` when the file content contains at least one
- * `-- ALLOW_DROP: <reason>` comment (the escape-hatch).
+ * `-- ALLOW_DROP: <reason>` comment (the legacy escape-hatch).
+ *
+ * `ALLOW_DROP:` is still accepted for backward-compatibility with migrations
+ * authored before the structured `TWO-PHASE-DROP:` header existed (e.g.
+ * `046_drop_module_data.sql`, `059_*.down.sql`). New migrations should use
+ * `TWO-PHASE-DROP:` so the soak-window dates are machine-verified.
  */
 export function hasAllowDropEscapeHatch(content) {
   return ALLOW_DROP_RE.test(content);
+}
+
+/**
+ * Strict parser for `YYYY-MM-DD` calendar dates: rejects values that
+ * `Date.parse` would silently normalize (e.g. `2026-02-30` → 2026-03-02).
+ * Returns the UTC midnight timestamp in ms, or `null` on any malformed
+ * input. Used by the two-phase-DROP validator so the deprecation timeline
+ * survives transcription typos.
+ */
+function strictParseISODate(s) {
+  if (typeof s !== "string") return null;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > 31) return null;
+  const ms = Date.UTC(year, month - 1, day);
+  const d = new Date(ms);
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return ms;
+}
+
+/**
+ * Days between two `YYYY-MM-DD` strings (UTC-based, ignores timezone). Used
+ * to verify the 14-day soak gap between Phase 1 (deprecate) and Phase 2
+ * (DROP) of Hard Rule #4's two-phase contract. Callers must have already
+ * validated the strings via `strictParseISODate()`.
+ */
+function dayDiff(fromISO, toISO) {
+  const a = strictParseISODate(fromISO);
+  const b = strictParseISODate(toISO);
+  if (a === null || b === null) return Number.NaN;
+  return Math.floor((b - a) / 86_400_000);
+}
+
+/**
+ * Parses the `-- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe
+ * to drop after YYYY-MM-DD` header. Returns one of three discriminated
+ * shapes:
+ *
+ * - `{ kind: "absent" }` — no `TWO-PHASE-DROP:` line found at all.
+ * - `{ kind: "malformed", reason }` — line starts with `TWO-PHASE-DROP:`
+ *   but doesn't match the canonical shape (typo, missing date, etc.).
+ * - `{ kind: "valid", introduced, safeAfter }` — both dates parsed, ISO
+ *   strings carried forward for downstream validation.
+ *
+ * The caller still has to run `validateTwoPhaseDropHeader()` on a `valid`
+ * shape to gate the soak gap and "safe to drop" boundary.
+ */
+export function parseTwoPhaseDropHeader(content) {
+  const m = content.match(TWO_PHASE_DROP_RE);
+  if (m) {
+    return { kind: "valid", introduced: m[1], safeAfter: m[2] };
+  }
+  if (TWO_PHASE_DROP_PROBE_RE.test(content)) {
+    return {
+      kind: "malformed",
+      reason:
+        "header present but does not match expected shape " +
+        '"-- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD"',
+    };
+  }
+  return { kind: "absent" };
+}
+
+/**
+ * Validates a `{ kind: "valid" }` two-phase-DROP header against:
+ *
+ * - gap between `introduced` and `safeAfter` ≥ `minGapDays` (default 14)
+ * - `safeAfter` ≤ `now` (the soak window has actually elapsed; we don't
+ *   want to merge a DROP whose canary period is still in the future)
+ * - both dates parse as a real calendar date
+ *
+ * Returns `{ ok: true }` when all checks pass, or `{ ok: false, reason }`
+ * with a single human-readable error string when one fails. Multiple
+ * failures collapse to the first reason hit — this is a CI lint, not a
+ * compiler diagnostic; the contributor will see them one at a time.
+ */
+export function validateTwoPhaseDropHeader(
+  parsed,
+  { now = new Date(), minGapDays = MIN_DEPRECATION_DAYS } = {},
+) {
+  if (parsed.kind !== "valid") {
+    return { ok: false, reason: "header is not in a valid shape" };
+  }
+  // Strict round-trip: `Date.parse` is permissive (treats 2026-02-30 as
+  // 2026-03-02), but Hard Rule #4 demands a real calendar date so the
+  // deprecation timeline is unambiguous.
+  const introducedMs = strictParseISODate(parsed.introduced);
+  const safeAfterMs = strictParseISODate(parsed.safeAfter);
+  if (introducedMs === null) {
+    return {
+      ok: false,
+      reason: `"introduced ${parsed.introduced}" is not a valid YYYY-MM-DD calendar date`,
+    };
+  }
+  if (safeAfterMs === null) {
+    return {
+      ok: false,
+      reason: `"safe to drop after ${parsed.safeAfter}" is not a valid YYYY-MM-DD calendar date`,
+    };
+  }
+  const gap = dayDiff(parsed.introduced, parsed.safeAfter);
+  if (gap < minGapDays) {
+    return {
+      ok: false,
+      reason:
+        `soak window between "${parsed.introduced}" and ` +
+        `"${parsed.safeAfter}" is ${gap} day(s); ` +
+        `Hard Rule #4 requires ≥ ${minGapDays} days`,
+    };
+  }
+  const nowMs = now instanceof Date ? now.getTime() : Number(now);
+  if (safeAfterMs > nowMs) {
+    const today = new Date(nowMs).toISOString().slice(0, 10);
+    return {
+      ok: false,
+      reason:
+        `"safe to drop after ${parsed.safeAfter}" is still in the future ` +
+        `(today is ${today}); wait for the soak window to elapse before merging`,
+    };
+  }
+  return { ok: true };
 }
 
 /**
@@ -264,21 +414,62 @@ export function run({
     }
 
     const dropLines = findDropLines(content);
-    if (dropLines.length > 0 && !hasAllowDropEscapeHatch(content)) {
-      for (const { lineNumber, text } of dropLines) {
+    if (dropLines.length === 0) continue;
+
+    // Acceptance order: TWO-PHASE-DROP (structured, machine-validated) →
+    // ALLOW_DROP (legacy, free-form). The latter is kept only so that
+    // pre-existing migrations on `main` (046_drop_module_data,
+    // 059_..._down.sql) keep linting; new code should always use the
+    // structured form.
+    const parsedTwoPhase = parseTwoPhaseDropHeader(content);
+    if (parsedTwoPhase.kind === "valid") {
+      const { ok, reason } = validateTwoPhaseDropHeader(parsedTwoPhase);
+      if (!ok) {
         errors.push(
           [
-            `❌ ${filePath}:${lineNumber}: "${text.trim()}"`,
-            `   AGENTS.md rule #4 requires two-phase DROP:`,
-            `   1. First PR: deploy code that stops using the column/table.`,
-            `   2. Second PR: DROP in a new migration (only after phase 1 is live).`,
-            `   Escape hatch: add a comment to the file:`,
-            `     -- ALLOW_DROP: <reason> (due: YYYY-MM-DD)`,
-            `   Ref: https://github.com/Skords-01/Sergeant/blob/main/AGENTS.md#4-sql-migrations-sequential-no-gaps-two-phase-for-drop`,
+            `❌ ${filePath}: TWO-PHASE-DROP header validation failed.`,
+            `   ${reason}.`,
+            `   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.`,
           ].join("\n"),
         );
       }
+      continue;
     }
+    if (parsedTwoPhase.kind === "malformed") {
+      errors.push(
+        [
+          `❌ ${filePath}: TWO-PHASE-DROP header is malformed.`,
+          `   ${parsedTwoPhase.reason}.`,
+          `   Expected (single line, single comment):`,
+          `     -- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD`,
+          `   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.`,
+        ].join("\n"),
+      );
+      continue;
+    }
+    if (hasAllowDropEscapeHatch(content)) {
+      // Legacy escape hatch — accepted but not validated. No new migration
+      // should rely on this; the structured TWO-PHASE-DROP header is
+      // preferred and lint-time-checked.
+      continue;
+    }
+
+    // No header at all — emit the canonical message the task spec calls for.
+    errors.push(
+      [
+        `❌ Migration ${name} contains destructive DROP without two-phase header.`,
+        `   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.`,
+        ``,
+        `   First non-comment DROP line: ${filePath}:${dropLines[0].lineNumber}:`,
+        `     ${dropLines[0].text.trim()}`,
+        ``,
+        `   Add (after the file header comment block):`,
+        `     -- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD`,
+        ``,
+        `   The two dates must be ≥ ${MIN_DEPRECATION_DAYS} days apart, and`,
+        `   "safe to drop after" must already be in the past on merge day.`,
+      ].join("\n"),
+    );
   }
 
   // 2b. Empty-rollback check for new/changed `.down.sql` files.
