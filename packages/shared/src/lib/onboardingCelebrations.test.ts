@@ -65,4 +65,53 @@ describe("onboardingCelebrations", () => {
       expect(subtext).not.toMatch(pattern);
     }
   });
+
+  it("each module exposes a non-empty nextStepTip and primaryCtaLabel (B-11 / P2-15)", () => {
+    // 2026-05-13 roast — both fields are mandatory copy props; an
+    // empty value would silently render an awkward empty paragraph
+    // or bare button. The shape contract here doubles as a
+    // copy-reviewer signal that the field exists at all.
+    for (const id of [...DASHBOARD_MODULE_IDS, "default"] as const) {
+      const copy = FIRST_ENTRY_CELEBRATIONS[id];
+      expect(copy.nextStepTip.length).toBeGreaterThan(0);
+      expect(copy.nextStepTip.length).toBeLessThanOrEqual(120);
+      expect(copy.primaryCtaLabel.length).toBeGreaterThan(0);
+      expect(copy.primaryCtaLabel.length).toBeLessThanOrEqual(28);
+      // CTA labels are imperative, no trailing punctuation (so they
+      // read like buttons, not sentences).
+      expect(copy.primaryCtaLabel).not.toMatch(/[.!…]$/);
+    }
+  });
+
+  it("nextStepTip is concrete — never the generic «продовжуй додавати записи» TODO (B-11)", () => {
+    // Audit B-11 §2.9: «Що далі» tips that just say «Продовжуй
+    // додавати записи. Після кількох днів отримаєш перші інсайти…»
+    // collapse the celebration moment into another TODO. The guard
+    // blocks regression to the pre-2026-05-13 generic tip.
+    const banned = [/продовжуй додавати записи/i, /кількох днів отримаєш/i];
+    for (const id of [...DASHBOARD_MODULE_IDS, "default"] as const) {
+      const { nextStepTip } = FIRST_ENTRY_CELEBRATIONS[id];
+      for (const pattern of banned) {
+        expect(nextStepTip).not.toMatch(pattern);
+      }
+    }
+  });
+
+  it("each module has a distinct primaryCtaLabel — no generic «Продовжити» fallback for known modules (P2-15)", () => {
+    // The default copy may still ship «Продовжити» (because we have
+    // no module context to promise against), but per-module copy
+    // must hand back a concrete next-action label.
+    for (const id of DASHBOARD_MODULE_IDS) {
+      const { primaryCtaLabel } = FIRST_ENTRY_CELEBRATIONS[id];
+      expect(primaryCtaLabel).not.toBe("Продовжити");
+    }
+    // Sanity-check that labels are distinct per module so the copy
+    // does not collapse to one shared string later by accident.
+    const labels = new Set(
+      DASHBOARD_MODULE_IDS.map(
+        (id) => FIRST_ENTRY_CELEBRATIONS[id].primaryCtaLabel,
+      ),
+    );
+    expect(labels.size).toBe(DASHBOARD_MODULE_IDS.length);
+  });
 });
