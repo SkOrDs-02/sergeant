@@ -645,6 +645,19 @@ export const aiRequestDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// PR-24: per-LLMProvider invocation counter. Окремо від `ai_requests_total`,
+// бо той вимагає `model`/`endpoint`/`outcome` labels від raw Anthropic-шляху,
+// а тут трекаємо саме provider-abstraction-шар: який provider пішов на call
+// і чи завершився ok. Endpoint-tag допомагає окремо рахувати classify-шлях
+// (PR-24) і weekly-digest (PR-25).
+// outcome=ok|error|missing_api_key|rate_limited|timeout
+export const llmProviderInvocationsTotal = new client.Counter({
+  name: "llm_provider_invocations_total",
+  help: "LLMProvider abstraction invocations by provider / endpoint / outcome",
+  labelNames: ["provider", "endpoint", "outcome"],
+  registers: [register],
+});
+
 // ───────────────────────── Frontend web-vitals ────────────────
 // LCP/INP/FCP/TTFB — таймінгові метрики в мілісекундах. Рейтинг обчислюється
 // клієнтом за порогами `web-vitals` package (Google Core Web Vitals):

@@ -16,6 +16,8 @@
 // мають інші вимоги до latency / outcome-tracking.
 
 import { env } from "../../env/env.js";
+import { llmProviderInvocationsTotal } from "../../obs/metrics.js";
+import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
 
 /**
@@ -295,4 +297,99 @@ export function getLLMProvider(
     return new StubProvider(override.stubResponse);
   }
   return new AnthropicProvider(apiKey);
+}
+
+// ─── Observability wrapper ───────────────────────────────────────────
+// PR-24: wraps `provider.generate()` зі стандартизованими Prometheus +
+// Sentry-breadcrumb-сигналами. Це — єдина точка, де провайдер-абстракція
+// зустрічається з observability-шаром, тому що `LLMProvider` сам по собі
+// має бути pure (jaak-test-able), а instrumentation залежить від
+// runtime-side-effects (prom-client registry, Sentry hub).
+//
+// Виклик через `invokeLLM(provider, opts)` замість прямого `provider.generate(opts)`:
+//   - інкрементує `llm_provider_invocations_total{provider, endpoint, outcome}`;
+//   - кладе Sentry breadcrumb (`category="llm.provider"`) з outcome/code.
+//
+// Outcome-мапа:
+//   ok            — provider повернув `ok: true`
+//   missing_api_key — AnthropicProvider не зміг (apiKey=='')
+//   rate_limited  — code='rate_limited' (HTTP 429)
+//   timeout       — code='timeout' (AbortError)
+//   error         — будь-який інший failure
+
+/**
+ * Тип callback-а для тестів — дозволяє підмінити breadcrumb-emitter без
+ * stub-ування глобального Sentry. У production — `Sentry.addBreadcrumb`.
+ */
+export type LLMBreadcrumbFn = (b: {
+  category: string;
+  level: "info" | "warning" | "error";
+  message: string;
+  data: Record<string, unknown>;
+}) => void;
+
+export interface InvokeLLMOptions {
+  /** Override Sentry breadcrumb emitter (for tests). */
+  addBreadcrumb?: LLMBreadcrumbFn;
+}
+
+function outcomeFromResult(result: LLMGenerateResult): string {
+  if (result.ok) return "ok";
+  if (result.code === "missing_api_key") return "missing_api_key";
+  if (result.code === "rate_limited") return "rate_limited";
+  if (result.code === "timeout") return "timeout";
+  return "error";
+}
+
+/**
+ * Wraps `provider.generate(opts)` з Prometheus + Sentry sidecars. Повертає
+ * той самий `LLMGenerateResult` — ця функція НЕ змінює бізнес-логіку, лише
+ * додає observability.
+ *
+ * Виклик ідемпотентний: помилка sidecar-а (Prom-registry / Sentry-hub
+ * unavailable) ловиться і не пробивається до caller-а.
+ */
+export async function invokeLLM(
+  provider: LLMProvider,
+  opts: LLMGenerateOpts,
+  invokeOpts: InvokeLLMOptions = {},
+): Promise<LLMGenerateResult> {
+  const endpoint = opts.endpoint ?? "unknown";
+  const result = await provider.generate(opts);
+  const outcome = outcomeFromResult(result);
+
+  try {
+    llmProviderInvocationsTotal.inc({
+      provider: provider.name,
+      endpoint,
+      outcome,
+    });
+  } catch {
+    /* metrics never break a request */
+  }
+
+  const breadcrumb: Parameters<LLMBreadcrumbFn>[0] = {
+    category: "llm.provider",
+    level: result.ok ? "info" : "warning",
+    message: `llm_provider_invocation provider=${provider.name} endpoint=${endpoint} outcome=${outcome}`,
+    data: {
+      provider: provider.name,
+      endpoint,
+      outcome,
+      model: opts.model,
+      ...(result.ok ? {} : { code: result.code, error: result.error }),
+    },
+  };
+  const emit =
+    invokeOpts.addBreadcrumb ??
+    ((b) => {
+      try {
+        Sentry.addBreadcrumb(b);
+      } catch {
+        /* Sentry не ініціалізований у деяких env — no-op */
+      }
+    });
+  emit(breadcrumb);
+
+  return result;
 }

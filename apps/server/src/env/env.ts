@@ -352,6 +352,22 @@ const envSchema = z.object({
   LLM_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
     .default("anthropic"),
+  /**
+   * PR-24 — окремий provider для read-only OpenClaw paths (зараз: `before_dispatch`
+   * classify; пізніше — інші read-only flows). Дозволяє перемкнути саме classifier
+   * у `stub`-mode (повертає plausible default `{"class":"chat"}`) НЕ зачіпаючи
+   * головний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+   *
+   * Use-cases:
+   * - Anthropic-incident: `LLM_READONLY_PROVIDER=stub` тимчасово; chat-flow
+   *   обслуговується головним provider-ом окремо (PR-25 wires weekly-digest).
+   * - Local-dev без `ANTHROPIC_API_KEY` — class-detection деградує у `chat`,
+   *   решта endpoints працює як раніше.
+   * - E2E-тести — детермінований шлях без витрат токенів.
+   */
+  LLM_READONLY_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    .default("anthropic"),
   /** AI request timeout (мс). */
   AI_TIMEOUT_MS: intFromEnv(180_000),
   /** Max AI retries on transient errors. */

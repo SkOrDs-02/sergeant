@@ -119,7 +119,22 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 - `stub` — `StubProvider`, no-op повертає `{"ok":true,"stub":true}` JSON. Призначення: e2e-тести без real-Anthropic-калькування, локальний dev без ключа, інцидент-recovery під час Anthropic-outage (read-only OpenClaw paths-ів).
 - `openrouter` — зарезервовано під майбутню імплементацію (OpenRouter fallback). Поки що деградує у `stub`, щоб неочікуваний env не валив app.
 
-Wire-up call-sites — окремі PR-24 (OpenClaw `classify`) і PR-25 (`weekly-digest`). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+PR-25 (`weekly-digest`) — наступний wire-up. Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+
+### `LLM_READONLY_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-24** — окремий provider для read-only OpenClaw paths (зараз: `before_dispatch` cheap-router classifier у [`apps/server/src/modules/openclaw/classify.ts`](../../apps/server/src/modules/openclaw/classify.ts); пізніше — інші read-only flows). Дозволяє перемкнути саме classifier у fallback-режим, **не зачіпаючи** основний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+
+Значення такі самі, як у `LLM_PROVIDER`:
+
+- `anthropic` (default) — повний шлях через `anthropicMessages()`.
+- `stub` — повертає plausible default `{"class":"chat"}` без HTTP-callu. Idey для:
+  - **Anthropic-outage:** classifier деградує у `chat`-default, чат-flow продовжує працювати окремо (Layer 2 повний agent).
+  - **Local-dev без `ANTHROPIC_API_KEY`:** не падає на classify-розі.
+  - **E2E-тести:** детермінований, безкоштовний шлях без витрат токенів.
+- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
+
+**Спостережуваність (PR-24).** Кожен виклик `LLMProvider.generate()` через обгортку [`invokeLLM()`](../../apps/server/src/lib/llm/provider.ts) інкрементує Prom-counter `llm_provider_invocations_total{provider,endpoint,outcome}` (outcome: `ok|error|missing_api_key|rate_limited|timeout`) + кладе Sentry breadcrumb `category=llm.provider, level=info|warning` з provider/endpoint/outcome/model. Дашборд `ai-cost` (PR-13) використовує цей counter для розщеплення runtime-distribution між Anthropic vs stub-режимами.
 
 ### `AI_TIMEOUT_MS`, `AI_MAX_RETRIES`, `AI_CIRCUIT_BREAKER_THRESHOLD`, `AI_CIRCUIT_BREAKER_RESET_MS` _(optional)_
 
