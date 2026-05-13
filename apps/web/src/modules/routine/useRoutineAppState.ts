@@ -19,6 +19,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
   type Dispatch,
@@ -29,6 +30,7 @@ import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { useRoutineRoute } from "./hooks/useRoutineRoute";
 import { useFinykHubPreview } from "../../core/hub/useFinykHubPreview";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
@@ -144,7 +146,19 @@ export function useRoutineAppState({
 
   useRoutineReminders(routine);
 
-  const [mainTab, setMainTab] = useLocalStorageState<RoutineMainTab>(
+  // Path-based mainTab: `/routine` → calendar, `/routine/stats` → stats.
+  // The `useRoutineRoute` hook owns:
+  //   - the pathname → mainTab derivation,
+  //   - the one-time hash-compat shim (rewrites legacy `/routine#calendar`,
+  //     `/routine#stats`, `/?module=routine#stats` to `/routine/<tab>`),
+  //   - the typed `navigate(tab)` setter (history push).
+  // The `useLocalStorageState`-backed "last-active tab" is still kept as
+  // a memory layer so that opening Hub → Routine (bare `/routine`) after a
+  // refresh lands on the previously active tab. The URL is otherwise
+  // canonical: bookmarking `/routine/stats` always opens stats regardless
+  // of the stored value.
+  const route = useRoutineRoute("calendar");
+  const [persistedTab, setPersistedTab] = useLocalStorageState<RoutineMainTab>(
     STORAGE_KEYS.ROUTINE_MAIN_TAB,
     "calendar",
     {
@@ -152,31 +166,34 @@ export function useRoutineAppState({
       validate: (v): v is RoutineMainTab => v === "calendar" || v === "stats",
     },
   );
-
-  // Deep-link: коли модуль відкритий з hash `#calendar` чи `#stats`
-  // (напр. з Fizruk → «Запланувати тренування»), форсуємо вкладку
-  // незалежно від попередньо збереженої у localStorage. Прибираємо
-  // hash після застосування, щоб back-навігація / refresh не
-  // повторювали стрибок.
+  const mainTab: RoutineMainTab = route.page;
+  // One-shot on mount: when the user lands on bare `/routine` (no tab in
+  // the path, no legacy hash), restore the last-active tab from
+  // localStorage. Subsequent tab changes go through `setMainTab` →
+  // `route.navigate(...)`, which writes both the URL and localStorage.
+  const restoredFromPersistRef = useRef(false);
   useEffect(() => {
-    let raw = "";
-    try {
-      raw = (window.location.hash || "").replace(/^#\/?/, "").toLowerCase();
-    } catch {
-      return;
-    }
-    if (raw !== "calendar" && raw !== "stats") return;
-    setMainTab(raw);
-    try {
-      const next = `${window.location.pathname}${window.location.search}`;
-      window.history.replaceState(null, "", next);
-    } catch {
-      /* noop */
-    }
-    // Один раз на mount — наступні переходи між вкладками — через
-    // RoutineBottomNav, без url hash.
+    if (restoredFromPersistRef.current) return;
+    restoredFromPersistRef.current = true;
+    if (typeof window === "undefined") return;
+    const pathTail = window.location.pathname.replace(/^\/routine\/?/, "");
+    if (pathTail !== "") return;
+    if (window.location.hash) return;
+    if (persistedTab === "calendar") return;
+    route.navigate(persistedTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const setMainTab: Dispatch<SetStateAction<RoutineMainTab>> = useCallback(
+    (next) => {
+      const resolved =
+        typeof next === "function"
+          ? (next as (prev: RoutineMainTab) => RoutineMainTab)(mainTab)
+          : next;
+      setPersistedTab(resolved);
+      route.navigate(resolved);
+    },
+    [mainTab, route, setPersistedTab],
+  );
 
   const time = useRoutineTimeState();
   const [tagFilter, setTagFilter] = useState<string | null>(null);
