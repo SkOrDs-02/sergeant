@@ -62,12 +62,13 @@ export const KNOWN_PATHS: ReadonlySet<string> = new Set([
  * set. When a new module migrates, add it here once; both consumers
  * pick it up automatically.
  *
- * Order: nutrition (PR #2104), finyk (PR #2108); fizruk + routine
- * are still on `?module=<id>` until later 0006 PRs.
+ * Order: nutrition (PR #2104), finyk (PR #2108), fizruk (Phase 2.c);
+ * routine is still on `?module=<id>` until a later 0006 PR.
  */
 export const PATH_BASED_MODULE_IDS: ReadonlySet<string> = new Set([
   "nutrition",
   "finyk",
+  "fizruk",
 ]);
 
 /**

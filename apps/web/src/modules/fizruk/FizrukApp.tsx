@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
-// eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-import { useHashRoute } from "@shared/hooks/useHashRoute";
+import { useFizrukRoute } from "./hooks/useFizrukRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
 import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
@@ -19,7 +18,7 @@ import {
 import { FIZRUK_NAV } from "./shell/fizrukNav";
 import { FizrukHeader } from "./shell/FizrukHeader";
 import { FizrukRouter } from "./shell/FizrukRouter";
-import { FIZRUK_PAGES, type FizrukPage } from "./shell/fizrukRoute";
+import { type FizrukPage } from "./shell/fizrukRoute";
 
 interface FizrukAppProps {
   onBackToHub?: () => void;
@@ -36,11 +35,7 @@ export default function FizrukApp({
   pwaAction,
   onPwaActionConsumed,
 }: FizrukAppProps = {}) {
-  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-  const { page, segments, navigate } = useHashRoute<FizrukPage>({
-    defaultPage: "dashboard",
-    validPages: FIZRUK_PAGES,
-  });
+  const { page, segments, navigate } = useFizrukRoute("dashboard");
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
 

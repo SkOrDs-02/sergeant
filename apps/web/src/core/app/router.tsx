@@ -59,6 +59,13 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: "/fizruk/*",
+    lazy: async () => {
+      const m = await import("../../modules/fizruk/route");
+      return m.route;
+    },
+  },
+  {
     path: "*",
     element: <App />,
   },
