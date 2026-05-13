@@ -32,6 +32,16 @@ import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  cancelForget,
+  confirmForget,
+  forgetById,
+  forgetByTopic,
+  forgetSince,
+  previewForget,
+  ForgetRateLimitError,
+  ForgetTokenError,
+} from "../../modules/ai-memory/forget.js";
+import {
   buildAiCostSummary,
   checkDailyBudget,
   finalizeInvocation,
@@ -146,6 +156,57 @@ const RecallBody = z.object({
   query: z.string().min(1).max(2000),
   topK: z.number().int().min(1).max(50).optional(),
 });
+
+// ─── /forget slash-команда (PR-23) ───────────────────────────────────────
+// Single endpoint, mode-dispatched. Зміна mode — без routing reshuffle.
+const ForgetBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    founderTgUserId: z.number().int(),
+    rawCommand: z.string().min(1).max(500),
+  })
+  .and(
+    z.discriminatedUnion("mode", [
+      z.object({
+        mode: z.literal("byId"),
+        memoryId: z.number().int().positive(),
+      }),
+      z.object({
+        mode: z.literal("byTopic"),
+        topic: z.string().min(1).max(200),
+      }),
+      z.object({
+        mode: z.literal("since"),
+        sinceDate: z
+          .string()
+          .regex(
+            /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/,
+            "sinceDate must be ISO8601 (YYYY-MM-DD or full timestamp)",
+          ),
+      }),
+      z.object({
+        mode: z.literal("previewQuery"),
+        query: z.string().min(1).max(2000),
+        topK: z.number().int().min(1).max(20).optional(),
+      }),
+    ]),
+  );
+
+const ForgetConfirmBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    founderTgUserId: z.number().int(),
+    rawCommand: z.string().min(1).max(500),
+    token: z.string().uuid(),
+  })
+  .strict();
+
+const ForgetCancelBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    token: z.string().uuid(),
+  })
+  .strict();
 
 const StrategyBody = z.object({
   path: z.string().min(1).max(500),
@@ -595,6 +656,123 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         topK: parsed.data.topK,
       });
       res.json(result);
+    }),
+  );
+
+  // ---- forget_memory (PR-23 / /forget slash) ----
+  // Single mode-dispatch endpoint:
+  //   byId        → soft-delete one row by ai_memories.id
+  //   byTopic     → soft-delete all rows for founder × topic
+  //   since       → soft-delete all rows created on/after date
+  //   previewQuery → semantic search, return token+preview (no delete)
+  // Rate-limited: 3 deletes/hour/founder. previewQuery NOT rate-limited.
+  r.post(
+    "/api/internal/openclaw/forget",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ForgetBody, req, res);
+      if (!parsed.ok) return;
+      const body = parsed.data;
+      try {
+        if (body.mode === "byId") {
+          const result = await forgetById(pool, {
+            founderUserId: body.founderUserId,
+            founderTgUserId: body.founderTgUserId,
+            rawCommand: body.rawCommand,
+            memoryId: body.memoryId,
+          });
+          res.json(result);
+          return;
+        }
+        if (body.mode === "byTopic") {
+          const result = await forgetByTopic(pool, {
+            founderUserId: body.founderUserId,
+            founderTgUserId: body.founderTgUserId,
+            rawCommand: body.rawCommand,
+            topic: body.topic,
+          });
+          res.json(result);
+          return;
+        }
+        if (body.mode === "since") {
+          const result = await forgetSince(pool, {
+            founderUserId: body.founderUserId,
+            founderTgUserId: body.founderTgUserId,
+            rawCommand: body.rawCommand,
+            sinceDate: body.sinceDate,
+          });
+          res.json(result);
+          return;
+        }
+        // previewQuery
+        const result = await previewForget({
+          founderUserId: body.founderUserId,
+          founderTgUserId: body.founderTgUserId,
+          rawCommand: body.rawCommand,
+          query: body.query,
+          topK: body.topK,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof ForgetRateLimitError) {
+          res.status(429).json({
+            error: "rate_limited",
+            message: err.message,
+            retryAfterSec: err.retryAfterSec,
+          });
+          return;
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- forget_memory_confirm (PR-23 / preview confirm) ----
+  r.post(
+    "/api/internal/openclaw/forget/confirm",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ForgetConfirmBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await confirmForget(pool, {
+          founderUserId: parsed.data.founderUserId,
+          founderTgUserId: parsed.data.founderTgUserId,
+          rawCommand: parsed.data.rawCommand,
+          token: parsed.data.token,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof ForgetRateLimitError) {
+          res.status(429).json({
+            error: "rate_limited",
+            message: err.message,
+            retryAfterSec: err.retryAfterSec,
+          });
+          return;
+        }
+        if (err instanceof ForgetTokenError) {
+          res.status(410).json({
+            error: "token_invalid",
+            reason: err.reason,
+            message: err.message,
+          });
+          return;
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- forget_memory_cancel (PR-23 / preview cancel) ----
+  r.post(
+    "/api/internal/openclaw/forget/cancel",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ForgetCancelBody, req, res);
+      if (!parsed.ok) return;
+      const cancelled = cancelForget(
+        parsed.data.token,
+        parsed.data.founderUserId,
+      );
+      res.json({ cancelled });
     }),
   );
 
