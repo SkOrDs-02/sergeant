@@ -88,8 +88,8 @@ export function DailyPlanMealRow({
         <div className="flex flex-col gap-1 shrink-0 items-end">
           <Button
             type="button"
-            variant="ghost"
-            className="h-8 text-xs px-2"
+            variant="secondary"
+            size="sm"
             onClick={() => onAddToLog(meal)}
             disabled={busy}
           >
@@ -97,8 +97,8 @@ export function DailyPlanMealRow({
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            className="h-8 text-xs px-2 text-subtle"
+            variant="secondary"
+            size="sm"
             onClick={() => onRegen(String(meal.type ?? ""))}
             disabled={busy}
           >

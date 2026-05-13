@@ -24,7 +24,7 @@ export function BarcodeSection({
 }: BarcodeSectionProps) {
   return (
     <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
-      <SectionHeading as="div" size="xs" className="mb-2">
+      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
         Штрихкод
       </SectionHeading>
       <div className="flex flex-wrap gap-2 items-center">

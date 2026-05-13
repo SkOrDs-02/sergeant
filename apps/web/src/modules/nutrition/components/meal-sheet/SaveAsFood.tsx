@@ -27,8 +27,8 @@ export function SaveAsFood({
     <div className="mt-3 mb-1">
       <Button
         type="button"
-        variant="ghost"
-        className="h-9 text-xs"
+        variant="secondary"
+        size="sm"
         onClick={async () => {
           const name = String(form.name || "").trim();
           if (!name) {

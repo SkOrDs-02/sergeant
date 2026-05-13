@@ -38,7 +38,7 @@ export function LogCardSearch({
       padding="none"
       className="bg-panel/40 px-3 py-3 space-y-2"
     >
-      <SectionHeading as="div" size="xs">
+      <SectionHeading as="div" size="xs" variant="nutrition">
         Пошук по журналу
       </SectionHeading>
       <Input

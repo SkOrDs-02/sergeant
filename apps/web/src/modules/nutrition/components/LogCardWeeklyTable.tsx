@@ -27,6 +27,7 @@ export function LogCardWeeklyTable({
       <SectionHeading
         as="button"
         size="xs"
+        variant="nutrition"
         type="button"
         onClick={() => setWeekOpen((v) => !v)}
         className="flex items-center gap-2 w-full text-left py-1"

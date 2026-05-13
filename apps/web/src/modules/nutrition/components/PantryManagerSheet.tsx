@@ -181,7 +181,7 @@ export function PantryManagerSheet({
 
       {isFormVisible && (
         <div className="rounded-2xl border border-nutrition/40 bg-panelHi p-4">
-          <SectionHeading as="div" size="xs">
+          <SectionHeading as="div" size="xs" variant="nutrition">
             {formTitle}
           </SectionHeading>
           <p className="text-xs text-subtle leading-relaxed mt-1">{formHint}</p>
@@ -246,7 +246,7 @@ export function PantryManagerSheet({
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="secondary"
               className="h-12 min-h-[44px]"
               onClick={() => setPantryForm({ mode: "idle", name: "", err: "" })}
               disabled={busy}
@@ -278,7 +278,7 @@ export function PantryManagerSheet({
               id="pantry-more-actions"
               className="rounded-2xl border border-line/60 bg-bg/40 p-4 mt-2"
             >
-              <SectionHeading as="div" size="xs">
+              <SectionHeading as="div" size="xs" variant="nutrition">
                 Небезпечна зона
               </SectionHeading>
               <p className="text-xs text-subtle leading-relaxed mt-1">

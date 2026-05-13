@@ -38,7 +38,12 @@ export function ItemEditSheet({
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <SectionHeading as="div" size="xs" className="mb-1">
+          <SectionHeading
+            as="div"
+            size="xs"
+            variant="nutrition"
+            className="mb-1"
+          >
             Кількість
           </SectionHeading>
           <Input
@@ -52,7 +57,12 @@ export function ItemEditSheet({
           />
         </div>
         <div>
-          <SectionHeading as="div" size="xs" className="mb-1">
+          <SectionHeading
+            as="div"
+            size="xs"
+            variant="nutrition"
+            className="mb-1"
+          >
             Одиниця
           </SectionHeading>
           <Input

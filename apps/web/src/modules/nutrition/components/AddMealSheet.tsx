@@ -424,7 +424,7 @@ export function AddMealSheet({
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 className="h-12 min-h-[44px]"
                 onClick={onClose}
               >

@@ -85,7 +85,7 @@ export function FoodPickerSection({
   return (
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <SectionHeading as="div" size="xs">
+        <SectionHeading as="div" size="xs" variant="nutrition">
           Продукт
         </SectionHeading>
         {(foodBusy || offBusy) && (
@@ -176,7 +176,7 @@ export function FoodPickerSection({
                 setPickedGrams("100");
                 setFoodQuery("");
               }}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors text-sm"
+              className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors text-sm"
               aria-label="Скинути продукт"
             >
               ✕
