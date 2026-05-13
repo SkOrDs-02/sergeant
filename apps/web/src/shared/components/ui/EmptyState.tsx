@@ -18,6 +18,14 @@ export interface EmptyStateProps {
   illustration?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;
+  /**
+   * CTA slot. Render a `<Button>` so focus styles (Hard Rule #14 —
+   * `focus-visible:ring-*`) and the WCAG 2.5.5 / HIG ≥44×44 touch target
+   * arrive for free. When the button is icon-only (e.g. `<Button iconOnly>`),
+   * make sure to pass an `aria-label` — there is no visible text fallback for
+   * the screen-reader announcement nested inside the surrounding
+   * `role="status"` live region.
+   */
   action?: ReactNode;
   className?: string;
   compact?: boolean;
@@ -31,6 +39,15 @@ export interface EmptyStateProps {
    *  the module accent so the empty state visually belongs to its host
    *  module instead of the neutral grey default. */
   module?: ModuleAccent;
+  /**
+   * Override the live-region politeness. The default (`"polite"`) lets
+   * a screen reader announce `title` + `description` when the empty state
+   * appears dynamically (e.g. after a filter clears the list). Set to
+   * `"off"` for empty states that mount on initial page load alongside
+   * other landmark content — the page title / heading already covers the
+   * announcement and a second polite region is redundant noise.
+   */
+  ariaLive?: "polite" | "off";
 }
 
 const MODULE_ICON_TINT: Record<
@@ -67,10 +84,20 @@ export function EmptyState({
   hint,
   examplePreview,
   module,
+  ariaLive = "polite",
 }: EmptyStateProps) {
   const accent = module ? MODULE_ICON_TINT[module] : null;
   return (
+    // `role="status"` + `aria-live="polite"` лишають empty-state німим до
+    // моменту динамічної появи (наприклад, після фільтра, який очистив
+    // список) — і тоді SR озвучує title + description одним блоком завдяки
+    // `aria-atomic`. Не перехоплюємо фокус на mount: tier-1 з action-ом
+    // лишає focus там, де він був (Button сам забезпечує focus-visible-ring
+    // за Hard Rule #14, коли користувач до неї tab-неться).
     <div
+      role="status"
+      aria-live={ariaLive}
+      aria-atomic="true"
       className={cn(
         "flex flex-col items-center justify-center text-center",
         compact ? "py-8 px-4 gap-2" : "py-14 px-6 gap-3",
@@ -82,6 +109,7 @@ export function EmptyState({
     >
       {illustration ? (
         <div
+          aria-hidden="true"
           className={cn(
             "flex items-center justify-center",
             !disableAnimation &&
@@ -93,6 +121,7 @@ export function EmptyState({
       ) : (
         icon && (
           <div
+            aria-hidden="true"
             className={cn(
               "flex items-center justify-center rounded-2xl border",
               accent ? accent.container : "bg-panelHi border-line text-subtle",
@@ -162,6 +191,7 @@ export function EmptyState({
           <Icon
             name="lightbulb"
             size={12}
+            aria-hidden="true"
             className={cn(accent ? accent.icon : "text-brand-500/70")}
           />
           {hint}
@@ -285,9 +315,13 @@ export function ModuleEmptyState({
           type="button"
           onClick={onDismiss}
           aria-label="Закрити"
-          className="absolute top-2 right-2 p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors z-10"
+          className={cn(
+            "absolute top-2 right-2 p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors z-10",
+            // Hard Rule #14 — visible focus indicator via focus-visible:
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+          )}
         >
-          <Icon name="x" size={16} />
+          <Icon name="x" size={16} aria-hidden="true" />
         </button>
       )}
       <EmptyState
