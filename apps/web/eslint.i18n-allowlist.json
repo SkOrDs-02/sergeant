@@ -83,6 +83,7 @@
   "apps/web/src/core/settings/GeneralSection.tsx",
   "apps/web/src/core/settings/NotificationsSection.tsx",
   "apps/web/src/core/settings/NutritionSection.tsx",
+  "apps/web/src/core/settings/PlanSection.tsx",
   "apps/web/src/core/settings/PWASection.tsx",
   "apps/web/src/core/settings/RoutineSection.tsx",
   "apps/web/src/core/stories/components/StoriesProgressHeader.tsx",

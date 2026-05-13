@@ -47,7 +47,7 @@
 | P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | Outstanding   |
 | P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding   |
 | P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
-| P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | Outstanding   |
+| P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)** |
 | P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding   |
 | P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | Outstanding   |
 | P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | Outstanding   |
@@ -117,3 +117,14 @@
 | 10  | `apps/server/src/modules/billing/stripe.test.ts`       | Changed |
 | 11  | `docs/audits/2026-05-13-revenue-monetization-roast.md` | New     |
 | 12  | `docs/audits/README.md`                                | Changed |
+
+## Прогрес виконання (follow-up PR — P1-6)
+
+### P1-6 · Pro plan limits UI in Settings (show plan + manage sub) ✅ Closed in #PR_NUMBER_PLACEHOLDER
+
+- **Файл:** `apps/web/src/core/settings/PlanSection.tsx` (new, ~155 LOC)
+- **Тест:** `apps/web/src/core/settings/PlanSection.test.tsx` (new, 3 tests — free / pro-active / pro-canceled)
+- **Інтеграція:** `apps/web/src/core/hub/HubSettingsPage.tsx` — додано секцію `plan` у tab `general` між `general` та `notifications`.
+- `usePlan()` (Hard Rule #2 ✓ через `billingKeys.status`) → бейдж Free/Pro, дата trial-end (`status === "trialing"` + `currentPeriodEnd`), warning для `canceled` / `past_due` / `inactive-canceled`.
+- CTA: «Перейти на Pro» (`/pricing?source=settings`) для Free; «Керувати підпискою» (`window.location.assign("/api/billing/portal")`) для Pro. Server-side endpoint — окремий outstanding item (**P0-6**); UI шле браузер на канонічний URL уже зараз, щоб не плодити dead-code wrapper у `billingApi` (api-client `openCustomerPortal` — Phase 3.3 ініціативи 0010).
+- i18n: новий файл додано до `apps/web/eslint.i18n-allowlist.json` (consistent з рештою `apps/web/src/core/settings/*Section.tsx`).

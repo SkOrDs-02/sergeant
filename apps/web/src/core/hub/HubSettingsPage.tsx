@@ -13,6 +13,7 @@ import { FizrukSection } from "../settings/FizrukSection";
 import { GeneralSection } from "../settings/GeneralSection";
 import { NotificationsSection } from "../settings/NotificationsSection";
 import { NutritionSection } from "../settings/NutritionSection";
+import { PlanSection } from "../settings/PlanSection";
 import { PrivacySection } from "../settings/PrivacySection";
 import { PWASection } from "../settings/PWASection";
 import { RoutineSection } from "../settings/RoutineSection";
@@ -31,7 +32,14 @@ const GROUPS = [
   {
     id: "general",
     label: "Загальні",
-    sections: ["dashboard", "general", "notifications", "ai", "assistant"],
+    sections: [
+      "dashboard",
+      "general",
+      "plan",
+      "notifications",
+      "ai",
+      "assistant",
+    ],
   },
   {
     id: "modules",
@@ -139,6 +147,13 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "загальні онбординг onboarding welcome синхронізація акаунт sync cloud",
         render: () => <GeneralSection user={user} />,
+      },
+      {
+        id: "plan",
+        title: "Підписка та план",
+        keywords:
+          "план plan підписка subscription billing pro free trial trialing keruvaty stripe portal upgrade оплата",
+        render: () => <PlanSection />,
       },
       {
         id: "notifications",
