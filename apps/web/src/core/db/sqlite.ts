@@ -2,6 +2,7 @@ import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import * as sqliteSchema from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
+import { logger } from "@shared/lib";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
@@ -154,7 +155,7 @@ function warnIfNotCrossOriginIsolated(): boolean {
 
   if (isolated) return true;
 
-  console.warn(
+  logger.warn(
     "[sqlite] Page is not crossOriginIsolated — Cross-Origin-Opener-Policy " +
       "and Cross-Origin-Embedder-Policy headers are missing. The plain OPFS " +
       "VFS (worker-backed) cannot install without SharedArrayBuffer; falling " +
@@ -223,7 +224,7 @@ async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
       });
       return { db: new pool.OpfsSAHPoolDb("sergeant.db"), vfs: "opfs-sahpool" };
     } catch (err) {
-      console.warn("[sqlite] OPFS-SAH Pool VFS unavailable, falling back", err);
+      logger.warn("[sqlite] OPFS-SAH Pool VFS unavailable, falling back", err);
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",
@@ -242,7 +243,7 @@ async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
     try {
       return { db: new sqlite3.oo1.JsStorageDb("local"), vfs: "kvvfs" };
     } catch (err) {
-      console.warn("[sqlite] kvvfs (localStorage) unavailable", err);
+      logger.warn("[sqlite] kvvfs (localStorage) unavailable", err);
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",
@@ -254,7 +255,7 @@ async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
 
   // 3) Last resort — non-persistent. The DB still works, callers just
   //    lose data on reload.
-  console.warn(
+  logger.warn(
     "[sqlite] No persistent VFS available; using in-memory database. " +
       "Data will not survive a reload.",
   );

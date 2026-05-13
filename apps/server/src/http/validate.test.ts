@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import type { Request, Response } from "express";
-import { validateBody, validateQuery } from "./validate.js";
+import {
+  parseBody,
+  parseQuery,
+  validateBody,
+  validateQuery,
+} from "./validate.js";
+import { ValidationError } from "../obs/errors.js";
 import {
   ChatRequestSchema,
   AnalyzePhotoSchema,
@@ -76,6 +82,63 @@ describe("validateQuery", () => {
       res,
     );
     expect(ok).toEqual({ ok: true, data: { q: "foo" } });
+  });
+});
+
+describe("parseBody (throw-based)", () => {
+  it("повертає parsed data для валідного payload-у", () => {
+    const schema = z.object({ a: z.string(), b: z.number() });
+    const data = parseBody(schema, { body: { a: "x", b: 1 } } as Request);
+    expect(data).toEqual({ a: "x", b: 1 });
+  });
+
+  it("кидає ValidationError з details у cause при помилці", () => {
+    const schema = z.object({ a: z.string() });
+    let caught: unknown;
+    try {
+      parseBody(schema, { body: { a: 42 } } as Request);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ValidationError);
+    const err = caught as ValidationError;
+    expect(err.status).toBe(400);
+    expect(err.code).toBe("VALIDATION");
+    expect(err.message).toBe("Некоректні дані запиту");
+    const cause = err.cause as { details: Array<{ path: string }> };
+    expect(cause.details).toHaveLength(1);
+    expect(cause.details[0]!.path).toBe("a");
+  });
+
+  it("обробляє відсутній body як {}", () => {
+    const schema = z.object({ a: z.string().optional() });
+    expect(parseBody(schema, {} as Request)).toEqual({});
+  });
+});
+
+describe("parseQuery (throw-based)", () => {
+  it("працює на req.query", () => {
+    const schema = z.object({ q: z.string() });
+    const data = parseQuery(schema, {
+      query: { q: "foo" },
+    } as unknown as Request);
+    expect(data).toEqual({ q: "foo" });
+  });
+
+  it("кидає ValidationError з details у cause при помилці", () => {
+    const schema = z.object({ n: z.coerce.number().int() });
+    let caught: unknown;
+    try {
+      parseQuery(schema, {
+        query: { n: "not-a-number" },
+      } as unknown as Request);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ValidationError);
+    expect((caught as ValidationError).message).toBe(
+      "Некоректні параметри запиту",
+    );
   });
 });
 

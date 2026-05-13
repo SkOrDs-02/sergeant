@@ -1,0 +1,268 @@
+name: RAG quality gate (recall@4 weekly)
+
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Linked to docs/planning/pr-plan-2026-05.md § PR-22 «RAG quality gate».
+# Reaction playbook: docs/observability/runbook.md § «RagQualityGateDegraded».
+#
+# Що робить:
+#   - Weekly (Mon 08:00 UTC = 11:00 Kyiv) запускає eval CLI у mock-mode
+#     як sanity-check, що gate-машинерія працює (не false-alarm-ить).
+#   - workflow_dispatch дозволяє запустити вручну з overрайдом mode-у
+#     і simulate_recall-у (для тестування alert-flow без real degradation).
+#   - Якщо exit≥1 → відкриває / оновлює GH issue (idempotent на marker)
+#     з відповідним label-ом:
+#       - `rag-quality-degraded` (warn, mean < 0.5)
+#       - `rag-quality-critical` (kill, mean < 0.4)
+#     Каритчні алерти додають CODEOWNERS mention + посилання на runbook.
+#
+# PR-20 (real-data eval) замінить mode=mock на mode=live (Voyage +
+# pgvector) — workflow_dispatch уже готовий до перемикача.
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Monday 08:00 UTC = 11:00 Europe/Kyiv
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Retrieval mode (mock|simulate|live)"
+        required: false
+        default: "mock"
+        type: choice
+        options:
+          - mock
+          - simulate
+          - live
+      simulate_recall:
+        description: "Target recall for --mode=simulate (0..1)"
+        required: false
+        default: "1.0"
+        type: string
+      warn_threshold:
+        description: "Warn threshold (mean < this → open issue)"
+        required: false
+        default: "0.5"
+        type: string
+      kill_threshold:
+        description: "Kill threshold (mean < this → critical issue + auto-disable)"
+        required: false
+        default: "0.4"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: rag-quality-gate
+  cancel-in-progress: false
+
+jobs:
+  pre-flight:
+    name: CLI smoke tests (node --test)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+
+      - name: Run eval-rag-recall CLI tests
+        run: node --test scripts/__tests__/eval-rag-recall.test.mjs
+
+  eval:
+    name: Run recall@4 eval
+    needs: [pre-flight]
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.eval.outputs.status }}
+      mean: ${{ steps.eval.outputs.mean }}
+      mode: ${{ steps.eval.outputs.mode }}
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+
+      - name: Run eval
+        id: eval
+        # `set +e` бо exit 1/2 — це expected signal (warn/kill), а не
+        # фатал. Ми читаємо exit-code і піднімаємо у Step Summary, а
+        # потім окремий job `alert` обробляє issue.
+        run: |
+          set +e
+          MODE="${{ inputs.mode || 'mock' }}"
+          SIM="${{ inputs.simulate_recall || '1.0' }}"
+          WARN="${{ inputs.warn_threshold || '0.5' }}"
+          KILL="${{ inputs.kill_threshold || '0.4' }}"
+
+          node scripts/eval-rag-recall.mjs \
+            --mode="$MODE" \
+            --simulate-recall="$SIM" \
+            --warn="$WARN" \
+            --kill="$KILL" \
+            --output=rag-eval-summary.json > rag-eval-stdout.json
+          EVAL_EXIT=$?
+          set -e
+
+          STATUS=$(jq -r '.status' rag-eval-summary.json)
+          MEAN=$(jq -r '.aggregate.mean' rag-eval-summary.json)
+          MIN=$(jq -r '.aggregate.min' rag-eval-summary.json)
+          P50=$(jq -r '.aggregate.p50' rag-eval-summary.json)
+          COUNT=$(jq -r '.aggregate.count' rag-eval-summary.json)
+
+          echo "status=${STATUS}" >> "$GITHUB_OUTPUT"
+          echo "mean=${MEAN}" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### RAG quality gate — eval summary"
+            echo ""
+            echo "| Metric | Value |"
+            echo "| --- | --- |"
+            echo "| mode | ${MODE} |"
+            echo "| status | **${STATUS}** |"
+            echo "| mean recall@4 | ${MEAN} |"
+            echo "| min recall@4 | ${MIN} |"
+            echo "| p50 recall@4 | ${P50} |"
+            echo "| query count | ${COUNT} |"
+            echo "| warn threshold | ${WARN} |"
+            echo "| kill threshold | ${KILL} |"
+            echo "| eval exit code | ${EVAL_EXIT} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$EVAL_EXIT" -ge 3 ]; then
+            echo "::error::Eval CLI hard-failed (exit ${EVAL_EXIT}) — investigate logs."
+            exit 1
+          fi
+
+      - name: Upload eval summary
+        if: ${{ !cancelled() }}
+        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: rag-eval-summary
+          path: rag-eval-summary.json
+          retention-days: 90
+
+  alert:
+    name: Open/update issue on degradation
+    needs: [eval]
+    if: ${{ needs.eval.outputs.status != 'pass' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/download-artifact v4.1.9 (SHA-pinned for supply-chain hardening)
+      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
+        with:
+          name: rag-eval-summary
+
+      # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('rag-eval-summary.json', 'utf-8'));
+            const status = summary.status; // 'warn' | 'kill'
+            const isKill = status === 'kill';
+
+            const title = isKill
+              ? 'RAG quality gate: KILL — recall@4 нижче kill threshold'
+              : 'RAG quality gate: WARN — recall@4 нижче warn threshold';
+            const marker = isKill
+              ? '<!-- rag-quality-gate-kill-marker -->'
+              : '<!-- rag-quality-gate-warn-marker -->';
+            const labels = isKill
+              ? ['rag-quality-critical', 'ai-memory']
+              : ['rag-quality-degraded', 'ai-memory'];
+
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const now = new Date().toISOString();
+
+            const reactionBlock = isKill
+              ? [
+                  '## Reaction',
+                  '',
+                  '1. **Зараз же** — встав `AI_MEMORY_ENABLED=false` на Railway → redeploy.',
+                  '   Це вимикає весь pipeline (ingestion + retrieval); chat-flow продовжує працювати без RAG-injection.',
+                  '2. Перевір `rag-eval-summary.json` (artifact цього run-у) → знайди queries з `recall: 0` за domain-breakdown-ом.',
+                  '3. Скан Voyage upstream incident-ів і recent embeddings.ts / vectorStore.ts changes.',
+                  '4. Якщо це false-positive (eval-harness регрес, не RAG-регрес) → close issue з міткою `false-positive`.',
+                  '5. Якщо RAG-регрес підтверджений → відкрий follow-up PR під label `ai-memory`.',
+                  '',
+                  'Детальний playbook: [`docs/observability/runbook.md` § «RagQualityGateKillSwitch»](../blob/main/docs/observability/runbook.md).',
+                ].join('\n')
+              : [
+                  '## Reaction',
+                  '',
+                  '1. Скан `perDomain` breakdown у artifact — який domain (chat/finyk/fizruk/…) деградував?',
+                  '2. Чи був recent ingestion-change або embedding-model bump?',
+                  '3. RAG залишається ON — це early warning. Якщо мetric не повертається у `pass` за 2 тижні → eскалувати до `kill`.',
+                  '',
+                  'Детальний playbook: [`docs/observability/runbook.md` § «RagQualityGateDegraded»](../blob/main/docs/observability/runbook.md).',
+                ].join('\n');
+
+            const body = [
+              marker,
+              `## ${title}`,
+              '',
+              `**Workflow run:** ${runUrl}`,
+              `**Status:** \`${status}\` (mode: \`${summary.mode}\`)`,
+              `**recall@4 mean:** \`${summary.aggregate.mean.toFixed(3)}\` (warn ≥ ${summary.thresholds.warn}, kill ≥ ${summary.thresholds.kill})`,
+              `**recall@4 min:** \`${summary.aggregate.min.toFixed(3)}\` / **p50:** \`${summary.aggregate.p50.toFixed(3)}\``,
+              `**queries:** ${summary.aggregate.count}`,
+              '',
+              '### Per-domain breakdown',
+              '',
+              '| Domain | Count | Mean |',
+              '| --- | --- | --- |',
+              ...Object.entries(summary.perDomain).map(
+                ([d, s]) => `| ${d} | ${s.count} | ${s.mean.toFixed(3)} |`,
+              ),
+              '',
+              reactionBlock,
+              '',
+              `> Auto-generated by \`.github/workflows/rag-quality-gate.yml\`. Last updated: ${now}.`,
+            ].join('\n');
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: labels.join(','),
+              state: 'open',
+              per_page: 20,
+            });
+
+            const existing = issues.find(
+              (i) => i.title === title && (i.body ?? '').includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`Updated existing issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels,
+              });
+              core.info(`Created issue #${created.data.number}`);
+            }

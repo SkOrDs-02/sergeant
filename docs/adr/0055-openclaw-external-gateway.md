@@ -17,7 +17,7 @@
 
 ## Context and Problem Statement
 
-The internal Telegram co-founder bot (`tools/console/src/openclaw/`, ADR-0031) is a bespoke Node.js grammy long-poll process running as Railway service `sergeant-openclaw`. It covers one channel (Telegram) and one persona (co-founder). Growing product needs drove three sequential decisions:
+The internal Telegram co-founder bot (`tools/openclaw/src/openclaw/`, ADR-0031) is a bespoke Node.js grammy long-poll process running as Railway service `sergeant-openclaw`. It covers one channel (Telegram) and one persona (co-founder). Growing product needs drove three sequential decisions:
 
 - **ADR-0031** — initial OpenClaw v0 Telegram bot, single persona, read-only tools.
 - **ADR-0036** — write-tools with founder-approval flow (Telegram inline-keyboard UX).
@@ -28,7 +28,7 @@ By 2026-05 the internal implementation had accumulated 10 personas, council roun
 ## Considered Options
 
 1. **Continue internal bot** — maintain the grammy-based implementation; add channels (WhatsApp, Slack) manually. High ongoing cost; blocks multi-channel roadmap.
-2. **Replace entirely with OpenClaw Gateway** — migrate `tools/console/src/openclaw/` → external OpenClaw Gateway + `@sergeant/openclaw-plugin`. Full feature set: 25+ channels, voice, multi-model, Canvas UI, community plugins.
+2. **Replace entirely with OpenClaw Gateway** — migrate `tools/openclaw/src/openclaw/` → external OpenClaw Gateway + `@sergeant/openclaw-plugin`. Full feature set: 25+ channels, voice, multi-model, Canvas UI, community plugins.
 3. **Hybrid: keep grammy fallback, add Gateway** — deploy Gateway on a new bot-identity (`@OpenClaw_sergeant_v2_bot`); keep grammy on `@OpenClaw_sergeant_bot` undisturbed as fallback. Phase 6.5 parallel run for ≥1 week before cutover.
 
 ## Decision
@@ -42,7 +42,7 @@ Concretely:
 - **Plugin**: `@sergeant/openclaw-plugin` (`packages/openclaw-plugin/`) — thin TypeScript bridge over existing `/api/internal/openclaw/*` server endpoints.
 - **Config-as-code**: `ops/openclaw/` — `openclaw.example.json`, `skills/`, `cheap-router.system.md`, `n8n-allowlist.json`. Copied to `~/.openclaw/` by `docker-entrypoint.sh` on every container start; persistent auth state (Telegram webhook, WhatsApp session) not overwritten.
 - **New bot-identity**: `@OpenClaw_sergeant_v2_bot` (separate Telegram bot token `OPENCLAW_GATEWAY_BOT_TOKEN`). Founder switches DMs to the new bot after Phase 6.5 parity window.
-- **Grammy fallback**: `@OpenClaw_sergeant_bot` on `sergeant-openclaw` Railway service stays running, undisturbed. No feature-flag flip in `tools/console`. Removal is gated behind Locked decision #17 (reminder +28 days post cutover-day).
+- **Grammy fallback**: `@OpenClaw_sergeant_bot` on `sergeant-openclaw` Railway service stays running, undisturbed. No feature-flag flip in `tools/openclaw`. Removal is gated behind Locked decision #17 (reminder +28 days post cutover-day).
 - **OpenClaw version pin**: latest stable tag at Phase 0 deploy date (Locked decision #2); weekly Renovate PR with manual review, no auto-merge.
 - **Hard Rule #20 preserved**: no `OPENCLAW_GITHUB_PAT` / `Git_PAT` in production; `assertStartupEnv()` blocks server startup if present.
 

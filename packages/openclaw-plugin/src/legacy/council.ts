@@ -17,7 +17,7 @@
  *   3. `createCouncilBudgetGate` — pre-flight HTTP helper that hits
  *      `/api/internal/openclaw/budget` and refuses the council session
  *      when `remainingUsd < councilUsdBudget`. Mirrors the legacy grammy
- *      bot's `/council` precondition (`tools/console/src/openclaw/
+ *      bot's `/council` precondition (`tools/openclaw/src/openclaw/
  *      handler-commands.ts`) so behaviour stays identical when the
  *      external Gateway takes over (Phase 6.5 parallel-run window).
  *
@@ -28,8 +28,8 @@
  * (Gateway or legacy grammy fallback during Phase 6.5 parity).
  */
 
-import type { OpenClawHttpClient } from "./http-client.js";
-import { OpenClawHttpError } from "./http-client.js";
+import type { OpenClawHttpClient } from "../http-client.js";
+import { OpenClawHttpError } from "../http-client.js";
 
 /**
  * Default sequence for `/council` without arguments (Locked decision #8).

@@ -30,6 +30,7 @@ import {
   captureException,
   initSentry,
 } from "./core/observability/sentry.js";
+import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
 import { maybeRunOnboarding } from "./core/onboarding/index.js";
@@ -120,7 +121,7 @@ void (async () => {
   try {
     const result = await bootstrapKvStore({
       onError: (stage, err) => {
-        console.warn(`[main] kvStoreBoot ${stage} failed`, err);
+        logger.warn(`[main] kvStoreBoot ${stage} failed`, err);
         addSentryBreadcrumb({
           category: "storage",
           level: "warning",
@@ -152,7 +153,7 @@ void (async () => {
       message: "kvStoreBoot threw (should be unreachable)",
       data: { error: err instanceof Error ? err.message : String(err) },
     });
-    console.warn("[main] kvStoreBoot threw (should be unreachable)", err);
+    logger.warn("[main] kvStoreBoot threw (should be unreachable)", err);
   }
 
   void maybeRunOnboarding();
@@ -214,7 +215,7 @@ if (isCapacitor()) {
   import("@sergeant/mobile-shell")
     .then(({ initNativeShell }) => initNativeShell())
     .catch((err) => {
-      console.warn("[main] native-shell init failed", err);
+      logger.warn("[main] native-shell init failed", err);
     });
 }
 

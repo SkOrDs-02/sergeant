@@ -338,6 +338,12 @@ const envSchema = z.object({
   RAILWAY_ENVIRONMENT: z.string().optional(),
   RAILWAY_SERVICE_NAME: z.string().optional(),
   RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
+  /** Generic CI commit SHA fallback (GitHub Actions, GitLab, тощо). */
+  GIT_COMMIT: z.string().optional(),
+  /** Vercel build commit SHA — fallback для Sentry / app_build_info. */
+  VERCEL_GIT_COMMIT_SHA: z.string().optional(),
+  /** Версія пакета (npm/pnpm проставляють під час `pnpm run`-у). */
+  npm_package_version: z.string().optional(),
 
   // ── AI (Anthropic) ─────────────────────────────────────────────────
   /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */
@@ -352,6 +358,47 @@ const envSchema = z.object({
   LLM_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
     .default("anthropic"),
+  /**
+   * PR-24 — окремий provider для read-only OpenClaw paths (зараз: `before_dispatch`
+   * classify; пізніше — інші read-only flows). Дозволяє перемкнути саме classifier
+   * у `stub`-mode (повертає plausible default `{"class":"chat"}`) НЕ зачіпаючи
+   * головний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+   *
+   * Use-cases:
+   * - Anthropic-incident: `LLM_READONLY_PROVIDER=stub` тимчасово; chat-flow
+   *   обслуговується головним provider-ом окремо (weekly-digest має власний
+   *   `LLM_DIGEST_PROVIDER` toggle, налаштовується незалежно).
+   * - Local-dev без `ANTHROPIC_API_KEY` — class-detection деградує у `chat`,
+   *   решта endpoints працює як раніше.
+   * - E2E-тести — детермінований шлях без витрат токенів.
+   */
+  LLM_READONLY_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    .default("anthropic"),
+  /**
+   * PR-25 — окремий provider для weekly-digest (`POST /api/weekly-digest`,
+   * WF-08 ingest). Дозволяє перемкнути digest-генерацію у `stub`-mode, який
+   * повертає template-based звіт із raw-метрик секцій (без LLM-рекомендацій),
+   * НЕ зачіпаючи ні chat/coach/nutrition (`LLM_PROVIDER`), ні OpenClaw
+   * classify (`LLM_READONLY_PROVIDER`).
+   *
+   * Use-cases:
+   * - Anthropic-incident: `LLM_DIGEST_PROVIDER=stub` — користувач бачить
+   *   digest із числами, без AI-коментарів. Краще, ніж 502.
+   * - Local-dev без `ANTHROPIC_API_KEY` — endpoint не падає.
+   * - E2E-тести — детермінований template-вихід без витрат токенів.
+   */
+  LLM_DIGEST_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    .default("anthropic"),
+  /**
+   * PR-25 — fail-soft toggle для weekly-digest. Коли `true` (default), Anthropic-
+   * помилки (5xx / rate-limit / timeout) ловляться у handler-і й digest
+   * повертається з template-репорту замість 502. Sentry breadcrumb level=warning
+   * + Prom-counter `llm_provider_invocations_total{outcome!=ok}` дають видимість.
+   * Коли `false` — strict-mode як раніше (handler кидає `ExternalServiceError`).
+   */
+  LLM_DIGEST_FALLBACK_ON_ERROR: boolFromEnv(true),
   /** AI request timeout (мс). */
   AI_TIMEOUT_MS: intFromEnv(180_000),
   /** Max AI retries on transient errors. */
@@ -447,6 +494,13 @@ const envSchema = z.object({
   SENTRY_RELEASE: z.string().optional(),
   /** `0.0`–`1.0` sampling rate для Sentry performance traces. */
   SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
+  /**
+   * Sentry sampling preset — switches the *fallback* rate (per-route rules
+   * stay fixed). `minimal` (0.01) для quota-mitigation, `prod` (0.05) —
+   * default, `aggressive` (0.2) — canary / pre-release visibility. Override
+   * via numeric `SENTRY_TRACES_SAMPLE_RATE` if needed.
+   */
+  SENTRY_SAMPLE_PROFILE: z.enum(["minimal", "prod", "aggressive"]).optional(),
   /** Pino log level. Use /debug-window CLI to temporarily lower without restart. */
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
@@ -559,10 +613,16 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: intFromEnv(100),
   /** Global rate limit: window size in seconds. */
   RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
-  /** Auth rate limit: attempts per window. */
+  /**
+   * Auth rate limit (sign-in / sign-up / forget-password / reset-password):
+   * attempts per IP per window. Default 5 spec-ed у `docs/security/better-auth-audit-2026-05.md`
+   * — closely matches OWASP ASVS V11.1.3 (5–10 за хвилину для credential flow).
+   * Реєстр `config/rateLimit.ts` бере цей default; ops може дополнити через env
+   * без redeploy-у.
+   */
   AUTH_RATE_LIMIT_MAX: intFromEnv(5),
-  /** Auth rate limit: window size in seconds. */
-  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
+  /** Auth rate limit: window size in seconds (default 60). */
+  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
 
   // ── Sync audit (PR #005 / Stage 0) ─────────────────────────────────
   /** Comma-separated allow-list of `user.id` для cross-user `/api/sync/audit` запитів. */
@@ -641,6 +701,27 @@ const envSchema = z.object({
    * § "AI memory activation & Day-30 decision-point").
    */
   MONO_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
+  /**
+   * Operator-toggle для n8n WF-30 `30-ai-memory-daily-digest.json`
+   * (cron 09:05 Kyiv → SELECT з `ai_memories` → Telegram #digest). PR-21
+   * додає його як **canonical-source** для статусу digest-workflow: значення
+   * читає оператор у self-hosted n8n Railway env (виставляє `true` для
+   * активації workflow toggle-у у n8n UI). Default `false` — workflow
+   * лишається off-by-default навіть якщо `pnpm ops:n8n:apply` deploy-нув
+   * JSON у n8n. Server-side digest-hook поки що відсутній (PR-21 — n8n-only
+   * activation), але змінна вже парситься тут для парності з
+   * `MONO_AI_MEMORY_INGEST_ENABLED` і майбутніх server-side метрик
+   * (наприклад emit `ai_memory_digest_sent_total` із n8n callback-у).
+   *
+   * Subordinate до `AI_MEMORY_ENABLED` — без master-flag-у `ai_memories`
+   * порожня, digest буде слати «За добу нічого не записано» graceful-message
+   * (workflow handle-ає empty result).
+   *
+   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
+   * Monitoring: [`docs/observability/runbook.md` § "WF-30 AI memory daily
+   * digest (PR-21)"].
+   */
+  MONO_AI_MEMORY_DIGEST_ENABLED: boolFromEnv(false),
 
   // ── OpenClaw v0 — Telegram-only co-founder bot (ADR-0031) ──────────
   /** Better Auth user.id founder-а. */
@@ -670,6 +751,14 @@ const envSchema = z.object({
   OPENCLAW_GITHUB_APP_INSTALLATION_ID: stringWithDefault(""),
   /** Repo target для decision PR-ів. */
   OPENCLAW_GITHUB_REPO: stringWithDefault("Skords-01/Sergeant"),
+  /**
+   * Comma-separated allowlist of `owner/repo` strings that OpenClaw
+   * read/write GitHub tools may target. Empty (default) collapses to
+   * just `OPENCLAW_GITHUB_REPO`, so the default config is the
+   * single-repo behaviour callers expect. T2 audit finding #3 — the
+   * console used to pass through whatever `repo` the LLM picked.
+   */
+  OPENCLAW_GITHUB_REPO_ALLOWLIST: stringWithDefault(""),
   /** Default branch у repo (для decision PR-ів). */
   OPENCLAW_GITHUB_BASE_BRANCH: stringWithDefault("main"),
   /**
@@ -681,6 +770,16 @@ const envSchema = z.object({
   N8N_API_URL: stringWithDefault(""),
   /** n8n personal API key sent as `X-N8N-API-KEY` header. */
   N8N_API_KEY: stringWithDefault(""),
+  /**
+   * Base URL n8n-інстансу для webhook-replay-у (PR-29). Replay-CLI /
+   * admin-API формує `${N8N_WEBHOOK_BASE_URL}/webhook/{path}` коли
+   * re-POST-ить збережений payload з `n8n_webhook_events`. Окрема env
+   * від `N8N_API_URL` бо n8n cloud-tier-и часом виставляють webhook-и
+   * на окремому домені (`webhook-{tenant}.n8n.cloud` vs
+   * `api-{tenant}.n8n.cloud`). Empty → replay-API повертає 503
+   * `not_configured`. Trailing-slash optional (helper-strip-ить).
+   */
+  N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
   // ── PR-C1b — SEO env-stubs (graceful fallback) ─────────────────────
   /** Google PageSpeed Insights API key. Empty → seo_psi_audit повертає `not_configured`. */
@@ -729,6 +828,16 @@ const envSchema = z.object({
   OPENCLAW_REMINDER_MAX_ATTEMPTS: intFromEnv(3),
   /** Скільки reminder-ів брати за один poll (batch). */
   OPENCLAW_REMINDER_POLL_BATCH: intFromEnv(20),
+
+  // ── PR-28 — n8n_webhook_events retention ───────────────────────────
+  /**
+   * Скільки днів зберігати рядки в `n8n_webhook_events` перед `DELETE`.
+   * Default 30. 0 → retention-poller не запускається (зберігаємо все
+   * назавжди — корисно у dev / тестах).
+   */
+  WEBHOOK_EVENTS_RETENTION_DAYS: intFromEnv(30),
+  /** Інтервал в мілісекундах для retention-cleanup tick-у. Default 1h; 0 → off. */
+  WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
 
   // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
   /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
@@ -870,10 +979,53 @@ export function assertStartupEnv(): void {
     );
   }
 
+  // T2 audit finding #4 — `/metrics` exposure. Without `METRICS_TOKEN`
+  // the endpoint is publicly reachable AND the `@opentelemetry/exporter-
+  // prometheus` stack has a HIGH-severity advisory ("process crash via
+  // malformed HTTP") — an unauthenticated attacker can therefore both
+  // scrape the full Prometheus registry (route latencies, queue depth,
+  // circuit-breaker state, AI cost histograms) and remotely crash the
+  // Node process. Hard-fail at boot in production so the misconfig
+  // surfaces immediately instead of silently shipping with the legacy
+  // warning. Dev/staging still accept the missing token (warning only).
   if (isProduction && !env.METRICS_TOKEN) {
+    throw new Error(
+      "METRICS_TOKEN is required in production. Without it `GET /metrics` is publicly reachable, leaking route latency, AI cost, and circuit-breaker telemetry — and the OTel Prometheus exporter has a HIGH-severity crash advisory exploitable from the same surface. Generate one with `openssl rand -hex 32` and set it on the deployment.",
+    );
+  } else if (!env.METRICS_TOKEN) {
     warnings.push(
       "METRICS_TOKEN is not set — /metrics endpoint is unprotected.",
     );
+  }
+
+  // T2 audit finding #6 — `BETTER_AUTH_URL` / `PUBLIC_API_BASE_URL`
+  // scheme is never validated as HTTPS in production. Better Auth only
+  // sets the `Secure` cookie flag + `SameSite=None` when the base URL
+  // `startsWith('https://')`, so a misconfigured deploy
+  // (`http://api.example.com`, a copy-paste from staging, a local
+  // tunnel URL) silently drops the Secure flag and ships session cookies
+  // over plaintext HTTP — exposing them to passive sniffers on the
+  // path and breaking the cross-site-cookie contract. Hard-fail at boot
+  // so the misconfig surfaces immediately. Localhost stays exempt
+  // (the schema accepts http://localhost for dev parity).
+  if (isProduction) {
+    const insecureUrls: string[] = [];
+    if (env.BETTER_AUTH_URL && !env.BETTER_AUTH_URL.startsWith("https://")) {
+      insecureUrls.push(`BETTER_AUTH_URL=${env.BETTER_AUTH_URL}`);
+    }
+    if (
+      env.PUBLIC_API_BASE_URL &&
+      !env.PUBLIC_API_BASE_URL.startsWith("https://")
+    ) {
+      insecureUrls.push(`PUBLIC_API_BASE_URL=${env.PUBLIC_API_BASE_URL}`);
+    }
+    if (insecureUrls.length > 0) {
+      throw new Error(
+        `Production deploys must use HTTPS for public URLs. Insecure values detected: ${insecureUrls.join(
+          ", ",
+        )}. Better Auth requires \`https://\` to set Secure / SameSite=None on session cookies; an HTTP base URL silently ships cookies plaintext.`,
+      );
+    }
   }
 
   if (isProduction && !env.NUTRITION_BACKUP_KEY_SECRET) {
@@ -884,6 +1036,22 @@ export function assertStartupEnv(): void {
     warnings.push(
       "NUTRITION_BACKUP_KEY_SECRET is not set — /api/nutrition/backup-{upload,download} will return 503.",
     );
+  }
+
+  // T2 audit finding #1 — Stripe webhook secret enforcement. If billing is
+  // wired (STRIPE_SECRET_KEY is set) then STRIPE_WEBHOOK_SECRET MUST also
+  // be set in production; otherwise `verifyStripeSignature` had no secret
+  // to compare against and the legacy non-prod fall-back was returning
+  // `true` (accept-all) — every staging / preview deploy was effectively
+  // an open billing-state write endpoint. Hard-fail at boot so the
+  // misconfig surfaces immediately instead of silently mutating
+  // subscription rows weeks later.
+  if (isProduction && process.env["STRIPE_SECRET_KEY"]) {
+    if (!process.env["STRIPE_WEBHOOK_SECRET"]) {
+      throw new Error(
+        "STRIPE_WEBHOOK_SECRET is required in production when STRIPE_SECRET_KEY is set. Without it the Stripe webhook endpoint cannot verify signatures and any caller can mutate billing state. Set the value from Stripe Dashboard → Developers → Webhooks → Signing secret.",
+      );
+    }
   }
 
   // H9: AI_QUOTA_DISABLED is a billing kill-switch — fine in CI/test where e2e

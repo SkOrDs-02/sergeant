@@ -19,7 +19,21 @@ type AppLikeError = Error & {
   status?: number | string;
   code?: string;
   message: string;
+  cause?: unknown;
 };
+
+/**
+ * Витягує `details` із `AppError.cause`, якщо там JSON-обʼєкт із полем
+ * `details: Array`. Це формат, який кидають `parseBody` / `parseQuery` з
+ * `http/validate.ts`. Решту causes ігноруємо: уникаємо випадкового
+ * витоку внутрішніх Error-обʼєктів (з stack-ом, PII) у відповідь клієнту.
+ */
+function extractClientDetails(cause: unknown): unknown[] | undefined {
+  if (!cause || typeof cause !== "object") return undefined;
+  const obj = cause as { details?: unknown };
+  if (!Array.isArray(obj.details)) return undefined;
+  return obj.details;
+}
 
 export const errorHandler: ErrorRequestHandler = (
   err: unknown,
@@ -85,10 +99,16 @@ export const errorHandler: ErrorRequestHandler = (
   // фронт без `message` → ловиться загальним fallback-ом на кшталт
   // «Помилка входу» без жодних деталей.
   const userMessage = operational ? e.message : "Server error";
+  // Surfacing `details` лише для operational помилок (4xx). Це формат,
+  // який кидають `parseBody`/`parseQuery` через `cause: { details }`.
+  // Для programmer-помилок (5xx) клієнт отримує тільки generic
+  // `Server error` без cause, щоб уникнути витоку внутрішніх обʼєктів.
+  const details = operational ? extractClientDetails(e.cause) : undefined;
   res.status(status).json({
     error: userMessage,
     message: userMessage,
     code,
     requestId: (req as Request & { requestId?: string }).requestId,
+    ...(details ? { details } : {}),
   });
 };

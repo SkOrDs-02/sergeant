@@ -12,6 +12,7 @@ import {
   syncDurationMs,
   syncOperationsTotal,
   syncOpLogApplyTotal,
+  syncOpLogNullOriginDeviceIdTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
   syncPayloadBytes,
@@ -2630,6 +2631,22 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     return;
   }
   const { ops } = parsed.data;
+
+  // Telemetry: clients that fail to forward `X-Origin-Device-Id` write
+  // rows into `sync_op_log` with `origin_device_id = NULL`, which the
+  // pull/SSE filter `IS DISTINCT FROM $3` silently drops for every
+  // NULL-header pull (PG: `NULL IS DISTINCT FROM NULL` is FALSE).
+  // Increment per request (not per row) to keep cardinality bounded —
+  // a single push with N ops still represents one misconfigured
+  // client. Alert: `rate(sync_op_log_null_origin_device_id_total[15m])
+  // > 0` for 30m. Resting expectation post-fix: 0.
+  if (originDeviceId === null && ops.length > 0) {
+    try {
+      syncOpLogNullOriginDeviceIdTotal.inc({ module: "v2" });
+    } catch {
+      /* metrics must never break a request */
+    }
+  }
 
   // bytes-метрика: serialized payload size. Тримаємо до COMMIT-а;
   // оригінальне `req.body` уже розпарсене.

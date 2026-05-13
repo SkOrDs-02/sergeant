@@ -1,4 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger as webLogger } from "@shared/lib";
 
 import type {
   NutritionDualWriteOp,
@@ -47,7 +48,7 @@ export interface ApplyDualWriteResult {
 
 const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
   if (level === "warn") {
-    console.warn(`[nutrition.dualWrite] ${message}`, meta ?? {});
+    webLogger.warn(`[nutrition.dualWrite] ${message}`, meta ?? {});
   }
 };
 

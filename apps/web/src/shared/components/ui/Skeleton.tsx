@@ -3,10 +3,18 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 
 import { cn } from "../../lib/ui/cn";
 
+export type SkeletonVariant = "rect" | "text" | "avatar" | "card";
+
 export interface SkeletonProps {
   className?: string;
-  /** Use shimmer effect instead of pulse (more premium feel) */
+  /** Use shimmer effect instead of pulse (more premium feel). Under
+   *  `prefers-reduced-motion: reduce` both shimmer and pulse collapse
+   *  to a static muted block (WCAG 2.3.3 + Apple HIG). */
   shimmer?: boolean;
+  /** Shape preset. Defaults to `rect`. Other variants (`text`,
+   *  `avatar`, `card`) are also exposed as their own components for
+   *  ergonomic call-sites. */
+  variant?: SkeletonVariant;
   /**
    * Inline style — primarily used for staggered `animationDelay` on rows
    * of skeletons (see `ModulePageLoader.RoutineLoader`). Forwarded to the
@@ -15,37 +23,154 @@ export interface SkeletonProps {
   style?: CSSProperties;
 }
 
+const SHIMMER_OVERLAY =
+  "absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/10 to-transparent";
+
 /**
  * Base skeleton loader with optional shimmer effect.
+ *
  * `motion-safe:animate-pulse` respects `prefers-reduced-motion: reduce`
- * (WCAG 2.3.3 + Apple HIG reduced motion compliance).
+ * (WCAG 2.3.3 + Apple HIG reduced motion compliance). Under reduced
+ * motion both the pulse and shimmer variants collapse to a static
+ * muted block — the skeleton's *presence* still communicates loading
+ * without animation.
+ *
+ * Variants:
+ * - `rect` (default) — a flexible block sized via `className`.
+ * - `text`  — a single 12 px-tall line; for multi-line text loaders
+ *   use the dedicated `<SkeletonText>` component which supports
+ *   randomized widths.
+ * - `avatar` — a perfect circle; size via `className`
+ *   (`w-12 h-12 rounded-full`).
+ * - `card` — a tall block with `rounded-3xl` (card radius); intended
+ *   for full card-sized placeholders.
  */
-export function Skeleton({ className, shimmer = false, style }: SkeletonProps) {
+export function Skeleton({
+  className,
+  shimmer = false,
+  variant = "rect",
+  style,
+}: SkeletonProps) {
+  const variantClass =
+    variant === "avatar"
+      ? "rounded-full aspect-square"
+      : variant === "text"
+        ? "rounded-xl h-3"
+        : variant === "card"
+          ? "rounded-3xl min-h-32"
+          : "rounded-2xl";
+
   return (
     <div
       className={cn(
-        "bg-panelHi rounded-2xl",
+        "bg-panelHi",
+        variantClass,
         shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
         className,
       )}
       style={style}
       aria-hidden="true"
     >
-      {shimmer && (
-        <div
-          className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/10 to-transparent"
-          aria-hidden="true"
-        />
-      )}
+      {shimmer && <div className={SHIMMER_OVERLAY} aria-hidden="true" />}
     </div>
   );
 }
 
-export function SkeletonText({
+/** Circle-shaped skeleton — sized via `className` (e.g. `w-12 h-12`). */
+export function SkeletonAvatar({
   className,
   shimmer = false,
   style,
 }: SkeletonProps) {
+  return (
+    <Skeleton
+      variant="avatar"
+      shimmer={shimmer}
+      style={style}
+      className={cn("w-10 h-10", className)}
+    />
+  );
+}
+
+/** Card-shaped skeleton with header + body lines. */
+export function SkeletonCardBlock({
+  className,
+  shimmer = false,
+  style,
+}: SkeletonProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-3xl border border-line bg-panel p-4 space-y-3",
+        className,
+      )}
+      style={style}
+      aria-hidden="true"
+    >
+      <div className="flex items-center gap-3">
+        <SkeletonAvatar shimmer={shimmer} className="w-10 h-10" />
+        <div className="flex-1 space-y-1.5">
+          <SkeletonText shimmer={shimmer} className="w-1/2" />
+          <SkeletonText shimmer={shimmer} className="w-1/3 h-2" />
+        </div>
+      </div>
+      <SkeletonText shimmer={shimmer} className="w-full" />
+      <SkeletonText shimmer={shimmer} className="w-5/6" />
+      <SkeletonText shimmer={shimmer} className="w-2/3" />
+    </div>
+  );
+}
+
+export interface SkeletonTextProps extends SkeletonProps {
+  /** When > 1, renders that many lines stacked with `gap` between
+   *  them; widths are randomised in the [55%, 100%] band so the
+   *  paragraph reads as text rather than a single bar. The last line
+   *  is always shorter to mirror real prose. */
+  lines?: number;
+  /** Tailwind gap class between lines when `lines > 1`. */
+  gap?: string;
+}
+
+/**
+ * Single line or multi-line text skeleton. Multi-line mode renders a
+ * deterministic pseudo-random width distribution so consecutive
+ * renders don't shift around: the seed is the line index, not
+ * `Math.random()`.
+ */
+export function SkeletonText({
+  className,
+  shimmer = false,
+  style,
+  lines = 1,
+  gap = "gap-2",
+}: SkeletonTextProps) {
+  if (lines > 1) {
+    // Deterministic pseudo-random widths from a small bag so the
+    // layout is stable across renders (no flicker / no SSR mismatch).
+    const widths = ["w-full", "w-11/12", "w-10/12", "w-9/12", "w-8/12"];
+    return (
+      <div
+        className={cn("flex flex-col", gap, className)}
+        style={style}
+        aria-hidden="true"
+      >
+        {Array.from({ length: lines }).map((_, i) => {
+          const isLast = i === lines - 1;
+          const widthIdx = isLast
+            ? widths.length - 1
+            : (i * 2 + 1) % (widths.length - 1);
+          return (
+            <SkeletonText
+              key={i}
+              shimmer={shimmer}
+              className={widths[widthIdx]}
+              lines={1}
+            />
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div
       className={cn(

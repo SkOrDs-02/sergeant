@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.
@@ -25,7 +25,7 @@ flowchart TB
         direction TB
         Server["apps/server<br/><i>Express + better-auth<br/>+ BullMQ workers in-process</i>"]
         N8N["n8n service<br/><i>cron, mono enrich,<br/>morning briefing</i>"]
-        Console["tools/console<br/><i>Telegram bot (grammy)</i>"]
+        Console["tools/openclaw<br/><i>Telegram bot (grammy)</i>"]
 
         subgraph DB["Stateful"]
             PG[("PostgreSQL 16<br/><i>+ pgvector</i>")]

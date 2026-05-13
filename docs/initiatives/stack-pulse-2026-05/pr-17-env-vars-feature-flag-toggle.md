@@ -76,7 +76,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 
 ### 5. Admin UI
 
-`tools/console` (Telegram bot) — нова команда `/flag <key> <value>` з audit-log у `feature_flags.updated_by = 'tg:@<user>'`.
+`tools/openclaw` (Telegram bot) — нова команда `/flag <key> <value>` з audit-log у `feature_flags.updated_by = 'tg:@<user>'`.
 
 ## Out of scope
 
@@ -90,7 +90,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 - [ ] `apps/server/src/env/env.ts` має explicit `FEATURE_FLAGS_BACKEND` enum (`db` | `env`); default `env` на 0% rollout, потім flip → `db`.
 - [ ] `pg_notify` listener в `apps/server/src/index.ts` invalidates cache на `feature_flag_changed`.
 - [ ] ADR-0054 «Feature-flag storage migration» з rationale + rollback plan.
-- [ ] `tools/console` /flag команда з role-check `ops`.
+- [ ] `tools/openclaw` /flag команда з role-check `ops`.
 - [ ] Documented у `docs/architecture/feature-flags.md`.
 
 ## Тести
@@ -120,7 +120,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 - `apps/server/src/migrations/` — new `045_feature_flags.sql`
 - `apps/server/src/index.ts` — pg_notify listener wiring
 - `packages/feature-flags/` — new workspace
-- `tools/console/src/agents/ops/` — /flag command
+- `tools/openclaw/src/agents/ops/` — /flag command
 - `docs/architecture/feature-flags.md` — new
 - `docs/adr/0054-feature-flag-storage-migration.md` — new
 

@@ -1,0 +1,17 @@
+[
+  "apps/web/src/core/hub/HubBackupPanel.tsx",
+  "apps/web/src/core/pricing/WaitlistForm.tsx",
+  "apps/web/src/core/profile/BiometricsSection.tsx",
+  "apps/web/src/core/profile/DangerZoneSection.tsx",
+  "apps/web/src/core/profile/MemoryBankSection.tsx",
+  "apps/web/src/core/profile/PersonalInfoSection.tsx",
+  "apps/web/src/core/profile/ProfilePage.tsx",
+  "apps/web/src/core/profile/SessionsSection.tsx",
+  "apps/web/src/core/settings/DashboardSection.tsx",
+  "apps/web/src/core/settings/PWASection.tsx",
+  "apps/web/src/modules/finyk/FinykApp.tsx",
+  "apps/web/src/modules/finyk/components/FinykLoginScreen.tsx",
+  "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
+  "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
+  "apps/web/src/shared/lib/ui/undoToast.tsx"
+]

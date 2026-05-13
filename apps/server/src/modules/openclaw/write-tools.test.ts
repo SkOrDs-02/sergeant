@@ -66,12 +66,18 @@ beforeEach(() => {
   vi.restoreAllMocks();
   restoreEnv();
   _clearOpenclawGithubAuthCacheForTests();
+  // T2 audit #3 — the existing fixtures target `owner/repo` (and one
+  // falls through to the schema-default `Skords-01/Sergeant`). Widen
+  // the allowlist so the tool-layer assert (`assertOpenClawRepoAllowed`)
+  // accepts both.
+  vi.stubEnv("OPENCLAW_GITHUB_REPO_ALLOWLIST", "owner/repo,Skords-01/Sergeant");
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
   restoreEnv();
   _clearOpenclawGithubAuthCacheForTests();
+  vi.unstubAllEnvs();
 });
 
 describe("assertStrategyDocPath", () => {

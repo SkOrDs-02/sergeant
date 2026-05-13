@@ -5,6 +5,12 @@
  * `apps/server` smoke-suite, manual parallel-run scripts). Плагін
  * entry-point (`src/index.ts`) парит-фікстури НЕ імпортує — це test-only
  * surface, але runtime-and-test-shared.
+ *
+ * @scaffolded
+ * @nextStep Wire `apps/server` parallel-run smoke-suite OR manual scripts
+ *   to import from this barrel (currently only `parity.test.ts` consumes
+ *   `./golden-conversations.js` deep-paths). Tracked in dead-code roast
+ *   2026-05-13.
  */
 
 export {

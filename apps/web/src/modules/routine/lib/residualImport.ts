@@ -22,6 +22,7 @@
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger } from "@shared/lib";
 import {
   defaultRoutineState,
   normalizeRoutineState,
@@ -69,7 +70,7 @@ export async function importRoutineResidualFromLs(
         clientTs: STALE_TIMESTAMP,
       });
     } catch (err) {
-      console.warn(
+      logger.warn(
         "[routine.residualImport] apply failed; LS key retained",
         err instanceof Error ? err.message : err,
       );

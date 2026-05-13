@@ -1,6 +1,6 @@
 # Sergeant — стан тестів і що покращити
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 >
 > Repo: `Skords-01/Sergeant`. Тип: аналіз без змін у коді. Парний документ — [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md).
@@ -9,7 +9,7 @@
 >
 > **Wave B старт (2026-05-06):** PR-T08 (#2012, Anthropic-mock harness `apps/server/src/test/__mocks__/anthropic.ts` + `anthropic.test.ts` 19 кейсів + README) — merged. Розблоковує T09–T12 (nutrition tools + openclaw) без copy-paste mock-stack-у. Прогалина P0 #2 (server AI-tool handlers) — інфраструктура готова.
 >
-> **Wave G прогрес (2026-05-06):** PR-T31 (#2013, `spendingVelocity` 19 кейсів + barrel-gate + smoke index → пакет coverage 95.41 stmts / 83.44 branches / 95.83 fns / 98.29 lines), PR-T32 (#2019, `nutrition-domain` pure helpers 0% → 100% / 50% пакетного stmts), PR-T39 (#2022, `tools/console` bot e2e через `bot.handleUpdate(...)` 9 кейсів покривають security/rate-limit/dispatch happy + error paths) — merged. Прогалини P2 #11 (insights/nutrition-domain) і дешевий console-e2e — закриті.
+> **Wave G прогрес (2026-05-06):** PR-T31 (#2013, `spendingVelocity` 19 кейсів + barrel-gate + smoke index → пакет coverage 95.41 stmts / 83.44 branches / 95.83 fns / 98.29 lines), PR-T32 (#2019, `nutrition-domain` pure helpers 0% → 100% / 50% пакетного stmts), PR-T39 (#2022, `tools/openclaw` bot e2e через `bot.handleUpdate(...)` 9 кейсів покривають security/rate-limit/dispatch happy + error paths) — merged. Прогалини P2 #11 (insights/nutrition-domain) і дешевий console-e2e — закриті.
 >
 > Floors у `vitest.config.{js,ts}` ще не підняті — це окремий ratchet-PR після merge всієї Wave A + закриття T07.
 
@@ -73,7 +73,7 @@ container-scan.yml, codeql.yml, audit-freeze.yml — security side
 | `packages/eslint-plugin-sergeant-design`                                 |           27 |
 | `packages/fizruk-domain`                                                 |           25 |
 | `packages/db-schema`                                                     |           20 |
-| `tools/console`                                                          |           19 |
+| `tools/openclaw`                                                         |           19 |
 | `packages/finyk-domain`                                                  |           14 |
 | `packages/api-client`                                                    |           11 |
 | `packages/routine-domain`                                                |            9 |
@@ -191,7 +191,7 @@ _До 2026-05-05 `coverageThreshold` був не сконфігуровано (`
 
 14. **No load/perf tests** на Anthropic-важких ендпойнтах (chat, parse-pantry) і `sync/v2` під contention. Хоча б один Artillery/k6 сценарій у nightly — щоб p95-регресію ловити до релізу.
 
-15. **`tools/console`** — 19 unit-тестів, але немає end-to-end бот-сценарію (моковий grammy update → асерти на reply). Не критично для основного продукту, але дешево додається.
+15. **`tools/openclaw`** — 19 unit-тестів, але немає end-to-end бот-сценарію (моковий grammy update → асерти на reply). Не критично для основного продукту, але дешево додається.
 
 16. **Migrations rollback.** `packages/db-schema` має `migrations/__tests__/` (3 файли) + `lint-migrations.mjs` — добре. Не ясно, чи кожна нова міграція тестує і `down()` — варто перевірити шаблон `plop-templates/new-migration` і додати rollback-assertion за замовчуванням.
 

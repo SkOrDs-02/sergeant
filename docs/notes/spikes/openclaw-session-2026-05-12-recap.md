@@ -14,7 +14,7 @@
 
 **Що нового у плагіні після цієї сесії:**
 
-- **Stage 5b PR-4 (`/okr`):** додано `packages/openclaw-plugin/src/strategic-modes/okr.ts` як третій entry у `ALL_STRATEGIC_MODES`. На відміну від `/plan` і `/analyze`, тут `topicRequired: false` — голий `/okr` активує мод, опційний `<topic>` форвардиться як `prompt`. Drift gate `OKR_PRIMER` байт-у-байт проти `tools/console/src/agents/strategic-modes.ts`.
+- **Stage 5b PR-4 (`/okr`):** додано `packages/openclaw-plugin/src/strategic-modes/okr.ts` як третій entry у `ALL_STRATEGIC_MODES`. На відміну від `/plan` і `/analyze`, тут `topicRequired: false` — голий `/okr` активує мод, опційний `<topic>` форвардиться як `prompt`. Drift gate `OKR_PRIMER` байт-у-байт проти `tools/openclaw/src/agents/strategic-modes.ts`.
 - **Stage 5c (`/council`):** новий модуль `src/council/index.ts` (port `legacy/council.ts` з активним `createCouncilBudgetGate` factory) + два hook-фабрики у `src/hooks/council.ts`:
   - `createCouncilGateHook` на `before_dispatch` — pre-flight `/budget` check, fail-closed.
   - `createCouncilModeHook` на `before_agent_start` — injection `COUNCIL_PRIMER` + topic-rewrite.
@@ -36,7 +36,7 @@
 ### 1.1 Scope (in this PR)
 
 - Новий файл `packages/openclaw-plugin/src/strategic-modes/okr.ts`:
-  - `OKR_PRIMER` (370+ chars) — **byte-for-byte copy** з `tools/console/src/agents/strategic-modes.ts` секція OKR. Drift gate перевіряє рівність.
+  - `OKR_PRIMER` (370+ chars) — **byte-for-byte copy** з `tools/openclaw/src/agents/strategic-modes.ts` секція OKR. Drift gate перевіряє рівність.
   - `OKR_PATTERN = /^\/okr\b\s*(?<topic>\S[\s\S]*?)?\s*$/i` — нотабене `\s*…?\s*$` замість `\s+…\s*$`: topic optional, bare `/okr` мусить матчитись.
   - `okrMode: StrategicModeDefinition = { slug: "okr", trigger: "strategic_okr", primer: OKR_PRIMER, pattern: OKR_PATTERN, topicRequired: false }`.
 - `strategic-modes/index.ts` — third entry у `ALL_STRATEGIC_MODES`.

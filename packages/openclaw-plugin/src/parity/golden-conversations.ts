@@ -20,7 +20,7 @@
  *     `toolName`, які повинні запуститися (canned-Markdown payload).
  *     Пустий масив = renderer-only shortcut (e.g. `/think`).
  *   - `legacyAgent` — куди б цей самий input пішов через
- *     `tools/console/src/agents/router.ts:parseCommand` (legacy grammy
+ *     `tools/openclaw/src/agents/router.ts:parseCommand` (legacy grammy
  *     bot). Documents the parallel-run divergence: для більшості
  *     shortcut-ів legacy → `dispatcher` (LLM agent), Gateway → Layer 0
  *     canned (`$0` LLM cost). Це не diff-у-помилку, а очікувана дрифт-

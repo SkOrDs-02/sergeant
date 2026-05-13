@@ -44,9 +44,28 @@ export declare const radius: Readonly<Record<MobileRadius, number>>;
  * Re-exported from tokens.js — identical values to the web token source.
  */
 export declare const moduleColors: {
-  finyk: { primary: string; secondary: string; surface: string; surfaceAlt: string };
-  fizruk: { primary: string; secondary: string; surface: string; accent: string };
-  routine: { primary: string; secondary: string; surface: string; surfaceAlt: string };
-  nutrition: { primary: string; secondary: string; surface: string; surfaceAlt: string };
+  finyk: {
+    primary: string;
+    secondary: string;
+    surface: string;
+    surfaceAlt: string;
+  };
+  fizruk: {
+    primary: string;
+    secondary: string;
+    surface: string;
+    accent: string;
+  };
+  routine: {
+    primary: string;
+    secondary: string;
+    surface: string;
+    surfaceAlt: string;
+  };
+  nutrition: {
+    primary: string;
+    secondary: string;
+    surface: string;
+    surfaceAlt: string;
+  };
 };
-

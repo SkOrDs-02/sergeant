@@ -3723,6 +3723,148 @@ const noRawReqInPinoLog = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// `require-toast-error-action` — every error-toast must carry a retry/CTA
+// ─────────────────────────────────────────────────────────────────────────
+//
+// `docs/ui/toast-policy.md` mandates that `error`-tone toasts include an
+// `action: { label, onClick }` so users can recover (retry the failed
+// operation, open Sessions to fix, etc.). A bare `toast.error("Не вдалося
+// синхронізувати")` traps users in a dead-end: the message disappears,
+// nothing changes, they don't know what to do next.
+//
+// Surfaces flagged:
+//   - `toast.error(msg)` / `toast.error(msg, duration)` / etc. — flagged
+//     when the `action` parameter (3rd positional arg, see useToast.tsx
+//     `error: (msg, duration?, action?) => number`) is absent or
+//     literal-`null` / literal-`undefined`.
+//   - `toast.show(msg, "error", duration?, action?)` — flagged on the
+//     same shape when the 4th arg is missing / null / undefined.
+//
+// Burndown gate: warn-only by default with a path allowlist for legacy
+// callsites. New error-toasts must include an action; existing offenders
+// are tracked in `apps/web/eslint.toast-error-action-allowlist.json` and
+// removed as those callsites are refactored. Mirrors the same burndown
+// shape as `no-raw-local-storage` (item #6) and `no-cyrillic-jsx-literal`
+// (item #18).
+//
+// Escape hatches:
+//   - Boot-time errors before any state is renderable (e.g. PWA storage
+//     diagnostics, biometric secret-not-supported) where retry doesn't
+//     apply: opt out with `// eslint-disable-next-line
+//     sergeant-design/require-toast-error-action` + comment explaining
+//     why retry is N/A.
+//   - Server-mapped error messages where the message itself IS the
+//     action ("Введи коректний email" — retry = re-submit form) still
+//     need an action: pass the submit handler as the retry callback.
+
+const REQUIRE_TOAST_ERROR_ACTION_MESSAGE =
+  '`toast.error(...)` (and `toast.show(..., "error")`) must include an `action: { label, onClick }` parameter so users can retry / recover. Bare error toasts trap users in a dead-end. See docs/ui/toast-policy.md.';
+
+function isLiteralNullish(arg) {
+  if (!arg) return true;
+  if (arg.type === "Literal" && arg.value === null) return true;
+  if (arg.type === "Identifier" && arg.name === "undefined") return true;
+  return false;
+}
+
+function getMemberMethodName(callee) {
+  if (!callee || callee.type !== "MemberExpression") return null;
+  const prop = callee.property;
+  if (!prop) return null;
+  if (prop.type === "Identifier") return prop.name;
+  if (prop.type === "Literal" && typeof prop.value === "string")
+    return prop.value;
+  return null;
+}
+
+function getCalleeReceiverName(callee) {
+  if (!callee || callee.type !== "MemberExpression") return null;
+  const obj = callee.object;
+  if (!obj) return null;
+  if (obj.type === "Identifier") return obj.name;
+  return null;
+}
+
+function requireToastErrorActionRelativePath(filename) {
+  if (!filename) return "";
+  const norm = filename.replace(/\\/g, "/");
+  const idx = norm.indexOf("/apps/");
+  if (idx === -1) return norm.replace(/^\/+/, "");
+  return norm.slice(idx + 1);
+}
+
+const requireToastErrorAction = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid bare `toast.error(...)` / `toast.show(..., 'error')` without an `action: { label, onClick }`. Every error toast must give the user a recovery path.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { bare: REQUIRE_TOAST_ERROR_ACTION_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    const opts = context.options[0] ?? {};
+    const allowPrefixes = Array.isArray(opts.allowlist) ? opts.allowlist : [];
+    const rel = requireToastErrorActionRelativePath(filename);
+    const isAllowlisted = allowPrefixes.some(
+      (p) => rel === p || rel.startsWith(p),
+    );
+    if (isAllowlisted) return {};
+
+    return {
+      CallExpression(node) {
+        const method = getMemberMethodName(node.callee);
+        if (!method) return;
+        const receiver = getCalleeReceiverName(node.callee);
+        // Only consider `<ident>.error(...)` / `<ident>.show(...)` —
+        // the receiver name must be `toast` to avoid false positives on
+        // unrelated `.error()` methods (Sentry, logger, console, etc.).
+        if (receiver !== "toast") return;
+
+        if (method === "error") {
+          // Signature: error(msg, duration?, action?)
+          // Action is the 3rd positional arg (index 2).
+          const action = node.arguments[2];
+          if (isLiteralNullish(action)) {
+            context.report({ node, messageId: "bare" });
+          }
+          return;
+        }
+        if (method === "show") {
+          // Signature: show(msg, type?, duration?, action?)
+          const typeArg = node.arguments[1];
+          if (
+            !typeArg ||
+            typeArg.type !== "Literal" ||
+            typeArg.value !== "error"
+          ) {
+            return;
+          }
+          const action = node.arguments[3];
+          if (isLiteralNullish(action)) {
+            context.report({ node, messageId: "bare" });
+          }
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -3754,6 +3896,7 @@ const plugin = {
     "require-stories-for-ui-components": requireStoriesForUiComponents,
     "prefer-data-state": preferDataState,
     "no-inline-body-size-limit": noInlineBodySizeLimit,
+    "require-toast-error-action": requireToastErrorAction,
   },
 };
 

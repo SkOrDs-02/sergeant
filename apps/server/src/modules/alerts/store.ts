@@ -204,6 +204,23 @@ export interface ListPendingAlertsFilters {
    * passes `true` to avoid double-DM.
    */
   notYetEscalated?: boolean | undefined;
+  /**
+   * When true, exclude rows that already have `repeated_at` set. WF-105
+   * Tier-2 repeat-ping cron passes `true` to avoid double-repeat.
+   */
+  notYetRepeated?: boolean | undefined;
+  /**
+   * When true, exclude rows that already have `sentry_warned_at` set.
+   * WF-106 Tier-3 sentry-warn cron passes `true` to avoid duplicate
+   * Sentry events.
+   */
+  notYetSentryWarned?: boolean | undefined;
+  /**
+   * When true, exclude rows whose `snoozed_until_at` is in the future.
+   * WF-105/WF-106 both pass `true` so operator-snooze suppresses tier-cron
+   * actions until the snooze expires.
+   */
+  notSnoozed?: boolean | undefined;
   /** 1..100, default 50. */
   limit?: number | undefined;
 }
@@ -243,6 +260,15 @@ export async function listPendingAlerts(
   if (filters.notYetEscalated) {
     conditions.push(`escalated_at IS NULL`);
   }
+  if (filters.notYetRepeated) {
+    conditions.push(`repeated_at IS NULL`);
+  }
+  if (filters.notYetSentryWarned) {
+    conditions.push(`sentry_warned_at IS NULL`);
+  }
+  if (filters.notSnoozed) {
+    conditions.push(`(snoozed_until_at IS NULL OR snoozed_until_at < NOW())`);
+  }
 
   const limit = Math.max(1, Math.min(100, filters.limit ?? 50));
   params.push(limit);
@@ -251,7 +277,8 @@ export async function listPendingAlerts(
   const result = await pool.query(
     `SELECT id, posted_at, alert_id, topic, severity, summary,
             ack_at, ack_by_tg_user_id, ack_action,
-            escalated_at, metadata,
+            escalated_at, repeated_at, sentry_warned_at, snoozed_until_at,
+            metadata,
             dedup_signature, occurrence_count, last_occurrence_at,
             telegram_chat_id, telegram_message_id
        FROM tg_alert_acks
@@ -262,6 +289,134 @@ export async function listPendingAlerts(
   );
 
   return result.rows.map(mapRowToRecord);
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// markAlertRepeated / markAlertSentryWarned / markAlertSnoozed
+// (Sprint 6 / escalation tiers — T2 + T3 + snooze)
+// ───────────────────────────────────────────────────────────────────────
+
+export interface MarkAlertRepeatedResult {
+  ok: boolean;
+  alreadyRepeated: boolean;
+  notFound: boolean;
+}
+
+/**
+ * Marks an alert as Tier-2 repeated (WF-105 cron has posted the [⚠ REPEAT]
+ * broadcast to the topic). Idempotent — second call with same `alertId`
+ * returns `alreadyRepeated=true` without re-stamping `repeated_at`.
+ *
+ * Race vs. user-ack: WF-105 query already filters `WHERE ack_at IS NULL`,
+ * but a click landing between SELECT and this UPDATE would still match
+ * (we do NOT filter on `ack_at` here intentionally — once the cron decided
+ * to repeat, we record that for audit-trail completeness). Net effect: at
+ * most one repeat-broadcast per alert, even under race.
+ */
+export async function markAlertRepeated(
+  pool: Pool,
+  alertId: string,
+): Promise<MarkAlertRepeatedResult> {
+  const updated = await pool.query<{ id: string }>(
+    `UPDATE tg_alert_acks
+        SET repeated_at = NOW()
+      WHERE alert_id = $1 AND repeated_at IS NULL
+      RETURNING id`,
+    [alertId],
+  );
+  if (updated.rowCount && updated.rows[0]) {
+    return { ok: true, alreadyRepeated: false, notFound: false };
+  }
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id FROM tg_alert_acks WHERE alert_id = $1`,
+    [alertId],
+  );
+  if (existing.rowCount && existing.rows[0]) {
+    return { ok: true, alreadyRepeated: true, notFound: false };
+  }
+  return { ok: false, alreadyRepeated: false, notFound: true };
+}
+
+export interface MarkAlertSentryWarnedResult {
+  ok: boolean;
+  alreadySentryWarned: boolean;
+  notFound: boolean;
+}
+
+/**
+ * Marks an alert as Tier-3 Sentry-warned (WF-106 cron has captured a
+ * Sentry warning event). Idempotent — second call with same `alertId`
+ * returns `alreadySentryWarned=true` without re-stamping or re-capturing.
+ *
+ * Caller (route) is responsible for the actual `Sentry.captureMessage`;
+ * this function only records the DB transition. Splitting them keeps
+ * the store unit-testable without a Sentry mock.
+ */
+export async function markAlertSentryWarned(
+  pool: Pool,
+  alertId: string,
+): Promise<MarkAlertSentryWarnedResult> {
+  const updated = await pool.query<{ id: string }>(
+    `UPDATE tg_alert_acks
+        SET sentry_warned_at = NOW()
+      WHERE alert_id = $1 AND sentry_warned_at IS NULL
+      RETURNING id`,
+    [alertId],
+  );
+  if (updated.rowCount && updated.rows[0]) {
+    return { ok: true, alreadySentryWarned: false, notFound: false };
+  }
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id FROM tg_alert_acks WHERE alert_id = $1`,
+    [alertId],
+  );
+  if (existing.rowCount && existing.rows[0]) {
+    return { ok: true, alreadySentryWarned: true, notFound: false };
+  }
+  return { ok: false, alreadySentryWarned: false, notFound: true };
+}
+
+export interface MarkAlertSnoozedInput {
+  alertId: string;
+  /** Absolute timestamp at which the snooze expires. */
+  snoozedUntilAt: Date;
+}
+
+export interface MarkAlertSnoozedResult {
+  ok: boolean;
+  notFound: boolean;
+  /** ISO-8601 of the persisted `snoozed_until_at`, or null on notFound. */
+  snoozedUntilAt: string | null;
+}
+
+/**
+ * Records an operator snooze. UNLIKE the other transitions, snooze is
+ * NOT one-shot — a second click extends the window (latest-write-wins)
+ * because operators may up-grade a 1h snooze to 4h.
+ */
+export async function markAlertSnoozed(
+  pool: Pool,
+  input: MarkAlertSnoozedInput,
+): Promise<MarkAlertSnoozedResult> {
+  const updated = await pool.query<{ snoozed_until_at: Date | string }>(
+    `UPDATE tg_alert_acks
+        SET snoozed_until_at = $2
+      WHERE alert_id = $1
+      RETURNING snoozed_until_at`,
+    [input.alertId, input.snoozedUntilAt],
+  );
+  const row = updated.rows[0];
+  if (!updated.rowCount || !row) {
+    return { ok: false, notFound: true, snoozedUntilAt: null };
+  }
+  return {
+    ok: true,
+    notFound: false,
+    snoozedUntilAt:
+      row.snoozed_until_at instanceof Date
+        ? row.snoozed_until_at.toISOString()
+        : String(row.snoozed_until_at),
+  };
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -295,7 +450,8 @@ export async function findRecentDedupMatch(
   const result = await pool.query(
     `SELECT id, posted_at, alert_id, topic, severity, summary,
             ack_at, ack_by_tg_user_id, ack_action,
-            escalated_at, metadata,
+            escalated_at, repeated_at, sentry_warned_at, snoozed_until_at,
+            metadata,
             dedup_signature, occurrence_count, last_occurrence_at,
             telegram_chat_id, telegram_message_id
        FROM tg_alert_acks
@@ -418,6 +574,18 @@ function mapRowToRecord(r: Record<string, unknown>): TgAlertAckRecord {
       r["escalated_at"] instanceof Date
         ? r["escalated_at"].toISOString()
         : ((r["escalated_at"] as string | null) ?? null),
+    repeated_at:
+      r["repeated_at"] instanceof Date
+        ? r["repeated_at"].toISOString()
+        : ((r["repeated_at"] as string | null) ?? null),
+    sentry_warned_at:
+      r["sentry_warned_at"] instanceof Date
+        ? r["sentry_warned_at"].toISOString()
+        : ((r["sentry_warned_at"] as string | null) ?? null),
+    snoozed_until_at:
+      r["snoozed_until_at"] instanceof Date
+        ? r["snoozed_until_at"].toISOString()
+        : ((r["snoozed_until_at"] as string | null) ?? null),
     metadata: (r["metadata"] as Record<string, unknown> | null) ?? {},
     dedup_signature: (r["dedup_signature"] as string | null) ?? null,
     occurrence_count:

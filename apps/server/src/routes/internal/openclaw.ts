@@ -1,9 +1,9 @@
 /**
  * `/api/internal/openclaw/*` — internal HTTP API для OpenClaw bot
- * (tools/console DM-handler).
+ * (tools/openclaw DM-handler).
  *
  * Архітектура (ADR-0031 §5):
- *   tools/console (DM bot)     ──HTTP──▶  apps/server /api/internal/openclaw/*
+ *   tools/openclaw (DM bot)     ──HTTP──▶  apps/server /api/internal/openclaw/*
  *                                          ├─ recall      (recall_memory)
  *                                          ├─ strategy    (read_strategy_docs)
  *                                          ├─ query       (query_app_db)
@@ -15,7 +15,7 @@
  *                                          ├─ invocations/open
  *                                          └─ invocations/finalize
  *
- * Чому tool execution тут, а не у `tools/console`:
+ * Чому tool execution тут, а не у `tools/openclaw`:
  *   - Single-process pgvector / Postgres connection pool.
  *   - Allowlist-enforcement в одному місці (compromised console process
  *     не може bypass-ити).
@@ -27,10 +27,12 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
+import { env } from "../../env.js";
 import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  buildAiCostSummary,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -44,6 +46,7 @@ import {
   recallCofounderMemory,
   recordDecision,
   OpenClawAllowlistError,
+  assertOpenClawRepoAllowed,
   OpenClawSchemaError,
   OpenClawNotFoundError,
   // ADR-0032: ops/marketing tools ported from Sergeant Console agents.
@@ -52,6 +55,8 @@ import {
   getServerStats,
   getPostHogStats,
   getGithubReleases,
+  // PR-26: morning briefing template assembly (no-LLM hardcoded sections).
+  assembleMorningBriefing,
   // ADR-0036 (Phase 4): write-tools — invoked only after console-side approval.
   commitToStrategyDoc,
   createGithubIssue,
@@ -242,6 +247,21 @@ const GithubReleasesBody = z.object({
 });
 
 const ServerStatsBody = z.object({}).strict();
+
+// PR-26: morning briefing payload — всі поля optional, бо консумер (cron
+// dispatcher / manual probe) може приймати дефолти.
+// O1 / Phase 2.A: додано `includeProposals` (default true) — вимикає
+// LLM-call для proposals-секції коли caller хоче чистий 5-секційний
+// briefing без витрат токенів (наприклад, retry після Anthropic outage).
+const MorningBriefingBody = z
+  .object({
+    windowDays: z.number().int().min(1).max(30).optional(),
+    githubRepo: z.string().min(3).max(140).optional(),
+    sentryLimit: z.number().int().min(1).max(20).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+    includeProposals: z.boolean().optional(),
+  })
+  .strict();
 
 // ADR-0036 (Phase 4): write-tool body schemas. The console invokes these
 // endpoints ONLY after the founder explicitly approved the corresponding
@@ -656,7 +676,7 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/classify",
     asyncHandler(async (req, res) => {
-      const apiKey = process.env["ANTHROPIC_API_KEY"];
+      const apiKey = env.ANTHROPIC_API_KEY;
       if (!apiKey) {
         res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
         return;
@@ -694,6 +714,31 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.tzName,
       );
       res.json(result);
+    }),
+  );
+
+  // ---- ai-cost-summary (`/ai_cost` slash-command backend) ----
+  //
+  // Realtime AI-spend rollup for founder DM. Sources:
+  //   - Anthropic per-day/-week/-month — `ai_usage_daily` ledger
+  //     (PR-12 #2567) у Europe/Kyiv-добу.
+  //   - Voyage cumulative + top-3 endpoints — in-process Prom-counter
+  //     `ai_cost_estimate_usd_total` (since process restart).
+  //   - Budget envelopes — `ANTHROPIC_MONTHLY_BUDGET_USD` /
+  //     `VOYAGE_MONTHLY_BUDGET_USD` env-vars (PR-13 #2590).
+  // Body порожній — endpoint без аргументів, founder-bound по
+  // internal-API-bearer guard.
+  r.post(
+    "/api/internal/openclaw/ai-cost-summary",
+    asyncHandler(async (_req, res) => {
+      const summary = await buildAiCostSummary({
+        pool,
+        budget: {
+          anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
+          voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
+        },
+      });
+      res.json(summary);
     }),
   );
 
@@ -791,6 +836,36 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     }),
   );
 
+  // ---- morning briefing assembler (PR-26, no LLM) ----
+  //
+  // POST /api/internal/openclaw/briefing/morning → { markdown, data }.
+  // Caller-и:
+  //   - OpenClaw morning-cron (ops/openclaw/provision-cron.mjs) — замінює
+  //     placeholder-payload своїм запитом + пушить markdown у founder-DM.
+  //   - Manual probe з /digest day shortcut (future wiring).
+  // Жодних side-ефектів — endpoint лиш збирає + рендерить. Fail-soft на
+  // кожну джерельну функцію (див. builder.ts → mapXxx-секції).
+  r.post(
+    "/api/internal/openclaw/briefing/morning",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MorningBriefingBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleMorningBriefing>[0] = {};
+      if (parsed.data.windowDays !== undefined)
+        input.windowDays = parsed.data.windowDays;
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.sentryLimit !== undefined)
+        input.sentryLimit = parsed.data.sentryLimit;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      if (parsed.data.includeProposals !== undefined)
+        input.includeProposals = parsed.data.includeProposals;
+      const result = await assembleMorningBriefing(input);
+      res.json(result);
+    }),
+  );
+
   // ---- ADR-0036 (Phase 4): write-tools ----
   //
   // Side-effecting operations. Console approves with the founder via
@@ -806,6 +881,12 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       const parsed = validateBody(CommitStrategyDocBody, req, res);
       if (!parsed.ok) return;
       try {
+        // T2 audit #3 — enforce the repo allowlist at the request
+        // boundary so an LLM-supplied `repo` is rejected with 400
+        // BEFORE we mint a GitHub App installation token. The same
+        // assert runs again inside `commitToStrategyDoc` as a defense
+        // in depth, so direct internal callers can't bypass it.
+        assertOpenClawRepoAllowed(parsed.data.repo);
         const result = await commitToStrategyDoc({
           path: parsed.data.path,
           content: parsed.data.content,
@@ -814,7 +895,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         });
         res.json(result);
       } catch (err) {
-        if (err instanceof OpenClawWriteAllowlistError) {
+        if (
+          err instanceof OpenClawWriteAllowlistError ||
+          err instanceof OpenClawAllowlistError
+        ) {
           return asAllowlistFailure(res, err);
         }
         throw err;
@@ -828,13 +912,22 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const parsed = validateBody(CreateGithubIssueBody, req, res);
       if (!parsed.ok) return;
-      const result = await createGithubIssue({
-        title: parsed.data.title,
-        body: parsed.data.body,
-        labels: parsed.data.labels,
-        repo: parsed.data.repo,
-      });
-      res.json(result);
+      try {
+        // T2 audit #3 — see write/strategy-doc for rationale.
+        assertOpenClawRepoAllowed(parsed.data.repo);
+        const result = await createGithubIssue({
+          title: parsed.data.title,
+          body: parsed.data.body,
+          labels: parsed.data.labels,
+          repo: parsed.data.repo,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof OpenClawAllowlistError) {
+          return asAllowlistFailure(res, err);
+        }
+        throw err;
+      }
     }),
   );
 

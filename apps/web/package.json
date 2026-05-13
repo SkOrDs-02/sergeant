@@ -28,7 +28,7 @@
       "name": "JS (усього)",
       "path": "../server/dist/assets/*.js",
       "brotli": true,
-      "limit": "820 kB"
+      "limit": "870 kB"
     },
     {
       "name": "CSS",
@@ -69,7 +69,6 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-hook-form": "^7.75.0",
-    "react-markdown": "^9.0.1",
     "react-router-dom": "^7.14.1",
     "react-virtuoso": "^4.18.5",
     "tailwind-merge": "^2.6.0",

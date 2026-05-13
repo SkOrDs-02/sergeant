@@ -1,0 +1,67 @@
+# FTUX Service-Level Objectives (declarative)
+#
+# Last validated: 2026-05-13 by Devin (child session).
+# Next review: 2026-08-11.
+# Status: Active
+#
+# Declarative SLO contract for the First-Time User Experience funnel.
+# This file is the source of truth that the PostHog dashboards
+# (`docs/observability/posthog-ftux-dashboards.md`) and Sentry alerts
+# read off. Closes PR-14 from `docs/launch/product-os/ftux-master-tracker.md`.
+#
+# Metrics are computed in PostHog from the canonical FTUX event set
+# emitted across `apps/web/src/core/onboarding/`,
+# `apps/web/src/core/hub/`, and `packages/shared/src/lib/firstRealEntry.ts`.
+# See `posthog-ftux-dashboards.md §3` for the saved insights that
+# read these metrics.
+#
+# When you change a target or alert threshold, also bump the
+# matching dashboard insight and the §6.3 row in `ftux-master-tracker.md`.
+
+version: 1
+
+slos:
+  - name: ftux_activation_conversion
+    description: >-
+      % of users that wrote a first real entry within 24h of the
+      first onboarding step. Primary north-star for FTUX.
+    target: ">= 30%"
+    metric: first_real_entry / onboarding_started
+    window: 24h
+    alert_threshold: "< 25% for 3 days"
+    owner: founder
+    posthog_insight: ftux_activation_funnel
+
+  - name: ftux_time_to_value_p50
+    description: >-
+      Median time from `onboarding_started` to `first_real_entry`.
+      Used to detect drift toward longer wizards / dead-end flows.
+    target: "<= 90s"
+    metric: p50(ftux_time_to_value)
+    window: 7d
+    alert_threshold: "> 120s for 3 days"
+    owner: founder
+    posthog_insight: ftux_ttv_histogram
+
+  - name: ftux_d1_retention
+    description: >-
+      % of users that return on day 1 after their first real entry.
+      Tracks emotional payoff of the celebration moment.
+    target: ">= 25%"
+    metric: d1_returning_user / first_real_entry
+    window: 7d cohort
+    alert_threshold: "< 20% for one cohort"
+    owner: founder
+    posthog_insight: ftux_d1_d7_retention
+
+  - name: ftux_celebration_visibility
+    description: >-
+      % of first_real_entry events that fire celebration_shown.
+      Catches regressions where the CelebrationModal stops mounting
+      (e.g. routing / hub state breakage swallowing the moment).
+    target: ">= 80%"
+    metric: celebration_shown / first_real_entry
+    window: 7d
+    alert_threshold: "< 70% for 3 days"
+    owner: founder
+    posthog_insight: ftux_celebration_dropoff

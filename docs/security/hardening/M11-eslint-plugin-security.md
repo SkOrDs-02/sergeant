@@ -1,6 +1,6 @@
 # M11 — No SAST lint rules for non-literal SQL / FS calls
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-04)
 
 | Field          | Value                                                                                                                                                    |
@@ -86,7 +86,7 @@ longest-tail file (`syncV2.ts`) is migrated to a typed
 
 ```bash
 pnpm --filter @sergeant/server lint    # 0 errors, 25 warnings (audit baseline)
-pnpm --filter @sergeant/console lint   # 0 errors, 1 warning  (audit baseline)
+pnpm --filter @sergeant/openclaw lint   # 0 errors, 1 warning  (audit baseline)
 pnpm lint:plugins                      # 391 tests / 8 new passing
 ```
 

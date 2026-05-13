@@ -1,7 +1,7 @@
 /**
  * Server-side implementations OpenClaw tool-ів (ADR-0031 §5).
  *
- * Чому tool-implementations тут на сервері, а не у `tools/console`:
+ * Чому tool-implementations тут на сервері, а не у `tools/openclaw`:
  *   1) Tool-execution потребує Postgres + filesystem-access у repo +
  *      внутрішні API. Все це є на сервері; виносити у console — duplicate
  *      DI + risk дрейф конфігурації.
@@ -22,6 +22,7 @@ import { logger } from "../../obs/logger.js";
 import { env } from "../../env.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
 import { OpenClawPathTraversalError, safeJoin } from "./safeJoin.js";
+import { assertOpenClawRepoAllowed } from "./repoAllowlist.js";
 import {
   QUERY_APP_DB_TABLE_ALLOWLIST,
   READ_STRATEGY_DOCS_ALLOWED_PATHS,
@@ -381,7 +382,10 @@ export async function readGithub(
     );
   }
   const token = auth.token;
-  const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
+  // T2 audit #3 — reject LLM-supplied repos outside the allowlist
+  // (otherwise the same prompt-injection vector that lets the model
+  // pick a tool call lets it choose ANY repo the App/PAT has scope on).
+  const repo = assertOpenClawRepoAllowed(input.repo);
 
   let url: string;
   if (input.mode === "file") {
@@ -449,8 +453,8 @@ export interface ReadWorkflowLogsOutput {
 export async function readWorkflowLogs(
   input: ReadWorkflowLogsInput,
 ): Promise<ReadWorkflowLogsOutput> {
-  const baseUrl = process.env["N8N_API_URL"];
-  const apiKey = process.env["N8N_API_KEY"];
+  const baseUrl = env.N8N_API_URL;
+  const apiKey = env.N8N_API_KEY;
   if (!baseUrl || !apiKey) {
     logger.warn({
       msg: "openclaw_read_workflow_logs_not_configured",
@@ -973,7 +977,7 @@ export interface GetServerStatsOutput {
  *     touching tool code.
  */
 export async function getServerStats(): Promise<GetServerStatsOutput> {
-  const port = process.env["PORT"] ?? "3000";
+  const port = String(env.PORT);
   const baseUrl =
     process.env["SERVER_INTERNAL_URL"] ?? `http://localhost:${port}`;
   const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/healthz`, {
@@ -1045,7 +1049,8 @@ export async function getGithubReleases(
   input: GetGithubReleasesInput,
 ): Promise<GetGithubReleasesOutput> {
   const limit = Math.max(1, Math.min(20, input.limit ?? 5));
-  const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
+  // T2 audit #3 — see readGithub for rationale.
+  const repo = assertOpenClawRepoAllowed(input.repo);
   // GitHub allows unauthenticated access for public repo releases (60 RPH);
   // any auth (PAT or App-installation token) bumps the rate to 5000 RPH and
   // is required for private repos.

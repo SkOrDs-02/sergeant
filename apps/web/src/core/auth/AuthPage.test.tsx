@@ -247,6 +247,112 @@ describe("AuthPage — mode switching", () => {
   });
 });
 
+describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
+  it("autoFocus-ить email на login-режимі при mount-і", () => {
+    render(<AuthPage />);
+
+    const email = screen.getByLabelText("Email") as HTMLInputElement;
+    expect(document.activeElement).toBe(email);
+  });
+
+  it("автокомплит атрибути виставлені на login-полях", () => {
+    render(<AuthPage />);
+
+    const email = screen.getByLabelText("Email") as HTMLInputElement;
+    const password = screen.getByLabelText("Пароль") as HTMLInputElement;
+
+    expect(email.getAttribute("autocomplete")).toBe("email");
+    expect(password.getAttribute("autocomplete")).toBe("current-password");
+  });
+
+  it("автокомплит атрибути виставлені на register-полях", () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
+
+    const name = screen.getByLabelText("Ім'я") as HTMLInputElement;
+    const email = screen.getByLabelText("Email") as HTMLInputElement;
+    const password = screen.getByLabelText("Пароль") as HTMLInputElement;
+
+    expect(name.getAttribute("autocomplete")).toBe("name");
+    expect(email.getAttribute("autocomplete")).toBe("email");
+    expect(password.getAttribute("autocomplete")).toBe("new-password");
+  });
+
+  it("кнопка show-password перемикає type password ↔ text", () => {
+    render(<AuthPage />);
+
+    const password = screen.getByLabelText("Пароль") as HTMLInputElement;
+    expect(password.type).toBe("password");
+
+    const toggle = screen.getByRole("button", { name: "Показати пароль" });
+    fireEvent.click(toggle);
+
+    expect(password.type).toBe("text");
+    expect(screen.getByRole("button", { name: "Сховати пароль" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Сховати пароль" }));
+    expect(password.type).toBe("password");
+  });
+
+  it("aria-describedby з'являється лише після помилки валідації", async () => {
+    render(<AuthPage />);
+
+    const password = screen.getByLabelText("Пароль") as HTMLInputElement;
+    expect(password.getAttribute("aria-describedby")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Увійти$/ }));
+
+    await waitFor(() => {
+      expect(password.getAttribute("aria-describedby")).toBe("auth-pw-error");
+    });
+    const errorEl = document.getElementById("auth-pw-error");
+    expect(errorEl?.getAttribute("role")).toBe("alert");
+  });
+
+  it("forgot-email отримує autoFocus при відкритті панелі", () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
+
+    const forgotEmail = screen.getByLabelText(
+      "Email для скидання",
+    ) as HTMLInputElement;
+    expect(document.activeElement).toBe(forgotEmail);
+  });
+
+  it("кнопка submit стає disabled під час login (aria-busy=true)", async () => {
+    let resolveLogin: ((v: boolean) => void) | undefined;
+    loginMock.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveLogin = resolve;
+        }),
+    );
+    render(<AuthPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "alice@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Пароль"), {
+      target: { value: "secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Увійти$/ }));
+
+    // У pending-стані кнопка перемикається на варіант з лоадинг-копією
+    // (`messages.loadingActions.signingIn`), отримує aria-busy і disabled.
+    await waitFor(() => {
+      const busyBtn = screen
+        .getAllByRole("button")
+        .find((b) => b.getAttribute("aria-busy") === "true");
+      expect(busyBtn).toBeTruthy();
+      expect((busyBtn as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    resolveLogin?.(true);
+  });
+});
+
 describe("AuthPage — forgot password (UX roast 2026-Q2 A14)", () => {
   it("після успіху показує кнопку «Назад до входу», що згортає панель", async () => {
     requestPasswordResetMock.mockResolvedValue(true);

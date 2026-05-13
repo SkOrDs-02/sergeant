@@ -542,7 +542,10 @@ describe("HubDashboard", () => {
     expect(mocks.dashboardFocus.dismiss).toHaveBeenCalledWith("hashed");
   });
 
-  it("shows the weekly digest footer on report days and expands the report summary inline", () => {
+  it("shows the weekly digest footer and expands the report summary inline", () => {
+    // UX-feedback 2026-05-13: footer is always rendered (regardless of day
+    // or `digestFresh`) so users always have a 1-tap entry into the
+    // weekly digest. Empty/fresh state is reflected by `data-fresh`.
     vi.setSystemTime(new Date("2026-04-28T09:00:00+03:00"));
     mocks.digestFresh = false;
 
@@ -614,9 +617,16 @@ describe("HubDashboard", () => {
     );
   });
 
-  it("shows a stale-day digest footer only when a live weekly digest exists", () => {
+  it("renders the weekly digest footer mid-week regardless of digest freshness", () => {
+    // 2026-04-29 is a Wednesday — pre-change this hid the footer unless a
+    // live digest existed (UX feedback: users couldn't find the report
+    // mid-week). Footer is now always present; the `data-fresh` flag
+    // still reflects whether a live digest is available.
     renderDashboard();
-    expect(screen.queryByTestId("weekly-digest-footer")).toBeNull();
+    expect(screen.getByTestId("weekly-digest-footer")).toHaveAttribute(
+      "data-fresh",
+      "false",
+    );
 
     cleanup();
     mocks.digestFresh = true;

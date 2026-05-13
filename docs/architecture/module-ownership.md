@@ -1,6 +1,6 @@
 # Module ownership map
 
-> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../AGENTS.md#module-ownership-map); deep per-path table is here so Stack-pulse PR-04 secondary-column gate (`pnpm lint:codeowners`) and the per-module CODEOWNERS coverage stay close to one another.
@@ -24,7 +24,7 @@
 | `apps/mobile/src/core/**`              | `@Skords-01` | TBD (mobile-engineer)   | Jest                                    | (mobile RQ uses module-local keys)    | NativeWind (not Tailwind). MMKV (not localStorage). No DOM.                                                                                                     |
 | `apps/mobile/app/**`                   | `@Skords-01` | TBD (mobile-engineer)   | Jest                                    | n/a                                   | Expo Router routes. Each `_layout.tsx` is a navigator.                                                                                                          |
 | `apps/mobile-shell/**`                 | `@Skords-01` | TBD (mobile-engineer)   | none                                    | n/a                                   | Capacitor wrapper around `apps/web`. No app code lives here, only build glue.                                                                                   |
-| `tools/console/**`                     | `@Skords-01` | TBD (backend-engineer)  | Vitest                                  | n/a                                   | Telegram bot (grammy + Anthropic). Multi-agent: ops + marketing. Internal only.                                                                                 |
+| `tools/openclaw/**`                    | `@Skords-01` | TBD (backend-engineer)  | Vitest                                  | n/a                                   | Telegram bot (grammy + Anthropic). Multi-agent: ops + marketing. Internal only.                                                                                 |
 
 ## Packages
 

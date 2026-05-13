@@ -3,3 +3,4 @@
  * the workflow for adding a new endpoint.
  */
 export * from "./me";
+export * from "./barcode";

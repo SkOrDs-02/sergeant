@@ -16,6 +16,8 @@
  *  - flushPendingWrites()
  */
 
+// eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; consumed by storage/ for warn-level error reporting.
+import { logger } from "../log";
 import { webKVStore } from "./storage";
 import { safeJsonSet } from "./storageQuota";
 
@@ -50,7 +52,7 @@ export function createModuleStorage({
 
   function reportError(scope: string, error: unknown): void {
     try {
-      console.warn(`[${moduleName}Storage] ${scope}`, error);
+      logger.warn(`[${moduleName}Storage] ${scope}`, error);
     } catch {
       /* ignore logging errors */
     }

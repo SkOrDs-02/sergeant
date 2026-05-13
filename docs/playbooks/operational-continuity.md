@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >
@@ -14,7 +14,7 @@ lang: en
 
 ## Owner surface
 
-- Primary surface: deploy infrastructure (Railway / Vercel / 1Password vaults), `tools/console`, `apps/server`
+- Primary surface: deploy infrastructure (Railway / Vercel / 1Password vaults), `tools/openclaw`, `apps/server`
 - Coupled surface: every product surface, since this playbook is the fallback when no other owner is around
 - Governing skill: `sergeant-start-here`
 

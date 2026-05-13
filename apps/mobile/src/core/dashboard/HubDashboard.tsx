@@ -39,7 +39,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Settings, Sparkles } from "lucide-react-native";
+import { Search, Settings, Sparkles } from "lucide-react-native";
 
 import { colors } from "@/theme";
 
@@ -331,6 +331,10 @@ export function HubDashboard() {
     router.push("/assistant" as Href);
   }, []);
 
+  const openSearch = useCallback(() => {
+    router.push("/hub-search" as Href);
+  }, []);
+
   const bumpHero = useCallback(() => setHeroTick((t) => t + 1), []);
 
   const onRefresh = useCallback(async () => {
@@ -420,15 +424,26 @@ export function HubDashboard() {
               {todayLabel}
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Відкрити налаштування"
-            onPress={openSettings}
-            className="h-10 w-10 items-center justify-center rounded-full bg-cream-100 active:opacity-70 active:scale-95"
-            testID="dashboard-settings-button"
-          >
-            <Settings size={20} color={colors.textMuted} strokeWidth={2} />
-          </Pressable>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Відкрити глобальний пошук"
+              onPress={openSearch}
+              className="h-10 w-10 items-center justify-center rounded-full bg-cream-100 active:opacity-70 active:scale-95"
+              testID="dashboard-search-button"
+            >
+              <Search size={20} color={colors.textMuted} strokeWidth={2} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Відкрити налаштування"
+              onPress={openSettings}
+              className="h-10 w-10 items-center justify-center rounded-full bg-cream-100 active:opacity-70 active:scale-95"
+              testID="dashboard-settings-button"
+            >
+              <Settings size={20} color={colors.textMuted} strokeWidth={2} />
+            </Pressable>
+          </View>
         </View>
 
         <View testID="dashboard-hero-slot">

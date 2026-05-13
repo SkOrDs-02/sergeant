@@ -1,7 +1,7 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
-> **Status:** In progress (Sprint 1 — 4/5 PR-ів merged: `Workouts.tsx` 744→567, `Exercise.tsx` 669→427, `LogCard.tsx` 736→533, `DailyPlanCard.tsx` 1228→405 — додано як drift-пункт у цій ревізії; `HubDashboard.tsx` (837 LOC) додано як drift-пункт для Sprint 2; `FinykApp.tsx` decomp вже не потрібний — файл 641 raw LOC але проходить max-lines:600 (skipBlankLines+skipComments))
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-07.
+> **Status:** In progress (Sprint 1 done, Sprint 2 частково: `Workouts.tsx` 744→213 ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)), `LogCard.tsx` 736→216 ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)), `Overview.tsx` ~750→139 ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f))).
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
@@ -64,9 +64,9 @@
 
 PR-и:
 
-- `decomp-r2-workouts` — `Workouts.tsx` (744 → 567) — **merged** ([#2002](https://github.com/Skords-01/Sergeant/pull/2002), commit `61a8afff`).
+- `decomp-r2-workouts` — `Workouts.tsx` (744 → 567 → 213) — **merged** ([#2002](https://github.com/Skords-01/Sergeant/pull/2002), commit `61a8afff`; далі [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)).
 - `decomp-r2-exercise` — `Exercise.tsx` (669 → 427) — **merged** ([#2128](https://github.com/Skords-01/Sergeant/pull/2128), commit `619381bb`); extract `LoadCalculator` + `ExerciseProgressChart` + `lib/numberFmt.ts`.
-- `decomp-r2-logcard` — `LogCard.tsx` (736 → 533) — extract `MealRow` (123 LOC) + `VirtualMealList` (89 LOC). **merged.**
+- `decomp-r2-logcard` — `LogCard.tsx` (736 → 533 → 216) — extract `MealRow` + `VirtualMealList`. **merged.** Далі [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) (LogCardSearch + LogCardWeeklyTable + LogCardAnalytics).
 - `decomp-r2-dailyplancard` — `DailyPlanCard.tsx` (1228 → 405) — **додано 2026-05-09**: extract `DailyPlanWarnings.tsx` (209) + `DailyPlanMacros.tsx` (105) + `DailyPlanMealRow.tsx` (127) + `DailyPlanGoalSelectors.tsx` (304) + `lib/dailyPlanValidation.ts` (139). **Ця ревізія.** Сюди ж — drop allowlist для `Progress.tsx` і `RoutineCalendarPanel.tsx` (вже проходять).
 - ~~`decomp-r2-finykapp`~~ — not-needed (ревізія 2026-05-09): 641 raw LOC але 537 effective, проходить max-lines:600. Як drift-назад виявиться post-0010 — відкриємо окремий PR на 0014 або безпосередньо в 0010 фічі-PR-і (білінг торкає `FinykApp.tsx`).
 
@@ -76,7 +76,7 @@ PR-и:
 
 - `decomp-r2-nutritionapp` — `NutritionApp.tsx` (766 LOC).
 - `decomp-r2-hubchatcontext` — `hubChatContext.ts` (681 LOC; найскладніший — context-provider з багатьма ефектами).
-- `decomp-r2-hubdashboard` — `HubDashboard.tsx` (837 LOC; **новий drift-пункт**, заміняє ~~Cards/Subscriptions~~).
+- `decomp-r2-hubdashboard` — `HubDashboard.tsx` (837 → 115) — **merged** ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5).
 - `decomp-r2-fizrukactions` — `chatActions/fizrukActions.ts` (672 LOC).
 - `decomp-r2-assetstable` — `AssetsTable.tsx` (671 LOC; перенесено з sprint 3).
 
@@ -135,7 +135,7 @@ PR-и:
 
 ### Sprint 1 — PR #1 `decomp-r2-workouts` (in flight, 2026-05-06)
 
-`apps/web/src/modules/fizruk/pages/Workouts.tsx` декомпозовано **744 → 567 LOC**
+`apps/web/src/modules/fizruk/pages/Workouts.tsx` декомпозовано **744 → 567 LOC** (далі до 213 LOC у [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) via `useWorkoutsOrchestrator` hook)
 (нижче 600-LOC гарду; рядок видалено з allowlist у `eslint.config.js`).
 
 Виокремлено в нові файли (поряд з існуючими `components/workouts/*`):

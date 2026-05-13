@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
@@ -82,7 +82,7 @@ flowchart TD
 
 1. Застосуй зміну до staging Railway-проекту (або тимчасового форку). Зміни конфігу в `railway.toml` (start commands, env, replica count) **обовʼязково** мають пройти через реальний deploy.
 2. Підтверди, що сервіс стартує чисто (Railway → Service → Deployments → latest → жодного restart-loop).
-3. Якщо сервіс — `tools/console` (Telegram-бот), верифікуй `/help` ping-ом у staging Telegram-бот. Якщо `ops/grafana-alloy` — верифікуй ingestion метрик у staging Grafana.
+3. Якщо сервіс — `tools/openclaw` (Telegram-бот), верифікуй `/help` ping-ом у staging Telegram-бот. Якщо `ops/grafana-alloy` — верифікуй ingestion метрик у staging Grafana.
 4. Постав лейбл `verified-on-staging`.
 
 ### 4. Emergency escape-hatch

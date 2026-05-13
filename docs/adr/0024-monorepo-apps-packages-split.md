@@ -95,7 +95,7 @@ packages:
 | `apps/server`       | Express API → Railway (Docker)                             | `*.up.railway.app`   |
 | `apps/mobile`       | Expo SDK 52 (RN 0.76) → APNs/FCM                           | `com.sergeant.app`   |
 | `apps/mobile-shell` | Capacitor 7 WebView shell of `apps/web`                    | `com.sergeant.shell` |
-| `tools/console`     | Telegram bot (grammy + Anthropic) — internal ops/marketing | n/a                  |
+| `tools/openclaw`    | Telegram bot (grammy + Anthropic) — internal ops/marketing | n/a                  |
 
 ### `packages/*` (10)
 
@@ -154,7 +154,7 @@ ESLint resolver шукає `eslint-plugin-*` за naming convention.
 
 **Audit-quote:** [2026-04-26 audit](../audits/archive/2026-04-26-sergeant-audit-devin.md),
 пункт 1: "5 apps + 9 `@sergeant/*` packages (+ `eslint-plugin-sergeant-design` = 10 total), `pnpm-workspace.yaml` чітко як `apps/*` +
-`packages/*`. … Domain packages — справжня доменна ізоляція, не fake." (`tools/console` додано після audit-у — Telegram-bot для ops/marketing.)
+`packages/*`. … Domain packages — справжня доменна ізоляція, не fake." (`tools/openclaw` додано після audit-у — Telegram-bot для ops/marketing.)
 
 ## Consequences
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { logger } from "@shared/lib";
 
 type SpeechRecognitionResultLike = {
   readonly length: number;
@@ -78,7 +79,7 @@ export function useSpeech(
       if (transcript) cbRef.current(transcript);
     };
     rec.onerror = (e) => {
-      console.warn("Speech error:", e.error);
+      logger.warn("Speech error:", e.error);
       setListening(false);
     };
     rec.onend = () => setListening(false);

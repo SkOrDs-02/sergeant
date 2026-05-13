@@ -363,8 +363,17 @@ export default function NutritionApp({
   }, [queryClient]);
 
   const handlePullRefreshError = useCallback(() => {
-    toast.error("Не вдалося оновити дані. Перевір з'єднання.");
-  }, [toast]);
+    // PTR-fail: provide an actionable retry path per
+    // docs/ui/toast-policy.md. The retry callback runs the same dual
+    // refetch (`invalidateQueries` + `requestCloudPull`) the gesture
+    // triggered so the user does not need to repeat the PTR pull.
+    toast.error("Не вдалося оновити дані. Перевір з'єднання.", undefined, {
+      label: "Повторити",
+      onClick: () => {
+        void handlePullRefresh();
+      },
+    });
+  }, [toast, handlePullRefresh]);
 
   const dayPlanQuery: DataStateQueryLike<NutritionDayPlan | null> = {
     data: dayPlanBusy ? undefined : dayPlan,

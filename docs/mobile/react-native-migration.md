@@ -1,6 +1,6 @@
 # Міграція на React Native (Expo)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Source-of-truth трекер по перенесенню Sergeant із PWA-клієнта (`apps/web`,
@@ -37,11 +37,11 @@
 | ---- | ---------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0    | Скафолд `apps/mobile`                    | ✅ Done        | [#401](https://github.com/Skords-01/Sergeant/pull/401)                                                                                                                                                                                                                                                                                                                                                                                            |
 | 1    | UI-основа (NativeWind + MMKV + UI-8)     | ✅ Done        | [#403](https://github.com/Skords-01/Sergeant/pull/403)–[#427](https://github.com/Skords-01/Sergeant/pull/427)                                                                                                                                                                                                                                                                                                                                     |
-| 2    | Hub-ядро                                 | 🔵 In progress | [#480](https://github.com/Skords-01/Sergeant/pull/480), [#482](https://github.com/Skords-01/Sergeant/pull/482), [#483](https://github.com/Skords-01/Sergeant/pull/483); HubChat / HubSearch — TODO                                                                                                                                                                                                                                                |
+| 2    | Hub-ядро                                 | 🔵 In progress | [#480](https://github.com/Skords-01/Sergeant/pull/480), [#482](https://github.com/Skords-01/Sergeant/pull/482), [#483](https://github.com/Skords-01/Sergeant/pull/483), HubSearch port ([`apps/mobile/src/core/hub/search/`](../../apps/mobile/src/core/hub/search/) + route `/hub-search`); HubChat — TODO                                                                                                                                       |
 | 3    | CloudSync v1 → Sync v2 (op-log + outbox) | 🔵 In progress | v1 client cut-over ([#2010](https://github.com/Skords-01/Sergeant/pull/2010)) + mobile engine drop ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)) + сервер `module_data` / v1 handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c)). Mobile writer-wiring трекає [plan 2026-05-06](../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md). Деталі — Q13 + storage-roadmap Stage 5–7 |
 | 4    | Модуль Фінік + Detox E2E                 | 🔵 In progress | усі 5 сторінок портовано, Detox iOS зелений; Android CI follow-up                                                                                                                                                                                                                                                                                                                                                                                 |
 | 5    | Модуль Рутина                            | 🔵 In progress | весь функціонал портовано; чекає stabilization на real device                                                                                                                                                                                                                                                                                                                                                                                     |
-| 6    | Модуль Фізрук                            | 🔵 In progress | усі основні сторінки портовано; залишився `WorkoutTemplates` drawer                                                                                                                                                                                                                                                                                                                                                                               |
+| 6    | Модуль Фізрук                            | ✅ Done        | усі основні сторінки + `WorkoutTemplates` drawer портовано (§ 5.3)                                                                                                                                                                                                                                                                                                                                                                                |
 | 7    | Модуль Харчування                        | 🔵 In progress | shell + Dashboard / Log / Water / Pantry / Shopping / Recipe + barcode + photo-аналіз                                                                                                                                                                                                                                                                                                                                                             |
 | 8    | AI-шар (HubChat / Coach / Digest)        | ⏸ Not started  | —                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 9    | Hub-пошук + звіти                        | ⏸ Not started  | —                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -223,8 +223,15 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
   [#474](https://github.com/Skords-01/Sergeant/pull/474),
   [#477](https://github.com/Skords-01/Sergeant/pull/477)). Detox iOS-сьют
   `finyk-manual-expense.e2e.ts`
-  ([#490](https://github.com/Skords-01/Sergeant/pull/490)). Android CI
-  workflow + `finyk-transactions` / `routine-smoke` сьюти — in-flight.
+  ([#490](https://github.com/Skords-01/Sergeant/pull/490)) + Android CI
+  лейн
+  ([`.github/workflows/detox-android.yml`](../../.github/workflows/detox-android.yml),
+  `ubuntu-latest` + `reactivecircus/android-emulator-runner` на API 34
+  `google_apis`, nightly cron + per-PR на `apps/mobile/**`,
+  `apps/mobile-shell/**`, mobile-shared packages). Suite-и:
+  `finyk-manual-expense`, `finyk-transactions` (period-filter:
+  prev/next-month chevrons + custom date-range sheet),
+  `routine-smoke`, `hub-ux-smoke` — усі зелені на обох платформах.
 - **Рутина** (`apps/mobile/src/modules/routine/*`): весь функціонал
   портовано — shell + 3-tab nav, pure-домен у
   `@sergeant/routine-domain`, habits-редактор з drag-reorder, heatmap,
@@ -251,7 +258,7 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
   `Dashboard` ([#493](https://github.com/Skords-01/Sergeant/pull/493)),
   `Exercise` detail
   ([#500](https://github.com/Skords-01/Sergeant/pull/500)). Залишився
-  `WorkoutTemplates` drawer; фото-прогрес тіла свідомо виключено
+  фото-прогрес тіла свідомо виключено
   ([#468](https://github.com/Skords-01/Sergeant/pull/468)).
 - **Харчування** (`apps/mobile/src/modules/nutrition/*`) — Phase 7
   активна: `NutritionApp` shell + bottom-nav, сторінки `Dashboard`,
@@ -348,7 +355,7 @@ sergeant/
 | 3   | CloudSync + офлайн-черга                   | 🔵 In progress | 1                            | RN-аналог `core/cloudSync/useCloudSync.ts`: MMKV + NetInfo + React Query persist; LWW-резолвер незмінний (на сервері). `useSyncedStorage` + ESLint-правило проти raw-tracked storage.                                        |
 | 4   | Порт модуля Фінік + перші Detox E2E        | 🔵 In progress | 1, 3                         | Усі 5 сторінок портовано. Detox iOS зелений, Android CI follow-up.                                                                                                                                                           |
 | 5   | Порт модуля Рутина                         | 🔵 In progress | 1, 3                         | Весь функціонал портовано. Stabilization + інтеграційні тести на real device через Expo Dev Client.                                                                                                                          |
-| 6   | Порт модуля Фізрук                         | 🔵 In progress | 1, 3                         | Усі сторінки портовано. Залишився `WorkoutTemplates` drawer.                                                                                                                                                                 |
+| 6   | Порт модуля Фізрук                         | ✅ Done        | 1, 3                         | Усі сторінки + `WorkoutTemplates` drawer портовано (§ 5.3).                                                                                                                                                                  |
 | 7   | Порт модуля Харчування                     | 🔵 In progress | 1, 3, 6                      | shell + 8 сторінок + barcode-сканер + photo-аналіз; чекає AI-генерація shopping-list.                                                                                                                                        |
 | 8   | AI-шар (HubChat / Coach / Digest)          | ⏸ Not started  | 2, 4–7                       | RN-сумісний стримінг (fetch ReadableStream у RN 0.76 ОК). Speech → `expo-speech-recognition` або server-side fallback (Whisper).                                                                                             |
 | 9   | Hub-пошук + звіти                          | ⏸ Not started  | 2, 4–7                       | `HubSearch` + `HubReports`. Pure-агрегатори вже у `@sergeant/insights`.                                                                                                                                                      |
@@ -363,23 +370,23 @@ Per module — які файли `apps/web` переносяться і в що 
 
 ### 5.1 `core/` (Hub)
 
-| web                                                      | mobile ціль                                             | нотатки                                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `core/App.tsx` (router, shell)                           | `apps/mobile/app/_layout.tsx` + `(tabs)/_layout.tsx`    | expo-router замість `react-router-dom`.                                        |
-| `core/auth/AuthContext.tsx`                              | викид — джерело правди стає `useUser()` з api-client    | Для мобілки контекст не потрібен; `authClient` уже в `src/auth/authClient.ts`. |
-| `core/auth/AuthPage.tsx`                                 | `apps/mobile/app/(auth)/{sign-in,sign-up}.tsx`          | Уже є scaffold; підключити validation з `@sergeant/shared/schemas`.            |
-| `core/HubDashboard.tsx`                                  | `apps/mobile/src/core/dashboard/HubDashboard.tsx`       | RN-компоненти, FlashList для стрічок. Статус — Done (3 PR-серія).              |
-| `core/OnboardingWizard.tsx`                              | `apps/mobile/src/core/onboarding/OnboardingWizard.tsx`  | Done — splash-Modal на mobile, shared `@sergeant/shared/lib/onboarding`.       |
-| `core/hub/HubSearch.tsx`                                 | TODO (`apps/mobile/src/core/hub/`)                      | Pure-скорінг уже у `@sergeant/insights/search` (R2); LS-recents — web-wrapper. |
-| `core/hub/HubReports.tsx`                                | TODO                                                    | Реюз агрегаторів з `@sergeant/insights`.                                       |
-| `core/HubChat.tsx` + `core/lib/hubChat*.ts`              | TODO (`apps/mobile/src/core/hub/chat/*`)                | Speech → `expo-speech-recognition`; streaming через ReadableStream.            |
-| `core/insights/WeeklyDigestCard.tsx` + `useWeeklyDigest` | `apps/mobile/src/core/dashboard/WeeklyDigestCard.tsx`   | Mobile-варіант присутній. Серверний ендпоінт незмінний.                        |
-| `core/insights/TodayFocusCard.tsx`, `CoachInsightCard`   | `apps/mobile/src/core/dashboard/{TodayFocusCard,…}.tsx` | Done.                                                                          |
-| `core/ModuleErrorBoundary.tsx`                           | `apps/mobile/src/core/ModuleErrorBoundary.tsx`          | Done.                                                                          |
-| `core/cloudSync/useCloudSync.ts`                         | `apps/mobile/src/sync/*`                                | MMKV + NetInfo + React Query persister. Done.                                  |
-| `core/observability/sentry.ts`                           | `apps/mobile/src/lib/observability.ts`                  | `@sentry/react-native`. Scaffold landed.                                       |
-| `core/observability/webVitals.ts`                        | — (викидаємо на мобілці)                                | На native — Sentry Performance + expo-perf.                                    |
-| `core/auth/authClient.ts`                                | `apps/mobile/src/auth/authClient.ts`                    | Done.                                                                          |
+| web                                                      | mobile ціль                                             | нотатки                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core/App.tsx` (router, shell)                           | `apps/mobile/app/_layout.tsx` + `(tabs)/_layout.tsx`    | expo-router замість `react-router-dom`.                                                                                                                                                                                                                        |
+| `core/auth/AuthContext.tsx`                              | викид — джерело правди стає `useUser()` з api-client    | Для мобілки контекст не потрібен; `authClient` уже в `src/auth/authClient.ts`.                                                                                                                                                                                 |
+| `core/auth/AuthPage.tsx`                                 | `apps/mobile/app/(auth)/{sign-in,sign-up}.tsx`          | Уже є scaffold; підключити validation з `@sergeant/shared/schemas`.                                                                                                                                                                                            |
+| `core/HubDashboard.tsx`                                  | `apps/mobile/src/core/dashboard/HubDashboard.tsx`       | RN-компоненти, FlashList для стрічок. Статус — Done (3 PR-серія).                                                                                                                                                                                              |
+| `core/OnboardingWizard.tsx`                              | `apps/mobile/src/core/onboarding/OnboardingWizard.tsx`  | Done — splash-Modal на mobile, shared `@sergeant/shared/lib/onboarding`.                                                                                                                                                                                       |
+| `core/hub/HubSearch.tsx`                                 | `apps/mobile/src/core/hub/search/HubSearch.tsx`         | Done — повний паритет з web HubSearch. `FlatList` замість `react-virtuoso`, MMKV recents (`hub_search_recents_v1`), Expo-Router `hrefForHit` замість `useNavigate`. Inline AI rail (single-shot `chat.send`); HubChat-handoff заглушений до Phase 2 follow-up. |
+| `core/hub/HubReports.tsx`                                | TODO                                                    | Реюз агрегаторів з `@sergeant/insights`.                                                                                                                                                                                                                       |
+| `core/HubChat.tsx` + `core/lib/hubChat*.ts`              | TODO (`apps/mobile/src/core/hub/chat/*`)                | Speech → `expo-speech-recognition`; streaming через ReadableStream.                                                                                                                                                                                            |
+| `core/insights/WeeklyDigestCard.tsx` + `useWeeklyDigest` | `apps/mobile/src/core/dashboard/WeeklyDigestCard.tsx`   | Mobile-варіант присутній. Серверний ендпоінт незмінний.                                                                                                                                                                                                        |
+| `core/insights/TodayFocusCard.tsx`, `CoachInsightCard`   | `apps/mobile/src/core/dashboard/{TodayFocusCard,…}.tsx` | Done.                                                                                                                                                                                                                                                          |
+| `core/ModuleErrorBoundary.tsx`                           | `apps/mobile/src/core/ModuleErrorBoundary.tsx`          | Done.                                                                                                                                                                                                                                                          |
+| `core/cloudSync/useCloudSync.ts`                         | `apps/mobile/src/sync/*`                                | MMKV + NetInfo + React Query persister. Done.                                                                                                                                                                                                                  |
+| `core/observability/sentry.ts`                           | `apps/mobile/src/lib/observability.ts`                  | `@sentry/react-native`. Scaffold landed.                                                                                                                                                                                                                       |
+| `core/observability/webVitals.ts`                        | — (викидаємо на мобілці)                                | На native — Sentry Performance + expo-perf.                                                                                                                                                                                                                    |
+| `core/auth/authClient.ts`                                | `apps/mobile/src/auth/authClient.ts`                    | Done.                                                                                                                                                                                                                                                          |
 
 ### 5.2 `modules/finyk` — ✅ Усі 5 сторінок портовано
 
@@ -397,10 +404,19 @@ Per module — які файли `apps/web` переносяться і в що 
 - Pure-домен — у `@sergeant/finyk-domain` (R3): `constants`, `utils`,
   `domain/*`, `lib/*`, `storageKeys`, `backup`, `assets`. Web імпортує
   з пакета напряму (без шімів).
-- Detox iOS-сьют `finyk-manual-expense.e2e.ts`. Android CI workflow +
-  `finyk-transactions.e2e.ts` period-filter сьют — in-flight.
+- Detox iOS + Android e2e:
+  - `finyk-manual-expense.e2e.ts` — Overview → Transactions → manual
+    expense flow.
+  - `finyk-transactions.e2e.ts` — period-filter: prev/next-month
+    chevrons на `TransactionsHeader` + custom date-range через
+    `DateRangeFilterSheet` (apply / clear).
+  - Android CI лейн
+    ([`.github/workflows/detox-android.yml`](../../.github/workflows/detox-android.yml))
+    запускає той самий `pnpm e2e:test:android:ci` через AVD
+    `Pixel_5_API_34` + `reactivecircus/android-emulator-runner` —
+    nightly cron (`15 3 * * *` UTC) + per-PR на mobile-scoped paths.
 
-### 5.3 `modules/fizruk` — ✅ Майже всі сторінки портовано
+### 5.3 `modules/fizruk` — ✅ Весь функціонал портовано
 
 - `FizrukApp.tsx` + 9 route-сторінок у stack-навігаторі
   (`apps/mobile/app/(tabs)/fizruk/*`): `index` (Dashboard), `workouts`,
@@ -427,12 +443,22 @@ Per module — які файли `apps/web` переносяться і в що 
 - `useRecovery` + `useExerciseCatalog` + `useDailyLog` — на mobile
   (MMKV + cloud-sync); Atlas / Body підключені до реальних даних
   відновлення.
-- **`WorkoutTemplates` drawer** — у scope Phase 6, але ще не реалізовано
-  на mobile. Mobile-хук `useWorkoutTemplates` уже існує (MMKV +
-  CloudSync, mirror web LS-shape під ключем `STORAGE_KEYS.FIZRUK_TEMPLATES`),
-  залишилось перенести UI з `apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx`
-  - узгодити тип `WorkoutTemplateGroup` з web-shape. Templates SQLite
-    cut-over — окрема follow-up серія, ще не у Stage 4 storage-roadmap.
+- **`WorkoutTemplates` drawer** — ✅ Done.
+  Mobile-хук `useWorkoutTemplates` уже існував (SQLite warm cache +
+  dual-write via `triggerFizrukDualWrite`, Stage 12 PR #070f-mobile-dualwrite);
+  у цьому PR-і ([feat(mobile,fizruk): port WorkoutTemplates drawer to RN
+  (Phase 6 closure)](https://github.com/Skords-01/Sergeant/pulls?q=is%3Apr+port+WorkoutTemplates))
+  додано UI-обгортку `WorkoutTemplatesSheet` (RN `Sheet`-bottom-sheet
+  з `WorkoutTemplateRow` + `WorkoutTemplateEditor`) і тригер у Fizruk
+  Workouts page (`apps/mobile/src/modules/fizruk/pages/Workouts.tsx`,
+  card «Шаблони» поруч із «Каталог вправ»). Apply-template-flow
+  створює нове тренування й заповнює його вправами шаблону через
+  існуючий `useFizrukWorkouts` + `useActiveFizrukWorkout`. Templates
+  superset / circuit-grouping editor — свідомо не портовано
+  (mobile-UI відкладено; hook round-tripить existing `groups`-поле
+  незмінним, тож web-шаблони з групами лишаються коректними після
+  редагування на mobile). Templates SQLite read cut-over — окрема
+  follow-up серія, ще не у Stage 4 storage-roadmap.
 - **Не мігруємо:** фото-прогрес тіла (виключено з плану,
   [#468](https://github.com/Skords-01/Sergeant/pull/468)).
 
@@ -584,9 +610,27 @@ Android — локальний config-плагін
 ### 6.5 Голосовий ввід і speech (Q6)
 
 - Web: Web Speech API (`SpeechRecognition` в Chrome).
-- Mobile: вирішено — `expo-speech-recognition` як primary,
-  server-side Whisper як fallback (`POST /api/v1/speech/transcribe`)
-  для пристроїв без on-device STT або для невдалих фолбеків.
+- Mobile (⚠️ partial, Phase 8): `expo-speech-recognition` як primary STT
+  (iOS `SFSpeechRecognizer`, Android `SpeechRecognizer`), `expo-speech` —
+  TTS. Хуки на полиці:
+  - `apps/mobile/src/lib/voice/useSpeechRecognition.ts` —
+    лазі-permission, UA-text помилок, `start/stop/toggle`, `listening`
+    - `supported` стейт, `onResult` тільки на final.
+  - `apps/mobile/src/lib/voice/useTextToSpeech.ts` — `speak()`,
+    `stop()`, `muted`/`toggleMute` persist-ить у MMKV
+    (`sergeant.voice.tts.muted`), default locale `uk-UA`.
+  - `apps/mobile/src/components/ui/VoiceMicButton.tsx` — sm/md/lg
+    варіанти, haptic-фідбек, accessibility-labels.
+- Wired: `apps/mobile/src/modules/nutrition/.../meal-sheet/NameTimeRow.tsx`
+  (AddMealSheet → mic поруч з полем назви).
+- Follow-up: HubChat-композер ще не існує на mobile (Phase 8 #1) —
+  після його лендингу wire-аємо `VoiceMicButton` у composer + кнопку
+  Mute (через `useTextToSpeech.toggleMute`). Server-side Whisper
+  fallback (`POST /api/v1/speech/transcribe`) для пристроїв без
+  on-device STT — TODO той самий follow-up.
+- iOS / Android permissions у `apps/mobile/app.config.ts`:
+  `NSSpeechRecognitionUsageDescription`,
+  `NSMicrophoneUsageDescription`, `android.permission.RECORD_AUDIO`.
 - `speechParsers` — pure, переносимо as-is.
 
 ### 6.6 Камера / штрихкод / фото-аналіз

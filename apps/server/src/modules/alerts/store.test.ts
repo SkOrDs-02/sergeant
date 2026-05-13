@@ -11,6 +11,9 @@ import {
   incrementOccurrence,
   listPendingAlerts,
   markAlertEscalated,
+  markAlertRepeated,
+  markAlertSentryWarned,
+  markAlertSnoozed,
   recordAlertAck,
   recordAlertPost,
   recordTelegramMessage,
@@ -230,6 +233,11 @@ describe("listPendingAlerts", () => {
       ack_by_tg_user_id: null,
       ack_action: null,
       escalated_at: null,
+      // Sprint 6 / escalation tiers (migration 063) — default to null
+      // when the row was inserted without tier-transitions yet.
+      repeated_at: null,
+      sentry_warned_at: null,
+      snoozed_until_at: null,
       metadata: { exec: 1 },
       // O4 / B.1 dedup fields default to null/1 when the DB row was
       // inserted without a `dedup_signature` (legacy path).
@@ -238,6 +246,189 @@ describe("listPendingAlerts", () => {
       last_occurrence_at: null,
       telegram_chat_id: null,
       telegram_message_id: null,
+    });
+  });
+
+  it("composes WF-105 repeat-ping filters (60min, not repeated, not snoozed)", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    await listPendingAlerts(pool as unknown as Pool, {
+      olderThanMinutes: 60,
+      notYetRepeated: true,
+      notSnoozed: true,
+    });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("posted_at < NOW() - make_interval(mins => $1)");
+    expect(sql).toContain("repeated_at IS NULL");
+    expect(sql).toContain(
+      "(snoozed_until_at IS NULL OR snoozed_until_at < NOW())",
+    );
+    // listPendingAlerts must NOT auto-filter `escalated_at` — WF-105 wants
+    // ALL unacked >60min rows regardless of T1 outcome.
+    expect(sql).not.toContain("escalated_at IS NULL");
+    expect(params).toEqual([60, 50]);
+  });
+
+  it("composes WF-106 sentry-warn filters (120min, not sentry-warned, not snoozed)", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    await listPendingAlerts(pool as unknown as Pool, {
+      olderThanMinutes: 120,
+      notYetSentryWarned: true,
+      notSnoozed: true,
+    });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("sentry_warned_at IS NULL");
+    expect(sql).toContain(
+      "(snoozed_until_at IS NULL OR snoozed_until_at < NOW())",
+    );
+    expect(params).toEqual([120, 50]);
+  });
+});
+
+describe("markAlertRepeated", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("marks repeated_at=NOW() with idempotency guard", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: "42" }] });
+    const result = await markAlertRepeated(pool as unknown as Pool, "wf-15:9");
+    expect(result).toEqual({
+      ok: true,
+      alreadyRepeated: false,
+      notFound: false,
+    });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("UPDATE tg_alert_acks");
+    expect(sql).toContain("SET repeated_at = NOW()");
+    expect(sql).toContain("WHERE alert_id = $1 AND repeated_at IS NULL");
+    expect(params).toEqual(["wf-15:9"]);
+  });
+
+  it("reports alreadyRepeated=true on cron retry within same tick", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: "42" }] });
+    const result = await markAlertRepeated(pool as unknown as Pool, "wf-15:9");
+    expect(result.alreadyRepeated).toBe(true);
+    expect(result.notFound).toBe(false);
+  });
+
+  it("reports notFound=true for unknown alert", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    const result = await markAlertRepeated(pool as unknown as Pool, "ghost");
+    expect(result).toEqual({
+      ok: false,
+      alreadyRepeated: false,
+      notFound: true,
+    });
+  });
+});
+
+describe("markAlertSentryWarned", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("marks sentry_warned_at=NOW() with idempotency guard", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: "42" }] });
+    const result = await markAlertSentryWarned(
+      pool as unknown as Pool,
+      "wf-15:9",
+    );
+    expect(result).toEqual({
+      ok: true,
+      alreadySentryWarned: false,
+      notFound: false,
+    });
+    const [sql] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("SET sentry_warned_at = NOW()");
+    expect(sql).toContain("WHERE alert_id = $1 AND sentry_warned_at IS NULL");
+  });
+
+  it("reports alreadySentryWarned=true on retry", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: "42" }] });
+    const result = await markAlertSentryWarned(
+      pool as unknown as Pool,
+      "wf-15:9",
+    );
+    expect(result.alreadySentryWarned).toBe(true);
+  });
+
+  it("reports notFound=true for unknown alert", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    const result = await markAlertSentryWarned(
+      pool as unknown as Pool,
+      "ghost",
+    );
+    expect(result.notFound).toBe(true);
+  });
+});
+
+describe("markAlertSnoozed", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("persists absolute snoozed_until_at and returns ISO string", async () => {
+    const until = new Date("2026-05-13T11:00:00.000Z");
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [{ snoozed_until_at: until }],
+    });
+    const result = await markAlertSnoozed(pool as unknown as Pool, {
+      alertId: "wf-15:9",
+      snoozedUntilAt: until,
+    });
+    expect(result).toEqual({
+      ok: true,
+      notFound: false,
+      snoozedUntilAt: "2026-05-13T11:00:00.000Z",
+    });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("SET snoozed_until_at = $2");
+    expect(sql).toContain("WHERE alert_id = $1");
+    expect(params).toEqual(["wf-15:9", until]);
+  });
+
+  it("latest-write-wins: operator can extend 1h snooze to 4h", async () => {
+    // First call — 1h snooze.
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [{ snoozed_until_at: new Date("2026-05-13T11:00:00Z") }],
+    });
+    await markAlertSnoozed(pool as unknown as Pool, {
+      alertId: "wf-15:9",
+      snoozedUntilAt: new Date("2026-05-13T11:00:00Z"),
+    });
+    // Second call — 4h snooze (no idempotency guard, UPDATE always wins).
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [{ snoozed_until_at: new Date("2026-05-13T14:00:00Z") }],
+    });
+    const result = await markAlertSnoozed(pool as unknown as Pool, {
+      alertId: "wf-15:9",
+      snoozedUntilAt: new Date("2026-05-13T14:00:00Z"),
+    });
+    expect(result.snoozedUntilAt).toBe("2026-05-13T14:00:00.000Z");
+    // Both calls hit UPDATE, no separate SELECT — latest-write-wins.
+    expect(pool.query).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports notFound=true for unknown alert", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    const result = await markAlertSnoozed(pool as unknown as Pool, {
+      alertId: "ghost",
+      snoozedUntilAt: new Date(),
+    });
+    expect(result).toEqual({
+      ok: false,
+      notFound: true,
+      snoozedUntilAt: null,
     });
   });
 });
@@ -291,6 +482,9 @@ describe("findRecentDedupMatch", () => {
           ack_by_tg_user_id: null,
           ack_action: null,
           escalated_at: null,
+          repeated_at: null,
+          sentry_warned_at: null,
+          snoozed_until_at: null,
           metadata: {},
           dedup_signature: "wf-15:boom",
           occurrence_count: 3,

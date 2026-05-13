@@ -18,6 +18,29 @@ export {
 } from "./store.js";
 export type { RecordWriteAuditInput, ListWriteAuditFilters } from "./store.js";
 export { checkDailyBudget, estimateClaudeSonnetCostUsd } from "./budget.js";
+
+// `/ai_cost` slash-command aggregator — PR continuation of #2567 (PR-12)
+// and #2590 (PR-13). DB-side rollup + in-process Prom snapshot.
+export {
+  buildAiCostSummary,
+  fetchAnthropicCostsForRange,
+  fetchTopEndpointsFromProm,
+  fetchVoyageCumulativeFromProm,
+  kyivDayKey,
+  kyivWeekStart,
+  kyivMonthStart,
+  kyivMonthEnd,
+  kyivDaysInMonth,
+} from "./aiCostSummary.js";
+export type {
+  AiCostSummary,
+  BudgetSnapshot,
+  BuildAiCostSummaryInput,
+  EndpointCostRow,
+  ModelCostBreakdown,
+  PeriodCostSummary,
+  VoyageSnapshot,
+} from "./aiCostSummary.js";
 export {
   recallCofounderMemory,
   readStrategyDoc,
@@ -39,6 +62,13 @@ export {
   getPostHogStats,
   getGithubReleases,
 } from "./tools.js";
+
+// T2 audit #3 — repo allowlist for OpenClaw GitHub-touching tools.
+export {
+  assertOpenClawRepoAllowed,
+  __resetOpenClawRepoAllowlistForTests,
+  __getOpenClawRepoAllowlistForTests,
+} from "./repoAllowlist.js";
 export { selectToneMode, buildSystemPrompt } from "./prompts.js";
 
 // Stage 4c (PR-Stage4c): Layer 1 cheap-router classifier (Haiku JSON).
@@ -148,6 +178,22 @@ export type {
   SeoSerpLookupOutput,
   SeoSerpResult,
 } from "./seo-tools.js";
+
+// PR-26: morning briefing template + orchestrator (no LLM).
+export {
+  buildMorningBriefing,
+  assembleMorningBriefing,
+} from "./briefing/index.js";
+export type {
+  AlertsBriefingSection,
+  AssembleMorningBriefingInput,
+  MorningBriefingData,
+  MorningBriefingResponse,
+  PrQueueBriefingSection,
+  SignupsBriefingSection,
+  StripeBriefingSection,
+  WorkflowsBriefingSection,
+} from "./briefing/index.js";
 
 // PR-C1b: reminder store + state transitions.
 export {

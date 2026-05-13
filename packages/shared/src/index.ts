@@ -10,10 +10,21 @@ export * from "./types";
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
 
+// Stable per-install origin-device-id resolver used by the web and
+// mobile sync-engine singletons to populate `X-Origin-Device-Id` on
+// every sync v2 push / pull / SSE stream request.
+export * from "./lib/originDeviceId";
+
 // Sensitive query-key policy for the React Query persisters
 // (web → IDB, mobile → MMKV). See PR #004 in
 // `docs/planning/storage-roadmap.md`.
 export * from "./lib/sensitiveQueryKeys";
+
+// PII / secret redaction policy — single source of truth for pino
+// (server), Sentry.beforeSend (server + web), and OTel attribute
+// denylist. See `docs/security/pii-handling.md` and audit
+// `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §6.5.
+export * from "./lib/pii";
 
 // Hub dashboard module ordering (pure helpers; storage I/O is per-platform).
 export * from "./lib/dashboard";

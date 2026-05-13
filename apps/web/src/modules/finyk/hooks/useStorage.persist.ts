@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { logger } from "@shared/lib";
 import { readJSON, writeJSONDebounced } from "../lib/finykStorage";
 
 export function reportSilentError(scope: string, error: unknown) {
-  console.warn(`[finyk] ${scope}`, error);
+  logger.warn(`[finyk] ${scope}`, error);
 }
 
 // Визначаємо "очікувану форму" за дефолтом: array / plain-object / скаляр.

@@ -24,7 +24,7 @@
  *    11 секунд один новий reload — і користувач все одно у нескінченному
  *    flicker-циклі, просто з 11-секундною затримкою. Counter лічить повні
  *    reload-цикли у sliding window 5 хвилин; на 4-му підряд — фолбек у
- *    `console.error` + ChunkPersistentError-телеметрію (Sentry breadcrumb)
+ *    `logger.error` + ChunkPersistentError-телеметрію (Sentry breadcrumb)
  *    замість ще одного reload-у. Користувач отримує помилку у консолі
  *    + ErrorBoundary-fallback з нашого UI замість blank-screen-flicker-у.
  *
@@ -32,6 +32,8 @@
  * на наступному reload-event-і, тож разові transient-збої не «отруюють»
  * довгий tab-session.
  */
+
+import { logger } from "@shared/lib";
 
 const KEY = "__sergeant_chunk_reload_at";
 const COOLDOWN_MS = 10_000;
@@ -119,7 +121,7 @@ export class ChunkPersistentError extends Error {
  *   2. Counter window 5 min × `MAX_RELOADS=3` — щоб persistent CDN-failure
  *      не пускав по одному reload-у кожні 11s нескінченно.
  *
- * При досягненні `MAX_RELOADS` логуємо `console.error` + emit-имо
+ * При досягненні `MAX_RELOADS` логуємо `logger.error` + emit-имо
  * глобальний `sergeant:chunk-persistent-error` event, щоб
  * `ErrorBoundary` міг показати UI замість blank-screen.
  */
@@ -154,7 +156,7 @@ export function reloadOnceForChunkError(now: number = Date.now()): boolean {
         // Logged + thrown into the global error channel so Sentry / our
         // ErrorBoundary can show a real fallback UI instead of yet another
         // blank-screen reload-flicker.
-        console.error("[chunkReload] " + error.message, error);
+        logger.error("[chunkReload] " + error.message, error);
         try {
           window.dispatchEvent(
             new CustomEvent("sergeant:chunk-persistent-error", {

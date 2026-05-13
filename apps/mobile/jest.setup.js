@@ -226,3 +226,53 @@ jest.mock("@react-native-community/netinfo", () => {
     },
   };
 });
+
+// `expo-speech-recognition` (Phase 8) — native module з власним TurboModule,
+// який не існує у jest-expo runtime. Стаб тримаємо мінімальним: тестам,
+// які цілять у голосовий flow, додатково мокують модуль під свої сценарії
+// (див. `apps/mobile/src/lib/voice/__tests__/*.test.tsx`).
+jest.mock("expo-speech-recognition", () => {
+  const noop = () => {};
+  const stubSubscription = { remove: noop };
+  const addListener = () => stubSubscription;
+  return {
+    __esModule: true,
+    ExpoSpeechRecognitionModule: {
+      start: noop,
+      stop: noop,
+      abort: noop,
+      requestPermissionsAsync: () =>
+        Promise.resolve({
+          granted: false,
+          canAskAgain: true,
+          status: "denied",
+          expires: "never",
+        }),
+      getPermissionsAsync: () =>
+        Promise.resolve({
+          granted: false,
+          canAskAgain: true,
+          status: "denied",
+          expires: "never",
+        }),
+      isRecognitionAvailable: () => false,
+      supportsOnDeviceRecognition: () => false,
+      addListener,
+    },
+    addSpeechRecognitionListener: addListener,
+    useSpeechRecognitionEvent: noop,
+  };
+});
+
+// `expo-speech` (Phase 8). На jest-expo runtime TTS не звучить — стаб
+// тримає API повним, щоб render-тести не падали.
+jest.mock("expo-speech", () => ({
+  __esModule: true,
+  speak: () => {},
+  stop: () => Promise.resolve(),
+  pause: () => Promise.resolve(),
+  resume: () => Promise.resolve(),
+  isSpeakingAsync: () => Promise.resolve(false),
+  getAvailableVoicesAsync: () => Promise.resolve([]),
+  maxSpeechInputLength: Number.MAX_VALUE,
+}));

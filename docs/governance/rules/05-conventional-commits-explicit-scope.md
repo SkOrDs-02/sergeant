@@ -23,31 +23,32 @@ Format: `<type>(<scope>): <subject>`. Allowed types: `feat`, `fix`, `docs`, `cho
 
 **Scopes (use one of these — do not invent new ones):**
 
-| Scope              | When to use                                                         |
-| ------------------ | ------------------------------------------------------------------- |
-| `web`              | `apps/web/**`                                                       |
-| `server`           | `apps/server/**` (excluding migrations alone)                       |
-| `mobile`           | `apps/mobile/**`                                                    |
-| `mobile-shell`     | `apps/mobile-shell/**`                                              |
-| `console`          | `tools/console/**`                                                  |
-| `shared`           | `packages/shared/**`                                                |
-| `api-client`       | `packages/api-client/**`                                            |
-| `finyk-domain`     | `packages/finyk-domain/**`                                          |
-| `fizruk-domain`    | `packages/fizruk-domain/**`                                         |
-| `nutrition-domain` | `packages/nutrition-domain/**`                                      |
-| `routine-domain`   | `packages/routine-domain/**`                                        |
-| `insights`         | `packages/insights/**`                                              |
-| `design-tokens`    | `packages/design-tokens/**`                                         |
-| `config`           | `packages/config/**`                                                |
-| `db-schema`        | `packages/db-schema/**`                                             |
-| `eslint-plugins`   | `packages/eslint-plugin-sergeant-design/**`                         |
-| `openclaw-plugin`  | `packages/openclaw-plugin/**`                                       |
-| `migrations`       | `apps/server/src/migrations/**` only                                |
-| `agents`           | `.agents/**`, `tools/console/src/agents/**`, `ops/n8n-workflows/**` |
-| `deps`             | Renovate / dependency-only PRs                                      |
-| `docs`             | `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`              |
-| `ci`               | `.github/workflows/**`, `turbo.json`, scripts under `scripts/`      |
-| `root`             | Repo-level config (`pnpm-workspace.yaml`, `package.json` at root)   |
+| Scope              | When to use                                                               |
+| ------------------ | ------------------------------------------------------------------------- |
+| `web`              | `apps/web/**`                                                             |
+| `server`           | `apps/server/**` (excluding migrations alone)                             |
+| `mobile`           | `apps/mobile/**`                                                          |
+| `mobile-shell`     | `apps/mobile-shell/**`                                                    |
+| `console`          | _deprecated alias for `openclaw` (back-compat; removed in PR-47 phase 2)_ |
+| `openclaw`         | `tools/openclaw/**`                                                       |
+| `shared`           | `packages/shared/**`                                                      |
+| `api-client`       | `packages/api-client/**`                                                  |
+| `finyk-domain`     | `packages/finyk-domain/**`                                                |
+| `fizruk-domain`    | `packages/fizruk-domain/**`                                               |
+| `nutrition-domain` | `packages/nutrition-domain/**`                                            |
+| `routine-domain`   | `packages/routine-domain/**`                                              |
+| `insights`         | `packages/insights/**`                                                    |
+| `design-tokens`    | `packages/design-tokens/**`                                               |
+| `config`           | `packages/config/**`                                                      |
+| `db-schema`        | `packages/db-schema/**`                                                   |
+| `eslint-plugins`   | `packages/eslint-plugin-sergeant-design/**`                               |
+| `openclaw-plugin`  | `packages/openclaw-plugin/**`                                             |
+| `migrations`       | `apps/server/src/migrations/**` only                                      |
+| `agents`           | `.agents/**`, `tools/openclaw/src/agents/**`, `ops/n8n-workflows/**`      |
+| `deps`             | Renovate / dependency-only PRs                                            |
+| `docs`             | `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`                    |
+| `ci`               | `.github/workflows/**`, `turbo.json`, scripts under `scripts/`            |
+| `root`             | Repo-level config (`pnpm-workspace.yaml`, `package.json` at root)         |
 
 If a PR genuinely spans multiple scopes (rare), use the most "user-visible" one and explain in the body. **Do not invent** scopes like `monorepo`, `app`, `core`, `all`.
 

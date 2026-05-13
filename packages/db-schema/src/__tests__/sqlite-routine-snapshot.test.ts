@@ -294,6 +294,7 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
       "pending",
       "rejected",
       "dead_letter",
+      "quarantined",
     ]);
   });
 });
@@ -514,7 +515,7 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 
 describe("sqlite/migrations exports", () => {
   it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(4);
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(5);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -598,6 +599,27 @@ describe("sqlite/migrations exports", () => {
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_completion_notes/,
+    );
+
+    // T3 audit HIGH#3 migration: poison-row quarantine. Pin the same
+    // three rebuild anchors as 002/003 plus the new CHECK literal
+    // that is the actual contract change.
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.name).toBe(
+      "005_sync_op_outbox_quarantine.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /CHECK \(status IN \('pending','rejected','dead_letter','quarantined'\)\)/,
+    );
+    // The op CHECK must stay at the post-003 shape — adding the
+    // quarantined status does not re-tighten the op tuple.
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /CHECK \(op IN \('insert','update','delete','increment'\)\)/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /sync_op_outbox_pending_due_idx_lite/,
     );
   });
 

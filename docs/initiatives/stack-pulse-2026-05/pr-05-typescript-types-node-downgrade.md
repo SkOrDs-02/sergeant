@@ -1,6 +1,6 @@
 # PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed — merged (ADR-0050, @types/node pinned to ^20.19.0, pnpm.overrides + renovate rule)
 
 |              |                                                             |
@@ -18,7 +18,7 @@
 "typescript": "^6.0.3"
 // усі apps/*/package.json і packages/*/package.json:
 "@types/node": "^25.6.0"
-// tools/console/package.json:
+// tools/openclaw/package.json:
 "typescript": "^5.7.2"
 // apps/mobile/package.json:
 "typescript": "~5.9.0"
@@ -42,7 +42,7 @@
 ### 2. TypeScript version harmonize
 
 - Root `^6.0.3` зберегти, але ADR-документ обов'язковий.
-- `tools/console/package.json` → ↑ до 6.x **або** root → 5.9 (узгодити з mobile).
+- `tools/openclaw/package.json` → ↑ до 6.x **або** root → 5.9 (узгодити з mobile).
 - `apps/mobile/package.json` → 5.9 (вимога Expo SDK 52, не міняти).
 - Decision criteria у ADR.
 
@@ -77,11 +77,11 @@
 
 ## Risks & mitigations
 
-| Risk                                                 | Mitigation                                                                                              |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Деякі files використовують Node 22+ API через типи   | typecheck це піймає; у ADR явно prohibit-ити                                                            |
-| TS 6 у `tools/console` потребує @anthropic-ai update | окремий PR на bump SDK у console, дочекатися перед мерджем                                              |
-| Renovate перетягне `@types/node` назад вгору         | `pnpm.overrides` + `renovate.json` правило `matchPackageNames: ["@types/node"], allowedVersions: "<21"` |
+| Risk                                                  | Mitigation                                                                                              |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Деякі files використовують Node 22+ API через типи    | typecheck це піймає; у ADR явно prohibit-ити                                                            |
+| TS 6 у `tools/openclaw` потребує @anthropic-ai update | окремий PR на bump SDK у console, дочекатися перед мерджем                                              |
+| Renovate перетягне `@types/node` назад вгору          | `pnpm.overrides` + `renovate.json` правило `matchPackageNames: ["@types/node"], allowedVersions: "<21"` |
 
 ## Touchpoints (file:line)
 

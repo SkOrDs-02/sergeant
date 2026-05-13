@@ -1,6 +1,6 @@
 # Security
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
@@ -32,7 +32,7 @@ project's full SAST + SCA coverage.
 | **OSV-Scanner** ([`nightly-audit.md`](./nightly-audit.md)) | Lockfile dependencies (SCA across npm + transitive)                                 | nightly 03:00 UTC                                                                              | Triaged in `audit-exceptions.md`; blocker fixes via PR  |
 
 The wider lint pipeline also runs `eslint-plugin-security` (M11) on
-`apps/server/**` and `tools/console/**` — that is a per-PR review-time
+`apps/server/**` and `tools/openclaw/**` — that is a per-PR review-time
 signal layered on top of CodeQL's deeper taint analysis.
 
 ## Secret scanning policy

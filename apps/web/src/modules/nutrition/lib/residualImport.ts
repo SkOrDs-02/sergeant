@@ -18,6 +18,7 @@
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger } from "@shared/lib";
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_LOG_KEY,
@@ -111,7 +112,7 @@ export async function importNutritionResidualFromLs(
         clientTs: STALE_TIMESTAMP,
       });
     } catch (err) {
-      console.warn(
+      logger.warn(
         "[nutrition.residualImport] apply failed; LS keys retained",
         err instanceof Error ? err.message : err,
       );

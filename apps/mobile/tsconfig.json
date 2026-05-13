@@ -23,6 +23,8 @@
       "@sergeant/api-client/*": ["../../packages/api-client/src/*"],
       "@sergeant/fizruk-domain": ["../../packages/fizruk-domain/src/index.ts"],
       "@sergeant/fizruk-domain/*": ["../../packages/fizruk-domain/src/*"],
+      "@sergeant/insights": ["../../packages/insights/src/index.ts"],
+      "@sergeant/insights/*": ["../../packages/insights/src/*"],
       "@sergeant/finyk-domain": ["../../packages/finyk-domain/src/index.ts"],
       "@sergeant/finyk-domain/*": ["../../packages/finyk-domain/src/*"],
       "@sergeant/db-schema": ["../../packages/db-schema/src/index.ts"],

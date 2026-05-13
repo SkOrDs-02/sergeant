@@ -1,5 +1,6 @@
 import pino, { type Logger, type LoggerOptions } from "pino";
 import pinoHttp, { type HttpLogger } from "pino-http";
+import { REDACT_KEY_NAMES } from "@sergeant/shared";
 import { hashUserId } from "../lib/userIdHash.js";
 import { als } from "./requestContext.js";
 
@@ -51,50 +52,18 @@ export function currentLogLevel(): string {
 // Якщо треба додати новий шлях — додавай тут, а НЕ робиш `logger.info({...})`
 // з плейнтекстовим email, обходячи редакцію.
 //
-// Контракт (для пов'язаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`):
+// Контракт (для пов'язаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
+// і браузерного аналога в `apps/web/src/core/observability/sentry.ts`):
 //   - `redactKeyNames` — імена полів, які потрібно маскувати на будь-якій
 //     глибині. Sentry-скрабер ходить рекурсивно і маскує ці ключі у
 //     `extra/contexts/breadcrumbs.data`. Це доповнення до Pino-redaction,
 //     бо Sentry не використовує pino, а будує власний payload.
-export const redactKeyNames = [
-  "password",
-  "newPassword",
-  "currentPassword",
-  "token",
-  "accessToken",
-  "refreshToken",
-  "idToken",
-  "sessionToken",
-  "apiKey",
-  "secret",
-  "clientSecret",
-  "privateKey",
-  "signature",
-  "dsn",
-  "connectionString",
-  "authorization",
-  "cookie",
-  "set-cookie",
-  "x-api-key",
-  "x-token",
-  "x-csrf-token",
-  // M3 — webhook secrets, які приходять як заголовки. Sentry-скрабер
-  // використовує case-insensitive match, тож одного рядка достатньо
-  // для будь-якого casing-у (X-Mono-Webhook-Secret, x-mono-webhook-secret).
-  "x-mono-webhook-secret",
-  "x-openclaw-webhook-secret",
-  "x-api-secret",
-  "x-internal-token",
-  // M3 — provider-specific API keys, які можуть з'явитись у `extra`-діагностиці
-  // (HubChat, embedding-debug, OpenClaw insights). Зберігаємо їх в одному
-  // конкретному casing-у (Sentry-скрабер сам нормалізує case).
-  "groqKey",
-  "anthropicKey",
-  "voyageKey",
-  // PII — на будь-якій глибині.
-  "email",
-  "phone",
-];
+//
+// Канонічний список з 2026-05-13 живе у `@sergeant/shared/lib/pii.ts` як
+// `REDACT_KEY_NAMES` (DOM-free) — однакові ключі потрібні web-Sentry SDK
+// (audit §6.5 outstanding). Тут лишаємо back-compat-алиас, який і досі
+// імпортує `apps/server/src/sentry.ts` і mock-и в інтеграційних тестах.
+export const redactKeyNames = REDACT_KEY_NAMES;
 
 export const redactPaths = [
   "req.headers.authorization",
