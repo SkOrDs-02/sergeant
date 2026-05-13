@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import type { Pool } from "pg";
 import { getUserPlan } from "./getUserPlan.js";
 
-function mockPool(rows: unknown[]) {
-  return { query: vi.fn().mockResolvedValue({ rows }) } as any;
+function mockPool(rows: unknown[]): Pool {
+  return { query: vi.fn().mockResolvedValue({ rows }) } as unknown as Pool;
 }
 
 describe("getUserPlan", () => {

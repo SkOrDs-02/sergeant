@@ -374,6 +374,10 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../apps/web/middlew
 - `POSTHOG_PROJECT_ID=12345` — числовий ID проєкту (Settings → Project → ID).
 - `POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, парний до `VITE_POSTHOG_HOST`).
 
+### Server-side (event ingestion)
+
+- `POSTHOG_PROJECT_API_KEY=phc_…` — Project ingestion key (той самий public ключ, що й `VITE_POSTHOG_KEY`). Використовується в `capturePostHogEvent()` для server-side трекінгу подій з webhook-ів / background workers (PR-09 — `subscription_started` зі Stripe). Без ключа capture-helper повертає `outcome: "skipped"` і caller (webhook handler) успішно завершує процесинг — аналітика best-effort.
+
 ---
 
 ## 15. Replit (опційно, авто-визначається)

@@ -486,6 +486,17 @@ const envSchema = z.object({
    * Парний до клієнтського `VITE_POSTHOG_HOST`.
    */
   POSTHOG_HOST: z.string().optional(),
+  /**
+   * Project ingestion key (`phc_…`) для server-side event capture з webhook-
+   * ів / background workers (PR-09 — `subscription_started` зі Stripe).
+   * Той самий public key, що `VITE_POSTHOG_KEY` у браузері; розведено в
+   * окремий env-var лише щоб НЕ змішувати scope-и (server side має своє
+   * fail-open behaviour і не deploy-ить frontend bundle).
+   *
+   * БЕЗ нього `capturePostHogEvent()` повертає `outcome: "skipped"` — caller
+   * (webhook handler) успішно завершує процесинг, аналітика — best-effort.
+   */
+  POSTHOG_PROJECT_API_KEY: z.string().optional(),
 
   // ── Security ───────────────────────────────────────────────────────
   // M1 (2026-05-04) — CSP_DISABLE видалено. Якщо потрібно швидко вимкнути
