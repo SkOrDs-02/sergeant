@@ -158,13 +158,14 @@ describe("L11: CSP monitoring allowlist", () => {
     const vercelCsp = parseCsp(readVercelCsp());
     const metaCsp = parseCsp(readMetaCsp());
 
-    // The HTML spec disallows `report-uri`, `frame-ancestors`, and
-    // `sandbox` inside `<meta http-equiv>`; the meta tag is allowed to
+    // The HTML spec disallows `report-uri`, `report-to`, `frame-ancestors`,
+    // and `sandbox` inside `<meta http-equiv>`; the meta tag is allowed to
     // be a strict subset of the response-header policy on those keys
     // only. Everything else must match byte-for-byte (modulo source
     // ordering).
     const META_NOT_ALLOWED = new Set([
       "report-uri",
+      "report-to",
       "frame-ancestors",
       "sandbox",
     ]);

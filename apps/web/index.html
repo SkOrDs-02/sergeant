@@ -57,10 +57,10 @@
       cases the SPA still loads in a CSP-protected context, so an XSS
       payload that slips into a dev build can't quietly exfiltrate data.
 
-      Note: `<meta>` CSP cannot include `report-uri` / `frame-ancestors` /
-      `sandbox` (HTML spec restriction), so the directive set here is a
-      reduced superset of the Vercel policy. Keep the two in sync when the
-      Vercel policy changes.
+      Note: `<meta>` CSP cannot include `report-uri` / `report-to` /
+      `frame-ancestors` / `sandbox` (HTML spec restriction), so the directive
+      set here is a reduced subset of the Vercel policy. Keep the two in
+      sync when the Vercel policy changes.
     -->
     <meta
       http-equiv="Content-Security-Policy"
