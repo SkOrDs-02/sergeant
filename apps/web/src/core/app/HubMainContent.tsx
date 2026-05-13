@@ -1,4 +1,4 @@
-import { memo, useCallback, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
@@ -126,6 +126,24 @@ export const HubMainContent = memo(function HubMainContent({
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
 
+  // Scroll-to-top when switching hub tabs. Targets the inner scroll
+  // container of `PullToRefresh` (the real scroller) — calling
+  // `window.scrollTo` on the document does nothing useful here because
+  // `#root` is `100dvh` and `HubHomeView` is `overflow-hidden`, and on
+  // iOS Safari / Capacitor it triggers a visual-viewport jump that
+  // pushes the bottom nav off-screen (user feedback 2026-05-13).
+  const scrollElRef = useRef<HTMLDivElement | null>(null);
+  const prevHubViewRef = useRef<HubView | null>(null);
+  const handleScrollElement = useCallback((el: HTMLDivElement | null) => {
+    scrollElRef.current = el;
+  }, []);
+  useEffect(() => {
+    if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
+      scrollElRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    prevHubViewRef.current = hubView;
+  }, [hubView]);
+
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: coachKeys.all }),
@@ -199,6 +217,7 @@ export const HubMainContent = memo(function HubMainContent({
         className="max-w-lg mx-auto w-full rounded-xl focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
         contentClassName="px-5 pb-28"
         onRefresh={handleRefresh}
+        onScrollElement={handleScrollElement}
         variant="default"
       >
         {hubView === "dashboard" && (

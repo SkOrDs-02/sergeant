@@ -51,8 +51,13 @@ export function useHubUIState(): HubUIState {
     }
     window.history.pushState(null, "", url.toString());
 
-    // Scroll to top when switching tabs.
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // NOTE: scroll-to-top on tab switch is handled by `HubMainContent`
+    // на внутрішньому scroll-контейнері `PullToRefresh`. Раніше тут стояв
+    // `window.scrollTo({ top: 0, behavior: "smooth" })`, але документ
+    // взагалі не скролиться (#root = `100dvh` + HubHomeView `overflow-hidden`),
+    // і виклик `smooth`-скролу на iOS Safari / Capacitor триггерив візуальний
+    // viewport jump: на мить з'являвся UI-бар браузера, верх отримував зайвий
+    // safe-area простір, а низ підрізав bottom-nav (user feedback 2026-05-13).
   }, []);
 
   // Re-sync `hubView` whenever the URL search params change, regardless of
