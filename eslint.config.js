@@ -1095,10 +1095,7 @@ export default [
   // ships. The allowlist is intentionally explicit (not a glob) so each
   // file shows up in `git blame` / `git log` against this rule.
   {
-    files: [
-      "apps/web/src/core/lib/hubChatContext.ts",
-      "apps/web/src/core/hub/HubDashboard.tsx",
-    ],
+    files: ["apps/web/src/core/lib/hubChatContext.ts"],
     rules: {
       "max-lines": "off",
     },
