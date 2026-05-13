@@ -25,7 +25,6 @@ export function useDemoCommands(): void {
   // between explicit `light` and `dark` (`system` and `hc` are
   // surfaced via the dedicated `<ThemeSwitcher />` in HubHeader).
   const { isDark, setChoice } = useTheme();
-  const dark = isDark;
   const toggleDark = useCallback(
     () => setChoice(isDark ? "light" : "dark"),
     [isDark, setChoice],
@@ -59,7 +58,7 @@ export function useDemoCommands(): void {
       },
       {
         id: "settings.toggle-dark",
-        title: dark ? "Світла тема" : "Темна тема",
+        title: isDark ? "Світла тема" : "Темна тема",
         description: "Перемкнути візуальну схему інтерфейсу",
         group: "Налаштування",
         shortcut: "⇧ T",
@@ -93,7 +92,7 @@ export function useDemoCommands(): void {
         },
       },
     ],
-    [dark, navigate, toast, toggleDark],
+    [isDark, navigate, toast, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);
