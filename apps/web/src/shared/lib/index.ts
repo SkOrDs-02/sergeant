@@ -134,6 +134,12 @@ export type {
   NativePushSubscription,
 } from "./adapters/pushNative";
 
+// ─── log/ ───────────────────────────────────────────────────────────────
+// Sentry-backed runtime logger. DEV → `console.*`; PROD → Sentry
+// breadcrumb / captureException (lazy-loaded). See `./log/logger.ts`.
+// eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir for runtime logging (sub-PR #2582 + #2583); allowed via this barrel.
+export { logger, type Logger } from "./log";
+
 // ─── ui/ ────────────────────────────────────────────────────────────────
 export { signedDeltaClass, transactionAmountClass } from "./ui/amountTone";
 

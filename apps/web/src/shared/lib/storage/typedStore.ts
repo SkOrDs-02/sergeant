@@ -24,6 +24,8 @@
 //   const unsubscribe = store.subscribe((next) => { ... });
 
 import type { ZodType } from "zod";
+// eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; consumed by storage/ for warn-level error reporting.
+import { logger } from "../log";
 import { webKVStore } from "./storage";
 
 type Listener<T> = (value: T) => void;
@@ -49,7 +51,7 @@ export interface TypedStoreOptions<T> {
    * Приймають будь-що (невідомий формат) і повертають форму наступної версії.
    */
   migrations?: Record<number, (input: unknown) => unknown>;
-  /** Кастомний логер (для тестів). Default — console.warn з префіксом. */
+  /** Кастомний логер (для тестів). Default — `logger.warn` з префіксом. */
   reportError?: (scope: string, error: unknown) => void;
   /** Legacy-адаптер: якщо envelope відсутній, приймаємо сиру форму як v = `legacyVersion` і мігруємо. */
   legacyVersion?: number;
@@ -77,7 +79,7 @@ function hasLocalStorage(): boolean {
 function defaultReport(key: string, scope: string, error: unknown): void {
   try {
     // Консистентно з createModuleStorage: один префікс, warn-рівень.
-    console.warn(`[typedStore:${key}] ${scope}`, error);
+    logger.warn(`[typedStore:${key}] ${scope}`, error);
   } catch {
     /* ignore logging errors */
   }

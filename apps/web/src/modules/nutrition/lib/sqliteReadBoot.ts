@@ -21,6 +21,7 @@
  * no-op.
  */
 
+import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateNutrition } from "./clientMigrate.js";
@@ -59,7 +60,7 @@ export async function bootNutritionSqliteReadPath(
     booted = true;
     return true;
   } catch (err) {
-    console.warn(
+    logger.warn(
       "[nutrition.sqliteRead] boot failed, falling back to LS",
       err instanceof Error ? err.message : err,
     );

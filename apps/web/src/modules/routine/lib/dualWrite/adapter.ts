@@ -1,4 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger as webLogger } from "@shared/lib";
 
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
 
@@ -61,7 +62,7 @@ export interface ApplyDualWriteResult {
 
 const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
   if (level === "warn") {
-    console.warn(`[routine.dualWrite] ${message}`, meta ?? {});
+    webLogger.warn(`[routine.dualWrite] ${message}`, meta ?? {});
   }
 };
 

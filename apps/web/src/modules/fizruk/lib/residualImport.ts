@@ -18,6 +18,7 @@
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger } from "@shared/lib";
 import {
   CUSTOM_EXERCISES_KEY,
   MEASUREMENTS_STORAGE_KEY,
@@ -93,7 +94,7 @@ export async function importFizrukResidualFromLs(
         clientTs: STALE_TIMESTAMP,
       });
     } catch (err) {
-      console.warn(
+      logger.warn(
         "[fizruk.residualImport] apply failed; LS keys retained",
         err instanceof Error ? err.message : err,
       );

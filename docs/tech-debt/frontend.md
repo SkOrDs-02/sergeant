@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-13 by @Skords-01 (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; того ж дня декомпозовано `core/onboarding/OnboardingWizard.tsx` (691 → composition root 148 + state hook 283 + WelcomeOneScreen 178 + ModuleRow 130 + picksStorage 74)). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; того ж дня декомпозовано `core/onboarding/OnboardingWizard.tsx` (691 → composition root 148 + state hook 283 + WelcomeOneScreen 178 + ModuleRow 130 + picksStorage 74); §7 — production console.\* purged до 3 DEV-only / documented call-sites). **Next review:** 2026-08-11.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
@@ -378,39 +378,36 @@ quick actions, callback routing, weekly digest footer).
 
 ## 🟢 Nice-to-have
 
-### 7. `console.*` у production коді — 59 викликів у 38 файлах (re-audit 2026-05-13)
+### 7. `console.*` у production коді — 3 DEV-only / documented (purge 2026-05-13)
 
-**Re-audit 2026-05-13.** Скан `apps/web/src/**` (без тестів і `__tests__/`)
-дає **59 викликів у 38 production-файлах**. Зростання з 35 (2026-05-02) →
-59 — наслідок PR-ів #062 / #063 / #064 (SQLite kv-store bootstrap + cloud-sync
-residual-import path) та нового `chunkReload.ts`/`ShellDeepLinkBridge.tsx`
-logger-у:
+**Re-audit 2026-05-13 (post-purge).** Скан `apps/web/src/**` (без тестів і
+`__tests__/`) дає **3 виклики у 3 файлах**, усі — DEV-gated або
+physically-documented:
 
-- **SQLite kv-store boot** — `core/db/kvStoreBoot.ts` (2), `core/db/sqlite.ts` (4),
-  `shared/lib/storage/typedStore.ts` (2), `shared/lib/storage/storageManager.ts` (1),
-  `shared/lib/storage/createModuleStorage.ts` (1).
-- **Residual-import (cloud-sync legacy LS pull)** —
-  `modules/{finyk,fizruk,routine,nutrition}/lib/residualImport.ts` + `sqliteReadBoot.ts`.
-- **Chunk-reload UX** — `core/lib/chunkReload.ts` (3 — best-effort Sentry warn
-  на dynamic-import failure / refresh-budget).
-- **DualWrite (fizruk + routine adapters)** — `modules/fizruk/lib/dualWrite/{adapter,index}.ts`
-  - `modules/routine/lib/dualWrite/{adapter,index}.ts`.
-- **Push / monobank webhook** — `shared/hooks/usePushNotifications.ts` (4),
-  `modules/finyk/hooks/useMonobankWebhook.ts` (2).
+- `shared/lib/ui/perf.ts:35` — `console.debug` під `if (import.meta.env?.DEV)`,
+  додатково сховано за `hub_perf=1` LS-toggle (опціональна dev-діагностика).
+- `sw/debug.ts:30` — `console.log` під `if (debugEnabled && import.meta.env?.DEV)`;
+  канонічний production-шлях для SW-snapshot — `buildSwSnapshot()` (postMessage
+  → `PWASection`).
+- `core/observability/analytics.ts:56` — `console.log("[analytics]", event)` —
+  навмисна transport-фіча analytics-ring-buffer-у; описана в docstring
+  (`devtools` taps + PostHog).
 
-| Категорія                        | Файли                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | К-сть |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Debug-mode logger                | `core/cloudSync/logger.ts` (2), `shared/lib/perf.ts` (1), `core/observability/analytics.ts` (1)                                                                                                                                                                                                                                                                                                                                                                             | 4     |
-| Best-effort failure warn (catch) | `main.tsx` (1), `core/app/ShellDeepLinkBridge.tsx` (1), `core/insights/useWeeklyDigest.ts` (1), `core/lib/chatActions/nutritionActions.ts` (1), `core/cloudSync/engine/{initialSync,push}.ts` (3), `core/hooks/useSpeech.ts` (1), `modules/finyk/hooks/usePrivatbank.ts` (1), `modules/finyk/hooks/useStorage.ts` (1), `shared/hooks/usePushNotifications.ts` (4), `shared/lib/{createModuleStorage,storageManager,typedStore}.ts` (3), `shared/components/ui/Icon.tsx` (1) | 19    |
-| Fallback warn (sqlite probe)     | `core/db/sqlite.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | 4     |
-| User-facing debug toggle         | `core/settings/PWASection.tsx` (4 — кнопки «Діагностика SW» / «Очистити кеш SW»), `sw.ts` (1 — `[sw] debug enabled`)                                                                                                                                                                                                                                                                                                                                                        | 5     |
-| dualWrite structured logger      | `modules/routine/lib/dualWrite/{adapter,index}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                          | 2     |
-| JSON-parse error                 | `modules/nutrition/hooks/useNutritionLog.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                | 1     |
+Перехід виконано в PR #2583 (`chore(web): purge console.* from production
+code`) разом із sub-PR #2582 (`feat(web): add Sentry-backed logger helper in
+shared/lib/log`). Усі решта `console.warn`/`console.error`/`console.log` —
+~55 викликів у 28 файлах — переведено на новий `logger` helper з
+`shared/lib/log/`, який у production проксіює у Sentry breadcrumb /
+`captureException`, а у DEV пише в `console.*`.
 
-**Усі 35 — навмисні** (best-effort logging без Sentry-context або
-debug-mode toggles). Виправлень не потрібно. Як пастка для нових
-випадків — додати ESLint-правило `no-console` з allowlist на
-debug-logger/warn-патерни — окремий PR (Phase 6 candidate).
+| Категорія                                   | Файли (key examples)                                                                | К-сть |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- | ----- |
+| DEV-only debug toggle                       | `shared/lib/ui/perf.ts` (1 — `hub_perf` LS-flag), `sw/debug.ts` (1 — SW debug-flag) | 2     |
+| Documented analytics transport (ring + log) | `core/observability/analytics.ts` (1 — навмисно, devtools tap)                      | 1     |
+
+**Trackable follow-up:** немає. Як пастка для нових випадків — додати
+ESLint-правило `no-console` з allowlist на ці три рядки (та `*.test.*` /
+`__tests__/`) — окремий PR (Phase 6 candidate).
 
 ---
 
