@@ -78,7 +78,7 @@
   - `dualWrite/diff.ts` → split per-shape diff-utilities (`workoutsDiff`, `dailyLogDiff`, `templatesDiff`, …) як module-folder, mirror `dualWrite/adapter.ts` operation-family прийнятий patten.
   - `routine/pages/Calendar.tsx` → винести `DayCell`, `WeekHeader`, completion-aggregator hook у `pages/Calendar/` folder. Не блокер. **✅ Closed in #2780** — `Calendar.tsx` розкладено у `pages/Calendar/` folder (13 sub-files): `index.tsx` (183 LOC), `DayCell.tsx`, `WeekHeader.tsx`, `MonthGridView.tsx`, `MonthHeader.tsx`, `TimeModeSegmented.tsx`, `StatsPill.tsx`, `EventRow.tsx`, `GroupedEventList.tsx`, `useCalendarAggregates.ts` (completion-aggregator hook), `formatters.ts`, `constants.ts`, `types.ts`. Жоден файл не перевищує 200 LOC, page остаточно під лімітом 600 (Hard Rule #18).
 
-#### P2.2a — Decompose `dualWrite/diff.ts` ✅ Closed in #<PR-NUMBER>
+#### P2.2a — Decompose `dualWrite/diff.ts` ✅ Closed in #2750
 
 Монолітний `apps/mobile/src/modules/fizruk/lib/dualWrite/diff.ts` (633 LOC) розкладено у module-folder `apps/mobile/src/modules/fizruk/lib/dualWrite/diff/` з per-shape diff-helpers (`workouts.ts`, `customExercises.ts`, `measurements.ts`, `dailyLog.ts`, `monthlyPlan.ts`, `workoutTemplates.ts`, `programs.ts`, `planTemplate.ts`, `wellbeing.ts`, `activeWorkout.ts`) + спільний `diffArray.ts` хелпер + барель `index.ts` (orchestrator + state + union + публічні re-exports). Барель = 229 LOC, найбільший per-shape файл = 95 LOC; усе значно нижче порогу 600 (Hard Rule #18). Публічний API `from "./dualWrite/diff"` збережено байт-у-байт (resolves через folder + index.ts). Поведінкові тести (`__tests__/diff.test.ts`) проходять без змін; додано per-shape `__tests__/diff.perShape.test.ts` (21 кейс, 1 happy-path + 1 edge-case на кожен з 10 shape-ів).
 
@@ -126,17 +126,17 @@
 
 ## Outstanding (відкрите після цього PR)
 
-| #         | Surface                  | Дія                                                                                             | Власник | Estimate |
-| --------- | ------------------------ | ----------------------------------------------------------------------------------------------- | ------- | -------- |
-| M3        | `apps/mobile/fizruk`     | Domain-shape alignment × 4 (drop 4× `as unknown as` через `toDomain*` converter)                | TBD     | M (3-4h) |
-| M4        | `apps/mobile/finyk`      | Domain-shape alignment × 2 (CategoryChartSection + TransactionsPage snapshot adapter)           | TBD     | S (1-2h) |
-| M7        | Sentry RN DSN            | Provision EAS Secret `EXPO_PUBLIC_SENTRY_DSN`; code already wired (closed 2026-05-13)           | ops     | XS       |
-| M9        | TS 6 bump mobile+console | Чекає Expo SDK 53 (blocked, not actionable)                                                     | TBD     | M-L      |
-| P2.1      | Dead-code cleanup        | Remove `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` after dynamic-import grep       | TBD     | XS       |
-| ~~P2.2a~~ | ~~fizruk dualWrite~~     | ~~Decompose `dualWrite/diff.ts` 633 LOC за per-shape diff-helpers~~ — ✅ Closed in #<PR-NUMBER> | Devin   | —        |
-| P2.2b     | routine/Calendar.tsx     | ✅ Closed in #2780 — `Calendar.tsx` → `pages/Calendar/` folder (13 sub-files)                   | @Devin  | M (3-4h) |
-| P2.2c     | fizruk PlanCalendar.tsx  | Декомпозиція 661 LOC (наростилося +45)                                                          | TBD     | M        |
-| P2.2d     | fizruk adapter.ts        | Декомпозиція 804 LOC (наростилося +67)                                                          | TBD     | M-L      |
-| P2.4      | Detox e2e CI             | Зачепити `hub-ux-smoke.e2e.ts` у CI matrix (iOS sim runner)                                     | ops     | M-L      |
-| P2.5      | Shell-tax recount        | Свіжий `report-shell-tax.mjs` друк + quarter trend у `docs/initiatives/0002-...`                | TBD     | S        |
-| UX-A      | A11y full screen-reader  | Sweep усіх screens VoiceOver + TalkBack (UX plan §"Accessibility audit: Partial")               | TBD     | M        |
+| #         | Surface                  | Дія                                                                                       | Власник | Estimate |
+| --------- | ------------------------ | ----------------------------------------------------------------------------------------- | ------- | -------- |
+| M3        | `apps/mobile/fizruk`     | Domain-shape alignment × 4 (drop 4× `as unknown as` через `toDomain*` converter)          | TBD     | M (3-4h) |
+| M4        | `apps/mobile/finyk`      | Domain-shape alignment × 2 (CategoryChartSection + TransactionsPage snapshot adapter)     | TBD     | S (1-2h) |
+| M7        | Sentry RN DSN            | Provision EAS Secret `EXPO_PUBLIC_SENTRY_DSN`; code already wired (closed 2026-05-13)     | ops     | XS       |
+| M9        | TS 6 bump mobile+console | Чекає Expo SDK 53 (blocked, not actionable)                                               | TBD     | M-L      |
+| P2.1      | Dead-code cleanup        | Remove `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` after dynamic-import grep | TBD     | XS       |
+| ~~P2.2a~~ | ~~fizruk dualWrite~~     | ~~Decompose `dualWrite/diff.ts` 633 LOC за per-shape diff-helpers~~ — ✅ Closed in #2750  | Devin   | —        |
+| P2.2b     | routine/Calendar.tsx     | ✅ Closed in #2780 — `Calendar.tsx` → `pages/Calendar/` folder (13 sub-files)             | @Devin  | M (3-4h) |
+| P2.2c     | fizruk PlanCalendar.tsx  | Декомпозиція 661 LOC (наростилося +45)                                                    | TBD     | M        |
+| P2.2d     | fizruk adapter.ts        | Декомпозиція 804 LOC (наростилося +67)                                                    | TBD     | M-L      |
+| P2.4      | Detox e2e CI             | Зачепити `hub-ux-smoke.e2e.ts` у CI matrix (iOS sim runner)                               | ops     | M-L      |
+| P2.5      | Shell-tax recount        | Свіжий `report-shell-tax.mjs` друк + quarter trend у `docs/initiatives/0002-...`          | TBD     | S        |
+| UX-A      | A11y full screen-reader  | Sweep усіх screens VoiceOver + TalkBack (UX plan §"Accessibility audit: Partial")         | TBD     | M        |
