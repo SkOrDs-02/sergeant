@@ -1,31 +1,28 @@
-# Audits
+# Audits — каталог документів та статусів
 
 > **Last validated:** 2026-05-13 by Devin (added row for `2026-05-13-mobile-reliability-ux-roast.md`; Status-row sync з file headers: `2026-05-04-csp-disable-retrospective` → Closed (A1–A5 resolved 2026-05-06)). **Next review:** 2026-08-11.
+
 > **Status:** Active
 
-Періодичні аудити коду, архітектури та UX. Цей README — навігаційний індекс
-із status-таблицею; кожен аудит сам по собі — окремий документ із власним
-freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
+> **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл —
+> індекс аудиторських документів. Не дублюй repo policy: hard rules,
+> performance budgets, governance — у `docs/governance/`.
 
-## Lifecycle
+## Що тут лежить
 
-- **Active** — аудит або трекер усе ще використовується для прийняття рішень / пріоритизації.
-- **Closed** — оцінка завершена, fixes винесені у tracker (зазвичай — `*-implementation-roadmap.md` або `2026-04-28-ux-improvement-plan.md`); сам документ лишається як historical record.
-- **Archived** — аудит застарів і фізично переміщений у `docs/audits/archive/`. Канонічні правила тепер живуть у `docs/design/*` або `docs/governance/*`.
+- **Прожарки** (`*-roast.md`) — тематичні rolling-roast програми (#1/10 …
+  #10/10) з freshness-маркером, cross-refs, TL;DR, P0/P1/P2 розбивкою.
+- **Аудити** (`*-audit.md`) — комплексні перевірки якості, безпеки, UX,
+  doc-hygiene тощо.
+- **Implementation-roadmap-и** (`*-roadmap.md`) — план послідовних PR-ів
+  за результатами аудитів.
+- **Архів** (`archive/`) — superseded або completed-and-frozen аудити.
 
-## Жанри під одним парасольником
+## Як читати
 
-З 2026-05-05 `docs/audits/` об'єднує два типи документів — раніше був окремий каталог `docs/diagnostics/`, який злито сюди як піджанр (`*-deep-dive/`-директорії).
-
-|             | Generalні аудити (`YYYY-MM-DD-<scope>-audit.md`)                                                     | Deep-dive прожарки (`YYYY-MM-DD-<scope>-deep-dive/`)                          |
-| ----------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Періодичні? | Регулярні (квартальні / напівщорічні)                                                                | Ad-hoc, на запит                                                              |
-| Скоуп       | Вся система чи весь домен                                                                            | Тонкий зріз з sub-секціями (frontend / architecture / backend / security ...) |
-| Структура   | Один файл                                                                                            | Директорія з `00-overview.md` + `01-...md` ... + опційний `round-NN-*.md`     |
-| Lifecycle   | Active / Closed / Archived                                                                           | Active / Superseded                                                           |
-| Приклад     | [`2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) | [`2026-05-03-web-deep-dive/`](./2026-05-03-web-deep-dive/)                    |
-
-## Як читати таблицю
+`Status` — поточний life-cycle статус документа: `Active` (актуальний,
+треба перевіряти), `Archived` (superseded або завершений),
+`Scaffolded` (skeleton без вмісту).
 
 `Implemented` / `Outstanding` — coarse-grain лічильники recommended-items
 у документі. Числа — приблизні («≈»), бо різні аудити форматують
@@ -49,9 +46,12 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
 | [`2026-05-13-web-frontend-ergonomics-roast.md`](./2026-05-13-web-frontend-ergonomics-roast.md)               | Прожарка #2/10 Web Frontend Ergonomics — toast policy, shortcuts, modal a11y, PWA defer                                        | Active   | 2/7              | 5             | self                                                                                           |
 | [`2026-05-13-web-architecture-state-roast.md`](./2026-05-13-web-architecture-state-roast.md)                 | Roast #3/10 — Web Architecture & State (provider invariant test, typed standalone routes registry, state-write-paths doctrine) | Active   | 5/5 closed in PR | 5 P1 deferred | self (§1.1 / §1.2 / §2.1 closed; P1-A/B/C/D/E carried forward)                                 |
 | [`2026-05-13-mobile-reliability-ux-roast.md`](./2026-05-13-mobile-reliability-ux-roast.md)                   | Прожарка #10/10 — mobile (Expo + Capacitor) reliability & UX                            | Active   | 3/12        | 9           | embedded "Outstanding" table                                                                   |
+| [`2026-05-13-testing-devx-roast.md`](./2026-05-13-testing-devx-roast.md)                                     | Прожарка #6/10 — Testing & DevX (Vitest/Jest/Playwright/Detox, CI, pre-commit)                                                 | Active   | 7/14             | 7             | embedded §Outstanding + [`docs/testing/2026-05-05-tests-pr-plan.md`](../testing/2026-05-05-tests-pr-plan.md) |
 | [`2026-05-13-ftux-onboarding-roast.md`](./2026-05-13-ftux-onboarding-roast.md)                               | FTUX onboarding day 0-7 roast (прожарка #1/10)                                          | Active   | 3/3 P0      | 3 P1 + 3 P2 | [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) |
 | [`2026-05-13-security-observability-roast.md`](./2026-05-13-security-observability-roast.md)                 | Security & observability roast — CSP, secrets, Sentry/OTel/web-vitals, audit logs                                              | Active   | 1/9              | 8             | embedded §Прогрес-виконання + §P0/P1/P2                                                        |
+<<<<<<< HEAD
 | [`2026-05-13-backend-performance-roast.md`](./2026-05-13-backend-performance-roast.md)                       | Backend/performance прожарка #4/10 — error handling, validation, observability, env     | Active   | 6/14 ≈      | 8 ≈         | embedded "Прогрес виконання" + cross-refs                                                      |
+
 | [`archive/2026-04-26-sergeant-audit-devin.md`](./archive/2026-04-26-sergeant-audit-devin.md)                 | Незалежний аудит Devin (historical record)                                                                                     | Archived | 30/31            | 1             | embedded таблиця у самому файлі                                                                |
 | [`archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит                                                                                                  | Archived | 12/18 ≈          | 6 ≈           | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)               |
 | [`archive/2026-04-28-ux-ui-audit.md`](./archive/2026-04-28-ux-ui-audit.md)                                   | UX/UI аудит 2026                                                                                                               | Archived | —                | —             | [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md)                     |
