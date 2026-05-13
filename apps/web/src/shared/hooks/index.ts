@@ -19,13 +19,6 @@ export { useDebounce } from "./useDebounce";
 export { useDialogFocusTrap } from "./useDialogFocusTrap";
 export type { DialogFocusTrapOptions } from "./useDialogFocusTrap";
 
-export { useHashRoute } from "./useHashRoute";
-export type {
-  HashRoute,
-  UseHashRouteOptions,
-  UseHashRouteResult,
-} from "./useHashRoute";
-
 export { useLocalStorageState } from "./useLocalStorageState";
 export type { UseLocalStorageStateOptions } from "./useLocalStorageState";
 
