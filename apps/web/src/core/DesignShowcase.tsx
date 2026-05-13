@@ -1,5 +1,4 @@
-import { Icon } from "@shared/components/ui";
-import { useDarkMode } from "@shared/hooks/useDarkMode";
+import { ThemeSwitcher } from "@shared/components/ui";
 import { NAV_SECTIONS } from "./designShowcase/_shared";
 import { ColorsSection } from "./designShowcase/sections/Colors";
 import { TypographySection } from "./designShowcase/sections/Typography";
@@ -17,16 +16,15 @@ import { FeedbackSection } from "./designShowcase/sections/Feedback";
 import { CelebrationSection } from "./designShowcase/sections/Celebration";
 import { OnboardingSection } from "./designShowcase/sections/Onboarding";
 import { MotionSection } from "./designShowcase/sections/Motion";
+import { ThemingSection } from "./designShowcase/sections/Theming";
 import { EmptyStatesSection } from "./designShowcase/sections/EmptyStates";
 
 export function DesignShowcase() {
-  const { dark, toggle: toggleDark } = useDarkMode();
-
   return (
     <div className="min-h-dvh bg-bg">
       {/* ── Sticky nav ──────────────────────────────────────────── */}
       <header className="sticky top-0 z-100 bg-panel/90 backdrop-blur-md border-b border-line">
-        <div className="max-w-3xl mx-auto px-5 h-12 flex items-center gap-4">
+        <div className="max-w-3xl mx-auto px-5 h-14 flex items-center gap-4">
           <h1 className="font-extrabold text-text text-sm shrink-0">
             Design System
           </h1>
@@ -44,19 +42,13 @@ export function DesignShowcase() {
               </a>
             ))}
           </nav>
-          <button
-            type="button"
-            onClick={toggleDark}
-            aria-label={dark ? "Світла тема" : "Темна тема"}
-            className="shrink-0 p-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-          >
-            <Icon name={dark ? "sun" : "moon"} size={16} />
-          </button>
+          <ThemeSwitcher className="shrink-0" />
         </div>
       </header>
 
       {/* ── Content ─────────────────────────────────────────────── */}
       <main className="max-w-3xl mx-auto px-5 py-10 space-y-20 pb-24">
+        <ThemingSection />
         <ColorsSection />
         <TypographySection />
         <ButtonsSection />

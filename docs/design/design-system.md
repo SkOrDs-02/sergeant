@@ -980,10 +980,98 @@ stroke-dasharray; indeterminate — чверть-дуга, яка обертає
 
 ---
 
-## 8. Темна тема
+## 8. Темна тема + High Contrast
 
-Увімкнення — клас `dark` на `<html>`. Всі кольори резолвяться через CSS-
-змінні `--c-*`, тож додавати `dark:bg-...` більшості разів **НЕ треба**:
+### 8.1 4-режимний state-machine (`useTheme`)
+
+З Track 9 (Design-System polish, PR-#057) у нас один уніфікований
+контролер теми — `apps/web/src/shared/hooks/useTheme.ts`. Стан:
+
+| Choice   | Що робить                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `light`  | Жодного theme-класу на `<html>` (дефолт).                                                                                 |
+| `dark`   | `<html class="dark">` — повна dark-палітра.                                                                               |
+| `system` | Клас `dark` реактивно слідує за `window.matchMedia('(prefers-color-scheme: dark)')`. OS-level зміна підхоплюється в live. |
+| `hc`     | `<html class="hc">` (+ `dark` якщо OS — dark). HC-режим залишається світлим/темним за системою, але токени бампають AAA.  |
+
+Контракт-точки:
+
+- **Bootstrap** — `useTheme()` викликається один раз у `core/App.tsx` і
+  володіє класами на `<html>`. Не клич `useTheme` повторно у дочірніх
+  компонентах для side-effect-ів — використовуй `<ThemeSwitcher />` (він
+  читає тих самий hook).
+- **Persistence** — вибір зберігається в `hub_theme_v2` (`localStorage`,
+  через `@shared/storage`). Старі ключі (`hub_dark_mode_v1`,
+  `hub_dark_mode_schedule_v1`) мігруються автоматично — fall-back на
+  `system` коли запис відсутній.
+- **Cross-tab sync** — `webKVStore.onChange(hub_theme_v2)` ловить DOM
+  `storage`-event (LS-fallback) АБО `BroadcastChannel("kv-store")`
+  (SQLite-warm-cache). Зміна теми в одній вкладці прокидається в інші
+  у живому часі.
+- **`prefers-color-scheme`** — підписка на media-query робить `system` і
+  `hc` справді живими. OS-level toggle відбивається без перезавантаження.
+
+### 8.2 High-Contrast контракт
+
+`html.hc { ... }` у `apps/web/src/styles/theme.css` — це AAA-leaning
+оверлей семантичних токенів поверх resolved-light/dark base-у. Контракт:
+
+1. **Text vs. bg ≥ 7:1** — WCAG AAA «Contrast (Enhanced)». `--c-text`
+   йде в pure `#000000` (HC-світла) і `#ffffff` (HC-темна).
+2. **Дільники ≥ 4.5:1** — `--c-line` бампається на near-black/near-white.
+   Карти, інпути, таблиці отримують видимий edge без shadow-залежності.
+3. **Focus-ring 3px** — `--ring-width-hc: 3px;` і
+   `--focus-ring-width: var(--ring-width-hc);` Усі примітиви, які
+   читають `--focus-ring-width`, автоматично отримують ширший фокус-
+   індикатор. Колір — `brand-strong` на світлій, `amber-300` на темній
+   (≥ 3:1 проти власного bg).
+4. **Жодних low-opacity surfaces** — soft-варіанти
+   (`success-soft`, `brand-soft`, `finyk-soft`, …) фліпаються на
+   full-strength fill, щоб banner / badge / pill читалися на 7:1.
+
+#### Аудит токенів у HC
+
+| Token              | Light → HC-light              | Dark → HC-dark                | Контраст vs `--c-bg` |
+| ------------------ | ----------------------------- | ----------------------------- | -------------------- |
+| `--c-text`         | `#1c1917` → `#000000`         | `#faf7f1` → `#ffffff`         | ≥ 18 : 1             |
+| `--c-muted`        | `#57534e` → `#1f1c19`         | `#b4aea9` → `#e6e0da`         | ≥ 14 : 1             |
+| `--c-subtle`       | `#6b645d` → `#332e29`         | `#878079` → `#cfc7bf`         | ≥ 9 : 1              |
+| `--c-line`         | `#ebe4da` → `#574b3c`         | `#524a41` → `#a89c8e`         | ≥ 4.7 : 1            |
+| `--c-border`       | = `--c-line`                  | = `--c-line`                  | ≥ 4.7 : 1            |
+| `--c-success-soft` | `emerald-100` → `emerald-200` | `emerald-900` → `emerald-700` | ≥ 4.6 : 1            |
+| `--c-danger-soft`  | `red-100` → `red-200`         | `red-900` → `red-700`         | ≥ 4.6 : 1            |
+| `--c-brand-soft`   | `emerald-100` → `emerald-200` | `emerald-900` → `emerald-700` | ≥ 4.6 : 1            |
+
+> ⚠ Додаючи новий semantic-token, дзеркаль override у `html.hc { ... }`
+> _і_ `html.hc.dark { ... }`. Скоупні preview-блоки
+> (`[data-theme-preview="…"]` в тому ж файлі) — copy/paste тих самих
+> values для side-by-side у `DesignShowcase`.
+
+### 8.3 UX-контракт `<ThemeSwitcher />`
+
+```tsx
+import { ThemeSwitcher } from "@shared/components/ui";
+
+// Compact — header chrome, dense rows. 4 IconButton-и (sun/moon/monitor/contrast)
+// згруповані як radiogroup.
+<ThemeSwitcher />;
+
+// Dropdown — Settings, DesignShowcase, verbose surfaces. Триггер-кнопка
+// + меню з лейблами та описом кожного режиму.
+<ThemeSwitcher variant="dropdown" />;
+```
+
+- Token-only стилізація (Hard Rules #11, #13). Жодного `bg-[#...]` —
+  все через `bg-panel`, `bg-brand-soft`, `border-line`.
+- `focus-visible:ring-2 ring-brand-500/45` (Hard Rule #14).
+- Кожен radio-item має `aria-label` (Ukrainian) + `aria-checked`.
+- Dropdown — `role="menu"` + `aria-haspopup="menu"`, ESC закриває,
+  фокус повертається на тригер.
+
+### 8.4 Не пиши `dark:` пар
+
+Усі кольори резолвяться через CSS-змінні `--c-*`, тож додавати
+`dark:bg-...` більшості разів **НЕ треба**:
 
 ```tsx
 // ❌ НЕ пиши
