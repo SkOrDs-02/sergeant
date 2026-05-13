@@ -115,7 +115,7 @@
 
 - **Файл:** `apps/web/src/core/billing/index.ts` — re-exports `usePlan`, `PaywallModal` + types.
 
-### P1-2 · Activation v2 web-side capture ✅ Closed in this PR
+### P1-2 · Activation v2 web-side capture ✅ Closed in #2756
 
 - **Файли:** `apps/web/src/core/activation/useActivationV2.ts` (core hook), `apps/web/src/core/activation/useActivationV2Boot.ts` (RQ-cache adapter), `apps/web/src/core/activation/index.ts` (barrel), `apps/web/src/core/App.tsx` (mount-point у `AppInner`).
 - **Тести:** `apps/web/src/core/activation/useActivationV2.test.tsx` (5 кейсів — happy path, null input, not-activated, persisted fire-flag, A/B variant payload). Mock-ане `evaluateActivationV2` + analytics-spy через `vi.mock`.
