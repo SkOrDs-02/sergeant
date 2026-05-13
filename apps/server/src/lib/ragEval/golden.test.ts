@@ -19,9 +19,9 @@ describe("loadDefaultGoldenSet (canonical fixture)", () => {
     expect(set.embeddingVersion).toBe("1");
   });
 
-  it("кожна query має non-empty expected (інакше recall undefined)", () => {
+  it("кожна query має non-empty expected_memory_ids (інакше recall undefined)", () => {
     for (const q of set.queries) {
-      expect(q.expected.length).toBeGreaterThan(0);
+      expect(q.expected_memory_ids.length).toBeGreaterThan(0);
     }
   });
 
@@ -36,12 +36,19 @@ describe("loadDefaultGoldenSet (canonical fixture)", () => {
     expect(ids.size).toBe(set.queries.length);
   });
 
-  it("expected refs мають префікс <source>: (для майбутньої wiring у real retrieval)", () => {
+  it("expected_memory_ids мають префікс <source>: (для wiring у real retrieval)", () => {
     for (const q of set.queries) {
-      for (const ref of q.expected) {
+      for (const ref of q.expected_memory_ids) {
         expect(ref).toMatch(/^[a-z]+:[\w-]+/);
       }
     }
+  });
+
+  it("contract: snake_case fixture field узгоджений з PR-plan-2026-05 specs", () => {
+    const sample = set.queries[0];
+    expect(sample).toBeDefined();
+    expect(sample).toHaveProperty("expected_memory_ids");
+    expect(Array.isArray(sample!.expected_memory_ids)).toBe(true);
   });
 });
 
@@ -53,8 +60,18 @@ describe("parseGoldenSet (validator)", () => {
       embeddingVersion: "1",
       topK: 4,
       queries: [
-        { id: "dup-1", domain: "chat", query: "q1", expected: ["chat:a"] },
-        { id: "dup-1", domain: "chat", query: "q2", expected: ["chat:b"] },
+        {
+          id: "dup-1",
+          domain: "chat",
+          query: "q1",
+          expected_memory_ids: ["chat:a"],
+        },
+        {
+          id: "dup-1",
+          domain: "chat",
+          query: "q2",
+          expected_memory_ids: ["chat:b"],
+        },
       ],
     };
     expect(() => parseGoldenSet(malformed)).toThrow(/Duplicate.*dup-1/);
@@ -66,7 +83,9 @@ describe("parseGoldenSet (validator)", () => {
       embeddingModel: "voyage-3.5-lite",
       embeddingVersion: "1",
       topK: 4,
-      queries: [{ id: "q1", domain: "chat", query: "q", expected: [] }],
+      queries: [
+        { id: "q1", domain: "chat", query: "q", expected_memory_ids: [] },
+      ],
     };
     expect(() => parseGoldenSet(malformed)).toThrow();
   });
@@ -82,7 +101,7 @@ describe("parseGoldenSet (validator)", () => {
           id: "q1",
           domain: "unknown-domain",
           query: "q",
-          expected: ["chat:a"],
+          expected_memory_ids: ["chat:a"],
         },
       ],
     };

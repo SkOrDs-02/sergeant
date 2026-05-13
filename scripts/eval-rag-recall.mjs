@@ -1,56 +1,51 @@
 #!/usr/bin/env node
 // scripts/eval-rag-recall.mjs
 //
-// RAG quality gate CLI (PR-22, WF-30 Phase 2 — eval harness scaffold).
+// RAG eval harness CLI (PR-20 § eval) + quality gate (PR-22 § weekly
+// cron). Linked to `docs/planning/pr-plan-2026-05.md` § PR-20 / PR-22
+// і § Day 60 decision-point (kill module якщо recall@4 < 0.4).
 //
-// Linked to `docs/planning/pr-plan-2026-05.md` § PR-22 «RAG quality
-// gate (auto-disable RAG якщо recall@4 < 0.5)» і § Day 60 decision-
-// point (kill module якщо recall@4 < 0.4).
+// Документація: docs/architecture/rag-eval.md (curation, formulas, baseline).
 //
 // Що робить:
 //   1. Завантажує golden-set із
-//      `apps/server/src/__fixtures__/rag-eval/golden.json` (50 queries
-//      з expected `<source>:<sourceRef>` refs у топ-K).
+//      `apps/server/src/__fixtures__/rag-eval/golden.json` (50 queries,
+//      поле `expected_memory_ids` — `<source>:<sourceRef>` refs).
 //   2. Для кожної query будує `retrieved[]` залежно від `--mode`:
-//        - `mock` (default) — деterministic retrieval, що повертає
-//          `expected` ⇒ recall@K = 1.0. Використовується у CI для
-//          sanity-check, що gate не false-alarm-ить, поки PR-20 не
-//          зашиплений з real-data eval.
+//        - `mock` (default) — deterministic retrieval, що повертає
+//          `expected` ⇒ recall@K = 1.0 і RR = 1.0 (P@1 = 1).
+//          Sanity-check CI; gate не false-alarm-ить до PR-21.
 //        - `simulate` — повертає `expected` у відсотках, заданих
-//          `--simulate-recall=0.X`. Дозволяє вручну тригерити warn /
-//          kill alerts через `workflow_dispatch`.
-//        - `live` — викликає real AI-memory service (Voyage + pgvector).
-//          Поки що NOT IMPLEMENTED — placeholder для PR-20 (`live`
-//          вимагатиме `DATABASE_URL` + `VOYAGE_API_KEY`).
-//   3. Обчислює recall@K per query → aggregate (mean / min / p50).
-//   4. Класифікує: `pass` / `warn` (mean < warn) / `kill` (mean < kill).
-//      Thresholds default: warn=0.5, kill=0.4 (узгоджено з pr-plan).
-//   5. Друкує JSON summary у stdout; опційно пише у `--output=<path>`.
-//   6. Exit codes: 0=pass, 1=warn, 2=kill (для CI step-conditional alert).
+//          `--simulate-recall=0.X`. Manually тригерити warn / kill.
+//        - `live` — real AI-memory service (Voyage + pgvector). NOT
+//          IMPLEMENTED — placeholder для PR-21 (`live` вимагає
+//          `DATABASE_URL` + `VOYAGE_API_KEY`).
+//   3. Обчислює три метрики per query:
+//        - recall@K = |retrieved[0..K] ∩ expected| / |expected|
+//        - precision@1 = 1 якщо retrieved[0] ∈ expected else 0
+//        - reciprocal_rank = 1 / (rank першого hit-у у retrieved); 0
+//          якщо жоден expected не знайдений.
+//      Aggregate — mean / min / p50 по кожній метриці (MRR =
+//      mean reciprocal_rank).
+//   4. Класифікує quality gate за recall@K mean:
+//      `pass` / `warn` (mean < warn) / `kill` (mean < kill).
+//      Defaults: warn=0.5, kill=0.4.
+//   5. Опційно порівнює з baseline (`--baseline=<path>`):
+//      `delta` по трьох метриках + flag `regression` якщо
+//      recall@K mean провалився більше ніж на 0.05.
+//   6. Друкує JSON summary у stdout; опційно пише у `--output=<path>`.
+//   7. Exit codes: 0=pass, 1=warn, 2=kill, 3=error.
 //
-// Math (recall@K): |retrieved[0..K] ∩ expected| / |expected|.
-// Дзеркало `apps/server/src/lib/ragEval/recall.ts` — для пurity-тестів
-// бери TS-модуль; цей файл — runtime CLI без TS-bundling-у.
+// Дзеркало formulas: `apps/server/src/lib/ragEval/recall.ts` — unit-
+// тести бери з TS-модуля; цей файл — runtime CLI без TS-bundling-у.
 //
 // Usage:
-//   node scripts/eval-rag-recall.mjs                  # mock, default thresholds
+//   pnpm eval:rag                                       # alias
+//   node scripts/eval-rag-recall.mjs                    # mock, defaults
 //   node scripts/eval-rag-recall.mjs --mode=simulate --simulate-recall=0.45
 //   node scripts/eval-rag-recall.mjs --output=eval-summary.json
 //   node scripts/eval-rag-recall.mjs --warn=0.6 --kill=0.45
-//
-// Output format (stdout JSON):
-//   {
-//     "version": "1.0",
-//     "mode": "mock" | "simulate" | "live",
-//     "ranAt": "2026-05-13T20:00:00.000Z",
-//     "topK": 4,
-//     "thresholds": { "warn": 0.5, "kill": 0.4 },
-//     "aggregate": { "count": 50, "mean": 1.0, "min": 1.0, "p50": 1.0 },
-//     "perDomain": { "finyk": { "count": 8, "mean": 1.0 }, ... },
-//     "status": "pass" | "warn" | "kill",
-//     "exitCode": 0 | 1 | 2,
-//     "queries": [{ "id": "...", "recall": 1.0, "domain": "..." }, ...]
-//   }
+//   node scripts/eval-rag-recall.mjs --baseline=prev-summary.json
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -68,6 +63,8 @@ const DEFAULT_GOLDEN_PATH = resolve(
 
 const DEFAULT_WARN_THRESHOLD = 0.5;
 const DEFAULT_KILL_THRESHOLD = 0.4;
+/** Delta beyond which a baseline-comparison flags `regression: true`. */
+const BASELINE_REGRESSION_DELTA = 0.05;
 
 /**
  * @typedef {Object} CliOptions
@@ -76,6 +73,7 @@ const DEFAULT_KILL_THRESHOLD = 0.4;
  * @property {number} kill
  * @property {string} goldenPath
  * @property {string | null} outputPath
+ * @property {string | null} baselinePath
  * @property {number} simulateRecall  // ∈ [0,1], коли mode=simulate
  */
 
@@ -90,6 +88,7 @@ function parseArgs(argv) {
     kill: DEFAULT_KILL_THRESHOLD,
     goldenPath: DEFAULT_GOLDEN_PATH,
     outputPath: null,
+    baselinePath: null,
     simulateRecall: 1.0,
   };
 
@@ -134,6 +133,9 @@ function parseArgs(argv) {
       case "output":
         opts.outputPath = resolve(process.cwd(), value);
         break;
+      case "baseline":
+        opts.baselinePath = resolve(process.cwd(), value);
+        break;
       case "simulate-recall":
         opts.simulateRecall = Number(value);
         if (
@@ -172,6 +174,7 @@ function printHelp() {
       "  --kill=<0..1>               Kill threshold (default: 0.4).",
       "  --golden=<path>             Golden-set fixture path.",
       "  --output=<path>             Write JSON summary to file.",
+      "  --baseline=<path>           Compare summary against prior baseline JSON.",
       "  --help                      Show this help.",
       "",
       "Exit codes: 0=pass, 1=warn, 2=kill.",
@@ -198,6 +201,34 @@ function recallAtK(retrieved, expected, k) {
 }
 
 /**
+ * Precision@1 — 1 якщо retrieved[0] ∈ expected, інакше 0.
+ * Дзеркало `apps/server/src/lib/ragEval/recall.ts → precisionAt1`.
+ * @param {string[]} retrieved
+ * @param {string[]} expected
+ */
+function precisionAt1(retrieved, expected) {
+  if (expected.length === 0) return 1;
+  if (retrieved.length === 0) return 0;
+  return new Set(expected).has(retrieved[0]) ? 1 : 0;
+}
+
+/**
+ * Reciprocal rank — 1 / (rank першого hit-у), rank 1-indexed.
+ * Дзеркало `apps/server/src/lib/ragEval/recall.ts → reciprocalRank`.
+ * @param {string[]} retrieved
+ * @param {string[]} expected
+ */
+function reciprocalRank(retrieved, expected) {
+  if (expected.length === 0) return 1;
+  if (retrieved.length === 0) return 0;
+  const expectedSet = new Set(expected);
+  for (let i = 0; i < retrieved.length; i++) {
+    if (expectedSet.has(retrieved[i])) return 1 / (i + 1);
+  }
+  return 0;
+}
+
+/**
  * Симулює retrieval: повертає `expected` як retrieved, плюс N noise-IDs.
  * Якщо `targetRecall` < 1, частину `expected` витирає, щоб mean recall
  * сходив у target. Deterministic — без RNG (порядок expected).
@@ -205,24 +236,23 @@ function recallAtK(retrieved, expected, k) {
 function buildRetrievedForQuery(query, mode, targetRecall, topK) {
   if (mode === "live") {
     throw new Error(
-      "--mode=live not implemented (waits for PR-20 real-data eval wiring).",
+      "--mode=live not implemented (waits for PR-21 real-data eval wiring).",
     );
   }
+
+  const expected = query.expected_memory_ids;
 
   if (mode === "mock") {
     // Detrministic 100% recall — `expected` плюс filler-и щоб дорости до K.
     const filler = Array.from({ length: topK }, (_, i) => `noise-${i}`);
-    return [...query.expected, ...filler].slice(
-      0,
-      Math.max(topK, query.expected.length),
-    );
+    return [...expected, ...filler].slice(0, Math.max(topK, expected.length));
   }
 
   // simulate-mode: per-query keepCount задається caller-ом
   // (`buildSimulationPlan` нижче — global-budget approach, щоб mean
   // recall сходив у target).
-  const keepN = query.simulateKeepCount ?? query.expected.length;
-  const kept = query.expected.slice(0, keepN);
+  const keepN = query.simulateKeepCount ?? expected.length;
+  const kept = expected.slice(0, keepN);
   const noise = Array.from(
     { length: Math.max(0, topK - kept.length) },
     (_, i) => `noise-${query.id}-${i}`,
@@ -248,7 +278,7 @@ function buildSimulationPlan(queries, targetRecall) {
   // golden-set-у з 50 queries.
   let achievedRecallSum = 0;
   return queries.map((q, i) => {
-    const denom = q.expected.length;
+    const denom = q.expected_memory_ids.length;
     const desiredRunningMean = targetRecall * (i + 1);
     let bestKeep = 0;
     let bestDelta = Number.POSITIVE_INFINITY;
@@ -313,9 +343,9 @@ async function main() {
     throw new Error(`Invalid topK in golden set: ${raw.topK}`);
   }
 
-  const perDomain = new Map(); // domain → number[]
+  const perDomain = new Map(); // domain → PerQueryMetrics[]
   const queryResults = [];
-  const perQueryRecall = [];
+  const perQueryMetrics = [];
 
   // У simulate-mode рознесли keepCount-и заздалегідь, щоб глобальна
   // mean recall зійшлась у targetRecall. У mock-mode plan === queries.
@@ -331,33 +361,53 @@ async function main() {
       opts.simulateRecall,
       topK,
     );
-    const r = recallAtK(retrieved, q.expected, topK);
-    perQueryRecall.push(r);
-    queryResults.push({ id: q.id, domain: q.domain, recall: r });
+    const expected = q.expected_memory_ids;
+    const r = recallAtK(retrieved, expected, topK);
+    const p1 = precisionAt1(retrieved, expected);
+    const rr = reciprocalRank(retrieved, expected);
+    const metrics = { recall: r, precisionAt1: p1, reciprocalRank: rr };
+    perQueryMetrics.push(metrics);
+    queryResults.push({
+      id: q.id,
+      domain: q.domain,
+      recall: r,
+      precisionAt1: p1,
+      reciprocalRank: rr,
+    });
     if (!perDomain.has(q.domain)) perDomain.set(q.domain, []);
-    perDomain.get(q.domain).push(r);
+    perDomain.get(q.domain).push(metrics);
   }
 
-  const overall = aggregate(perQueryRecall);
-  const status = classify(overall.mean, opts.warn, opts.kill);
+  const bundle = aggregateBundle(perQueryMetrics);
+  const status = classify(bundle.recallAtK.mean, opts.warn, opts.kill);
   const exitCode = statusToExitCode(status);
 
   const perDomainSummary = {};
   for (const [domain, values] of perDomain.entries()) {
-    perDomainSummary[domain] = aggregate(values);
+    perDomainSummary[domain] = aggregateBundle(values);
+  }
+
+  /** @type {{baselinePath:string,deltas:object,regression:boolean}|null} */
+  let comparison = null;
+  if (opts.baselinePath) {
+    comparison = compareToBaseline(opts.baselinePath, bundle);
   }
 
   const summary = {
-    version: "1.0",
+    version: "2.0",
     mode: opts.mode,
     ranAt: new Date().toISOString(),
     topK,
     thresholds: { warn: opts.warn, kill: opts.kill },
-    aggregate: overall,
+    /** Primary signal — mean recall@K узгоджено з PR-22 workflow.       */
+    aggregate: bundle.recallAtK,
+    /** PR-20 secondary signals — P@1 і MRR (mean reciprocal rank).         */
+    metrics: bundle,
     perDomain: perDomainSummary,
     status,
     exitCode,
     queries: queryResults,
+    baselineComparison: comparison,
   };
 
   const json = JSON.stringify(summary, null, 2);
@@ -367,6 +417,57 @@ async function main() {
   }
 
   process.exit(exitCode);
+}
+
+/**
+ * Aggregate всіх трьох метрик (recall@K, P@1, MRR) з per-query bundle.
+ * Дзеркало `aggregateMetrics` у TS-модулі.
+ */
+function aggregateBundle(perQuery) {
+  return {
+    recallAtK: aggregate(perQuery.map((q) => q.recall)),
+    precisionAt1: aggregate(perQuery.map((q) => q.precisionAt1)),
+    mrr: aggregate(perQuery.map((q) => q.reciprocalRank)),
+  };
+}
+
+/**
+ * Читає baseline JSON і порівнює три метрики (recall@K mean, P@1
+ * mean, MRR). Флаг `regression` — true якщо recall@K mean провалився
+ * більше ніж на BASELINE_REGRESSION_DELTA. На missing baseline раннє
+ * повертаємо null (caller вже зберіг baseline-flag як guard).
+ */
+function compareToBaseline(baselinePath, current) {
+  /** @type {any} */
+  let baseline;
+  try {
+    baseline = JSON.parse(readFileSync(baselinePath, "utf-8"));
+  } catch (err) {
+    throw new Error(`Failed to read baseline ${baselinePath}: ${err.message}`);
+  }
+  // Підтримуємо обидві версії summary: 1.0 (only `aggregate`) i 2.0
+  // (`metrics.recallAtK/precisionAt1/mrr`). Старі baseline-и падають в
+  // graceful-fallback.
+  const recallMeanPrev =
+    baseline?.metrics?.recallAtK?.mean ?? baseline?.aggregate?.mean ?? 0;
+  const p1MeanPrev = baseline?.metrics?.precisionAt1?.mean ?? 0;
+  const mrrPrev = baseline?.metrics?.mrr?.mean ?? 0;
+
+  const recallDelta = current.recallAtK.mean - recallMeanPrev;
+  return {
+    baselinePath,
+    deltas: {
+      recallAtK: round(recallDelta, 4),
+      precisionAt1: round(current.precisionAt1.mean - p1MeanPrev, 4),
+      mrr: round(current.mrr.mean - mrrPrev, 4),
+    },
+    regression: recallDelta < -BASELINE_REGRESSION_DELTA,
+  };
+}
+
+function round(n, digits) {
+  const f = 10 ** digits;
+  return Math.round(n * f) / f;
 }
 
 main().catch((err) => {

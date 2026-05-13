@@ -1,13 +1,14 @@
 // scripts/__tests__/eval-rag-recall.test.mjs
 //
-// Integration tests for `scripts/eval-rag-recall.mjs` (PR-22 RAG quality gate).
+// Integration tests for `scripts/eval-rag-recall.mjs` (PR-20 eval harness +
+// PR-22 RAG quality gate).
 //
 // Run with:  node --test scripts/__tests__/eval-rag-recall.test.mjs
 
 import { describe, it, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,13 +51,16 @@ describe("eval-rag-recall.mjs — mock mode", () => {
     assert.ok(r.parsed.aggregate.count >= 50);
   });
 
-  it("emit-ить thresholds і perDomain breakdown", () => {
+  it("emit-ить thresholds і perDomain breakdown (bundle: recall+P@1+MRR)", () => {
     const r = runCli(["--mode=mock"]);
     assert.deepEqual(r.parsed.thresholds, { warn: 0.5, kill: 0.4 });
     const domains = Object.keys(r.parsed.perDomain);
     assert.ok(domains.length >= 7);
     for (const stats of Object.values(r.parsed.perDomain)) {
-      assert.ok(stats.mean >= 0 && stats.mean <= 1);
+      // PR-20 schema 2.0: per-domain — це bundle, не плоский aggregate.
+      assert.ok(stats.recallAtK.mean >= 0 && stats.recallAtK.mean <= 1);
+      assert.ok(stats.precisionAt1.mean >= 0 && stats.precisionAt1.mean <= 1);
+      assert.ok(stats.mrr.mean >= 0 && stats.mrr.mean <= 1);
     }
   });
 });
@@ -111,8 +115,104 @@ describe("eval-rag-recall.mjs — --output writes JSON file", () => {
   });
 });
 
+describe("eval-rag-recall.mjs — PR-20 metrics (P@1 + MRR)", () => {
+  it("summary включає metrics bundle: recallAtK + precisionAt1 + mrr", () => {
+    const r = runCli([]);
+    assert.equal(r.exitCode, 0);
+    assert.ok(r.parsed.metrics, "expected `metrics` block у summary");
+    for (const key of ["recallAtK", "precisionAt1", "mrr"]) {
+      const m = r.parsed.metrics[key];
+      assert.ok(m, `metrics.${key} відсутній`);
+      assert.equal(m.count, r.parsed.aggregate.count);
+      assert.ok(m.mean >= 0 && m.mean <= 1);
+    }
+  });
+
+  it("queries[] мають per-query precisionAt1 + reciprocalRank", () => {
+    const r = runCli([]);
+    const q = r.parsed.queries[0];
+    assert.ok(q);
+    assert.ok(q.precisionAt1 === 0 || q.precisionAt1 === 1);
+    assert.ok(q.reciprocalRank >= 0 && q.reciprocalRank <= 1);
+  });
+
+  it("perDomain breakdown містить bundle (recallAtK + precisionAt1 + mrr)", () => {
+    const r = runCli([]);
+    const sampleDomain = Object.values(r.parsed.perDomain)[0];
+    assert.ok(sampleDomain.recallAtK);
+    assert.ok(sampleDomain.precisionAt1);
+    assert.ok(sampleDomain.mrr);
+  });
+
+  it("mock-mode дає P@1 = 1 для всіх queries (retrieved[0] === expected[0])", () => {
+    const r = runCli([]);
+    assert.equal(r.parsed.metrics.precisionAt1.mean, 1);
+    assert.equal(r.parsed.metrics.mrr.mean, 1);
+  });
+});
+
+describe("eval-rag-recall.mjs — baseline comparison", () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "eval-rag-recall-baseline-"));
+  });
+
+  after(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("без --baseline → baselineComparison = null", () => {
+    const r = runCli([]);
+    assert.equal(r.parsed.baselineComparison, null);
+  });
+
+  it("регресія recall@K → regression: true", () => {
+    const basePath = join(tmpDir, "base.json");
+    const nowPath = join(tmpDir, "now.json");
+    runCli([`--output=${basePath}`]);
+    const r = runCli([
+      "--mode=simulate",
+      "--simulate-recall=0.3",
+      `--baseline=${basePath}`,
+      `--output=${nowPath}`,
+    ]);
+    assert.equal(r.exitCode, 2);
+    const cmp = r.parsed.baselineComparison;
+    assert.ok(cmp);
+    assert.equal(cmp.baselinePath, basePath);
+    assert.ok(cmp.deltas.recallAtK < 0);
+    assert.equal(cmp.regression, true);
+  });
+
+  it("без регресії — regression: false", () => {
+    const basePath = join(tmpDir, "base-same.json");
+    runCli([`--output=${basePath}`]);
+    const r = runCli([`--baseline=${basePath}`]);
+    assert.equal(r.exitCode, 0);
+    assert.equal(r.parsed.baselineComparison.regression, false);
+    assert.equal(r.parsed.baselineComparison.deltas.recallAtK, 0);
+  });
+
+  it("graceful-fallback для 1.x-summary baseline (без .metrics)", () => {
+    const oldBase = join(tmpDir, "old.json");
+    writeFileSync(
+      oldBase,
+      JSON.stringify({
+        version: "1.0",
+        aggregate: { count: 50, mean: 0.85, min: 0, p50: 1 },
+      }),
+    );
+    const r = runCli([`--baseline=${oldBase}`]);
+    assert.equal(r.exitCode, 0);
+    assert.ok(r.parsed.baselineComparison);
+    // current mock mean=1, prev=0.85 → delta = +0.15.
+    assert.ok(r.parsed.baselineComparison.deltas.recallAtK > 0.14);
+  });
+});
+
 describe("eval-rag-recall.mjs — error handling", () => {
-  it("--mode=live → exit 3 (placeholder для PR-20)", () => {
+  it("--mode=live → exit 3 (placeholder для PR-21)", () => {
     const r = runCli(["--mode=live"]);
     assert.equal(r.exitCode, 3);
     assert.match(r.stderr, /not implemented/i);

@@ -423,10 +423,13 @@ SBOM (Software Bill of Materials) — це machine-readable список **вс�
 
 **Що горить**: weekly `.github/workflows/rag-quality-gate.yml` зафіксував
 mean `recall@4` < `warn_threshold` (default `0.5`), але ≥ `kill_threshold`
-(default `0.4`). Eval-harness — synthetic golden-set
+(default `0.4`). Eval-harness — 50-query golden-set
 [`apps/server/src/__fixtures__/rag-eval/golden.json`](../../apps/server/src/__fixtures__/rag-eval/golden.json)
-(50 queries, 7 domains). PR-20 замінить його на real-data golden-set;
-contract сторгнутий через `apps/server/src/lib/ragEval/golden.ts`.
+(8 domains, `expected_memory_ids` рефи). PR-21 ввімкне `--mode=live`
+(real Voyage + pgvector retrieval); contract — `apps/server/src/lib/ragEval/
+golden.ts`. Повна документація харнесу +
+metric формули (recall@K / P@1 / MRR) + baseline-comparison: [`docs/
+architecture/rag-eval.md`](../architecture/rag-eval.md).
 
 **Рівень**: warn — RAG залишається ON, але є early-warning regression.
 
@@ -488,7 +491,7 @@ https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped
 6. Після root-cause fix → запусти eval manually:
    ```bash
    gh workflow run rag-quality-gate.yml \
-     -f mode=mock  # або 'live' коли PR-20 зашиплений
+     -f mode=mock  # або 'live' коли PR-21 зашиплений
    ```
    Якщо `status=pass` → revert kill-switch (`AI_MEMORY_ENABLED=true`)
    - close issue.

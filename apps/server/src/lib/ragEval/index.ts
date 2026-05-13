@@ -8,13 +8,18 @@
 export {
   DEFAULT_KILL_THRESHOLD,
   DEFAULT_WARN_THRESHOLD,
+  aggregateMetrics,
   aggregateRecall,
   classifyRecall,
+  precisionAt1,
   recallAtK,
+  reciprocalRank,
   statusToExitCode,
 } from "./recall.js";
 export type {
   ClassifyOptions,
+  MetricsBundle,
+  PerQueryMetrics,
   RecallAggregate,
   RecallClassification,
   RecallStatus,
