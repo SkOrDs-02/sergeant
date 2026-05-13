@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextFunction, Request, Response } from "express";
 
-const { getSubscriptionStatusMock } = vi.hoisted(() => ({
-  getSubscriptionStatusMock: vi.fn(),
+const { getUserPlanMock } = vi.hoisted(() => ({
+  getUserPlanMock: vi.fn(),
 }));
 
-vi.mock("./stripe.js", () => ({
-  getSubscriptionStatus: getSubscriptionStatusMock,
+vi.mock("./getUserPlan.js", () => ({
+  getUserPlan: getUserPlanMock,
 }));
 
 import { requirePlan } from "./requirePlan.js";
@@ -38,7 +38,7 @@ describe("requirePlan middleware", () => {
     const middleware = requirePlan(pool, "pro");
     await middleware(makeReq("user_1"), makeRes(), next);
     expect(next).toHaveBeenCalledTimes(1);
-    expect(getSubscriptionStatusMock).not.toHaveBeenCalled();
+    expect(getUserPlanMock).not.toHaveBeenCalled();
   });
 
   it("returns 401 when STRIPE_ENABLED=true and no session user", async () => {
@@ -51,8 +51,11 @@ describe("requirePlan middleware", () => {
 
   it("calls next() when user has active pro subscription", async () => {
     process.env["STRIPE_ENABLED"] = "true";
-    getSubscriptionStatusMock.mockResolvedValue({
-      subscription: { active: true, plan: "pro" },
+    getUserPlanMock.mockResolvedValue({
+      plan: "pro",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
     });
     await requirePlan(pool, "pro")(makeReq("user_1"), makeRes(), next);
     expect(next).toHaveBeenCalledTimes(1);
@@ -60,8 +63,11 @@ describe("requirePlan middleware", () => {
 
   it("returns 402 when user is on free plan", async () => {
     process.env["STRIPE_ENABLED"] = "true";
-    getSubscriptionStatusMock.mockResolvedValue({
-      subscription: { active: false, plan: null },
+    getUserPlanMock.mockResolvedValue({
+      plan: "free",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
     });
     const res = makeRes();
     await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
@@ -74,8 +80,11 @@ describe("requirePlan middleware", () => {
 
   it("returns 402 when subscription is inactive (expired/canceled)", async () => {
     process.env["STRIPE_ENABLED"] = "true";
-    getSubscriptionStatusMock.mockResolvedValue({
-      subscription: { active: false, plan: "pro" },
+    getUserPlanMock.mockResolvedValue({
+      plan: "pro",
+      status: "canceled",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
     });
     const res = makeRes();
     await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
