@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-05-08 by @claude. **Next review:** 2026-08-06.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -369,6 +369,10 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../apps/web/middlew
 - `POSTHOG_API_KEY=phx_…` — Personal API key із project-scope доступом до `persons` (write). Використовується в `deletePostHogPerson(userId)` із cleanup-черги при hard-delete акаунта. Без ключа cleanup-job скіпає PostHog (outcome=skipped) — рекомендовано виставити у production.
 - `POSTHOG_PROJECT_ID=12345` — числовий ID проєкту (Settings → Project → ID).
 - `POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, парний до `VITE_POSTHOG_HOST`).
+
+### Server-side (event ingestion)
+
+- `POSTHOG_PROJECT_API_KEY=phc_…` — Project ingestion key (той самий public ключ, що й `VITE_POSTHOG_KEY`). Використовується в `capturePostHogEvent()` для server-side трекінгу подій з webhook-ів / background workers (PR-09 — `subscription_started` зі Stripe). Без ключа capture-helper повертає `outcome: "skipped"` і caller (webhook handler) успішно завершує процесинг — аналітика best-effort.
 
 ---
 

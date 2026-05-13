@@ -5,6 +5,9 @@ import type {
   BillingPlan,
   BillingStatusResponse,
 } from "@sergeant/shared";
+import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { capturePostHogEvent } from "../../lib/posthogCapture.js";
+import { logger } from "../../obs/logger.js";
 
 const STRIPE_CHECKOUT_URL = "https://api.stripe.com/v1/checkout/sessions";
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
@@ -30,6 +33,118 @@ interface StripeEvent {
   id: string;
   type: string;
   data?: { object?: Record<string, unknown> };
+}
+
+interface StripeSubscriptionPricing {
+  priceCents: number | null;
+  currency: string | null;
+  cadence: string | null;
+}
+
+function extractSubscriptionPricing(
+  object: Record<string, unknown>,
+): StripeSubscriptionPricing {
+  const items = object["items"];
+  const data =
+    items && typeof items === "object" && !Array.isArray(items)
+      ? (items as Record<string, unknown>)["data"]
+      : null;
+  const first = Array.isArray(data) ? (data[0] as unknown) : null;
+  const price =
+    first && typeof first === "object" && !Array.isArray(first)
+      ? ((first as Record<string, unknown>)["price"] as
+          | Record<string, unknown>
+          | undefined)
+      : undefined;
+  const recurring =
+    price &&
+    typeof price["recurring"] === "object" &&
+    price["recurring"] !== null &&
+    !Array.isArray(price["recurring"])
+      ? (price["recurring"] as Record<string, unknown>)
+      : undefined;
+  return {
+    priceCents:
+      typeof price?.["unit_amount"] === "number"
+        ? (price["unit_amount"] as number)
+        : null,
+    currency:
+      typeof price?.["currency"] === "string"
+        ? (price["currency"] as string).toUpperCase()
+        : null,
+    cadence:
+      typeof recurring?.["interval"] === "string"
+        ? (recurring["interval"] as string)
+        : null,
+  };
+}
+
+/**
+ * Inject-point для unit-тестів. Production-код викликає `capturePostHogEvent`
+ * напряму (default), але `stripe.test.ts` підмінює fetch через цей setter,
+ * щоб НЕ stub-ити global `fetch` і не залежати від мережі.
+ */
+type CaptureFn = typeof capturePostHogEvent;
+let captureImpl: CaptureFn = capturePostHogEvent;
+export function __setPostHogCaptureForTesting(fn: CaptureFn | null): void {
+  captureImpl = fn ?? capturePostHogEvent;
+}
+
+async function emitSubscriptionStarted(
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<void> {
+  const metadata = getStripeMetadata(object);
+  const userId =
+    typeof metadata["user_id"] === "string" ? metadata["user_id"] : null;
+  if (!userId) {
+    logger.warn({
+      msg: "subscription_started_skipped_no_user",
+      stripe_event_id: event.id,
+    });
+    return;
+  }
+  const subscriptionId = getStripeObjectString(object, "id");
+  const status = getStripeObjectString(object, "status");
+  const pricing = extractSubscriptionPricing(object);
+  const plan = normalizePlan(metadata["plan"]);
+  const properties: Record<string, unknown> = {
+    plan,
+    cadence: pricing.cadence,
+    source: "stripe_webhook",
+    status,
+    price_cents: pricing.priceCents,
+    currency: pricing.currency,
+    stripe_event_id: event.id,
+    stripe_subscription_id: subscriptionId,
+  };
+  if (pricing.priceCents != null && pricing.currency) {
+    // PostHog revenue analytics — `$revenue` super-property powers
+    // MRR / LTV dashboards. Major-unit number (e.g. 7 for $7), не cents.
+    properties["$revenue"] = pricing.priceCents / 100;
+  }
+  try {
+    const result = await captureImpl({
+      event: ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
+      distinctId: userId,
+      properties,
+      uuid: event.id,
+    });
+    if (result.outcome !== "ok" && result.outcome !== "skipped") {
+      logger.warn({
+        msg: "subscription_started_capture_non_ok",
+        outcome: result.outcome,
+        stripe_event_id: event.id,
+      });
+    }
+  } catch (err) {
+    // Analytics is best-effort; never break webhook processing on it.
+    logger.warn({
+      msg: "subscription_started_capture_threw",
+      stripe_event_id: event.id,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 interface BillingRow {
@@ -333,6 +448,7 @@ export async function processStripeWebhook(
     }
 
     const object = event.data?.object;
+    let shouldEmitSubscriptionStarted = false;
     if (object && typeof object === "object" && !Array.isArray(object)) {
       if (event.type === "checkout.session.completed") {
         await upsertCheckoutCompleted(client, object);
@@ -342,10 +458,21 @@ export async function processStripeWebhook(
         event.type === "customer.subscription.deleted"
       ) {
         await upsertSubscriptionEvent(client, object);
+        if (event.type === "customer.subscription.created") {
+          shouldEmitSubscriptionStarted = true;
+        }
       }
     }
 
     await client.query("COMMIT");
+    // PostHog `subscription_started` capture — POST-COMMIT, щоб не блокувати
+    // транзакцію і щоб мережева помилка PostHog НЕ призводила до rollback-у
+    // (DB row уже записано — idempotency по `stripe_webhook_events.event_id`
+    // забезпечує одноразовість). Idempotency PostHog-у — через `uuid =
+    // event.id`. Викликається тільки коли подія НЕ duplicate (above).
+    if (shouldEmitSubscriptionStarted && object) {
+      await emitSubscriptionStarted(event, object);
+    }
     return { ok: true, duplicate: false };
   } catch (err) {
     try {
