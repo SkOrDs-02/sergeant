@@ -650,6 +650,36 @@ const envSchema = z.object({
   /** SerpAPI key (читай-only SERP-snapshots). Empty → seo_serp_lookup → `not_configured`. */
   OPENCLAW_SERP_API_KEY: stringWithDefault(""),
 
+  // ── PR-35 — read_telegram_topic_history (Pain P8) ──────────────────
+  /**
+   * Maximum messages returned by `read_telegram_topic_history` per call.
+   * Clamped 1..100 by the route-side Zod schema; this env var sets the
+   * **default** when the tool caller omits `limit`. Default 100 keeps
+   * historical reads bounded for the LLM context budget.
+   */
+  TELEGRAM_TOPIC_HISTORY_LIMIT: intFromEnv(100),
+  /**
+   * Opt-in flag for merging live `Bot API getUpdates` payloads into
+   * `read_telegram_topic_history` (PR-35). Must be left `false`
+   * (default) when the bot is in long-poll mode — a parallel
+   * `getUpdates` call would steal updates from the running consumer.
+   * Safe to enable for webhook-mode bots.
+   */
+  OPENCLAW_TELEGRAM_FETCH_UPDATES: boolFromEnv(false),
+  /**
+   * Bot API token used by `read_telegram_topic_history` for the
+   * `getChat` access probe and (when `OPENCLAW_TELEGRAM_FETCH_UPDATES`
+   * is on) for `getUpdates`. Shares the same token as `postToTopic`
+   * write-tool. Empty → skip the Bot API probe entirely.
+   */
+  SERGEANT_ALERT_BOT_TOKEN: stringWithDefault(""),
+  /** Supergroup chat id for the Sergeant Ops chat (negative integer). */
+  SERGEANT_OPS_CHAT_ID: stringWithDefault(""),
+  /** Forum-topic message_thread_id mappings (PR-35 / write-tools.ts). */
+  TELEGRAM_TOPIC_OPS: stringWithDefault(""),
+  TELEGRAM_TOPIC_ENGINEERING: stringWithDefault(""),
+  TELEGRAM_TOPIC_GROWTH: stringWithDefault(""),
+
   // ── PR-C1b — Reminder cron-poller (in-process) ─────────────────────
   /** Інтервал в мілісекундах для poll-а `openclaw_reminders` (default 60s; 0 → off). */
   OPENCLAW_REMINDER_POLL_INTERVAL_MS: intFromEnv(60_000),

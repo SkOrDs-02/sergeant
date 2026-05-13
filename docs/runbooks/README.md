@@ -17,6 +17,7 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 | [`database-connection-pooling.md`](./database-connection-pooling.md) | pgBouncer transaction-mode deploy-shape, `DATABASE_URL_POOL`, runtime app-pool. Storage roadmap PR #046.          |
 | [`encryption-key-rotation.md`](./encryption-key-rotation.md)         | Key-ring rotation для Better Auth (`BETTER_AUTH_TOKEN_ENC_KEY*`) + legacy single-key path для Mono. Hardening H4. |
 | [`postgres-read-replica.md`](./postgres-read-replica.md)             | Streaming read-replica + `DATABASE_URL_REPLICA`, прозорий fallback на primary. Storage roadmap PR #047.           |
+| [`openclaw-telegram-tools.md`](./openclaw-telegram-tools.md)         | `read_telegram_topic_history` LLM tool — env-vars, structured errors, smoke-tests (PR-35 / Pain P8).              |
 
 ## Runbook vs playbook vs incident workflow
 
