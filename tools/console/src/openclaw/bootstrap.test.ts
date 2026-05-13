@@ -6,6 +6,13 @@ import {
   validateWebhookConfig,
 } from "./bootstrap.js";
 
+const { mockAddBreadcrumb } = vi.hoisted(() => ({
+  mockAddBreadcrumb: vi.fn(),
+}));
+vi.mock("../obs/sentry.js", () => ({
+  Sentry: { addBreadcrumb: mockAddBreadcrumb },
+}));
+
 const SECRET_OK = "a".repeat(32);
 
 function makeBotMock(initialUrl = "") {
@@ -148,6 +155,43 @@ describe("registerOpenClawWebhook", () => {
       }),
     ).rejects.toThrow(/must use https/);
     expect(setWebhook).not.toHaveBeenCalled();
+  });
+
+  it("emits Sentry breadcrumb on successful recovery after W4.1 race", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockAddBreadcrumb.mockClear();
+    const { bot, getWebhookInfo } = makeBotMock();
+    let calls = 0;
+    getWebhookInfo.mockImplementation(async () => {
+      calls += 1;
+      return {
+        url: calls === 1 ? "" : "https://x.example/webhook",
+        has_custom_certificate: false,
+        pending_update_count: 0,
+      };
+    });
+    await registerOpenClawWebhook(bot as never, {
+      url: "https://x.example/webhook",
+      secretToken: SECRET_OK,
+    });
+    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+    expect(mockAddBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "openclaw.webhook",
+        level: "info",
+        data: expect.objectContaining({ attempt: 2 }),
+      }),
+    );
+  });
+
+  it("does not emit Sentry breadcrumb on first-attempt success", async () => {
+    mockAddBreadcrumb.mockClear();
+    const { bot } = makeBotMock();
+    await registerOpenClawWebhook(bot as never, {
+      url: "https://x.example/webhook",
+      secretToken: SECRET_OK,
+    });
+    expect(mockAddBreadcrumb).not.toHaveBeenCalled();
   });
 
   it("retries setWebhook when getWebhookInfo reports an empty url (W4.1 race)", async () => {

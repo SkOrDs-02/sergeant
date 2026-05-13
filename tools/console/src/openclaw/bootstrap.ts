@@ -12,6 +12,7 @@
  * if Telegram already has the same config.
  */
 import type { Bot } from "grammy";
+import { Sentry } from "../obs/sentry.js";
 
 export interface OpenClawWebhookConfig {
   /** Public HTTPS URL Telegram should POST updates to. */
@@ -113,7 +114,17 @@ export async function registerOpenClawWebhook(
     });
     const info = await bot.api.getWebhookInfo();
     lastInfoUrl = info.url ?? "";
-    if (lastInfoUrl === config.url) return;
+    if (lastInfoUrl === config.url) {
+      if (attempt > 1) {
+        Sentry.addBreadcrumb({
+          category: "openclaw.webhook",
+          message: `[openclaw] webhook recovered after race (attempt ${attempt})`,
+          level: "info",
+          data: { url: config.url, attempt },
+        });
+      }
+      return;
+    }
     if (attempt >= WEBHOOK_VERIFY_MAX_ATTEMPTS) break;
     const delayMs = Math.min(
       WEBHOOK_VERIFY_BASE_DELAY_MS * 2 ** (attempt - 1),
