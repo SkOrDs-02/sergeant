@@ -7,7 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
-import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
+import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { normalizeRecipes } from "../../lib/nutritionResponse.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
@@ -58,10 +58,9 @@ export default async function handler(
   const exclude = String(prefs.exclude || "");
   const locale = String(prefs.locale || "uk-UA");
 
-  const pantry = formatPantryForPrompt(pantryIn, {
-    itemFormat: "nameQuantityNotes",
-    limit: 60,
-    joinWith: "\n- ",
+  const pantrySec = pantryPromptSection({
+    pantry: pantryIn,
+    preset: "recipes",
   });
 
   const prompt = `Мова: ${locale}.
@@ -70,8 +69,7 @@ export default async function handler(
 Час: ${Number.isFinite(timeMinutes) && timeMinutes > 0 ? timeMinutes : 25} хв.
 Не використовувати/алергени: ${exclude || "—"}.
 
-Наявні продукти:
-- ${pantry}
+${pantrySec}
 
 Поверни 3 рецепти.
 Обмеження формату:

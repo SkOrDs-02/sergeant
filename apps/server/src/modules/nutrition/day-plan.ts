@@ -7,7 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
-import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
+import { pantryPromptSection } from "../../lib/prompt-builders.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -140,11 +140,10 @@ export default async function handler(
   const fat = tgt.fat_g != null ? Number(tgt.fat_g) : null;
   const carbs = tgt.carbs_g != null ? Number(tgt.carbs_g) : null;
 
-  const pantryStr = formatPantryForPrompt(pantryIn, {
-    itemFormat: "nameQuantity",
-    limit: 50,
-    joinWith: "\n- ",
-    fallbackWhenEmpty: "продукти не вказані",
+  const pantrySec = pantryPromptSection({
+    pantry: pantryIn,
+    preset: "dayPlan",
+    label: "Наявні продукти (намагайся використовувати їх)",
   });
 
   const targetsStr =
@@ -159,8 +158,7 @@ export default async function handler(
   const prompt = `Мова: ${loc}.
 ${targetsStr}
 
-Наявні продукти (намагайся використовувати їх):
-- ${pantryStr}
+${pantrySec}
 
 ${regenStr}`;
 
