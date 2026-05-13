@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   commitToStrategyDocMock,
@@ -58,6 +58,14 @@ async function makeApp() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // T2 audit #3 — these tests exercise write tools with `repo: 'owner/repo'`,
+  // which is a fixture rather than the real OPENCLAW_GITHUB_REPO. Widen the
+  // allowlist so the route-level guard accepts it.
+  vi.stubEnv("OPENCLAW_GITHUB_REPO_ALLOWLIST", "owner/repo");
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("/api/internal/openclaw/write/*", () => {
@@ -95,12 +103,47 @@ describe("/api/internal/openclaw/write/*", () => {
         path: "docs/secrets.md",
         content: "# nope\n",
         message: "bad",
+        repo: "owner/repo",
       });
     expect(rejected.status).toBe(400);
     expect(rejected.body).toMatchObject({
       error: "allowlist_fail",
       message: "bad path",
     });
+  });
+
+  it("rejects strategy-doc writes whose `repo` is outside the allowlist with 400", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/write/strategy-doc")
+      .send({
+        path: "docs/strategy/roadmap.md",
+        content: "# Roadmap\n",
+        message: "refresh roadmap",
+        repo: "evil-org/owned-repo",
+      });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: "allowlist_fail",
+    });
+    // Must reject BEFORE the tool layer is reached — no GitHub token mint.
+    expect(commitToStrategyDocMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects github-issue writes whose `repo` is outside the allowlist with 400", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/write/github-issue")
+      .send({
+        title: "oops",
+        body: "oops",
+        repo: "evil-org/owned-repo",
+      });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: "allowlist_fail",
+    });
+    expect(createGithubIssueMock).not.toHaveBeenCalled();
   });
 
   it("validates and forwards github-issue writes", async () => {

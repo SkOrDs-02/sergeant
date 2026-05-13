@@ -44,6 +44,7 @@ import {
   recallCofounderMemory,
   recordDecision,
   OpenClawAllowlistError,
+  assertOpenClawRepoAllowed,
   OpenClawSchemaError,
   OpenClawNotFoundError,
   // ADR-0032: ops/marketing tools ported from Sergeant Console agents.
@@ -806,6 +807,12 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       const parsed = validateBody(CommitStrategyDocBody, req, res);
       if (!parsed.ok) return;
       try {
+        // T2 audit #3 — enforce the repo allowlist at the request
+        // boundary so an LLM-supplied `repo` is rejected with 400
+        // BEFORE we mint a GitHub App installation token. The same
+        // assert runs again inside `commitToStrategyDoc` as a defense
+        // in depth, so direct internal callers can't bypass it.
+        assertOpenClawRepoAllowed(parsed.data.repo);
         const result = await commitToStrategyDoc({
           path: parsed.data.path,
           content: parsed.data.content,
@@ -814,7 +821,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         });
         res.json(result);
       } catch (err) {
-        if (err instanceof OpenClawWriteAllowlistError) {
+        if (
+          err instanceof OpenClawWriteAllowlistError ||
+          err instanceof OpenClawAllowlistError
+        ) {
           return asAllowlistFailure(res, err);
         }
         throw err;
@@ -828,13 +838,22 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const parsed = validateBody(CreateGithubIssueBody, req, res);
       if (!parsed.ok) return;
-      const result = await createGithubIssue({
-        title: parsed.data.title,
-        body: parsed.data.body,
-        labels: parsed.data.labels,
-        repo: parsed.data.repo,
-      });
-      res.json(result);
+      try {
+        // T2 audit #3 — see write/strategy-doc for rationale.
+        assertOpenClawRepoAllowed(parsed.data.repo);
+        const result = await createGithubIssue({
+          title: parsed.data.title,
+          body: parsed.data.body,
+          labels: parsed.data.labels,
+          repo: parsed.data.repo,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof OpenClawAllowlistError) {
+          return asAllowlistFailure(res, err);
+        }
+        throw err;
+      }
     }),
   );
 

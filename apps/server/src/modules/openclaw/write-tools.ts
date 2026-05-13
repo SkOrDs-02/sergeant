@@ -19,6 +19,7 @@
 import path from "node:path";
 import { env } from "../../env.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
+import { assertOpenClawRepoAllowed } from "./repoAllowlist.js";
 
 // ─────────────────────────────────────────────────────────────────────────
 // commit_to_strategy_doc — open a GitHub PR with new/updated file in docs/strategy/
@@ -97,7 +98,9 @@ export async function commitToStrategyDoc(
     };
   }
   const token = auth.token;
-  const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
+  // T2 audit #3 — assert at the tool boundary too (defense in depth);
+  // the HTTP route already runs the same check at request entry.
+  const repo = assertOpenClawRepoAllowed(input.repo);
   const baseBranch = env.OPENCLAW_GITHUB_BASE_BRANCH;
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -243,7 +246,8 @@ export async function createGithubIssue(
     };
   }
   const token = auth.token;
-  const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
+  // T2 audit #3 — see commitToStrategyDoc for rationale.
+  const repo = assertOpenClawRepoAllowed(input.repo);
   const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
     method: "POST",
     headers: {
