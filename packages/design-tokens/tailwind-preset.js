@@ -468,36 +468,50 @@ const preset = {
       // RULE: A screen should never run more than 1 AMBIENT + 1 RESPONSE simultaneously.
       // Stagger animations count as 1 RESPONSE regardless of child count.
       animation: {
-        // Entry animations
-        "fade-in": "fadeIn 0.2s ease-out",
-        "slide-up": "slideUp 0.3s ease-out",
-        "slide-down": "slideDown 0.3s ease-out",
-        "scale-in": "scaleIn 0.2s ease-out",
-        // Success/completion
-        "check-pop": "checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        "success-pulse": "successPulse 0.6s ease-out",
-        // Interaction feedback
-        "press-scale": "pressScale 0.15s ease-out",
-        "hover-lift": "hoverLift 0.2s ease-out forwards",
-        // Loading states
-        shimmer: "shimmer 1.5s infinite",
-        "pulse-soft": "pulseSoft 2s infinite",
-        // Progress ring
-        "progress-fill": "progressFill 1s ease-out forwards",
-        // Bounce for notifications
-        "bounce-in": "bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        // Stagger enter — children use animation-delay: ${index * 50}ms
+        // Entry animations (RESPONSE tier)
+        "fade-in":
+          "fadeIn var(--motion-duration-fast) var(--motion-ease-decelerate)",
+        "slide-up":
+          "slideUp var(--motion-duration-slow) var(--motion-ease-decelerate)",
+        "slide-down":
+          "slideDown var(--motion-duration-slow) var(--motion-ease-decelerate)",
+        "scale-in":
+          "scaleIn var(--motion-duration-base) var(--motion-ease-decelerate)",
+        // Success / completion (CELEBRATE tier)
+        "check-pop":
+          "checkPop var(--motion-duration-slower) var(--motion-ease-overshoot)",
+        "success-pulse":
+          "successPulse var(--motion-duration-slowest) var(--motion-ease-decelerate)",
+        // Interaction feedback (RESPONSE tier)
+        "press-scale":
+          "pressScale var(--motion-duration-fast) var(--motion-ease-decelerate)",
+        "hover-lift":
+          "hoverLift var(--motion-duration-fast) var(--motion-ease-decelerate) forwards",
+        // Loading states (AMBIENT tier — infinite loops)
+        shimmer: "shimmer var(--motion-duration-loop) infinite",
+        "pulse-soft": "pulseSoft var(--motion-duration-loop-glow) infinite",
+        // Progress ring (RESPONSE tier)
+        "progress-fill":
+          "progressFill var(--motion-duration-loop-spin) var(--motion-ease-decelerate) forwards",
+        // Bounce for notifications (CELEBRATE tier)
+        "bounce-in":
+          "bounceIn var(--motion-duration-slower) var(--motion-ease-overshoot)",
+        // Stagger enter — children use animation-delay: index × 30 ms,
+        // capped at 150 ms total (Hard Rule #17).
         "stagger-in":
-          "fadeSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both",
-        // Celebration modal animations
-        "fade-out": "fadeOut 0.2s ease-out forwards",
-        "scale-out": "scaleOut 0.2s ease-out forwards",
-        "draw-check": "drawCheck 0.4s ease-out 0.2s forwards",
-        // iOS-style "edit mode" wiggle for sortable bento cards. Looped,
-        // very subtle (±0.6°) so it signals "I am draggable" without
-        // becoming an attention sink. `motion-safe:` variants in
-        // consumers handle the reduced-motion case.
-        wiggle: "wiggle 0.45s ease-in-out infinite",
+          "fadeSlideUp var(--motion-duration-slow) var(--motion-ease-standard) both",
+        // Modal / sheet exits (RESPONSE tier)
+        "fade-out":
+          "fadeOut var(--motion-duration-fast) var(--motion-ease-accelerate) forwards",
+        "scale-out":
+          "scaleOut var(--motion-duration-fast) var(--motion-ease-accelerate) forwards",
+        "draw-check":
+          "drawCheck var(--motion-duration-slower) var(--motion-ease-decelerate) 0.2s forwards",
+        // iOS-style "edit mode" wiggle for sortable bento cards. AMBIENT
+        // tier — gated by `motion-safe:` in consumers so the
+        // reduced-motion strategy pauses it.
+        wiggle:
+          "wiggle var(--motion-duration-slower) var(--motion-ease-standard) infinite",
       },
       keyframes: {
         fadeIn: {
@@ -579,18 +593,34 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // TRANSITIONS — Consistent timing
+      // TRANSITIONS — Consistent timing.
+      // Hard Rule #17 motion tokens — single source of truth lives in
+      // `apps/web/src/styles/theme.css` (CSS custom properties); these
+      // mappings forward them through Tailwind so authors write
+      // `duration-base ease-standard` instead of raw `duration-[220ms]`
+      // or inline `cubic-bezier(...)`. Raw timing values in `className`
+      // are forbidden (e.g. `duration-[230ms]` is a Hard Rule #17 violation).
       // ═══════════════════════════════════════════════════════════════════
       transitionDuration: {
-        DEFAULT: "200ms",
-        fast: "150ms",
-        slow: "300ms",
-        slower: "400ms",
+        DEFAULT: "var(--motion-duration-base)",
+        instant: "var(--motion-duration-instant)", // 75ms — micro-feedback
+        fast: "var(--motion-duration-fast)", // 150ms — exit / dismissal
+        base: "var(--motion-duration-base)", // 220ms — default enter
+        slow: "var(--motion-duration-slow)", // 320ms — sheet / list reveal
+        slower: "var(--motion-duration-slower)", // 480ms — CELEBRATE pop
+        slowest: "var(--motion-duration-slowest)", // 680ms — CELEBRATE burst
       },
       transitionTimingFunction: {
-        bounce: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-        smooth: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-        spring: "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+        standard: "var(--motion-ease-standard)",
+        emphasized: "var(--motion-ease-emphasized)",
+        accelerate: "var(--motion-ease-accelerate)",
+        decelerate: "var(--motion-ease-decelerate)",
+        overshoot: "var(--motion-ease-overshoot)",
+        // Legacy aliases — alias to canonical tokens. Do not introduce
+        // new usages; prefer the names above.
+        bounce: "var(--motion-ease-overshoot)",
+        smooth: "var(--motion-ease-standard)",
+        spring: "var(--motion-ease-overshoot)",
       },
 
       // ═══════════════════════════════════════════════════════════════════

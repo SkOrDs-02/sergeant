@@ -1,9 +1,28 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   ANIMATIONS — Page transitions, micro-interactions
-   Extracted from index.css for maintainability.
+   ANIMATIONS — Page transitions, micro-interactions, choreography helpers.
+
+   Hard Rule #17 (Animation budget) — 3 tiers, max 1 AMBIENT + 1 RESPONSE
+   simultaneously on screen. Stagger groups count as 1 RESPONSE regardless
+   of child count. Stagger delay ≤ 30 ms × N, capped at 150 ms total.
+
+     AMBIENT   — looped, behind `motion-safe:`. Examples: shimmer,
+                 pulse-soft, wiggle, streak-glow, float-slow. Paused
+                 when `prefers-reduced-motion: reduce`.
+     RESPONSE  — one-shot, 75–320 ms, fires once per user action.
+                 Examples: fade-in, slide-up, scale-in, stagger-in.
+                 Collapsed to opacity-only fade ≤ 100 ms under reduced
+                 motion.
+     CELEBRATE — milestone, rare (streak 7/30/100/365, first-of-its-kind,
+                 weekly goal hit). Examples: confetti, check-pop,
+                 streak-milestone-burst. Also collapsed to opacity-only
+                 fade under reduced motion.
+
+   All timing values come from `--motion-duration-*` / `--motion-ease-*`
+   in `theme.css`. Raw values in `className` (e.g. `duration-[230ms]`)
+   are forbidden — see `docs/governance/rules/17-animation-budget.md`.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Page & module entry ─────────────────────────────────────────────── */
+/* ── Page & module entry (RESPONSE) ──────────────────────────────────── */
 
 @keyframes page-enter {
   from {
@@ -16,7 +35,8 @@
   }
 }
 .page-enter {
-  animation: page-enter 0.22s ease-out both;
+  animation: page-enter var(--motion-duration-base)
+    var(--motion-ease-decelerate) both;
 }
 
 @keyframes module-slide-in {
@@ -29,7 +49,6 @@
     transform: translateX(0);
   }
 }
-
 @keyframes hub-slide-in {
   from {
     opacity: 0;
@@ -40,7 +59,6 @@
     transform: translateX(0);
   }
 }
-
 @keyframes onboarding-enter {
   from {
     opacity: 0;
@@ -53,13 +71,19 @@
 }
 
 .module-enter {
-  animation: module-slide-in 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation: module-slide-in var(--motion-duration-base)
+    var(--motion-ease-standard) both;
 }
 .hub-enter {
-  animation: hub-slide-in 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation: hub-slide-in var(--motion-duration-base)
+    var(--motion-ease-standard) both;
+}
+.animate-onboarding-enter {
+  animation: onboarding-enter var(--motion-duration-slow)
+    var(--motion-ease-overshoot) both;
 }
 
-/* ── Page Transition Animations (for PageTransition component) ───────── */
+/* ── Page transition slide directions (RESPONSE) ─────────────────────── */
 
 @keyframes slide-in-right {
   from {
@@ -71,7 +95,6 @@
     transform: translateX(0);
   }
 }
-
 @keyframes slide-out-left {
   from {
     opacity: 1;
@@ -82,7 +105,6 @@
     transform: translateX(-24px);
   }
 }
-
 @keyframes slide-in-left {
   from {
     opacity: 0;
@@ -93,7 +115,6 @@
     transform: translateX(0);
   }
 }
-
 @keyframes slide-out-right {
   from {
     opacity: 1;
@@ -104,7 +125,6 @@
     transform: translateX(24px);
   }
 }
-
 @keyframes slide-in-up {
   from {
     opacity: 0;
@@ -115,7 +135,6 @@
     transform: translateY(0);
   }
 }
-
 @keyframes slide-out-down {
   from {
     opacity: 1;
@@ -126,7 +145,6 @@
     transform: translateY(16px);
   }
 }
-
 @keyframes slide-in-down {
   from {
     opacity: 0;
@@ -137,7 +155,6 @@
     transform: translateY(0);
   }
 }
-
 @keyframes slide-out-up {
   from {
     opacity: 1;
@@ -148,7 +165,6 @@
     transform: translateY(-16px);
   }
 }
-
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -157,7 +173,6 @@
     opacity: 1;
   }
 }
-
 @keyframes fade-out {
   from {
     opacity: 1;
@@ -166,42 +181,72 @@
     opacity: 0;
   }
 }
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
+.animate-slide-in-right,
+.animate-slide-in-left,
+.animate-slide-in-up,
+.animate-slide-in-down {
+  animation-duration: var(--motion-duration-base);
+  animation-timing-function: var(--motion-ease-decelerate);
+  animation-fill-mode: both;
+}
+.animate-slide-out-left,
+.animate-slide-out-right,
+.animate-slide-out-down,
+.animate-slide-out-up {
+  animation-duration: var(--motion-duration-base);
+  animation-timing-function: var(--motion-ease-accelerate);
+  animation-fill-mode: both;
+}
 .animate-slide-in-right {
-  animation: slide-in-right 0.24s ease-out both;
+  animation-name: slide-in-right;
 }
 .animate-slide-out-left {
-  animation: slide-out-left 0.24s ease-out both;
+  animation-name: slide-out-left;
 }
 .animate-slide-in-left {
-  animation: slide-in-left 0.24s ease-out both;
+  animation-name: slide-in-left;
 }
 .animate-slide-out-right {
-  animation: slide-out-right 0.24s ease-out both;
+  animation-name: slide-out-right;
 }
 .animate-slide-in-up {
-  animation: slide-in-up 0.24s ease-out both;
+  animation-name: slide-in-up;
 }
 .animate-slide-out-down {
-  animation: slide-out-down 0.24s ease-out both;
+  animation-name: slide-out-down;
 }
 .animate-slide-in-down {
-  animation: slide-in-down 0.24s ease-out both;
+  animation-name: slide-in-down;
 }
 .animate-slide-out-up {
-  animation: slide-out-up 0.24s ease-out both;
-}
-.animate-fade-in {
-  animation: fade-in 0.2s ease-out both;
-}
-.animate-fade-out {
-  animation: fade-out 0.2s ease-out both;
-}
-.animate-onboarding-enter {
-  animation: onboarding-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-name: slide-out-up;
 }
 
-/* ── Onboarding wizard step transitions ──────────────────────────────── */
+.animate-fade-in {
+  animation: fade-in var(--motion-duration-fast) var(--motion-ease-decelerate)
+    both;
+}
+.animate-fade-out {
+  animation: fade-out var(--motion-duration-fast) var(--motion-ease-accelerate)
+    forwards;
+}
+.animate-slide-up {
+  animation: slide-up var(--motion-duration-base) var(--motion-ease-decelerate)
+    forwards;
+}
+
+/* ── Wizard step transitions (RESPONSE) ──────────────────────────────── */
 
 @keyframes step-slide-left {
   from {
@@ -224,13 +269,15 @@
   }
 }
 .animate-step-forward {
-  animation: step-slide-left 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation: step-slide-left var(--motion-duration-slow)
+    var(--motion-ease-standard) both;
 }
 .animate-step-backward {
-  animation: step-slide-right 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation: step-slide-right var(--motion-duration-slow)
+    var(--motion-ease-standard) both;
 }
 
-/* ── Module card stagger ─────────────────────────────────────────────── */
+/* ── Module card entry (RESPONSE w/ overshoot) ───────────────────────── */
 
 @keyframes module-card-enter {
   from {
@@ -243,10 +290,24 @@
   }
 }
 .animate-module-card {
-  animation: module-card-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: module-card-enter var(--motion-duration-slow)
+    var(--motion-ease-overshoot) both;
 }
 
-/* ── Staggered entry for lists ───────────────────────────────────────── */
+/* ── Stagger choreography (RESPONSE) ─────────────────────────────────────
+   Hard Rule #17: ≤ 30 ms between children, total delay cap ≤ 150 ms. A
+   stagger group always counts as 1 RESPONSE regardless of child count.
+
+   `.stagger-children` — canonical, token-driven entry stagger. Apply to
+   the parent of a short list (cards, chips, hub modules). Children inherit
+   the same keyframe + duration; only `animation-delay` varies.
+
+   `.stagger-enter` — legacy alias kept for back-compat with existing
+   usages; pinned to the same 30 ms / 150 ms schedule.
+
+   `.skeleton-stagger` — skeleton sequential reveal (faster cadence so the
+   skeleton settles in before content swaps in).
+   ──────────────────────────────────────────────────────────────────────── */
 
 @keyframes stagger-in {
   from {
@@ -259,29 +320,103 @@
   }
 }
 
+.stagger-children > *,
 .stagger-enter > * {
-  animation: stagger-in 0.3s ease-out both;
+  animation: stagger-in var(--motion-duration-slow)
+    var(--motion-ease-decelerate) both;
 }
+.stagger-children > *:nth-child(1),
 .stagger-enter > *:nth-child(1) {
   animation-delay: 0ms;
 }
+.stagger-children > *:nth-child(2),
 .stagger-enter > *:nth-child(2) {
-  animation-delay: 50ms;
+  animation-delay: 30ms;
 }
+.stagger-children > *:nth-child(3),
 .stagger-enter > *:nth-child(3) {
-  animation-delay: 100ms;
+  animation-delay: 60ms;
 }
+.stagger-children > *:nth-child(4),
 .stagger-enter > *:nth-child(4) {
+  animation-delay: 90ms;
+}
+.stagger-children > *:nth-child(5),
+.stagger-enter > *:nth-child(5) {
+  animation-delay: 120ms;
+}
+.stagger-children > *:nth-child(n + 6),
+.stagger-enter > *:nth-child(n + 6) {
   animation-delay: 150ms;
 }
-.stagger-enter > *:nth-child(5) {
-  animation-delay: 200ms;
+
+/* Skeleton stagger — same 30 ms cadence, faster duration so the
+   placeholder settles before content swaps in. */
+@keyframes skeleton-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.stagger-enter > *:nth-child(6) {
-  animation-delay: 250ms;
+.skeleton-stagger > * {
+  opacity: 0;
+  animation: skeleton-fade-in var(--motion-duration-slow)
+    var(--motion-ease-decelerate) forwards;
+}
+.skeleton-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.skeleton-stagger > *:nth-child(2) {
+  animation-delay: 30ms;
+}
+.skeleton-stagger > *:nth-child(3) {
+  animation-delay: 60ms;
+}
+.skeleton-stagger > *:nth-child(4) {
+  animation-delay: 90ms;
+}
+.skeleton-stagger > *:nth-child(5) {
+  animation-delay: 120ms;
+}
+.skeleton-stagger > *:nth-child(n + 6) {
+  animation-delay: 150ms;
 }
 
-/* ── Success checkmark (Duolingo-style) ──────────────────────────────── */
+/* ── Sheet / modal / menu choreography helpers ───────────────────────────
+   Token-driven enter/exit pairs. Use these on overlay primitives so every
+   sheet/menu/modal opens & closes with the same cadence.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.motion-sheet-enter {
+  animation: slide-in-up var(--motion-duration-slow)
+    var(--motion-ease-decelerate) both;
+}
+.motion-sheet-exit {
+  animation: slide-out-down var(--motion-duration-base)
+    var(--motion-ease-accelerate) forwards;
+}
+.motion-modal-enter {
+  animation: scale-in var(--motion-duration-base) var(--motion-ease-decelerate)
+    both;
+}
+.motion-modal-exit {
+  animation: scale-out var(--motion-duration-fast) var(--motion-ease-accelerate)
+    forwards;
+}
+.motion-menu-enter {
+  animation: fade-in var(--motion-duration-fast) var(--motion-ease-decelerate)
+    both;
+}
+.motion-menu-exit {
+  animation: fade-out var(--motion-duration-instant)
+    var(--motion-ease-accelerate) forwards;
+}
+
+/* ── Success checkmark / Confetti / Streak (CELEBRATE) ───────────────── */
 
 @keyframes check-draw {
   0% {
@@ -291,13 +426,11 @@
     stroke-dashoffset: 0;
   }
 }
-
 .animate-check-draw {
   stroke-dasharray: 24;
-  animation: check-draw 0.3s ease-out 0.1s forwards;
+  animation: check-draw var(--motion-duration-slow)
+    var(--motion-ease-decelerate) 0.1s forwards;
 }
-
-/* ── Celebration confetti burst ───────────────────────────────────────── */
 
 @keyframes confetti-burst {
   0% {
@@ -312,12 +445,10 @@
     opacity: 0;
   }
 }
-
 .animate-confetti {
-  animation: confetti-burst 0.6s ease-out forwards;
+  animation: confetti-burst var(--motion-duration-slowest)
+    var(--motion-ease-decelerate) forwards;
 }
-
-/* ── Celebration effects — pop, success ring, streak glow ────────────── */
 
 @keyframes celebration-pop {
   0% {
@@ -335,9 +466,9 @@
     opacity: 1;
   }
 }
-
 .animate-celebration-pop {
-  animation: celebration-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: celebration-pop var(--motion-duration-slower)
+    var(--motion-ease-overshoot) forwards;
 }
 
 @keyframes success-ring {
@@ -348,9 +479,9 @@
     box-shadow: 0 0 0 16px rgba(16, 185, 129, 0);
   }
 }
-
 .animate-success-ring {
-  animation: success-ring 0.6s ease-out forwards;
+  animation: success-ring var(--motion-duration-slowest)
+    var(--motion-ease-decelerate) forwards;
 }
 
 @keyframes streak-glow {
@@ -362,192 +493,10 @@
     filter: drop-shadow(0 0 16px rgba(249, 112, 102, 0.6));
   }
 }
-
 .animate-streak-glow {
-  animation: streak-glow 2s ease-in-out infinite;
+  animation: streak-glow var(--motion-duration-loop-glow)
+    var(--motion-ease-standard) infinite;
 }
-
-/* ── Skeleton shimmer ────────────────────────────────────────────────── */
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-shimmer {
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* ── Skeleton stagger (for sequential skeleton appearance) ───────────── */
-
-@keyframes skeleton-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.skeleton-stagger > * {
-  opacity: 0;
-  animation: skeleton-fade-in 0.3s ease-out forwards;
-}
-.skeleton-stagger > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-.skeleton-stagger > *:nth-child(2) {
-  animation-delay: 30ms;
-}
-.skeleton-stagger > *:nth-child(3) {
-  animation-delay: 60ms;
-}
-.skeleton-stagger > *:nth-child(4) {
-  animation-delay: 90ms;
-}
-.skeleton-stagger > *:nth-child(5) {
-  animation-delay: 120ms;
-}
-.skeleton-stagger > *:nth-child(6) {
-  animation-delay: 150ms;
-}
-.skeleton-stagger > *:nth-child(7) {
-  animation-delay: 180ms;
-}
-.skeleton-stagger > *:nth-child(8) {
-  animation-delay: 210ms;
-}
-
-/* ── Content reveal (skeleton to content transition) ─────────────────── */
-
-@keyframes content-reveal {
-  from {
-    opacity: 0;
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-
-.animate-content-reveal {
-  animation: content-reveal 0.25s ease-out forwards;
-}
-
-/* ── Page exit animations ────────────────────────────────────────────── */
-
-@keyframes module-slide-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-32px);
-  }
-}
-
-@keyframes hub-slide-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(32px);
-  }
-}
-
-@keyframes page-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-}
-
-.module-exit {
-  animation: module-slide-out 0.2s ease-in forwards;
-}
-
-.hub-exit {
-  animation: hub-slide-out 0.2s ease-in forwards;
-}
-
-.page-exit {
-  animation: page-exit 0.15s ease-in forwards;
-}
-
-/* ── Toast animations ────────────────────────────────────────────────── */
-
-@keyframes toast-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toast-exit {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.95);
-  }
-}
-
-.animate-toast-enter {
-  animation: toast-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.animate-toast-exit {
-  animation: toast-exit 0.2s ease-in forwards;
-}
-
-/*
- * Linear countdown bar for toasts that carry a recoverable action (the
- * undo-pattern). The `animation-duration` is supplied inline by
- * `<ToastRow>` so a single keyframe set works for any toast lifetime
- * (3.5 s for regular auto-dismiss, 5 s for undo). We scale on the X-axis
- * only, with `transform-origin: left`, so the bar shrinks toward the
- * trailing edge — matching the cognitive "time draining" affordance.
- *
- * CSS-driven instead of JS-RAF: animation-play-state lets us pause on
- * hover/focus/touch-drag without touching the main thread (Rule #17 —
- * RESPONSE tier; one-shot, linear easing for accurate time mapping).
- */
-@keyframes toast-countdown {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
-.animate-toast-countdown {
-  animation: toast-countdown linear forwards;
-  transform-origin: left center;
-  will-change: transform;
-}
-
-/* ── Streak milestone celebration ────────────────────────────────────── */
 
 @keyframes streak-milestone-burst {
   0% {
@@ -570,13 +519,142 @@
     filter: drop-shadow(0 0 8px rgba(249, 112, 102, 0.2));
   }
 }
-
 .animate-streak-milestone {
-  animation: streak-milestone-burst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)
+  animation: streak-milestone-burst var(--motion-duration-slowest)
+    var(--motion-ease-overshoot) forwards;
+}
+
+/* ── Skeleton shimmer (AMBIENT) ──────────────────────────────────────── */
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.animate-shimmer {
+  animation: shimmer var(--motion-duration-loop) var(--motion-ease-standard)
+    infinite;
+}
+
+/* ── Content reveal (skeleton → content) (RESPONSE) ──────────────────── */
+
+@keyframes content-reveal {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.animate-content-reveal {
+  animation: content-reveal var(--motion-duration-slow)
+    var(--motion-ease-decelerate) forwards;
+}
+
+/* ── Page exit animations (RESPONSE) ─────────────────────────────────── */
+
+@keyframes module-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+@keyframes hub-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes page-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.module-exit {
+  animation: module-slide-out var(--motion-duration-fast)
+    var(--motion-ease-accelerate) forwards;
+}
+.hub-exit {
+  animation: hub-slide-out var(--motion-duration-fast)
+    var(--motion-ease-accelerate) forwards;
+}
+.page-exit {
+  animation: page-exit var(--motion-duration-fast) var(--motion-ease-accelerate)
     forwards;
 }
 
-/* ── Pull to refresh ─────────────────────────────────────────────────── */
+/* ── Toast animations (RESPONSE) ─────────────────────────────────────── */
+
+@keyframes toast-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes toast-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+.animate-toast-enter {
+  animation: toast-enter var(--motion-duration-slow)
+    var(--motion-ease-overshoot) forwards;
+}
+.animate-toast-exit {
+  animation: toast-exit var(--motion-duration-fast)
+    var(--motion-ease-accelerate) forwards;
+}
+
+/*
+ * Linear countdown bar for toasts that carry a recoverable action (undo
+ * pattern). `animation-duration` is supplied inline by `<ToastRow>` so a
+ * single keyframe set works for any toast lifetime (3.5 s auto-dismiss,
+ * 5 s undo). RESPONSE tier — one-shot, linear easing for accurate time
+ * mapping; `animation-play-state` lets us pause on hover/focus without
+ * touching the main thread.
+ */
+@keyframes toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.animate-toast-countdown {
+  animation: toast-countdown linear forwards;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* ── Pull-to-refresh spinner (AMBIENT) ───────────────────────────────── */
 
 @keyframes pull-rotate {
   from {
@@ -586,12 +664,11 @@
     transform: rotate(360deg);
   }
 }
-
 .animate-pull-rotate {
-  animation: pull-rotate 0.8s linear infinite;
+  animation: pull-rotate var(--motion-duration-loop-spin) linear infinite;
 }
 
-/* ── Number counter ticks ────────────────────────────────────────────── */
+/* ── Number counter (CELEBRATE / RESPONSE) ───────────────────────────── */
 
 @keyframes number-tick-up {
   0% {
@@ -603,7 +680,6 @@
     opacity: 1;
   }
 }
-
 @keyframes number-tick-down {
   0% {
     transform: translateY(-100%);
@@ -614,44 +690,30 @@
     opacity: 1;
   }
 }
-
 .animate-tick-up {
-  animation: number-tick-up 0.3s ease-out forwards;
+  animation: number-tick-up var(--motion-duration-slow)
+    var(--motion-ease-decelerate) forwards;
 }
-
 .animate-tick-down {
-  animation: number-tick-down 0.3s ease-out forwards;
+  animation: number-tick-down var(--motion-duration-slow)
+    var(--motion-ease-decelerate) forwards;
 }
 
-/* ── Fade in/out ─────────────────────────────────────────────────────── */
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
+@keyframes number-pulse {
+  0%,
+  100% {
+    transform: scale(1);
   }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
+  50% {
+    transform: scale(1.05);
   }
 }
-
-.animate-fade-in {
-  animation: fade-in 0.2s ease-out forwards;
+.animate-number-update {
+  animation: number-pulse var(--motion-duration-slow)
+    var(--motion-ease-decelerate);
 }
 
-.animate-fade-out {
-  animation: fade-out 0.15s ease-in forwards;
-}
-
-/* ── Scale in/out for modals ─────────────────────────────────────────── */
+/* ── Scale (RESPONSE for modals) ─────────────────────────────────────── */
 
 @keyframes scale-in {
   from {
@@ -663,7 +725,6 @@
     transform: scale(1);
   }
 }
-
 @keyframes scale-out {
   from {
     opacity: 1;
@@ -674,16 +735,16 @@
     transform: scale(0.9);
   }
 }
-
 .animate-scale-in {
-  animation: scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: scale-in var(--motion-duration-base) var(--motion-ease-overshoot)
+    forwards;
 }
-
 .animate-scale-out {
-  animation: scale-out 0.15s ease-in forwards;
+  animation: scale-out var(--motion-duration-fast) var(--motion-ease-accelerate)
+    forwards;
 }
 
-/* ── Check mark pop ──────────────────────────────────────────────────── */
+/* ── Check mark / Check bounce (CELEBRATE) ───────────────────────────── */
 
 @keyframes check-pop {
   0% {
@@ -696,12 +757,34 @@
     transform: scale(1);
   }
 }
-
 .animate-check-pop {
-  animation: check-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: check-pop var(--motion-duration-slower)
+    var(--motion-ease-overshoot) forwards;
 }
 
-/* ── Confetti fall (for extended confetti particles) ─────────────────── */
+@keyframes check-bounce {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.25);
+  }
+  50% {
+    transform: scale(0.92);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-check-bounce {
+  animation: check-bounce var(--motion-duration-slower)
+    var(--motion-ease-overshoot) forwards;
+}
+
+/* ── Confetti fall / particle burst (CELEBRATE) ──────────────────────── */
 
 @keyframes confetti-fall {
   0% {
@@ -713,12 +796,34 @@
     opacity: 0;
   }
 }
-
 .animate-confetti-fall {
-  animation: confetti-fall 2.5s ease-in forwards;
+  animation: confetti-fall var(--motion-duration-confetti-fall)
+    var(--motion-ease-accelerate) forwards;
 }
 
-/* ── Form error shake ────────────────────────────────────────────────── */
+@keyframes confetti-particle-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+        calc(-50% + var(--tx, 0px)),
+        calc(-50% + var(--ty, 0px))
+      )
+      scale(1);
+    opacity: 0;
+  }
+}
+.animate-confetti-burst {
+  animation: confetti-particle-burst var(--motion-duration-slowest)
+    var(--motion-ease-decelerate) forwards;
+}
+
+/* ── Form error shake (RESPONSE) ─────────────────────────────────────── */
 
 @keyframes shake {
   0%,
@@ -739,12 +844,12 @@
     transform: translateX(4px);
   }
 }
-
 .animate-shake {
-  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  animation: shake var(--motion-duration-slower) var(--motion-ease-standard)
+    both;
 }
 
-/* ── Chart entrance animations ───────────────────────────────────────── */
+/* ── Chart entrance (RESPONSE) ───────────────────────────────────────── */
 
 @keyframes bar-grow {
   from {
@@ -756,9 +861,9 @@
     opacity: 1;
   }
 }
-
 .animate-bar-grow {
-  animation: bar-grow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: bar-grow var(--motion-duration-slower) var(--motion-ease-overshoot)
+    both;
   transform-origin: bottom;
 }
 
@@ -772,76 +877,12 @@
     transform: translateY(0);
   }
 }
-
 .animate-chart-enter {
-  animation: chart-fade-in 0.3s ease-out both;
+  animation: chart-fade-in var(--motion-duration-slow)
+    var(--motion-ease-decelerate) both;
 }
 
-/* ── Number counter pulse ────────────────────────────────────────────── */
-
-@keyframes number-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-.animate-number-update {
-  animation: number-pulse 0.3s ease-out;
-}
-
-/* ── AnimatedCheckbox bounce ─────────────────────────────────────────── */
-
-@keyframes check-bounce {
-  0% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.25);
-  }
-  50% {
-    transform: scale(0.92);
-  }
-  70% {
-    transform: scale(1.08);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.animate-check-bounce {
-  animation: check-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* ── Checkbox confetti burst (uses CSS custom properties) ────────────── */
-
-@keyframes confetti-particle-burst {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
-  }
-  60% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(
-        calc(-50% + var(--tx, 0px)),
-        calc(-50% + var(--ty, 0px))
-      )
-      scale(1);
-    opacity: 0;
-  }
-}
-
-.animate-confetti-burst {
-  animation: confetti-particle-burst 0.6s ease-out forwards;
-}
-
-/* ── FloatingActionButton item entry ─────────────────────────────────── */
+/* ── FAB / floating items / cards (RESPONSE) ─────────────────────────── */
 
 @keyframes fab-item-enter {
   0% {
@@ -853,29 +894,10 @@
     transform: translateY(0) scale(1);
   }
 }
-
 .animate-fab-item {
-  animation: fab-item-enter 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fab-item-enter var(--motion-duration-base)
+    var(--motion-ease-overshoot) both;
 }
-
-/* ── Slide up (for spotlights, tooltips) ─────────────────────────────── */
-
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.25s ease-out forwards;
-}
-
-/* ── Welcome screen floating shapes ──────────────────────────────────── */
 
 @keyframes float-slow {
   0%,
@@ -886,12 +908,10 @@
     transform: translateY(-20px) scale(1.05);
   }
 }
-
 .animate-float-slow {
-  animation: float-slow 8s ease-in-out infinite;
+  animation: float-slow var(--motion-duration-loop-float)
+    var(--motion-ease-standard) infinite;
 }
-
-/* ── Slow fade in for backdrop elements ──────────────────────────────── */
 
 @keyframes fade-in-slow {
   from {
@@ -901,12 +921,10 @@
     opacity: 1;
   }
 }
-
 .animate-fade-in-slow {
-  animation: fade-in-slow 0.8s ease-out forwards;
+  animation: fade-in-slow var(--motion-duration-slowest)
+    var(--motion-ease-decelerate) forwards;
 }
-
-/* ── Card entry with scale ───────────────────────────────────────────── */
 
 @keyframes card-enter {
   from {
@@ -918,7 +936,124 @@
     transform: translateY(0) scale(1);
   }
 }
-
 .animate-card-enter {
-  animation: card-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: card-enter var(--motion-duration-slower)
+    var(--motion-ease-overshoot) both;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REDUCED MOTION strategy (WCAG 2.3.3 + Hard Rule #17).
+
+   Two activation paths share a single ruleset:
+     1. `@media (prefers-reduced-motion: reduce)` — OS-level preference.
+     2. `.simulate-reduced-motion` ancestor class — DesignShowcase toggle
+        + tests, so authors can visually validate the fallback without
+        touching their OS settings.
+
+   Strategy by tier:
+     - AMBIENT  (looped): `animation-play-state: paused` — the element
+                          stays composed, but motion stops.
+     - RESPONSE (one-shot): collapses to opacity-only fade ≤ 100 ms.
+     - CELEBRATE: same as RESPONSE — confetti, pops, bursts all collapse
+                  to a quick opacity fade so milestone state still
+                  registers without vestibular load.
+
+   Anything inheriting a CSS animation gets the same treatment via the
+   universal selector — there is no opt-out at the call site.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes rm-opacity-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Default — collapse every animated class to an opacity-only fade. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 100ms !important;
+    animation-timing-function: var(--motion-ease-decelerate) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 100ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* RESPONSE + CELEBRATE — swap the keyframe set to a pure opacity fade. */
+  [class*="animate-"],
+  [class*="motion-sheet-"],
+  [class*="motion-modal-"],
+  [class*="motion-menu-"],
+  .page-enter,
+  .page-exit,
+  .module-enter,
+  .module-exit,
+  .hub-enter,
+  .hub-exit,
+  .stagger-children > *,
+  .stagger-enter > *,
+  .skeleton-stagger > * {
+    animation-name: rm-opacity-fade !important;
+    animation-delay: 0ms !important;
+  }
+
+  /* AMBIENT — pause looped animations in place. */
+  .animate-shimmer,
+  .animate-streak-glow,
+  .animate-pull-rotate,
+  .animate-float-slow,
+  .animate-pulse,
+  .animate-pulse-soft,
+  .animate-spin,
+  .animate-bounce,
+  .animate-wiggle,
+  .animate-fade-in-slow {
+    animation-play-state: paused !important;
+  }
+}
+
+/* `.simulate-reduced-motion` — apply to any ancestor (typically a wrapper
+   in the design showcase) to exercise the fallback without changing OS
+   settings. Mirrors the `@media` block above. */
+
+.simulate-reduced-motion *,
+.simulate-reduced-motion *::before,
+.simulate-reduced-motion *::after {
+  animation-duration: 100ms !important;
+  animation-timing-function: var(--motion-ease-decelerate) !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 100ms !important;
+  scroll-behavior: auto !important;
+}
+.simulate-reduced-motion [class*="animate-"],
+.simulate-reduced-motion [class*="motion-sheet-"],
+.simulate-reduced-motion [class*="motion-modal-"],
+.simulate-reduced-motion [class*="motion-menu-"],
+.simulate-reduced-motion .page-enter,
+.simulate-reduced-motion .page-exit,
+.simulate-reduced-motion .module-enter,
+.simulate-reduced-motion .module-exit,
+.simulate-reduced-motion .hub-enter,
+.simulate-reduced-motion .hub-exit,
+.simulate-reduced-motion .stagger-children > *,
+.simulate-reduced-motion .stagger-enter > *,
+.simulate-reduced-motion .skeleton-stagger > * {
+  animation-name: rm-opacity-fade !important;
+  animation-delay: 0ms !important;
+}
+.simulate-reduced-motion .animate-shimmer,
+.simulate-reduced-motion .animate-streak-glow,
+.simulate-reduced-motion .animate-pull-rotate,
+.simulate-reduced-motion .animate-float-slow,
+.simulate-reduced-motion .animate-pulse,
+.simulate-reduced-motion .animate-pulse-soft,
+.simulate-reduced-motion .animate-spin,
+.simulate-reduced-motion .animate-bounce,
+.simulate-reduced-motion .animate-wiggle,
+.simulate-reduced-motion .animate-fade-in-slow {
+  animation-play-state: paused !important;
 }
