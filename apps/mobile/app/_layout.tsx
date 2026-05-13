@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 
 import { apiClient } from "@/api/apiClient";
+import { installE2EAuthMock } from "@/auth/e2eAuthMock";
 import { ErrorBoundary as RootErrorBoundary } from "@/core/ErrorBoundary";
 import { SegmentErrorBoundary } from "@/core/SegmentErrorBoundary";
 import { SyncStatusOverlay } from "@/core/SyncStatusOverlay";
@@ -50,6 +51,15 @@ import { ToastContainer, ToastProvider } from "@/components/ui/Toast";
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* already prevented or platform doesn't support it — non-fatal */
 });
+
+// E2E mock-auth fetch interceptor — активний лише за
+// `EXPO_PUBLIC_E2E_REAL_AUTH=1`. У production-білдах виклик
+// перетворюється на ранній `return false` (Metro інлайнить
+// `process.env.EXPO_PUBLIC_*` на bundle-time). Встановлюємо ДО монтажу
+// React-дерева, щоб `useUser` під `ApiClientProvider` ніколи не побачив
+// живого `/api/v1/me` — інакше у тестах без бекенда `useUser` лагав би
+// 30 секунд на network timeout перед редиректом на sign-in.
+installE2EAuthMock();
 
 /**
  * Inner shell — mounted below the providers so `useDeepLinks` runs

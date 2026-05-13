@@ -773,6 +773,20 @@ appBuildInfo
   })
   .set(1);
 
+// ───────────────────────── Log retention archive ───────────────
+// Лічильник рядків, оброблених background-архіватором `openclaw_invocations`
+// / `tg_alert_acks` / `n8n_webhook_events` (див.
+// `apps/server/src/modules/logRetention/archivePoller.ts`).
+// `outcome` — фінальний стан батча: `archived` (upload + DELETE OK),
+// `upload_failed` (GCS відмовив → DB rows збережені), `noop` (нічого
+// під TTL не потрапило).
+export const logArchiveRowsTotal = new client.Counter({
+  name: "openclaw_log_archive_rows_total",
+  help: "Rows processed by the log retention archiver, by table + outcome",
+  labelNames: ["table", "outcome"],
+  registers: [register],
+});
+
 // ───────────────────────── Mono webhook ───────────────────────
 export const monoWebhookReceivedTotal = new client.Counter({
   name: "mono_webhook_received_total",
@@ -786,6 +800,30 @@ export const monoWebhookDurationMs = new client.Histogram({
   help: "Monobank webhook handler duration in ms",
   labelNames: ["status"],
   buckets: [1, 5, 25, 50, 100, 250, 500, 1000],
+  registers: [register],
+});
+
+// ───────────────────────── n8n webhook-events replay (PR-29) ──
+// Instrument-имо replay-CLI / API щоб дашборд `n8n-webhook-events`
+// (PR-26-after) міг показати: which workflow-и replay-яться найчастіше,
+// яка success-rate per-workflow, p95 латентності self-served replay-у.
+// Cardinality bound: workflow_id ∈ REPLAYABLE_WORKFLOW_IDS (наразі 4),
+// outcome ∈ {ok, http_error, unknown_workflow, timeout, error} —
+// дешевий labels-set, безпечно крутити без top-K-обмеження.
+export const n8nWebhookReplayAttemptsTotal = new client.Counter({
+  name: "n8n_webhook_replay_attempts_total",
+  help: "n8n webhook event replay attempts by workflow and outcome",
+  labelNames: ["workflow_id", "outcome"], // ok|http_error|unknown_workflow|timeout|error
+  registers: [register],
+});
+
+export const n8nWebhookReplayDurationMs = new client.Histogram({
+  name: "n8n_webhook_replay_duration_ms",
+  help: "n8n webhook event replay per-attempt duration in ms",
+  labelNames: ["workflow_id", "outcome"],
+  // Replay HTTP-call timeout = 10s (DEFAULT_TIMEOUT_MS у replayWebhookEvent.ts).
+  // Buckets щільніше у нижчій частині, бо здорові replay-и зазвичай <500ms.
+  buckets: [25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
   registers: [register],
 });
 

@@ -246,6 +246,21 @@ sum(rate(mono_webhook_received_total{status="ok"}[5m])) / sum(rate(mono_webhook_
 histogram_quantile(0.95, sum by (le) (rate(mono_webhook_duration_ms_bucket[5m])))
 ```
 
+### 10.1 n8n webhook-replay (PR-28 / PR-29)
+
+| Metric                              | Type      | Labels                    | Emitter                                                                                      |
+| ----------------------------------- | --------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `n8n_webhook_replay_attempts_total` | Counter   | `workflow_id` · `outcome` | [routes/internal/webhook-events.ts](../../apps/server/src/routes/internal/webhook-events.ts) |
+| `n8n_webhook_replay_duration_ms`    | Histogram | `workflow_id` · `outcome` | [routes/internal/webhook-events.ts](../../apps/server/src/routes/internal/webhook-events.ts) |
+
+`outcome`: `ok` · `http_error` · `unknown_workflow` · `timeout` · `error`. `workflow_id` ∈ `REPLAYABLE_WORKFLOW_IDS` (наразі 4). Buckets: `25, 50, 100, 250, 500, 1000, 2500, 5000, 10000` ms (10s = `DEFAULT_TIMEOUT_MS` у [replayWebhookEvent.ts](../../apps/server/src/modules/webhooks/replayWebhookEvent.ts)). **Кардинальність**: 20 (counter); 220 (histogram). Дашборд: [`dashboards/n8n-webhook-events.json`](./dashboards/n8n-webhook-events.json).
+
+```promql
+sum(increase(n8n_webhook_replay_attempts_total{outcome="ok"}[24h])) / clamp_min(sum(increase(n8n_webhook_replay_attempts_total[24h])), 1)
+topk(10, sum by (workflow_id) (increase(n8n_webhook_replay_attempts_total[24h])))
+histogram_quantile(0.95, sum by (le, workflow_id) (rate(n8n_webhook_replay_duration_ms_bucket[5m])))
+```
+
 ---
 
 ## 11. Barcode-лукапи
@@ -398,6 +413,8 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 **Alerts**: [`voyage-cost.yml`](../../ops/prometheus/rules/voyage-cost.yml) — `VoyageDailyBudgetSoftBreach` (warn @ 80% × `voyage_daily_budget_usd`, after 10m) і `VoyageDailyBudgetHardBreach` (page @ 100%, after 5m). Маршрут — той самий, що й інші sergeant-server alerts: Alertmanager → WF-98 → Telegram-топік `🟠 Контрол-план`.
 
 **PR-14 — Anthropic daily budget alert ($3 soft / $5 hard).** На відміну від Voyage, для Anthropic не використовуємо Prometheus alert rule, а робимо in-process loop у [`obs/anthropicBudgetGuard.ts`](../../apps/server/src/obs/anthropicBudgetGuard.ts) — Sentry → n8n WF-22 → Telegram pipeline уже live, тоді як Prometheus → Alertmanager → Telegram routing для production-deploy-у ще не змонтований. Loop читає `aiCostEstimateUsd{provider="anthropic"}` через `Counter#get()`, тримає baseline-snapshot на початок UTC-доби (`dailyBaseline`), рахує delta кожні `ANTHROPIC_BUDGET_CHECK_INTERVAL_MS` мс. Soft → `Sentry.captureMessage(level="warning", tags={op:"anthropic_budget_alert", threshold:"soft"})`, Hard → `level="error"` + взводить `isAnthropicBudgetHardExceeded()` для не-критичних шляхів. Idempotency: Redis `SET NX EX 36h` під key `anthropic_budget_alert_v1:<YYYY-MM-DD>:<soft|hard>` з in-memory fallback. Налаштовується через `ANTHROPIC_BUDGET_SOFT_USD` / `ANTHROPIC_BUDGET_HARD_USD` / `ANTHROPIC_BUDGET_ALERT_ENABLED` (див. [`env-vars.md`](../integrations/env-vars.md#ai-budget-envelopes)).
+
+**Voyage daily cost alert ($1 soft / $5 hard) + monthly projection.** Analogous до PR-14, але post-record-driven (не polling): хук [`runVoyageBudgetTick`](../../apps/server/src/modules/ai-memory/voyageBudget.ts) у `recordVoyageUsage()` рахує today-spend і шле Sentry alert при breach. Soft (PR-38, pre-existing) → `level="warning"`, `tags.error_signature='voyage-daily-budget-soft'`, skip non-critical embeddings. **Hard** → `level="error"`, `tags.error_signature='voyage-daily-budget-hard'`, взводить `isVoyageBudgetHardExceeded()` flag; `AiMemoryService.remember()` читає flag і skip-ить embed-call ще до `embedBatch` (auto-pause ingestion). **Monthly projection** — коли `today-spend × днів-у-місяці ≥ VOYAGE_MONTHLY_BUDGET_USD`, шлемо warning `error_signature='voyage-monthly-budget-projection'` один раз на (`YYYY-MM`, monthly). Idempotency у пам'яті: `alertedTiers` Set keyed на `(dayKey|monthKey):tier` (clearing на day/month rollover). Налаштовується через `VOYAGE_DAILY_BUDGET_USD_SOFT` / `VOYAGE_DAILY_BUDGET_USD_HARD` / `VOYAGE_MONTHLY_BUDGET_USD` (див. [`env-vars.md`](../integrations/env-vars.md#ai-budget-envelopes)). Sentry → n8n WF-22 → Telegram (same pipeline як Anthropic). Dedup на Telegram стороні — через `error_signature` tag (analogous до WF-98 `workflowId:error_signature` шаблону, PR-15 #2535).
 
 ---
 

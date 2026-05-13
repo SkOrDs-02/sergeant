@@ -350,5 +350,5 @@ runtimeKillSwitch.ts`):
   kill-switch registry
 - [`scripts/rag-eval-weekly.mjs`](../../scripts/rag-eval-weekly.mjs) —
   weekly wrapper script
-- [`ops/n8n-workflows/28-rag-eval-weekly-cron.json`](../../ops/n8n-workflows/28-rag-eval-weekly-cron.json) —
+- [`ops/n8n-workflows/29-rag-eval-weekly-cron.json`](../../ops/n8n-workflows/29-rag-eval-weekly-cron.json) —
   n8n WF-28 cron

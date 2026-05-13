@@ -40,6 +40,26 @@ Never drop a column in the same release as the code that stops writing to it —
 
 A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollbacks. Production never runs `down.sql`, but the file is still required: it documents how to revert the schema during incident recovery or local development.
 
+### `TWO-PHASE-DROP` header gate
+
+Any new `*.up.sql` migration that contains `DROP TABLE` or `ALTER TABLE … DROP COLUMN` must carry a machine-validated comment header on a single line:
+
+```sql
+-- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD
+```
+
+`pnpm lint:migrations` parses the two dates and enforces:
+
+- both dates are real `YYYY-MM-DD` calendar dates (`2026-02-30` is rejected);
+- `safe to drop after − introduced ≥ 14` days (the soak window of Phase 1);
+- `safe to drop after ≤ today` on the CI run (so a Phase 2 PR cannot land before its own deadline).
+
+`DROP INDEX` and `DROP FUNCTION` are allowed without a header because they are re-creatable from the migration body. `DROP` statements inside `*.down.sql` files are governed by the empty-`.down.sql` rule below, not by this header.
+
+The legacy escape hatch `-- ALLOW_DROP: <reason>` still passes the lint for backward-compat with pre-existing migrations on `main`, but new migrations should use `TWO-PHASE-DROP:` so the deprecation timeline is machine-verifiable.
+
+Authoring walkthrough + failure-mode catalog: [`docs/runbooks/operations-runbook.md § 8.2`](../../runbooks/operations-runbook.md#82-two-phase-drop-authoring).
+
 ### Empty `.down.sql` is a lint error
 
 `pnpm lint:migrations` rejects any **new or modified** `.down.sql` file whose body is empty — only blank lines, single-line `--` comments, or the plop-generated `-- TODO: write your DOWN (rollback) migration here` placeholder count as "empty". Pre-existing empty rollbacks in the tree are not retroactively flagged; the gate only fires on files the PR touches.

@@ -290,7 +290,37 @@
       "requiredCredentials": [],
       "notes": "PR-34 (pr-plan-2026-05) strategic mode skeleton. Weekly Mon 09:00 Kyiv → fan-out across 4 personas (finyk/fizruk/nutrition/routine) → POST /api/internal/strategic/weekly-checkin для кожної; кожен запит INSERT-ить placeholder-goal у `strategic_goals` (migration 062). Поки що — лише datalayer marker, без LLM conversation. Activate after STRATEGIC_FOUNDER_USER_ID set on n8n Railway (Better Auth opaque founder ID). PR-35+ replace placeholder з real planning conversation."
     },
-    "28-rag-eval-weekly-cron.json": {
+    "27-monthly-okr-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "dm",
+      "audienceTier": "P2",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "OPENCLAW_BOT_TOKEN",
+        "OPENCLAW_FOUNDER_TG_USER_ID"
+      ],
+      "requiredCredentials": [],
+      "notes": "1st of month 09:00 Kyiv → POST /api/internal/openclaw/ritual/monthly (O3 Phase 2.B; 4 sections: narrative / OKR progress per KR / monthly wins / risks & blockers) → POST /api/internal/webhook-events/record + DM founder. Reporting month = previous calendar month. OKR-список — INTERIM_OKRS hardcoded (apps/server/src/modules/openclaw/monthly-okr/okrs.ts) як fallback; PR-34 strategic_goals DB-table (migration 062) merged — наступний follow-up може замінити INTERIM_OKRS на DB-query. Wins/risks через GitHub closed PRs (30d window) + Sentry unresolved + stale open PRs (>30d). LLM narrative — claude-sonnet-4-6 з StubProvider fallback."
+    },
+    "28-weekly-review-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "dm",
+      "audienceTier": "P2",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "OPENCLAW_BOT_TOKEN",
+        "OPENCLAW_FOUNDER_TG_USER_ID"
+      ],
+      "requiredCredentials": [],
+      "notes": "Friday 18:00 Kyiv → POST /api/internal/openclaw/ritual/weekly (O3 Phase 2.B; 5 sections: narrative / shipped / metrics with delta vs prev week / open commitments / Sentry alerts) → POST /api/internal/webhook-events/record + DM founder via @OpenClaw_sergeant_bot. LLM narrative — claude-sonnet-4-6 via LLMProvider (PR-23), StubProvider fallback (PR-25 pattern). Endpoint 200 з graceful-degrade на missing env-vars (sections рендерять notConfigured-hint). Активуй після OPENCLAW_BOT_TOKEN + OPENCLAW_FOUNDER_TG_USER_ID + LLM_DIGEST_PROVIDER на n8n Railway. Slot 28 — slot 26 зайняв PR-34 strategic_weekly cron (Mon 09:00 per-persona DB writes); 27 — місячний OKR ritual нижче."
+    },
+    "29-rag-eval-weekly-cron.json": {
       "owner": "ops",
       "status": "experimental",
       "riskTier": "P2",

@@ -97,15 +97,36 @@
 
 Готові до імпорту JSON-dashboard-и лежать у [`dashboards/`](./dashboards/). Деталі про datasource-variable-и й очікувані label-и див. у [`dashboards/README.md`](./dashboards/README.md).
 
-| Файл                                                    | Скоуп                                                                                                                                                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`http-red.json`](./dashboards/http-red.json)           | HTTP RED (rate, errors, duration p50/p95/p99) з фільтром по module/path                                                                                                                                            |
-| [`db-use.json`](./dashboards/db-use.json)               | Postgres pool USE, тривалість запитів, slow-запити, DB-помилки                                                                                                                                                     |
-| [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json) | Multi-window multi-burn-rate SLO-огляд (усі домени)                                                                                                                                                                |
-| [`sync.json`](./dashboards/sync.json)                   | Результати sync по op/module/outcome, p95 тривалості, p95 payload, conflict ratio, SLO burn-rate                                                                                                                   |
-| [`auth.json`](./dashboards/auth.json)                   | Результати auth, p95 session-lookup, rate-limit-hit-и, sign-in success-rate                                                                                                                                        |
-| [`ai-cost.json`](./dashboards/ai-cost.json)             | PR-13 — focused AI-cost (Anthropic + Voyage): 30d-стати, hourly burn, per-model daily breakdown, top-10 endpoints, run-rate vs `*_MONTHLY_BUDGET_USD`, projected EOM spend, cache-hit ratio, quota fail-open guard |
-| [`hubchat.json`](./dashboards/hubchat.json)             | HubChat tool-invocation leaderboard, executed/proposed-співвідношення, unknown_tool, truncation-и                                                                                                                  |
-| [`frontend-cwv.json`](./dashboards/frontend-cwv.json)   | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor-ratio + p75 (baseline-режим)                                                                                                                    |
+| Файл                                                              | Скоуп                                                                                                                                                                                                              |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`http-red.json`](./dashboards/http-red.json)                     | HTTP RED (rate, errors, duration p50/p95/p99) з фільтром по module/path                                                                                                                                            |
+| [`db-use.json`](./dashboards/db-use.json)                         | Postgres pool USE, тривалість запитів, slow-запити, DB-помилки                                                                                                                                                     |
+| [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json)           | Multi-window multi-burn-rate SLO-огляд (усі домени)                                                                                                                                                                |
+| [`sync.json`](./dashboards/sync.json)                             | Результати sync по op/module/outcome, p95 тривалості, p95 payload, conflict ratio, SLO burn-rate                                                                                                                   |
+| [`auth.json`](./dashboards/auth.json)                             | Результати auth, p95 session-lookup, rate-limit-hit-и, sign-in success-rate                                                                                                                                        |
+| [`ai-cost.json`](./dashboards/ai-cost.json)                       | PR-13 — focused AI-cost (Anthropic + Voyage): 30d-стати, hourly burn, per-model daily breakdown, top-10 endpoints, run-rate vs `*_MONTHLY_BUDGET_USD`, projected EOM spend, cache-hit ratio, quota fail-open guard |
+| [`hubchat.json`](./dashboards/hubchat.json)                       | HubChat tool-invocation leaderboard, executed/proposed-співвідношення, unknown_tool, truncation-и                                                                                                                  |
+| [`frontend-cwv.json`](./dashboards/frontend-cwv.json)             | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor-ratio + p75 (baseline-режим)                                                                                                                    |
+| [`n8n-webhook-events.json`](./dashboards/n8n-webhook-events.json) | n8n webhook-events replay (PR-28/PR-29): replay success-rate, attempts-over-time per workflow×outcome, top-10 workflows, p50/p95/p99 latency, latency-heatmap до 10s timeout                                       |
 
 Імпорт через Grafana UI: **Dashboards → Import → Upload JSON**.
+
+## n8n webhook-events replay (PR-28/PR-29)
+
+`n8n_webhook_events` table (PR-28 #2608) фіксує всі вхідні webhook-events; replay CLI/API (PR-29 #2665) re-POST-ить їх до n8n. Сервер інструментує replay-цикл двома Prometheus-серіями:
+
+- **`n8n_webhook_replay_attempts_total{workflow_id, outcome}`** — counter. `outcome ∈ {ok, http_error, unknown_workflow, timeout, error}`. Cardinality bound: 4 workflow-и × 5 outcomes = 20 series worst-case.
+- **`n8n_webhook_replay_duration_ms_bucket{workflow_id, outcome, le}`** — histogram (buckets `[25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]` ms). 10s = `DEFAULT_TIMEOUT_MS` у [`replayWebhookEvent.ts`](../../apps/server/src/modules/webhooks/replayWebhookEvent.ts) — buckets щільніше у нижчій частині, бо здорові replay-и < 500ms.
+
+Key PromQL queries (фіксовані у [`n8n-webhook-events.json`](./dashboards/n8n-webhook-events.json)):
+
+- **Success rate (24h)**:
+  - `sum(increase(n8n_webhook_replay_attempts_total{outcome="ok"}[24h])) / clamp_min(sum(increase(n8n_webhook_replay_attempts_total[24h])), 1)`
+- **Replay attempts per minute (per workflow × outcome)**:
+  - `sum by (workflow_id, outcome) (rate(n8n_webhook_replay_attempts_total[5m])) * 60`
+- **Top workflows by replay count (24h)**:
+  - `topk(10, sum by (workflow_id) (increase(n8n_webhook_replay_attempts_total[24h])))`
+- **p95 latency per workflow**:
+  - `histogram_quantile(0.95, sum by (le, workflow_id) (rate(n8n_webhook_replay_duration_ms_bucket[5m])))`
+- **Failures by outcome (24h)**:
+  - `sum by (outcome) (increase(n8n_webhook_replay_attempts_total{outcome!="ok"}[24h]))`

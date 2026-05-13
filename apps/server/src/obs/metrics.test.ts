@@ -18,6 +18,8 @@ import {
   aiRequestDurationMs,
   aiRequestsTotal,
   metricsHandler,
+  n8nWebhookReplayAttemptsTotal,
+  n8nWebhookReplayDurationMs,
   syncOpLogApplyTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
@@ -178,6 +180,61 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="100"\}/);
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="5000"\}/);
     expect(text).toMatch(/sync_op_log_pull_queue_depth_bucket\{le="200"\}/);
+  });
+});
+
+describe("metrics registry — n8n webhook-events replay (PR-29)", () => {
+  it("реєструє `n8n_webhook_replay_attempts_total` counter з labels {workflow_id, outcome}", () => {
+    const metric = register.getSingleMetric(
+      "n8n_webhook_replay_attempts_total",
+    );
+    expect(metric).toBe(n8nWebhookReplayAttemptsTotal);
+  });
+
+  it("реєструє `n8n_webhook_replay_duration_ms` histogram з labels {workflow_id, outcome}", () => {
+    const metric = register.getSingleMetric("n8n_webhook_replay_duration_ms");
+    expect(metric).toBe(n8nWebhookReplayDurationMs);
+  });
+
+  it("counter інкрементується per (workflow_id, outcome) і експортується з повним label-set-ом", async () => {
+    n8nWebhookReplayAttemptsTotal.inc({
+      workflow_id: "01-billing-pipeline",
+      outcome: "ok",
+    });
+    n8nWebhookReplayAttemptsTotal.inc({
+      workflow_id: "06-mono-webhook-enrichment",
+      outcome: "http_error",
+    });
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE n8n_webhook_replay_attempts_total counter");
+    // Дашборд `n8n-webhook-events.json` робить
+    // `sum by (workflow_id, outcome) (rate(...))` — фіксуємо лейбли.
+    expect(text).toMatch(
+      /n8n_webhook_replay_attempts_total\{workflow_id="01-billing-pipeline",outcome="ok"\} \d+/,
+    );
+    expect(text).toMatch(
+      /n8n_webhook_replay_attempts_total\{workflow_id="06-mono-webhook-enrichment",outcome="http_error"\} \d+/,
+    );
+  });
+
+  it("histogram експортує buckets під 10s timeout (DEFAULT_TIMEOUT_MS у replayWebhookEvent)", async () => {
+    n8nWebhookReplayDurationMs.observe(
+      { workflow_id: "02-failed-payment-recovery", outcome: "ok" },
+      120,
+    );
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE n8n_webhook_replay_duration_ms histogram");
+    // SLO-margin: 250ms = healthy p50, 5000ms = почати turbулізуватися
+    // до timeout-у. Фіксуємо щоб дашборд p95-панелі не drift-нула.
+    expect(text).toMatch(
+      /n8n_webhook_replay_duration_ms_bucket\{le="250",workflow_id="02-failed-payment-recovery",outcome="ok"\}/,
+    );
+    expect(text).toMatch(
+      /n8n_webhook_replay_duration_ms_bucket\{le="5000",workflow_id="02-failed-payment-recovery",outcome="ok"\}/,
+    );
+    expect(text).toMatch(
+      /n8n_webhook_replay_duration_ms_bucket\{le="10000",workflow_id="02-failed-payment-recovery",outcome="ok"\}/,
+    );
   });
 });
 

@@ -31,6 +31,10 @@ import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  n8nWebhookReplayAttemptsTotal,
+  n8nWebhookReplayDurationMs,
+} from "../../obs/metrics.js";
+import {
   HeadersTooLargeError,
   PayloadTooLargeError,
   recordWebhookEvent,
@@ -43,6 +47,22 @@ import {
   UnknownWorkflowError,
   type ReplayableEvent,
 } from "../../modules/webhooks/replayWebhookEvent.js";
+
+/**
+ * Map error → Prometheus `outcome` label. Cardinality-bound enum
+ * (5 values total); unknown-shape err → "error" bucket для catch-all.
+ */
+function replayOutcomeFromError(err: unknown): string {
+  if (err instanceof ReplayHttpError) return "http_error";
+  if (err instanceof UnknownWorkflowError) return "unknown_workflow";
+  if (
+    err instanceof Error &&
+    (err.name === "AbortError" || /timeout/i.test(err.message))
+  ) {
+    return "timeout";
+  }
+  return "error";
+}
 
 const RecordBody = z
   .object({
@@ -196,6 +216,8 @@ export function createWebhookEventsInternalRouter({
       const outcomes: ReplayOutcome[] = [];
       let successes = 0;
       for (const event of candidates) {
+        const startedAt = Date.now();
+        let observedOutcome = "ok";
         try {
           const out = await replayWebhookEvent(pool, {
             event,
@@ -209,6 +231,7 @@ export function createWebhookEventsInternalRouter({
           });
           successes += 1;
         } catch (err) {
+          observedOutcome = replayOutcomeFromError(err);
           if (err instanceof ReplayHttpError) {
             outcomes.push({
               id: event.id,
@@ -242,6 +265,15 @@ export function createWebhookEventsInternalRouter({
             code: "REPLAY_FAILED",
             message,
           });
+        } finally {
+          n8nWebhookReplayAttemptsTotal.inc({
+            workflow_id: workflowId,
+            outcome: observedOutcome,
+          });
+          n8nWebhookReplayDurationMs.observe(
+            { workflow_id: workflowId, outcome: observedOutcome },
+            Date.now() - startedAt,
+          );
         }
       }
 

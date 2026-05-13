@@ -4,7 +4,6 @@
   "apps/web/src/core/ErrorBoundary.tsx",
   "apps/web/src/core/NotFoundPage.tsx",
   "apps/web/src/core/PricingPage.tsx",
-  "apps/web/src/core/app/DarkModeToggle.tsx",
   "apps/web/src/core/app/HubHeader.tsx",
   "apps/web/src/core/app/HubMainContent.tsx",
   "apps/web/src/core/app/IOSInstallBanner.tsx",
@@ -39,6 +38,7 @@
   "apps/web/src/core/designShowcase/sections/Onboarding.tsx",
   "apps/web/src/core/designShowcase/sections/Overlays.tsx",
   "apps/web/src/core/designShowcase/sections/Primitives.tsx",
+  "apps/web/src/core/designShowcase/sections/Theming.tsx",
   "apps/web/src/core/designShowcase/sections/Typography.tsx",
   "apps/web/src/core/hub/HubBackupPanel.tsx",
   "apps/web/src/core/hub/HubChatHistoryDrawer.tsx",
@@ -229,5 +229,6 @@
   "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
   "apps/web/src/shared/components/ui/StreakCelebration.tsx",
   "apps/web/src/shared/components/ui/StreakProtection.tsx",
+  "apps/web/src/shared/components/ui/ThemeSwitcher.tsx",
   "apps/web/src/shared/components/ui/voice/PendingVoiceChip.tsx"
 ]

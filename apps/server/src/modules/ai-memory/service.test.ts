@@ -317,6 +317,39 @@ describe("AiMemoryService — enabled", () => {
     expect(store!.rows[0]!.sourceRef).toBe("tx-2");
   });
 
+  it("remember() — skip-ить embed-call коли VOYAGE hard daily budget вже відстрелявся", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10"; // soft off-path
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    // Reset state з voyageBudget module, потім simul-имо hard-breach
+    // через add+tick (як це робить real-flow у recordVoyageUsage).
+    const {
+      __resetVoyageBudgetState,
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(6); // >= 5 → hard breach
+    runVoyageBudgetTick();
+
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+    });
+    await svc.remember([
+      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+    ]);
+    expect(embeddings.calls).toBe(0);
+    expect(store.upsertCalls).toBe(0);
+
+    // Cleanup щоб не злилось у наступні тести.
+    __resetVoyageBudgetState();
+    delete process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"];
+    delete process.env["VOYAGE_DAILY_BUDGET_USD_HARD"];
+  });
+
   it("recall() — кидає якщо provider повернув порожній результат", async () => {
     const store = makeFakeStore();
     const embeddings: EmbeddingProvider = {

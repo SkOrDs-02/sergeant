@@ -197,6 +197,7 @@ Decision-tree коли щось «не працює»:
 | `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                        |
 | Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md) |
 | Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                    |
+| Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                         |
 | Access review (хто має які доступи)            | Квартальна            | [`docs/playbooks/run-access-review.md`](../playbooks/run-access-review.md)     |
 
 ### 8.1. Migration `down.sql` drill
@@ -223,6 +224,81 @@ DATABASE_URL=postgresql://hub:hub@127.0.0.1:5432/hub \
 Exit code `0` + останній рядок `drill_ok` з digest = pass. Exit code `1` + `drill_fingerprint_mismatch` або `drill_migration_failed` = впав; `file` поле каже, на якому `*.down.sql` зламалося.
 
 **Що drill не покриває:** seed data (drill бере чистий schema), partition state (нові партиції `module_data_*` створюються динамічно за межами `.sql`), application-level invariants (RLS policies, тригери, що залежать від app-state). Для них діє окремий `database-backup-restore` runbook ([§ 8 «Disaster-recovery drill»](#8-routine-maintenance)) — повний restore production-snapshot-у на read-replica раз на 6 міс.
+
+### 8.2. Two-phase DROP authoring
+
+Hard Rule #4 ([`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../governance/rules/04-sql-migrations-sequential-two-phase.md)): **destructive `DROP TABLE` / `ALTER TABLE … DROP COLUMN` мають проходити дві фази, розведені у часі мінімум на 14 днів.** Сенс правила — дати running app-у час перестати читати/писати в колонку/таблицю перед тим, як її фізично прибрати. Один-PR-DROP частіше = production incident.
+
+**Phase 1 (deprecate).** Окремий PR, що deploy-ить новий код, який більше не reads/writes до колонки/таблиці. Може бути за тиждень-два до Phase 2 — головне, щоб **на дату merge Phase 2 PR-у Phase 1 уже стояв на проді як мінімум 14 днів** (для відкату при необхідності).
+
+**Phase 2 (drop).** Окрема міграція `apps/server/src/migrations/NNN_*.sql` робить `DROP`. У шапці міграції — машино-перевіряємий header:
+
+```sql
+-- NNN: коментар про контекст міграції
+-- TWO-PHASE-DROP: introduced 2026-04-01 as deprecation; safe to drop after 2026-04-15
+
+ALTER TABLE foo DROP COLUMN unused_blob;
+```
+
+Парсер `scripts/lint-migrations.mjs` (`pnpm lint:migrations`) перевіряє:
+
+- `introduced YYYY-MM-DD` — день merge-у Phase 1 PR-у. Date має парситись як реальний календарний день (`2026-02-30` reject-иться).
+- `safe to drop after YYYY-MM-DD` — день merge-у Phase 2 PR-у (або раніше). Має бути `≤` сьогодні **на CI-run**.
+- Gap між двома датами `≥ 14` днів (константа `MIN_DEPRECATION_DAYS` у `lint-migrations.mjs`).
+- Header регулярно case-insensitive, толерантний до whitespace, але точний у синтаксисі.
+
+**Що CI ловить (`pnpm lint:migrations`):**
+
+```text
+❌ Migration NNN_xxx.sql contains destructive DROP without two-phase header.
+   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.
+
+   First non-comment DROP line: apps/server/src/migrations/NNN_xxx.sql:42:
+     DROP TABLE legacy_thing;
+
+   Add (after the file header comment block):
+     -- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD
+
+   The two dates must be ≥ 14 days apart, and
+   "safe to drop after" must already be in the past on merge day.
+```
+
+Інші режими fail:
+
+- `TWO-PHASE-DROP header is malformed.` — є рядок `-- TWO-PHASE-DROP:`, але не матчить shape (пропущена дата, неправильний формат, типос).
+- `TWO-PHASE-DROP header validation failed.` — header валідний, але `soak window` < 14 днів, OR одна з дат — не реальний календарний день, OR `safe to drop after` ще в майбутньому.
+
+**Що CI допускає без header-а:**
+
+- `DROP INDEX` — переоборотний (`CREATE INDEX` y тому самому файлі або у `.down.sql`).
+- `DROP FUNCTION` — переоборотний з тіла міграції.
+- `DROP` у `.down.sql` файлах — окрема перевірка (`isEmptyDownMigration`), header не потрібен.
+
+**Legacy escape hatch (`-- ALLOW_DROP: <reason>`).** Прийнятий для backward-сumісності з міграціями, які лежали на main до запровадження структурованого header-у (e.g. `046_drop_module_data.sql`, `059_ai_usage_daily_est_cost_usd.down.sql`). Новий код **повинен** використовувати `TWO-PHASE-DROP:` — dates валідовуються машинно, ALLOW_DROP — ні.
+
+**Workflow для нового DROP:**
+
+1. **Tag day 0 (Phase 1):** open PR, що видаляє code-references до колонки/таблиці. Merge. Запам'ятати дату — це `introduced`.
+2. **Wait ≥ 14 days.** За цей час якщо app проявить regression (читає видалену колонку) — Phase 1 rollback тривіальний (`git revert`), data ще на місці.
+3. **Tag day N (Phase 2):** open PR з міграцією `NNN_drop_foo.sql`, header:
+   ```sql
+   -- TWO-PHASE-DROP: introduced YYYY-MM-DD (day 0) as deprecation; safe to drop after YYYY-MM-DD (today або раніше)
+   ALTER TABLE … DROP COLUMN …;
+   ```
+4. CI прогонить `lint:migrations` + `migration-down-drill`. Drill також виконає `.down.sql` (для DROP COLUMN — `ADD COLUMN` зворотній), тож rollback procedure також тестується.
+5. Merge Phase 2. Railway deploy одночасно apply-нить міграцію.
+
+**Якщо забув про 14-day soak window:**
+
+- Не подовжуй date-и руками щоб обійти лінтер — це опасно. Натомість: rebase Phase 2 PR-у та чекай.
+- Якщо це абсолютно невідкладний security/data-loss fix — використай `-- ALLOW_DROP: <reason> (security incident YYYY-MM-DD)` як explicit override + посилання на postmortem. Lint пропустить, але reviewer має явно затвердити нестандартний шлях.
+
+**Локальний прогон:**
+
+```bash
+pnpm lint:migrations         # парсер + всі pure-checks
+node --test scripts/__tests__/lint-migrations.test.mjs   # 75 unit + integration тестів
+```
 
 ## 9. Як написати postmortem
 

@@ -20,8 +20,10 @@ import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
 import { parseDuration } from "./duration.js";
 import { parseFounderTgUserId } from "./security.js";
 import {
+  formatHistoryReply,
   formatPendingReply,
   parseAlertsCommand,
+  type HistoryReplyPayload,
   type PendingAlertItem,
 } from "./alerts-format.js";
 import { executeRitualCommand } from "./ritual-runner.js";
@@ -303,13 +305,19 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     if (parsed.subcommand === "help") {
       await c.reply(
         [
-          "<b>Usage:</b> <code>/alerts pending [filters]</code>",
+          "<b>Usage:</b>",
+          "  <code>/alerts pending [filters]</code> — unacked queue",
+          "  <code>/alerts history [days] [limit=N]</code> — past-N-days stats",
           "",
-          "Filters:",
+          "<b>Pending filters:</b>",
           "  • <code>p0</code>/<code>p1</code>/<code>p2</code>/<code>p3</code> — severity",
           "  • <code>since=15m|24h|7d</code> — лише старші за вказаний інтервал",
           "  • число (1..50) — limit (default 20)",
           "  • будь-який інший токен — topic-key",
+          "",
+          "<b>History args:</b>",
+          "  • число (1..30) — days look-back (default 7)",
+          "  • <code>limit=&lt;N&gt;</code> — top-N noisy workflows (1..50, default 10)",
         ].join("\n"),
         { parse_mode: "HTML" },
       );
@@ -345,6 +353,62 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     );
     const invocationId = openRes.data?.invocationId;
 
+    const finalizeError = async (errorMessage: string): Promise<void> => {
+      if (!invocationId) return;
+      await postJson(
+        `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+        internalApiKey,
+        {
+          invocationId,
+          status: "error",
+          assistantResponse: null,
+          errorMessage,
+          inputTokens: 0,
+          outputTokens: 0,
+        },
+      );
+    };
+    const finalizeSuccess = async (
+      assistantResponse: string,
+    ): Promise<void> => {
+      if (!invocationId) return;
+      await postJson(
+        `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+        internalApiKey,
+        {
+          invocationId,
+          status: "success",
+          assistantResponse,
+          errorMessage: null,
+          inputTokens: 0,
+          outputTokens: 0,
+        },
+      );
+    };
+
+    if (parsed.subcommand === "history") {
+      // History defaults are pre-clamped by the parser, but the route also
+      // clamps to keep server-side safety.
+      const historyFilters = parsed.historyFilters ?? { days: 7, limit: 10 };
+      const r = await postJson<HistoryReplyPayload>(
+        `${serverUrl}/api/internal/alerts/history`,
+        internalApiKey,
+        {
+          days: historyFilters.days,
+          limit: historyFilters.limit,
+        },
+      );
+      if (!r.ok || !r.data) {
+        await finalizeError(`alerts history HTTP ${r.status}`);
+        await c.reply(`Не зміг прочитати alerts history (HTTP ${r.status}).`);
+        return;
+      }
+      const reply = formatHistoryReply(r.data);
+      await finalizeSuccess(reply);
+      await c.reply(reply);
+      return;
+    }
+
     const r = await postJson<{ alerts: PendingAlertItem[] }>(
       `${serverUrl}/api/internal/alerts/pending`,
       internalApiKey,
@@ -360,20 +424,7 @@ export function registerInfoCommands(ctx: HandlerContext): void {
       },
     );
     if (!r.ok || !r.data) {
-      if (invocationId) {
-        await postJson(
-          `${serverUrl}/api/internal/openclaw/invocations/finalize`,
-          internalApiKey,
-          {
-            invocationId,
-            status: "error",
-            assistantResponse: null,
-            errorMessage: `alerts HTTP ${r.status}`,
-            inputTokens: 0,
-            outputTokens: 0,
-          },
-        );
-      }
+      await finalizeError(`alerts HTTP ${r.status}`);
       await c.reply(`Не зміг прочитати alerts (HTTP ${r.status}).`);
       return;
     }
@@ -383,23 +434,7 @@ export function registerInfoCommands(ctx: HandlerContext): void {
       sinceLabel: parsed.sinceLabel,
       filters: parsed.filters,
     });
-
-    // O5: finalize audit row with success.
-    if (invocationId) {
-      await postJson(
-        `${serverUrl}/api/internal/openclaw/invocations/finalize`,
-        internalApiKey,
-        {
-          invocationId,
-          status: "success",
-          assistantResponse: reply,
-          errorMessage: null,
-          inputTokens: 0,
-          outputTokens: 0,
-        },
-      );
-    }
-
+    await finalizeSuccess(reply);
     await c.reply(reply);
   });
 

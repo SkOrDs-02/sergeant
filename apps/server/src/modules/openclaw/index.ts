@@ -184,6 +184,36 @@ export {
   buildMorningBriefing,
   assembleMorningBriefing,
 } from "./briefing/index.js";
+
+// O3 (Phase 2.B): Friday weekly review template + orchestrator.
+export {
+  buildWeeklyReview,
+  assembleWeeklyReview,
+} from "./weekly-review/index.js";
+export type {
+  AssembleWeeklyReviewInput,
+  AssembleWeeklyReviewOptions,
+  WeeklyReviewData,
+  WeeklyReviewResponse,
+} from "./weekly-review/index.js";
+
+// O3 (Phase 2.B): Monthly OKR review.
+export {
+  buildMonthlyOkrReview,
+  assembleMonthlyOkrReview,
+  INTERIM_OKRS,
+  krProgressPct,
+} from "./monthly-okr/index.js";
+export type {
+  AssembleMonthlyOkrInput,
+  AssembleMonthlyOkrOptions,
+  KeyResult,
+  MonthlyOkrData,
+  MonthlyOkrResponse,
+  Okr,
+  OkrSource,
+} from "./monthly-okr/index.js";
+
 export type {
   AlertsBriefingSection,
   AssembleMorningBriefingInput,

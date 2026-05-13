@@ -45,10 +45,10 @@
 | **Харчування** — log/water/meal   | ✅               | ✅              | 🟡                 | RN: AddMealSheet + scanner готові; shopping/pantry — Phase 7                                                                                                                                                                                            |
 | **Харчування** — barcode scan     | ✅               | ✅              | ✅                 | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode`                                                                                                                                                                                  |
 | **Харчування** — pantry           | ✅               | ✅              | ✅                 | RN: `useNutritionPantries` + `pages/Pantry` готові                                                                                                                                                                                                      |
-| **Харчування** — shopping list    | ✅               | ✅              | ✅                 | RN: ручний список + AI-генерація з рецептів через `apiClient.nutrition.shoppingList`; weekplan-джерело — TODO                                                                                                                                                                                                    |
+| **Харчування** — shopping list    | ✅               | ✅              | ✅                 | RN: ручний список + AI-генерація з рецептів через `apiClient.nutrition.shoppingList`; weekplan-джерело — TODO                                                                                                                                           |
 | **Харчування** — recipes (AI)\*\* | ✅               | ✅              | 🟥                 | RN: `recipe/[id].tsx` — заглушка, Phase 7                                                                                                                                                                                                               |
 | **Харчування** — photo-AI\*\*     | ✅               | ✅              | 🟥                 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`)                                                                                                                                                                                                |
-| **Detox / e2e on CI**             | n/a              | n/a             | ✅                 | `detox-ios.yml` (macos-14 sim) + `detox-android.yml` (ubuntu AVD `Pixel_5_API_34`) — full e2e suite: finyk-manual-expense, finyk-transactions (period-filter), routine-smoke, hub-ux-smoke; per-PR + nightly cron                                       |
+| **Detox / e2e on CI**             | n/a              | n/a             | ✅                 | `detox-ios.yml` — smoke + full sign-in→module→sign-out (×4 модуля), `detox-android.yml` — smoke-build; full під mock-auth flag                                                                                                                          |
 | **Native UX** (haptics, sheets)   | 🟡               | 🟡              | ✅                 | Web — обмежено (`navigator.vibrate`); shell — Capacitor Haptics; RN — `react-native-haptics`                                                                                                                                                            |
 
 ### 🚨 Exit dashboard (для ADR-0010 § Sunset schedule)
@@ -57,7 +57,7 @@
 
 - 🟥 **RN-Nutrition full parity** — `recipe/[id]`, photo-AI. (AI-shopping shipped — recipes source live; weekplan source чекає на mobile week-plan storage.) Зеленіє коли всі три рядки = `✅`
 - 🟥 **RN-Voice (STT/TTS)** — Phase 7+. Зеленіє коли Hub voice у RN = `✅`
-- 🟡 **Detox real e2e** — sign-in → module → sign-out × 4 модулі. Зеленіє коли Detox = `✅`
+- ✅ **Detox real e2e** — sign-in → module → sign-out × 4 модулі. Чотири повні сьюти (`routine-full.e2e.ts`, `fizruk-full.e2e.ts`, `finyk-full.e2e.ts`, `nutrition-full.e2e.ts`) ганяють real Better Auth через mock-fetch interceptor (`apps/mobile/src/auth/e2eAuthMock.ts`) на iOS Simulator (`detox-ios.yml` matrix). Android — smoke build, full-сьюти follow-up.
 
 ---
 
@@ -104,7 +104,7 @@
 - **Nutrition решта** — `recipe/[id].tsx` заглушка; shopping generate, photo/day plan — Phase 7
 - **Voice/Speech** — потребує `expo-speech` + платформний STT (iOS Speech framework / Android SpeechRecognizer)
 - **App Store/Play метадані** — store-listing, іконки, privacy manifest (iOS), data safety (Android)
-- **Detox e2e** — `detox-ios.yml`/`detox-android.yml` тільки smoke-build; реальні сценарії待機
+- **Detox e2e** — smoke + 4 full сьюти (`routine-full.e2e.ts`, `fizruk-full.e2e.ts`, `finyk-full.e2e.ts`, `nutrition-full.e2e.ts`) під `EXPO_PUBLIC_E2E_REAL_AUTH=1` на iOS Simulator (`detox-ios.yml`). Android залишається smoke-only — включення full-сьют на emu pipeline — окремий follow-up.
 
 **Що варто покращити:**
 
@@ -157,7 +157,7 @@
 1. **Web + мобільний shell (Android)** — найшвидший до користувача: web live, shell потребує workflow + підпис. **2–3 PR-и.**
 2. **Native RN Nutrition-порт** — найдорожчий (Phase 7), блокує App Store/Play реліз. **4–6 PR-ів.**
 3. **iOS shell** — потребує Mac у CI (EAS / macOS runner), досі заблоковано Xcode-env.
-4. **Detox e2e** — зараз smoke; треба реальні сценарії, інакше false confidence.
+4. **Detox e2e** — iOS Simulator проганяє реальні sign-in→module→sign-out сьюти (×4 модулі); Android все ще smoke-only — full-сьюти на emu pipeline — follow-up.
 
 ---
 
