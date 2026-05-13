@@ -13,31 +13,33 @@ describe("PATH_BASED_MODULE_IDS", () => {
     // pick it up automatically.
     expect(PATH_BASED_MODULE_IDS.has("nutrition")).toBe(true);
     expect(PATH_BASED_MODULE_IDS.has("finyk")).toBe(true);
+    expect(PATH_BASED_MODULE_IDS.has("fizruk")).toBe(true);
   });
 
   it("does not include modules still on the legacy `?module=<id>` URL contract", () => {
-    expect(PATH_BASED_MODULE_IDS.has("fizruk")).toBe(false);
     expect(PATH_BASED_MODULE_IDS.has("routine")).toBe(false);
   });
 });
 
 describe("isPathBasedModulePath()", () => {
-  it("matches the bare module root (`/finyk`, `/nutrition`)", () => {
+  it("matches the bare module root (`/finyk`, `/nutrition`, `/fizruk`)", () => {
     expect(isPathBasedModulePath("/finyk")).toBe(true);
     expect(isPathBasedModulePath("/nutrition")).toBe(true);
+    expect(isPathBasedModulePath("/fizruk")).toBe(true);
   });
 
-  it("matches nested module URLs (`/finyk/budgets`, `/nutrition/log`)", () => {
+  it("matches nested module URLs (`/finyk/budgets`, `/nutrition/log`, `/fizruk/exercise/12`)", () => {
     expect(isPathBasedModulePath("/finyk/budgets")).toBe(true);
     expect(isPathBasedModulePath("/finyk/budgets?cat=smoking")).toBe(true);
     expect(isPathBasedModulePath("/nutrition/log")).toBe(true);
     expect(isPathBasedModulePath("/nutrition/pantry/shopping")).toBe(true);
+    expect(isPathBasedModulePath("/fizruk/workouts")).toBe(true);
+    expect(isPathBasedModulePath("/fizruk/exercise/12")).toBe(true);
   });
 
   it("does not match modules that have not migrated yet", () => {
-    expect(isPathBasedModulePath("/fizruk")).toBe(false);
     expect(isPathBasedModulePath("/routine")).toBe(false);
-    expect(isPathBasedModulePath("/fizruk/exercise/12")).toBe(false);
+    expect(isPathBasedModulePath("/routine/today")).toBe(false);
   });
 
   it("does not match prefix-aliased URLs (boundary check)", () => {
