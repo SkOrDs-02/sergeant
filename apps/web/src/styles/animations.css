@@ -1057,3 +1057,25 @@
 .simulate-reduced-motion .animate-fade-in-slow {
   animation-play-state: paused !important;
 }
+
+/* ── Progress indeterminate slide ───────────────────────────────────── */
+/*
+ * Used by `ProgressBar` in indeterminate mode. The bar is ~40% wide and
+ * slides from off-screen-left to off-screen-right in a 1.4 s loop. The
+ * `motion-reduce:` variant in `ProgressBar.tsx` falls back to a slow
+ * pulse so vestibular-sensitive users still see "we're working" without
+ * continuous horizontal motion (WCAG 2.3.3).
+ */
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.4s linear infinite;
+}
