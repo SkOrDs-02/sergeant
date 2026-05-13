@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  SENTRY_SAMPLE_PROFILES,
   SENTRY_SAMPLING_RULES,
   defaultSampleRate,
   pickTracesSampleRate,
+  resolveSampleProfile,
 } from "../sentry.js";
 
 /**
@@ -49,6 +51,24 @@ describe("pickTracesSampleRate", () => {
 
   it("samples /api/sync/poll at 1% (chatty heartbeat)", () => {
     expect(pickTracesSampleRate("/api/sync/poll?cursor=42", 0.05)).toBe(0.01);
+  });
+
+  it("samples /api/v2/sync/* at 1% (op-log sync chatter)", () => {
+    expect(pickTracesSampleRate("/api/v2/sync/push", 0.05)).toBe(0.01);
+    expect(pickTracesSampleRate("/api/v2/sync/pull?since=42", 0.05)).toBe(0.01);
+    expect(pickTracesSampleRate("/api/v2/sync/stream", 0.05)).toBe(0.01);
+  });
+
+  it("samples /api/internal/openclaw/write/* at 100% (mutations)", () => {
+    expect(
+      pickTracesSampleRate("/api/internal/openclaw/write/strategy-doc", 0.05),
+    ).toBe(1.0);
+    expect(
+      pickTracesSampleRate("/api/internal/openclaw/write/github-issue", 0.05),
+    ).toBe(1.0);
+    expect(
+      pickTracesSampleRate("/api/internal/openclaw/write/pause-workflow", 0.05),
+    ).toBe(1.0);
   });
 
   it("falls back to default for unmatched routes", () => {
@@ -124,5 +144,66 @@ describe("defaultSampleRate", () => {
     expect(defaultSampleRate({ SENTRY_TRACES_SAMPLE_RATE: "banana" })).toBe(
       0.05,
     );
+  });
+
+  it("reads SENTRY_SAMPLE_PROFILE=minimal as 0.01", () => {
+    expect(defaultSampleRate({ SENTRY_SAMPLE_PROFILE: "minimal" })).toBe(0.01);
+  });
+
+  it("reads SENTRY_SAMPLE_PROFILE=aggressive as 0.2", () => {
+    expect(defaultSampleRate({ SENTRY_SAMPLE_PROFILE: "aggressive" })).toBe(
+      0.2,
+    );
+  });
+
+  it("reads SENTRY_SAMPLE_PROFILE=prod as 0.05", () => {
+    expect(defaultSampleRate({ SENTRY_SAMPLE_PROFILE: "prod" })).toBe(0.05);
+  });
+
+  it("numeric SENTRY_TRACES_SAMPLE_RATE wins over profile (explicit kill-switch override)", () => {
+    expect(
+      defaultSampleRate({
+        SENTRY_SAMPLE_PROFILE: "aggressive",
+        SENTRY_TRACES_SAMPLE_RATE: "0",
+      }),
+    ).toBe(0);
+  });
+
+  it("unknown profile collapses to prod baseline (0.05)", () => {
+    expect(
+      defaultSampleRate({ SENTRY_SAMPLE_PROFILE: "banana" as never }),
+    ).toBe(0.05);
+  });
+});
+
+describe("resolveSampleProfile", () => {
+  it("accepts the three documented profile names", () => {
+    expect(resolveSampleProfile("minimal")).toBe("minimal");
+    expect(resolveSampleProfile("prod")).toBe("prod");
+    expect(resolveSampleProfile("aggressive")).toBe("aggressive");
+  });
+
+  it("defaults to prod when unset / unknown", () => {
+    expect(resolveSampleProfile(undefined)).toBe("prod");
+    expect(resolveSampleProfile("")).toBe("prod");
+    expect(resolveSampleProfile("banana")).toBe("prod");
+  });
+});
+
+describe("SENTRY_SAMPLE_PROFILES — budget invariants", () => {
+  it("profile rates are ordered minimal < prod < aggressive", () => {
+    expect(SENTRY_SAMPLE_PROFILES.minimal).toBeLessThan(
+      SENTRY_SAMPLE_PROFILES.prod,
+    );
+    expect(SENTRY_SAMPLE_PROFILES.prod).toBeLessThan(
+      SENTRY_SAMPLE_PROFILES.aggressive,
+    );
+  });
+
+  it("all profile rates in [0, 1]", () => {
+    for (const rate of Object.values(SENTRY_SAMPLE_PROFILES)) {
+      expect(rate).toBeGreaterThanOrEqual(0);
+      expect(rate).toBeLessThanOrEqual(1);
+    }
   });
 });

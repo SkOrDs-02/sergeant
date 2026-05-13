@@ -275,7 +275,7 @@ describe("pickWebTracesSampleRate", () => {
     expect(pickWebTracesSampleRate({ op: "pageload" }, 0.05)).toBe(1.0);
   });
 
-  it("samples navigation at 10% (SPA route changes)", async () => {
+  it("samples navigation at 10% by default (no route name)", async () => {
     const { pickWebTracesSampleRate } = await import("./sentry");
     expect(
       pickWebTracesSampleRate(
@@ -283,6 +283,70 @@ describe("pickWebTracesSampleRate", () => {
         0.05,
       ),
     ).toBe(0.1);
+  });
+
+  it("samples navigation to /onboarding at 100% (first-run UX)", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          name: "/onboarding",
+        },
+        0.05,
+      ),
+    ).toBe(1.0);
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          name: "/onboarding/welcome",
+        },
+        0.05,
+      ),
+    ).toBe(1.0);
+  });
+
+  it("samples navigation to /fizruk and /finyk at 50% (active tuning)", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        { attributes: { "sentry.op": "navigation" }, name: "/fizruk" },
+        0.05,
+      ),
+    ).toBe(0.5);
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          name: "/finyk/transactions",
+        },
+        0.05,
+      ),
+    ).toBe(0.5);
+  });
+
+  it("samples navigation to the Hub root (/) at 5% (most visited)", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        { attributes: { "sentry.op": "navigation" }, name: "/" },
+        0.5,
+      ),
+    ).toBe(0.05);
+  });
+
+  it("reads route name from transactionContext.name when top-level name is missing", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          transactionContext: { name: "/fizruk/workout/123" },
+        },
+        0.05,
+      ),
+    ).toBe(0.5);
   });
 
   it("samples http.client at 1% (chatty XHR/fetch)", async () => {
@@ -309,5 +373,61 @@ describe("pickWebTracesSampleRate", () => {
     expect(
       pickWebTracesSampleRate({ attributes: { "sentry.op": 42 } }, 0.05),
     ).toBe(0.05);
+  });
+});
+
+describe("defaultWebSampleRate", () => {
+  it("returns 0.05 (prod baseline) when no env vars are set", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(defaultWebSampleRate({})).toBe(0.05);
+  });
+
+  it("reads VITE_SENTRY_SAMPLE_PROFILE=minimal as 0.01", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(
+      defaultWebSampleRate({ VITE_SENTRY_SAMPLE_PROFILE: "minimal" }),
+    ).toBe(0.01);
+  });
+
+  it("reads VITE_SENTRY_SAMPLE_PROFILE=aggressive as 0.2", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(
+      defaultWebSampleRate({ VITE_SENTRY_SAMPLE_PROFILE: "aggressive" }),
+    ).toBe(0.2);
+  });
+
+  it("explicit VITE_SENTRY_TRACES_SAMPLE_RATE wins over profile (kill-switch)", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(
+      defaultWebSampleRate({
+        VITE_SENTRY_SAMPLE_PROFILE: "aggressive",
+        VITE_SENTRY_TRACES_SAMPLE_RATE: "0",
+      }),
+    ).toBe(0);
+  });
+
+  it("unknown profile collapses to prod (0.05)", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(defaultWebSampleRate({ VITE_SENTRY_SAMPLE_PROFILE: "banana" })).toBe(
+      0.05,
+    );
+  });
+});
+
+describe("resolveWebSampleProfile", () => {
+  it("accepts the three documented profile names", async () => {
+    const { resolveWebSampleProfile } = await import("./sentry");
+    expect(resolveWebSampleProfile("minimal")).toBe("minimal");
+    expect(resolveWebSampleProfile("prod")).toBe("prod");
+    expect(resolveWebSampleProfile("aggressive")).toBe("aggressive");
+  });
+
+  it("defaults to prod when unset / unknown / wrong type", async () => {
+    const { resolveWebSampleProfile } = await import("./sentry");
+    expect(resolveWebSampleProfile(undefined)).toBe("prod");
+    expect(resolveWebSampleProfile(null)).toBe("prod");
+    expect(resolveWebSampleProfile("")).toBe("prod");
+    expect(resolveWebSampleProfile("banana")).toBe("prod");
+    expect(resolveWebSampleProfile(42)).toBe("prod");
   });
 });

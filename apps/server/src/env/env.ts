@@ -494,6 +494,13 @@ const envSchema = z.object({
   SENTRY_RELEASE: z.string().optional(),
   /** `0.0`–`1.0` sampling rate для Sentry performance traces. */
   SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
+  /**
+   * Sentry sampling preset — switches the *fallback* rate (per-route rules
+   * stay fixed). `minimal` (0.01) для quota-mitigation, `prod` (0.05) —
+   * default, `aggressive` (0.2) — canary / pre-release visibility. Override
+   * via numeric `SENTRY_TRACES_SAMPLE_RATE` if needed.
+   */
+  SENTRY_SAMPLE_PROFILE: z.enum(["minimal", "prod", "aggressive"]).optional(),
   /** Pino log level. Use /debug-window CLI to temporarily lower without restart. */
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
