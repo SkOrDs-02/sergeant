@@ -98,7 +98,12 @@ export function MacrosEditor({
           ] as const
         ).map(({ key, label, placeholder }) => (
           <div key={key}>
-            <SectionHeading as="div" size="xs" className="mb-1">
+            <SectionHeading
+              as="div"
+              size="xs"
+              variant="nutrition"
+              className="mb-1"
+            >
               {label}
             </SectionHeading>
             <Input
