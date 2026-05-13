@@ -1,7 +1,7 @@
 # PR-30: Dockerfile post-install cleanup CVE-shrink fragility
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Shipped — PR pending
 
 |                    |                                                                  |
 | ------------------ | ---------------------------------------------------------------- |
@@ -87,12 +87,13 @@ Trivy в CI (`.github/workflows/docker-cve-scan.yml`):
 
 ## Acceptance criteria (DoD)
 
-- [ ] `Dockerfile.api` + `Dockerfile.console` рефакторені на multi-stage distroless.
-- [ ] `docker/base.Dockerfile` shared layer.
-- [ ] `.github/workflows/docker-cve-scan.yml` Trivy scan.
-- [ ] Image size reduced (target: -30% vs baseline).
-- [ ] Smoke-test: `docker run` boots api + console у local Docker.
-- [ ] `docs/ops/docker-image-policy.md`.
+- [x] `Dockerfile.api` + `Dockerfile.console` рефакторені на multi-stage distroless (`builder` + `deps` + `runtime` (`gcr.io/distroless/nodejs20-debian12:nonroot`)).
+- [ ] `docker/base.Dockerfile` shared layer — відкладено як follow-up PR (поточні файли divergent enough — console не потребує db-schema білду, api не потребує tsc-on-build; вигода від поблихи введення базової layer-и не переважує maintenance cost).
+- [x] Trivy scan вже є у [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) для Dockerfile.api; розширення на Dockerfile.console — follow-up PR.
+- [~] Image size виміряно: api 750 MB, console 166 MB (cold build, без buildx layer cache). Baseline pre-PR-30 не був знятий (вроді без referencing artifact-у CI); -30% target не верифіковано. Distroless runtime base сам по собі ≈165 MB проти alpine ≈50 MB, тому byte-виграш неочевидний — основний win в attack-surface (no shell / no package-managers).
+- [x] Smoke-test виконано локально: `docker run` api + console бутсять до env-validation step як expected. Migrations dir resolve-иться всередині distroless layer-у (verified: `dist-server/migrations/001_noop.sql` присутній).
+- [x] [`docs/ops/docker-image-policy.md`](../../ops/docker-image-policy.md) написано (TL;DR + stage map + healthcheck rationale + Trivy gate + rollout + backout).
+- [x] `.dockerignore` виправлено (`node_modules` → `**/node_modules`) — без цього nested host `tools/console/node_modules/dotenv/` потрапляв у build context і колізіював зі pnpm symlinks у container-i.
 
 ## Тести
 
