@@ -53,7 +53,7 @@
 | O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ✅ Done ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531), `49d5c846`)                                                                                        |
 | O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ✅ Done ([PR #2534](https://github.com/Skords-01/Sergeant/pull/2534), `6ee444d3`)                                                                                        |
 | O8  | Phase 3: `/plan`, `/analyze`, `/okr`                          | openclaw §Phase 3      | Later | L      | ✅ Done за founder підтвердженням 2026-05-13 — Stage 5b PR-1..PR-4 + persona allowlist Stage 5a                                                                          |
-| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ⏳ В очікуванні (Sprint 6)                                                                                                                                               |
+| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ✅ Done (W3 PR-4: 8 wirings — WF-08/15/16/30/60/63/98/99 — закривають 17-workflow set; routing map: `docs/observability/alert-bot-routing.md`)                           |
 
 ### 1.3. Вже зроблено (довідка)
 
@@ -213,23 +213,26 @@ ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS last_occurrence_at TIMESTAMPT
 
 ---
 
-#### O9: 17 workflow ACK-wirings `Продукт` `M`
+#### O9: 17 workflow ACK-wirings `Продукт` `M` — ✅ Done (W3 PR-4)
 
-**Що:** дотягнути pattern із WF-04 (reference wiring з W3 PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480)) до решти broadcast workflows. Кожен WF що шле P0/P1 alert має:
+**Що:** дотягнули pattern із WF-04 (reference wiring з W3 PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480)) до решти 16 broadcast workflows. Кожен WF що шле alert має:
 
 1. Формувати payload через `POST /api/internal/alerts/post`
 2. Отримувати inline-keyboard `[ ✅ Прочитав | 🔄 Розбираю | 🔕 Замутити 30хв ]`
 
-**Пріоритет wirings:**
+**Послідовність wirings:**
 
-1. WF-03 (Sentry P0), WF-18 (Railway crash), WF-22 (DB alerts) — критичні
-2. WF-01/02/05..14/16/17/19..21 — решта
+1. W3 PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480) — WF-04 reference
+2. W3 PR-3 batch 1 [#1503](https://github.com/Skords-01/Sergeant/pull/1503) — WF-03 (P0+P1), WF-18 (P1)
+3. W3 PR-3 batch 2 — WF-01, WF-02, WF-05, WF-06, WF-17, WF-19
+4. W3 PR-4 (O9) — WF-08, WF-15 (dynamic ops/incidents), WF-16, WF-30, WF-60, WF-63, WF-98 (alertId за `error_signature`), WF-99 (silent heartbeat)
 
 **Acceptance:**
 
-- [ ] Всі P0/P1 workflows мають 3-кнопковий row при нових alert-ах
-- [ ] WF-103 (escalation cron) коректно знаходить unacked-и від всіх wired workflows
-- [ ] `ops/n8n-workflows/` JSON оновлені у git (`"active": false` → staging → prod toggle)
+- [x] Всі 17 broadcast workflows мають 3-кнопковий row при нових alert-ах
+- [x] WF-103 (escalation cron) коректно знаходить unacked-и від всіх wired workflows (uniform `alertId` shape per workflow)
+- [x] `ops/n8n-workflows/` JSON оновлені у git (`"active": false` — staging → prod toggle лишається UI-only step)
+- [x] Routing map зафіксована в `docs/observability/alert-bot-routing.md` (workflow → topic/severity/alertId)
 
 ---
 

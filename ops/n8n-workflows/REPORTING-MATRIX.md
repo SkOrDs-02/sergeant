@@ -113,16 +113,24 @@ lane `qa-release`.
 workflow_id:execution_id[:branch]`, `ON CONFLICT DO NOTHING`), а в
 Telegram-меседжі рендерить inline-keyboard з 3 кнопок: ✅ Прочитав / 🔄 Розбираю
 / 🔕 Замутити 30хв. Кліки мапляться на `callback_data = "ack:<r|i|m>:<alertId>"`
-і обробляються WF-104. Поточно wired: **WF-04** (reference, W3 PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480)),
+і обробляються WF-104. Поточно wired (всі 17 broadcast workflows):
+**WF-04** (reference, W3 PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480)),
 **WF-03** (fatal P0 + warning P1, обидві гілки) + **WF-18** (audit-failed P1)
 у W3 PR-3 batch 1 [#1503](https://github.com/Skords-01/Sergeant/pull/1503),
 **WF-01** (Stripe Pro upgrade P0), **WF-02** (Stripe payment-failed P0),
 **WF-05** (Renovate non-patch P1), **WF-06** (Mono budget over P1),
-**WF-17** (stale PR P2), **WF-19** (DB-health weekly P1) — у W3 PR-3 batch 2
-(цей PR). Решта broadcast workflows (WF-08/15/16/30/60/63/98/99) дотягають
-ack-row у наступних mechanical sub-PR — pattern зафіксований у WF-04;
-кожен sub-PR ≈30 LOC + smoke у staging. Server-side endpoint —
+**WF-17** (stale PR P2), **WF-19** (DB-health weekly P1) — у W3 PR-3 batch 2,
+**WF-08** (weekly financial digest, P2 digest), **WF-15** (Railway deploy,
+динамічний topic ok→ops/P2, fail→incidents/P1), **WF-16** (PostHog daily,
+P2 growth), **WF-30** (AI memory digest, P2 digest), **WF-60** (growth funnel,
+P2 growth), **WF-63** (growth acquisition, P2 growth), **WF-98** (error-handler,
+P0 meta — `alertId = wf98:<failed_wfId>:<error_signature>` mapped 1:1 на
+WF-98 SQL cooldown), **WF-99** (heartbeat, P3 meta — silent broadcast
+зі збереженим `disable_notification=true`) — у W3 PR-4 (O9 batch, цей PR).
+Server-side endpoint —
 [`apps/server/src/modules/alerts/store.ts`](../../apps/server/src/modules/alerts/store.ts).
+Mapping per-workflow деталізований у
+[`docs/observability/alert-bot-routing.md`](../../docs/observability/alert-bot-routing.md).
 
 ⁽⁶⁾ Wave 3 §3.2 ADR-0038. **WF-104** — Telegram callback router: trigger на
 `callback_query`, парсить `ack:<action>:<alertId>`, шле `POST
