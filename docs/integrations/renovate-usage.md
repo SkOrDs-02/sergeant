@@ -1,6 +1,6 @@
 # Renovate — як працювати з PR-ами
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 >
 > Створено 2026-04-25 разом з [#721](https://github.com/Skords-01/Sergeant/pull/721). Конфіг: `renovate.json` у корені.

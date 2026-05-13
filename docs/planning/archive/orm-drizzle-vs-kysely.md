@@ -1,6 +1,6 @@
 # ORM: Drizzle vs Kysely — що це і яку обрати (архів)
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** ніколи (read-only архів).
+> **Last validated:** 2026-05-13 by Devin. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only).
 > **Created:** 2026-05-03.
 > **Owner:** @Skords-01.

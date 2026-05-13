@@ -23,6 +23,10 @@ const {
   activateN8nWorkflowMock,
   refreshBusinessSnapshotMock,
   classifyMessageMock,
+  setFounderMuteMock,
+  clearFounderMuteMock,
+  getFounderMuteMock,
+  isFounderMutedMock,
 } = vi.hoisted(() => ({
   listRecentWriteAuditsMock: vi.fn(),
   recordWriteAuditMock: vi.fn(),
@@ -33,6 +37,10 @@ const {
   activateN8nWorkflowMock: vi.fn(),
   refreshBusinessSnapshotMock: vi.fn(),
   classifyMessageMock: vi.fn(),
+  setFounderMuteMock: vi.fn(),
+  clearFounderMuteMock: vi.fn(),
+  getFounderMuteMock: vi.fn(),
+  isFounderMutedMock: vi.fn(),
 }));
 
 vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
@@ -49,6 +57,10 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
     activateN8nWorkflow: activateN8nWorkflowMock,
     refreshBusinessSnapshot: refreshBusinessSnapshotMock,
     classifyMessage: classifyMessageMock,
+    setFounderMute: setFounderMuteMock,
+    clearFounderMute: clearFounderMuteMock,
+    getFounderMute: getFounderMuteMock,
+    isFounderMuted: isFounderMutedMock,
   };
 });
 
@@ -543,5 +555,149 @@ describe("/api/internal/openclaw/classify", () => {
 
     expect(res.status).toBe(400);
     expect(classifyMessageMock).not.toHaveBeenCalled();
+  });
+});
+
+// ───── PR /mute (Phase 5b): mute-state endpoints ──────────────────────
+
+describe("/api/internal/openclaw/mute/*", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("/mute/set forwards parsed ISO and reason to setFounderMute", async () => {
+    setFounderMuteMock.mockResolvedValueOnce({
+      founderUserId: "user-1",
+      mutedUntilIso: "2026-05-13T22:00:00.000Z",
+      setAtIso: "2026-05-13T18:00:00.000Z",
+      reason: "sleep",
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/set")
+      .send({
+        founderUserId: "user-1",
+        mutedUntilIso: "2026-05-13T22:00:00.000Z",
+        reason: "sleep",
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.mutedUntilIso).toBe("2026-05-13T22:00:00.000Z");
+    expect(setFounderMuteMock).toHaveBeenCalledTimes(1);
+    const call = setFounderMuteMock.mock.calls[0]!;
+    const arg = call[1] as Record<string, unknown>;
+    expect(arg["founderUserId"]).toBe("user-1");
+    expect(arg["mutedUntil"]).toBeInstanceOf(Date);
+    expect((arg["mutedUntil"] as Date).toISOString()).toBe(
+      "2026-05-13T22:00:00.000Z",
+    );
+    expect(arg["reason"]).toBe("sleep");
+  });
+
+  it("/mute/set accepts null mutedUntilIso (parses to null)", async () => {
+    setFounderMuteMock.mockResolvedValueOnce({
+      founderUserId: "user-1",
+      mutedUntilIso: null,
+      setAtIso: "2026-05-13T18:00:00.000Z",
+      reason: null,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/set")
+      .send({
+        founderUserId: "user-1",
+        mutedUntilIso: null,
+      });
+    expect(res.status).toBe(200);
+    const call = setFounderMuteMock.mock.calls[0]!;
+    const arg = call[1] as Record<string, unknown>;
+    expect(arg["mutedUntil"]).toBeNull();
+    expect(arg["reason"]).toBeNull();
+  });
+
+  it("/mute/set rejects malformed ISO timestamp (400)", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/set")
+      .send({
+        founderUserId: "user-1",
+        mutedUntilIso: "not-an-iso",
+      });
+    expect(res.status).toBe(400);
+    expect(setFounderMuteMock).not.toHaveBeenCalled();
+  });
+
+  it("/mute/clear forwards founderUserId to clearFounderMute", async () => {
+    clearFounderMuteMock.mockResolvedValueOnce({
+      founderUserId: "user-1",
+      mutedUntilIso: null,
+      setAtIso: "2026-05-13T18:00:00.000Z",
+      reason: null,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/clear")
+      .send({ founderUserId: "user-1" });
+    expect(res.status).toBe(200);
+    expect(res.body.mutedUntilIso).toBeNull();
+    expect(clearFounderMuteMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "user-1",
+    });
+  });
+
+  it("/mute/status returns null state when no row exists", async () => {
+    getFounderMuteMock.mockResolvedValueOnce(null);
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/status")
+      .send({ founderUserId: "user-1" });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ state: null });
+  });
+
+  it("/mute/status returns hydrated state when row exists", async () => {
+    getFounderMuteMock.mockResolvedValueOnce({
+      founderUserId: "user-1",
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+      setAtIso: "2026-05-13T22:00:00.000Z",
+      reason: "deep-work",
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/status")
+      .send({ founderUserId: "user-1" });
+    expect(res.status).toBe(200);
+    expect(res.body.state).toEqual({
+      founderUserId: "user-1",
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+      setAtIso: "2026-05-13T22:00:00.000Z",
+      reason: "deep-work",
+    });
+  });
+
+  it("/mute/check returns runtime guard result", async () => {
+    isFounderMutedMock.mockResolvedValueOnce({
+      muted: true,
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+      reason: "sleep",
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/check")
+      .send({ founderUserId: "user-1" });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      muted: true,
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+      reason: "sleep",
+    });
+  });
+
+  it("/mute/check rejects missing founderUserId with 400", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/mute/check")
+      .send({});
+    expect(res.status).toBe(400);
+    expect(isFounderMutedMock).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 # I6 — Document the STRIDE threat model per module
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-06, doc-only) — see Resolution log.
 
 | Field          | Value                             |

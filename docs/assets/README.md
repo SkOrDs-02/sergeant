@@ -1,6 +1,6 @@
 # Repo assets — hero, screenshots, GIFs
 
-> **Last validated:** 2026-05-05 by @Skords-01 / Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Static assets, що використовуються в `README.md`, `docs/`, або в social-meta-картинках. Не плутати з `apps/web/public/` (runtime web assets) і `apps/mobile/assets/` (mobile bundle).

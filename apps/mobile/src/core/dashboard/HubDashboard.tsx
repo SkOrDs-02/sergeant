@@ -328,7 +328,10 @@ export function HubDashboard() {
   }, []);
 
   const openAssistant = useCallback(() => {
-    router.push("/assistant" as Href);
+    // FAB → HubChat (Phase 2 hub-core parity). `/assistant` лишається
+    // capability-catalogue route, доступний з самого чату через
+    // `/help`-команду.
+    router.push("/hub-chat" as Href);
   }, []);
 
   const openSearch = useCallback(() => {

@@ -1,6 +1,6 @@
 # Dev stack roadmap — інструменти і поради по всьому ЖЦ розробки
 
-> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 **Статус:** весь топ-15 закритий + більшість Тиждень 1–4 / Місяць 2 беклогу теж залендено. Створено 2026-04-25. Останнє оновлення 2026-05-05: понад топ-15 додатково закрилися Storybook (44 stories у `apps/web`), Stryker mutation testing (`stryker.cloudSync.conf.json` — згодом retired 2026-05-06 разом із v1 engine drop, [#052b](https://github.com/Skords-01/Sergeant/pull/2046)), Argos visual regression (`@argos-ci/playwright`), Drizzle ORM POC (повноцінний `packages/db-schema` з PG + SQLite адаптерами), Helmet + CSP report-only middleware (`apps/server/src/http/security.ts`), gitleaks secret-scan + CodeQL + Trivy container-scan + release-SBOM, mobile Sentry SDK через `@sentry/react-native` (DSN-gated). Sentry mobile DSN provisioning у Expo EAS Secrets — все ще TODO, решта пунктів TL;DR — закриті. **Архів історичних сесій (2026-04-25 / 2026-04-25 evening):** [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md).

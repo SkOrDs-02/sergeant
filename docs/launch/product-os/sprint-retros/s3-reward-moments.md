@@ -1,6 +1,6 @@
 # S3 — Reward у правильний момент · post-mortem (live)
 
-> **Last validated:** 2026-05-04 by @Skords-01 (S3.4 + S3.5 + S3.1 + S3.2 виконані).
+> **Last validated:** 2026-05-13 by @Skords-01 (S3.4 + S3.5 + S3.1 + S3.2 виконані).
 > **Status:** Active — спринт у роботі. Документ оновлюється після кожного S3.× merge-у.
 
 > Зворотний зв'язок до [`docs/launch/ftux-sprint-plan.md` §5](../ftux-sprint-plan.md#5-sprint-3--reward-у-правильний-момент--value-progress-2-тижні).

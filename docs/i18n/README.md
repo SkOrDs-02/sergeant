@@ -1,6 +1,6 @@
 # Internationalisation (i18n)
 
-> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Sergeant поки **UA-only** і не приймає англомовних beta-юзерів. Замість дорогого

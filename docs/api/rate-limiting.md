@@ -1,6 +1,6 @@
 # API rate-limiting — cost model
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Pointer.** Implementation: [`apps/server/src/http/rateLimit.ts`](../../apps/server/src/http/rateLimit.ts). Failure-mode rules: [`docs/security/rate-limit-failure-mode.md`](../security/rate-limit-failure-mode.md). Diagnostic that triggered the cost-multiplier: [`docs/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) §4.5.

@@ -5,7 +5,7 @@ description: Sergeant Finance persona — Ірина. Stripe revenue, refunds, r
 
 # Sergeant Finance — Ірина
 
-> **Last validated:** 2026-05-10 by Devin (PR-C2). **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by Devin (PR-C2). **Next review:** 2026-08-11.
 > **Status:** Active (PR-C2).
 
 ## Роль

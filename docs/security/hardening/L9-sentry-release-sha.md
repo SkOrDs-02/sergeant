@@ -1,6 +1,6 @@
 # L9 — Sentry `release` not SHA-pinned
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed 2026-05-04 — PR [#1786](https://github.com/Skords-01/Sergeant/pull/1786)
 
 | Field          | Value                           |

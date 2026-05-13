@@ -46,6 +46,7 @@ import {
   recordAlertPost,
   type TelegramApiClient,
 } from "../../modules/alerts/index.js";
+import { isFounderMuted } from "../../modules/openclaw/index.js";
 import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -168,6 +169,16 @@ const SendBody = z
     messageThreadId: z.number().int().optional(),
     text: z.string().min(1).max(4096),
     disableNotification: z.boolean().optional(),
+    /**
+     * Optional. Якщо supplied, server перевіряє `openclaw_mute_state`
+     * (PR /mute Phase 5b) перед send. Non-P0 при активному mute →
+     * silently skip з breadcrumb `[openclaw-muted-skip]`. P0 при
+     * mute → proceed з breadcrumb `[openclaw-muted-override-critical]`.
+     * Topic-channel callers (ops/eng/incidents) НЕ передають це поле —
+     * mute стосується тільки founder DM-ів (WF-103 escalations,
+     * SAB direct-to-founder pings).
+     */
+    founderUserId: z.string().min(1).max(128).optional(),
     /** Override window. Необов'язково — default 600_000 ms (10 хв). */
     windowMs: z
       .number()
@@ -304,6 +315,56 @@ export function createAlertsInternalRouter({
           note: "SERGEANT_ALERT_BOT_TOKEN env не виставлений.",
         });
         return;
+      }
+
+      // PR /mute (Phase 5b): founder DM "do not disturb" gate.
+      // Caller передає `founderUserId` лише для DM-channel-ів (WF-103
+      // escalation, SAB direct-to-founder). Topic-channel-и
+      // (ops/eng/incidents) skip-ають це поле — їх mute не торкається.
+      // P0 (critical) bypass-ить mute з breadcrumb-ом для audit-trail.
+      if (parsed.data.founderUserId) {
+        const muteGuard = await isFounderMuted(pool, {
+          founderUserId: parsed.data.founderUserId,
+        });
+        if (muteGuard.muted) {
+          if (parsed.data.severity === "P0") {
+            Sentry.addBreadcrumb({
+              category: "openclaw.mute",
+              message: "openclaw-muted-override-critical",
+              level: "warning",
+              data: {
+                alertId: parsed.data.alertId,
+                topic: parsed.data.topic,
+                severity: parsed.data.severity,
+                mutedUntilIso: muteGuard.mutedUntilIso,
+              },
+            });
+          } else {
+            Sentry.addBreadcrumb({
+              category: "openclaw.mute",
+              message: "openclaw-muted-skip",
+              level: "info",
+              data: {
+                alertId: parsed.data.alertId,
+                topic: parsed.data.topic,
+                severity: parsed.data.severity,
+                mutedUntilIso: muteGuard.mutedUntilIso,
+              },
+            });
+            logger.info({
+              msg: "alerts_send_skipped_muted",
+              alertId: parsed.data.alertId,
+              severity: parsed.data.severity,
+              mutedUntilIso: muteGuard.mutedUntilIso,
+            });
+            res.status(200).json({
+              action: "skipped_muted",
+              alertId: parsed.data.alertId,
+              mutedUntilIso: muteGuard.mutedUntilIso,
+            });
+            return;
+          }
+        }
       }
 
       const result = await postOrEditDedupedAlert(pool, client, {

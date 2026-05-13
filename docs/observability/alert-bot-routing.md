@@ -1,6 +1,7 @@
 # Alert-bot routing — n8n broadcast workflows → `tg_alert_acks`
 
-> **Status:** Active. **Owner:** ops. **Last refreshed:** 2026-05-13 (O9 batch).
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Active. **Owner:** ops.
 > **Spec:** [`docs/adr/0038-tg-alert-acks-and-escalation.md`](../adr/0038-tg-alert-acks-and-escalation.md)
 > §3.2; reporting matrix footnote 5 in
 > [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md).

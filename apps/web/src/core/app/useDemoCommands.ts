@@ -19,10 +19,16 @@ import {
 export function useDemoCommands(): void {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isDark, setChoice: setThemeChoice } = useTheme();
+  // `useDarkMode` was retired in PR #2660 in favour of the 4-mode
+  // `useTheme` (`light` / `dark` / `system` / `hc`). The Command
+  // Palette's binary toggle keeps its old UX semantics by flipping
+  // between explicit `light` and `dark` (`system` and `hc` are
+  // surfaced via the dedicated `<ThemeSwitcher />` in HubHeader).
+  const { isDark, setChoice } = useTheme();
+  const dark = isDark;
   const toggleDark = useCallback(
-    () => setThemeChoice(isDark ? "light" : "dark"),
-    [isDark, setThemeChoice],
+    () => setChoice(isDark ? "light" : "dark"),
+    [isDark, setChoice],
   );
 
   const commands = useMemo<PaletteCommand[]>(
@@ -53,7 +59,7 @@ export function useDemoCommands(): void {
       },
       {
         id: "settings.toggle-dark",
-        title: isDark ? "Світла тема" : "Темна тема",
+        title: dark ? "Світла тема" : "Темна тема",
         description: "Перемкнути візуальну схему інтерфейсу",
         group: "Налаштування",
         shortcut: "⇧ T",
@@ -87,7 +93,7 @@ export function useDemoCommands(): void {
         },
       },
     ],
-    [isDark, navigate, toast, toggleDark],
+    [dark, navigate, toast, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);

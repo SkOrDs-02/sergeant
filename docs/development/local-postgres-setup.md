@@ -1,6 +1,6 @@
 # Local Postgres setup
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у

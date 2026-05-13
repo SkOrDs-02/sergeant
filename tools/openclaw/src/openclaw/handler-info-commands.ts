@@ -26,6 +26,7 @@ import {
   type HistoryReplyPayload,
   type PendingAlertItem,
 } from "./alerts-format.js";
+import { executeMuteCommand } from "./mute-runner.js";
 import { executeRitualCommand } from "./ritual-runner.js";
 import { executeOpenclawStatusCommand } from "./status-runner.js";
 import type { HandlerContext } from "./handler-context.js";
@@ -580,6 +581,100 @@ export function registerInfoCommands(ctx: HandlerContext): void {
             `${serverUrl}/api/internal/openclaw/metrics/sentry`,
             internalApiKey,
             { level: "error", limit: 5 },
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async openInvocation(input) {
+          const r = await postJson<OpenInvocationResponse>(
+            `${serverUrl}/api/internal/openclaw/invocations/open`,
+            internalApiKey,
+            input,
+          );
+          return {
+            ok: r.ok,
+            status: r.status,
+            invocationId: r.data?.invocationId ?? null,
+          };
+        },
+        async finalizeInvocation(input) {
+          const r = await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status };
+        },
+      },
+      addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+    });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
+  });
+
+  // PR-/mute (Phase 5b): "do not disturb" — пауза вихідних bot pings
+  // (alerts, ranok briefing, /ritual digests) на N часу без env-var
+  // змін. Critical alerts (severity=P0) bypass-аються; gate-логіка
+  // (skip vs override) живе в `apps/server/src/routes/internal/alerts.ts`.
+  //
+  // Implementation: pure orchestrator `executeMuteCommand` (mute-runner.ts);
+  // handler — thin shim, що мапить fetcher на postJson + Sentry breadcrumb.
+  bot.command("mute", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (c.match ?? "").toString();
+    const founderTgUserId =
+      parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
+      c.from?.id ??
+      0;
+
+    const result = await executeMuteCommand({
+      rawArgument: argument,
+      founderUserId,
+      founderTgUserId,
+      ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+      fetcher: {
+        async postMuteSet(input) {
+          const r = await postJson<{
+            founderUserId: string;
+            mutedUntilIso: string | null;
+            setAtIso: string;
+            reason: string | null;
+          }>(
+            `${serverUrl}/api/internal/openclaw/mute/set`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async postMuteClear(input) {
+          const r = await postJson<{
+            founderUserId: string;
+            mutedUntilIso: string | null;
+            setAtIso: string;
+            reason: string | null;
+          }>(
+            `${serverUrl}/api/internal/openclaw/mute/clear`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async postMuteStatus(input) {
+          const r = await postJson<{
+            state: {
+              founderUserId: string;
+              mutedUntilIso: string | null;
+              setAtIso: string;
+              reason: string | null;
+            } | null;
+          }>(
+            `${serverUrl}/api/internal/openclaw/mute/status`,
+            internalApiKey,
+            input,
           );
           return { ok: r.ok, status: r.status, data: r.data };
         },

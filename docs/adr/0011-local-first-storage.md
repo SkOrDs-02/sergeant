@@ -1,6 +1,6 @@
 # ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор
 
-> **Last validated:** 2026-05-10 by @Skords-01 / Devin. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 - **Status:** accepted

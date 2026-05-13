@@ -1,6 +1,6 @@
 # PR-03: password length policy — scrypt premise correction
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Closed — merged [#1550](https://github.com/Skords-01/Sergeant/pull/1550)
 
 |              |                                                               |

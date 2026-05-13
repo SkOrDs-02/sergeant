@@ -1,7 +1,7 @@
 # Doc-hygiene roast — 2026-05-13
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11. **Status:** Active
-
+> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Status:** Active
 > **Cross-refs:**
 > [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md) — попередній doc-hygiene прохід ·
 > [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md) — gap-analysis README ·
@@ -15,7 +15,7 @@
 2. **`lighthouse-ci.yml` GitHub workflow не існує**, але `apps/web/AGENTS.md:45`, `docs/planning/sprint-roadmap-q2q3-2026.md:38,374` і `AGENTS.md` посилаються на нього як «shipped». **Fixed у цьому PR** — текст бампнуто до «planned, локально через `pnpm lighthouse`».
 3. **`docs/initiatives/0006-frontend-routing-and-code-split.md` стейл**: рапортує `useHashRouter` migration як «2/4», насправді 4/4. Дві останні (shared `useHashRoute.ts` + per-module hooks для fizruk/routine) закриті у `f5caf1ee` (2026-05-13). **Fixed у цьому PR.**
 4. **Tech-debt freshness guard не покривав `docs/tech-debt/backend.md`** — `scripts/check-tech-debt-freshness.mjs` `DEFAULT_FILES` містив лише frontend + mobile. Backend `Last validated` міг дрейфувати без CI-сигналу. **Fixed у цьому PR.**
-5. **README gap-analysis (`2026-05-03`) status drift**: `docs/audits/README.md` досі рапортує `Implemented: 0/8 ≈ Outstanding: 8 ≈`, хоча 13/15 пунктів чек-листу §6 уже у README.md (Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map). Залишається 2 (Packages як окрема таблиця, Environment Variables як окрема секція). **Не правлено** — обмеження «one-line edit» від parent session.
+5. **README gap-analysis (`2026-05-03`) status drift**: `docs/audits/README.md` досі рапортує `Implemented: 0/8 ≈ Outstanding: 8 ≈`, хоча 13/15 пунктів чек-листу §6 уже у README.md (Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map). Залишається 2 (Packages як окрема таблиця, Environment Variables як окрема секція). **Fixed у follow-up PR** — рядок пересинхронізовано на `13/15 ≈ / 2` (див. §Прогрес виконання → P1-1).
 6. **AGENTS.md split** — попередня прожарка пропонувала розгрупування у `AGENTS.md` slim + `docs/governance/hard-rules.md` full. Поточний AGENTS.md = 170 рядків (manageable), вже містить cross-refs у `docs/governance/rules/`. **Split не потрібен** — попередня прожарка спиралась на стару версію файлу.
 7. **`docs/audits/archive/2026-04-28-ux-ui-audit.md` 3-date-drift** — у файлі ще 3 окремі дати (Last validated, Initial audit date, Initial audit reference). Файл Archived; рекомендується канонікалізувати у наступному audit-passе.
 
@@ -83,16 +83,9 @@
 
 ## P1 — recommended follow-up (не в цьому PR)
 
-### P1-1. `docs/audits/README.md` README-gap-analysis row drift
+### P1-1. `docs/audits/README.md` README-gap-analysis row drift ✅ Closed
 
-[`docs/audits/README.md:43`](./README.md) рапортує `2026-05-03-readme-gap-analysis.md` як `Implemented: 0/8 ≈ Outstanding: 8 ≈`. Реальний стан: 13/15 із §6 чек-листу вже у `README.md` (Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map). Залишається 2 outstanding-пункти:
-
-- **Packages** — окрема таблиця-каталог пакетів у `packages/*` (зараз інлайново у §What is in the repo)
-- **Environment Variables** — окрема секція з обов'язковими vs опціональними змінними (зараз in-line у Quickstart)
-
-**Дія (рекомендована для наступної прожарки):** оновити status row → `Implemented: 13/15 ≈ Outstanding: 2`; додати ці 2 пункти як trackable у самій 2026-05-03 audit-document.
-
-**Чому не в цьому PR:** parent-session обмеження — змінювати `docs/audits/README.md` ТІЛЬКИ ОДНИМ рядком для нової прожарки. Перенесено на 2026-08-11 cycle.
+**Закрито у follow-up PR** — рядок `2026-05-03-readme-gap-analysis.md` у `docs/audits/README.md` пересинхронізовано з `0/8 ≈ / 8 ≈` на `13/15 ≈ / 2`. `Last validated` у `docs/audits/README.md` бампнуто з посиланням на цей audit § P1-1. Деталі дії перенесено у §Прогрес виконання нижче.
 
 ### P1-2. `docs/audits/archive/2026-04-28-ux-ui-audit.md` 3-date canonicalization
 
@@ -124,7 +117,7 @@
 - ✅ **P0-2**: 4 stale «lighthouse-ci.yml shipped» refs → виправлені на «planned, local only».
 - ✅ **P0-3**: useHashRoute.ts ghost ref → виправлено + bumped `[x] 4/4`.
 - ✅ **P0-4**: tech-debt-freshness тепер покриває `backend.md`; marker grammar розширена для canonical `Last validated:` pattern; +1 unit-test, +1 default list test.
-- ⏸ **P1-1**: README-gap-analysis row drift — пропущено через one-line constraint від parent session; задокументовано як P1.
+- ✅ **P1-1** (follow-up PR): `docs/audits/README.md` row для `2026-05-03-readme-gap-analysis.md` пересинхронізовано з `Implemented: 0/8 ≈ / Outstanding: 8 ≈` на `Implemented: 13/15 ≈ / Outstanding: 2`. Реальний стан зачекдено по `README.md` (13 секцій присутні: Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map; 2 залишаються outstanding — Packages як окрема таблиця-каталог і Environment Variables як окрема секція). `docs/audits/README.md` `Last validated` бампнуто. Сам `2026-05-03-readme-gap-analysis.md` не редагувався — деталізовані §Резюме-пункти живуть там як історичний знімок 2026-05-03.
 - ⏸ **P1-2/P1-3, P2-1/P2-2**: рекомендовані follow-up-и, не блокуючі.
 
 ## Файли у цьому PR (~7-9)

@@ -71,7 +71,7 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 
 ## Layout
 
-`<ToastContainer>` живе у `apps/web/src/App.tsx` як root-portal.
+`<ToastContainer>` живе у `apps/web/src/core/App.tsx` як root-portal.
 
 - На mobile: `bottom: safe-area-inset-bottom + 12px`. На iOS PWA — над
   Home Indicator (safe-area).

@@ -1,6 +1,6 @@
 # PR-21: SW `prompt`-mode auto-update on inactivity
 
-> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Planned (refresh: build-id rename — `__SW_BUILD_ID__` → `import.meta.env.VITE_BUILD_ID` post PR-28 merge, [#2309](https://github.com/Skords-01/Sergeant/pull/2309))
 
 |                    |                                                                          |

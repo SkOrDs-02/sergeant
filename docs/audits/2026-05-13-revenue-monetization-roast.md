@@ -1,6 +1,7 @@
 # Revenue, Monetization & Marketing Roast (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11. **Status:** Active
+> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Status:** Active
 
 ## Cross-refs
 

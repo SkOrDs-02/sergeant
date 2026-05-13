@@ -1,6 +1,6 @@
 # L5 — Confirm `X-DNS-Prefetch-Control: off`
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-05) — see Resolution log.
 
 | Field          | Value                           |

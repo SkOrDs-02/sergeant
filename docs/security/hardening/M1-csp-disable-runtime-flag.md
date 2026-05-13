@@ -1,6 +1,6 @@
 # M1 — `CSP_DISABLE=1` runtime fault-injection vector
 
-> **Last validated:** 2026-05-04 by @steppupa. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-04) — see Resolution log.
 
 | Field          | Value                                                  |

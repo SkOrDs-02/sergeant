@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-05-06 by Devin (синхронізовано зі станом Stage 7 storage-roadmap, OpenClaw Phase 3 prep + архівація `orm-drizzle-vs-kysely.md` після Kysely → Drizzle міграції). **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-13 by Devin (синхронізовано зі станом Stage 7 storage-roadmap, OpenClaw Phase 3 prep + архівація `orm-drizzle-vs-kysely.md` після Kysely → Drizzle міграції). **Next review:** 2026-08-11.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.

@@ -1,7 +1,7 @@
 # Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11. **Status:** Active
-
+> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Status:** Active
 > Targeted re-audit web-фронту: state management, routing, providers, code-split, RQ keys, module decomposition. Скоуп — `apps/web` лише.
 
 ## Cross-refs (попередні прожарки/аудити цієї теми)

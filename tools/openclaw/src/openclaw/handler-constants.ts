@@ -181,6 +181,7 @@ export const HELP_TEXT = [
   "/ritual [morning|weekly|monthly|help] — ad-hoc ritual trigger (WF-25 mirror)",
   "/ai_cost — AI-spend rollup: today/week/month + budget + top endpoints",
   "/openclaw [status|help] — debug snapshot: persona / WF / invocations / budget / Sentry",
+  "/mute [30m|1h|4h|8h|until-morning|status|off|help] — pause bot pings (P0 alerts override)",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",

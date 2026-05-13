@@ -1,6 +1,6 @@
 # PR-11: Drizzle schema ↔ SQL drift CI gate
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Closed — drift CI gate landed (`scripts/check-schema-drift.mjs` + `packages/db-schema/src/__tests__/drift.test.ts`); ROOT-path fix in [#2089](https://github.com/Skords-01/Sergeant/pull/2089)
 
 |              |                                               |

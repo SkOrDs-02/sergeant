@@ -1,6 +1,6 @@
 # Walkthrough: `finyk` module
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
