@@ -102,6 +102,9 @@ export type {
   TextareaProps,
 } from "./Input";
 
+export { Prose } from "./Prose";
+export type { ProseProps, ProseVariant } from "./Prose";
+
 export { SectionHeader, SectionHeading } from "./SectionHeading";
 export type {
   SectionHeadingProps,

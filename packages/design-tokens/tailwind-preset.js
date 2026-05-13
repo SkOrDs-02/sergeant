@@ -656,27 +656,46 @@ const preset = {
   // ═══════════════════════════════════════════════════════════════════════
   // PLUGINS
   //   1. Semantic typography utilities (`.text-style-*`).
-  //   2. Touch-target floors (`.touch-target`, `.touch-target-48`).
+  //   2. Tabular numerics helper (`.tnum`).
+  //   3. Touch-target floors (`.touch-target`, `.touch-target-48`).
   // ═══════════════════════════════════════════════════════════════════════
   //
   // The `.text-style-*` utilities below are the canonical way to apply
-  // a typographic role. They bundle font-size, line-height, weight,
-  // letter-spacing, and casing into a single class so layouts can't
-  // drift on any one axis (e.g. shipping the hero size with the wrong
-  // weight). Prefer these over re-deriving the values from the raw
-  // `text-xs / text-sm / …` scale whenever a slot has a documented
-  // role:
+  // a typographic role. They bundle font-size (fluid via `clamp()`),
+  // line-height, weight, letter-spacing, and casing into a single class
+  // so layouts can't drift on any one axis. Prefer these over re-deriving
+  // the values from the raw `text-xs / text-sm / …` scale whenever a slot
+  // has a documented role.
   //
-  //   .text-style-hero      — page H1s and hero stat numbers
-  //   .text-style-title     — section headings, card titles
-  //   .text-style-body      — main body copy
-  //   .text-style-label     — form labels, button text
-  //   .text-style-caption   — metadata, timestamps, helper text
-  //   .text-style-overline  — uppercase section kickers / eyebrows
+  // Twelve canonical slots:
   //
-  // Minimum text size in the design system is 12px (`text-style-caption`);
-  // `text-2xs` (10px) is reserved for chart ticks and decorative
-  // metadata badges.
+  //   .text-style-display    — landing hero / splash heading (32→56px)
+  //   .text-style-headline   — page H1s, hero stat numbers   (26→36px)
+  //   .text-style-title-lg   — large section heading         (22→28px)
+  //   .text-style-title      — section heading, card title   (18→22px)
+  //   .text-style-subtitle   — sub-heading                   (16→18px)
+  //   .text-style-body-lg    — emphasised body copy          (16→18px)
+  //   .text-style-body       — default body copy             (15→16px)
+  //   .text-style-body-sm    — secondary body, descriptions  (13→14px)
+  //   .text-style-label      — form labels, button text      (13→14px)
+  //   .text-style-caption    — metadata, timestamps          (12px floor)
+  //   .text-style-overline   — uppercase kickers / eyebrows  (12px floor)
+  //   .text-style-code       — inline code / monospace stat  (13→14px)
+  //
+  // Fluid clamp() formula targets the 320→1280px viewport range so the
+  // scale grows smoothly from compact mobile to comfortable desktop while
+  // respecting the **12px floor** (Hard Rule #16): no slot drops below
+  // `caption` / `overline`. `.text-style-hero` is preserved as a
+  // back-compat alias on top of `headline`.
+  //
+  // Minimum text size in the design system is 12px; `text-2xs` (10px)
+  // is reserved for chart ticks and decorative metadata badges and is
+  // NOT a `text-style-*` slot.
+  //
+  // The `.tnum` utility toggles `font-variant-numeric: tabular-nums` on
+  // numeric columns / stats so digits stay column-aligned regardless of
+  // the surrounding text-style. Sibling to `.tabular-nums` defined in
+  // `apps/web/src/styles/base.css` (kept for back-compat).
   //
   // The `.touch-target*` plugin enforces WCAG 2.5.5 / Apple HIG ≥44×44px
   // on `(pointer: coarse)` — see the inline comment on the plugin for the
@@ -684,39 +703,90 @@ const preset = {
   plugins: [
     function semanticTypography({ addUtilities }) {
       addUtilities({
-        ".text-style-hero": {
-          fontSize: "26px",
-          lineHeight: "32px",
+        ".text-style-display": {
+          fontSize: "clamp(2rem, 1.572rem + 2.143vw, 3.5rem)",
+          lineHeight: "1.05",
+          fontWeight: "700",
+          letterSpacing: "-0.025em",
+        },
+        ".text-style-headline": {
+          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
+          lineHeight: "1.15",
           fontWeight: "700",
           letterSpacing: "-0.02em",
         },
+        // Back-compat alias — `.text-style-hero` was the prior name for
+        // the page-H1 / hero-stat slot. New code should reach for
+        // `.text-style-headline`; existing call-sites keep working.
+        ".text-style-hero": {
+          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
+          lineHeight: "1.15",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
+        },
+        ".text-style-title-lg": {
+          fontSize: "clamp(1.375rem, 1.268rem + 0.536vw, 1.75rem)",
+          lineHeight: "1.25",
+          fontWeight: "600",
+          letterSpacing: "-0.015em",
+        },
         ".text-style-title": {
-          fontSize: "20px",
-          lineHeight: "28px",
+          fontSize: "clamp(1.125rem, 1.054rem + 0.357vw, 1.375rem)",
+          lineHeight: "1.3",
           fontWeight: "600",
           letterSpacing: "-0.01em",
         },
+        ".text-style-subtitle": {
+          fontSize: "clamp(1rem, 0.964rem + 0.179vw, 1.125rem)",
+          lineHeight: "1.4",
+          fontWeight: "500",
+          letterSpacing: "-0.005em",
+        },
+        ".text-style-body-lg": {
+          fontSize: "clamp(1rem, 0.964rem + 0.179vw, 1.125rem)",
+          lineHeight: "1.55",
+          fontWeight: "400",
+        },
         ".text-style-body": {
-          fontSize: "16px",
-          lineHeight: "24px",
+          fontSize: "clamp(0.9375rem, 0.920rem + 0.089vw, 1rem)",
+          lineHeight: "1.55",
+          fontWeight: "400",
+        },
+        ".text-style-body-sm": {
+          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
+          lineHeight: "1.55",
           fontWeight: "400",
         },
         ".text-style-label": {
-          fontSize: "14px",
-          lineHeight: "20px",
+          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
+          lineHeight: "1.4",
           fontWeight: "500",
+          letterSpacing: "0.005em",
         },
+        // 12px floor — Hard Rule #16. Fixed (non-fluid) so the floor
+        // never drifts below readability on any viewport.
         ".text-style-caption": {
-          fontSize: "12px",
-          lineHeight: "16px",
+          fontSize: "0.75rem",
+          lineHeight: "1.4",
           fontWeight: "400",
+          letterSpacing: "0.005em",
         },
         ".text-style-overline": {
-          fontSize: "12px",
-          lineHeight: "16px",
+          fontSize: "0.75rem",
+          lineHeight: "1.4",
           fontWeight: "600",
-          letterSpacing: "0.06em",
+          letterSpacing: "0.08em",
           textTransform: "uppercase",
+        },
+        ".text-style-code": {
+          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
+          lineHeight: "1.5",
+          fontWeight: "500",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+        },
+        ".tnum": {
+          fontVariantNumeric: "tabular-nums",
         },
       });
     },
