@@ -14,6 +14,7 @@ export const NAV_SECTIONS = [
   { id: "navigation", label: "Навігація" },
   { id: "overlays", label: "Overlays" },
   { id: "primitives", label: "Tooltip & Popover" },
+  { id: "menus", label: "Menus" },
   { id: "feedback", label: "Фідбек" },
   { id: "celebration", label: "Святкування" },
   { id: "onboarding", label: "Онбординг" },

@@ -2,11 +2,13 @@ import { useCallback, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
+import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 
 import { useAuth } from "./auth/AuthContext";
 import { AppLock } from "./security/AppLock";
 import { useAppLockContext } from "./security/AppLockContext";
-import { setFlag } from "./lib/featureFlags";
+import { setFlag, useFlag } from "./lib/featureFlags";
+import { useDemoCommands } from "./app/useDemoCommands";
 import { ActiveModuleView } from "./app/ActiveModuleView";
 import { HubHomeView } from "./app/HubHomeView";
 import { Providers } from "./app/Providers";
@@ -148,6 +150,14 @@ function AppInner() {
     onOpenSearch: openSearchFromShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
   });
+
+  // Track 5 — global ⌘K / Ctrl+K command palette. Gated by the
+  // `hub_command_palette` flag so we can ship the primitive without
+  // racing the existing Hub-search Cmd+K shortcut. When the flag flips
+  // on, the palette steals Cmd+K from `useHubKeyboardShortcuts`.
+  const paletteEnabled = useFlag("hub_command_palette");
+  useCommandPaletteHotkey(paletteEnabled);
+  useDemoCommands();
 
   // URL-addressable surfaces that live outside the hub composition
   // (sign-in, reset-password, /design, /pricing, /assistant, /chat,
