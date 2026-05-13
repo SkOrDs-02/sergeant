@@ -41,6 +41,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
                 placeholder="Вівсянка з бананом"
                 accessibilityLabel="Назва страви"
                 autoCapitalize="sentences"
+                testID="add-meal-name"
               />
             </View>
             <VoiceMicButton

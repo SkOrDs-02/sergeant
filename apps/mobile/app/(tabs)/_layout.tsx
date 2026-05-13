@@ -40,9 +40,28 @@ function createTabIcon(Icon: LucideIcon) {
  * never set this variable — the check compiles away in release binaries
  * because `process.env.EXPO_PUBLIC_*` is statically inlined by Metro.
  *
+ * Mutually exclusive with `EXPO_PUBLIC_E2E_REAL_AUTH=1`: that flag
+ * activates a mock fetch interceptor (`src/auth/e2eAuthMock.ts`) so the
+ * sign-in screen, `signOut`, and `useUser` can run end-to-end through
+ * the real Better Auth client without a live backend. When the real-
+ * auth flag is set we intentionally disable the bypass so suites land
+ * on `/(auth)/sign-in` after the first launch.
+ *
  * Docs: `docs/mobile/react-native-migration.md` §8 / §13 Q8.
  */
-const E2E_AUTH_BYPASS = process.env.EXPO_PUBLIC_E2E === "1";
+const E2E_AUTH_BYPASS =
+  process.env.EXPO_PUBLIC_E2E === "1" &&
+  process.env.EXPO_PUBLIC_E2E_REAL_AUTH !== "1";
+
+// Suppress the onboarding wizard under the E2E real-auth flag so the
+// Detox suites can land on the tabs immediately after sign-in. The
+// wizard's MMKV "done" flag is not pre-seeded because the encrypted
+// storage bootstrap (`app/_layout.tsx`) swaps the MMKV instance after
+// our mock-auth interceptor installs, which means any write before the
+// swap lands on the wrong handle.
+const E2E_SKIP_ONBOARDING =
+  process.env.EXPO_PUBLIC_E2E_REAL_AUTH === "1" ||
+  process.env.EXPO_PUBLIC_E2E === "1";
 
 export default function TabsLayout() {
   const { data, isLoading } = useUser();
@@ -54,7 +73,7 @@ export default function TabsLayout() {
   // where the wizard renders above the populated hub until the user
   // taps through.
   const [onboardingVisible, setOnboardingVisible] = useState<boolean>(() =>
-    shouldShowOnboarding(getOnboardingStore()),
+    E2E_SKIP_ONBOARDING ? false : shouldShowOnboarding(getOnboardingStore()),
   );
 
   useEffect(() => {

@@ -4,6 +4,10 @@ Detox-E2E-харнес для мобільного застосунку (Phase 4
 
 ## Сьюти
 
+### Smoke (auth-bypass)
+
+Запускаються під прапором `EXPO_PUBLIC_E2E=1`, який обходить Better Auth-гейт у `(tabs)/_layout.tsx` і рендерить таби без живої сесії.
+
 | Сьют                          | Скоуп                                                                       |
 | ----------------------------- | --------------------------------------------------------------------------- |
 | `finyk-manual-expense.e2e.ts` | Фінік Overview → Transactions → додати manual expense → row видно.          |
@@ -11,7 +15,31 @@ Detox-E2E-харнес для мобільного застосунку (Phase 4
 | `hub-ux-smoke.e2e.ts`         | Hub → Settings → theme toggle + стабільні top-level tab testIDs.            |
 | `routine-smoke.e2e.ts`        | Рутина → Settings → додати daily habit → Calendar → toggle today → ✓ видно. |
 
-Усі три спираються на спільні примітиви з `helpers.ts` (`tapWhenVisible`, `waitForVisibleById`, `byId`) і той самий launch-flag `EXPO_PUBLIC_E2E=1`, який обходить auth. Сьюти крутяться послідовно з `maxWorkers: 1`, щоб MMKV-стан був детермінованим між блоками `it()` — кожен сьют засіває власний row, не покладаючись на залишки від іншого сьюта.
+### Full (sign-in → module → sign-out)
+
+Запускаються під парою прапорів `EXPO_PUBLIC_E2E=1` + `EXPO_PUBLIC_E2E_REAL_AUTH=1`. Останній встановлює fetch-перехоплювач у `apps/mobile/src/auth/e2eAuthMock.ts`, що відповідає на `POST /api/auth/sign-in/email`, `POST /api/auth/sign-out`, `GET /api/v1/me` — справжній Better Auth-клієнт працює end-to-end без живого бекенда. Бай-пас `(tabs)/_layout.tsx` вимикається, тож після запуску додаток лендить на `/(auth)/sign-in`, і сьют логіниться через форму, виконує модульну дію, потім виходить через Settings → Акаунт → "Вийти".
+
+| Сьют                    | Скоуп                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `routine-full.e2e.ts`   | sign-in → Routine → створити habit → toggle done → перевірити streak → sign-out.         |
+| `fizruk-full.e2e.ts`    | sign-in → ФІЗРУК → start workout → pick exercise → log set → finish → sign-out.          |
+| `finyk-full.e2e.ts`     | sign-in → Фінік → Transactions → manual expense → перевірити row → sign-out.             |
+| `nutrition-full.e2e.ts` | sign-in → Їжа → Log → AddMealSheet → "Ввести вручну" → save → перевірити row → sign-out. |
+
+### Спільні утиліти
+
+Всі сьюти спираються на:
+
+- `helpers.ts` — низькорівневі примітиви (`tapWhenVisible`, `waitForVisibleById`, `byId`).
+- `_helpers/auth.ts` — `signIn()`, `signOut()`, `signInIfNeeded()`, `disableAutoSignIn()` (full-сьюти викликають `disableAutoSignIn()` на module level, щоб opt-out з auto-sign-in у `setup.ts`).
+- `_helpers/nav.ts` — `goToRoutineTab()`, `goToFizrukTab()`, `goToFinykTab()`, `goToNutritionTab()`, `goToHubTab()`.
+- `_helpers/assertions.ts` — `expectAnyByPrefix(prefix)`, `expectNotVisibleById(testID)`.
+
+Сьюти крутяться послідовно з `maxWorkers: 1`, щоб MMKV-стан був детермінованим між блоками `it()` — кожен сьют засіває власний row, не покладаючись на залишки від іншого.
+
+### Тестовий обліковий запис
+
+Mock-auth перехоплювач очікує дефолтний email `e2e-detox@sergeant.test` і пароль `detox-pass-2026`. Перевизначте через env-vars (`EXPO_PUBLIC_E2E_USER_EMAIL`, `EXPO_PUBLIC_E2E_USER_PASSWORD`) — `apps/mobile/src/auth/e2eAuthMock.ts` читає їх при ініціалізації, а CI workflow-и пробрасують ті ж значення.
 
 ## Локальний запуск
 
