@@ -789,6 +789,30 @@ export const monoWebhookDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// ───────────────────────── n8n webhook-events replay (PR-29) ──
+// Instrument-имо replay-CLI / API щоб дашборд `n8n-webhook-events`
+// (PR-26-after) міг показати: which workflow-и replay-яться найчастіше,
+// яка success-rate per-workflow, p95 латентності self-served replay-у.
+// Cardinality bound: workflow_id ∈ REPLAYABLE_WORKFLOW_IDS (наразі 4),
+// outcome ∈ {ok, http_error, unknown_workflow, timeout, error} —
+// дешевий labels-set, безпечно крутити без top-K-обмеження.
+export const n8nWebhookReplayAttemptsTotal = new client.Counter({
+  name: "n8n_webhook_replay_attempts_total",
+  help: "n8n webhook event replay attempts by workflow and outcome",
+  labelNames: ["workflow_id", "outcome"], // ok|http_error|unknown_workflow|timeout|error
+  registers: [register],
+});
+
+export const n8nWebhookReplayDurationMs = new client.Histogram({
+  name: "n8n_webhook_replay_duration_ms",
+  help: "n8n webhook event replay per-attempt duration in ms",
+  labelNames: ["workflow_id", "outcome"],
+  // Replay HTTP-call timeout = 10s (DEFAULT_TIMEOUT_MS у replayWebhookEvent.ts).
+  // Buckets щільніше у нижчій частині, бо здорові replay-и зазвичай <500ms.
+  buckets: [25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
+  registers: [register],
+});
+
 // ───────────────────────── Mono enrichment worker ─────────────
 // Polling-worker для `mono_ai_enrichment_queue`. Раніше outbox-таблиця
 // існувала (міграція 013), але жоден консьюмер її не читав — n8n flow

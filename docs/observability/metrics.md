@@ -246,6 +246,21 @@ sum(rate(mono_webhook_received_total{status="ok"}[5m])) / sum(rate(mono_webhook_
 histogram_quantile(0.95, sum by (le) (rate(mono_webhook_duration_ms_bucket[5m])))
 ```
 
+### 10.1 n8n webhook-replay (PR-28 / PR-29)
+
+| Metric                              | Type      | Labels                    | Emitter                                                                                      |
+| ----------------------------------- | --------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `n8n_webhook_replay_attempts_total` | Counter   | `workflow_id` · `outcome` | [routes/internal/webhook-events.ts](../../apps/server/src/routes/internal/webhook-events.ts) |
+| `n8n_webhook_replay_duration_ms`    | Histogram | `workflow_id` · `outcome` | [routes/internal/webhook-events.ts](../../apps/server/src/routes/internal/webhook-events.ts) |
+
+`outcome`: `ok` · `http_error` · `unknown_workflow` · `timeout` · `error`. `workflow_id` ∈ `REPLAYABLE_WORKFLOW_IDS` (наразі 4). Buckets: `25, 50, 100, 250, 500, 1000, 2500, 5000, 10000` ms (10s = `DEFAULT_TIMEOUT_MS` у [replayWebhookEvent.ts](../../apps/server/src/modules/webhooks/replayWebhookEvent.ts)). **Кардинальність**: 20 (counter); 220 (histogram). Дашборд: [`dashboards/n8n-webhook-events.json`](./dashboards/n8n-webhook-events.json).
+
+```promql
+sum(increase(n8n_webhook_replay_attempts_total{outcome="ok"}[24h])) / clamp_min(sum(increase(n8n_webhook_replay_attempts_total[24h])), 1)
+topk(10, sum by (workflow_id) (increase(n8n_webhook_replay_attempts_total[24h])))
+histogram_quantile(0.95, sum by (le, workflow_id) (rate(n8n_webhook_replay_duration_ms_bucket[5m])))
+```
+
 ---
 
 ## 11. Barcode-лукапи
