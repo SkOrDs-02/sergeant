@@ -1,9 +1,22 @@
+import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   processStripeWebhook,
+  verifyStripeSignature,
   __setPostHogCaptureForTesting,
 } from "./stripe.js";
 import type { capturePostHogEvent } from "../../lib/posthogCapture.js";
+
+function signedHeader(
+  secret: string,
+  timestampSeconds: number,
+  payload: Buffer,
+): string {
+  const v1 = createHmac("sha256", secret)
+    .update(`${timestampSeconds}.${payload.toString("utf8")}`)
+    .digest("hex");
+  return `t=${timestampSeconds},v1=${v1}`;
+}
 
 function createClient(rowCount: number) {
   const query = vi.fn().mockResolvedValue({ rowCount, rows: [] });
@@ -268,5 +281,84 @@ describe("subscription_started PostHog capture (PR-09)", () => {
     expect(result).toEqual({ ok: true, duplicate: false });
     expect(client.query).toHaveBeenLastCalledWith("COMMIT");
     expect(capture).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("verifyStripeSignature (T2 audit hardening)", () => {
+  const SECRET = "whsec_test_1234567890abcdef";
+  const payload = Buffer.from(`{"id":"evt_1","type":"ping"}`);
+
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  });
+
+  afterEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  });
+
+  it("returns false when STRIPE_WEBHOOK_SECRET is unset (no accept-all in non-prod)", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns true for a freshly-signed payload when secret is set", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(true);
+  });
+
+  it("returns false for a payload signed 10 minutes ago (replay outside tolerance)", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600;
+    const header = signedHeader(SECRET, tenMinutesAgo, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns false for a future-dated signature outside tolerance", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const futureSec = Math.floor(Date.now() / 1000) + 600;
+    const header = signedHeader(SECRET, futureSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("accepts a borderline timestamp within tolerance (299s old)", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000) - 299;
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(true);
+  });
+
+  it("respects STRIPE_WEBHOOK_TOLERANCE_SECONDS override", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"] = "60";
+    const tooOldSec = Math.floor(Date.now() / 1000) - 120;
+    const header = signedHeader(SECRET, tooOldSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns false on a tampered payload even when timestamp is fresh", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    const tampered = Buffer.from(`{"id":"evt_1","type":"evil"}`);
+    expect(verifyStripeSignature(tampered, header)).toBe(false);
+  });
+
+  it("returns false when signature header is missing", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    expect(verifyStripeSignature(payload, undefined)).toBe(false);
+  });
+
+  it("returns false when timestamp is non-numeric", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const v1 = createHmac("sha256", SECRET)
+      .update(`abc.${payload.toString("utf8")}`)
+      .digest("hex");
+    const header = `t=abc,v1=${v1}`;
+    expect(verifyStripeSignature(payload, header)).toBe(false);
   });
 });

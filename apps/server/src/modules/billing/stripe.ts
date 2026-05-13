@@ -406,12 +406,41 @@ async function upsertSubscriptionEvent(
   );
 }
 
+/**
+ * Default replay-window tolerance for Stripe webhook timestamps, in seconds.
+ * Matches the value `stripe-node` uses for `constructEvent` (300s = 5 min).
+ * Override at runtime via `STRIPE_WEBHOOK_TOLERANCE_SECONDS` if your platform
+ * has unusual clock skew; values <= 0 disable the check (NOT recommended).
+ */
+export const DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS = 300;
+
+function getStripeWebhookToleranceSeconds(): number {
+  const raw = process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  if (!raw) return DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS;
+  return parsed;
+}
+
+/**
+ * Verify a Stripe webhook signature.
+ *
+ * Hardening (T2 audit findings 1 & 2):
+ *   1. If `STRIPE_WEBHOOK_SECRET` is unset we ALWAYS return `false`. The
+ *      previous behaviour of accepting any payload in non-production
+ *      effectively turned every staging / preview deploy into an
+ *      unauthenticated write endpoint into the billing DB.
+ *   2. The signed payload includes a timestamp; we enforce a tolerance
+ *      window (`STRIPE_WEBHOOK_TOLERANCE_SECONDS`, default 300s) so that
+ *      a captured signed body cannot be replayed indefinitely.
+ */
 export function verifyStripeSignature(
   rawPayload: Buffer,
   signatureHeader: string | undefined,
+  options: { now?: () => number; toleranceSeconds?: number } = {},
 ): boolean {
   const secret = process.env["STRIPE_WEBHOOK_SECRET"];
-  if (!secret) return process.env["NODE_ENV"] !== "production";
+  if (!secret) return false;
   if (!signatureHeader) return false;
   const parts = new Map(
     signatureHeader.split(",").map((part) => {
@@ -422,6 +451,16 @@ export function verifyStripeSignature(
   const timestamp = parts.get("t");
   const expected = parts.get("v1");
   if (!timestamp || !expected) return false;
+
+  const timestampSeconds = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(timestampSeconds)) return false;
+  const tolerance =
+    options.toleranceSeconds ?? getStripeWebhookToleranceSeconds();
+  if (tolerance > 0) {
+    const nowSeconds = Math.floor((options.now ?? Date.now)() / 1000);
+    if (Math.abs(nowSeconds - timestampSeconds) > tolerance) return false;
+  }
+
   const actual = createHmac("sha256", secret)
     .update(`${timestamp}.${rawPayload.toString("utf8")}`)
     .digest("hex");

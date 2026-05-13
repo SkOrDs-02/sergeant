@@ -170,3 +170,49 @@ describe("assertStartupEnv — Hard Rule #20: no OpenClaw PAT in production", ()
     expect(() => assertStartupEnv()).not.toThrow();
   });
 });
+
+describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // PROD_BASELINE only stubs the keys it sets — Devin/CI shells may export
+  // `Git_PAT` / `OPENCLAW_GITHUB_PAT`, which would trigger Hard Rule #20 and
+  // make these tests non-hermetic. Stub them to empty explicitly.
+  const STRIPE_BASELINE = {
+    ...PROD_BASELINE,
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...STRIPE_BASELINE,
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+    });
+    expect(() => assertStartupEnv()).toThrow(/STRIPE_WEBHOOK_SECRET/);
+  });
+
+  it("does NOT throw in production when both Stripe vars are set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...STRIPE_BASELINE,
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in production when neither Stripe var is set (billing not wired)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(STRIPE_BASELINE);
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when STRIPE_SECRET_KEY is set without webhook secret", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      STRIPE_SECRET_KEY: "sk_test_xxx",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
