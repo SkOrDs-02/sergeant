@@ -8,6 +8,8 @@ import {
   externalHttpRequestsTotal,
 } from "../obs/metrics.js";
 import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
+import { estimateAnthropicCostUsd, pickAnthropicPricing } from "./aiPricing.js";
+import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
@@ -123,92 +125,10 @@ interface AnthropicResponseData {
   [key: string]: unknown;
 }
 
-/**
- * Anthropic per-million-token pricing (USD). Sources:
- * https://www.anthropic.com/pricing — як на 2025-Q1.
- *
- * Ключі — model-prefix, що матчить `pickPricing()` через `startsWith`. Це
- * стійкіше за повну назву моделі: Anthropic регулярно випускає subversions
- * (`-20240620`, `-20241022` …) з тим самим прайсингом, тому match-имо по
- * сімейству. Невідома модель → cost-counter не інкрементується (краще
- * "невідомо" ніж "0$ — все ок"). Cache prices: write = 1.25× input, read =
- * 0.10× input — це політика Anthropic prompt-caching.
- */
-interface ModelPricing {
-  /** USD per 1M input tokens */
-  input: number;
-  /** USD per 1M output tokens */
-  output: number;
-  /** USD per 1M cache-write tokens */
-  cacheWrite: number;
-  /** USD per 1M cache-read tokens */
-  cacheRead: number;
-}
-
-const ANTHROPIC_PRICING_USD_PER_MTOK: Record<string, ModelPricing> = {
-  // Sonnet (3, 3.5, 3.7, 4.x): $3 / $15
-  "claude-sonnet-4": {
-    input: 3.0,
-    output: 15.0,
-    cacheWrite: 3.75,
-    cacheRead: 0.3,
-  },
-  "claude-3-7-sonnet": {
-    input: 3.0,
-    output: 15.0,
-    cacheWrite: 3.75,
-    cacheRead: 0.3,
-  },
-  "claude-3-5-sonnet": {
-    input: 3.0,
-    output: 15.0,
-    cacheWrite: 3.75,
-    cacheRead: 0.3,
-  },
-  "claude-3-sonnet": {
-    input: 3.0,
-    output: 15.0,
-    cacheWrite: 3.75,
-    cacheRead: 0.3,
-  },
-  // Haiku 3.5: $0.80 / $4
-  "claude-3-5-haiku": {
-    input: 0.8,
-    output: 4.0,
-    cacheWrite: 1.0,
-    cacheRead: 0.08,
-  },
-  // Haiku 3: $0.25 / $1.25
-  "claude-3-haiku": {
-    input: 0.25,
-    output: 1.25,
-    cacheWrite: 0.3,
-    cacheRead: 0.03,
-  },
-  // Opus 3 / 4: $15 / $75
-  "claude-opus-4": {
-    input: 15.0,
-    output: 75.0,
-    cacheWrite: 18.75,
-    cacheRead: 1.5,
-  },
-  "claude-3-opus": {
-    input: 15.0,
-    output: 75.0,
-    cacheWrite: 18.75,
-    cacheRead: 1.5,
-  },
-};
-
-function pickPricing(model: string): ModelPricing | null {
-  if (!model || model === "unknown") return null;
-  for (const [prefix, price] of Object.entries(
-    ANTHROPIC_PRICING_USD_PER_MTOK,
-  )) {
-    if (model.startsWith(prefix)) return price;
-  }
-  return null;
-}
+// AI-NOTE: per-million-token pricing live in `./aiPricing.ts` (extracted у
+// PR-12, щоб DB-ledger і Prometheus-counter могли шарити one source of
+// truth). `pickAnthropicPricing()` повертає той самий ModelPricing-shape
+// (input/output/cacheWrite/cacheRead per MTok).
 
 /**
  * Public helper для streaming-шляху: chat.ts витягує `usage` з SSE
@@ -279,26 +199,8 @@ function recordUsage(
     // Cost estimate per request (USD). Безпечно інкрементує counter навіть
     // дробовими значеннями (prom-client це підтримує). Невідома модель →
     // нічого не інкрементуємо.
-    const price = pickPricing(model);
-    if (price) {
-      const inTok = Number.isFinite(usage.input_tokens)
-        ? usage.input_tokens!
-        : 0;
-      const outTok = Number.isFinite(usage.output_tokens)
-        ? usage.output_tokens!
-        : 0;
-      const cwTok = Number.isFinite(usage.cache_creation_input_tokens)
-        ? usage.cache_creation_input_tokens!
-        : 0;
-      const crTok = Number.isFinite(usage.cache_read_input_tokens)
-        ? usage.cache_read_input_tokens!
-        : 0;
-      const usd =
-        (inTok * price.input +
-          outTok * price.output +
-          cwTok * price.cacheWrite +
-          crTok * price.cacheRead) /
-        1_000_000;
+    if (pickAnthropicPricing(model)) {
+      const usd = estimateAnthropicCostUsd(model, usage) ?? 0;
       if (usd > 0) {
         aiCostEstimateUsd.inc(
           { provider: "anthropic", model, endpoint: ep },
@@ -306,6 +208,12 @@ function recordUsage(
         );
       }
     }
+    // PR-12: persistent USD ledger у `ai_usage_daily` (паралельно з
+    // Prometheus). Fire-and-forget — fail-open усередині helper-а, тому
+    // ledger-failure НЕ ламає Anthropic-flow. `void` навмисно, щоб eslint
+    // no-floating-promises не репортив (recordAnthropicUsageToDb сам
+    // ковтає рантайм-помилки).
+    void recordAnthropicUsageToDb(model, usage);
   } catch {
     /* ignore */
   }
