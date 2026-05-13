@@ -110,6 +110,12 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   // `apps/mobile/src/lib/storage.ts`).
   const originDeviceId = resolveOriginDeviceId({ store: mobileKVStore });
 
+  // Per-install ±20% interval randomization — see the matching
+  // helper in `apps/web/src/core/syncEngine/singleton.ts`. Picking
+  // the period once at boot from `[24s, 36s]` desynchronizes the
+  // fleet after an outage without changing average throughput.
+  const intervalMs = randomizeIntervalMs(30_000, 0.2);
+
   // T3 audit HIGH#3: forward every poison-row quarantine to Sentry.
   // Mirrors the web singleton — see
   // `apps/web/src/core/syncEngine/singleton.ts` for the rationale.
@@ -140,6 +146,10 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
         dbSchema.markOutboxRejected(client, id, reason),
       planRetry: dbSchema.planRetry,
       now: () => new Date(),
+      // Retry jitter on transient batch failures. Same shape as web:
+      // a per-row sample in `[0, SYNC_OP_JITTER_WINDOW_MS]` desynchronizes
+      // the retry schedule for a batch that failed together.
+      jitterMs: () => Math.random() * dbSchema.SYNC_OP_JITTER_WINDOW_MS,
     },
     setInterval: (handler, ms) =>
       (globalThis.setInterval as (h: () => void, ms: number) => unknown)(
@@ -155,8 +165,19 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     addBreadcrumb: observability.addSentryBreadcrumb,
     captureException: (error, context) =>
       observability.captureError(error, context),
-    intervalMs: 30_000,
+    intervalMs,
     limit: 100,
     originDeviceId,
   });
+}
+
+/**
+ * Returns `baseMs * (1 + uniform(-spread, +spread))`, clamped to a
+ * positive integer. `spread=0.2` yields a value in `[baseMs*0.8,
+ * baseMs*1.2]`. Used once per boot to desynchronize fleet-wide drain
+ * ticks; not re-sampled across the lifetime of a runtime instance.
+ */
+function randomizeIntervalMs(baseMs: number, spread: number): number {
+  const factor = 1 + (Math.random() * 2 - 1) * spread;
+  return Math.max(1, Math.floor(baseMs * factor));
 }

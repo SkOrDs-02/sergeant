@@ -219,13 +219,21 @@ export type MarkOutboxRejectedFn = (
 /**
  * DI: pure retry-policy. Mirror of `planRetry` from
  * `packages/db-schema/src/sqlite/syncOpRetry.ts`. Takes the row's
- * previous attempt count, the engine's pinned clock, and a stable
- * low-cardinality `lastError` label; returns a {@link SyncOpRetryPlanShape}.
+ * previous attempt count, the engine's pinned clock, a stable
+ * low-cardinality `lastError` label, and an optional `jitterMs` in
+ * `[0, SYNC_OP_JITTER_WINDOW_MS]`; returns a {@link SyncOpRetryPlanShape}.
+ *
+ * The `jitterMs` argument exists so the orchestrator can desynchronize
+ * fleet-wide retry storms after an outage (T3 audit MEDIUM finding —
+ * without jitter, every client globally retries on identical 1s/2s/4s/…
+ * boundaries). Pre-existing callers that omitted `jitterMs` still work:
+ * the underlying `planRetry` impl defaults it to 0.
  */
 export type PlanRetryFn = (
   previousAttempts: number,
   now: Date,
   lastError: string,
+  jitterMs?: number,
 ) => SyncOpRetryPlanShape;
 
 export interface SyncEnginePushDeps {
@@ -242,6 +250,18 @@ export interface SyncEnginePushDeps {
    * so retry windows are deterministic in tests and monotonic in prod.
    */
   readonly now: () => Date;
+  /**
+   * Optional jitter source for `planRetry`. Returns a number in
+   * `[0, SYNC_OP_JITTER_WINDOW_MS]` (250 ms today). The orchestrator
+   * calls this once per `planRetry` invocation within a tick — never
+   * caches across rows — so a transient batch failure spreads its
+   * retries within the window instead of stacking them on the same
+   * scheduler beat. Omit to keep the pre-PR-#040 zero-jitter behavior;
+   * production singletons should wire `Math.random() *
+   * SYNC_OP_JITTER_WINDOW_MS` so fleet-wide outage recoveries
+   * desynchronize.
+   */
+  readonly jitterMs?: () => number;
 }
 
 export interface SyncEnginePushOptions {
@@ -302,7 +322,7 @@ export async function runSyncEnginePushOnce(
     // Transport / HTTP failure: every row in the batch goes to retry.
     const lastError = describePushError(err);
     for (const row of drained) {
-      const plan = deps.planRetry(row.attempts, now, lastError);
+      const plan = callPlanRetry(deps, row.attempts, now, lastError);
       await deps.markRetry(row.id, plan);
     }
     return {
@@ -329,7 +349,7 @@ export async function runSyncEnginePushOnce(
     if (result === undefined) {
       // Server returned 2xx but no matching result for this op.
       // Treat as transient: bump attempts, leave the row pending.
-      const plan = deps.planRetry(row.attempts, now, "missing_result");
+      const plan = callPlanRetry(deps, row.attempts, now, "missing_result");
       await deps.markRetry(row.id, plan);
       retried += 1;
       continue;
@@ -355,7 +375,8 @@ export async function runSyncEnginePushOnce(
     // mark for retry with a labelled error. The label keeps
     // `last_error` cardinality bounded.
     const unknownStatus = (result as { status: string }).status;
-    const plan = deps.planRetry(
+    const plan = callPlanRetry(
+      deps,
       row.attempts,
       now,
       `unknown_status:${unknownStatus}`,
@@ -370,6 +391,26 @@ export async function runSyncEnginePushOnce(
     retried,
     rejected,
   };
+}
+
+/**
+ * Internal helper: forwards to `deps.planRetry`, only passing the 4th
+ * `jitterMs` argument when the orchestrator has a `deps.jitterMs`
+ * source. Done this way (rather than always passing `undefined`) so
+ * existing call-sites and tests that assert `planRetry` was called with
+ * exactly 3 arguments continue to pass — both shapes remain valid per
+ * {@link PlanRetryFn}.
+ */
+function callPlanRetry(
+  deps: SyncEnginePushDeps,
+  previousAttempts: number,
+  now: Date,
+  lastError: string,
+): SyncOpRetryPlanShape {
+  if (deps.jitterMs === undefined) {
+    return deps.planRetry(previousAttempts, now, lastError);
+  }
+  return deps.planRetry(previousAttempts, now, lastError, deps.jitterMs());
 }
 
 /**

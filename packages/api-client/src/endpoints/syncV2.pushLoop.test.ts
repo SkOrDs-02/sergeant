@@ -114,6 +114,9 @@ function makeDeps(overrides: Partial<SyncEnginePushDeps> = {}): {
       (markRejected as unknown as MarkOutboxRejectedFn),
     planRetry: overrides.planRetry ?? (planRetry as unknown as PlanRetryFn),
     now: overrides.now ?? (now as unknown as () => Date),
+    ...(overrides.jitterMs !== undefined
+      ? { jitterMs: overrides.jitterMs }
+      : {}),
   };
 
   return {
@@ -577,6 +580,87 @@ describe("mapDrainedRowToSyncV2PushOp — drift tripwire", () => {
       const row = makeRow({ id: 1, idempotencyKey: IDEM_A, op });
       expect(mapDrainedRowToSyncV2PushOp(row).op).toBe(op);
     }
+  });
+});
+
+describe("runSyncEnginePushOnce — jitter pass-through (T3 audit MEDIUM)", () => {
+  it("does NOT pass a 4th arg to planRetry when deps.jitterMs is absent", async () => {
+    // Pre-PR-#040 behaviour. Existing call-sites that omit jitterMs
+    // must keep getting (attempts, now, lastError) — no trailing
+    // `undefined`. Verifies the conditional in `callPlanRetry`.
+    const { deps, drain, push, planRetry } = makeDeps();
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+    push.mockRejectedValueOnce(
+      new ApiError({
+        kind: "network",
+        message: "fetch failed",
+        url: "https://api.example.com/api/v2/sync/push",
+      }),
+    );
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(planRetry).toHaveBeenCalledTimes(1);
+    expect(planRetry.mock.calls[0]).toEqual([0, NOW, "network"]);
+  });
+
+  it("threads jitterMs() output into every planRetry call on transport failure", async () => {
+    const jitterMs = vi.fn(() => 137);
+    const { deps, drain, push, planRetry } = makeDeps({ jitterMs });
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A }),
+      makeRow({ id: 2, idempotencyKey: IDEM_B, attempts: 3 }),
+    ]);
+    push.mockRejectedValueOnce(
+      new ApiError({
+        kind: "network",
+        message: "fetch failed",
+        url: "https://api.example.com/api/v2/sync/push",
+      }),
+    );
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    // jitterMs is sampled ONCE PER ROW — never cached across rows
+    // within a tick. Two rows → two jitter samples.
+    expect(jitterMs).toHaveBeenCalledTimes(2);
+    expect(planRetry).toHaveBeenCalledTimes(2);
+    expect(planRetry).toHaveBeenNthCalledWith(1, 0, NOW, "network", 137);
+    expect(planRetry).toHaveBeenNthCalledWith(2, 3, NOW, "network", 137);
+  });
+
+  it("threads jitterMs() output on missing_result + unknown_status retries", async () => {
+    const jitterMs = vi.fn(() => 42);
+    const { deps, drain, push, planRetry } = makeDeps({ jitterMs });
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A }),
+      makeRow({ id: 2, idempotencyKey: IDEM_B }),
+    ]);
+    push.mockResolvedValueOnce({
+      accepted: 2,
+      last_op_id: 99,
+      // Row A → server omits matching result (missing_result branch).
+      // Row B → forward-compat unknown status.
+      results: [
+        {
+          idempotency_key: IDEM_B,
+          status: "newly_invented" as unknown as "applied",
+        },
+      ],
+    });
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(jitterMs).toHaveBeenCalledTimes(2);
+    expect(planRetry).toHaveBeenCalledTimes(2);
+    expect(planRetry).toHaveBeenNthCalledWith(1, 0, NOW, "missing_result", 42);
+    expect(planRetry).toHaveBeenNthCalledWith(
+      2,
+      0,
+      NOW,
+      "unknown_status:newly_invented",
+      42,
+    );
   });
 });
 
