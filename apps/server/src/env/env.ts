@@ -670,6 +670,14 @@ const envSchema = z.object({
   OPENCLAW_GITHUB_APP_INSTALLATION_ID: stringWithDefault(""),
   /** Repo target для decision PR-ів. */
   OPENCLAW_GITHUB_REPO: stringWithDefault("Skords-01/Sergeant"),
+  /**
+   * Comma-separated allowlist of `owner/repo` strings that OpenClaw
+   * read/write GitHub tools may target. Empty (default) collapses to
+   * just `OPENCLAW_GITHUB_REPO`, so the default config is the
+   * single-repo behaviour callers expect. T2 audit finding #3 — the
+   * console used to pass through whatever `repo` the LLM picked.
+   */
+  OPENCLAW_GITHUB_REPO_ALLOWLIST: stringWithDefault(""),
   /** Default branch у repo (для decision PR-ів). */
   OPENCLAW_GITHUB_BASE_BRANCH: stringWithDefault("main"),
   /**

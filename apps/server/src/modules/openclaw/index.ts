@@ -39,6 +39,13 @@ export {
   getPostHogStats,
   getGithubReleases,
 } from "./tools.js";
+
+// T2 audit #3 — repo allowlist for OpenClaw GitHub-touching tools.
+export {
+  assertOpenClawRepoAllowed,
+  __resetOpenClawRepoAllowlistForTests,
+  __getOpenClawRepoAllowlistForTests,
+} from "./repoAllowlist.js";
 export { selectToneMode, buildSystemPrompt } from "./prompts.js";
 
 // Stage 4c (PR-Stage4c): Layer 1 cheap-router classifier (Haiku JSON).
