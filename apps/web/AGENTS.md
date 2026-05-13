@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last validated:** 2026-05-10 by @Skords-01 / Devin. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-08.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -24,6 +24,7 @@ pnpm --filter @sergeant/web test:a11y          # Playwright + axe
 pnpm --filter @sergeant/web test:coverage      # Vitest with coverage
 pnpm --filter @sergeant/web typecheck
 pnpm --filter @sergeant/web size               # size-limit (CI gate)
+pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gate)
 ```
 
 ## Surface-specific gotchas
@@ -38,6 +39,47 @@ pnpm --filter @sergeant/web size               # size-limit (CI gate)
 ## Bundle budget
 
 CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
+
+## Lighthouse CI (perf-budget gate)
+
+T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг. Workflow: [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
+
+**Routes audited (3 runs each, median):** `/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition`. `/` is the Hub root — there is no separate `/hub` path (see [`apps/web/src/core/app/router.tsx`](./src/core/app/router.tsx)).
+
+**Budgets (median run):**
+
+| Метрика                          | Поріг   | Рівень (first pass)                                              |
+| -------------------------------- | ------- | ---------------------------------------------------------------- |
+| `largest-contentful-paint` (LCP) | 2000 ms | `warn` (target — після baseline tightening → `error` на 3000 ms) |
+| `first-contentful-paint` (FCP)   | 1500 ms | `warn`                                                           |
+| `total-blocking-time` (TBT)      | 200 ms  | `warn`                                                           |
+
+**Як читати reports:**
+
+1. Відкрий job `Lighthouse CI (perf budgets)` у CI таб PR-а.
+2. В кінці кроку `Run Lighthouse CI` LHCI друкує `Open the report at <url>` — клік → HTML-репорт на `storage.googleapis.com/lighthouse-infrastructure...`. Один URL на route.
+3. Альтернативно: завантаж workflow-artifact `lighthouse-reports` (retention 14 днів) — містить `.lighthouseci/lhr-*.html` + `manifest.json` з тривалостями кожного run-у.
+4. Зелений job без warn-ів означає, що **median LCP / FCP / TBT всіх 5 routes** під порогами.
+5. `⚠ warning` біля метрики — поріг перевищено, але job-у не падає (поки first-pass `warn`).
+6. `✗ error` (після tightening) — fail-stop; PR не мерджиться без зеленої метрики або temp-override.
+
+**Temp-overrides (regression patch / urgent merge):**
+
+Жорсткого override-механізму немає (на відміну від `size-limit` `audit-exception` label-а). Якщо потрібен hotfix-bypass:
+
+1. **Preferred:** виправ regression перед merge — переглянь LHCI report → шукай `unused-javascript`, `largest-contentful-paint-element`, `render-blocking-resources`.
+2. **Якщо incident-bypass необхідний:** додай у PR-description `[skip-lighthouse-ci]` + причину; в follow-up PR (≤24h) — fix regression АБО bump поріг у [`apps/web/lighthouserc.json`](./lighthouserc.json) з justification у commit message (e.g. «major dep upgrade adds 50 KB → tier-2 chunk → LCP +200 ms; budget bump узгоджено з owner»).
+3. Workflow зараз `warn`-only — жодного hard-block-у не існує до tightening PR-а. Після нього: `pull_request` `lighthouse` job стане `required` через GitHub branch-protection rules (manual flip у settings).
+
+**Локальний прогон:**
+
+```bash
+pnpm --filter @sergeant/web build   # без VERCEL=1: build кладеться у ../server/dist
+VERCEL=1 pnpm --filter @sergeant/web build   # for `vite preview` to find dist
+pnpm --filter @sergeant/web lighthouse       # boots vite preview + runs LHCI
+```
+
+Reports drop у `apps/web/.lighthouseci/` (gitignored).
 
 ## Deeper docs
 

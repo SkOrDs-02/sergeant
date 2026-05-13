@@ -19,6 +19,9 @@ storybook-static/
 playwright-report/
 test-results/
 
+# Lighthouse CI reports (uploaded as workflow artifact + to temporary-public-storage)
+.lighthouseci/
+
 # Stryker mutation testing artefacts
 .stryker-tmp/
 stryker-tmp/

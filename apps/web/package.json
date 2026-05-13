@@ -9,6 +9,8 @@
     "build:capacitor": "cross-env VITE_TARGET=capacitor vite build",
     "build:analyze": "cross-env ANALYZE=1 vite build",
     "preview": "vite preview",
+    "preview:lhci": "vite preview --port 4173 --strictPort --host 127.0.0.1",
+    "lighthouse": "lhci autorun --config=lighthouserc.json",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "test": "vitest run",
@@ -83,6 +85,7 @@
   "devDependencies": {
     "@argos-ci/playwright": "^6.6.4",
     "@axe-core/playwright": "^4.11.3",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.59.1",
     "@sentry/vite-plugin": "^5.2.0",
     "@sergeant/config": "workspace:*",

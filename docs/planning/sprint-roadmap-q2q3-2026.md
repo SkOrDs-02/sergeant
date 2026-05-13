@@ -35,7 +35,7 @@
 | T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                                       | ❌ Не почато (Sprint 7)                                                                                                                                                  |
 | T3  | Великі файли (батч 3)              | `Workouts.tsx` 744→213, `LogCard.tsx` 736→216, `NutritionApp.tsx` 728→<250 | ✅ Done ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) NutritionApp; [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) Workouts+LogCard) |
 | T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                                          | ⏳ Очікує Sprint 8                                                                                                                                                       |
-| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | ❌ Не почато (Sprint 8)                                                                                                                                                  |
+| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | 🚧 First pass shipped (warn-only) — [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml). Tightening → error follow-up.                    |
 | T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ⏳ Очікує Sprint 8                                                                                                                                                       |
 | T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | ⏳ Очікує 20-run CI verification                                                                                                                                         |
 
@@ -366,29 +366,20 @@ describe("Capacitor Boundary Tests", () => {
 
 ---
 
-#### T5: Lighthouse CI `Tech` `S`
+#### T5: Lighthouse CI `Tech` `S` 🚧 First pass shipped
 
 **Що:**
 
-```yaml
-# .github/workflows/lighthouse.yml
-name: Lighthouse CI
-on: [pull_request]
-jobs:
-  lighthouse:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: treosh/lighthouse-ci-action@v12
-        with:
-          configPath: "./lighthouserc.json"
-          uploadArtifacts: true
-```
+- Config: [`apps/web/lighthouserc.json`](../../apps/web/lighthouserc.json)
+- Workflow: [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (без `treosh/lighthouse-ci-action`; прямо `@lhci/cli` як devDep в `apps/web` — уникаємо додаткового SHA-pin-у).
+- Routes аудитуються: `/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition` (`/` = Hub; окремого `/hub` немає).
+- 3 runs/URL, median-run aggregation.
 
 **Acceptance:**
 
-- [ ] LCP < 2.0s у CI
-- [ ] PR блокується якщо LCP > 2.5s (warn) або > 3.0s (error)
+- [x] First pass shipped: warn-only assertions (LCP ≤2000, FCP ≤1500, TBT ≤200).
+- [ ] Baseline gathered (≥2 PR-runs в `temporary-public-storage`) → tighten LCP до `error` на 3000 ms.
+- [ ] PR блокується якщо LCP > 3.0s (після tightening + branch-protection flip).
 
 ---
 
@@ -450,7 +441,7 @@ jobs:
 | Спринт 5 | O1, O2, O5        | T7          | ~5–6 днів        |
 | Спринт 6 | O3, O4, O9        | T1          | ~8–10 днів       |
 | Спринт 7 | O6, O7            | T2          | ~7–9 днів        |
-| Спринт 8 | O8-start          | T4, T5, T6  | ~8–10 днів       |
+| Спринт 8 | O8-start          | T4, T6      | ~8–10 днів       |
 
 ---
 

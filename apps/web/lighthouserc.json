@@ -1,0 +1,42 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "startServerCommand": "pnpm preview:lhci",
+      "startServerReadyPattern": "Local:",
+      "startServerReadyTimeout": 30000,
+      "url": [
+        "http://127.0.0.1:4173/",
+        "http://127.0.0.1:4173/finyk",
+        "http://127.0.0.1:4173/fizruk",
+        "http://127.0.0.1:4173/routine",
+        "http://127.0.0.1:4173/nutrition"
+      ],
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["performance"],
+        "skipAudits": ["uses-http2", "redirects-http"],
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": [
+          "warn",
+          { "maxNumericValue": 2000, "aggregationMethod": "median-run" }
+        ],
+        "first-contentful-paint": [
+          "warn",
+          { "maxNumericValue": 1500, "aggregationMethod": "median-run" }
+        ],
+        "total-blocking-time": [
+          "warn",
+          { "maxNumericValue": 200, "aggregationMethod": "median-run" }
+        ]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
