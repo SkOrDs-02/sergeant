@@ -23,7 +23,7 @@
 1. **[Closed у цьому PR]** Web-Sentry `beforeSend` рекурсивно не скрабив PII — лише викидав `cookies`. `Authorization` header у XHR breadcrumb-ах, `Sentry.setExtra('payload', body)` з паролем, `event.user.email` через `setUser` — все доходило до Sentry ingest. Закрито через `applyWebBeforeSend` + єдине джерело правди `@sergeant/shared/lib/pii.ts`.
 2. **[P0]** `apps/web/src/core/observability/analytics.ts:56` логує дев-time `console.log("[analytics]", event)` без перевірки PII у payload-event. Якщо handler передасть `{ email }` — leak у DevTools console screen-share / Sentry breadcrumb (`console`-integration увімкнено за замовчуванням у `@sentry/react`).
 3. **[P1]** `apps/web/index.html:66-69` тримає `<meta http-equiv="Content-Security-Policy">` як defense-in-depth fallback, але директиви — **скорочений subset** Vercel-policy. При оновленні `apps/web/vercel.json` людська сінхронізація → drift. Потрібен `apps/web/src/test/cspMonitoringAllowlist.test.ts`-style parity-тест (уже існує, але перевіряє `Reporting-Endpoints`, не саму CSP).
-4. **[P1]** SRI (Subresource Integrity) для third-party JS — у CSP дозволено `https://*.posthog.com`, `https://*.sentry-cdn.com`, але без `integrity=` хеша CDN-компроміс одразу стане XSS-вектором. `apps/web/index.html` зараз не вантажить ні PostHog, ні Sentry статично — обидва йдуть через npm-bundle, отже **SRI наразі не блокатор**, але потрібен ESLint-guard, щоб новий `<script src="https://..."` без `integrity=` фейлив білд.
+4. **[P1, closed у follow-up `chore(web): add HTML SRI linter`]** SRI (Subresource Integrity) для third-party JS — у CSP дозволено `https://*.posthog.com`, `https://*.sentry-cdn.com`, але без `integrity=` хеша CDN-компроміс одразу стане XSS-вектором. `apps/web/index.html` зараз не вантажить ні PostHog, ні Sentry статично — обидва йдуть через npm-bundle, отже **SRI наразі не блокатор**, але потрібен guard, щоб новий `<script src="https://..."` без `integrity=` фейлив білд. Закрито через `scripts/lint-html-sri.mjs` (parse5-based) + CI step у `check` job.
 5. **[P1]** Pino redact-paths мають wildcard рівно на одну глибину (`*.password` / `*.*.password`). Якщо у `req.body.nested.user.password` (3 рівні) — Pino не зачистить. Sentry-scrubber (тепер shared) ходить рекурсивно — але access-логи в Loki ходять тільки через Pino. Треба або додати `*.*.*` рівні, або (краще) — Pino-redaction-helper, який знає, що це wildcard-suffix і генерує всі рівні до 5.
 6. **[P1]** OpenTelemetry attribute denylist у `apps/server/src/obs/tracing.ts` (доклинено header-фільтром) не перевіряється тестом проти `REDACT_KEY_NAMES`. Тобто додавання нового PII-ключа у `@sergeant/shared/lib/pii.ts` не автоматично закриває OTel-span attributes — drift можливий.
 7. **[P1]** `apps/web/src/core/security/lockStorage.ts:44` PBKDF2 з `iterations: 200_000`. OWASP 2023 рекомендація для SHA-256 — мінімум 600 000 ітерацій на сучасних мобільних. Це не критично (PIN — 4-значний у будь-якому випадку слабкий), але «PBKDF2 200k» виглядає як floor, не як baseline.
@@ -36,12 +36,12 @@
 | ------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **S1** — Web Sentry PII scrub parity | §P0-S1     | `applyWebBeforeSend` рекурсивно чистить `request.headers/data/cookies`, `extra`, `contexts`, `breadcrumbs[].data`, нормалізує `event.user` до `{ id }`. | `packages/shared/src/lib/pii.ts` (новий), `packages/shared/src/lib/pii.test.ts` (новий), `packages/shared/src/index.ts`, `apps/web/src/core/observability/sentry.ts`, `apps/web/src/core/observability/sentry.test.ts`, `apps/server/src/obs/logger.ts` (back-compat alias), `apps/server/src/sentry.ts` (re-export), `docs/security/pii-handling.md` (single-source pointer). |
 
-**Закрито:** 1 з 9 (S1 — найвищий impact, бо XHR/fetch breadcrumb-и в production досі везли `Authorization` header у Sentry payload).
+**Закрито:** 1 з 9 у цьому PR (S1 — найвищий impact, бо XHR/fetch breadcrumb-и в production досі везли `Authorization` header у Sentry payload). **+1 закрито follow-up-ом:** S3 — `scripts/lint-html-sri.mjs` (parse5-based) валить білд на `<script src="https://...">` без `integrity=`/`crossorigin=` (див. § S3 заголовок).
 
 **Не закрито в цьому PR (наступні PR-кандидати):**
 
 - **S2** (P0, audit §6.5 carry-over) — ESLint-guard проти `console.log` з email-regex у payload. Потребує власного `eslint-plugin-sergeant-design`-правила + visit-фази для `MemberExpression` / `TaggedTemplateExpression`. Виноситься в окремий PR.
-- **S3** (P1) — SRI ESLint-guard на `<script src="https://...">` без `integrity=`. Потребує `parse5`-based парсера в `eslint-plugin-sergeant-design`; великий і самостійний PR.
+- ~~**S3** (P1) — SRI ESLint-guard на `<script src="https://...">` без `integrity=`.~~ ✅ Closed у follow-up PR `chore(web): add HTML SRI linter (audit § S3)` — реалізовано як `scripts/lint-html-sri.mjs` + `pnpm lint:html-sri` + CI step у `check` job (custom parse5-based script замість ESLint-правила, бо ESLint не парсить HTML natively).
 - **S4** (P1) — Pino redact-paths wildcard generator до 5 рівнів. Потребує тестового матриксу + узгодження з `docs/security/pii-handling.md`.
 - **S5** (P1) — OTel attribute denylist parity test (`apps/server/src/obs/tracing.ts` ↔ `@sergeant/shared/lib/pii.ts`).
 - **S6** (P1) — PBKDF2 ramp-up до 600_000 ітерацій + migration plan (revaluation existing IDB credentials at next unlock).
@@ -63,11 +63,11 @@
 - **Change:** додати правило у `packages/eslint-plugin-sergeant-design/src/index.ts` і виставити severity `error` у `eslint.config.mjs`.
 - **Remove:** -
 
-### S3 — SRI ESLint-guard на сторонні `<script src>` (audit §6.4, outstanding)
+### S3 — SRI ESLint-guard на сторонні `<script src>` (audit §6.4, outstanding) ✅ Closed у цьому PR
 
-- **Add:** ESLint-rule (custom AST на `apps/web/index.html` через `parse5`) — `<script src="https://...">` БЕЗ `integrity=` валить білд.
+- **Add:** Кастомний `scripts/lint-html-sri.mjs` (parse5-based) — `<script src="https://...">` БЕЗ `integrity="sha384-..."` + `crossorigin="anonymous"` валить білд. Wire-up: `pnpm lint:html-sri` (також chained у `pnpm lint` → `pnpm check`), dedicated CI-кроки у `.github/workflows/ci.yml` § `check` job. Юніт-тести (28 кейсів, 6 BAD/GOOD-фікстур + actual `apps/web/index.html` guard): `scripts/__tests__/lint-html-sri.test.mjs` + `scripts/__tests__/fixtures/lint-html-sri/*.html`.
 - **Why:** CSP allowlist (`apps/web/vercel.json:31`) пропускає `https://*.posthog.com`, `https://*.sentry-cdn.com`, `https://*.sentry.io`, `https://js.sentry-cdn.com`. У 2026 жодне з них зараз НЕ підключається статично у `index.html`, але майбутній PR, що додасть `<script>`-тег без `integrity=`, тихо відкриє supply-chain атаку.
-- **Change:** на `<script src>` з `https://`-URL — обов'язковий `integrity="sha384-..."` + `crossorigin="anonymous"`.
+- **Change:** на `<script src>` з `https://`-URL — обов'язковий `integrity="sha384-..."` (приймається також `sha256-` / `sha512-` per W3C SRI § 3.5; rejected: `md5-`, інші непідтримувані algos) + `crossorigin="anonymous"` (або `use-credentials`). Schema-relative URLs (`//cdn/...`) — той самий gate.
 - **Remove:** -
 
 ## P1 — закрити в найближчий квартал

@@ -129,6 +129,22 @@ jobs:
         # truth: scripts/check-patches-doc.mjs.
         run: pnpm lint:patches
 
+      - name: HTML SRI gate for apps/web/index.html (audit § S3)
+        # Closes audit-item S3 from
+        # docs/audits/2026-05-13-security-observability-roast.md.
+        # Fails CI if `apps/web/index.html` adds a
+        # `<script src="https://...">` without `integrity="sha384-..."`
+        # + `crossorigin="anonymous"`. Supply-chain hardening: any
+        # cross-origin script without SRI is silent XSS-on-CDN-compromise.
+        run: pnpm lint:html-sri
+
+      - name: HTML SRI gate — unit tests
+        # Companion unit tests for the SRI linter (BAD/GOOD fixtures
+        # + apps/web/index.html guard). Kept separate so a fixture-only
+        # regression fails noisily before `pnpm check` runs the whole
+        # turbo matrix.
+        run: node --test scripts/__tests__/lint-html-sri.test.mjs
+
       - name: Drizzle schema ↔ SQL migration drift (PR-11)
         # Static analysis: verifies that every table/column in
         # packages/db-schema/src/pg/ is present in the SQL migrations under

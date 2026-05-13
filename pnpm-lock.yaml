@@ -74,6 +74,9 @@ importers:
       openapi-typescript:
         specifier: ^7
         version: 7.13.0(typescript@6.0.3)
+      parse5:
+        specifier: ^8.0.1
+        version: 8.0.1
       plop:
         specifier: ^4.0.5
         version: 4.0.5(@types/node@20.19.41)
