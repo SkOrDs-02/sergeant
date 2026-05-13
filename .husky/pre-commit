@@ -1,1 +1,1 @@
-pnpm exec lint-staged --concurrent false
+node scripts/pre-commit-timing.mjs

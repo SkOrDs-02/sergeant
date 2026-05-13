@@ -1,6 +1,6 @@
 # Audits — каталог документів та статусів
 
-> **Last validated:** 2026-05-13 by Devin (P1-4 cleanup — архівовано `2026-04-28-implementation-roadmap.md` + `2026-04-28-ux-improvement-plan.md` у `archive/` за [`2026-05-13-ftux-onboarding-roast.md`](./2026-05-13-ftux-onboarding-roast.md) § P1-4; previous: re-sync `2026-05-03-readme-gap-analysis.md` row `0/8 ≈ / 8 ≈` → `13/15 ≈ / 2` per [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) § P1-1; додано рядок для `2026-05-13-mobile-reliability-ux-roast.md`; Status-row sync з file headers: `2026-05-04-csp-disable-retrospective` → Closed (A1–A5 resolved 2026-05-06)). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (P1-4 cleanup — архівовано `2026-04-28-implementation-roadmap.md` + `2026-04-28-ux-improvement-plan.md` у `archive/` за [`2026-05-13-ftux-onboarding-roast.md`](./2026-05-13-ftux-onboarding-roast.md) § P1-4; testing-devx-roast P1-5 closed — pre-commit timing wrapper + `pnpm pre-commit:timings` reporter + `docs/development/pre-commit-timing.md`; counter 7/14 → 8/14, outstanding 7 → 6; previous: re-sync `2026-05-03-readme-gap-analysis.md` row `0/8 ≈ / 8 ≈` → `13/15 ≈ / 2` per [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) § P1-1; додано рядок для `2026-05-13-mobile-reliability-ux-roast.md`; Status-row sync з file headers: `2026-05-04-csp-disable-retrospective` → Closed (A1–A5 resolved 2026-05-06)). **Next review:** 2026-08-11.
 
 > **Status:** Active
 
