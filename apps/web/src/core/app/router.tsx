@@ -66,6 +66,13 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: "/routine/*",
+    lazy: async () => {
+      const m = await import("../../modules/routine/route");
+      return m.route;
+    },
+  },
+  {
     path: "*",
     element: <App />,
   },
