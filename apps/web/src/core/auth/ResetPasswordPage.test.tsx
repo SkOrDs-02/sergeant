@@ -74,6 +74,25 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("ResetPasswordPage — UX polish", () => {
+  it("autoFocus-ить перше required-поле (новий пароль) при mount-і", () => {
+    renderAt("/reset-password?token=abc");
+
+    const password = screen.getByLabelText("Новий пароль") as HTMLInputElement;
+    expect(document.activeElement).toBe(password);
+  });
+
+  it("password і confirm мають autoComplete=new-password", () => {
+    renderAt("/reset-password?token=abc");
+
+    const password = screen.getByLabelText("Новий пароль") as HTMLInputElement;
+    const confirm = screen.getByLabelText("Підтвердження") as HTMLInputElement;
+
+    expect(password.getAttribute("autocomplete")).toBe("new-password");
+    expect(confirm.getAttribute("autocomplete")).toBe("new-password");
+  });
+});
+
 describe("ResetPasswordPage — missing token", () => {
   it("renders error-state when ?token= is missing", () => {
     renderAt("/reset-password");

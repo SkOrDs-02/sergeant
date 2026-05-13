@@ -148,6 +148,14 @@ export const SYSTEM_PATHS: Record<string, ReactNode> = {
       <line x1="1" y1="1" x2="23" y2="23" />
     </>
   ),
+  // Lucide `eye` — глядач (open). Парний токен до `eye-off`. Використовується
+  // як toggle-icon у password-visibility-кнопках (`apps/web/src/core/auth/AuthPage.tsx`).
+  eye: (
+    <>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
   compass: (
     <>
       <circle cx="12" cy="12" r="10" />
