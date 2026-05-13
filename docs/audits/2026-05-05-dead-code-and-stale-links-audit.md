@@ -20,17 +20,17 @@
 
 ### 1.1 Broken internal links → виправлено (14 у 5 файлах)
 
-| Файл                                              | Старий шлях                                      | Новий шлях                                                     | Чому drift                                                          |
-| ------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `docs/adr/0009-hosting-split-railway-vercel.md`   | `../../vercel.json` (×4)                         | `../../apps/web/vercel.json`                                   | Vercel SSOT перенесено з root у `apps/web/` (commit `61196120`).    |
-| `docs/initiatives/0006-frontend-routing-...md`    | ../../scripts/bundle-size-guard.ts (×2)          | `../../scripts/check-bundle-size.mjs`                          | Bundle-gate переписано з TS на ESM `.mjs`.                          |
-| `docs/initiatives/0006-frontend-routing-...md`    | ../../apps/web/src/shared/hooks/useHashRouter.ts | `../../apps/web/src/modules/finyk/hooks/useHashRouter.ts`      | Hook переїхав в Finyk-module за planом самої ініціативи.            |
-| `docs/initiatives/0006-frontend-routing-...md`    | `../../vite.config.js`                           | `../../apps/web/vite.config.js`                                | Vite-конфіг живе тільки у `apps/web/`.                              |
-| `docs/initiatives/_0007-design-system-tooling.md` | `../design-system/` (×2)                         | `../design/`                                                   | Дизайн-доки переїхали у `docs/design/` (doc-hygiene PR 2026-05-02). |
-| `docs/initiatives/_0008-platform-hardening.md`    | `../../apps/server/src/__tests__/`               | `../../apps/server/src/http/` + іменовані `rateLimit*.test.ts` | `__tests__/` стало per-module (`http/`, `migrations/__tests__/`).   |
-| `docs/initiatives/_0008-platform-hardening.md`    | `../../apps/server/src/middleware/`              | `../../apps/server/src/http/`                                  | Middleware рефакторнули у `http/`.                                  |
-| `docs/integrations/env-vars.md`                   | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).               |
-| `docs/launch/product-os/ftux-sprint-plan.md`      | `[…s6-cleanup-batch.md](./sprint-retros/...)`    | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.       |
+| Файл                                                      | Старий шлях                                      | Новий шлях                                                     | Чому drift                                                          |
+| --------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `docs/adr/0009-hosting-split-railway-vercel.md`           | `../../vercel.json` (×4)                         | `../../apps/web/vercel.json`                                   | Vercel SSOT перенесено з root у `apps/web/` (commit `61196120`).    |
+| `docs/initiatives/0006-frontend-routing-...md`            | ../../scripts/bundle-size-guard.ts (×2)          | `../../scripts/check-bundle-size.mjs`                          | Bundle-gate переписано з TS на ESM `.mjs`.                          |
+| `docs/initiatives/0006-frontend-routing-...md`            | ../../apps/web/src/shared/hooks/useHashRouter.ts | `../../apps/web/src/modules/finyk/hooks/useHashRouter.ts`      | Hook переїхав в Finyk-module за planом самої ініціативи.            |
+| `docs/initiatives/0006-frontend-routing-...md`            | `../../vite.config.js`                           | `../../apps/web/vite.config.js`                                | Vite-конфіг живе тільки у `apps/web/`.                              |
+| `docs/initiatives/archive/_0007-design-system-tooling.md` | `../design-system/` (×2)                         | `../design/`                                                   | Дизайн-доки переїхали у `docs/design/` (doc-hygiene PR 2026-05-02). |
+| `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/__tests__/`               | `../../apps/server/src/http/` + іменовані `rateLimit*.test.ts` | `__tests__/` стало per-module (`http/`, `migrations/__tests__/`).   |
+| `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/middleware/`              | `../../apps/server/src/http/`                                  | Middleware рефакторнули у `http/`.                                  |
+| `docs/integrations/env-vars.md`                           | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).               |
+| `docs/launch/product-os/ftux-sprint-plan.md`              | `[…s6-cleanup-batch.md](./sprint-retros/...)`    | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.       |
 
 `pnpm docs:check-links` тепер `✅All markdown links resolve.` (12 external 404 / aborted — non-fatal, поза scope цього аудиту).
 

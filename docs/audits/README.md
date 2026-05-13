@@ -1,6 +1,6 @@
 # Audits
 
-> **Last validated:** 2026-05-07 by @Skords-01 / Devin. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by Devin / @Skords-01 (Status-row sync з file headers: `2026-05-04-csp-disable-retrospective` → Closed (A1–A5 resolved 2026-05-06)). **Next review:** 2026-08-11.
 > **Status:** Active
 
 Періодичні аудити коду, архітектури та UX. Цей README — навігаційний індекс
@@ -48,7 +48,7 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
 | [`2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md)                     | Web FTUX onboarding roast — 6 P0 + 22 рекомендацій                                      | Frozen   | 3/6 P0      | 3 P0        | [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) |
 | [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md)                                               | UX-прожарка post-onboarding (день 0–7), web                                             | Active   | 10/39       | 29 ≈        | [`2026-05-06-ux-roast-pr-plan.md`](./2026-05-06-ux-roast-pr-plan.md)                           |
 | [`2026-05-06-ux-roast-pr-plan.md`](./2026-05-06-ux-roast-pr-plan.md)                               | План PR-ів за UX-прожаркою — 41 PR + 4 cross-cutting                                    | Active   | 10/41       | 31          | self                                                                                           |
-| [`2026-05-04-csp-disable-retrospective.md`](./2026-05-04-csp-disable-retrospective.md)             | CSP_DISABLE retrospective audit (initiative 0011 PR 1.4)                                | Active   | 0/5 ≈       | 5 ≈         | self (Action items §A1–A5)                                                                     |
+| [`2026-05-04-csp-disable-retrospective.md`](./2026-05-04-csp-disable-retrospective.md)             | CSP_DISABLE retrospective audit (initiative 0011 PR 1.4)                                | Closed   | 5/5         | 0           | self (A1–A5 resolved 2026-05-06)                                                               |
 | [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) | Dead-code & stale-links прохід (knip / docs:check-links)                                | Active   | 5/5         | 6 ≈         | embedded §3 (unused deps + exports + duplicate exports for follow-up PRs)                      |
 | [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md)                                             | Повний аудит застосунку — web-blocker, mobile/web tests, lint hard-rule, latent imports | Active   | 0/11        | 11          | embedded §10 (P0–P3 follow-up PR plan)                                                         |
 | [`archive/ux-audit-2025.md`](./archive/ux-audit-2025.md)                                           | UX-аудит 2025                                                                           | Archived | n/a         | n/a         | superseded by [`2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md)                       |

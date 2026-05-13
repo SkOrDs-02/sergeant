@@ -1,11 +1,11 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Last validated:** 2026-05-11 by @claude. **Next review:** 2026-08-09.
-> **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md).
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 working days
-> **Sources:** Design Review 2026-05-03 §8 (AI integration), [`docs/tech-debt/backend.md`](../tech-debt/backend.md)
+> **Sources:** Design Review 2026-05-03 §8 (AI integration), [`docs/tech-debt/backend.md`](../../tech-debt/backend.md)
 
 ## TL;DR
 
@@ -122,7 +122,7 @@ Sergeant досить агресивно використовує Anthropic Clau
   - `ai_daily_cost_usd > 50` → Telegram `#ai-ops`.
   - `ai_cache_hit_rate < 30%` за 1 год → Telegram `#ai-ops-warn`.
   - `ai_429_rate > 5%` за 5 хв → Telegram `#ai-ops`.
-- Запис у [`docs/observability/runbook.md`](../observability/runbook.md): «як інтерпретувати AI алерти, як зробити drill-down per model».
+- Запис у [`docs/observability/runbook.md`](../../observability/runbook.md): «як інтерпретувати AI алерти, як зробити drill-down per model».
 
 ### Фаза 4 — ADR (1 PR)
 
@@ -175,15 +175,15 @@ Sergeant досить агресивно використовує Anthropic Clau
 - Design Review 2026-05-03 — §8 AI Integration
 - [Anthropic Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
 - [Anthropic Pricing](https://www.anthropic.com/pricing)
-- [ADR-0039 — Anthropic prompt-cache breakpoint policy](../adr/0039-anthropic-prompt-cache-policy.md) — rationale для 2 breakpoints, ephemeral vs 1h, rollback порогу 30%.
-- [ADR-0005 — Anthropic model selection and prompt caching](../adr/0005-anthropic-model-selection-and-prompt-caching.md) — попередник, model-selection baseline.
-- [Playbook `enable-prompt-caching.md`](../playbooks/enable-prompt-caching.md) — операційний rollout-checklist + manual smoke-команди.
-- [`docs/observability/dashboards/ai-cost.json`](../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`) — 7-panel Grafana.
-- [`docs/observability/metrics.md`](../observability/metrics.md) — реєстр метрик (`ai_tokens_total`, `anthropic_prompt_cache_hit_total`, `ai_cost_estimate_usd_total`).
-- [`docs/observability/runbook.md` § Troubleshooting](../observability/runbook.md#troubleshooting) — як інтерпретувати порожні Anthropic-spans + AI-алерти.
-- [`apps/server/src/modules/chat/`](../../apps/server/src/modules/chat/) — `chat.ts`, `tools.ts`, `toolDefs/systemPrompt.ts`.
+- [ADR-0039 — Anthropic prompt-cache breakpoint policy](../../adr/0039-anthropic-prompt-cache-policy.md) — rationale для 2 breakpoints, ephemeral vs 1h, rollback порогу 30%.
+- [ADR-0005 — Anthropic model selection and prompt caching](../../adr/0005-anthropic-model-selection-and-prompt-caching.md) — попередник, model-selection baseline.
+- [Playbook `enable-prompt-caching.md`](../../playbooks/enable-prompt-caching.md) — операційний rollout-checklist + manual smoke-команди.
+- [`docs/observability/dashboards/ai-cost.json`](../../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`) — 7-panel Grafana.
+- [`docs/observability/metrics.md`](../../observability/metrics.md) — реєстр метрик (`ai_tokens_total`, `anthropic_prompt_cache_hit_total`, `ai_cost_estimate_usd_total`).
+- [`docs/observability/runbook.md` § Troubleshooting](../../observability/runbook.md#troubleshooting) — як інтерпретувати порожні Anthropic-spans + AI-алерти.
+- [`apps/server/src/modules/chat/`](../../../apps/server/src/modules/chat) — `chat.ts`, `tools.ts`, `toolDefs/systemPrompt.ts`.
 - Координується з ініціативою [0004 — server observability](./_0004-server-observability.md) — `aiSpan` помічатиме `cache_hit` як attribute.
-- [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — запис про AI cost (раніше «not measured»; зараз закритий, prompt-caching активний з [#864](https://github.com/Skords-01/Sergeant/pull/864), per-endpoint cost-метрики з [#1247](https://github.com/Skords-01/Sergeant/pull/1247)).
+- [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) — запис про AI cost (раніше «not measured»; зараз закритий, prompt-caching активний з [#864](https://github.com/Skords-01/Sergeant/pull/864), per-endpoint cost-метрики з [#1247](https://github.com/Skords-01/Sergeant/pull/1247)).
 
 ## Outcome (2026-05-04)
 
@@ -191,18 +191,18 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 **Phase 1 — prompt cache: ✅ DONE (2 breakpoints, не 1)** — [#864](https://github.com/Skords-01/Sergeant/pull/864) (audit PR-12.A, активація на `system` + tools), [#924](https://github.com/Skords-01/Sergeant/pull/924) (per-tool lifecycle-метрика, audit PR-12.C).
 
-- [`apps/server/src/modules/chat/chat.ts`](../../apps/server/src/modules/chat/chat.ts) `buildSystem(context)`:
+- [`apps/server/src/modules/chat/chat.ts`](../../../apps/server/src/modules/chat/chat.ts) `buildSystem(context)`:
   - `system[0]` = `SYSTEM_PREFIX` з `cache_control: { type: "ephemeral" }`. Сьогодні префікс ~987 токенів — **рівно під** Anthropic min-cacheable-prompt 1024 для Sonnet, тому окремий slot фактично не реєструється. Залишаємо breakpoint як **forward-looking marker**: щойно `SYSTEM_PREFIX` виросте понад 1024 — кеш ввімкнеться без зміни коду.
   - `system[1]` = per-user `context` **без** `cache_control` — інакше cache-key різниться між юзерами на тривіальних змінах і hit-rate валиться у 0%.
 - `applyToolsCacheBreakpoint(TOOLS)` додає `cache_control: ephemeral` на **останній tool** у масиві:
   - Anthropic читає cache в order `system → tools → messages`; останній `cache_control` каже «кешуй усе до цього блоку **включно**». Тому cache реально покриває `system[0]` + усі tools (~5825 байт SYSTEM_PREFIX + 83 tool-definitions у `toolDefs/{finyk,fizruk,routine,nutrition,crossModule,utility,memory}.ts` ≈ **12k токенів** при першому write).
-  - **Без цього другого breakpoint-у** cache_control на `system[0]` сам по собі не вмикає кеш на tools (та й сам не реєструється на 987 токенах). Це специфіка Anthropic, не очевидна з doc-ів — зафіксована в коментарях `chat.ts:30-48` і у [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md). Operational rollout-checklist — у [playbook `enable-prompt-caching.md`](../playbooks/enable-prompt-caching.md) (включно з real-key smoke output: `cache_creation=12284` → `cache_read=12284` між першим і другим запитом).
+  - **Без цього другого breakpoint-у** cache_control на `system[0]` сам по собі не вмикає кеш на tools (та й сам не реєструється на 987 токенах). Це специфіка Anthropic, не очевидна з doc-ів — зафіксована в коментарях `chat.ts:30-48` і у [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md). Operational rollout-checklist — у [playbook `enable-prompt-caching.md`](../../playbooks/enable-prompt-caching.md) (включно з real-key smoke output: `cache_creation=12284` → `cache_read=12284` між першим і другим запитом).
 - `messages` НЕ кешуються (single-turn flow; cache-write-cost > read-saving).
-- Тести: [`apps/server/src/modules/chat/chat.stream.test.ts:732-844`](../../apps/server/src/modules/chat/chat.stream.test.ts) — 4 кейси для `recordAnthropicUsage` (cache_read>0, cache_creation>0, both, neither). Структурні тести `system[]`/tools breakpoint — у [`chat.test.ts:673-731`](../../apps/server/src/modules/chat/chat.test.ts).
+- Тести: [`apps/server/src/modules/chat/chat.stream.test.ts:732-844`](../../../apps/server/src/modules/chat/chat.stream.test.ts) — 4 кейси для `recordAnthropicUsage` (cache_read>0, cache_creation>0, both, neither). Структурні тести `system[]`/tools breakpoint — у [`chat.test.ts:673-731`](../../../apps/server/src/modules/chat/chat.test.ts).
 
 **Phase 2 — cost-computation utility: ✅ DONE (повністю)** — [#1247](https://github.com/Skords-01/Sergeant/pull/1247) (per-endpoint tokens + USD cost metrics), [#1248](https://github.com/Skords-01/Sergeant/pull/1248) (capture `output_tokens` з SSE `message_delta`, інакше `ai_cost_estimate_usd_total` систематично занижував spend для streaming-флоу).
 
-- [`apps/server/src/lib/anthropic.ts`](../../apps/server/src/lib/anthropic.ts):147-200 — `ANTHROPIC_PRICING_USD_PER_MTOK` keyed by model-prefix через `pickPricing()` + `startsWith` (стійкіше за повну назву моделі — Anthropic регулярно випускає subversions з тим самим прайсингом).
+- [`apps/server/src/lib/anthropic.ts`](../../../apps/server/src/lib/anthropic.ts):147-200 — `ANTHROPIC_PRICING_USD_PER_MTOK` keyed by model-prefix через `pickPricing()` + `startsWith` (стійкіше за повну назву моделі — Anthropic регулярно випускає subversions з тим самим прайсингом).
   - `claude-sonnet-4` / `claude-3-7-sonnet` / `claude-3-5-sonnet` / `claude-3-sonnet`: input $3, output $15, cache_write $3.75, cache_read $0.30 / 1M.
   - `claude-3-5-haiku`: input $0.80, output $4, cache_write $1.00, cache_read $0.08 / 1M.
   - `claude-3-haiku`: input $0.25, output $1.25, cache_write $0.30, cache_read $0.03 / 1M.
@@ -215,7 +215,7 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 **Phase 3 — Grafana dashboards: ✅ DONE (7 panels, не 5)**
 
-- [`docs/observability/dashboards/ai-cost.json`](../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`):
+- [`docs/observability/dashboards/ai-cost.json`](../../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`):
   1. Token rate by model (prompt + completion) — `sum by (model, kind) (rate(ai_tokens_total{kind=~"prompt|completion"}[5m]))`.
   2. Estimated daily spend (USD) — `sum(increase(ai_tokens_total{kind=~"prompt|completion"}[24h])) / 1e6 * $usd_per_1m_tokens`.
   3. Cache-hit ratio (1h window) — `sum(rate(anthropic_prompt_cache_hit_total{outcome="hit"}[1h])) / clamp_min(sum(rate(anthropic_prompt_cache_hit_total[1h])), 1)`.
@@ -223,11 +223,11 @@ Sergeant досить агресивно використовує Anthropic Clau
   5. AI quota fail-open (CRITICAL) — `sum(increase(ai_quota_fail_open_total[1h]))`.
   6. AI request outcomes — `sum by (endpoint, outcome) (rate(ai_requests_total[5m]))`.
   7. AI p95 latency by endpoint — `histogram_quantile(0.95, sum by (le, endpoint) (rate(ai_request_duration_ms_bucket[5m])))`.
-- Alerts (у [`docs/observability/prometheus/alert_rules.yml`](../observability/prometheus/alert_rules.yml)): `AiErrorBudgetBurnFast` / `AiErrorBudgetBurnSlow` (multi-window, multi-burn-rate per Google SRE), `AiQuotaStoreDown` / `AiQuotaFailOpen` (10 хв вікно, severity=ticket). Runbook entry «Anthropic-spans порожні (немає tokens, prompt_cache_hit)» — [`docs/observability/runbook.md` § Troubleshooting](../observability/runbook.md#troubleshooting).
+- Alerts (у [`docs/observability/prometheus/alert_rules.yml`](../../observability/prometheus/alert_rules.yml)): `AiErrorBudgetBurnFast` / `AiErrorBudgetBurnSlow` (multi-window, multi-burn-rate per Google SRE), `AiQuotaStoreDown` / `AiQuotaFailOpen` (10 хв вікно, severity=ticket). Runbook entry «Anthropic-spans порожні (немає tokens, prompt_cache_hit)» — [`docs/observability/runbook.md` § Troubleshooting](../../observability/runbook.md#troubleshooting).
 
 **Phase 4 — ADR: ✅ DONE**
 
-- [ADR-0039: Anthropic prompt-cache breakpoint policy](../adr/0039-anthropic-prompt-cache-policy.md) — status `Accepted`. Зафіксовано:
+- [ADR-0039: Anthropic prompt-cache breakpoint policy](../../adr/0039-anthropic-prompt-cache-policy.md) — status `Accepted`. Зафіксовано:
   - чому 2 breakpoints (а не 1, не 4),
   - чому ephemeral, а не 1h-cache,
   - чому НЕ кешуємо `messages`,
@@ -317,7 +317,7 @@ sum by (version) (rate(anthropic_prompt_cache_hit_total{outcome="hit"}[1h]))
   / clamp_min(sum by (version) (rate(anthropic_prompt_cache_hit_total[1h])), 1)
 ```
 
-Manual smoke (потрібен реальний `ANTHROPIC_API_KEY`, не `AI_QUOTA_DISABLED`-режим) описаний у playbook-у [`enable-prompt-caching.md` § 7](../playbooks/enable-prompt-caching.md): два послідовні `/api/chat` мають дати `cache_creation_input_tokens > 0` (1-й) і `cache_read_input_tokens > 0` (2-й, у межах 5-хв TTL).
+Manual smoke (потрібен реальний `ANTHROPIC_API_KEY`, не `AI_QUOTA_DISABLED`-режим) описаний у playbook-у [`enable-prompt-caching.md` § 7](../../playbooks/enable-prompt-caching.md): два послідовні `/api/chat` мають дати `cache_creation_input_tokens > 0` (1-й) і `cache_read_input_tokens > 0` (2-й, у межах 5-хв TTL).
 
 ### Carry-over → successor
 

@@ -11,13 +11,7 @@
 
 ## One-shot
 
-| Due | Initiative                                  | Item                                                                                                                                                                                                                                                                              |
-| --- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| —   | [0004](./_0004-server-observability.md)     | Перевести RED-deltas і AI-latency на span attributes замість Prom histograms — опційно, залежить від вибору OTLP-backend-у (Honeycomb derived columns vs Tempo metrics-from-traces). Не блокує закриття ініціативи; буде розглянуто в успадкованій 0006-RUM-spans-web ініціативі. |
-| —   | [0005](./_0005-ai-cost-and-prompt-cache.md) | Per-route hit-rate breakdown — додати `endpoint` label на `anthropic_prompt_cache_hit_total` коли буде incident, що цього вимагає (поки що `aggregated` view достатньо).                                                                                                          |
-| —   | [0005](./_0005-ai-cost-and-prompt-cache.md) | OpenAI prompt cache (auto-cache після 1024 токенів) — окремий ADR, якщо/коли перейдемо на OpenAI або multi-provider routing. Тільки метрика, без коду — Anthropic SDK залишається primary.                                                                                        |
-
-Колонка `Due` — ISO-дата для дат-driven items (`⚠ overdue` на минулі), курсивом — trigger-based phrase (`Після baseline-week`, `When …`), `—` = unscheduled (TBD).
+_Жодного відкритого one-shot follow-up-у._
 
 ## Recurring
 

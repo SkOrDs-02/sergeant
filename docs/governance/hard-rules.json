@@ -432,13 +432,13 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/initiatives/_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)"
+          "ref": "docs/initiatives/archive/_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)"
         }
       ],
       "links": [
         {
           "type": "doc",
-          "ref": "docs/initiatives/_0001-module-decomposition.md"
+          "ref": "docs/initiatives/archive/_0001-module-decomposition.md"
         },
         {
           "type": "agents",
@@ -463,13 +463,13 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/initiatives/_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)"
+          "ref": "docs/initiatives/archive/_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)"
         }
       ],
       "links": [
         {
           "type": "doc",
-          "ref": "docs/initiatives/_0012-perfect-strictness-rollout.md"
+          "ref": "docs/initiatives/archive/_0012-perfect-strictness-rollout.md"
         },
         {
           "type": "doc",

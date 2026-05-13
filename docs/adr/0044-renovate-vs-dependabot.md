@@ -5,7 +5,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/_0008-platform-hardening.md`](../initiatives/_0008-platform-hardening.md) §Phase 3
+  - [`docs/initiatives/archive/_0008-platform-hardening.md`](../initiatives/archive/_0008-platform-hardening.md) §Phase 3
   - [`docs/security/hardening/H2-dependabot.md`](../security/hardening/H2-dependabot.md) (Dependabot setup card)
   - [`docs/integrations/renovate-usage.md`](../integrations/renovate-usage.md)
   - [`renovate.json`](../../renovate.json), [`.github/dependabot.yml`](../../.github/dependabot.yml)

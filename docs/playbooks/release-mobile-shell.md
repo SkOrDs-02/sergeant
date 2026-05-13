@@ -5,10 +5,10 @@ lang-reason: Superseded stub kept only as historical anchor (`Status: Deprecated
 
 # Playbook: Release Mobile Shell
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Deprecated
 
-> **Superseded by:** [release.md § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.3).
+> **Superseded by:** [release.md § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor) — merged 2026-05-04 (initiative [0009](../initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).
 
 **Trigger:** historical anchor — open [release.md § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor) instead.
 

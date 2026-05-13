@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [ADR-0015 — observability stack](./0015-observability-stack.md) — `anthropic_prompt_cache_hit_total` Prom counter живе тут.
-  - [Initiative 0005 — AI cost optimisation (prompt cache)](../initiatives/_0005-ai-cost-and-prompt-cache.md) — це rationale-документ для рішень, прийнятих під час її закриття.
+  - [Initiative 0005 — AI cost optimisation (prompt cache)](../initiatives/archive/_0005-ai-cost-and-prompt-cache.md) — це rationale-документ для рішень, прийнятих під час її закриття.
   - [`apps/server/src/modules/chat/chat.ts`](../../apps/server/src/modules/chat/chat.ts) — `buildSystem()` + `applyToolsCacheBreakpoint()`.
   - [`apps/server/src/lib/anthropic.ts`](../../apps/server/src/lib/anthropic.ts) — `recordAnthropicUsage` + `ANTHROPIC_PRICING_USD_PER_MTOK`.
   - [`apps/server/src/modules/chat/tools.ts`](../../apps/server/src/modules/chat/tools.ts) — `SYSTEM_PREFIX`, `SYSTEM_PROMPT_VERSION`.
@@ -202,6 +202,6 @@ Tool-result у HubChat — short-lived (1-turn flow): user задає question, 
 
 - [Anthropic Prompt Caching docs](https://docs.claude.com/en/docs/build-with-claude/prompt-caching)
 - [Anthropic Pricing](https://www.anthropic.com/pricing)
-- [Initiative 0005 — AI cost optimisation (prompt cache)](../initiatives/_0005-ai-cost-and-prompt-cache.md)
+- [Initiative 0005 — AI cost optimisation (prompt cache)](../initiatives/archive/_0005-ai-cost-and-prompt-cache.md)
 - [`docs/observability/dashboards/ai-cost.json`](../observability/dashboards/ai-cost.json) — 7-panel Grafana.
 - [`apps/server/src/lib/anthropic.ts`](../../apps/server/src/lib/anthropic.ts) — `recordAnthropicUsage` + pricing table.

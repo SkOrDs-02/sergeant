@@ -2,7 +2,7 @@ name: Mobile Shell (iOS)
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. docs/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # iOS build-only lane for the Capacitor shell in `apps/mobile-shell/**`.
 # Proves the shell still compiles on an Apple toolchain every PR.

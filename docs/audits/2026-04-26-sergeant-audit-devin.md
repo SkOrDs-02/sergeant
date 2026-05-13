@@ -1,7 +1,7 @@
 # Sergeant — незалежний аудит (Devin)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** Active
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Status:** Closed (historical record — 30/31 recommended PR-ів закриті; залишковий пункт переслідується у `docs/planning/dev-stack-roadmap.md` + `docs/tech-debt/frontend.md`)
 
 > **STATUS — historical record (2026-04-27): 30 / 31 closed.**
 > Цей аудит — **історичний рекорд**, а не activity-tracker. Майже всі

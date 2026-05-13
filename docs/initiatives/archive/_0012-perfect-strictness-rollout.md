@@ -1,11 +1,11 @@
 # 0012 — Perfect TS strictness rollout (`noUncheckedIndexedAccess` + 4 opt-in flags)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
-> **Status:** Closed (Phase 6a/6c/6e/6f ✅ Done; Phase 6b/6d enabled у `tsconfig.base.json` з allowlist-residual у `apps/web` — tracked у [`docs/tech-debt/frontend.md` §11.1](../tech-debt/frontend.md))
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Status:** Closed (Phase 6a/6c/6e/6f ✅ Done; Phase 6b/6d enabled у `tsconfig.base.json` з allowlist-residual у `apps/web` — tracked у [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md))
 > **Priority:** P1 (Sprint 2–4 — після 0010 revenue-first launch стабілізації)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 sprints (≈4 тижні), **15–17 PRs** загалом
-> **Sources:** [`docs/tech-debt/frontend.md` §11.1](../tech-debt/frontend.md) (Phase 6a baseline-experiment, 2026-05-03 measurement) + Phase 4/5/5c TS rollout уроки + ADR-кандидат «Per-flag strictness gate via tsconfig-guard allowlist».
+> **Sources:** [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md) (Phase 6a baseline-experiment, 2026-05-03 measurement) + Phase 4/5/5c TS rollout уроки + ADR-кандидат «Per-flag strictness gate via tsconfig-guard allowlist».
 
 ## TL;DR
 
@@ -14,7 +14,7 @@ TypeScript-міграція в Sergeant закрита: **0 production `.js`/`.j
 ## Чому зараз
 
 - TS-міграція як «file-rename» закрита 2026-05-03 (PR [#1454](https://github.com/Skords-01/Sergeant/pull/1454) Phase 5c). Більше немає причин відкладати strictness-tuning.
-- `noUncheckedIndexedAccess` уже flipped у [`packages/config/tsconfig.base.json`](../../packages/config/tsconfig.base.json), **11/13 пакетів** мігровано (PR-и [#1635](https://github.com/Skords-01/Sergeant/pull/1635) shared, [#1681](https://github.com/Skords-01/Sergeant/pull/1681) nutrition-domain, [#1689](https://github.com/Skords-01/Sergeant/pull/1689) insights, [#1750](https://github.com/Skords-01/Sergeant/pull/1750) finyk-domain, [#1779](https://github.com/Skords-01/Sergeant/pull/1779) fizruk-domain, `0012-phase6a-mobile` apps/mobile — merged 2026-05-04). Залишок — **2 апи** з override `false`: `apps/web`, `apps/server`. Без формального roadmap-у вони лишатимуться в allowlist-у `tools/tsconfig-guard/allowlist.json` нескінченно (`expires: 2026-09-30` уже видно як hard deadline).
+- `noUncheckedIndexedAccess` уже flipped у [`packages/config/tsconfig.base.json`](../../../packages/config/tsconfig.base.json), **11/13 пакетів** мігровано (PR-и [#1635](https://github.com/Skords-01/Sergeant/pull/1635) shared, [#1681](https://github.com/Skords-01/Sergeant/pull/1681) nutrition-domain, [#1689](https://github.com/Skords-01/Sergeant/pull/1689) insights, [#1750](https://github.com/Skords-01/Sergeant/pull/1750) finyk-domain, [#1779](https://github.com/Skords-01/Sergeant/pull/1779) fizruk-domain, `0012-phase6a-mobile` apps/mobile — merged 2026-05-04). Залишок — **2 апи** з override `false`: `apps/web`, `apps/server`. Без формального roadmap-у вони лишатимуться в allowlist-у `tools/tsconfig-guard/allowlist.json` нескінченно (`expires: 2026-09-30` уже видно як hard deadline).
 - Інші 4 прапори (`exactOptionalPropertyTypes`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`) — ще не flipped; baseline не виміряний. Кожен новий PR без guard-а потенційно вносить регрес.
 - Sprint-1 ranking: P0 ініціативи закриті (0001–0005, 0008 у фазі 5). Sprint 2–4 — час підіймати «foundation» якість.
 
@@ -28,15 +28,15 @@ TypeScript-міграція в Sergeant закрита: **0 production `.js`/`.j
   3. `noImplicitReturns` + `noFallthroughCasesInSwitch` (один PR — пов'язані семантично).
   4. `noPropertyAccessFromIndexSignature`.
   5. `noUnusedLocals` + `noUnusedParameters` — переніс із ESLint у TS (uniformity).
-- Розширення [`tools/tsconfig-guard`](../../tools/tsconfig-guard/check.mjs) для нових прапорів (`GUARDED_OPTIONS`).
-- Розширення [`scripts/strict-coverage.mjs`](../../scripts/strict-coverage.mjs) — нові columns у markdown table + summary.
+- Розширення [`tools/tsconfig-guard`](../../../tools/tsconfig-guard/check.mjs) для нових прапорів (`GUARDED_OPTIONS`).
+- Розширення [`scripts/strict-coverage.mjs`](../../../scripts/strict-coverage.mjs) — нові columns у markdown table + summary.
 - Cleanup `as unknown as X` у production коді (тести залишаємо — Phase 7 опційно).
 - Оновлення `docs/tech-debt/frontend.md` §11.1 — кожна row у статусі-таблиці отримує PR-link і final coverage.
 - Оновлення hard-rule registry: `noUncheckedIndexedAccess` стає **Hard Rule #19** після завершення Phase 1 (як `max-lines: 600` для `apps/web/src` в Initiative 0001).
 
 **Out:**
 
-- TS 6 bump для `apps/mobile` + `tools/console` — це окремий вектор, BLOCKED на Expo SDK 53. Трекається в [`docs/tech-debt/mobile.md` M9](../tech-debt/mobile.md).
+- TS 6 bump для `apps/mobile` + `tools/console` — це окремий вектор, BLOCKED на Expo SDK 53. Трекається в [`docs/tech-debt/mobile.md` M9](../../tech-debt/mobile.md).
 - `as unknown as X` у тестах (~50 файлів) — Phase 7 опційно, окрема міні-ініціатива якщо ROI виправдає.
 - ESLint `consistent-type-imports`, `consistent-type-exports` — це окрема ініціатива по import-style (поза скоупом strictness).
 - `tsconfig.sw.json` (service worker) — окремий target з власним lifecycle.
@@ -139,8 +139,8 @@ const c2: Config = {}; // ✅ OK
   - `exactOptionalPropertyTypes` — **11 / 12 = 92%** (відсутній лише `apps/web` — allowlist `expires: 2026-09-30`)
   - `noPropertyAccessFromIndexSignature` — **11 / 12 = 92%** (відсутній лише `apps/web` — allowlist `expires: 2026-09-30`)
 - [x] `tools/tsconfig-guard/allowlist.json` — лише residual `apps/web` для двох нових прапорів (`expires: 2026-09-30`). Решта прапорів — без override-ів. CI падає при regress-override.
-- [x] [`docs/tech-debt/frontend.md` §11.1](../tech-debt/frontend.md) — таблиця Status оновлена: 6a/6c/6e/6f ✅ Done; 6b/6d residual `apps/web` mark `🟡 in-flight (apps/web only — Sprint 5+)`.
-- [x] [`AGENTS.md` Hard Rules](../../AGENTS.md) — Hard Rule #19 «Strict-mode flag canonical: `noUncheckedIndexedAccess: true` по всьому monorepo» зафіксований у [`docs/governance/hard-rules.json`](../governance/hard-rules.json).
+- [x] [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md) — таблиця Status оновлена: 6a/6c/6e/6f ✅ Done; 6b/6d residual `apps/web` mark `🟡 in-flight (apps/web only — Sprint 5+)`.
+- [x] [`AGENTS.md` Hard Rules](../../../AGENTS.md) — Hard Rule #19 «Strict-mode flag canonical: `noUncheckedIndexedAccess: true` по всьому monorepo» зафіксований у [`docs/governance/hard-rules.json`](../../governance/hard-rules.json).
 - [x] CI ganye `pnpm strict:coverage` post-PR-merge → markdown table попадає в `$GITHUB_STEP_SUMMARY` (як зараз для existing flags). Columns для `exactOptionalPropertyTypes` + `noPropertyAccessFromIndexSignature` додано у `scripts/strict-coverage.mjs`.
 - [x] Жодного `as unknown as X` у production-коді (`apps/*/src/**` excluding `**/*.test.ts`/`*.spec.ts`) — 2026-05-05 audit: 0 matches.
 
@@ -168,11 +168,11 @@ const c2: Config = {}; // ✅ OK
 
 ## Посилання
 
-- [`docs/tech-debt/frontend.md` §11.1 (Що ще лишилось до «ідеального» стрікту)](../tech-debt/frontend.md) — full table з baseline-помилками per-workspace + per-module rollout планом.
-- [`docs/tech-debt/backend.md` § Gradual TypeScript migration plan](../tech-debt/backend.md) — archive-marker з посиланням сюди як successor.
-- [`packages/config/tsconfig.base.json`](../../packages/config/tsconfig.base.json) — поточний canonical strict baseline.
-- [`tools/tsconfig-guard/check.mjs`](../../tools/tsconfig-guard/check.mjs) + [`tools/tsconfig-guard/allowlist.json`](../../tools/tsconfig-guard/allowlist.json) — drift-захист, який буде розширено для кожного нового прапора.
-- [`scripts/strict-coverage.mjs`](../../scripts/strict-coverage.mjs) — strict coverage tracker, output у `$GITHUB_STEP_SUMMARY`.
+- [`docs/tech-debt/frontend.md` §11.1 (Що ще лишилось до «ідеального» стрікту)](../../tech-debt/frontend.md) — full table з baseline-помилками per-workspace + per-module rollout планом.
+- [`docs/tech-debt/backend.md` § Gradual TypeScript migration plan](../../tech-debt/backend.md) — archive-marker з посиланням сюди як successor.
+- [`packages/config/tsconfig.base.json`](../../../packages/config/tsconfig.base.json) — поточний canonical strict baseline.
+- [`tools/tsconfig-guard/check.mjs`](../../../tools/tsconfig-guard/check.mjs) + [`tools/tsconfig-guard/allowlist.json`](../../../tools/tsconfig-guard/allowlist.json) — drift-захист, який буде розширено для кожного нового прапора.
+- [`scripts/strict-coverage.mjs`](../../../scripts/strict-coverage.mjs) — strict coverage tracker, output у `$GITHUB_STEP_SUMMARY`.
 - Прецедент: Phase 4 + Phase 5c TS rollout — PR [#1454](https://github.com/Skords-01/Sergeant/pull/1454) — патерн «flip + measure + guard + frontend.md update» доведений у проді.
 - ADR-кандидат: «Per-flag strictness gate via tsconfig-guard allowlist» (буде створений у Phase 6a closure).
 - Initiative 0001 (Module decomposition) — структурний шаблон цієї ініціативи.
@@ -214,7 +214,7 @@ Baseline (виміряно 2026-05-04 через per-workspace `npx tsc -p tscon
 
 - `packages/config/tsconfig.base.json` — `"noImplicitReturns": true, "noFallthroughCasesInSwitch": true` додано.
 - `tools/tsconfig-guard/check.mjs` — `GUARDED_OPTIONS` розширено двома новими прапорами; жоден workspace не має override-у.
-- [`docs/tech-debt/frontend.md` §11.1 row 3](../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
+- [`docs/tech-debt/frontend.md` §11.1 row 3](../../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
 
 ### Phase 6e — `noUnusedLocals` + `noUnusedParameters` (✅ DONE — 1 PR, 2026-05-04)
 
@@ -232,7 +232,7 @@ Baseline (виміряно 2026-05-04 через per-workspace `npx tsc -p tscon
 
 - `packages/config/tsconfig.base.json` — `"noUnusedLocals": true, "noUnusedParameters": true` додано.
 - `tools/tsconfig-guard/check.mjs` — `GUARDED_OPTIONS` розширено двома новими прапорами; жоден workspace не має override-у.
-- [`docs/tech-debt/frontend.md` §11.1 row 5](../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
+- [`docs/tech-debt/frontend.md` §11.1 row 5](../../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
 
 **Чому залишаємо ESLint rule active (doubly-redundant):** `@typescript-eslint/no-unused-vars` ловить деякі edge-cases, які TS пропускає — зокрема JSX-imports у `.tsx` файлах і `_`-prefixed argument convention. Видалення ESLint-rule можна зробити окремим PR-ом після кварталу expirience з TS-enforcement, якщо буде доведено, що ESLint нічого додаткового не знаходить. Поки — обидва.
 

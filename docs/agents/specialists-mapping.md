@@ -1,6 +1,6 @@
 # Specialists ↔ skills mapping
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Цей файл — канонічний міст між **runtime specialist agents** (`SpecialistAgent` у [`tools/console/src/agents/dispatcher.ts`](../../tools/console/src/agents/dispatcher.ts)), які класифікують Telegram-команди (`/assign web-ui …`), і **governance skills** ([`./agent-skills-catalog.md`](./agent-skills-catalog.md)), якими оперують Devin / Claude під час роботи в репо.
@@ -42,5 +42,5 @@
 
 - Routing catalog: [`agent-skills-catalog.md`](./agent-skills-catalog.md)
 - Workflow decision trees: [`agent-workflows.md`](./agent-workflows.md)
-- Initiative 0009 phase 2.1: [`docs/initiatives/0009-agent-os-hardening.md`](../initiatives/0009-agent-os-hardening.md)
+- Initiative 0009 phase 2.1: [`docs/initiatives/archive/_0009-agent-os-hardening.md`](../initiatives/archive/_0009-agent-os-hardening.md)
 - ADR-0033 OpenClaw multi-personas and council: [`docs/adr/0033-openclaw-multi-personas-and-council.md`](../adr/0033-openclaw-multi-personas-and-council.md)
