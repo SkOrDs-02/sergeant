@@ -26,7 +26,7 @@
 7. **Landing page (Phase 6.1) — 0 LOC** — публічний `/` для SEO/paid-acquisition не існує.
 8. **EN locale (Phase 6.2) — 0 progress** — i18n framework не інтегрований; hero copy тільки uk.
 9. **LiqPay placeholder — відсутній** — UA-локальний платіжний шлюз не scaffolded.
-10. **Activation v2 web-side capture — не wired** — `evaluateActivationV2()` pure function існує в packages/insights, але ніхто її не викликає на client.
+10. **Activation v2 web-side capture — wired ✅** — `evaluateActivationV2()` тепер кличеться з `apps/web/src/core/activation/useActivationV2.ts`; Boot-адаптер агрегує snapshot з Auth + finyk RQ-кешу і запускає `ACTIVATION_V2_HIT` одноразово (`sergeant.activation_v2_fired` localStorage-флаг). Будж-фіксація через React Query — наступний крок (TODO у `useActivationV2Boot.ts`).
 
 ## P0 — Blocker (без цього launch неможливий)
 
@@ -45,7 +45,7 @@
 | #    | Item                                                       | Дія        | Файл / шлях                                                         | Статус        |
 | ---- | ---------------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------- |
 | P1-1 | Analytics events: init 0010 Phase 4–6 constants            | **Add**    | `packages/shared/src/lib/analyticsEvents.ts:218–259`                | **Done (PR)** |
-| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | Outstanding   |
+| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | **Done (PR)** |
 | P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | Outstanding   |
 | P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding   |
 | P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
@@ -67,7 +67,7 @@
 
 ## Прогрес виконання (цей PR)
 
-Закрито **6 items** з P0/P1 у цьому PR:
+Закрито **6 items** з P0/P1 у попередньому PR + **1 follow-up item** (P1-2) у поточному:
 
 ## Прогрес виконання — follow-up PR (2026-05-13, P1-9)
 
@@ -114,6 +114,13 @@
 ### Barrel export
 
 - **Файл:** `apps/web/src/core/billing/index.ts` — re-exports `usePlan`, `PaywallModal` + types.
+
+### P1-2 · Activation v2 web-side capture ✅ Closed in this PR
+
+- **Файли:** `apps/web/src/core/activation/useActivationV2.ts` (core hook), `apps/web/src/core/activation/useActivationV2Boot.ts` (RQ-cache adapter), `apps/web/src/core/activation/index.ts` (barrel), `apps/web/src/core/App.tsx` (mount-point у `AppInner`).
+- **Тести:** `apps/web/src/core/activation/useActivationV2.test.tsx` (5 кейсів — happy path, null input, not-activated, persisted fire-flag, A/B variant payload). Mock-ане `evaluateActivationV2` + analytics-spy через `vi.mock`.
+- `useActivationV2(input)` рахує `ActivationResult` через pure-fn з `@sergeant/insights` і фає `ACTIVATION_V2_HIT` рівно один раз — гард localStorage-флага `sergeant.activation_v2_fired` (контракт у `analyticsEvents.ts:222`). Payload: `time_to_activate_hours`, `mono_connected: true`, `transactions_categorized`, `budgets_set`, опціональний `variant`.
+- `useActivationV2Boot()` агрегує snapshot з `useAuth().user.createdAt` (signedUpAt) + cache-prefix walk `["finyk", "mono", "webhook-tx"]` (categorized txn count з `MonoTransactionDto.categorySlug !== null`) + `finykKeys.monoWebhookAccounts.length`. Будж-кількість поки `0` (TODO: budget RQ-key зараз немає — `finyk/budgets` читає з SQLite напряму; follow-up плагне count сюди й активаційний funnel запрацює end-to-end на live data).
 
 ## Файли змінено у цьому PR
 

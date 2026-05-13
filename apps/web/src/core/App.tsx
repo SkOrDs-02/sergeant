@@ -5,6 +5,7 @@ import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcu
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 
 import { useAuth } from "./auth/AuthContext";
+import { useActivationV2Boot } from "./activation";
 import { AppLock } from "./security/AppLock";
 import { useAppLockContext } from "./security/AppLockContext";
 import { setFlag, useFlag } from "./lib/featureFlags";
@@ -131,6 +132,14 @@ function AppInner() {
   // module-level `booted` flag in `bootNutritionSqliteReadPath`.
   useNutritionDualWriteBoot();
   useNutritionSqliteReadBoot();
+
+  // Activation v2 web-side capture (audit P1-2). Subscribes to the
+  // signed-up time and finyk RQ cache to fire `ACTIVATION_V2_HIT`
+  // once when the Mono / categorized-txn / budgets predicate flips
+  // to `true` within the 72 h window. Pure side-effect; the hook
+  // self-gates on `null` input so unauthenticated visitors are a
+  // no-op.
+  useActivationV2Boot();
 
   useAppEffects({
     user,
