@@ -575,10 +575,16 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: intFromEnv(100),
   /** Global rate limit: window size in seconds. */
   RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
-  /** Auth rate limit: attempts per window. */
+  /**
+   * Auth rate limit (sign-in / sign-up / forget-password / reset-password):
+   * attempts per IP per window. Default 5 spec-ed у `docs/security/better-auth-audit-2026-05.md`
+   * — closely matches OWASP ASVS V11.1.3 (5–10 за хвилину для credential flow).
+   * Реєстр `config/rateLimit.ts` бере цей default; ops може дополнити через env
+   * без redeploy-у.
+   */
   AUTH_RATE_LIMIT_MAX: intFromEnv(5),
-  /** Auth rate limit: window size in seconds. */
-  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
+  /** Auth rate limit: window size in seconds (default 60). */
+  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
 
   // ── Sync audit (PR #005 / Stage 0) ─────────────────────────────────
   /** Comma-separated allow-list of `user.id` для cross-user `/api/sync/audit` запитів. */
