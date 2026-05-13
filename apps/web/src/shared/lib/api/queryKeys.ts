@@ -105,6 +105,18 @@ export const strategicKeys = {
     ["strategic", "goals", "week", weekStart] as const,
 };
 
+// ─── Sync (CloudSync v2 outbox status) ────────────────────────────────────
+//
+// Live counts (`pending` / `rejected` / `dead_letter`) from
+// `getSyncEngineWriter().getStatus()` — used by `useSyncStatus` (`OfflineBanner`)
+// for an "online + queued" / "blocked" pill. Polled every 30 s while the
+// session is online and on `window` focus, invalidated on `online`/`offline`
+// transitions (Hard Rule #2 — see `apps/web/src/core/cloudSync/hook/useSyncStatus.ts`).
+export const syncKeys = {
+  all: ["sync"] as const,
+  status: () => ["sync", "status"] as const,
+};
+
 // ─── Billing (Stripe checkout / subscription status) ──────────────────────
 //
 // Backed by `/api/billing/status` (`packages/api-client` → `billingApi.status`).

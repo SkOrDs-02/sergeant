@@ -110,7 +110,7 @@ Single source of truth: **Europe/Kyiv** for time, **minor units (kopiykas) as `n
 
 ## RQ keys factory
 
-Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/rules/02-rq-keys-via-centralized-factories.md).
+Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/rules/02-rq-keys-via-centralized-factories.md).
 
 ## Performance budgets
 
