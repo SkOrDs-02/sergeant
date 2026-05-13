@@ -232,6 +232,12 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                   {monthMarkers.find((m) => m.weekIdx === w)?.label ?? ""}
                 </div>
                 {week.map((cell) => (
+                  // Heatmap cells are intentionally 12×12 px to fit ~52 weeks
+                  // (~365 days) in a single overview row. data-compact opts
+                  // out of the global ≥44×44 touch-target safety-net; cells
+                  // are activated via roving keyboard focus + clear focus
+                  // outline, and the selection details are announced through
+                  // the aria-live region below the grid.
                   <button
                     key={cell.key}
                     ref={(el) => {
@@ -239,6 +245,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                       else cellRefs.current.delete(cell.key);
                     }}
                     type="button"
+                    data-compact
                     tabIndex={rovingKey === cell.key ? 0 : -1}
                     data-cell-key={cell.key}
                     onClick={() => handleClick(cell.key)}

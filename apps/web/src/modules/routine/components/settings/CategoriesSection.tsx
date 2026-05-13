@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { IconButton } from "@shared/components/ui/IconButton";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -129,9 +130,10 @@ export function CategoriesSection({
                     </span>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button
-                      type="button"
-                      className="text-subtle hover:text-text min-w-[32px] min-h-[32px] flex items-center justify-center rounded-xl text-xs"
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      className="rounded-xl text-subtle hover:text-text text-xs!"
                       onClick={() => {
                         setEditingCatId(c.id);
                         setCatDraft({ name: c.name, emoji: c.emoji || "" });
@@ -139,10 +141,11 @@ export function CategoriesSection({
                       aria-label={`Змінити ${c.name}`}
                     >
                       ✎
-                    </button>
-                    <button
-                      type="button"
-                      className="text-subtle hover:text-danger min-w-[32px] min-h-[32px] flex items-center justify-center rounded-xl text-xs"
+                    </IconButton>
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      className="rounded-xl text-subtle hover:text-danger text-xs!"
                       onClick={() => {
                         // Soft-delete with undo: snapshot the full
                         // routine state, apply the deletion, then offer
@@ -169,7 +172,7 @@ export function CategoriesSection({
                       aria-label={`Видалити ${c.name}`}
                     >
                       ×
-                    </button>
+                    </IconButton>
                   </div>
                 </li>
               );

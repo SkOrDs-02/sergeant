@@ -1,3 +1,4 @@
+import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
@@ -54,17 +55,18 @@ export function DayReportSheet({
                 key={h.id}
                 className="flex items-center gap-3 rounded-xl bg-routine-surface/40 dark:bg-routine-surface-dark/10 border border-routine-line/30 dark:border-routine-border-dark/20 px-3 py-2.5"
               >
-                <button
-                  type="button"
+                <IconButton
+                  size="xs"
+                  variant="ghost"
                   onClick={() => onToggleHabit(h.id, dateKey)}
                   className={cn(
-                    "w-8 h-8 rounded-xl border flex items-center justify-center text-sm font-bold shrink-0 transition-colors",
+                    "shrink-0 rounded-xl border text-sm! font-bold",
                     C.done,
                   )}
                   aria-label="Скасувати виконання"
                 >
                   ✓
-                </button>
+                </IconButton>
                 <span className="text-style-label text-text truncate">
                   {h.emoji} {h.name}
                 </span>
@@ -85,14 +87,15 @@ export function DayReportSheet({
                 key={h.id}
                 className="flex items-center gap-3 rounded-xl bg-panel border border-line px-3 py-2.5"
               >
-                <button
-                  type="button"
+                <IconButton
+                  size="xs"
+                  variant="ghost"
                   onClick={() => onToggleHabit(h.id, dateKey)}
-                  className="w-8 h-8 rounded-xl border border-line flex items-center justify-center text-sm font-bold shrink-0 text-muted hover:bg-panelHi transition-colors"
+                  className="shrink-0 rounded-xl border border-line text-sm! font-bold text-muted"
                   aria-label="Відмітити як виконано"
                 >
                   ○
-                </button>
+                </IconButton>
                 <span className="text-style-label text-muted truncate">
                   {h.emoji} {h.name}
                 </span>

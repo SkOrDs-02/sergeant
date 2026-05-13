@@ -8,6 +8,7 @@ import { z } from "zod";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { IconButton } from "@shared/components/ui/IconButton";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
@@ -136,17 +137,19 @@ export function TagsSection({
             ) : (
               <>
                 {t.name}
-                <button
-                  type="button"
-                  className="text-subtle hover:text-text min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  className="rounded-xl text-subtle hover:text-text"
                   onClick={() => startEdit(t.id, t.name)}
                   aria-label={`Змінити ${t.name}`}
                 >
                   ✎
-                </button>
-                <button
-                  type="button"
-                  className="text-subtle hover:text-danger min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
+                </IconButton>
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  className="rounded-xl text-subtle hover:text-danger"
                   onClick={() => {
                     // Soft-delete with undo (see docs/design/UNDO-PATTERN.md):
                     // snapshot the routine before applying the delete, then
@@ -168,7 +171,7 @@ export function TagsSection({
                   aria-label={`Видалити ${t.name}`}
                 >
                   ×
-                </button>
+                </IconButton>
               </>
             )}
           </li>

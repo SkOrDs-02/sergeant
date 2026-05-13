@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { IconButton } from "@shared/components/ui/IconButton";
 import { Input } from "@shared/components/ui/Input";
 import { ROUTINE_THEME as C } from "../../lib/routineConstants";
 import { REMINDER_PRESETS } from "../../lib/routineDraftUtils";
@@ -24,7 +25,7 @@ export function ReminderPresets({
             key={preset.id}
             type="button"
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[32px]",
+              "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
               JSON.stringify(times.slice().sort()) ===
                 JSON.stringify(preset.times.slice().sort())
                 ? C.chipOn
@@ -44,7 +45,7 @@ export function ReminderPresets({
         <button
           type="button"
           className={cn(
-            "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[32px]",
+            "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
             times.length === 0 ? C.chipOn : C.chipOff,
           )}
           onClick={() =>
@@ -76,9 +77,10 @@ export function ReminderPresets({
               })
             }
           />
-          <button
-            type="button"
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-subtle hover:text-danger hover:bg-danger/10 transition-colors"
+          <IconButton
+            size="xs"
+            variant="ghost"
+            className="rounded-xl text-subtle hover:text-danger hover:bg-danger/10"
             onClick={() =>
               setHabitDraft((d) => {
                 const arr = (d.reminderTimes || []).filter((_, j) => j !== i);
@@ -92,7 +94,7 @@ export function ReminderPresets({
             aria-label="Видалити час"
           >
             ✕
-          </button>
+          </IconButton>
         </div>
       ))}
       {times.length < 5 && times.length > 0 && (

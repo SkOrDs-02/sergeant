@@ -1,5 +1,7 @@
 import { cn } from "@shared/lib/ui/cn";
+import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { parseDateKey } from "../lib/hubCalendarAggregate";
@@ -53,36 +55,39 @@ export function RoutineCalendarMonthGrid({
     <>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            className="w-10 h-10 rounded-xl border border-line bg-panel/90 text-muted hover:text-text shadow-sm"
+          <IconButton
+            size="md"
+            variant="ghost"
+            className="border border-line bg-panel/90 shadow-sm"
             onClick={() => goMonth(-1)}
             aria-label="Попередній місяць"
           >
             ‹
-          </button>
+          </IconButton>
           <span className="text-style-label capitalize flex-1 text-center">
             {monthTitle}
           </span>
-          <button
-            type="button"
-            className="w-10 h-10 rounded-xl border border-line bg-panel/90 text-muted hover:text-text shadow-sm"
+          <IconButton
+            size="md"
+            variant="ghost"
+            className="border border-line bg-panel/90 shadow-sm"
             onClick={() => goMonth(1)}
             aria-label="Наступний місяць"
           >
             ›
-          </button>
+          </IconButton>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={goToToday}
           className={cn(
-            "w-full min-h-[40px] rounded-xl text-xs font-semibold border transition-colors",
+            "w-full rounded-xl text-xs! font-semibold border",
             C.chipOn,
           )}
         >
           Сьогодні
-        </button>
+        </Button>
       </div>
 
       <Card as="section" radius="lg" padding="md">
@@ -95,7 +100,7 @@ export function RoutineCalendarMonthGrid({
           {cells.map((day, i) => {
             if (day == null)
               return (
-                <div key={`e-${i}`} className="aspect-square min-h-[40px]" />
+                <div key={`e-${i}`} className="aspect-square min-h-[44px]" />
               );
             const key = `${monthCursor.y}-${String(monthCursor.m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const n = dayCounts.get(key) || 0;
@@ -118,7 +123,7 @@ export function RoutineCalendarMonthGrid({
                 aria-label={aria}
                 aria-pressed={sel}
                 className={cn(
-                  "text-style-label aspect-square min-h-[40px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors",
+                  "text-style-label aspect-square min-h-[44px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors",
                   sel
                     ? C.monthSel
                     : "hover:bg-panelHi border border-transparent",
@@ -148,13 +153,14 @@ export function RoutineCalendarMonthGrid({
           })}
         </p>
         {showFizrukShortcut && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onPlanFizruk(selectedDay)}
-            className="text-style-caption mt-2 w-full rounded-xl border border-sky-400/30 bg-sky-500/5 hover:bg-sky-500/10 px-3 py-2 text-info-strong dark:text-info transition-colors text-center"
+            className="text-style-caption mt-2 w-full rounded-xl border border-sky-400/30 bg-sky-500/5 hover:bg-sky-500/10 px-3! text-info-strong dark:text-info text-center"
           >
             Планувати тренування
-          </button>
+          </Button>
         )}
         {flatGroupedItems.length > 0 && (
           <div className="mt-3 space-y-1">
@@ -188,7 +194,8 @@ export function RoutineCalendarMonthGrid({
                   className={cn(
                     "flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60",
                     e.completed && "opacity-70",
-                    e.fizruk && "cursor-pointer hover:bg-sky-500/5",
+                    e.fizruk &&
+                      "cursor-pointer hover:bg-sky-500/5 min-h-[44px]",
                   )}
                 >
                   <span
@@ -208,21 +215,20 @@ export function RoutineCalendarMonthGrid({
                     {e.subtitle}
                   </span>
                   {e.habitId && (
-                    <button
-                      type="button"
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
                       onClick={() => onToggleHabit(e.habitId!, e.date)}
                       className={cn(
-                        "w-7 h-7 rounded-xl border flex items-center justify-center text-xs font-bold transition-colors shrink-0",
-                        e.completed
-                          ? C.done
-                          : "border-line hover:bg-panelHi text-muted",
+                        "shrink-0 rounded-xl border text-xs! font-bold",
+                        e.completed ? C.done : "border-line text-muted",
                       )}
                       aria-label={
                         e.completed ? "Скасувати виконання" : "Виконано"
                       }
                     >
                       {e.completed ? "✓" : "○"}
-                    </button>
+                    </IconButton>
                   )}
                 </div>
               );
