@@ -9,7 +9,7 @@
  *   * bigint coercion (Hard Rule #1) — string id з pg coerc-иться у number.
  *
  * Інтеграційне покриття (real Postgres → real INSERT → real index +
- * retention) живе у `apps/server/src/migrations/__tests__/060-n8n-webhook-events.test.ts`.
+ * retention) живе у `apps/server/src/migrations/__tests__/061-n8n-webhook-events.test.ts`.
  */
 
 import { describe, it, expect, vi } from "vitest";

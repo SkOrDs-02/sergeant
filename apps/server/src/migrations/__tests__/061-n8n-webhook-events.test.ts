@@ -1,4 +1,4 @@
-// Migration 060 — focused integration test for `n8n_webhook_events`
+// Migration 061 — focused integration test for `n8n_webhook_events`
 // (PR-28: webhook replay infrastructure).
 //
 // Mirrors `058-n8n-failure-events-signature.test.ts`: Testcontainers
@@ -60,7 +60,7 @@ beforeAll(async () => {
   } catch (e) {
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
-      `[060-n8n-webhook-events] Skipping: Testcontainers unavailable — ${skipReason}`,
+      `[061-n8n-webhook-events] Skipping: Testcontainers unavailable — ${skipReason}`,
     );
   }
 }, TIMEOUT_MS);
@@ -124,7 +124,7 @@ async function indexDef(p: pg.Pool, name: string): Promise<string | null> {
   return r.rows[0]?.indexdef ?? null;
 }
 
-describe("060_n8n_webhook_events migration", () => {
+describe("061_n8n_webhook_events migration", () => {
   it(
     "creates n8n_webhook_events with expected columns",
     async (ctx) => {
@@ -336,7 +336,7 @@ describe("060_n8n_webhook_events migration", () => {
       expect(await tableExists(pool, "n8n_webhook_events")).toBe(true);
 
       const downSql = await fs.readFile(
-        path.join(MIGRATIONS_DIR, "060_n8n_webhook_events.down.sql"),
+        path.join(MIGRATIONS_DIR, "061_n8n_webhook_events.down.sql"),
         "utf8",
       );
       await pool.query(downSql);
@@ -349,7 +349,7 @@ describe("060_n8n_webhook_events migration", () => {
 
       // Re-apply the up migration manually (without resetting the rest of the schema).
       const upSql = await fs.readFile(
-        path.join(MIGRATIONS_DIR, "060_n8n_webhook_events.sql"),
+        path.join(MIGRATIONS_DIR, "061_n8n_webhook_events.sql"),
         "utf8",
       );
       await pool.query(upSql);
