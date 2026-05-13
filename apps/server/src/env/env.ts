@@ -730,6 +730,16 @@ const envSchema = z.object({
   /** Скільки reminder-ів брати за один poll (batch). */
   OPENCLAW_REMINDER_POLL_BATCH: intFromEnv(20),
 
+  // ── PR-28 — n8n_webhook_events retention ───────────────────────────
+  /**
+   * Скільки днів зберігати рядки в `n8n_webhook_events` перед `DELETE`.
+   * Default 30. 0 → retention-poller не запускається (зберігаємо все
+   * назавжди — корисно у dev / тестах).
+   */
+  WEBHOOK_EVENTS_RETENTION_DAYS: intFromEnv(30),
+  /** Інтервал в мілісекундах для retention-cleanup tick-у. Default 1h; 0 → off. */
+  WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
+
   // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
   /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
   RAILWAY_MONTHLY_COST_USD: floatFromEnv(0),

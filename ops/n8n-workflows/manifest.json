@@ -171,7 +171,9 @@
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_OPS",
-        "TELEGRAM_TOPIC_INCIDENTS"
+        "TELEGRAM_TOPIC_INCIDENTS",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules."
