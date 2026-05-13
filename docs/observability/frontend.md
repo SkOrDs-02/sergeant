@@ -253,21 +253,46 @@ PR #052b разом із рештою v1 engine tree (storage-roadmap Stage 7).
 `modules` у `sync_conflict_resolved` — лічильник, не імена модулів: кардинальність
 у PostHog залишається маленькою, але spike-и LWW-loss детектуються.
 
-### Subscription-події (placeholder-и)
+### Subscription-події
 
-Білінг ще не підключений, але канонічні імена вже зафіксовані в
-`ANALYTICS_EVENTS` (`SUBSCRIPTION_STARTED`, `SUBSCRIPTION_CANCELED`,
-`SUBSCRIPTION_RENEWED`) — щоб у момент підключення Stripe/IAP не винаходити
-нові імена і не розвалити PostHog-funnel-и між першим і другим релізом.
-Очікувані payload-и (для майбутнього implementor-а):
+Канонічні імена зафіксовані в `ANALYTICS_EVENTS` (`SUBSCRIPTION_STARTED`,
+`SUBSCRIPTION_CANCELED`, `SUBSCRIPTION_RENEWED`). `SUBSCRIPTION_STARTED`
+вже **активний у проді** — fire-ить сервер з `processStripeWebhook` на
+`customer.subscription.created` через `apps/server/src/lib/posthogCapture.ts`
+(PR-09, merged [#2525](https://github.com/Skords-01/Sergeant/pull/2525)).
+`CANCELED` / `RENEWED` ще placeholder-и до підключення відповідних Stripe
+events (наступний PR з 48-плану).
+
+**Server-side `subscription_started`** (поточний shipping payload):
 
 ```ts
-trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_STARTED, {
-  plan: "monthly" | "yearly",
-  source: "paywall" | "deeplink" | "cta",
-  price_cents: number,
-  currency: string, // ISO-4217, "UAH" / "USD" / …
-});
+// apps/server/src/modules/billing/stripe.ts → emitSubscriptionStarted
+{
+  event: ANALYTICS_EVENTS.SUBSCRIPTION_STARTED, // "subscription_started"
+  distinctId: userId,                            // Better Auth opaque string
+  uuid: event.id,                                // Stripe event.id → PostHog-dedup
+  properties: {
+    plan: "free" | "pro" | "premium",            // normalizePlan(metadata.plan)
+    cadence: "month" | "year" | null,            // recurring.interval
+    source: "stripe_webhook",                    // origin marker (vs. майбутній IAP)
+    status: "active" | "trialing" | …,           // Stripe subscription.status
+    price_cents: number | null,                  // price.unit_amount (minor units)
+    currency: string | null,                     // ISO-4217 uppercase
+    stripe_event_id: string,                     // event.id (duplicate of uuid)
+    stripe_subscription_id: string,              // subscription.id
+    $revenue: number,                            // price_cents / 100 → major units
+  },
+}
+```
+
+`$revenue` — це PostHog super-property у major units, який живить
+MRR / LTV-дашборди. Event емітиться **post-COMMIT** (`stripe_webhook_events`
+вже записаний), а fail-open: відсутність `POSTHOG_PROJECT_API_KEY` дає
+`outcome: "skipped"`, без падіння webhook-а.
+
+**Очікувані payload-и для майбутніх (`CANCELED` / `RENEWED`):**
+
+```ts
 trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED, {
   plan: string,
   reason: "user" | "billing" | "expired",
@@ -277,10 +302,6 @@ trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED, {
   period: number, // кількість успішних renewal-ів
 });
 ```
-
-Revenue-аналітика (MRR/ARR у PostHog) рахується через super-property
-`$revenue` на `subscription_started` / `subscription_renewed` — окремий
-task коли білінг оживе.
 
 ### Identify / reset
 

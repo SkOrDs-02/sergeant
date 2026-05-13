@@ -1,6 +1,6 @@
 # 🎯 Статус трьох поверхонь — Web / RN mobile / Capacitor shell
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active.  
 > **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
 > **Initiative:** [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md).
@@ -128,7 +128,7 @@
 **Auth & Deep links:**
 
 - Bearer у `auth-storage.ts`, barcode у `barcodeNative.ts` — підключаються динамічним `import()` за guard-ом `isCapacitor()`
-- Deep links: shell диспатчить parsed path через `window.__sergeantShellNavigate` з буфером для cold-start сценарію
+- Deep links: shell дублює parsed path через два канали — стандартний `BroadcastChannel("sergeant-shell-deeplink")` (canonical з PR-29 [#2526](https://github.com/Skords-01/Sergeant/pull/2526)) і `window.__sergeantShellNavigate` (backward-compat shim до PR-2 у серпні 2026), з буфером `window.__sergeantShellDeepLinkQueue` для cold-start; web-bridge `apps/web/src/core/app/ShellDeepLinkBridge.tsx` слухає обидва і coalesce-ить дублі по `(path, timestamp)` у вікні 500 ms
 - HTTPS Universal Links / App Links теж підтримуються — див. `docs/mobile/capacitor-deep-links.md`
 
 **Android:**
