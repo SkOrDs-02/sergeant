@@ -47,7 +47,7 @@
 | --- | ------------------------------------------------------------- | ---------------------- | ----- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | O1  | Phase 2.A: Ранкова повістка 08:30 Kyiv                        | openclaw §Phase 2      | W2    | M      | 🚧 Partial — cron live (Stage 5d, [`b187bfaf`](https://github.com/Skords-01/Sergeant/commit/b187bfaf)); повний LLM-ritual з MRR/signups/PR-queue/proposal — не зашиплено |
 | O2  | C.2: Sentry breadcrumbs у tool-calls                          | tg-improvements §4.3   | W2    | XS     | ✅ Done ([PR #2504](https://github.com/Skords-01/Sergeant/pull/2504), `284cf7cd`, Sprint 5)                                                                              |
-| O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
+| O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | 🚧 First pass shipped — endpoints + n8n WF-27/28 готові, активуй cron-и після OPENCLAW_BOT_TOKEN на n8n Railway                                                          |
 | O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
 | O5  | W3 PR-3: `/alerts pending` slash-команда                      | tg-improvements §3.2   | W3    | S      | ✅ Done ([PR #2507](https://github.com/Skords-01/Sergeant/pull/2507), `9ad0e272`, Sprint 5)                                                                              |
 | O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ✅ Done ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531), `49d5c846`)                                                                                        |
@@ -175,7 +175,7 @@
 
 ### Задачі
 
-#### O3: Friday weekly review + monthly OKR (Phase 2.B) `Продукт` `M`
+#### O3: Friday weekly review + monthly OKR (Phase 2.B) `Продукт` `M` 🚧 First pass shipped
 
 **Що:**
 
@@ -185,11 +185,19 @@
 
 **Acceptance:**
 
-- [ ] П'ятниця 18:00 — DM weekly review
-- [ ] 1-го числа 09:00 — DM monthly OKR review
-- [ ] Broadcast у `📊 Дайджести` при weekly і monthly review
+- [x] П'ятниця 18:00 — DM weekly review (endpoint `POST /api/internal/openclaw/ritual/weekly` + n8n WF-28 cron `0 18 * * 5 Europe/Kyiv`; markdown via LLMProvider claude-sonnet-4-6 з StubProvider fallback)
+- [x] 1-го числа 09:00 — DM monthly OKR review (endpoint `POST /api/internal/openclaw/ritual/monthly` + n8n WF-27 cron `0 9 1 * * Europe/Kyiv`; INTERIM_OKRS hardcoded як fallback — PR-34 strategic_goals DB-table merged, follow-up може замінити на DB-query)
+- [ ] Broadcast у `📊 Дайджести` topic (зараз — DM founder; topic broadcast — окремий follow-up)
+- [ ] Активація на n8n Railway після `OPENCLAW_BOT_TOKEN` + `OPENCLAW_FOUNDER_TG_USER_ID` + `LLM_DIGEST_PROVIDER` сетапу
 
-**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), ADR-0039
+**Реалізація:**
+
+- Server endpoints: `apps/server/src/modules/openclaw/weekly-review/` + `monthly-okr/`.
+- n8n workflows: `ops/n8n-workflows/28-weekly-review-cron.json` + `27-monthly-okr-cron.json` (slot 26 зайняв PR-34 strategic_weekly cron).
+- Hardcoded OKRs: `apps/server/src/modules/openclaw/monthly-okr/okrs.ts` (3 quarters: foundation-Q2-2026, reliability-Q2-2026, growth-Q3-2026). Treat as interim while PR-34 strategic_goals DB-table is in flight.
+- Тести: weekly-review 21 unit tests (template + builder); monthly-okr 21 unit tests.
+
+**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), ADR-0039, PR-26 (morning briefing reference), PR-23 LLMProvider, PR-25 StubProvider fallback pattern
 
 ---
 

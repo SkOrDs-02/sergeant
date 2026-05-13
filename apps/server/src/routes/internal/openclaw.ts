@@ -57,6 +57,9 @@ import {
   getGithubReleases,
   // PR-26: morning briefing template assembly (no-LLM hardcoded sections).
   assembleMorningBriefing,
+  // O3 (Phase 2.B): Friday weekly + monthly OKR rituals.
+  assembleWeeklyReview,
+  assembleMonthlyOkrReview,
   // ADR-0036 (Phase 4): write-tools — invoked only after console-side approval.
   commitToStrategyDoc,
   createGithubIssue,
@@ -260,6 +263,31 @@ const MorningBriefingBody = z
     sentryLimit: z.number().int().min(1).max(20).optional(),
     prLimit: z.number().int().min(1).max(30).optional(),
     includeProposals: z.boolean().optional(),
+  })
+  .strict();
+
+// O3 (Phase 2.B): Friday weekly review payload — всі поля optional.
+// Консумер — n8n WF-28 (`0 18 * * FRI` Europe/Kyiv) → DM founder.
+const WeeklyReviewBody = z
+  .object({
+    windowDays: z.number().int().min(1).max(30).optional(),
+    staleDays: z.number().int().min(1).max(60).optional(),
+    githubRepo: z.string().min(3).max(140).optional(),
+    sentryLimit: z.number().int().min(1).max(20).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+  })
+  .strict();
+
+// O3 (Phase 2.B): Monthly OKR review payload — всі поля optional.
+// Консумер — n8n WF-27 (`0 9 1 * *` Europe/Kyiv) → DM founder. Hardcoded
+// interim OKR-список — fallback (PR-34 strategic_goals DB-table merged,
+// follow-up може замінити константу на DB-query).
+const MonthlyOkrReviewBody = z
+  .object({
+    githubRepo: z.string().min(3).max(140).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+    staleDays: z.number().int().min(1).max(120).optional(),
+    sentryLevel: z.enum(["fatal", "error", "warning"]).optional(),
   })
   .strict();
 
@@ -862,6 +890,62 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       if (parsed.data.includeProposals !== undefined)
         input.includeProposals = parsed.data.includeProposals;
       const result = await assembleMorningBriefing(input);
+      res.json(result);
+    }),
+  );
+
+  // ---- O3 (Phase 2.B): Friday weekly review ritual ----
+  //
+  // POST /api/internal/openclaw/ritual/weekly → { markdown, data }.
+  // Викликає n8n WF-26 (cron `0 18 * * FRI Europe/Kyiv`) — після
+  // отримання markdown WF постить його у founder-DM. Fail-soft: будь-яка
+  // джерельна subsystem (GitHub / Stripe / PostHog / Sentry / LLM) недо-
+  // ступна → секція з `notConfigured` або `note`, але endpoint все одно
+  // повертає 200 з частковими даними. LLM narrative — через `LLMProvider`
+  // абстракцію (PR-23) з StubProvider fallback (PR-25 паттерн).
+  r.post(
+    "/api/internal/openclaw/ritual/weekly",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WeeklyReviewBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleWeeklyReview>[0] = {};
+      if (parsed.data.windowDays !== undefined)
+        input.windowDays = parsed.data.windowDays;
+      if (parsed.data.staleDays !== undefined)
+        input.staleDays = parsed.data.staleDays;
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.sentryLimit !== undefined)
+        input.sentryLimit = parsed.data.sentryLimit;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      const result = await assembleWeeklyReview(input);
+      res.json(result);
+    }),
+  );
+
+  // ---- O3 (Phase 2.B): Monthly OKR review ritual ----
+  //
+  // POST /api/internal/openclaw/ritual/monthly → { markdown, data }.
+  // Викликає n8n WF-27 (cron `0 9 1 * *` Europe/Kyiv) — 1-го числа місяця
+  // о 09:00 Kyiv. OKR-список читається з `INTERIM_OKRS` (hardcoded, поки
+  // PR-34 strategic_goals DB-table не merged). Wins/risks збираються з
+  // GitHub + Sentry. Narrative — LLM з template fallback.
+  r.post(
+    "/api/internal/openclaw/ritual/monthly",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MonthlyOkrReviewBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleMonthlyOkrReview>[0] = {};
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      if (parsed.data.staleDays !== undefined)
+        input.staleDays = parsed.data.staleDays;
+      if (parsed.data.sentryLevel !== undefined)
+        input.sentryLevel = parsed.data.sentryLevel;
+      const result = await assembleMonthlyOkrReview(input);
       res.json(result);
     }),
   );
