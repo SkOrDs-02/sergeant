@@ -154,19 +154,26 @@ function main() {
       `[staged-typecheck] ${rel.length} file(s) → ${tsconfigKey}` +
         (extras.length ? ` (+${extras.length} global d.ts)` : ""),
     );
-    const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+    // `pnpm exec` reroots `process.cwd()` to the nearest workspace
+    // package's directory, which breaks `tsc-files` when the chosen
+    // tsconfig lives in a sub-directory (e.g. `apps/mobile/e2e/`):
+    // tsc-files reads `${cwd}/tsconfig.json` and writes its temp
+    // config beside that path, so the `files: [...]` list resolves
+    // relative to the wrong directory (`apps/mobile/finyk-...e2e.ts`
+    // → ENOENT). Spawn the CLI directly via `node` so `cwd: dir`
+    // sticks.
+    const tscFilesCli = join(REPO_ROOT, "node_modules", "tsc-files", "cli.js");
     const result = spawnSync(
-      pnpmBin,
-      ["exec", "tsc-files", "--noEmit", "--skipLibCheck", ...rel, ...extras],
+      process.execPath,
+      [tscFilesCli, "--noEmit", "--skipLibCheck", ...rel, ...extras],
       {
         stdio: "inherit",
         cwd: dir,
-        shell: process.platform === "win32",
       },
     );
     if (result.error) {
       console.error(
-        `[staged-typecheck] failed to start ${pnpmBin}: ${result.error.message}`,
+        `[staged-typecheck] failed to start ${process.execPath}: ${result.error.message}`,
       );
     }
     if (result.status !== 0) {
