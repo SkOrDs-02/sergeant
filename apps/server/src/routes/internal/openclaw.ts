@@ -33,6 +33,7 @@ import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
   buildAiCostSummary,
+  buildPerfSnapshot,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -767,6 +768,35 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         },
       });
       res.json(summary);
+    }),
+  );
+
+  // ---- perf-snapshot (`/perf` slash-command backend) ----
+  //
+  // Server-side performance TLDR для founder DM (продовжує
+  // observability-cluster: `/ai_cost` PR-26 #2706, `/alerts history`
+  // #2715, `/openclaw status` #2709).
+  //
+  // Sources — in-process prom-client register:
+  //   - HTTP latency p50/p95/p99 from `http_request_duration_ms`
+  //     histogram, top-N routes by call count.
+  //   - AI latency p95 from `ai_request_duration_ms` histogram
+  //     (per-provider — anthropic / voyage / etc).
+  //   - DB pool gauges (`db_pool_total/idle/waiting`).
+  //   - AI memory queue depth gauge (`ai_memory_ingest_queue_depth`).
+  //   - Top error routes from `http_errors_total`.
+  //
+  // Все cumulative since-process-restart (не 5min-rate — для того
+  // потрібна Prometheus-сторона). Formatter рендерить `uptime` секцію
+  // явно щоб founder-а не вводити в оману.
+  //
+  // Body порожній — endpoint без аргументів, founder-bound через
+  // internal-API-bearer guard.
+  r.post(
+    "/api/internal/openclaw/perf-snapshot",
+    asyncHandler(async (_req, res) => {
+      const snapshot = await buildPerfSnapshot();
+      res.json(snapshot);
     }),
   );
 

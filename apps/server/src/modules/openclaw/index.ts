@@ -41,6 +41,28 @@ export type {
   PeriodCostSummary,
   VoyageSnapshot,
 } from "./aiCostSummary.js";
+
+// `/perf` slash-command server-side performance snapshot. Reads in-process
+// prom-client register (`http_request_duration_ms`, `ai_request_duration_ms`,
+// `db_pool_*`, `ai_memory_ingest_queue_depth`, `http_errors_total`).
+export {
+  buildPerfSnapshot,
+  estimateQuantileFromBuckets,
+  fetchTopHttpRoutes,
+  fetchAiLatency,
+  fetchDbPool,
+  fetchAiMemoryQueue,
+  fetchTopErrors,
+} from "./perfSnapshot.js";
+export type {
+  AiLatencySnapshot,
+  BuildPerfSnapshotInput,
+  DbPoolSnapshot,
+  ErrorRouteSnapshot,
+  PerfSnapshot,
+  QueueDepthSnapshot,
+  RouteLatencySnapshot,
+} from "./perfSnapshot.js";
 export {
   recallCofounderMemory,
   readStrategyDoc,
