@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **Мовна примітка:** назви команд, сервісів і змінних середовища залишені в оригіналі, бо це буквальні ідентифікатори рантайму; рішення, перевірки та послідовність дій описані українською.
+
 **Trigger:** Stage 6b parallel-run завершений, founder підтвердив паритет Gateway з grammy-ботом. Готовність до перемикання production-трафіку з `@OpenClaw_sergeant_bot` (grammy) на `@kOPENCLAW_GATEWAY_BOT` (OpenClaw Gateway).
 
 ## Owner surface
