@@ -38,7 +38,17 @@ test("@extended offline: shows OfflineBanner status", async ({
   context,
 }) => {
   await seedLocalStorage(page);
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  // `domcontentloaded` fires before lazily-loaded vendor chunks
+  // (web-vitals, fonts, Sentry) finish, so flipping `setOffline(true)`
+  // immediately after can leave an in-flight chunk in
+  // `net::ERR_INTERNET_DISCONNECTED`, stalling React before it ever
+  // mounts the OfflineBanner — see chromium trace in the nightly
+  // extended-e2e run #25821506416. Wait for the `load` event AND for
+  // React's first commit (root has at least one child) before dropping
+  // the network so the banner is guaranteed to be mounted and the only
+  // thing left to test is its reaction to the `offline` event.
+  await page.goto("/", { waitUntil: "load" });
+  await expect(page.locator("#root > *").first()).toBeAttached();
 
   await context.setOffline(true);
 
