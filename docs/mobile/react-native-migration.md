@@ -495,10 +495,21 @@ Per module — які файли `apps/web` переносяться і в що 
 - **Pantry / Shopping (Done):** `useNutritionPantries` + `Pantry.tsx`,
   `useShoppingList` + `Shopping.tsx`. Доменні мутації — з
   `@sergeant/nutrition-domain` (`mergeItems` / `parseLoosePantryText`
-  / `groupItemsByCategory`). AI-розбір списку через
-  `apiClient.nutrition.parsePantry`.
-- **TODO:** AI-генерація shopping-list з рецептів / плану як на web
-  (наразі тільки розбір власноруч-введеного списку).
+  / `groupItemsByCategory` / `normalizeShoppingList`). AI-розбір списку
+  через `apiClient.nutrition.parsePantry`.
+- **AI shopping-list (Done):** `Shopping.tsx` має кнопку
+  «Згенерувати зі рецептів», що збирає payload із збережених рецептів
+  (`useSavedRecipesList`) + активної комори (`useNutritionPantries`) і
+  викликає `apiClient.nutrition.shoppingList` (той самий endpoint, що
+  на web — `POST /api/nutrition/shopping-list`). Категорії пропускає
+  через `useShoppingList.setGeneratedList` → `normalizeShoppingList`,
+  тож рерун ідемпотентний. Помилки `402`/`429` → інлайн «Перевищено
+  AI-квоту», `network` → «Немає звʼязку». Тести —
+  `apps/mobile/src/modules/nutrition/pages/__tests__/Shopping.generate.test.tsx`.
+- **TODO:** weekplan-джерело для shopping-list — мобільний клієнт ще
+  не зберігає `weekPlan` локально (web-only `useNutritionUiState`).
+  Доки week-plan не персиститься в MMKV/SQLite, у UI лишається
+  disabled-перемикач «Тижневий план» з підказкою «поки тільки на web».
 
 ## 6. Cross-cutting concerns
 
