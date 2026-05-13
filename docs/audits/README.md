@@ -1,6 +1,6 @@
 # Audits — каталог документів та статусів
 
-> **Last validated:** 2026-05-13 by Devin (child session — `2026-05-13-dead-code-hard-rules-roast.md` P1.2 closed: counter 11/13 → 12/13, Outstanding 2 → 1; re-sync `2026-05-03-readme-gap-analysis.md` row `0/8 ≈ / 8 ≈` → `13/15 ≈ / 2` per [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) § P1-1; previous bump: added row for `2026-05-13-mobile-reliability-ux-roast.md`; Status-row sync з file headers: `2026-05-04-csp-disable-retrospective` → Closed (A1–A5 resolved 2026-05-06)). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (revenue-monetization-roast counter bump: P1-9 closed → 7/18 implemented / 11 outstanding; previous bump: `2026-05-13-dead-code-hard-rules-roast.md` P1.2 closed: counter 11/13 → 12/13, Outstanding 2 → 1; re-sync `2026-05-03-readme-gap-analysis.md` row `0/8 ≈ / 8 ≈` → `13/15 ≈ / 2` per [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) § P1-1; added row for `2026-05-13-mobile-reliability-ux-roast.md`; Status-row sync з file headers: `2026-05-04-csp-disable-retrospective` → Closed (A1–A5 resolved 2026-05-06)). **Next review:** 2026-08-11.
 
 > **Status:** Active
 
@@ -54,7 +54,7 @@
 
 | [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md) | Dead code + hard-rules roast #9/10 (knip / dead-code:files / docs:check-links) | Active | 12/13 | 1 ≈ | embedded §6 (knip Unlisted/Unresolved sweep) — P1.2 closed via `.github/workflows/lighthouse-ci.yml` (2026-05-13) |
 
-| [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md) | Revenue / monetization / paywall roast — follow-up до 2026-05-04 | Active | 6/18 | 12 | self (Прогрес виконання) + [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) |
+| [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md) | Revenue / monetization / paywall roast — follow-up до 2026-05-04 | Active | 7/18 | 11 | self (Прогрес виконання) + [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) |
 
 | [`archive/2026-04-26-sergeant-audit-devin.md`](./archive/2026-04-26-sergeant-audit-devin.md) | Незалежний аудит Devin (historical record) | Archived | 30/31 | 1 | embedded таблиця у самому файлі |
 | [`archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит | Archived | 12/18 ≈ | 6 ≈ | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md) |
