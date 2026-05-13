@@ -199,8 +199,13 @@ describe("parseSergeantUrl", () => {
     it.each([
       "",
       "   ",
+      // `http://` is never accepted — App Links / Universal Links
+      // only verify on HTTPS.
       "http://sergeant.app/routine",
-      "https://sergeant.2dmanager.com.ua/routine",
+      "http://sergeant.vercel.app/routine",
+      // HTTPS host not on the universal-links allow-list.
+      "https://sergeant.app/routine",
+      "https://evil.com/routine",
       "exp://192.168.0.1:19000/routine",
       "routine",
       "sergeant:/routine",
