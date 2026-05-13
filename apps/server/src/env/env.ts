@@ -896,6 +896,22 @@ export function assertStartupEnv(): void {
     );
   }
 
+  // T2 audit finding #1 — Stripe webhook secret enforcement. If billing is
+  // wired (STRIPE_SECRET_KEY is set) then STRIPE_WEBHOOK_SECRET MUST also
+  // be set in production; otherwise `verifyStripeSignature` had no secret
+  // to compare against and the legacy non-prod fall-back was returning
+  // `true` (accept-all) — every staging / preview deploy was effectively
+  // an open billing-state write endpoint. Hard-fail at boot so the
+  // misconfig surfaces immediately instead of silently mutating
+  // subscription rows weeks later.
+  if (isProduction && process.env["STRIPE_SECRET_KEY"]) {
+    if (!process.env["STRIPE_WEBHOOK_SECRET"]) {
+      throw new Error(
+        "STRIPE_WEBHOOK_SECRET is required in production when STRIPE_SECRET_KEY is set. Without it the Stripe webhook endpoint cannot verify signatures and any caller can mutate billing state. Set the value from Stripe Dashboard → Developers → Webhooks → Signing secret.",
+      );
+    }
+  }
+
   // H9: AI_QUOTA_DISABLED is a billing kill-switch — fine in CI/test where e2e
   // hammers real Anthropic without burning user quota, catastrophic in
   // production where it disables every per-user / per-IP cap. The advisory
