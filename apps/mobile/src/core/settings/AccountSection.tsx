@@ -77,7 +77,7 @@ export function AccountSection() {
   };
 
   return (
-    <SettingsGroup title="Акаунт" emoji="👤">
+    <SettingsGroup title="Акаунт" emoji="👤" testID="account-section">
       <SettingsSubGroup title="Сесія">
         <Pressable
           accessibilityRole="button"

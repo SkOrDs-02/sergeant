@@ -1,6 +1,6 @@
 # Міграція на React Native (Expo)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Source-of-truth трекер по перенесенню Sergeant із PWA-клієнта (`apps/web`,
@@ -221,10 +221,14 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
   [#460](https://github.com/Skords-01/Sergeant/pull/460),
   [#467](https://github.com/Skords-01/Sergeant/pull/467),
   [#474](https://github.com/Skords-01/Sergeant/pull/474),
-  [#477](https://github.com/Skords-01/Sergeant/pull/477)). Detox iOS-сьют
-  `finyk-manual-expense.e2e.ts`
-  ([#490](https://github.com/Skords-01/Sergeant/pull/490)). Android CI
-  workflow + `finyk-transactions` / `routine-smoke` сьюти — in-flight.
+  [#477](https://github.com/Skords-01/Sergeant/pull/477)). Detox iOS-сьюти
+  smoke (`finyk-manual-expense.e2e.ts`, `finyk-transactions.e2e.ts`,
+  `routine-smoke.e2e.ts`, `hub-ux-smoke.e2e.ts`) + full sign-in→module
+  →sign-out (`routine-full.e2e.ts`, `fizruk-full.e2e.ts`,
+  `finyk-full.e2e.ts`, `nutrition-full.e2e.ts`) під
+  `EXPO_PUBLIC_E2E_REAL_AUTH=1` (mock-fetch interceptor у
+  `apps/mobile/src/auth/e2eAuthMock.ts`). Android CI: smoke-build
+  зелений, full-сьюти follow-up.
 - **Рутина** (`apps/mobile/src/modules/routine/*`): весь функціонал
   портовано — shell + 3-tab nav, pure-домен у
   `@sergeant/routine-domain`, habits-редактор з drag-reorder, heatmap,
@@ -661,9 +665,18 @@ Android — локальний config-плагін
   клієнтів.
 - `apps/mobile` — Jest (`jest-expo`) + `@testing-library/react-native`
   для unit / component.
-- E2E — **Detox** (Q8). Перший сьют — Фінік
-  (`finyk-manual-expense.e2e.ts`). Підготовка дев-білду —
-  `EXPO_PUBLIC_E2E=1` auth-bypass у `app/(tabs)/_layout.tsx`.
+- E2E — **Detox** (Q8). Smoke-сьюти —
+  `finyk-manual-expense.e2e.ts`, `finyk-transactions.e2e.ts`,
+  `routine-smoke.e2e.ts`, `hub-ux-smoke.e2e.ts` (auth-bypass через
+  `EXPO_PUBLIC_E2E=1` у `app/(tabs)/_layout.tsx`). Full sign-in→module
+  →sign-out (✅) — `routine-full.e2e.ts`, `fizruk-full.e2e.ts`,
+  `finyk-full.e2e.ts`, `nutrition-full.e2e.ts`. Last two групи
+  ганяють real Better Auth client через mock-fetch interceptor
+  (`apps/mobile/src/auth/e2eAuthMock.ts`) під прапором
+  `EXPO_PUBLIC_E2E_REAL_AUTH=1` — синтетичний тестовий обліковий запис
+  (`e2e-detox@sergeant.test` / `detox-pass-2026`, переоверридується
+  через `EXPO_PUBLIC_E2E_USER_EMAIL` / `_PASSWORD`). Деталі — у
+  `apps/mobile/e2e/README.md`.
 - Ручне smoke-тестування — Expo Dev Client на фізичному пристрої
   (iOS + Android) перед кожним merge у master після Phase 4.
 

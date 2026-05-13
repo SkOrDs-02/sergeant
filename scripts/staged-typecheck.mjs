@@ -121,10 +121,22 @@ function main() {
       `[staged-typecheck] ${rel.length} file(s) → ${tsconfigKey}` +
         (extras.length ? ` (+${extras.length} global d.ts)` : ""),
     );
-    const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+    // Invoke tsc-files via the hoisted bin directly rather than `pnpm exec`,
+    // because `pnpm exec` resolves the nearest workspace package and re-roots
+    // cwd at that package — which for staged files inside a nested tsconfig
+    // sub-tree (e.g. apps/mobile/e2e/*.ts) silently shifts cwd up to
+    // apps/mobile/ and makes tsc-files load the wrong tsconfig.json (its
+    // `files` array becomes relative to the wrong directory and every
+    // entry fails TS6053 "File ... not found").
+    const tscFilesBin = join(
+      REPO_ROOT,
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsc-files.cmd" : "tsc-files",
+    );
     const result = spawnSync(
-      pnpmBin,
-      ["exec", "tsc-files", "--noEmit", "--skipLibCheck", ...rel, ...extras],
+      tscFilesBin,
+      ["--noEmit", "--skipLibCheck", ...rel, ...extras],
       {
         stdio: "inherit",
         cwd: dir,
@@ -133,7 +145,7 @@ function main() {
     );
     if (result.error) {
       console.error(
-        `[staged-typecheck] failed to start ${pnpmBin}: ${result.error.message}`,
+        `[staged-typecheck] failed to start tsc-files: ${result.error.message}`,
       );
     }
     if (result.status !== 0) {
