@@ -94,8 +94,13 @@ describe("DataState", () => {
         {(data: number[]) => <span data-testid="body">{data.length}</span>}
       </DataState>,
     );
-    // Default fallback shows "Помилка" + the message.
-    expect(screen.getByRole("alert")).toBeTruthy();
+    // Default fallback now delegates to `<EmptyState variant="danger">`,
+    // which renders inside `role="status"` (correct per WAI-ARIA — empty/
+    // error placeholders are advisory, not interruptive). The eyebrow
+    // chip carries "Помилка"; the description carries the raw message.
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.getByText("Помилка")).toBeTruthy();
+    expect(screen.getByText("network down")).toBeTruthy();
     expect(screen.queryByTestId("body")).toBeNull();
   });
 

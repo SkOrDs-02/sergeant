@@ -344,6 +344,7 @@ export default defineConfig(({ mode }) => {
           "../../packages/api-client/src/index.ts",
         ),
         "@shared": resolve(__dirname, "src/shared"),
+        "@assets": resolve(__dirname, "src/assets"),
         "@finyk": resolve(__dirname, "src/modules/finyk"),
         "@fizruk": resolve(__dirname, "src/modules/fizruk"),
         "@routine": resolve(__dirname, "src/modules/routine"),

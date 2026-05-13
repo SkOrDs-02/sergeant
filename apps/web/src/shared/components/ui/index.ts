@@ -42,7 +42,12 @@ export { Avatar } from "./Avatar";
 export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
 
 export { EmptyState, ModuleEmptyState } from "./EmptyState";
-export type { EmptyStateProps, ModuleEmptyStateProps } from "./EmptyState";
+export type {
+  EmptyStateProps,
+  EmptyStateSize,
+  EmptyStateVariant,
+  ModuleEmptyStateProps,
+} from "./EmptyState";
 
 export {
   FeatureSpotlight,
