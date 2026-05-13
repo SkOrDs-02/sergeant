@@ -168,7 +168,11 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         onPointerDown={(e) => e.stopPropagation()}
         className={cn(
-          "relative w-full bg-surface border border-line rounded-3xl shadow-float",
+          // Elevation e4 — modal/sheet tier. Pairs with the default
+          // `zIndex={200}` prop (`zTier.modal`); a Modal must always
+          // sit at e4+z-modal so it clears every dropdown, popover
+          // and sticky header.
+          "relative w-full bg-surface border border-line rounded-3xl shadow-e4",
           "flex flex-col max-h-[min(90vh,calc(100dvh-2rem))]",
           "motion-safe:animate-scale-in",
           sizes[size],

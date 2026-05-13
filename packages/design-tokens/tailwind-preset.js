@@ -16,6 +16,7 @@ import {
   chartPalette,
   moduleColors,
   statusColors,
+  zTier,
 } from "./tokens.js";
 
 /** @type {import('tailwindcss').Config} */
@@ -317,12 +318,36 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BOX SHADOWS — Soft, layered, premium feel
+      // BOX SHADOWS — Semantic elevation scale e0..e5
+      //
+      // The `e0..e5` scale is the canonical elevation contract — see
+      // `elevation` token in `./tokens.js` for the per-level light/dark
+      // recipe. CSS variables `--shadow-e0..--shadow-e5` are defined in
+      // `apps/web/src/styles/theme.css` and flip with `.dark`, so call
+      // sites use a single `shadow-eN` utility — never `dark:shadow-*`.
+      //
+      // Legacy aliases (`soft` / `card` / `float`) are preserved as
+      // pointers into the new scale so existing call sites keep
+      // working unchanged: `shadow-card === shadow-e1`,
+      // `shadow-float === shadow-e3`, `shadow-soft === shadow-e4`.
+      // New code should prefer `shadow-eN` for the explicit semantic
+      // level. See docs/design/design-system.md § 4.
       // ═══════════════════════════════════════════════════════════════════
       boxShadow: {
-        soft: "var(--shadow-soft)",
-        card: "var(--shadow-card)",
-        float: "var(--shadow-float)",
+        // Semantic elevation scale (preferred for new code).
+        e0: "var(--shadow-e0)",
+        e1: "var(--shadow-e1)",
+        e2: "var(--shadow-e2)",
+        e3: "var(--shadow-e3)",
+        e4: "var(--shadow-e4)",
+        e5: "var(--shadow-e5)",
+        // Legacy aliases — kept for back-compat, mapped 1:1 to the new
+        // scale via the same CSS vars (so a theme tweak to `--shadow-eN`
+        // propagates to every consumer regardless of which name they
+        // import).
+        soft: "var(--shadow-e4)",
+        card: "var(--shadow-e1)",
+        float: "var(--shadow-e3)",
         glow: "0 0 0 3px rgba(16, 185, 129, 0.15)", // emerald glow
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
@@ -607,18 +632,39 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // Z-INDEX — Layering system
+      // Z-INDEX — Semantic stacking tier (paired with elevation scale)
+      //
+      // Authoring rule: an element at elevation `eN` must use the
+      // matching `z-*` tier. e0/e1/e2 → `z-base`, e3 → `z-dropdown`,
+      // e4 → `z-modal`, e5 → `z-toast`. Mismatched pairs are how
+      // popovers slide under modals and toasts get hidden by drawers.
+      // See docs/design/design-system.md § 4 and `zTier` in tokens.js.
+      //
+      // Legacy numeric scale (`z-100`/`200`/`300`/`400` and the
+      // `z-header`/`modal`/`toast`/`tooltip` aliases) is preserved so
+      // existing call sites keep working unchanged.
       // ═══════════════════════════════════════════════════════════════════
       zIndex: {
+        // Raw numeric scale (legacy — kept for back-compat).
         0: "0",
         10: "10",
         20: "20",
         30: "30",
         40: "40",
         50: "50",
-        header: "100",
-        modal: "200",
-        toast: "300",
+        100: "100",
+        // Semantic tier — preferred for new code.
+        base: zTier.base,
+        dropdown: zTier.dropdown,
+        sticky: zTier.sticky,
+        overlay: zTier.overlay,
+        modal: zTier.modal,
+        toast: zTier.toast,
+        // Legacy tier aliases (kept so existing `z-header` / `z-modal`
+        // / `z-toast` / `z-tooltip` call sites keep working). `header`
+        // is an alias of `sticky`; `tooltip` is an alias of `toast`
+        // (highest non-modal tier — preserves the historical order).
+        header: zTier.sticky,
         tooltip: "400",
       },
     },

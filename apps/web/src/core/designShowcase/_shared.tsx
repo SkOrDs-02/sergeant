@@ -8,6 +8,7 @@ export const NAV_SECTIONS = [
   { id: "buttons", label: "Кнопки" },
   { id: "badges", label: "Бейджі" },
   { id: "cards", label: "Карти" },
+  { id: "elevation", label: "Елевація" },
   { id: "forms", label: "Форми" },
   { id: "data", label: "Дані" },
   { id: "navigation", label: "Навігація" },
