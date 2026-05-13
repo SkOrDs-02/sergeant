@@ -19,6 +19,7 @@ export const NAV_SECTIONS = [
   { id: "celebration", label: "Святкування" },
   { id: "onboarding", label: "Онбординг" },
   { id: "motion", label: "Motion" },
+  { id: "empty-states", label: "EmptyState" },
 ] as const;
 
 export function Sec({
