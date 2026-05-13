@@ -2,6 +2,8 @@ import { fireEvent, render } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import { Text } from "react-native";
 
+import { captureError } from "@/lib/observability";
+
 import { ErrorBoundary } from "./ErrorBoundary";
 
 jest.mock("expo-router", () => ({
@@ -9,10 +11,20 @@ jest.mock("expo-router", () => ({
   router: { replace: jest.fn() },
 }));
 
+jest.mock("@/lib/observability", () => ({
+  __esModule: true,
+  captureError: jest.fn(),
+}));
+
+const mockedCaptureError = captureError as jest.MockedFunction<
+  typeof captureError
+>;
+
 // Silence the expected `console.error` the boundary emits + React's own
 // "The above error occurred in..." for a cleaner test report.
 let consoleSpy: jest.SpyInstance;
 beforeEach(() => {
+  mockedCaptureError.mockReset();
   consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -118,5 +130,19 @@ describe("ErrorBoundary", () => {
       (call) => call[0] === "[ErrorBoundary] caught error",
     );
     expect(matched).toBe(true);
+  });
+
+  it("forwards the caught error to `captureError` from @/lib/observability", () => {
+    render(
+      <ErrorBoundary>
+        <Thrower boom />
+      </ErrorBoundary>,
+    );
+
+    expect(mockedCaptureError).toHaveBeenCalledTimes(1);
+    const [forwardedError, context] = mockedCaptureError.mock.calls[0] ?? [];
+    expect(forwardedError).toBeInstanceOf(Error);
+    expect((forwardedError as Error).message).toBe("kaboom");
+    expect(context).toMatchObject({ componentStack: expect.any(String) });
   });
 });

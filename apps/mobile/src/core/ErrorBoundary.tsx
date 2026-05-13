@@ -57,7 +57,15 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-function DefaultErrorFallback({ error, resetError }: FallbackProps) {
+/**
+ * Default fallback rendered when no `fallback` prop is supplied.
+ *
+ * Exported as `RootErrorFallback` so the Expo Router segment-level
+ * boundary in `app/_layout.tsx` (which receives `{ error, retry }`
+ * directly, not via a React error boundary) can reuse the same Card
+ * + Button + reset semantics without duplicating the markup.
+ */
+export function RootErrorFallback({ error, resetError }: FallbackProps) {
   return (
     <View className="flex-1 bg-bg dark:bg-bg items-stretch justify-center p-6">
       <Card variant="default" padding="lg">
@@ -134,9 +142,7 @@ export class ErrorBoundary extends Component<
       if (Fallback !== undefined) {
         return Fallback;
       }
-      return (
-        <DefaultErrorFallback error={error} resetError={this.resetError} />
-      );
+      return <RootErrorFallback error={error} resetError={this.resetError} />;
     }
     return children;
   }
