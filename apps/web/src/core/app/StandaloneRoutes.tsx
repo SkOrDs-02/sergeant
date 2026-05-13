@@ -43,6 +43,7 @@ const AssistantCataloguePage = lazyImport(
   "AssistantCataloguePage",
 );
 const PricingPage = lazyImport(() => import("../PricingPage"), "PricingPage");
+const LandingPage = lazyImport(() => import("../LandingPage"), "LandingPage");
 const StatusPage = lazyImport(
   () => import("../status/StatusPage"),
   "StatusPage",
@@ -89,6 +90,29 @@ interface StandaloneRoute {
 }
 
 const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
+  // `/` — public landing page for non-auth visitors (initiative 0010
+  // Phase 6.1, audit `2026-05-13-revenue-monetization-roast.md` §P1-3).
+  // We only render the marketing surface when there's no session AND
+  // no existing local data: that keeps local-first users (who never
+  // signed up but already populated the app) on their Hub home, and
+  // keeps the funnel-targeted landing for genuine fresh visitors.
+  // Authed users + warm local-first installs fall through to the
+  // existing Hub composition by returning `null`.
+  {
+    paths: ["/"],
+    render: ({ user, authLoading, onLeaveWelcome }) => {
+      if (authLoading || user) return null;
+      if (!shouldShowOnboarding()) return null;
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <div className="page-enter">
+            <LandingPage onContinueWithoutAccount={onLeaveWelcome} />
+          </div>
+        </Suspense>
+      );
+    },
+  },
+
   // `/sign-in` is a URL-addressable auth entry. Already-authenticated
   // users landing here (e.g. from a stale link or from tapping "Вже маю
   // акаунт" after logging in on another tab) get redirected straight
@@ -220,9 +244,11 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
 /**
  * Static set of all paths owned by `STANDALONE_ROUTES`. Used by
  * `StandaloneRoutes.test.tsx` to verify the exhaustiveness contract:
- * every member of `KNOWN_PATHS` (minus the Hub root `/`) must be
- * mapped here. `/` is excluded because it intentionally falls through
- * to the Hub home shell — there is no standalone surface for it.
+ * every member of `KNOWN_PATHS` must be mapped here. The Hub root `/`
+ * is now conditionally owned by the landing-page entry (P1-3) — the
+ * entry returns `null` for warm local-first / authed sessions so the
+ * Hub home keeps rendering, and the marketing surface only shows for
+ * fresh non-auth visitors.
  *
  * Public for tests only; runtime callers should use
  * `renderStandaloneRoute()`.
