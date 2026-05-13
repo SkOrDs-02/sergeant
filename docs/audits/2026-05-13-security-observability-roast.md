@@ -1,6 +1,6 @@
 # Sergeant — Security & Observability прожарка (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (S6 closeout — PBKDF2 ramp-up 200k → 600k + v=1→v=2 migration). **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Cross-refs:**
@@ -26,17 +26,18 @@
 4. **[P1]** SRI (Subresource Integrity) для third-party JS — у CSP дозволено `https://*.posthog.com`, `https://*.sentry-cdn.com`, але без `integrity=` хеша CDN-компроміс одразу стане XSS-вектором. `apps/web/index.html` зараз не вантажить ні PostHog, ні Sentry статично — обидва йдуть через npm-bundle, отже **SRI наразі не блокатор**, але потрібен ESLint-guard, щоб новий `<script src="https://..."` без `integrity=` фейлив білд.
 5. **[P1]** Pino redact-paths мають wildcard рівно на одну глибину (`*.password` / `*.*.password`). Якщо у `req.body.nested.user.password` (3 рівні) — Pino не зачистить. Sentry-scrubber (тепер shared) ходить рекурсивно — але access-логи в Loki ходять тільки через Pino. Треба або додати `*.*.*` рівні, або (краще) — Pino-redaction-helper, який знає, що це wildcard-suffix і генерує всі рівні до 5.
 6. **[P1]** OpenTelemetry attribute denylist у `apps/server/src/obs/tracing.ts` (доклинено header-фільтром) не перевіряється тестом проти `REDACT_KEY_NAMES`. Тобто додавання нового PII-ключа у `@sergeant/shared/lib/pii.ts` не автоматично закриває OTel-span attributes — drift можливий.
-7. **[P1]** `apps/web/src/core/security/lockStorage.ts:44` PBKDF2 з `iterations: 200_000`. OWASP 2023 рекомендація для SHA-256 — мінімум 600 000 ітерацій на сучасних мобільних. Це не критично (PIN — 4-значний у будь-якому випадку слабкий), але «PBKDF2 200k» виглядає як floor, не як baseline.
+7. **[Closed у цьому PR]** `apps/web/src/core/security/lockStorage.ts:44` PBKDF2 з `iterations: 200_000`. OWASP 2023 рекомендація для SHA-256 — мінімум 600 000 ітерацій на сучасних мобільних. Закрито через `iterations: 600_000` + `v: 2` field у IDB-cred + silent re-derive legacy `v=1` credentials at next successful unlock.
 8. **[P2]** Sentry-init у web (`apps/web/src/core/observability/sentry.ts:104`) тегує `platform` і `is_capacitor`, але не тегує `outboxBootOutcome` / `cspMode` (report-only vs enforce) на ініті. Це робить retrospective-аналіз CSP-rollout складнішим у Sentry.
 9. **[P2]** `docs/security/pii-handling.md:34` посилається на конкретні file:line у `apps/server/src/sentry.ts`, але після рефакторингу 2026-05-13 канонічна імплементація `scrubPII` живе у `@sergeant/shared/lib/pii.ts`. Документ оновлено у тому ж PR, але майбутні `redactKeyNames`-розширення треба робити **у shared**, а не у `apps/server/src/obs/logger.ts` (там лишився back-compat-alias).
 
 ## Прогрес виконання — закрите у цьому PR
 
-| Пункт                                | Section ID | Що зроблено                                                                                                                                             | Файли                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **S1** — Web Sentry PII scrub parity | §P0-S1     | `applyWebBeforeSend` рекурсивно чистить `request.headers/data/cookies`, `extra`, `contexts`, `breadcrumbs[].data`, нормалізує `event.user` до `{ id }`. | `packages/shared/src/lib/pii.ts` (новий), `packages/shared/src/lib/pii.test.ts` (новий), `packages/shared/src/index.ts`, `apps/web/src/core/observability/sentry.ts`, `apps/web/src/core/observability/sentry.test.ts`, `apps/server/src/obs/logger.ts` (back-compat alias), `apps/server/src/sentry.ts` (re-export), `docs/security/pii-handling.md` (single-source pointer). |
+| Пункт                                 | Section ID | Що зроблено                                                                                                                                                                                                                                                                                          | Файли                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **S1** — Web Sentry PII scrub parity  | §P0-S1     | `applyWebBeforeSend` рекурсивно чистить `request.headers/data/cookies`, `extra`, `contexts`, `breadcrumbs[].data`, нормалізує `event.user` до `{ id }`.                                                                                                                                              | `packages/shared/src/lib/pii.ts` (новий), `packages/shared/src/lib/pii.test.ts` (новий), `packages/shared/src/index.ts`, `apps/web/src/core/observability/sentry.ts`, `apps/web/src/core/observability/sentry.test.ts`, `apps/server/src/obs/logger.ts` (back-compat alias), `apps/server/src/sentry.ts` (re-export), `docs/security/pii-handling.md` (single-source pointer). |
+| **S6** — PBKDF2 ramp-up (200k → 600k) | §P1-S6     | `iterations: 200_000` → `600_000`; `LockCred` отримав опціональне `v` поле (`v: 2` для нових записів, `undefined`/`1` для legacy). `verifyPin` на legacy-cred виводить хеш зі старою кількістю ітерацій, а після успішного match — silent re-derive з 600k і запис під `v: 2` (rotates salt + hash). | `apps/web/src/core/security/lockStorage.ts`, `apps/web/src/core/security/lockStorage.test.ts`.                                                                                                                                                                                                                                                                                 |
 
-**Закрито:** 1 з 9 (S1 — найвищий impact, бо XHR/fetch breadcrumb-и в production досі везли `Authorization` header у Sentry payload).
+**Закрито:** 2 з 9 (S1 — Web Sentry PII scrub parity; S6 — PBKDF2 ramp-up + v=1→v=2 migration).
 
 **Не закрито в цьому PR (наступні PR-кандидати):**
 
@@ -44,7 +45,6 @@
 - **S3** (P1) — SRI ESLint-guard на `<script src="https://...">` без `integrity=`. Потребує `parse5`-based парсера в `eslint-plugin-sergeant-design`; великий і самостійний PR.
 - **S4** (P1) — Pino redact-paths wildcard generator до 5 рівнів. Потребує тестового матриксу + узгодження з `docs/security/pii-handling.md`.
 - **S5** (P1) — OTel attribute denylist parity test (`apps/server/src/obs/tracing.ts` ↔ `@sergeant/shared/lib/pii.ts`).
-- **S6** (P1) — PBKDF2 ramp-up до 600_000 ітерацій + migration plan (revaluation existing IDB credentials at next unlock).
 - **S7** (P2) — Sentry init tags: `cspMode`, `outboxBootOutcome` initial value, `webVitalsEnabled`.
 - **S8** (P2) — Contract-тест coverage поширити з `/api/me` на `/api/auth/session`, `/api/account/recovery/*`, `/api/csp-report`.
 
@@ -83,11 +83,13 @@
 - **Add:** `apps/server/src/obs/tracing.test.ts` (новий) — інстансіювати NodeSDK у dryRun-mode, створити span з атрибутом-ключем з `REDACT_KEY_NAMES`, переконатися, що exporter не бачить значення.
 - **Why:** Зараз denylist у `tracing.ts` — статичний список у коментарі. Drift між `@sergeant/shared/lib/pii.ts` і OTel-config-ом ловиться тільки code-review-ом.
 
-### S6 — PBKDF2 ramp-up (200k → 600k iterations)
+### S6 (closed у цьому PR) — PBKDF2 ramp-up (200k → 600k iterations)
 
-- **Change:** `apps/web/src/core/security/lockStorage.ts:44` — `iterations: 200_000` → `600_000`. Додати `version`-поле в IDB-cred, щоб старі credentials мігрувались при наступному unlock-у (re-derive з новою кількістю ітерацій).
+- **Before:** `apps/web/src/core/security/lockStorage.ts:44` (pre-S6) — `iterations: 200_000`, IDB-cred shape `{ salt, hash }` без version-field-а; bruteforce 4-digit PIN з offline-dump-у IDB лімітований ~200k SHA-256 ітераціями per candidate.
+- **After:** `apps/web/src/core/security/lockStorage.ts` — `LATEST_CRED_VERSION = 2`, `CURRENT_PBKDF2_ITERATIONS = 600_000`; IDB-cred тепер `{ salt, hash, v?: 1 | 2 }`. `savePinHash` завжди пише `v: 2` із 600k-derived hash-ом. `verifyPin` на cred-у з `v` undefined або `1` виводить кандидат за старою (200k) кількістю ітерацій — і, після успішного `timingSafeEqual`, silent re-derive з 600k + новий salt + запис під `v: 2` (`migrateCredIfNeeded`). Невдалий unlock не торкається legacy-запис.
 - **Why:** OWASP 2023 рекомендує 600_000+ для SHA-256-PBKDF2 на mobile. Без ramp-up — 4-значний PIN bruteforce за хвилини на десктопі, якщо атакувальник має IDB dump.
-- **Add:** snapshot-тест у `apps/web/src/core/security/lockStorage.test.ts`, що валідує `iterations === 600_000`.
+- **Tests:** `apps/web/src/core/security/lockStorage.test.ts` — `S6` describe-block із 6 кейсів: snapshot `CURRENT_PBKDF2_ITERATIONS === 600_000` + `LATEST_CRED_VERSION === 2`; `savePinHash` пише `v: 2`; `deriveBits` викликається з `iterations: 600_000`; legacy v=1 cred верифікується; legacy v=1 апгрейдиться на v=2 після успішного unlock-у (rotates hash); wrong-PIN на legacy v=1 не запускає міграцію.
+- **Action:** ✅ landed у цьому PR. Подальші правки iteration-floor-а (наприклад, OWASP-2026 bump до 1_200_000) — bump-нути `LATEST_CRED_VERSION` до 3, додати entry в `ITERATIONS_BY_VERSION`, і `verifyPin` автоматично підхопить нову migration-стежку.
 
 ### S7 — Contract test expansion (audit §7.4 carry-over)
 
