@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; `core/auth/AuthPage.tsx` декомпозовано 694 → 150 LOC). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; того ж дня декомпозовано `core/onboarding/OnboardingWizard.tsx` (691 → composition root 148 + state hook 283 + WelcomeOneScreen 178 + ModuleRow 130 + picksStorage 74)). **Next review:** 2026-08-11.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
@@ -13,18 +13,16 @@
 > Двоступенева драбина у `apps/web/src/shared/lib/storage/storage.ts:resolveStore()`:
 > SQLite warm-cache (bootstrap-resolved) → `localStorage`-fallback (pre-bootstrap / SSR /
 > private mode). Out-of-scope follow-up з §2 закритий.
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **5 файлів >600 LOC** (раніше 14 на 2026-05-04;
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **6 файлів >600 LOC** (раніше 14 на 2026-05-04;
 > lookup-таблиця нижче синхронізована з `wc -l` 2026-05-13). Додатково декомпозовано (після 2026-05-04):
 > `RoutineApp.tsx`, `Progress.tsx` (fizruk), `useStorage.ts` (finyk), `HubDashboard.tsx` (676 → 115 LOC,
 > stale entry в `max-lines` allowlist прибрано у цьому PR),
 > `chatActions/types.ts`, `fizrukActions.ts`, `AssetsTable.tsx`, `Workouts.tsx` (fizruk),
-> `DailyPlanCard.tsx`, `Icon.tsx`, `NutritionApp.tsx`, `sw.ts`, `Exercise.tsx`, `LogCard.tsx`,
-> `core/auth/AuthPage.tsx` (694 → 150 LOC; винесено `LoginForm`, `RegisterForm`,
-> `ForgotPasswordPanel` + `useForgotPassword`, `GoogleSignInButton`, `authFormPrimitives`,
-> `authSchemas`).
+> `DailyPlanCard.tsx`, `Icon.tsx`, `NutritionApp.tsx`, `sw.ts`, `Exercise.tsx`, `LogCard.tsx`.
 > Нові leakers (раніше у doc не трекалися, тепер додані до таблиці §4):
-> `core/onboarding/OnboardingWizard.tsx` (691),
-> `modules/fizruk/lib/dualWrite/adapter.ts` (641). Початково запланований carry-over
+> `core/auth/AuthPage.tsx` (694), `modules/fizruk/lib/dualWrite/adapter.ts` (641).
+> `core/onboarding/OnboardingWizard.tsx` (691) декомпозовано в цьому ж циклі
+> (див. лог нижче). Початково запланований carry-over
 > з Initiative 0001 — лише `FinykApp.tsx` і `RoutineCalendarPanel.tsx` досі активні.
 > Розділ 9 (`any` типи) — таблиця з 10 файлів **повністю закрита**
 > (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452) + закриття
@@ -205,16 +203,12 @@ Codemod ідемпотентний: повторний запуск дасть `
 > PR #2517 round-2 0013). `max-lines` allowlist у `eslint.config.js` тепер
 > **порожній**. Активних carry-over залишилось **2**: `FinykApp.tsx`
 > (640 LOC) і `RoutineCalendarPanel.tsx` (602 LOC). Плюс **2 нових leakers**,
-> які з'явились після audit-у 0001: `OnboardingWizard.tsx`,
-> `dualWrite/adapter.ts` — поки що під `skipBlankLines + skipComments`
-> max-lines lint не падає (LOC > 600 raw, але <600 не-blank/не-comment),
-> моніторити окремо. `core/auth/AuthPage.tsx` (раніше 694 LOC) було
-> декомпозовано на `AuthPage.tsx` (150 — shell + mode-switch composition),
-> `LoginForm.tsx` (133), `RegisterForm.tsx` (152), `ForgotPasswordPanel.tsx`
-> (85), `useForgotPassword.ts` (87 — reset-panel state + 6-сек auto-close),
-> `GoogleSignInButton.tsx` (43), `authFormPrimitives.tsx` (99 — `FieldError` +
-> `PasswordStrengthBar` + `PasswordVisibilityToggle`), `authSchemas.ts` (38 —
-> zod-схеми login/register + типи). Всі < 200 LOC. Деталі — в Outcome секції
+> які з'явились після audit-у 0001: `AuthPage.tsx`, `dualWrite/adapter.ts` —
+> поки що під `skipBlankLines + skipComments` max-lines lint не падає
+> (LOC > 600 raw, але <600 не-blank/не-comment), моніторити окремо.
+> Третій leaker з цієї когорти — `OnboardingWizard.tsx` (691 raw) —
+> декомпозовано (composition root + state-machine hook + WelcomeOneScreen +
+> ModuleRow + picksStorage; кожен файл <300 LOC raw). Деталі — в Outcome секції
 > [`_0001-module-decomposition.md`](../initiatives/archive/_0001-module-decomposition.md).
 >
 > Свіжість таблиці нижче — на 2026-05-04; перерахунок виконується вручну
@@ -326,7 +320,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 | Рядків | Файл                                                  | Категорія                       |
 | ------ | ----------------------------------------------------- | ------------------------------- |
-| 691    | `core/onboarding/OnboardingWizard.tsx`                | Новий leaker (не в Init. 0001)  |
+| 694    | `core/auth/AuthPage.tsx`                              | Новий leaker (не в Init. 0001)  |
 | 641    | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001)  |
 | 640    | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over (активне) |
 | 602    | `modules/routine/components/RoutineCalendarPanel.tsx` | Init. 0001 carry-over (активне) |
