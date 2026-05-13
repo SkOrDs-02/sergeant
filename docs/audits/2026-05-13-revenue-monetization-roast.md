@@ -42,17 +42,17 @@
 
 ## P1 — High (launch quality / funnel completeness)
 
-| #    | Item                                                       | Дія        | Файл / шлях                                                         | Статус        |
-| ---- | ---------------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------- |
-| P1-1 | Analytics events: init 0010 Phase 4–6 constants            | **Add**    | `packages/shared/src/lib/analyticsEvents.ts:218–259`                | **Done (PR)** |
-| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | Outstanding   |
-| P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | **Done (PR)** |
-| P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding   |
-| P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
-| P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)** |
-| P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding   |
-| P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | **Done (PR)** |
-| P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | **Done (PR)** |
+| #    | Item                                                       | Дія        | Файл / шлях                                                         | Статус           |
+| ---- | ---------------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ---------------- |
+| P1-1 | Analytics events: init 0010 Phase 4–6 constants            | **Add**    | `packages/shared/src/lib/analyticsEvents.ts:218–259`                | **Done (PR)**    |
+| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | Outstanding      |
+| P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | **Done (PR)**    |
+| P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding      |
+| P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding      |
+| P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)**    |
+| P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding      |
+| P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | **Done (#2760)** |
+| P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | **Done (PR)**    |
 
 ## P2 — Nice-to-have (post-launch polish)
 
@@ -168,7 +168,7 @@
 
 ## Фолов-ап (окремий PR — P1-8)
 
-### P1-8 · PricingPage: handle `?checkout=success` return URL ✅ Closed in this PR
+### P1-8 · PricingPage: handle `?checkout=success` return URL ✅ Closed in #2760
 
 - **Файл:** `apps/web/src/core/PricingPage.tsx` — новий `useEffect` читає `useSearchParams()`, реагує на `?checkout=success` і `?checkout=cancelled`, чистить параметр через `setSearchParams({}, { replace: true })` (idempotency при reload).
 - На success: `queryClient.invalidateQueries({ queryKey: billingKeys.status })` (Hard Rule #2 — RQ keys лише через фабрики) + success-toast «Підписку активовано — ласкаво просимо в Pro!» із action `Перейти у налаштування` → `navigate("/settings")`. ref-guard захищає від StrictMode double-invoke.
