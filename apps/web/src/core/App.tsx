@@ -16,6 +16,7 @@ import { AppLock } from "./security/AppLock";
 import { AppLockProvider, useAppLockContext } from "./security/AppLockContext";
 import { setFlag } from "./lib/featureFlags";
 import { ActiveModuleView } from "./app/ActiveModuleView";
+import { HashRedirect } from "./app/HashRedirect";
 import { HubHomeView } from "./app/HubHomeView";
 import { RedirectTo } from "./app/RedirectTo";
 import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
@@ -53,6 +54,15 @@ export default function App() {
           /reset-password, /design тощо) — deep link може прилетіти у
           будь-який із цих станів. */}
         <ShellDeepLinkBridge />
+        {/* Legacy hash-URL compat shim (initiative 0006 §Phase 3):
+          rewrites root-level hash URLs (e.g. `/#fizruk/workouts` from a
+          legacy PWA install / share-card / push notification) to the
+          canonical `/<module>/<page>` path. Mounted alongside the
+          deep-link bridge so it survives the same set of unauthenticated
+          surfaces (`/sign-in`, `/welcome`, …) where a legacy URL could
+          land first. In-module hashes (`/fizruk#workouts`) are handled
+          by each module's own redirect-on-mount shim. */}
+        <HashRedirect />
         {/* PostHog `$pageview` tracker: монтуємо тут (всередині
           BrowserRouter, поза AuthProvider), щоб фіксувати pathname і
           в unauthenticated-шляхах (`/sign-in`, `/welcome`,
