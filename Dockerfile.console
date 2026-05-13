@@ -1,23 +1,37 @@
-# Мінімальний образ для tools/console (Telegram bot runtime).
+# Console container — multi-stage with distroless runtime (PR-30 / L3).
 #
 # Шлях `tools/console` (раніше `apps/console`) — internal ops tool, не product
 # surface. Ім'я npm-пакету `@sergeant/console` НЕ змінюється; Railway service
 # був перейменований `sergeant-hubchat` → `sergeant-openclaw` per ADR-0032 /
-# Pain P10 (див. docs/launch/tech/telegram-improvements-roadmap.md §C.5).
+# Pain P10.
 #
-# Розгортається як окремий Railway service `sergeant-openclaw`
-# (див. docs/architecture/service-catalog.md рядок про Console agents).
-# Хостить два long-poll grammy-боти в одному процесі:
+# Розгортається як окремий Railway service `sergeant-openclaw`. Хостить два
+# long-poll grammy-боти в одному процесі:
 #   1. `@sergeant_console_bot` (ADR-0027) — multi-agent ops/marketing.
 #   2. `@OpenClaw_sergeant_bot` (ADR-0031) — DM-only co-founder bot.
 #
 # Збірка: docker build -f Dockerfile.console -t sergeant-console .
-FROM node:20.20.2-alpine AS builder
+#
+# Stage map (PR-30 — `docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+#   1. `builder`  — node:alpine + full deps + `pnpm build`.
+#   2. `deps`     — node:alpine + `pnpm install --prod` + cleanup CVE-
+#      noisy optional peers (потребує shell, distroless його не має).
+#   3. `runtime`  — `gcr.io/distroless/nodejs20-debian12:nonroot`. NO
+#      shell, NO `npm` / `pnpm` / `corepack`. Trivy attack surface
+#      shrinks ~90% порівняно з alpine + cleanup-based hardening.
+#
+# Healthcheck: Long-poll grammy-боти не слухають HTTP. Старий HEALTHCHECK
+# виконував `pgrep -f "node dist/index.js"`; у distroless немає shell-у і
+# немає `pgrep`. Railway сам моніторить, що container живий (process
+# не exit-нув) і рестартить crashloop, тож Dockerfile HEALTHCHECK опущено.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 1: builder
+FROM --platform=linux/amd64 node:20.20.2-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 
-# --- Залежності (кеш-шар) ---
 # `patches/` обов'язково ДО `pnpm install` (див. Dockerfile.api для деталей —
 # `pnpm.patchedDependencies` застосовується завжди, навіть з --ignore-scripts).
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
@@ -35,19 +49,15 @@ COPY tools/console ./tools/console
 
 WORKDIR /app/tools/console
 ENV NODE_ENV=production
-
 RUN pnpm build
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Runtime image
-FROM node:20.20.2-alpine AS runtime
+# Stage 2: deps — production-only deps + CVE-cleanup
+FROM --platform=linux/amd64 node:20.20.2-alpine AS deps
 WORKDIR /app
-
-ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 
-# Install production deps only.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/config/package.json ./packages/config/package.json
@@ -55,10 +65,6 @@ COPY tools/console/package.json ./tools/console/package.json
 
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
       --filter @sergeant/console...
-
-# App code + build output
-COPY tools/console ./tools/console
-COPY --from=builder /app/tools/console/dist ./tools/console/dist
 
 # Trim Trivy-flagged optional peers (vite/vitest/esbuild) — ми їх не виконуємо
 # у runtime, але `pnpm install --prod` тягне через peer-граф.
@@ -72,26 +78,30 @@ RUN find node_modules -maxdepth 3 -type d \
          -o -path 'node_modules/.pnpm/tsx@*' \
          -o -path 'node_modules/.pnpm/rollup@*' \
          -o -path 'node_modules/.pnpm/@rollup+*' \) \
-      -prune -exec rm -rf {} + \
- && rm -rf /usr/local/lib/node_modules/corepack \
-           /usr/local/lib/node_modules/npm \
-           /usr/local/bin/corepack \
-           /usr/local/bin/npm \
-           /usr/local/bin/npx \
-           /usr/local/bin/yarn \
-           /usr/local/bin/yarnpkg \
-           /root/.local/share/pnpm \
-           /root/.cache
+      -prune -exec rm -rf {} +
 
-# Non-root user (CIS Docker Benchmark, OWASP).
-RUN addgroup -S app && adduser -S app -G app
-USER app
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 3: runtime — distroless. Жодного shell-у, жодного package manager-у.
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs20-debian12:nonroot AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Production node_modules + workspace symlinks з deps-stage. pnpm symlinks
+# у `tools/console/node_modules` вказують у `/app/node_modules/.pnpm/...`,
+# тож обидва шляхи мають існувати для node module resolution.
+COPY --from=deps --chown=nonroot:nonroot /app/node_modules /app/node_modules
+COPY --from=deps --chown=nonroot:nonroot /app/tools/console/node_modules /app/tools/console/node_modules
+
+# Manifest-и
+COPY --from=deps --chown=nonroot:nonroot /app/package.json /app/package.json
+COPY --from=deps --chown=nonroot:nonroot /app/tools/console/package.json /app/tools/console/package.json
+
+# Build артефакт
+COPY --from=builder --chown=nonroot:nonroot /app/tools/console/dist /app/tools/console/dist
 
 WORKDIR /app/tools/console
 
-# Long-poll grammy-боти не слухають HTTP. Healthcheck — наявність процесу
-# `node dist/index.js`. Railway автоматично рестартить crash-нутий контейнер.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD pgrep -f "node dist/index.js" >/dev/null || exit 1
-
-CMD ["node", "dist/index.js"]
+# Distroless entrypoint = `/nodejs/bin/node`. CMD = args only. NO HEALTHCHECK
+# — long-poll bot не має HTTP-endpoint-у; Railway моніторить crashloop сам.
+CMD ["dist/index.js"]

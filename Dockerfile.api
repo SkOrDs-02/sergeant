@@ -1,19 +1,42 @@
-# Мінімальний образ лише для Hub API (Railway / Docker).
-# Збірка: docker buildx build --platform linux/amd64 -f Dockerfile.api -t hub-api .
+# Hub API container — multi-stage with distroless runtime (PR-30 / L3).
 #
-# `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening card
-# L13 — `docs/security/hardening/L13-docker-platform-pin.md`). Railway runtime
-# це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
+# Build (Railway / Docker): docker buildx build --platform linux/amd64 \
+#     -f Dockerfile.api -t hub-api .
+#
+# `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening
+# card L13 — `docs/security/hardening/L13-docker-platform-pin.md`). Railway
+# runtime це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
 # зібрала б arm64-image, який локально проходить smoke, але на Railway
-# падає з "exec format error". На amd64-хостах buildx ігнорує цей рядок
-# (image нативний), тож overhead нульовий.
+# падає з "exec format error".
+#
+# Stage map (PR-30 — `docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+#
+#   1. `builder`  — node:alpine + full dev deps + `pnpm build` (esbuild
+#      бандл у `dist-server/index.js` + копія `migrations/*.sql`).
+#   2. `deps`     — node:alpine + `pnpm install --prod` + cleanup CVE-
+#      noisy optional peers (vite / esbuild / vitest / rollup / tsx).
+#      Має shell, тому `find … -prune` працює; в distroless його б не
+#      було.
+#   3. `runtime`  — `gcr.io/distroless/nodejs20-debian12:nonroot`. NO
+#      shell, NO package managers, NO `corepack` / `npm` / `pnpm` / `yarn`.
+#      Trivy attack surface shrinks ~90% порівняно з alpine: усі CVE
+#      бувшого fragile `find … -delete` cleanup тепер відсутні by-design,
+#      бо binary просто немає у образі.
+#
+# Healthcheck: Distroless не має shell-у, тож HEALTHCHECK CMD не може
+# виконати `wget`/`curl`. Railway моніторить через external HTTP-probe
+# на `/health` (service-level config), тому Dockerfile HEALTHCHECK
+# опущено — Railway автоматично рестартить unhealthy container незалежно.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 1: builder — full dev deps + pnpm build
 FROM --platform=linux/amd64 node:20.20.2-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 
 # --- Залежності (кеш-шар) ---
-# `patches/` потрібен ДО `pnpm install`, бо `pnpm.patchedDependencies` у
+# `patches/` обов'язково ДО `pnpm install`: `pnpm.patchedDependencies` у
 # package.json (наразі `@expo/cli@0.22.28`) застосовується завжди — навіть з
 # `--ignore-scripts` — і відсутність патч-файлу валить frozen-install.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
@@ -40,27 +63,20 @@ COPY apps/server ./apps/server
 # `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
 # `apps/server/build.mjs` (esbuild, packages: "bundle") резолвить
 # `@sergeant/db-schema/pg` через `packages/db-schema/dist/pg/index.js`,
-# який існує тільки після `tsc -p tsconfig.build.json`. Без цього
-# Docker-build падає на esbuild-resolve:
-# `Could not resolve "@sergeant/db-schema/pg"` (Railway deploy fails).
+# який існує тільки після `tsc -p tsconfig.build.json`.
 RUN pnpm --filter @sergeant/db-schema build
 
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
-
 RUN pnpm build
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Runtime image
-FROM --platform=linux/amd64 node:20.20.2-alpine AS runtime
+# Stage 2: deps — production-only node_modules + CVE-cleanup (potrebuje shell)
+FROM --platform=linux/amd64 node:20.20.2-alpine AS deps
 WORKDIR /app
-
-ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 
-# Install production deps only (keeps runtime small & safer).
-# `patches/` обов'язково ДО `pnpm install` — див. коментар у builder-stage.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
@@ -72,53 +88,20 @@ COPY apps/server/package.json ./apps/server/package.json
 # `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
 # тому числі workspace-only `@sergeant/db-schema` (через `apps/server`).
 # Сам `dist/` нам у runtime не потрібен — esbuild у builder-стейджі
-# забандлив db-schema у `dist-server/index.js`. Але без `package.json`-а
-# `pnpm` не зможе резолвнути workspace-протокол `workspace:^` і впаде
-# на старті install. Тому копіюємо тільки маніфест, як і для інших
-# workspace-пакетів вище (shared/config/finyk-domain).
+# забандлив db-schema у `dist-server/index.js`.
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server...
 
-# App code + build output
-COPY apps/server ./apps/server
-COPY --from=builder /app/apps/server/dist-server ./apps/server/dist-server
-
-# OpenClaw `read_strategy_docs` (ADR-0031 §5) reads from repo-relative
-# `docs/<allowlisted-prefix>/`. У runtime container-і `import.meta.dirname`
-# дорівнює `/app/apps/server/dist-server`; default `resolveRepoRoot()` робив
-# 5 рівнів угору і отримував `/`, тож `fs.stat('/docs/decisions')` валив у
-# ENOENT і LLM-а виганяв 5xx у Sentry. Pinning `OPENCLAW_REPO_ROOT=/app` +
-# COPY-ю прохідних subdir-ів у `/app/docs/` робить tool детермінованим.
+# Trim CVE-noisy optional peers. `--frozen-lockfile` блокує перемикання
+# `auto-install-peers`, тому прибираємо ці модулі постфактум, тримаючи
+# lockfile незмінним:
+#   - `vite` / `vitest` / `vite-node` / `@vitest+*` — Trivy фейлить
+#     CRITICAL/HIGH через bundle Go-stdlib `esbuild`.
+#   - `esbuild` / `@esbuild+*` / `tsx` — самі Go-binary артефакти.
+#   - `rollup` / `@rollup+*` — peer Vite-у, аналогічна логіка.
 #
-# Копіюємо ТІЛЬКИ існуючі директорії з `READ_STRATEGY_DOCS_ALLOWED_PATHS`
-# (`apps/server/src/modules/openclaw/types.ts`). `docs/decisions/` і
-# `docs/strategy/` навмисно НЕ скопійовано — це aspirational paths, що
-# матеріалізуються через `record_decision` / `commit_to_strategy_doc` PR-и
-# у часі. Для них `readStrategyDoc` повертає 404 (`OpenClawNotFoundError`),
-# а не 500, тож no Sentry-noise.
-ENV OPENCLAW_REPO_ROOT=/app
-COPY docs/adr ./docs/adr
-COPY docs/launch ./docs/launch
-COPY docs/integrations ./docs/integrations
-COPY docs/governance ./docs/governance
-
-# Trim vulnerabilities surfaced by Trivy on the runtime image:
-#
-#   1. `pnpm install --prod` авто-встановлює optional-peer-и (`vitest` у
-#      `better-auth`, `@tanstack/react-start` тощо) і разом із ними тягне
-#      `vite` + `@esbuild/linux-x64`. У runtime ми виконуємо лише
-#      `node dist-server/index.js`, тож ні `vite`, ні `vitest`, ні Go-binary
-#      `esbuild` не потрібні, але Trivy фейлить CRITICAL/HIGH у Go-stdlib
-#      `esbuild`-білда (CVE-2025-68121 + 8 HIGH). `--frozen-lockfile`
-#      блокує перемикання `auto-install-peers`, тому прибираємо ці модулі
-#      постфактум, тримаючи lockfile незмінним.
-#   2. `node:*-alpine` ships старий `npm` (bundles vulnerable `cross-spawn`,
-#      `glob`, `minimatch`, `tar`) і `corepack`-prepared `pnpm@9.15.1` під
-#      `/root/.local/share/pnpm` (CVE-2025-69262/69263). У runtime ми не
-#      викликаємо жоден із цих менеджерів — прибираємо їх та супутні
-#      symlink-и під `/usr/local/bin/`.
-#
-# Усе виконуємо ще під root-юзером, до зміни на `app`.
+# Distroless runtime НЕ виконує жодного з цих бінарів (немає shell-у), але
+# Trivy все одно scan-ить файли і фейлить, тому позбавляємось їх.
 RUN find node_modules -maxdepth 3 -type d \
       \( -path 'node_modules/.pnpm/vite@*' \
          -o -path 'node_modules/.pnpm/vitest@*' \
@@ -129,26 +112,52 @@ RUN find node_modules -maxdepth 3 -type d \
          -o -path 'node_modules/.pnpm/tsx@*' \
          -o -path 'node_modules/.pnpm/rollup@*' \
          -o -path 'node_modules/.pnpm/@rollup+*' \) \
-      -prune -exec rm -rf {} + \
- && rm -rf /usr/local/lib/node_modules/corepack \
-           /usr/local/lib/node_modules/npm \
-           /usr/local/bin/corepack \
-           /usr/local/bin/npm \
-           /usr/local/bin/npx \
-           /usr/local/bin/yarn \
-           /usr/local/bin/yarnpkg \
-           /root/.local/share/pnpm \
-           /root/.cache
+      -prune -exec rm -rf {} +
 
-# Non-root user for security (CIS Docker Benchmark, OWASP).
-RUN addgroup -S app && adduser -S app -G app
-USER app
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 3: runtime — distroless. Жодного shell-у, жодного package manager-у,
+# жодного `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs20-debian12:nonroot AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# OpenClaw `read_strategy_docs` (ADR-0031 §5) reads from repo-relative
+# `docs/<allowlisted-prefix>/`. `OPENCLAW_REPO_ROOT=/app` робить tool
+# детермінованим у container-i (без цього `resolveRepoRoot()` ішов 5 рівнів
+# угору і отримував `/`, тож `fs.stat('/docs/decisions')` валив у ENOENT).
+ENV OPENCLAW_REPO_ROOT=/app
+
+# Production node_modules + workspace symlinks з deps-stage. Зберігаємо
+# обидва шари (root + apps/server) — pnpm symlinks у `apps/server/node_modules`
+# вказують у `/app/node_modules/.pnpm/...`, тож обидва шляхи мають існувати
+# для node module resolution. `--chown=nonroot:nonroot` ставить власника
+# `nonroot:nonroot` (uid:gid 65532:65532) у distroless.
+COPY --from=deps --chown=nonroot:nonroot /app/node_modules /app/node_modules
+COPY --from=deps --chown=nonroot:nonroot /app/apps/server/node_modules /app/apps/server/node_modules
+
+# Manifest-и для workspace-resolution на runtime. `node` сам пакетами не
+# керує, але `read-pkg` / `find-up`-патерни деяких deps можуть їх читати.
+COPY --from=deps --chown=nonroot:nonroot /app/package.json /app/package.json
+COPY --from=deps --chown=nonroot:nonroot /app/apps/server/package.json /app/apps/server/package.json
+
+# Build артефакт: `dist-server/index.js` + bundled `dist-server/migrations/*.sql`
+# (esbuild build.mjs копіює migrations поряд із bundle).
+COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/apps/server/dist-server
+
+# OpenClaw strategy docs — runtime read-only через `read_strategy_docs`.
+# Копіюємо ТІЛЬКИ існуючі директорії з `READ_STRATEGY_DOCS_ALLOWED_PATHS`
+# (`apps/server/src/modules/openclaw/types.ts`). `docs/decisions/` і
+# `docs/strategy/` навмисно НЕ скопійовано — це aspirational paths.
+COPY --chown=nonroot:nonroot docs/adr /app/docs/adr
+COPY --chown=nonroot:nonroot docs/launch /app/docs/launch
+COPY --chown=nonroot:nonroot docs/integrations /app/docs/integrations
+COPY --chown=nonroot:nonroot docs/governance /app/docs/governance
 
 WORKDIR /app/apps/server
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1
-
-CMD ["node", "dist-server/index.js"]
+# Distroless entrypoint = `/nodejs/bin/node`. CMD = args only. NO
+# HEALTHCHECK — Railway моніторить через external HTTP-probe на /health.
+CMD ["dist-server/index.js"]
