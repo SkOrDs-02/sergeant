@@ -1,5 +1,10 @@
 import { useCallback, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  ScrollRestoration,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
@@ -63,6 +68,14 @@ export default function App() {
           land first. In-module hashes (`/fizruk#workouts`) are handled
           by each module's own redirect-on-mount shim. */}
         <HashRedirect />
+        {/* Scroll restoration (initiative 0006 §Phase 4): react-router
+          web behaviour. Restores `(x, y)` for POP-нав (back/forward) і
+          скролить у `(0, 0)` для PUSH/REPLACE. Покриває всі top-level
+          паттерни — Hub `/`, `/<module>/*`, `/sign-in`, `/welcome`,
+          `/reset-password`. NOOP за замовчанням: без аргументів просто
+          відновлює default-behaviour браузера, який react-router
+          вимикає для SPA-нав. */}
+        <ScrollRestoration />
         {/* PostHog `$pageview` tracker: монтуємо тут (всередині
           BrowserRouter, поза AuthProvider), щоб фіксувати pathname і
           в unauthenticated-шляхах (`/sign-in`, `/welcome`,
