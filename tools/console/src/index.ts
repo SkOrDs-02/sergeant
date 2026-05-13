@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "./obs/sentry.js";
 import { Bot } from "grammy";
 import Anthropic from "@anthropic-ai/sdk";
 import { attachConsoleHandlers } from "./bot.js";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildSystemPromptInline,
   createOpenClawToolExecutor,
@@ -10,6 +10,13 @@ import {
   ApprovalStore,
   PendingApprovalsCollector,
 } from "../openclaw/approval-store.js";
+
+const { mockAddBreadcrumb } = vi.hoisted(() => ({
+  mockAddBreadcrumb: vi.fn(),
+}));
+vi.mock("../obs/sentry.js", () => ({
+  Sentry: { addBreadcrumb: mockAddBreadcrumb },
+}));
 
 describe("OpenClaw selectToneMode", () => {
   it("defaults to diplomatic for vague messages", () => {
@@ -444,5 +451,146 @@ describe("OpenClaw executor — write-tool interception (ADR-0036)", () => {
     expect(pendingCollector.size()).toBe(2);
     const drained = pendingCollector.drain();
     expect(drained.map((r) => r.id)).toEqual(["id-1", "id-2"]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// O2: Sentry breadcrumbs in tool-calls
+// ─────────────────────────────────────────────────────────────────────────
+
+describe("OpenClaw executor — Sentry breadcrumbs (O2)", () => {
+  beforeEach(() => {
+    mockAddBreadcrumb.mockClear();
+  });
+
+  function makeDeps(
+    overrides: {
+      approvalStore?: ApprovalStore;
+      pendingCollector?: PendingApprovalsCollector;
+    } = {},
+  ) {
+    return {
+      serverUrl: "http://localhost:9999",
+      internalApiKey: "test-key",
+      founderUserId: "user_1",
+      founderTgUserId: 555,
+      invocationId: 42,
+      ...overrides,
+    };
+  }
+
+  it("emits breadcrumb with tool_name, latency_ms, status=ok on successful HTTP call", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('{"rows":[]}'),
+    }) as unknown as typeof fetch;
+
+    try {
+      const exec = createOpenClawToolExecutor(makeDeps());
+      await exec("query_app_db", { sql: "SELECT 1" });
+
+      expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+      const bc = mockAddBreadcrumb.mock.calls[0]![0];
+      expect(bc.category).toBe("openclaw.tool_call");
+      expect(bc.level).toBe("info");
+      expect(bc.data).toMatchObject({
+        tool_name: "query_app_db",
+        status: "ok",
+      });
+      expect(typeof bc.data["latency_ms"]).toBe("number");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("emits breadcrumb with status=http_error on non-ok HTTP response", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve("Forbidden"),
+    }) as unknown as typeof fetch;
+
+    try {
+      const exec = createOpenClawToolExecutor(makeDeps());
+      await exec("recall_memory", { query: "test" });
+
+      expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+      const bc = mockAddBreadcrumb.mock.calls[0]![0];
+      expect(bc.level).toBe("warning");
+      expect(bc.data).toMatchObject({
+        tool_name: "recall_memory",
+        status: "http_error",
+        http_status: 403,
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("emits breadcrumb with status=error on network failure", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error("ECONNREFUSED")) as unknown as typeof fetch;
+
+    try {
+      const exec = createOpenClawToolExecutor(makeDeps());
+      await exec("get_server_stats", {});
+
+      expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+      const bc = mockAddBreadcrumb.mock.calls[0]![0];
+      expect(bc.level).toBe("error");
+      expect(bc.data).toMatchObject({
+        tool_name: "get_server_stats",
+        status: "error",
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("emits breadcrumb with status=queued for write-tool with approval store", async () => {
+    const approvalStore = new ApprovalStore({ ttlMs: 60_000 });
+    const pendingCollector = new PendingApprovalsCollector();
+    const exec = createOpenClawToolExecutor(
+      makeDeps({ approvalStore, pendingCollector }),
+    );
+    await exec("create_github_issue", { title: "test", body: "test body" });
+
+    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+    const bc = mockAddBreadcrumb.mock.calls[0]![0];
+    expect(bc.data).toMatchObject({
+      tool_name: "create_github_issue",
+      status: "queued",
+    });
+  });
+
+  it("emits breadcrumb with status=rejected for write-tool without approval store", async () => {
+    const exec = createOpenClawToolExecutor(makeDeps());
+    await exec("pause_workflow", { workflowId: "WF-15" });
+
+    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+    const bc = mockAddBreadcrumb.mock.calls[0]![0];
+    expect(bc.level).toBe("warning");
+    expect(bc.data).toMatchObject({
+      tool_name: "pause_workflow",
+      status: "rejected",
+    });
+  });
+
+  it("emits breadcrumb with status=unknown for unrecognized tool", async () => {
+    const exec = createOpenClawToolExecutor(makeDeps());
+    await exec("nonexistent_tool", {});
+
+    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
+    const bc = mockAddBreadcrumb.mock.calls[0]![0];
+    expect(bc.level).toBe("error");
+    expect(bc.data).toMatchObject({
+      tool_name: "nonexistent_tool",
+      status: "unknown",
+    });
   });
 });

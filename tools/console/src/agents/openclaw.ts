@@ -19,6 +19,7 @@ import {
   incrementCounter,
   OPENCLAW_PER_CALL_CAP_HIT_TOTAL,
 } from "../obs/metrics.js";
+import { Sentry } from "../obs/sentry.js";
 import {
   type ApprovalStore,
   type PendingApprovalsCollector,
@@ -678,10 +679,22 @@ export function createOpenClawToolExecutor(
   deps: OpenClawAgentDeps,
 ): (name: string, input: Record<string, unknown>) => Promise<string> {
   return async (name, input) => {
+    const startMs = Date.now();
+
     // ADR-0036: write-tool interception. Fail-closed if approval
     // infrastructure not provided — we never auto-execute side effects.
     if (isWriteToolName(name)) {
       if (!deps.approvalStore || !deps.pendingCollector) {
+        Sentry.addBreadcrumb({
+          category: "openclaw.tool_call",
+          message: `${name} rejected (no approval store)`,
+          level: "warning",
+          data: {
+            tool_name: name,
+            latency_ms: Date.now() - startMs,
+            status: "rejected",
+          },
+        });
         return WRITE_TOOL_REJECTED_LITERAL;
       }
       const founderTgUserId = deps.founderTgUserId ?? 0;
@@ -694,11 +707,33 @@ export function createOpenClawToolExecutor(
         persona: deps.persona,
       });
       deps.pendingCollector.add(record);
+      Sentry.addBreadcrumb({
+        category: "openclaw.tool_call",
+        message: `${name} queued for approval`,
+        level: "info",
+        data: {
+          tool_name: name,
+          latency_ms: Date.now() - startMs,
+          status: "queued",
+        },
+      });
       return WRITE_TOOL_QUEUED_LITERAL;
     }
 
     const route = TOOL_ROUTE[name];
-    if (!route) return `Unknown OpenClaw tool: ${name}`;
+    if (!route) {
+      Sentry.addBreadcrumb({
+        category: "openclaw.tool_call",
+        message: `${name} unknown`,
+        level: "error",
+        data: {
+          tool_name: name,
+          latency_ms: Date.now() - startMs,
+          status: "unknown",
+        },
+      });
+      return `Unknown OpenClaw tool: ${name}`;
+    }
 
     const body: Record<string, unknown> = { ...input };
 
@@ -720,11 +755,43 @@ export function createOpenClawToolExecutor(
         body: JSON.stringify(body),
       });
       const text = await res.text();
+      const latencyMs = Date.now() - startMs;
       if (!res.ok) {
+        Sentry.addBreadcrumb({
+          category: "openclaw.tool_call",
+          message: `${name} HTTP ${res.status}`,
+          level: "warning",
+          data: {
+            tool_name: name,
+            latency_ms: latencyMs,
+            status: "http_error",
+            http_status: res.status,
+          },
+        });
         return `Tool ${name} failed (HTTP ${res.status}): ${text}`;
       }
+      Sentry.addBreadcrumb({
+        category: "openclaw.tool_call",
+        message: `${name} ok`,
+        level: "info",
+        data: {
+          tool_name: name,
+          latency_ms: latencyMs,
+          status: "ok",
+        },
+      });
       return text;
     } catch (e) {
+      Sentry.addBreadcrumb({
+        category: "openclaw.tool_call",
+        message: `${name} error`,
+        level: "error",
+        data: {
+          tool_name: name,
+          latency_ms: Date.now() - startMs,
+          status: "error",
+        },
+      });
       return `Tool ${name} error: ${e instanceof Error ? e.message : String(e)}`;
     }
   };
