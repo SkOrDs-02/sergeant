@@ -173,6 +173,8 @@ export const HELP_TEXT = [
   "       <code>since=</code> фільтрує по recorded_at (max 30d), <code>csv</code> шле документ.",
   "/alerts pending [p0|p1] [topic] [since=15m] — unacked Sergeant_alert_bot броадкасти;",
   "       без аргументів — топ-20 unacked, newest-first.",
+  "/strategy [list|add|done|abandon|carry] — per-persona weekly goals (PR-34).",
+  "       <code>/strategy add finyk: &lt;text&gt;</code>; <code>/strategy list active</code>.",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",

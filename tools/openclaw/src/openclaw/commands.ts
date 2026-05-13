@@ -95,6 +95,10 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
     description: "Recent write-actions journal (CSV optional)",
   },
   { command: "decisions", description: "Last recorded cofounder decisions" },
+  {
+    command: "strategy",
+    description: "Per-persona weekly goals (list/add/done/abandon/carry)",
+  },
   { command: "budget", description: "Today's OpenClaw spend vs daily cap" },
   { command: "reset", description: "Start a new cofounder session" },
 ];

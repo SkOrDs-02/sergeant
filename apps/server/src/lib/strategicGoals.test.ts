@@ -9,8 +9,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Pool, QueryResult, QueryResultRow } from "pg";
 import {
+  carryGoalToNextWeek,
   createGoal,
   createGoalsBatch,
+  getGoalById,
+  listGoals,
   listGoalsForWeek,
   MAX_GOAL_TEXT_BYTES,
   STRATEGIC_GOAL_PERSONAS,
@@ -344,6 +347,138 @@ describe("createGoalsBatch", () => {
     ]);
     expect(goals).toHaveLength(2);
     expect(queryFn).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("getGoalById", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns coerced row when goal exists", async () => {
+    const { pool, queryFn } = mockPool([makeFakeRow({ id: "55" })]);
+    const goal = await getGoalById(pool, 55);
+    expect(goal).not.toBeNull();
+    expect(goal!.id).toBe(55);
+    expect(typeof goal!.id).toBe("number");
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    expect(queryFn.mock.calls[0]![1]).toEqual([55]);
+  });
+
+  it("returns null when row not found (rowCount=0)", async () => {
+    const { pool } = mockPool([]);
+    expect(await getGoalById(pool, 1)).toBeNull();
+  });
+
+  it("fail-open on DB error", async () => {
+    const pool = failingPool(new Error("pg connection lost"));
+    expect(await getGoalById(pool, 1)).toBeNull();
+  });
+});
+
+describe("listGoals", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("runs the no-filter variant when nothing passed", async () => {
+    const { pool, queryFn } = mockPool([]);
+    await listGoals(pool, {});
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    const [sql, params] = queryFn.mock.calls[0]!;
+    expect(sql).toContain("FROM strategic_goals");
+    expect(sql).not.toMatch(/WHERE/);
+    // Limit-only param.
+    expect(params).toEqual([50]);
+  });
+
+  it("binds founderUserId + persona + status", async () => {
+    const { pool, queryFn } = mockPool([makeFakeRow()]);
+    await listGoals(pool, {
+      founderUserId: "user-1",
+      persona: "finyk",
+      status: "active",
+      limit: 25,
+    });
+    const [sql, params] = queryFn.mock.calls[0]!;
+    expect(sql).toContain("founder_user_id = $1");
+    expect(sql).toContain("persona = $2");
+    expect(sql).toContain("status = $3");
+    expect(params).toEqual(["user-1", "finyk", "active", 25]);
+  });
+
+  it("binds status-only filter", async () => {
+    const { pool, queryFn } = mockPool([]);
+    await listGoals(pool, { status: "achieved" });
+    const [sql, params] = queryFn.mock.calls[0]!;
+    expect(sql).toContain("status = $1");
+    expect(params).toEqual(["achieved", 50]);
+  });
+
+  it("applies hard-cap of 200 when caller asks for more", async () => {
+    const { pool, queryFn } = mockPool([]);
+    await listGoals(pool, { limit: 9999 });
+    const params = queryFn.mock.calls[0]![1];
+    expect(params[params.length - 1]).toBe(200);
+  });
+
+  it("clamps limit at minimum of 1", async () => {
+    const { pool, queryFn } = mockPool([]);
+    await listGoals(pool, { limit: 0 });
+    const params = queryFn.mock.calls[0]![1];
+    expect(params[params.length - 1]).toBe(1);
+  });
+
+  it("fail-open on DB error returns []", async () => {
+    const pool = failingPool(new Error("pg gone"));
+    expect(await listGoals(pool, {})).toEqual([]);
+  });
+});
+
+describe("carryGoalToNextWeek", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("UPDATEs week_start += 7 days and sets status=carried_over", async () => {
+    const { pool, queryFn } = mockPool([
+      makeFakeRow({
+        id: "42",
+        week_start: "2026-05-18",
+        status: "carried_over",
+      }),
+    ]);
+    const goal = await carryGoalToNextWeek(pool, 42);
+    expect(goal).not.toBeNull();
+    expect(goal!.id).toBe(42);
+    expect(goal!.status).toBe("carried_over");
+    expect(goal!.weekStart).toBe("2026-05-18");
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    const [sql, params] = queryFn.mock.calls[0]!;
+    expect(sql).toMatch(/UPDATE\s+strategic_goals/i);
+    expect(sql).toMatch(/week_start\s*=\s*week_start\s*\+/i);
+    expect(sql).toMatch(/status\s*=\s*'carried_over'/i);
+    expect(params).toEqual([42]);
+  });
+
+  it("returns null when goal does not exist (rowCount=0)", async () => {
+    const { pool } = mockPool([]);
+    expect(await carryGoalToNextWeek(pool, 999)).toBeNull();
+  });
+
+  it("fail-open on DB error", async () => {
+    const pool = failingPool(new Error("pg gone"));
+    expect(await carryGoalToNextWeek(pool, 1)).toBeNull();
+  });
+});
+
+describe("listGoalsForWeek with status filter", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("binds week_start + status when only status is passed", async () => {
+    const { pool, queryFn } = mockPool([makeFakeRow()]);
+    await listGoalsForWeek(pool, {
+      weekStart: "2026-05-11",
+      status: "abandoned",
+    });
+    const [sql, params] = queryFn.mock.calls[0]!;
+    expect(sql).toContain("week_start = $1");
+    expect(sql).toContain("status = $2");
+    expect(params).toEqual(["2026-05-11", "abandoned"]);
   });
 });
 
