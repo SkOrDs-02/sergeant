@@ -85,7 +85,7 @@ async function enqueueFresh(
 function setStatus(
   db: BetterSqliteDatabase,
   id: number,
-  status: "pending" | "rejected" | "dead_letter",
+  status: "pending" | "rejected" | "dead_letter" | "quarantined",
 ): void {
   db.prepare(`UPDATE sync_op_outbox SET status = ? WHERE id = ?`).run(
     status,

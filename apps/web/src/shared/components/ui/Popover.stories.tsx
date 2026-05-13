@@ -4,11 +4,10 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 
 /**
- * `Popover` — desktop dropdown / context-menu з focus-trap-lite,
- * outside-click та Escape dismiss. Stories відкривають popover у
- * controlled-mode (`open=true`), щоб фіксувати visual state. Покривають
- * стандартний items-список, з divider, з destructive-варіантом, і
- * placement варіанти. Initiative 0007 Phase 2 — shared/ui story.
+ * `Popover` — click-triggered floating surface for menus, filters,
+ * info-cards and contextual forms on desktop. Stories open the
+ * popover in controlled mode (`open=true`) so visual states are
+ * deterministic for chromatic snapshots.
  */
 const meta: Meta<typeof Popover> = {
   title: "Shared / Popover",
@@ -19,7 +18,7 @@ const meta: Meta<typeof Popover> = {
   },
   decorators: [
     (Story) => (
-      <div className="relative h-[260px] w-[320px] flex items-start justify-center pt-4">
+      <div className="relative h-[320px] w-[420px] flex items-start justify-center pt-4">
         <Story />
       </div>
     ),
@@ -30,7 +29,7 @@ export default meta;
 
 type Story = StoryObj<typeof Popover>;
 
-/** Закритий стан — лише trigger-кнопка. */
+/** Closed state — only the trigger is rendered. */
 export const Closed: Story = {
   render: () => (
     <Popover trigger={<Button variant="ghost">Опції</Button>}>
@@ -40,7 +39,7 @@ export const Closed: Story = {
   ),
 };
 
-/** Відкритий popover із кількома items. */
+/** Open menu with several items. */
 export const Open: Story = {
   render: () => (
     <Popover open trigger={<Button variant="ghost">Опції</Button>}>
@@ -55,7 +54,7 @@ export const Open: Story = {
   ),
 };
 
-/** З divider-ом і destructive-варіантом внизу. */
+/** Menu with a divider + destructive item. */
 export const WithDivider: Story = {
   render: () => (
     <Popover open trigger={<Button variant="ghost">Опції</Button>}>
@@ -71,7 +70,7 @@ export const WithDivider: Story = {
   ),
 };
 
-/** Placement `bottom-end` — popover вирівнюється по правому краю trigger-а. */
+/** Placement `bottom-end` — panel aligns with the trigger's right edge. */
 export const PlacementBottomEnd: Story = {
   render: () => (
     <Popover
@@ -81,6 +80,41 @@ export const PlacementBottomEnd: Story = {
     >
       <PopoverItem>Налаштування</PopoverItem>
       <PopoverItem>Допомога</PopoverItem>
+    </Popover>
+  ),
+};
+
+/** Header + body + footer slots — turns the popover into a mini-dialog
+ * (role="dialog" auto-applied) for form-in-popover patterns. */
+export const WithHeaderAndFooter: Story = {
+  render: () => (
+    <Popover
+      open
+      trigger={<Button variant="ghost">Фільтри</Button>}
+      header="Фільтри транзакцій"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm">
+            Скинути
+          </Button>
+          <Button size="sm">Застосувати</Button>
+        </div>
+      }
+    >
+      <div className="px-2 py-2 space-y-2 text-sm text-fg">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" className="accent-accent" />
+          Доходи
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" className="accent-accent" defaultChecked />
+          Витрати
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" className="accent-accent" />
+          Перекази
+        </label>
+      </div>
     </Popover>
   ),
 };

@@ -62,6 +62,13 @@ export interface UseOnboardingWizardStateReturn {
   ctaLabelOverride?: string;
   emptyPicksHint: string;
   finish: () => void;
+  /**
+   * `true` between the first successful `finish()` call and unmount.
+   * Used by the CTA to render a busy state and by the hook itself to
+   * block re-entrant submissions (analytics / storage writes are not
+   * idempotent — see {@link finish}).
+   */
+  submitting: boolean;
   secondaryAction?: () => void;
 }
 
@@ -110,6 +117,16 @@ export function useOnboardingWizardState({
     isTour ? [...ALL_MODULES] : loadPersistedPicks(defaultPicksVariant),
   );
   const [expanded, setExpanded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Double-submit guard. `finish()` is synchronous today, but a
+  // double-tap on the primary CTA during the same React commit (e.g.
+  // route navigation kicks in between paint and unmount) would
+  // otherwise fire the analytics events / `saveVibePicks` /
+  // `markOnboardingDone` writes twice. Ref-based so it stays in
+  // sync inside the same tick — a `useState` flag alone would not
+  // block the second click before the next render flush.
+  const submittingRef = useRef(false);
 
   // Persist picks on every change. Payload is tiny (≤4 strings) so
   // unconditional writes are cheap and keep the resume-after-refresh
@@ -146,7 +163,16 @@ export function useOnboardingWizardState({
   }, []);
 
   const finish = useCallback(() => {
+    // Block re-entrant clicks: the side-effects below (analytics,
+    // storage writes, route navigation via `onDone`) are not
+    // idempotent. A second click during the same commit must be a
+    // no-op. The flag is never reset because the wizard unmounts
+    // immediately after the first successful call.
+    if (submittingRef.current) return;
+
     if (isTour) {
+      submittingRef.current = true;
+      setSubmitting(true);
       // Tour replay: no side effects on user state. Just emit the
       // dismissal event with a duration so PostHog can show "how long
       // does the user spend in replay" without polluting the FTUX
@@ -172,6 +198,9 @@ export function useOnboardingWizardState({
     if (hadEmptyPicks && defaultPicksVariant === "none") {
       return;
     }
+
+    submittingRef.current = true;
+    setSubmitting(true);
 
     // `all` arm (legacy): empty selection falls back to all modules
     // so the lazy "tap-through" path leaves every module visible on
@@ -278,6 +307,7 @@ export function useOnboardingWizardState({
     ctaLabelOverride: isTour ? "Закрити" : undefined,
     emptyPicksHint: "Обери хоч один розділ",
     finish,
+    submitting,
     secondaryAction,
   };
 }

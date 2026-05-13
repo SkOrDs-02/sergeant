@@ -19,6 +19,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "../../../env.js";
+import {
+  StubProvider,
+  type LLMGenerateOpts,
+  type LLMGenerateResult,
+  type LLMProvider,
+} from "../../../lib/llm/provider.js";
 import { assembleMorningBriefing } from "./builder.js";
 
 vi.mock("../github-auth.js", () => ({
@@ -388,5 +394,236 @@ describe("assembleMorningBriefing — partial / error tolerance", () => {
     });
     expect(data.prQueue.openCount).toBeUndefined();
     expect(data.prQueue.note).toContain("GitHub API повернув 404");
+  });
+});
+
+/**
+ * O1 / Phase 2.A — proposals секція через LLMProvider override.
+ * Перевіряємо happy / parse-fail / provider-error / stub / disabled.
+ * Мокаємо тільки LLM (стандартні fetch-mocks залишають інші 5 секцій
+ * на дефолтних not-configured-fallback-ах).
+ */
+class FakeLLMProvider implements LLMProvider {
+  readonly name = "anthropic" as const;
+  calls: LLMGenerateOpts[] = [];
+  constructor(
+    private readonly responder: (
+      opts: LLMGenerateOpts,
+    ) => Promise<LLMGenerateResult> | LLMGenerateResult,
+  ) {}
+  async generate(opts: LLMGenerateOpts): Promise<LLMGenerateResult> {
+    this.calls.push(opts);
+    return await this.responder(opts);
+  }
+}
+
+describe("assembleMorningBriefing — O1 / Phase 2.A proposals (LLM)", () => {
+  it("populates proposals from LLM response with reasoning", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: true,
+      text: JSON.stringify({
+        proposals: [
+          "Закрити PR #101 (needs-review старший за 24h)",
+          "Перевірити Sentry error spike по chat-stream",
+          "Розписати growth-experiment у docs/strategy",
+        ],
+        reasoning:
+          "PR-черга росте, Sentry показав error, growth блокує MRR — три фокуси максимізують impact.",
+      }),
+    }));
+    const { data, markdown } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(llm.calls).toHaveLength(1);
+    expect(llm.calls[0]?.model).toBe("claude-sonnet-4-5-20250929");
+    expect(llm.calls[0]?.endpoint).toBe(
+      "internal/openclaw/briefing/morning/proposals",
+    );
+    expect(data.proposals?.proposals).toEqual([
+      "Закрити PR #101 (needs-review старший за 24h)",
+      "Перевірити Sentry error spike по chat-stream",
+      "Розписати growth-experiment у docs/strategy",
+    ]);
+    expect(data.proposals?.reasoning).toContain("PR-черга росте");
+    expect(markdown).toContain("🎯 Пропозиції на сьогодні");
+    expect(markdown).toContain(
+      "1. Закрити PR #101 (needs-review старший за 24h)",
+    );
+    // Proposals must appear above MRR section.
+    const proposalsIdx = markdown.indexOf("🎯 Пропозиції");
+    const stripeIdx = markdown.indexOf("💵 MRR / Stripe");
+    expect(proposalsIdx).toBeLessThan(stripeIdx);
+  });
+
+  it("returns notConfigured when LLM provider is stub (Anthropic outage / dev)", async () => {
+    const { data, markdown } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: new StubProvider() },
+    );
+    expect(data.proposals?.notConfigured).toBe(true);
+    expect(data.proposals?.note).toContain("stub-режим");
+    expect(markdown).toContain(
+      "_LLM-провайдер не сконфігурований (`ANTHROPIC_API_KEY` / `LLM_PROVIDER`); next-action-и пропущено._",
+    );
+  });
+
+  it("renders rate-limit note when LLM returned 429", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: false,
+      error: "Anthropic rate-limit exceeded",
+      status: 429,
+      code: "rate_limited",
+    }));
+    const { data, markdown } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(data.proposals?.notConfigured).toBeUndefined();
+    expect(data.proposals?.proposals).toBeUndefined();
+    expect(data.proposals?.note).toBe(
+      "LLM rate-limit; фокус — roadmap-задача дня.",
+    );
+    expect(markdown).toContain("- LLM rate-limit");
+  });
+
+  it("renders timeout note when LLM provider timed out", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: false,
+      error: "Request aborted",
+      code: "timeout",
+    }));
+    const { data } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(data.proposals?.note).toBe(
+      "LLM timeout; фокус — roadmap-задача дня.",
+    );
+  });
+
+  it("renders generic-error note when LLM returned non-classified failure", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: false,
+      error: "Internal Server Error",
+      status: 500,
+      code: "anthropic_error",
+    }));
+    const { data } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(data.proposals?.note).toBe(
+      "LLM-пропозиції недоступні (див. Sentry).",
+    );
+  });
+
+  it("renders parse-fail note when LLM returned non-JSON text", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: true,
+      text: "Sorry I cannot generate proposals today.",
+    }));
+    const { data } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(data.proposals?.proposals).toBeUndefined();
+    expect(data.proposals?.note).toContain("невалідний JSON");
+  });
+
+  it("caps proposals to 3 even if LLM returned more", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: true,
+      text: JSON.stringify({
+        proposals: ["a", "b", "c", "d", "e"],
+      }),
+    }));
+    const { data } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(data.proposals?.proposals).toEqual(["a", "b", "c"]);
+  });
+
+  it("filters out empty strings + non-string items from proposals[]", async () => {
+    const llm = new FakeLLMProvider(() => ({
+      ok: true,
+      text: JSON.stringify({
+        proposals: ["valid", "", "  ", 42, "second", null],
+      }),
+    }));
+    const { data } = await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(data.proposals?.proposals).toEqual(["valid", "second"]);
+  });
+
+  it("skips LLM call entirely when includeProposals=false", async () => {
+    const llm = new FakeLLMProvider(() => {
+      throw new Error("should not be called");
+    });
+    const { data, markdown } = await assembleMorningBriefing(
+      {
+        nowMs: Date.parse("2026-05-13T06:00:00Z"),
+        includeProposals: false,
+      },
+      { llmProvider: llm },
+    );
+    expect(llm.calls).toHaveLength(0);
+    expect(data.proposals).toBeUndefined();
+    expect(markdown).not.toContain("🎯 Пропозиції");
+  });
+
+  it("includes briefing data in LLM user message (Stripe + Sentry + PR signals)", async () => {
+    patchEnv({
+      STRIPE_SECRET_KEY: "sk_test",
+      POSTHOG_API_KEY: "phx",
+      POSTHOG_PROJECT_ID: "1",
+      SENTRY_AUTH_TOKEN: "sntryu",
+      N8N_API_URL: "https://n8n.example.com",
+      N8N_API_KEY: "n8n",
+    });
+    routes.push(
+      {
+        match: (u) => u.startsWith("https://api.stripe.com/v1/charges"),
+        respond: () =>
+          makeJsonResponse({
+            data: [{ amount: 25_000, paid: true }],
+          }),
+      },
+      {
+        match: (u) => u.includes("app.posthog.com"),
+        respond: () => makeJsonResponse({ result: [{ aggregated_value: 5 }] }),
+      },
+      {
+        match: (u) => u.startsWith("https://api.github.com/repos/"),
+        respond: () => makeJsonResponse([]),
+      },
+      {
+        match: (u) => u.includes("n8n.example.com"),
+        respond: () => makeJsonResponse({ data: [] }),
+      },
+      {
+        match: (u) => u.startsWith("https://sentry.io/"),
+        respond: () => makeJsonResponse([]),
+      },
+    );
+    const llm = new FakeLLMProvider(() => ({
+      ok: true,
+      text: JSON.stringify({
+        proposals: ["one", "two", "three"],
+      }),
+    }));
+    await assembleMorningBriefing(
+      { nowMs: Date.parse("2026-05-13T06:00:00Z") },
+      { llmProvider: llm },
+    );
+    expect(llm.calls).toHaveLength(1);
+    const userMsg = llm.calls[0]?.messages[0]?.content ?? "";
+    expect(userMsg).toContain("День звіту: 2026-05-12");
+    expect(userMsg).toContain("Stripe:");
+    expect(userMsg).toContain("PostHog:");
+    expect(userMsg).toContain("Sentry:");
   });
 });

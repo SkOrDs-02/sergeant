@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -36,6 +37,8 @@ export function WelcomeOneScreen({
   ctaDisabled,
   emptyPicksHint,
   onSecondaryAction,
+  headingRef,
+  ctaBusy,
 }: {
   picks: string[];
   togglePick: (id: string) => void;
@@ -71,12 +74,32 @@ export function WelcomeOneScreen({
    * card.
    */
   onSecondaryAction?: () => void;
+  /**
+   * Ref to the splash heading. Set by the wizard so the modal variant
+   * can move focus there on mount (WCAG 2.4.3 — focus must land
+   * inside the dialog so screen readers announce the new context
+   * instead of stranding the user on `<body>`).
+   */
+  headingRef?: RefObject<HTMLHeadingElement>;
+  /**
+   * Disable + mark the primary CTA busy while `finish()` is mid-flight.
+   * Synchronous today, but the flag keeps a double-click during the
+   * same React commit (route navigation, analytics flush) from
+   * firing the side-effects twice.
+   */
+  ctaBusy?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center text-center space-y-5">
       <div className="space-y-2">
         <BrandLogo size="md" variant="inline" className="mx-auto" />
-        <h2 className="text-style-hero text-text">{copy.title}</h2>
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-sm"
+        >
+          {copy.title}
+        </h2>
         <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
           {copy.subtitle}
         </p>
@@ -127,7 +150,8 @@ export function WelcomeOneScreen({
         variant="primary"
         size="lg"
         className="w-full"
-        disabled={ctaDisabled}
+        disabled={ctaDisabled || ctaBusy}
+        loading={ctaBusy}
       >
         {ctaLabelOverride ?? copy.primaryCta}
         <Icon name="chevron-right" size={16} />

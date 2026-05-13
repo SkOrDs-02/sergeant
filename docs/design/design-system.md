@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -329,16 +329,73 @@ Tailwind `spacing` (базова шкала 4px) + кастомні:
 Правило: **одна картка — один радіус**. Не змішуй `rounded-xl`
 header + `rounded-2xl` body.
 
-### Тіні
+### Тіні (елеваційна шкала e0..e5)
 
-| Клас           | Джерело                   | Коли                     |
-| -------------- | ------------------------- | ------------------------ |
-| `shadow-soft`  | `--shadow-soft`           | Фонова підсвітка блоку   |
-| `shadow-card`  | `--shadow-card`           | Дефолт для `Card`        |
-| `shadow-float` | `--shadow-float`          | Hover, плаваючі елементи |
-| `shadow-glow`  | Tailwind (брендовий blur) | CTA, акценти, фокуси     |
+Семантична шкала єдине джерело правди для глибини. Розподіл рівнів —
+в [`packages/design-tokens/tokens.js`](../../packages/design-tokens/tokens.js) →
+`elevation`; CSS-змінні лежать в
+[`apps/web/src/styles/theme.css`](../../apps/web/src/styles/theme.css)
+і автоматично перемикаються в `.dark` — ніяких `dark:shadow-*`
+(Hard Rule #13).
 
-Темна тема має власні значення змінних — не додавай `dark:shadow-*`.
+| Клас        | Рівень      | Коли                                     | Z-tier       |
+| ----------- | ----------- | ---------------------------------------- | ------------ |
+| `shadow-e0` | Flat        | Фон сторінки, секції, інпути             | `z-base`     |
+| `shadow-e1` | Raised      | Дефолт `Card`, рядки списку, панелі      | `z-base`     |
+| `shadow-e2` | Interactive | Hover підйом карток / pressables         | `z-base`     |
+| `shadow-e3` | Overlay     | Popover, dropdown, tooltip, menu         | `z-dropdown` |
+| `shadow-e4` | Modal       | `<Modal>`, `<Sheet>`, drawer             | `z-modal`    |
+| `shadow-e5` | Toast       | `<Toast>`, snackbar (top-most ephemeral) | `z-toast`    |
+
+Парний z-index тір (`zTier` в токенах):
+
+| Семантика  | Клас         | Значення | Призначення                               |
+| ---------- | ------------ | -------- | ----------------------------------------- |
+| `base`     | `z-base`     | `0`      | Контент сторінки, картки, кнопки (e0..e2) |
+| `dropdown` | `z-dropdown` | `50`     | Попапи, меню, tooltip (e3)                |
+| `sticky`   | `z-sticky`   | `100`    | Sticky header / toolbar                   |
+| `overlay`  | `z-overlay`  | `150`    | Non-modal overlays, scrim під модалкою    |
+| `modal`    | `z-modal`    | `200`    | Modal, Sheet, drawer (e4)                 |
+| `toast`    | `z-toast`    | `300`    | Toast, snackbar (e5)                      |
+
+Правило: **рівень елевації рухається в парі з z-tier**. Якщо піднімаєш
+shadow до e4 — бери `z-modal`. Їх розсинхронізація = popover під модалкою
+або toast під drawer-ом.
+
+#### ДО ї НЕ ТРЕБА
+
+**ДО** — вибирай найменший рівень, який передає роль елемента. Дефолтний Card — e1.
+
+```tsx
+<Card prominence="interactive">  {/* shadow-e1, hover → shadow-e2 */}
+  <Stat label="Баланс" value="₴12 345" />
+</Card>
+
+<Modal>                            {/* shadow-e4 + z-modal */}
+  <CelebrationCopy />
+</Modal>
+
+<Toast>                            {/* shadow-e5 + z-toast */}
+  Запис збережено.
+</Toast>
+```
+
+**НЕ ТРЕБА** — не додавай `dark:shadow-*`, не копіюй raw `boxShadow` в inline-style,
+не бери `shadow-e4` для плоскої картки "щоб було popping". Що більший рівень —
+тим вище має бути z-tier.
+
+```tsx
+/* ⛔ НЕ ТРЕБА — вибиває візуальну ієрархію */
+<Card className="shadow-e4" />                          /* картка не має важити як Modal */
+<div className="shadow-card dark:shadow-2xl" />         /* парні dark: — Hard Rule #13 */
+<div className="shadow-e3 z-toast" />                   /* попап на toast тірі — розсинхрон з e3 */
+```
+
+#### Legacy aliases
+
+Наявні класи `shadow-soft / shadow-card / shadow-float / shadow-glow` продовжують
+працювати — вони внутрішньо мапляться на нову шкалу (`card → e1`,
+`float → e3`, `soft → e4`). Новий код має вживати явний `shadow-eN`.
 
 ---
 
@@ -526,6 +583,130 @@ Home/End, `role="tablist"`.
 Перед `tone` уникай `text-nutrition/70` / `text-nutrition/80` /
 `text-nutrition/90` драфту — усі branded eyebrow'и нормалізовані до
 `/70`.
+
+### Tooltip
+
+Доступний замінник native `title="..."` (який не читається скрін-рідерами і
+не дотискається з клавіатури). Хінт для контролів, у яких іконка/коротка
+лейба не дає повного контексту: «зберегти», «синхронізувати»,
+«дізнатися більше».
+
+```tsx
+import { Tooltip } from "@shared/components/ui";
+
+<Tooltip content="Зберегти зміни (Ctrl+S)" placement="top">
+  <Button variant="primary" iconOnly aria-label="Зберегти">
+    <Icon name="save" />
+  </Button>
+</Tooltip>;
+```
+
+**Контракт:**
+
+- **Тригер** — рівно один React-елемент. Має форвардити
+  `onMouseEnter` / `onMouseLeave` / `onFocus` / `onBlur` /
+  `aria-describedby` (Sergeant `Button` / `IconButton` / `Badge` — ок).
+- **Розкривається** на `mouseenter` АБО `focus-visible` після
+  `openDelay` (typ. 150 мс).
+- **Закривається** на `mouseleave` / `focusout` / `Escape` / outside-click.
+- **`role="tooltip"`** на панелі, `aria-describedby` — на тригері (автоматично).
+- **`size`** — `sm` (дефолт, compact caption) або `md` (multi-line copy).
+- **`placement`** — 12-точкова решітка:
+  `top|right|bottom|left` + `*-start|*-end`. Legacy-аліаси
+  (`top-center`, …) теж приймаються — нормалізуються всередині.
+- **Portaled to `document.body`** — панель не клипається transformed /
+  `overflow: hidden`-ancestor-ами (containing-block-фікс; той самий мотив, що
+  в Modal — PR #2227).
+- **`motion-safe:animate-fade-in`** — реагує на `prefers-reduced-motion: reduce`.
+- **Toggle off:** `disabled` — тригер далі рендериться, але tooltip
+  ніколи не з'являється.
+
+**Do:**
+
+- Використовуй для icon-only кнопок без візуальної лейби.
+- Тримай copy ≤ 1–2 рядки в `sm`; для довшого пояснення — `size="md"`.
+
+**Don't:**
+
+- Не клади інтерактивний контент (кнопки, лінки) у tooltip — це не
+  модал. Для інтерактиву потрібен `Popover`.
+- Не дублюй native `title="..."` — призводить до подвійних спливаючих хінтів.
+- Не привʼязуй критично-важливу інфу лише до tooltip — користувачі
+  на тач-пристроях можуть не побачити hover-стан.
+
+### Popover
+
+Click-driven floating-surface для меню, фільтрів, info-карток і форм-у-
+попапі. На мобільному (< md) — використовуй `Sheet` замість Popover-а.
+
+```tsx
+import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
+
+// Меню дій
+<Popover trigger={<Button>Опції</Button>}>
+  <PopoverItem onClick={onEdit}>Редагувати</PopoverItem>
+  <PopoverDivider />
+  <PopoverItem destructive onClick={onDelete}>
+    Видалити
+  </PopoverItem>
+</Popover>;
+
+// Форма-в-попапі — header + body + footer слоти
+<Popover
+  trigger={<Button>Фільтри</Button>}
+  header="Фільтри транзакцій"
+  footer={<ActionButtons />}
+>
+  <FilterForm />
+</Popover>;
+```
+
+**Контракт:**
+
+- **Click-toggle** на тригер; ESC + outside-click + Tab-trap, коли відкритий.
+  Focus повертається на тригер при закритті (`useDialogFocusTrap`).
+- **ARIA**: `aria-haspopup="true"`, `aria-expanded`, `aria-controls` на
+  тригер-обгортці; коли передаєш `header` — додатково `aria-labelledby`
+  на панель + автоматичний `role="dialog"` (інакше `role="menu"` для
+  класичних item-меню).
+- **Portaled to `document.body`** — той самий containing-block-фікс, що й
+  у Tooltip / Modal.
+- **`placement`** — та сама 12-точкова решітка (`top|right|bottom|left`
+  - `*-start|*-end`). Дефолт — `bottom-start`.
+- **Слоти**: `header` (string | JSX) і `footer` (JSX) додають візуальні
+  розділювачі + padding; без них panel — компактна menu-смуга з `py-1.5`.
+- **Sub-components**: `PopoverItem` (`role="menuitem"` + arrow-нав з parent)
+  і `PopoverDivider` (`<hr>`).
+- **Controlled mode**: `open` + `onOpenChange` (як на формі-в-попапі, де
+  треба «Apply → закрити»).
+- **`motion-safe:animate-fade-in`** на панелі.
+
+**Keyboard:**
+
+| Клавіша           | Дія                                                       |
+| ----------------- | --------------------------------------------------------- |
+| `Enter` / `Space` | Toggle на тригері                                         |
+| `Tab`             | Cycle всередині панелі (focus-trap)                       |
+| `ArrowDown / Up`  | Roving focus між `PopoverItem`-ами (тільки `role="menu"`) |
+| `Home / End`      | Перший / останній item у menu-режимі                      |
+| `Escape`          | Закрити панель + повернути фокус на тригер                |
+
+**Do:**
+
+- Використовуй для меню дій з 3-7 опцій, info-карток, фільтрів і легких
+  форм (1-3 поля).
+- Для меню — `PopoverItem` + `PopoverDivider` (підхоплять стрілкову
+  навігацію + `role="menuitem"`).
+- Для info-card / form — `header` / `footer` слоти; роль панелі автоматично
+  перейде у `"dialog"`.
+
+**Don't:**
+
+- Не клади важкі форми (> 4-5 полів) — це Sheet/Modal.
+- Не вкладай `Popover` всередину `Popover` без сильного юзкейса — кілька
+  трапів конфліктують.
+- Не запихай destructive multi-step дії — попап може закритися outside-click-ом
+  до підтвердження. Для destructive → `ConfirmDialog`.
 
 ### EmptyState
 

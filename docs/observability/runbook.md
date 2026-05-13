@@ -379,6 +379,42 @@ WHERE inserted_at >= now() - interval '7 days';
 - **Master `true`, sub-flag `false`:** intentional selective kill. Метрика `mode="source_disabled"` росте, `mode="queued"`=0. Підтверди у Railway, що sub-flag навмисно вимкнено.
 - **Spike у `mode="enqueue_error"`:** Redis incident або invalid source enum. Подивись pino-лог `ai_memory_ingest_enqueue_failed` / `ai_memory_ingest_invalid_source`.
 
+## WF-30 AI memory daily digest (PR-21)
+
+> **Owner:** `@Skords-01` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](../../ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
+
+### Контекст
+
+WF-30 — щоденний 09:05 Kyiv n8n workflow, що SELECT-ить агрегати з `ai_memories` (24h totals + per-source breakdown + lifetime + rough Voyage cost) і шле короткий summary у Telegram `#digest`. Aggregated-only payload (без `user_id` у тексті). Призначення — founder-DM-style daily-pulse поверх AI memory ingestion: бачити чи ingest працює (PR-19) без читання Grafana.
+
+### Activation procedure
+
+1. **Pre-flight:** `AI_MEMORY_ENABLED=true` (master) і `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19) уже виставлені у Railway. Без цього `ai_memories` порожня → digest буде слати «За добу нічого не записано».
+2. **n8n Railway env:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` у self-hosted n8n service (Settings → Environment Variables). Це canonical-toggle (parsed у `apps/server/src/env/env.ts` для парності з ingest-flag-ом).
+3. **n8n UI:** flip toggle workflow `30 — AI Memory Daily Digest` в active. Hard-rule [`validate-n8n-workflows.mjs`](../../tools/scripts/validate-n8n-workflows.mjs) тримає JSON `active=false` у git, тож активація — manual у UI.
+4. **Verification (T+24h):** наступний ранок о 09:05 Kyiv → перевір канал Telegram `#digest`, має зʼявитись повідомлення `🧠 AI Memory — <дата>`.
+
+### Що моніторити
+
+| Сигнал                                     | Норма                         | Action при відхиленні                                                                                                                                                                    |
+| ------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Telegram `#digest` daily post              | щоранку 09:05 Kyiv            | Якщо пропущений день — перевір `n8n.executions` для `30-ai-memory-daily-digest` (success/error). Sentry breadcrumb `n8n.workflow.failed` тригерить #incidents через WF-98 error-handler. |
+| n8n exec count `30-ai-memory-daily-digest` | 1/day                         | > 1/day → cron-schedule drift або manual re-trigger; = 0/day → workflow toggle off у n8n UI.                                                                                             |
+| `ai_memories` 24h count у digest body      | > 0 після activation pre-reqs | 0 декілька днів поспіль → ingest (PR-19) зламаний; перевір [`§ AI memory activation`](#ai-memory-activation--day-30-decision-point) монiтори.                                            |
+| Voyage cost у digest body (`💸`)           | < $0.50/добу при ~100 mem-ів  | > $1/добу sustained → перевір `AI_MEMORY_INGEST_MAX_CONTENT_LEN` cap; great content-length у Mono enrichment або chat sources.                                                           |
+
+### Failure modes
+
+- **Postgres node fails** (`onError=continueRegularOutput` → empty row): Format Code node graceful degrades до `0` агрегатів, Telegram пост все одно йде з нулями. Sentry breadcrumb у WF-98 error-handler.
+- **Telegram API fails** (rate-limit / token revoked): n8n exec marked `error`; WF-98 шле в `#meta` Telegram alert.
+- **`MONO_AI_MEMORY_DIGEST_ENABLED` missing на n8n Railway env**: workflow toggle у n8n UI просто не активується операторами per activation runbook. Если ж випадково активований без env — workflow все одно бігає (n8n не валідує env), але operator-intent документований як must-have у `docs/integrations/env-vars.md`.
+
+### Kill procedure
+
+1. **Швидкий kill (≤30s):** flip workflow toggle у n8n UI в inactive. Cron перестає тригерити node-chain негайно.
+2. **Permanent disable:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=false` у n8n Railway env (для документації operator-intent-у) + manifest status `prod-ready → experimental` у новому PR (signals deprecation).
+3. **Code-side:** видалити `MONO_AI_MEMORY_DIGEST_ENABLED` з `env.ts` тільки після успішних 30 днів без digest-у і прийнятого decision-point на kill всього AI memory модуля ([`§ AI memory activation & Day-30 decision-point`](#ai-memory-activation--day-30-decision-point)).
+
 ## Як обробити Renovate PR із breaking change
 
 Per [ADR-0044](../adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:

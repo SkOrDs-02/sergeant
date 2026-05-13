@@ -98,6 +98,13 @@ export const hubKeys = {
   preview: (module: ModuleAccent) => ["hub", "preview", module] as const,
 };
 
+// ─── Strategic mode (PR-34 — per-persona weekly goals) ────────────────────
+export const strategicKeys = {
+  all: ["strategic"] as const,
+  goalsForWeek: (weekStart: string) =>
+    ["strategic", "goals", "week", weekStart] as const,
+};
+
 // ─── Token hashing helper ─────────────────────────────────────────────────
 //
 // Не використовуємо криптографічну стійкість — потрібне лише стабільне,

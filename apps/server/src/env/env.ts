@@ -688,6 +688,27 @@ const envSchema = z.object({
    * § "AI memory activation & Day-30 decision-point").
    */
   MONO_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
+  /**
+   * Operator-toggle для n8n WF-30 `30-ai-memory-daily-digest.json`
+   * (cron 09:05 Kyiv → SELECT з `ai_memories` → Telegram #digest). PR-21
+   * додає його як **canonical-source** для статусу digest-workflow: значення
+   * читає оператор у self-hosted n8n Railway env (виставляє `true` для
+   * активації workflow toggle-у у n8n UI). Default `false` — workflow
+   * лишається off-by-default навіть якщо `pnpm ops:n8n:apply` deploy-нув
+   * JSON у n8n. Server-side digest-hook поки що відсутній (PR-21 — n8n-only
+   * activation), але змінна вже парситься тут для парності з
+   * `MONO_AI_MEMORY_INGEST_ENABLED` і майбутніх server-side метрик
+   * (наприклад emit `ai_memory_digest_sent_total` із n8n callback-у).
+   *
+   * Subordinate до `AI_MEMORY_ENABLED` — без master-flag-у `ai_memories`
+   * порожня, digest буде слати «За добу нічого не записано» graceful-message
+   * (workflow handle-ає empty result).
+   *
+   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
+   * Monitoring: [`docs/observability/runbook.md` § "WF-30 AI memory daily
+   * digest (PR-21)"].
+   */
+  MONO_AI_MEMORY_DIGEST_ENABLED: boolFromEnv(false),
 
   // ── OpenClaw v0 — Telegram-only co-founder bot (ADR-0031) ──────────
   /** Better Auth user.id founder-а. */

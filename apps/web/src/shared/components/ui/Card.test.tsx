@@ -20,12 +20,15 @@ afterEach(cleanup);
  */
 describe("Card", () => {
   describe("defaults", () => {
-    it("renders with bg-panel, shadow-card, border, rounded-3xl, p-4", () => {
+    it("renders with bg-panel, shadow-e1, border, rounded-3xl, p-4", () => {
       const { container } = render(<Card>body</Card>);
       const el = container.firstElementChild!;
       expect(el.className).toContain("bg-panel");
       expect(el.className).toContain("border-line");
-      expect(el.className).toContain("shadow-card");
+      // Semantic elevation scale — default Card sits at e1 (raised).
+      // The legacy `shadow-card` alias still resolves to the same CSS
+      // var, but new code (and this primitive) uses the explicit token.
+      expect(el.className).toContain("shadow-e1");
       expect(el.className).toContain("rounded-3xl");
       expect(el.className).toContain("p-4");
     });
@@ -57,21 +60,24 @@ describe("Card", () => {
       const { container } = render(<Card variant="default">x</Card>);
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("bg-panel");
-      expect(cls).toContain("shadow-card");
+      expect(cls).toContain("shadow-e1");
     });
 
     it("variant='flat' drops the shadow", () => {
       const { container } = render(<Card variant="flat">x</Card>);
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("bg-panel");
+      // No elevation utility on a flat card (no `shadow-e*`, no legacy
+      // alias). Asserting both surfaces guards against accidental drift.
+      expect(cls).not.toMatch(/\bshadow-e\d\b/);
       expect(cls).not.toContain("shadow-card");
       expect(cls).not.toContain("shadow-float");
     });
 
-    it("variant='elevated' uses shadow-float", () => {
+    it("variant='elevated' lifts to elevation e3 (overlay tier)", () => {
       const { container } = render(<Card variant="elevated">x</Card>);
       const cls = container.firstElementChild!.className;
-      expect(cls).toContain("shadow-float");
+      expect(cls).toContain("shadow-e3");
     });
 
     it("variant='ghost' is transparent without border", () => {
@@ -179,7 +185,9 @@ describe("Card", () => {
       );
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("transition-interactive");
-      expect(cls).toContain("hover:shadow-float");
+      // Hover lifts the card from elevation e1 → e2 (still in the
+      // page-level z-base tier, no z-index bump on hover).
+      expect(cls).toContain("hover:shadow-e2");
       expect(cls).toContain("border-finyk-soft-border");
     });
 

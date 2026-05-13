@@ -173,6 +173,95 @@ export const statusHex = {
 };
 
 /**
+ * Elevation scale — semantic, layered shadows for the entire surface
+ * stack. Each level pairs a `light` and `dark` recipe; consumers read
+ * the corresponding CSS variable (`--shadow-e0…--shadow-e5`) so the
+ * shadow flips automatically when `.dark` is toggled — never use
+ * `dark:shadow-*` Tailwind variants (Hard Rule #13).
+ *
+ * Semantics (level → typical role → matching z-index tier):
+ *   e0  flat        no shadow — page background / sections / inputs    z-base
+ *   e1  raised      default `Card`, list rows, panels                  z-base
+ *   e2  interactive hover lift on cards / buttons / pressables         z-base
+ *   e3  overlay     popovers, dropdowns, menus, segmented hover        z-dropdown
+ *   e4  modal       Modal panels, Sheets, drawers                      z-modal
+ *   e5  toast       Toasts, snackbars, top-most ephemeral surfaces     z-toast
+ *
+ * Why two themes:
+ *   In light mode the shadow is the dominant depth cue (soft warm
+ *   umber with a faint inset top highlight to mimic a physical
+ *   surface). In dark mode the surface itself can't get darker than
+ *   the background, so we lean on a *stronger* shadow + a brighter
+ *   inset top edge to read a level up. Same level → same perceived
+ *   prominence across themes.
+ *
+ * Authoring rule:
+ *   Always pick the smallest level that conveys the role. Don't reach
+ *   for `e4` on a card just because it should "pop"; that's how the
+ *   UI started looking flat and amateur — every surface used the same
+ *   muddy `shadow-card`. The pairing with z-index tier is intentional:
+ *   if you bump elevation, you bump the z-tier too (and vice versa).
+ */
+export const elevation = {
+  e0: {
+    light: "none",
+    dark: "none",
+  },
+  e1: {
+    light:
+      "0 1px 2px rgba(28, 25, 23, 0.04), 0 2px 6px rgba(28, 25, 23, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)",
+    dark: "0 1px 2px rgba(0, 0, 0, 0.30), 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+  },
+  e2: {
+    light:
+      "0 1px 3px rgba(28, 25, 23, 0.06), 0 6px 16px rgba(28, 25, 23, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9)",
+    dark: "0 2px 4px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
+  },
+  e3: {
+    light:
+      "0 2px 8px rgba(28, 25, 23, 0.08), 0 12px 24px rgba(28, 25, 23, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+    dark: "0 3px 10px rgba(0, 0, 0, 0.40), 0 14px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+  },
+  e4: {
+    light:
+      "0 4px 16px rgba(28, 25, 23, 0.10), 0 24px 48px rgba(28, 25, 23, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+    dark: "0 6px 18px rgba(0, 0, 0, 0.45), 0 28px 56px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+  },
+  e5: {
+    light:
+      "0 8px 24px rgba(28, 25, 23, 0.12), 0 32px 64px rgba(28, 25, 23, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+    dark: "0 10px 28px rgba(0, 0, 0, 0.50), 0 36px 72px rgba(0, 0, 0, 0.70), inset 0 1px 0 rgba(255, 255, 255, 0.07)",
+  },
+};
+
+/**
+ * Z-index tier — semantic stacking levels that must move in lockstep
+ * with the elevation scale. Authoring rule: an element at elevation
+ * `eN` belongs in the matching `z-*` tier (e0/e1/e2 → base, e3 →
+ * dropdown, e4 → modal, e5 → toast). Mismatched pairs are how
+ * popovers end up under modals and toasts get hidden by drawers.
+ *
+ * Numeric values are spaced so future intermediate tiers can be
+ * inserted without renumbering. `sticky` sits above `dropdown`
+ * because a sticky header should still cover a body-level popover.
+ *
+ *   z-base       0    — page content, cards, buttons, e0..e2 surfaces
+ *   z-dropdown  50    — popovers, tooltips, menus, e3 surfaces
+ *   z-sticky   100    — sticky headers, sticky table headers
+ *   z-overlay  150    — non-modal overlays, scrims behind a modal
+ *   z-modal    200    — Modal, Sheet, drawer (e4 surfaces)
+ *   z-toast    300    — Toasts, snackbars (e5 surfaces; always on top)
+ */
+export const zTier = {
+  base: "0",
+  dropdown: "50",
+  sticky: "100",
+  overlay: "150",
+  modal: "200",
+  toast: "300",
+};
+
+/**
  * Chart hex tokens — semantic names for inline-styled chart primitives
  * that accept a raw `"#rrggbb"` string (SVG `fill` / `stroke`, canvas
  * contexts, `style={{ color }}`). Each key maps to exactly one design

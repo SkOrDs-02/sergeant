@@ -94,6 +94,34 @@ export interface DrainSyncOpOutboxOptions {
    * production callers pass `new Date()`.
    */
   readonly now: Date;
+  /**
+   * Optional sink invoked once per poison row encountered while
+   * decoding the drain batch (T3 audit HIGH#3 — poison-row
+   * quarantine). Production wiring: forward to `addBreadcrumb` /
+   * `captureException` so SRE has Sentry visibility on every
+   * quarantine event; tests assert the call shape.
+   *
+   * Invoked AFTER the row has been UPDATE-d to `status='quarantined'`
+   * with the populated `reject_reason`, so the callback is purely
+   * observational. If the callback itself throws, drainSyncOpOutbox
+   * lets the throw propagate — a misbehaving callback should not
+   * silently swallow.
+   */
+  readonly onQuarantine?: (event: OutboxQuarantineEvent) => void;
+}
+
+/**
+ * Diagnostic event handed to {@link DrainSyncOpOutboxOptions.onQuarantine}
+ * for each row that was moved to `status='quarantined'` because
+ * decoding failed inside the drain batch. The `reason` matches the
+ * `reject_reason` column that was just written, so callers can
+ * synthesize a one-liner Sentry message without re-querying SQLite.
+ */
+export interface OutboxQuarantineEvent {
+  readonly id: number;
+  readonly tableName: string;
+  readonly op: string;
+  readonly reason: string;
 }
 
 export interface DrainedOutboxRow {
@@ -153,23 +181,27 @@ const SUPPORTED_OPS: ReadonlySet<string> = new Set(SYNC_OP_OUTBOX_OPS);
 /**
  * Read pending, due ops from `sync_op_outbox` in insertion order.
  *
+ * Returns the subset of rows that decoded cleanly. Rows that fail
+ * to decode (T3 audit HIGH#3 — "poison rows": unparseable JSON,
+ * non-object payload, or `op` outside the supported tuple) are
+ * UPDATE-d in place to `status='quarantined'` with a populated
+ * `reject_reason`, so the next drain tick advances past them
+ * instead of head-of-line blocking the entire writer-runtime.
+ *
  * Returns an empty array when nothing is due, when `limit <= 0`, or
- * when the table is empty. Throws on:
+ * when the table is empty.
  *
- *   - a `row` column that fails `JSON.parse`,
- *   - a `row` column that parses to a non-object (`null`, array,
- *     primitive),
- *   - an `op` literal outside {@link SYNC_OP_OUTBOX_OPS}.
- *
- * All three indicate a schema-invariant violation that the caller
- * must surface (dead-letter the row, fail the drain tick) rather
- * than skip silently.
+ * The per-row quarantine UPDATE is best-effort: a failure to write
+ * the status (e.g. the SQLite client is in a read-only transient
+ * state) is caught and logged via {@link DrainSyncOpOutboxOptions.onQuarantine}
+ * with `reason='quarantine_failed:<message>'` so the next tick can
+ * try again. The decoded-clean rows are still returned regardless.
  */
 export async function drainSyncOpOutbox(
   client: SqliteMigrationClient,
   options: DrainSyncOpOutboxOptions,
 ): Promise<DrainedOutboxRow[]> {
-  const { limit, now } = options;
+  const { limit, now, onQuarantine } = options;
   if (!Number.isFinite(limit) || limit <= 0) {
     return [];
   }
@@ -187,42 +219,87 @@ export async function drainSyncOpOutbox(
     [nowIso, cap],
   );
 
-  return rows.map(parseDrainedRow);
+  const decoded: DrainedOutboxRow[] = [];
+  for (const raw of rows) {
+    const result = tryParseDrainedRow(raw);
+    if (result.kind === "ok") {
+      decoded.push(result.row);
+      continue;
+    }
+    // Poison row — move it to 'quarantined' so the next tick skips
+    // it. The UPDATE is best-effort; if it fails we still report the
+    // quarantine event so the runtime can breadcrumb / alert.
+    let quarantineReason = result.reason;
+    try {
+      await client.run(
+        `UPDATE sync_op_outbox
+            SET status = 'quarantined',
+                reject_reason = ?
+          WHERE id = ?`,
+        [result.reason, raw.id],
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      quarantineReason = `quarantine_failed:${message}`;
+    }
+    if (onQuarantine) {
+      onQuarantine({
+        id: raw.id,
+        tableName: raw.table_name,
+        op: raw.op,
+        reason: quarantineReason,
+      });
+    }
+  }
+  return decoded;
 }
 
-function parseDrainedRow(raw: OutboxRowFromDb): DrainedOutboxRow {
+type ParseResult =
+  | { kind: "ok"; row: DrainedOutboxRow }
+  | { kind: "poison"; reason: string };
+
+function tryParseDrainedRow(raw: OutboxRowFromDb): ParseResult {
   if (!SUPPORTED_OPS.has(raw.op)) {
-    throw new Error(
-      `drainSyncOpOutbox: unsupported op=${JSON.stringify(raw.op)} on row id=${raw.id}; ` +
-        `expected one of ${JSON.stringify(SYNC_OP_OUTBOX_OPS)}`,
-    );
+    return {
+      kind: "poison",
+      reason: `unsupported_op:${raw.op}`,
+    };
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw.row);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      `drainSyncOpOutbox: row id=${raw.id} has unparseable JSON in column "row": ${message}`,
-    );
+    return {
+      kind: "poison",
+      reason: `parse_failed:${message}`,
+    };
   }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(
-      `drainSyncOpOutbox: row id=${raw.id} JSON parsed to non-object ` +
-        `(${parsed === null ? "null" : Array.isArray(parsed) ? "array" : typeof parsed}); ` +
-        `enqueue contract requires a JSON object payload`,
-    );
+    const shape =
+      parsed === null
+        ? "null"
+        : Array.isArray(parsed)
+          ? "array"
+          : typeof parsed;
+    return {
+      kind: "poison",
+      reason: `non_object_payload:${shape}`,
+    };
   }
   return {
-    id: raw.id,
-    table: raw.table_name,
-    op: raw.op as SyncOpOutboxOp,
-    row: parsed as Readonly<Record<string, unknown>>,
-    clientTs: raw.client_ts,
-    idempotencyKey: raw.idempotency_key,
-    attempts: raw.attempts,
-    nextRetryAt: raw.next_retry_at,
-    lastError: raw.last_error,
-    createdAt: raw.created_at,
+    kind: "ok",
+    row: {
+      id: raw.id,
+      table: raw.table_name,
+      op: raw.op as SyncOpOutboxOp,
+      row: parsed as Readonly<Record<string, unknown>>,
+      clientTs: raw.client_ts,
+      idempotencyKey: raw.idempotency_key,
+      attempts: raw.attempts,
+      nextRetryAt: raw.next_retry_at,
+      lastError: raw.last_error,
+      createdAt: raw.created_at,
+    },
   };
 }

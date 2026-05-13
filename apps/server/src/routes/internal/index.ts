@@ -17,6 +17,7 @@ import { createAlertsInternalRouter } from "./alerts.js";
 import { createEvalRagInternalRouter } from "./eval-rag.js";
 import { createMonoInternalRouter } from "./mono.js";
 import { createWebhookEventsInternalRouter } from "./webhook-events.js";
+import { createStrategicInternalRouter } from "./strategic.js";
 
 /**
  * Mounts all /api/internal/* routes behind a shared bearer-token guard.
@@ -65,6 +66,7 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createEvalRagInternalRouter({ pool }));
   router.use(createMonoInternalRouter({ pool }));
   router.use(createWebhookEventsInternalRouter({ pool }));
+  router.use(createStrategicInternalRouter({ pool }));
 
   return router;
 }

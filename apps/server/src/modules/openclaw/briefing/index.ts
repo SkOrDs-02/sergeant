@@ -7,13 +7,18 @@
  */
 
 export { buildMorningBriefing } from "./template.js";
-export { assembleMorningBriefing } from "./builder.js";
+export {
+  assembleMorningBriefing,
+  generateProposalsSection,
+} from "./builder.js";
+export type { AssembleMorningBriefingOptions } from "./builder.js";
 export type {
   AlertsBriefingSection,
   AssembleMorningBriefingInput,
   MorningBriefingData,
   MorningBriefingResponse,
   PrQueueBriefingSection,
+  ProposalsBriefingSection,
   SignupsBriefingSection,
   StripeBriefingSection,
   WorkflowsBriefingSection,

@@ -187,9 +187,32 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
   sentry.setSentryTag("sync.origin_device_id_present", "true");
 
+  // T3 audit HIGH#3: surface every poison-row quarantine via Sentry
+  // so SRE has visibility on the corruption class that was previously
+  // a silent head-of-line stall. The breadcrumb is enough — we do NOT
+  // captureException because a single corrupt row in an otherwise
+  // healthy outbox is not an "error" to alert on; the alerting layer
+  // builds a Grafana counter off these breadcrumbs.
+  const onOutboxQuarantine = (event: {
+    readonly id: number;
+    readonly tableName: string;
+    readonly op: string;
+    readonly reason: string;
+  }): void => {
+    sentry.addSentryBreadcrumb({
+      category: "sync",
+      level: "warning",
+      message: `sync_op_outbox.quarantine id=${event.id} table=${event.tableName} op=${event.op} reason=${event.reason}`,
+    });
+  };
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
-      drain: (options) => dbSchema.drainSyncOpOutbox(client, options),
+      drain: (options) =>
+        dbSchema.drainSyncOpOutbox(client, {
+          ...options,
+          onQuarantine: onOutboxQuarantine,
+        }),
       push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
       markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
       markRetry: (id, plan) => dbSchema.markOutboxRetry(client, id, plan),

@@ -53,19 +53,10 @@ export function ColorsSection() {
         </div>
       </Group>
 
-      <Group label="Тіні">
-        <div className="flex flex-wrap gap-4">
-          <div className="shadow-soft bg-panel rounded-2xl border border-line px-4 py-3 text-xs text-muted font-mono">
-            shadow-soft
-          </div>
-          <div className="shadow-card bg-panel rounded-2xl border border-line px-4 py-3 text-xs text-muted font-mono">
-            shadow-card
-          </div>
-          <div className="shadow-float bg-panel rounded-2xl border border-line px-4 py-3 text-xs text-muted font-mono">
-            shadow-float
-          </div>
-        </div>
-      </Group>
+      {/* Тіні winnowed out of Colors and promoted into its own
+          standalone "Елевація" section — see ElevationSection. The
+          legacy aliases (`shadow-soft / card / float`) are documented
+          there alongside the canonical `shadow-e0..shadow-e5` scale. */}
     </Sec>
   );
 }

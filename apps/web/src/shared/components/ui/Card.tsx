@@ -101,15 +101,22 @@ const paddings: Record<CardPadding, string> = {
 // ─── Non-module surfaces ──────────────────────────────────────────────
 // Reach for these when the card is **not** branded for a module.
 // Padding and radius are layered on top of these by the wrapper below.
+// Maps onto the semantic elevation scale (e0..e5) from
+// `packages/design-tokens`. `default` is e1 (raised card), `interactive`
+// rests at e1 and lifts to e2 on hover (matches the new hover-lift
+// contract), and `elevated` sits at e3 so it reads as a clearly higher
+// surface than a default card. The `shadow-card` / `shadow-float`
+// aliases still resolve here for back-compat in product code, but
+// new code below uses the explicit `shadow-eN` utilities.
 const NON_MODULE_PROMINENCE: Record<
   Exclude<CardProminence, "hero" | "soft" | "tinted">,
   string
 > = {
-  default: "bg-panel border border-line shadow-card",
+  default: "bg-panel border border-line shadow-e1",
   interactive:
-    "bg-panel border border-line shadow-card transition-interactive hover:shadow-float hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer",
+    "bg-panel border border-line shadow-e1 transition-interactive hover:shadow-e2 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer",
   flat: "bg-panel border border-line",
-  elevated: "bg-panel border border-line shadow-float",
+  elevated: "bg-panel border border-line shadow-e3",
   ghost: "bg-transparent border border-transparent",
 };
 
