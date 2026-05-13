@@ -773,6 +773,20 @@ appBuildInfo
   })
   .set(1);
 
+// ───────────────────────── Log retention archive ───────────────
+// Лічильник рядків, оброблених background-архіватором `openclaw_invocations`
+// / `tg_alert_acks` / `n8n_webhook_events` (див.
+// `apps/server/src/modules/logRetention/archivePoller.ts`).
+// `outcome` — фінальний стан батча: `archived` (upload + DELETE OK),
+// `upload_failed` (GCS відмовив → DB rows збережені), `noop` (нічого
+// під TTL не потрапило).
+export const logArchiveRowsTotal = new client.Counter({
+  name: "openclaw_log_archive_rows_total",
+  help: "Rows processed by the log retention archiver, by table + outcome",
+  labelNames: ["table", "outcome"],
+  registers: [register],
+});
+
 // ───────────────────────── Mono webhook ───────────────────────
 export const monoWebhookReceivedTotal = new client.Counter({
   name: "mono_webhook_received_total",

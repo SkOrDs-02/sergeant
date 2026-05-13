@@ -69,6 +69,7 @@ import {
 } from "./obs/metrics.js";
 import { applyInfraMonthlyCosts, applyVoyageDailyBudget } from "./obs/cost.js";
 import { anthropicBudgetGuard } from "./obs/anthropicBudgetGuard.js";
+import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { Sentry } from "./sentry.js";
 
@@ -172,6 +173,22 @@ const webhookEventsRetentionPoller = new WebhookEventsRetentionPoller({
   intervalMs: env.WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS,
 });
 webhookEventsRetentionPoller.start();
+
+// Log-retention archive cron — opt-in (`LOG_ARCHIVE_ENABLED=true`).
+// Streams `openclaw_invocations` / `tg_alert_acks` / `n8n_webhook_events`
+// rows older than `LOG_RETENTION_DAYS` to GCS as gzipped JSONL, then
+// DELETE-s them. Fail-closed on archive errors (rows stay in DB).
+// Co-exists with `webhookEventsRetentionPoller` — both pollers are
+// idempotent on overlapping rows.
+const logArchivePoller = new LogArchivePoller({
+  pool,
+  enabled: env.LOG_ARCHIVE_ENABLED,
+  retentionDays: env.LOG_RETENTION_DAYS,
+  intervalMs: env.LOG_ARCHIVE_POLL_INTERVAL_MS,
+  batchSize: env.LOG_ARCHIVE_BATCH_SIZE,
+  bucket: env.GCS_LOG_ARCHIVE_BUCKET,
+});
+logArchivePoller.start();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
@@ -326,6 +343,15 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     } catch (err) {
       logger.warn({
         msg: "webhook_events_retention_poller_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
+    }
+
+    try {
+      await logArchivePoller.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "log_archive_poller_stop_error",
         err: serializeError(err, { includeStack: false }),
       });
     }

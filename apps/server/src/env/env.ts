@@ -839,6 +839,30 @@ const envSchema = z.object({
   /** Інтервал в мілісекундах для retention-cleanup tick-у. Default 1h; 0 → off. */
   WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
 
+  // ── Log retention archive (`apps/server/src/modules/logRetention`) ──
+  /**
+   * Opt-in master switch для GCS-архіватора `openclaw_invocations` /
+   * `tg_alert_acks` / `n8n_webhook_events`. Default `false`, тож existing
+   * deploy-и не вмикаються автоматично — для увімкнення треба явно
+   * `LOG_ARCHIVE_ENABLED=true` + сетити `GCS_LOG_ARCHIVE_BUCKET`.
+   */
+  LOG_ARCHIVE_ENABLED: boolFromEnv(false),
+  /**
+   * Скільки днів зберігати audit-rows у live DB перед archive+DELETE.
+   * Default 30. 0 → archiver не виконує ніяких DELETE-ів (зберігаємо
+   * все назавжди — корисно для compliance freeze).
+   */
+  LOG_RETENTION_DAYS: intFromEnv(30),
+  /** Інтервал в мілісекундах. Default 1h; 0 → off. */
+  LOG_ARCHIVE_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
+  /** Скільки рядків брати у батч на таблицю на tick. Default 1000. */
+  LOG_ARCHIVE_BATCH_SIZE: intFromEnv(1000),
+  /**
+   * Цільовий GCS-бакет. Пусто → poller лоґує warning і пропускає
+   * batches (rows залишаються в DB).
+   */
+  GCS_LOG_ARCHIVE_BUCKET: stringWithDefault(""),
+
   // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
   /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
   RAILWAY_MONTHLY_COST_USD: floatFromEnv(0),
