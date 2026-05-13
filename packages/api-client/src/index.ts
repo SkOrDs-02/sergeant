@@ -220,10 +220,12 @@ export {
   createBillingEndpoints,
   BillingCheckoutRequestBodySchema,
   BillingCheckoutResponseBodySchema,
+  BillingPortalResponseBodySchema,
   BillingStatusResponseBodySchema,
   type BillingCheckoutRequest,
   type BillingCheckoutResponse,
   type BillingEndpoints,
+  type BillingPortalResponse,
   type BillingStatusResponse,
 } from "./endpoints/billing";
 

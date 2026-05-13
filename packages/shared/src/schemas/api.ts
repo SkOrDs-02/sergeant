@@ -1064,6 +1064,18 @@ export const BillingStatusResponseSchema = z.object({
 });
 export type BillingStatusResponse = z.infer<typeof BillingStatusResponseSchema>;
 
+// `POST /api/billing/portal` — створює Stripe Customer Portal session і
+// повертає короткоживучий redirect-URL для self-serve cancel / update
+// payment / change plan. Endpoint доступний лише для користувачів з
+// active/trialing/past_due підпискою (у яких є `provider_customer_id`);
+// інакше — `409 NO_BILLING_CUSTOMER`. Якщо `STRIPE_SECRET_KEY` не
+// сконфігурований — `503 BILLING_UNAVAILABLE` (як у `/checkout`).
+export const BillingPortalResponseSchema = z.object({
+  ok: z.literal(true),
+  url: z.string().url(),
+});
+export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
+
 // ────────────────────── Transcribe (Groq Whisper proxy) ─────────────────────
 // `POST /api/transcribe` приймає сире audio-тіло (Content-Type: `audio/*`),
 // query визначає мову/prompt. Schema тут — SSOT і для server-side

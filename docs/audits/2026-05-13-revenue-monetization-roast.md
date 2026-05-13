@@ -20,7 +20,7 @@
 1. **Paywall modal відсутній** — PAYWALL_VIEWED оголошений, але ніде не емітиться; Pro-gate UI не існує → free users бачать Pro-фічі без обмежень.
 2. **`usePlan` hook не існує** — web-сторона не знає план користувача; downstream (paywall, settings, AI-ліміти) не може gate-ити.
 3. **Webhook lifecycle неповний** — `subscription_started` emit працює, але `subscription_renewed` і `subscription_canceled` — ні. MRR / churn dashboards PostHog неможливі.
-4. **Customer Portal endpoint відсутній** — self-serve cancel / update payment — лише Stripe Dashboard.
+4. ~~**Customer Portal endpoint відсутній** — self-serve cancel / update payment — лише Stripe Dashboard.~~ → Closed: `POST /api/billing/portal` shipped (P0-6 follow-up PR); UI-кнопка в `PlanSection` чекає P1-6.
 5. **Analytics event registry неповний** — initiative 0010 Phases 4–6 потребує ACTIVATION_V2_HIT, LANDING_VIEWED, LANDING_EMAIL_CAPTURED, SIGNUP_PROVIDER_SELECTED — жодного не було в canonical registry.
 6. **billingKeys factory пропущена** — Hard Rule #2 compliance gap для billing domain RQ queries.
 7. **Landing page (Phase 6.1) — 0 LOC** — публічний `/` для SEO/paid-acquisition не існує.
@@ -37,7 +37,7 @@
 | P0-3 | billingKeys factory (Hard Rule #2)               | **Add** | `apps/web/src/shared/lib/api/queryKeys.ts:101–111` | **Done (PR)** |
 | P0-4 | Webhook: subscription_renewed emit               | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
 | P0-5 | Webhook: subscription_canceled emit              | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
-| P0-6 | Customer Portal endpoint (`/api/billing/portal`) | **Add** | `apps/server/src/routes/billing.ts`                | Outstanding   |
+| P0-6 | Customer Portal endpoint (`/api/billing/portal`) | **Add** | `apps/server/src/routes/billing.ts`                | **Done (PR)** |
 | P0-7 | Stripe price_id env-config + validation          | **Add** | `apps/server/src/config/env.ts` (schema)           | Outstanding   |
 
 ## P1 — High (launch quality / funnel completeness)
@@ -138,3 +138,33 @@
 | 10  | `apps/server/src/modules/billing/stripe.test.ts`       | Changed |
 | 11  | `docs/audits/2026-05-13-revenue-monetization-roast.md` | New     |
 | 12  | `docs/audits/README.md`                                | Changed |
+
+## Прогрес виконання (P0-6 follow-up PR — Customer Portal endpoint)
+
+Закрито **1 item** з P0:
+
+### P0-6 · Customer Portal endpoint (`POST /api/billing/portal`) ✅ Зроблено в цьому PR
+
+- **Server:** `apps/server/src/routes/billing.ts` — додано `r.post("/api/billing/portal", requireSession(), rateLimitExpress({ key: "api:billing:portal", limit: 10, windowMs: 1h }), …)`. Помилки маплимо у `503 BILLING_UNAVAILABLE` (немає `STRIPE_SECRET_KEY`) та `409 NO_BILLING_CUSTOMER` (немає `provider_customer_id` у `subscriptions`).
+- **Module:** `apps/server/src/modules/billing/stripe.ts` — нова `createCustomerPortalSession({ pool, userId })` + `NoBillingCustomerError`. Дзеркалить pattern `createCheckoutSession`: дістає `provider_customer_id` із `subscriptions WHERE status IN ('active','trialing','past_due')`, POSTить на `https://api.stripe.com/v1/billing_portal/sessions` із `return_url=${PUBLIC_WEB_BASE_URL}/settings?billing=portal-return`.
+- **Contract triplet (Hard Rule #3):** `BillingPortalResponseSchema` у `packages/shared/src/schemas/api.ts` (SSOT) → OpenAPI registry/routes → `api-client` `createPortal()` + регенерований `docs/api/openapi.json` і `packages/api-client/src/generated/openapi.d.ts`.
+- **Тести:** `apps/server/src/routes/billing.test.ts` — 3 нові кейси (happy path + 503 + 409), мок `globalThis.fetch`. `packages/api-client/src/endpoints/billing.test.ts` — нові unit-тести на `createPortal()` (URL, method) + schema rejection regression-guard.
+- **Web:** `PlanSection` ще не існує (P1-6 outstanding) — endpoint expose-нуто в `api-client` (`http.billing.createPortal()`); UI-кнопка чекає P1-6.
+
+## Файли змінено у P0-6 follow-up PR
+
+| #   | Файл                                                   | Тип                 |
+| --- | ------------------------------------------------------ | ------------------- |
+| 1   | `packages/shared/src/schemas/api.ts`                   | Changed             |
+| 2   | `packages/shared/src/openapi/registry.ts`              | Changed             |
+| 3   | `packages/shared/src/openapi/routes.ts`                | Changed             |
+| 4   | `apps/server/src/modules/billing/stripe.ts`            | Changed             |
+| 5   | `apps/server/src/routes/billing.ts`                    | Changed             |
+| 6   | `apps/server/src/routes/billing.test.ts`               | Changed             |
+| 7   | `packages/api-client/src/endpoints/billing.ts`         | Changed             |
+| 8   | `packages/api-client/src/endpoints/billing.test.ts`    | New                 |
+| 9   | `packages/api-client/src/index.ts`                     | Changed             |
+| 10  | `docs/api/openapi.json`                                | Changed (generated) |
+| 11  | `packages/api-client/src/generated/openapi.d.ts`       | Changed (generated) |
+| 12  | `docs/audits/2026-05-13-revenue-monetization-roast.md` | Changed             |
+| 13  | `docs/audits/README.md`                                | Changed             |

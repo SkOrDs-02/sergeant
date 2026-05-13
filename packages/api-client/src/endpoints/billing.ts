@@ -1,6 +1,7 @@
 import {
   BillingCheckoutRequestSchema,
   BillingCheckoutResponseSchema,
+  BillingPortalResponseSchema,
   BillingStatusResponseSchema,
   z,
 } from "@sergeant/shared";
@@ -10,6 +11,7 @@ import type { RequestOptions } from "../types";
 export const BillingCheckoutRequestBodySchema = BillingCheckoutRequestSchema;
 export const BillingCheckoutResponseBodySchema = BillingCheckoutResponseSchema;
 export const BillingStatusResponseBodySchema = BillingStatusResponseSchema;
+export const BillingPortalResponseBodySchema = BillingPortalResponseSchema;
 
 export type BillingCheckoutRequest = z.infer<
   typeof BillingCheckoutRequestBodySchema
@@ -20,6 +22,9 @@ export type BillingCheckoutResponse = z.infer<
 export type BillingStatusResponse = z.infer<
   typeof BillingStatusResponseBodySchema
 >;
+export type BillingPortalResponse = z.infer<
+  typeof BillingPortalResponseBodySchema
+>;
 
 export interface BillingEndpoints {
   createCheckout: (
@@ -29,6 +34,9 @@ export interface BillingEndpoints {
   status: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<BillingStatusResponse>;
+  createPortal: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingPortalResponse>;
 }
 
 export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
@@ -42,6 +50,12 @@ export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
     status: async ({ signal } = {}) => {
       const raw = await http.get<unknown>("/api/billing/status", { signal });
       return BillingStatusResponseBodySchema.parse(raw);
+    },
+    createPortal: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/billing/portal", undefined, {
+        signal,
+      });
+      return BillingPortalResponseBodySchema.parse(raw);
     },
   };
 }
