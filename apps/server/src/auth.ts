@@ -199,8 +199,21 @@ export const auth = betterAuth({
       });
     },
   },
+  /**
+   * 7-day hard expiry + 1-day rolling refresh. Active користувачі
+   * (≥1 запит/день) ніколи не бачать logout — `updateAge` подовжує сесію
+   * на чергові 7 днів. Холодні сесії після 7 днів простою — re-login.
+   *
+   * Вибір 7d (а не 30/90 typical для consumer SaaS) — security trade-off
+   * для daily-habit app: ризик украденого cookie обмежений тижнем, а
+   * active-user UX не страждає завдяки rolling refresh. Деталі —
+   * ADR-0017 і `docs/security/better-auth-audit-2026-05.md`.
+   *
+   * `cookieCache.maxAge` 5 хв — підписана JWT-style cookie кеш, який
+   * `requireSession` валідує без DB-look-up. 30× швидший за SELECT.
+   */
   session: {
-    expiresIn: 60 * 60 * 24 * 30,
+    expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
