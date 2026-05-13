@@ -1,9 +1,9 @@
 /**
  * `/api/internal/openclaw/*` — internal HTTP API для OpenClaw bot
- * (tools/console DM-handler).
+ * (tools/openclaw DM-handler).
  *
  * Архітектура (ADR-0031 §5):
- *   tools/console (DM bot)     ──HTTP──▶  apps/server /api/internal/openclaw/*
+ *   tools/openclaw (DM bot)     ──HTTP──▶  apps/server /api/internal/openclaw/*
  *                                          ├─ recall      (recall_memory)
  *                                          ├─ strategy    (read_strategy_docs)
  *                                          ├─ query       (query_app_db)
@@ -15,7 +15,7 @@
  *                                          ├─ invocations/open
  *                                          └─ invocations/finalize
  *
- * Чому tool execution тут, а не у `tools/console`:
+ * Чому tool execution тут, а не у `tools/openclaw`:
  *   - Single-process pgvector / Postgres connection pool.
  *   - Allowlist-enforcement в одному місці (compromised console process
  *     не може bypass-ити).

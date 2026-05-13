@@ -1,8 +1,7 @@
 import { Bot } from "grammy";
 
 /**
- * Process-level lifecycle handlers for the console (Sergeant Console +
- * OpenClaw) bot host.
+ * Process-level lifecycle handlers for the OpenClaw bot host.
  *
  * Pain P9 (`docs/launch/tech/telegram-improvements-roadmap.md`):
  *
@@ -19,7 +18,8 @@ import { Bot } from "grammy";
  *     even when Sentry samples).
  *  2. Adding a tight randomized jitter (default 1–3s) before `exit(1)`
  *     so back-to-back crashes do not blow through Railway's
- *     `restartPolicyMaxRetries=10` (`railway.console.toml`) inside
+ *     `restartPolicyMaxRetries=10` (`railway.console.toml` — phase-2
+ *     rename to `railway.openclaw.toml`) inside
  *     seconds. With 10 restarts × ~2s in-process delay + ~10s Railway
  *     rebuild + restart, the supervisor sees ≥120s of attempts before
  *     giving up — comfortably under any incident-paging threshold.
@@ -82,8 +82,8 @@ function logFatal(
       : { name: "non-error", message: String(err) };
   const entry = {
     level: "fatal",
-    service: "sergeant-console",
-    msg: "console_fatal_exit",
+    service: "sergeant-openclaw",
+    msg: "openclaw_fatal_exit",
     reason,
     delay_ms: delayMs,
     err: errPayload,
@@ -144,7 +144,7 @@ export interface RegisterProcessLifecycleOptions {
 }
 
 /**
- * Wires the four process-level events the console host cares about:
+ * Wires the four process-level events the OpenClaw host cares about:
  *
  *  - `uncaughtException` / `unhandledRejection` → backoff + exit 1
  *  - `SIGTERM` / `SIGINT` → bot.stop() (releases TG slot) + exit 0
@@ -184,7 +184,7 @@ export function registerProcessLifecycle(
     log(
       JSON.stringify({
         level: "info",
-        service: "sergeant-console",
+        service: "sergeant-openclaw",
         msg: "signal_received",
         signal,
         bot_count: bots.length,
@@ -198,7 +198,7 @@ export function registerProcessLifecycle(
       log(
         JSON.stringify({
           level: "warn",
-          service: "sergeant-console",
+          service: "sergeant-openclaw",
           msg: "shutdown_hard_timeout",
           signal,
           ts: new Date().toISOString(),
@@ -220,7 +220,7 @@ export function registerProcessLifecycle(
           log(
             JSON.stringify({
               level: "warn",
-              service: "sergeant-console",
+              service: "sergeant-openclaw",
               msg: "bot_stop_failed",
               label: entry?.label ?? null,
               reason:
@@ -234,7 +234,7 @@ export function registerProcessLifecycle(
       log(
         JSON.stringify({
           level: "info",
-          service: "sergeant-console",
+          service: "sergeant-openclaw",
           msg: "shutdown_complete",
           signal,
           ts: new Date().toISOString(),

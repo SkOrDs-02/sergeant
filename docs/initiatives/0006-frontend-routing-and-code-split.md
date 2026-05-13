@@ -237,5 +237,5 @@ DOR для Phase 1 (`feat-react-router-setup`): після введення `<Ro
 - `react-router@7` не доданий — це Phase 1; rule свідомо стоїть до залежності, щоб зафіксувати baseline без ризику регресій рантайму.
 - `<HashRedirect />` shim не реалізовано — Phase 3, після per-route migration; інакше hash-redirect ламає `useHashRouter` під час перехідного стану.
 - Auto-fix-ера не додано — заміна `useHashRouter()` на `useNavigate()` потребує контексту (router-context, відсутній до Phase 1); ручна міграція робиться по одному модулю на PR (Phase 2).
-- Rule НЕ покриває `apps/mobile/**` / `apps/server/**` / `tools/console/**` — мобільний має React Navigation (інша stack), сервер — без DOM, console — Telegram bot.
+- Rule НЕ покриває `apps/mobile/**` / `apps/server/**` / `tools/openclaw/**` — мобільний має React Navigation (інша stack), сервер — без DOM, console — Telegram bot.
 - Rule НЕ блокує `addEventListener("hashchange", ...)` — підписка на hashchange валідна для compat-shim Phase 3 і тестів.

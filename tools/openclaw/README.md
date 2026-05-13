@@ -1,6 +1,6 @@
-# @sergeant/console
+# @sergeant/openclaw
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Внутрішня ops-консоль Sergeant — Telegram-бот з multi-agent AI (ops + marketing). Використовує grammy + Anthropic Claude.
@@ -29,21 +29,21 @@ src/
 ## Запуск
 
 ```bash
-cp tools/console/.env.example tools/console/.env
+cp tools/openclaw/.env.example tools/openclaw/.env
 # Заповни CONSOLE_BOT_TOKEN, ALLOWED_USER_IDS, ANTHROPIC_API_KEY
 
-pnpm --filter @sergeant/console dev     # tsx watch
-pnpm --filter @sergeant/console build   # tsc
-pnpm --filter @sergeant/console start   # node dist/index.js
+pnpm --filter @sergeant/openclaw dev     # tsx watch
+pnpm --filter @sergeant/openclaw build   # tsc
+pnpm --filter @sergeant/openclaw start   # node dist/index.js
 ```
 
 ## Середовище
 
-Див. [`tools/console/.env.example`](.env.example) — потрібні `CONSOLE_BOT_TOKEN`, `ALLOWED_USER_IDS`, `ANTHROPIC_API_KEY`. Опціонально: `SERVER_INTERNAL_URL`, `INTERNAL_API_KEY`.
+Див. [`tools/openclaw/.env.example`](.env.example) — потрібні `CONSOLE_BOT_TOKEN`, `ALLOWED_USER_IDS`, `ANTHROPIC_API_KEY`. Опціонально: `SERVER_INTERNAL_URL`, `INTERNAL_API_KEY`.
 
 ## Тести
 
 ```bash
-pnpm --filter @sergeant/console test       # Vitest
-pnpm --filter @sergeant/console typecheck  # TypeScript
+pnpm --filter @sergeant/openclaw test       # Vitest
+pnpm --filter @sergeant/openclaw typecheck  # TypeScript
 ```

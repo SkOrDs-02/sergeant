@@ -4,7 +4,7 @@
  * Single agent turn for both free-form DM messages and slash-command
  * shortcuts (`/status`, `/metrics`, `/ops <q>`, …). Owns the audit-log
  * lifecycle (open → finalize) plus per-turn budget gate. The agent
- * loop itself lives in `tools/console/src/agents/openclaw.ts` —
+ * loop itself lives in `tools/openclaw/src/agents/openclaw.ts` —
  * we just wire deps and surface the reply.
  *
  * Boundary semantics (fail-closed):

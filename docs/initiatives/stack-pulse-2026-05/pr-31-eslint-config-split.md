@@ -24,7 +24,7 @@
 - Packages/shared (isomorphic)
 - Packages/api-client (no React)
 - Packages/eslint-plugin-sergeant-design (meta — lint самого плагіну)
-- tools/console (Telegram bot, Node)
+- tools/openclaw (Telegram bot, Node)
 
 Issues:
 
@@ -45,7 +45,7 @@ eslint.config.js                       (root — base + shared rules)
 ├── packages/shared/eslint.config.js   (extends root + isomorphic)
 ├── packages/api-client/eslint.config.js
 ├── packages/eslint-plugin-sergeant-design/eslint.config.js
-└── tools/console/eslint.config.js
+└── tools/openclaw/eslint.config.js
 ```
 
 Root config — тільки **shared baseline**: TypeScript-base, prettier-conflict-disable, sergeant-design-plugin v0.X (поточний minimum).
@@ -110,7 +110,7 @@ Per-app lint runs паралельно (Turbo).
 - `eslint.config.js:1-1073` — split source
 - `apps/{server,web,mobile,mobile-shell}/eslint.config.js` — new
 - `packages/{shared,api-client,eslint-plugin-sergeant-design}/eslint.config.js` — new
-- `tools/console/eslint.config.js` — new
+- `tools/openclaw/eslint.config.js` — new
 - `turbo.json` — додати lint task
 - `docs/development/eslint-config.md` — new
 

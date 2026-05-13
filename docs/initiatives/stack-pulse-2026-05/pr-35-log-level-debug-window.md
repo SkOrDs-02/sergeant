@@ -1,17 +1,17 @@
 # PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Partially closed (server-side merged via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec)); `tools/console` `/debug-window` CLI винесено у follow-up (див. нижче).
+> **Status:** Partially closed (server-side merged via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec)); `tools/openclaw` `/debug-window` CLI винесено у follow-up (див. нижче).
 
-|                    |                                                                                |
-| ------------------ | ------------------------------------------------------------------------------ |
-| **Severity**       | Low (L8)                                                                       |
-| **Linked finding** | L8 (`00-overview.md`)                                                          |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
-| **Effort**         | 0.5 дня                                                                        |
-| **Risk**           | Low (logging policy зміна; не міняє runtime behavior)                          |
-| **Touches**        | `apps/server/src/obs/logger.ts`, `apps/server/src/env/env.ts`, `tools/console` |
-| **Trigger**        | next debugging session коли `LOG_LEVEL=debug` потрібно тимчасово               |
+|                    |                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------- |
+| **Severity**       | Low (L8)                                                                        |
+| **Linked finding** | L8 (`00-overview.md`)                                                           |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                       |
+| **Effort**         | 0.5 дня                                                                         |
+| **Risk**           | Low (logging policy зміна; не міняє runtime behavior)                           |
+| **Touches**        | `apps/server/src/obs/logger.ts`, `apps/server/src/env/env.ts`, `tools/openclaw` |
+| **Trigger**        | next debugging session коли `LOG_LEVEL=debug` потрібно тимчасово                |
 
 ## Контекст
 
@@ -60,7 +60,7 @@ Pino `level()` setter dynamically swap-ається на check.
 
 ### 3. CLI command
 
-`tools/console` Telegram bot:
+`tools/openclaw` Telegram bot:
 
 - `/debug-window 5m` — enable for 5 хв (max 30 хв).
 - `/debug-window-status` — show remaining.
@@ -90,15 +90,15 @@ Pino `level()` setter dynamically swap-ається на check.
 - [x] Auto-revert + 30-min hard ceiling — `DEBUG_WINDOW_MAX_MS = 30 * 60 * 1000` у `logger.ts`; `Math.min(durationMs, DEBUG_WINDOW_MAX_MS)` при enable.
 - [x] Tests pass — `apps/server/src/obs/__tests__/logger-debug-window.test.ts` (7 кейсів: базовий level / enable → debug / expire → base / `debugWindowRemainingMs` поведінка / 30-min cap / `disableDebugWindow` clears).
 - [x] [`docs/observability/log-levels.md`](../../observability/log-levels.md) — production-`info` / dev-`debug` policy + Telegram `/debug-window` UX.
-- [ ] `tools/console` `/debug-window` command з role-check `ops` — **deferred** у follow-up (див. "Follow-up scope" нижче).
+- [ ] `tools/openclaw` `/debug-window` command з role-check `ops` — **deferred** у follow-up (див. "Follow-up scope" нижче).
 - [ ] Sentry alert на >30 хв window — **не потрібно** без CLI-bypass: 30-min hard ceiling уже не дає ввімкнути більше (`enableDebugWindow` clamp); ре-оцінити при CLI follow-up-і якщо в CLI буде retry-loop з 'continuous-debug' патерном.
 
 ## Follow-up scope (CLI)
 
-`tools/console` (OpenClaw DM bot) додавання `/debug-window` вимагає всіх п'яти хуків grammy + внутрішнього API:
+`tools/openclaw` (OpenClaw DM bot) додавання `/debug-window` вимагає всіх п'яти хуків grammy + внутрішнього API:
 
-1. Реєстрація команд у [`tools/console/src/openclaw/commands.ts`](../../../tools/console/src/openclaw/commands.ts) — `/debug-window`, `/debug-window-status`.
-2. Handler-и у [`tools/console/src/openclaw/handler-commands.ts`](../../../tools/console/src/openclaw/handler-commands.ts) з `isFounderAllowed` + `isPrivateChat` гейтами.
+1. Реєстрація команд у [`tools/openclaw/src/openclaw/commands.ts`](../../../tools/openclaw/src/openclaw/commands.ts) — `/debug-window`, `/debug-window-status`.
+2. Handler-и у [`tools/openclaw/src/openclaw/handler-commands.ts`](../../../tools/openclaw/src/openclaw/handler-commands.ts) з `isFounderAllowed` + `isPrivateChat` гейтами.
 3. Internal endpoint у `apps/server/src/routes/internal/debug-window.ts` з `requireInternalApiKey` (PR-27 вже merged) + виклик `enableDebugWindow`/`disableDebugWindow`.
 4. Синхронний audit-рядок у `internal_api_keys` table (PR-27 dependency).
 5. Unit-test grammy handler-ів + e2e через mock-и `postJson`.
@@ -108,7 +108,7 @@ Pino `level()` setter dynamically swap-ається на check.
 ## Тести
 
 - Unit (мерджені): `apps/server/src/obs/__tests__/logger-debug-window.test.ts` — enable → debug, expire → base, 30-min cap, `disableDebugWindow` clears window, `debugWindowRemainingMs` поведінка у idle / active state-ах.
-- Integration: `tools/console` CLI command — відкладено разом з CLI follow-up-ом.
+- Integration: `tools/openclaw` CLI command — відкладено разом з CLI follow-up-ом.
 - Manual smoke: `enableDebugWindow(5*60_000, "test")` → pino runtime level світає у `debug` протягом ≤5s (через 5-секундний sync interval), потім повертається до `info` (verified manually на staging).
 - Cost guard: production deploys без manual `enableDebugWindow()` залишаються на `info` → Datadog/Loki log-volume стабільний.
 
@@ -127,7 +127,7 @@ Pino `level()` setter dynamically swap-ається на check.
 
 - `apps/server/src/env/env.ts` — LOG_LEVEL field
 - `apps/server/src/obs/logger.ts` — Pino instance + debug-window logic
-- `tools/console/src/agents/ops/debugWindow.ts` — new
+- `tools/openclaw/src/agents/ops/debugWindow.ts` — new
 - `apps/server/src/obs/__tests__/logger-debug-window.test.ts` — new
 - `docs/observability/log-levels.md` — new
 

@@ -146,7 +146,7 @@ describe("runWithCrashBackoff", () => {
 
     expect(sentry.addBreadcrumb).toHaveBeenCalledTimes(1);
     const call = sentry.addBreadcrumb.mock.calls[0]![0];
-    expect(call.category).toBe("console.crash-backoff");
+    expect(call.category).toBe("openclaw.crash-backoff");
     expect(call.level).toBe("warning");
     expect(call.data).toMatchObject({
       label: "console",

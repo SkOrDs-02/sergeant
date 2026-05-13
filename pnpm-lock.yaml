@@ -963,7 +963,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5(@opentelemetry/api@1.9.1)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.14.3(@types/node@20.19.39)(typescript@6.0.3))(vite@8.0.10(@types/node@20.19.39)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  tools/console:
+  tools/openclaw:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.95.2
@@ -20957,7 +20957,7 @@ snapshots:
 
   dotenv-expand@11.0.7:
     dependencies:
-      dotenv: 16.4.7
+      dotenv: 16.6.1
 
   dotenv@16.4.7: {}
 

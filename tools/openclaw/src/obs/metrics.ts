@@ -43,7 +43,7 @@ export function resetMetricsForTesting(): void {
 /**
  * Incremented every time the OpenClaw per-call USD cap (M18) rejects
  * an Anthropic request before dispatch. See
- * `tools/console/src/openclaw/policy.ts` for the cap logic.
+ * `tools/openclaw/src/openclaw/policy.ts` for the cap logic.
  */
 export const OPENCLAW_PER_CALL_CAP_HIT_TOTAL =
   "openclaw.per_call_cap_hit_total";
@@ -52,7 +52,7 @@ export const OPENCLAW_PER_CALL_CAP_HIT_TOTAL =
  * Incremented every time the cross-user console rate-limit (M17) rejects
  * a Telegram message because the aggregate bot budget is exhausted, even
  * though the originating user's per-user bucket still had headroom. See
- * `tools/console/src/security.ts` `FixedWindowRateLimiter` and
+ * `tools/openclaw/src/security.ts` `FixedWindowRateLimiter` and
  * `docs/security/hardening/M17-console-global-rate-cap.md`.
  *
  * A non-zero value across a soak test signals that the allowlist has

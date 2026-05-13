@@ -1,5 +1,5 @@
 {
-  "name": "@sergeant/console",
+  "name": "@sergeant/openclaw",
   "version": "0.1.0",
   "private": true,
   "description": "Sergeant internal ops console — Telegram bot with multi-agent AI (ops + marketing)",

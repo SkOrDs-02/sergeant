@@ -2,7 +2,7 @@ import { Sentry as DefaultSentry } from "./obs/sentry.js";
 
 /**
  * In-process crash-backoff supervisor for the Telegram bot loops
- * (Sergeant Console + OpenClaw) hosted in `tools/console/`.
+ * (OpenClaw) hosted in `tools/openclaw/`.
  *
  * Pain P9 in `docs/launch/tech/telegram-improvements-roadmap.md` — when
  * the bot crashes (auth, network, Anthropic 429, unhandled rejection)
@@ -51,7 +51,7 @@ export interface CrashBackoffSentryLike {
 }
 
 export interface CrashBackoffOptions {
-  /** Human label used in logs and breadcrumb messages (e.g. "console"). */
+  /** Human label used in logs and breadcrumb messages (e.g. "openclaw"). */
   label: string;
   /** Replaces `setTimeout` in tests so a fake-clock can drive the loop. */
   sleep?: (ms: number) => Promise<void>;
@@ -150,7 +150,7 @@ export async function runWithCrashBackoff(
       const delayMs = computeBackoffDelayMs(consecutiveCrashes);
 
       sentry.addBreadcrumb({
-        category: "console.crash-backoff",
+        category: "openclaw.crash-backoff",
         message: `[${label}] bot crashed (consecutive=${consecutiveCrashes}, in_window=${restartsInWindow})`,
         level: breadcrumbLevel,
         data: {

@@ -21,7 +21,7 @@
 | `apps/server`       | Express + PostgreSQL (`pg`) + Better Auth + Anthropic fetch client + Voyage fetch client + Vitest/Testcontainers | REST API + chat orchestrator + Mono webhook ingestion. Dockerfile: `Dockerfile.api` → Railway.         |
 | `apps/mobile`       | Expo 52 + React Native 0.76 + NativeWind + MMKV + Jest                                                           | iOS/Android app via Expo Router. Local-first storage in MMKV.                                          |
 | `apps/mobile-shell` | Capacitor 7 wrapper                                                                                              | Native shell that re-uses the `apps/web` build artifacts; no app code lives here, only build glue.     |
-| `tools/console`     | grammy + Anthropic SDK + Vitest                                                                                  | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.    |
+| `tools/openclaw`    | grammy + Anthropic SDK + Vitest                                                                                  | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.    |
 
 ## Packages (`packages/`)
 
@@ -43,7 +43,7 @@
 ## Ops & tooling (`ops/`, `tools/`, `scripts/`)
 
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
-- `tools/console/` — Telegram bot (above). Sidecar `tsconfig.json` extends `tsconfig.node.json`.
+- `tools/openclaw/` — Telegram bot (above). Sidecar `tsconfig.json` extends `tsconfig.node.json`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
 - `scripts/` — governance / docs / API / CI helpers. See [`docs/governance/README.md`](../governance/README.md) for the full list.
 
@@ -52,7 +52,7 @@
 - `apps/web` — Vitest + MSW + Testing Library; a11y via `pnpm test:a11y`; Playwright for e2e (`pnpm e2e`).
 - `apps/server` — Vitest + Testcontainers (real Postgres). Snapshot tests on response shapes lock Hard Rule #1 / #3.
 - `apps/mobile` — Jest.
-- `tools/console` — Vitest. Includes the dispatcher contract test against `ops/n8n-workflows/20-agent-dispatcher.json`.
+- `tools/openclaw` — Vitest. Includes the dispatcher contract test against `ops/n8n-workflows/20-agent-dispatcher.json`.
 - `packages/eslint-plugin-sergeant-design` — `node --test` (`__tests__/*.mjs`).
 - All other `packages/*` — Vitest.
 

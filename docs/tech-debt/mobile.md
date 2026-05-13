@@ -319,7 +319,7 @@ never-resolving Promise).
 | `apps/web`          | `^6.0.3`           |
 | `apps/server`       | `^6.0.3`           |
 | `apps/mobile`       | `~5.9.0`           |
-| `tools/console`     | `^5.7.2`           |
+| `tools/openclaw`    | `^5.7.2`           |
 | `apps/mobile-shell` | (наслідує root)    |
 
 Web/server рухаються на bleeding-edge TS 6, mobile тримається на 5.9 (RN/Expo

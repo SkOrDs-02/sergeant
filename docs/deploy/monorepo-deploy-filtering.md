@@ -1,13 +1,13 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + Railway watchPatterns
 
-> **Last validated:** 2026-05-09 by @Skords-01. **Next review:** 2026-08-07.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Sergeant ships three production surfaces from one `main` branch:
 
 - `apps/web` → Vercel
 - `apps/server` → Railway service `Sergeant`
-- `tools/console` → Railway service `sergeant-openclaw` (config-as-code path
+- `tools/openclaw` → Railway service `sergeant-openclaw` (config-as-code path
   `railway.console.toml`)
 
 Without filtering, **every push to `main` triggers all three deploys**, even
@@ -107,7 +107,7 @@ Rationale:
 ### Service `sergeant-openclaw` (console) — service id `5f3248d1-5a67-4702-81ee-1371f9d31191`
 
 ```
-tools/console/**
+tools/openclaw/**
 packages/config/**
 Dockerfile.console
 railway.console.toml
@@ -122,7 +122,7 @@ patches/**
 
 Rationale:
 
-- `tools/console/package.json` only depends on `@sergeant/config`. Keep this list narrower than `Sergeant`'s on purpose — long-poll grammy bots are sensitive to needless restarts (per [`./console.md`](./console.md) §Build / runtime, the service is `restartPolicyType=ON_FAILURE` for exactly this reason).
+- `tools/openclaw/package.json` only depends on `@sergeant/config`. Keep this list narrower than `Sergeant`'s on purpose — long-poll grammy bots are sensitive to needless restarts (per [`./console.md`](./console.md) §Build / runtime, the service is `restartPolicyType=ON_FAILURE` for exactly this reason).
 - `railway.console.toml` is the config-as-code file; `Dockerfile.console` is the build input.
 
 ### Read / update via GraphQL

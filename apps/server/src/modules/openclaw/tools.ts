@@ -1,7 +1,7 @@
 /**
  * Server-side implementations OpenClaw tool-ів (ADR-0031 §5).
  *
- * Чому tool-implementations тут на сервері, а не у `tools/console`:
+ * Чому tool-implementations тут на сервері, а не у `tools/openclaw`:
  *   1) Tool-execution потребує Postgres + filesystem-access у repo +
  *      внутрішні API. Все це є на сервері; виносити у console — duplicate
  *      DI + risk дрейф конфігурації.

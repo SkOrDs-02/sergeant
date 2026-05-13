@@ -68,8 +68,8 @@ describe("exitFatalWithBackoff", () => {
     const parsed = JSON.parse(lines[0]!);
     expect(parsed).toMatchObject({
       level: "fatal",
-      service: "sergeant-console",
-      msg: "console_fatal_exit",
+      service: "sergeant-openclaw",
+      msg: "openclaw_fatal_exit",
       reason: "uncaughtException",
       delay_ms: FATAL_EXIT_BASE_DELAY_MS + 1000,
       err: { name: "Error", message: "boom" },
@@ -141,7 +141,7 @@ describe("registerProcessLifecycle", () => {
     await Promise.resolve();
     expect(exit).toHaveBeenCalledWith(1);
     expect(JSON.parse(lines[0]!)).toMatchObject({
-      msg: "console_fatal_exit",
+      msg: "openclaw_fatal_exit",
       reason: "uncaughtException",
     });
     dispose();
@@ -162,7 +162,7 @@ describe("registerProcessLifecycle", () => {
     await Promise.resolve();
     expect(exit).toHaveBeenCalledWith(1);
     expect(JSON.parse(lines[0]!)).toMatchObject({
-      msg: "console_fatal_exit",
+      msg: "openclaw_fatal_exit",
       reason: "unhandledRejection",
     });
     dispose();

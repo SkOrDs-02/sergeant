@@ -69,7 +69,7 @@ TR-26-05 §1 ставить **ElectricSQL** на топ (🔥🔥🔥, L effort,
 #### Tier 1 (зробити цього тижня)
 
 1. **Anthropic `strict: true`** на existing tool definitions у `apps/server/src/modules/chat/`. Це години, не дні. Знімає клас bug-ів `#261 "Unknown action"` (коли `max_tokens` обрізає JSON) — він явно згаданий у TR-26-05 §9 як активний irritant.
-2. **UptimeRobot** на `/health` + `/healthz` (free tier, 50 monitors, 5-min interval). Алерт у Telegram через `tools/console`-bot або через webhook.
+2. **UptimeRobot** на `/health` + `/healthz` (free tier, 50 monitors, 5-min interval). Алерт у Telegram через `tools/openclaw`-bot або через webhook.
 
 #### Tier 2 (цього кварталу)
 
@@ -161,7 +161,7 @@ grep -rln 'featureFlag\|isFeatureEnabled\|getFeatureFlag' apps/
 
 - **Адопчено:** PostHog Feature Flags (`apps/web/src/core/lib/featureFlags.ts`, `apps/mobile/src/core/lib/featureFlags.ts` + тести).
 - **Не адопчено:** CVA, react-email, pg-boss, TanStack Router, Hono, SQLocal/PGlite, Devcontainer, fishery+faker, apple-health, chart-library, Anthropic `strict: true`, UptimeRobot.
-- **У `tools/console` / `apps/server`:** BullMQ + ioredis (Redis-залежність — рішення проти pg-boss).
+- **У `tools/openclaw` / `apps/server`:** BullMQ + ioredis (Redis-залежність — рішення проти pg-boss).
 
 ---
 

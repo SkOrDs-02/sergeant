@@ -121,7 +121,7 @@
 
 **Що:** після кожного tool-call у OpenClaw agent-loop — додавати Sentry breadcrumb з `tool_name`, `latency_ms`, `status`.
 
-**Файл:** `tools/console/src/agents/openclaw.ts` — у `runAgentTurn` helper.
+**Файл:** `tools/openclaw/src/agents/openclaw.ts` — у `runAgentTurn` helper.
 
 **Acceptance:**
 
@@ -136,7 +136,7 @@
 
 **Що:** нова slash-команда у `@OpenClaw_sergeant_bot` DM що показує unacked alerts з `tg_alert_acks`.
 
-**Файл:** `tools/console/src/openclaw/handler.ts`
+**Файл:** `tools/openclaw/src/openclaw/handler.ts`
 
 **Acceptance:**
 
@@ -271,7 +271,7 @@ apps/web/src/core/hub/
 
 **Статус:** Shipped — [PR #2531](https://github.com/Skords-01/Sergeant/pull/2531) `49d5c846`.
 
-**Scope:** `tools/console/src/openclaw/bootstrap.ts::registerOpenClawWebhook`
+**Scope:** `tools/openclaw/src/openclaw/bootstrap.ts::registerOpenClawWebhook`
 
 **Що:** після `bot.api.setWebhook(...)` — `getWebhookInfo`, перевірити `url === expected`, при mismatch → retry з backoff (max 3 спроби: 1s / 2s / 4s).
 
@@ -289,7 +289,7 @@ apps/web/src/core/hub/
 
 **Статус:** Shipped — [PR #2534](https://github.com/Skords-01/Sergeant/pull/2534) `6ee444d3`.
 
-**Scope:** `tools/console/src/openclaw/handler.ts`
+**Scope:** `tools/openclaw/src/openclaw/handler.ts`
 
 **Що:**
 

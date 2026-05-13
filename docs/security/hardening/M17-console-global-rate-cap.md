@@ -1,6 +1,6 @@
 # M17 — Console rate-limit per Telegram user, no global cap
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-05)
 
 | Field          | Value                                                                                                                       |
@@ -15,8 +15,8 @@
 
 ## Summary
 
-`FixedWindowRateLimiter` (`tools/console/src/security.ts`,
-`tools/console/src/index.ts:117–119`) keys per `chat.id` / `from.id`. While
+`FixedWindowRateLimiter` (`tools/openclaw/src/security.ts`,
+`tools/openclaw/src/index.ts:117–119`) keys per `chat.id` / `from.id`. While
 the founder bot is allowlisted to one user, `consoleBot` (under
 `CONSOLE_BOT_TOKEN`) supports N allowlisted users, each with their own
 bucket. As the allowlist grows the aggregate rate scales linearly.
@@ -30,10 +30,10 @@ bucket. As the allowlist grows the aggregate rate scales linearly.
 
 ## Correction points
 
-- `tools/console/src/security.ts` — extend `FixedWindowRateLimiter` to
+- `tools/openclaw/src/security.ts` — extend `FixedWindowRateLimiter` to
   accept a secondary global key (e.g. `bot:console`); deny when either
   bucket is exhausted.
-- `tools/console/src/obs/metrics.ts` — add
+- `tools/openclaw/src/obs/metrics.ts` — add
   `console.global_rate_cap_hit_total`.
 
 ## Verification

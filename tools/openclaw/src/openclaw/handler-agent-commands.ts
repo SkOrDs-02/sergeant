@@ -155,7 +155,7 @@ export function registerAgentCommands(ctx: HandlerContext): void {
 
   // ADR-0031, Phase 3 skeleton (PR-34): strategic-mode slash-команди.
   // `/plan <topic>`, `/analyze <anomaly>`, `/okr` запускають agent-turn
-  // зі structured-thinking primer-ом (`tools/console/src/agents/strategic-modes.ts`).
+  // зі structured-thinking primer-ом (`tools/openclaw/src/agents/strategic-modes.ts`).
   // Cofounder persona (default toolset, synthesis-tone) — модель сама
   // драйвить 4-step workflow через prompt; persistence + write-tool
   // follow-up — Phase 4 territory (ADR-0036).

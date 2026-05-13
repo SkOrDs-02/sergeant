@@ -330,7 +330,7 @@ export interface RecordWriteAuditInput {
 
 /**
  * INSERT-ить одну row у `openclaw_write_audit` (append-only за дизайном).
- * Caller — `tools/console` callback handler через
+ * Caller — `tools/openclaw` callback handler через
  * `POST /api/internal/openclaw/write-audit/log` endpoint.
  *
  * Чому без UPDATE-flow-у: lifecycle reconstructed by reading rows за

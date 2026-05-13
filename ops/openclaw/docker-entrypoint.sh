@@ -106,7 +106,7 @@ Canonical mapping живе у `packages/openclaw-plugin/src/personas/allowlist.t
 
 - Parity-harness reactivation у CI (grammy vs Gateway diff на shortcuts + strategic-modes + `/council` + morning-digest) — Stage 6a.
 - ≥1 тиждень manual parallel run (operational) — Stage 6b.
-- Cutover playbook ADR-0056 + видалення `tools/console/src/openclaw/` через 28 днів — Stage 7.
+- Cutover playbook ADR-0056 + видалення `tools/openclaw/src/openclaw/` через 28 днів — Stage 7.
 
 ## Stage 5d живий (morning-digest cron)
 

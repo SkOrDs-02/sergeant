@@ -28,6 +28,9 @@ function makeBot(): Bot {
     supports_inline_queries: false,
     can_connect_to_business: false,
     has_main_web_app: false,
+    can_manage_bots: false,
+    has_topics_enabled: false,
+    allows_users_to_create_topics: false,
   };
   return bot;
 }

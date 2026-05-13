@@ -9,7 +9,11 @@ const SCOPES = [
   "server",
   "mobile",
   "mobile-shell",
+  // PR-47 — `console` deprecated alias kept for back-compat with existing
+  // open PRs. New commits SHOULD use `openclaw`. Removed in PR-47 phase 2
+  // once Dockerfile.console / railway.console.toml are also renamed.
   "console",
+  "openclaw",
   "shared",
   "api-client",
   "finyk-domain",

@@ -55,7 +55,7 @@ function validateTelegramHtml(text: string): void {
   const stack: Array<{ tag: string; offset: number }> = [];
   for (const m of text.matchAll(HTML_TAG_RE)) {
     const closing = m[1] === "/";
-    const tag = m[2].toLowerCase();
+    const tag = (m[2] ?? "").toLowerCase();
     const offset = m.index ?? 0;
     if (!HTML_ALLOWED.has(tag)) {
       throw new Error(
@@ -184,13 +184,14 @@ describe("OpenClaw parse_mode integrity (regression PR #1568)", () => {
       /\b(HELP_TEXT|[A-Z][A-Z0-9_]+_(?:TEXT|MESSAGE|HELP|REPLY))\b/;
     const RE_LEGACY_MD = /parse_mode:\s*"Markdown"/;
     for (let i = 0; i < lines.length; i++) {
-      if (!RE_LEGACY_MD.test(lines[i])) continue;
+      const line = lines[i] ?? "";
+      if (!RE_LEGACY_MD.test(line)) continue;
       // 8-line look-back covers multi-line `await ctx.reply(... { ... })` calls.
       const ctx = lines.slice(Math.max(0, i - 8), i + 1).join("\n");
       const match = ctx.match(RE_LONG_CONST);
       if (match) {
         offending.push(
-          `handler.ts:${i + 1} → ${lines[i].trim()} (refers to ${match[0]} above; use parse_mode: "HTML" instead)`,
+          `handler.ts:${i + 1} → ${line.trim()} (refers to ${match[0]} above; use parse_mode: "HTML" instead)`,
         );
       }
     }
@@ -204,7 +205,7 @@ describe("OpenClaw parse_mode integrity (regression PR #1568)", () => {
     const re = /parse_mode:\s*"([^"]+)"/g;
     const seen = new Set<string>();
     for (const m of HANDLER_SRC.matchAll(re)) {
-      seen.add(m[1]);
+      if (m[1] !== undefined) seen.add(m[1]);
     }
     const invalid = [...seen].filter((v) => !ALLOWED.has(v));
     expect(invalid).toEqual([]);

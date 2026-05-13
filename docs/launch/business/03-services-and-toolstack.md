@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -42,7 +42,7 @@
                                                 | Resend              |  Transactional email
               OPS / CONSOLE                     | Web Push (VAPID)    |  via web-push
               +-------------------+             +---------------------+
-              | tools/console     |
+              | tools/openclaw     |
               | grammy (Telegram) |             CI / CD
               | + OpenClaw bot    |             +-------------------+
               | Anthropic SDK     |             | GitHub Actions    |
@@ -88,7 +88,7 @@
 | Expo 52 + React Native 0.76 | `apps/mobile/package.json`                                                                                       | in use    |
 | Capacitor (mobile-shell)    | `apps/mobile-shell/`                                                                                             | in use    |
 | **BullMQ**                  | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest) | in use    |
-| **Telegram bot (grammy)**   | `tools/console` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                              | in use    |
+| **Telegram bot (grammy)**   | `tools/openclaw` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                             | in use    |
 | **n8n workflows**           | `ops/n8n-workflows/` — 26 workflow-ів (manifest.json) ; ADR-0026                                                 | in use    |
 | **Grafana + Alloy**         | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                            | in use    |
 | **Storybook + Argos**       | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                  | in use    |
@@ -233,11 +233,11 @@
 
 ### 2.14 Підтримка юзерів
 
-| Сервіс           | Сайт                                                         | Free tier                               | Paid tier            | Date checked | Why this / Why not                                                                                                                                                                        | Status |
-| ---------------- | ------------------------------------------------------------ | --------------------------------------- | -------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **Crisp**        | [crisp.chat](https://crisp.chat/)                            | 2 оператори, live chat + knowledge base | Pro: $25/mo/operator | 2026-04      | In-app чат. Деталі workflow — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-5--support).                                                                  | to add |
-| **Canny**        | [canny.io](https://canny.io/)                                | Free до 100 постів                      | Starter: $79/mo      | 2026-04      | Feature requests + голосування.                                                                                                                                                           | to add |
-| **Telegram бот** | [core.telegram.org/bots](https://core.telegram.org/bots/api) | Безкоштовно                             | N/A                  | 2026-05      | `tools/console` (grammy + Anthropic) — internal ops/marketing console, OpenClaw cofounder bot з memory recall + decision-PR (ADR-0031, ADR-0032). Telegram alert routing через n8n WF-03. | in use |
+| Сервіс           | Сайт                                                         | Free tier                               | Paid tier            | Date checked | Why this / Why not                                                                                                                                                                         | Status |
+| ---------------- | ------------------------------------------------------------ | --------------------------------------- | -------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| **Crisp**        | [crisp.chat](https://crisp.chat/)                            | 2 оператори, live chat + knowledge base | Pro: $25/mo/operator | 2026-04      | In-app чат. Деталі workflow — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-5--support).                                                                   | to add |
+| **Canny**        | [canny.io](https://canny.io/)                                | Free до 100 постів                      | Starter: $79/mo      | 2026-04      | Feature requests + голосування.                                                                                                                                                            | to add |
+| **Telegram бот** | [core.telegram.org/bots](https://core.telegram.org/bots/api) | Безкоштовно                             | N/A                  | 2026-05      | `tools/openclaw` (grammy + Anthropic) — internal ops/marketing console, OpenClaw cofounder bot з memory recall + decision-PR (ADR-0031, ADR-0032). Telegram alert routing через n8n WF-03. | in use |
 
 ### 2.15 Юридичне
 
@@ -286,7 +286,7 @@
 | 7   | **Termly** + **CookieYes**     | P1 — legal blocker                | `[ ]` | Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                                                                                                                                | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
 | 8   | **Google Search Console**      | P2 — SEO baseline                 | `[ ]` | Підключити домен. Безкоштовно.                                                                                                                                                                                                          | —                                                                                  |
 | 9   | **EAS Build**                  | P1 — mobile launch                | `[ ]` | Free: 15+15 builds/mo. Для CI/CD мобілки.                                                                                                                                                                                               | —                                                                                  |
-| 10  | **Telegram бот** (support)     | P2 — support                      | `[x]` | `tools/console` (grammy) + OpenClaw cofounder bot. Telegram alert routing — n8n WF-03 (Sentry → topic). **Crisp** (in-app webchat) — окремо, ще `[ ]`.                                                                                  | [05 -> support zone](./05-operations-and-automation.md#зона-5--support)            |
+| 10  | **Telegram бот** (support)     | P2 — support                      | `[x]` | `tools/openclaw` (grammy) + OpenClaw cofounder bot. Telegram alert routing — n8n WF-03 (Sentry → topic). **Crisp** (in-app webchat) — окремо, ще `[ ]`.                                                                                 | [05 -> support zone](./05-operations-and-automation.md#зона-5--support)            |
 
 ---
 

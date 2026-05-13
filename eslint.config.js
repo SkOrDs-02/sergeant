@@ -288,7 +288,7 @@ export default [
   {
     files: [
       "apps/web/src/**/*.{ts,tsx,js,jsx}",
-      "tools/console/src/**/*.{ts,tsx,js,jsx}",
+      "tools/openclaw/src/**/*.{ts,tsx,js,jsx}",
       "apps/mobile/src/**/*.{ts,tsx,js,jsx}",
       "apps/mobile/app/**/*.{ts,tsx,js,jsx}",
       "apps/mobile-shell/src/**/*.{ts,tsx,js,jsx}",
@@ -557,14 +557,14 @@ export default [
   // and web bundles do not touch `fs` / `eval`; web XSS is governed
   // by the existing CSP card (C2).
   {
-    files: ["apps/server/src/**/*.{js,ts}", "tools/console/src/**/*.{js,ts}"],
+    files: ["apps/server/src/**/*.{js,ts}", "tools/openclaw/src/**/*.{js,ts}"],
     ignores: [
       "apps/server/src/**/*.test.{js,ts}",
       "apps/server/src/**/*.integration.test.{js,ts}",
       "apps/server/src/**/__tests__/**",
       "apps/server/src/test/**",
-      "tools/console/src/**/*.test.{js,ts}",
-      "tools/console/src/**/__tests__/**",
+      "tools/openclaw/src/**/*.test.{js,ts}",
+      "tools/openclaw/src/**/__tests__/**",
     ],
     plugins: { security },
     rules: {
@@ -648,7 +648,7 @@ export default [
   // also live on `tools/console/**`. See
   // `docs/security/hardening/M16-telegram-markdown-v2.md`.
   {
-    files: ["tools/console/src/**/*.{js,ts}"],
+    files: ["tools/openclaw/src/**/*.{js,ts}"],
     rules: {
       "sergeant-design/no-legacy-telegram-parse-mode": "error",
     },

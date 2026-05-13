@@ -252,7 +252,7 @@
       "audienceTier": "P1",
       "requiredEnv": [],
       "requiredCredentials": [],
-      "notes": "Telegram console webhook dispatcher. Receives approved/read-only agent commands from tools/console and returns a task acceptance payload; keep inactive until N8N_AGENT_DISPATCHER_WEBHOOK_URL is configured for the console."
+      "notes": "Telegram console webhook dispatcher. Receives approved/read-only agent commands from tools/openclaw and returns a task acceptance payload; keep inactive until N8N_AGENT_DISPATCHER_WEBHOOK_URL is configured for the console."
     },
     "30-ai-memory-daily-digest.json": {
       "owner": "ops",
