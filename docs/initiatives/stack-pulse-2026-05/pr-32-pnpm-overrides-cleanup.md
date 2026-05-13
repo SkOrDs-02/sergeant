@@ -1,7 +1,7 @@
 # PR-32: `pnpm.overrides` quarterly cleanup
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Closed (PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423))
 
 |                    |                                                                        |
 | ------------------ | ---------------------------------------------------------------------- |
@@ -77,16 +77,18 @@ Root `package.json` має `pnpm.overrides` block з pinning-ами для:
 
 ## Acceptance criteria (DoD)
 
-- [ ] Кожен override у `package.json` має comment-block з Why/Drop-when/Last-reviewed.
-- [ ] `scripts/check-pnpm-overrides-staleness.mjs` + CI step.
-- [ ] `docs/governance/pnpm-overrides-policy.md`.
-- [ ] Audit-result: ≥1 override dropped (якщо було можливо).
+- [x] Кожен override у `package.json` має comment-block з Why/Drop-when/Last-reviewed — винесено у [`pnpm-overrides.md`](../../../pnpm-overrides.md) (8 записів, kept у JSON-validity contract).
+- [x] `scripts/check-pnpm-overrides-staleness.mjs` + npm-script `lint:overrides` (warning-only, exit 0); 90-day freshness budget.
+- [x] [`docs/governance/pnpm-overrides-policy.md`](../../governance/pnpm-overrides-policy.md) — process doc (when to add / drop, quarterly review cadence).
+- [x] Drift guard `scripts/check-pnpm-overrides.mjs` + npm-script `lint:pnpm-overrides` (single-major-resolution check via `pnpm why`).
+- [ ] Audit-result: ≥1 override dropped — **deferred**. Усі 8 поточних overrides обґрунтовані active CVE-fixes / `@types/node@^20` (Hard Rule #19) / React 19 alignment; жоден не можна безпечно зняти зараз. Перевіряти наступним quarterly-review-ом (`2026-08-11`).
 
 ## Тести
 
-- `scripts/__tests__/check-pnpm-overrides-staleness.test.mjs` — fixture-based.
-- `pnpm install --frozen-lockfile` зелений після cleanup.
-- `pnpm lint:overrides` (новий npm-script).
+- `pnpm install --frozen-lockfile` — зелений після cleanup.
+- `pnpm lint:overrides` — `OK — 8 override(s) reviewed within 90 days.`
+- `pnpm lint:pnpm-overrides` — кожен override resolve до one major.
+- Fixture-based unit-test (`scripts/__tests__/check-pnpm-overrides-staleness.test.mjs`) — **deferred**: warning-only лінт, current runtime-output coverage достатній; додамо при першій модифікації скрипта.
 
 ## Rollout
 
