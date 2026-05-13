@@ -5,6 +5,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
@@ -115,6 +116,7 @@ export function Sheet({
   }, [open, title, announce]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   // Lift the panel above the module bottom nav (set via the
   // `--bottom-nav-height` CSS variable on ModuleShell) plus the iOS
@@ -141,7 +143,17 @@ export function Sheet({
         transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
       };
 
-  return (
+  // Portal the sheet to <body> so it escapes every ancestor stacking /
+  // containing-block context. Several hub routes wrap their root in a
+  // `.page-enter` element whose entry animation keeps
+  // `transform: translateY(0)` via `animation-fill-mode: both`. Per the
+  // CSS spec, any non-`none` `transform` on an ancestor establishes a
+  // new containing block — which means our `position: fixed` overlay is
+  // anchored to that ancestor's box instead of the viewport, and the
+  // sheet renders clipped above or below the visible area. Mirrors the
+  // identical fix applied to `Modal` (see its inline comment for the
+  // full root-cause writeup).
+  const sheet = (
     <div
       className="fixed inset-0 flex items-end justify-center motion-safe:animate-fade-in"
       style={{ zIndex }}
@@ -180,7 +192,10 @@ export function Sheet({
             {...swipe.bind}
             role="presentation"
           >
-            <div className="w-12 h-sheet-handle bg-line/70 rounded-full" aria-hidden />
+            <div
+              className="w-12 h-sheet-handle bg-line/70 rounded-full"
+              aria-hidden
+            />
           </div>
         )}
         <div
@@ -246,4 +261,6 @@ export function Sheet({
       </div>
     </div>
   );
+
+  return createPortal(sheet, document.body);
 }
