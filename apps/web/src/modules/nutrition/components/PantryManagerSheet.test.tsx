@@ -9,7 +9,7 @@
 //
 // UX-roast 2026-05 §3.4 — додаємо `idle`-режим форми. У цьому стані
 // інпут «Назва складу» взагалі не показано, доки користувач явно не
-// натиснув «+ Новий склад» / «Перейменувати активний». Перевіряємо:
+// натиснув «+ Новий склад» або не тапнув по назві активного складу. Перевіряємо:
 //   • в `idle` форма прихована;
 //   • у режимі `create` поряд зі «Створити» стоїть «Скасувати», а не
 //     «Видалити»;
@@ -113,9 +113,25 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
     expect(screen.queryByRole("button", { name: "Скасувати" })).toBeNull();
     // The action triggers (still visible) confirm the sheet is interactive.
     expect(screen.getByRole("button", { name: "+ Новий склад" })).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Перейменувати активний" }),
-    ).toBeTruthy();
+  });
+
+  it("triggers onBeginRename when tapping the active pantry row", () => {
+    const onBeginRename = vi.fn();
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [
+            { id: "home", name: "Дім", items: [], text: "" },
+            { id: "work", name: "Робота", items: [], text: "" },
+          ],
+          activePantryId: "home",
+        })}
+        onBeginRename={onBeginRename}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Дім/ }));
+    expect(onBeginRename).toHaveBeenCalledTimes(1);
   });
 
   it("invokes setPantryForm with idle when Cancel is clicked", () => {

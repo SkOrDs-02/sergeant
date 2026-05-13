@@ -131,7 +131,13 @@ export function PantryManagerSheet({
             <button
               key={p.id}
               type="button"
-              onClick={() => setActivePantryId(p.id)}
+              onClick={() => {
+                if (active) {
+                  onBeginRename();
+                } else {
+                  setActivePantryId(p.id);
+                }
+              }}
               className={cn(
                 "w-full text-left px-4 py-3 border-b border-line last:border-0 hover:bg-panelHi transition-colors",
                 active && "bg-nutrition/10",
@@ -139,7 +145,13 @@ export function PantryManagerSheet({
               aria-pressed={active}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="text-style-label text-text truncate">
+                <div
+                  className={cn(
+                    "text-style-label text-text truncate",
+                    active &&
+                      "underline decoration-nutrition/30 underline-offset-2",
+                  )}
+                >
                   {p.name || "Склад"}
                 </div>
                 {active ? (
@@ -153,30 +165,17 @@ export function PantryManagerSheet({
         })}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+      <div className="mb-4">
         <Button
           type="button"
           aria-pressed={pantryForm.mode === "create"}
           className={cn(
-            "h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover",
+            "w-full h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover",
             pantryForm.mode === "create" && "ring-2 ring-nutrition/60",
           )}
           onClick={onBeginCreate}
         >
           + Новий склад
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          aria-pressed={pantryForm.mode === "rename"}
-          className={cn(
-            "h-12 min-h-[44px]",
-            pantryForm.mode === "rename" &&
-              "border border-nutrition text-text bg-panelHi",
-          )}
-          onClick={onBeginRename}
-        >
-          Перейменувати активний
         </Button>
       </div>
 
