@@ -292,13 +292,14 @@
     },
     "30-ai-memory-daily-digest.json": {
       "owner": "ops",
-      "status": "experimental",
+      "status": "prod-ready",
       "riskTier": "P2",
       "telegramTopic": "digest",
       "audienceTier": "P2",
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_DIGEST",
+        "MONO_AI_MEMORY_DIGEST_ENABLED",
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY"
       ],
@@ -306,7 +307,7 @@
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "Daily 09:05 Kyiv → SELECT з ai_memories (rolling 24h totals + per-source breakdown + lifetime) → Telegram #digest. Aggregated only, без user_id у тексті. Voyage cost — rough estimate з total chars (chars/4 tokens × $0.02 / 1M). Активуй у self-hosted n8n після того як ingestion-flag-и (наприклад MONO_AI_MEMORY_INGEST_ENABLED) вмикнуть і таблиця почне наповнюватись. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=digest, P2) + renders 3-button ack-keyboard."
+      "notes": "Daily 09:05 Kyiv → SELECT з ai_memories (rolling 24h totals + per-source breakdown + lifetime) → Telegram #digest. Aggregated only, без user_id у тексті. Voyage cost — rough estimate з total chars (chars/4 tokens × $0.02 / 1M). Activated by PR-21 (`docs/planning/pr-plan-2026-05.md`). Pre-requisite: ingestion-flag-и (`MONO_AI_MEMORY_INGEST_ENABLED=true`, PR-19) і master `AI_MEMORY_ENABLED=true` у Railway, щоб таблиця наповнювалась. Operator-toggle `MONO_AI_MEMORY_DIGEST_ENABLED=true` має бути виставлений на n8n Railway env перед тим, як активувати workflow toggle у n8n UI (canonical-source — `apps/server/src/env/env.ts`; default `false` keeps WF-30 dormant навіть після деплою JSON). При empty `ai_memories` workflow надсилає graceful «За добу нічого не записано» message — не падає. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=digest, P2) + renders 3-button ack-keyboard."
     },
     "60-growth-funnel-snapshot.json": {
       "owner": "growth",
