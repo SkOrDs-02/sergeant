@@ -5,7 +5,7 @@
 
 > **Мовна примітка:** назви команд, сервісів і змінних середовища залишені в оригіналі, бо це буквальні ідентифікатори рантайму; рішення, перевірки та послідовність дій описані українською.
 
-**Trigger:** Stage 6b parallel-run завершений АБО пропущений (fast-forward), founder підтвердив паритет Gateway з grammy-ботом. Готовність до перемикання production-трафіку з `@OpenClaw_sergeant_bot` (grammy) на `@kOPENCLAW_GATEWAY_BOT` (OpenClaw Gateway).
+**Trigger:** Stage 6b parallel-run завершений або пропущений (fast-forward), паритет Gateway з grammy підтверджено. Перемикання production-трафіку з `@OpenClaw_sergeant_bot` (grammy) на `@kOPENCLAW_GATEWAY_BOT` (Gateway).
 
 > **Стан після виконання:** Cutover виконано 2026-05-12 22:30 UTC (commit `62b07a0d`). Stage 6b пропущений — замінений Stage 4c production smoke 12/12 PASS + Stage 6a CI parity-harness під real SDK. Документ лишається активним як інструкція для майбутніх міграцій схожого профілю та для кроку видалення (§5) 2026-06-09.
 
