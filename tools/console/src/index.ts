@@ -18,6 +18,7 @@ import {
 import { registerOpenClawBotCommands } from "./openclaw/commands.js";
 import { createOpenClawWebhookServer } from "./openclaw/webhook.js";
 import { startBotWithConflictRetry } from "./startup-conflict-retry.js";
+import { registerProcessLifecycle, type BotLike } from "./bot-lifecycle.js";
 
 const DEFAULT_OPENCLAW_MAX_ITERATIONS = 8;
 const DEFAULT_OPENCLAW_WEBHOOK_PATH = "/webhook/openclaw";
@@ -42,6 +43,11 @@ async function main() {
     process.exit(1);
   }
   const anthropic = new Anthropic({ apiKey: anthropicKey });
+
+  // PR-46 (48-plan) — bots accumulator. Populated as bots start; passed
+  // to `registerProcessLifecycle` so SIGTERM/SIGINT can call `bot.stop()`
+  // on each registered bot. Pain P9 close-out.
+  const lifecycleBots: Array<{ label: string; bot: BotLike }> = [];
 
   // ADR-0032: Sergeant Console (ADR-0027) consolidated into OpenClaw. The
   // legacy console bot is kept dormant in this process so we can revive it
@@ -83,6 +89,7 @@ async function main() {
 
     console.log("Sergeant Console starting…");
     consolePromise = startBotWithConflictRetry(bot, "console");
+    lifecycleBots.push({ label: "console", bot });
   }
 
   // OpenClaw — DM-only co-founder bot (ADR-0031). Fail-closed якщо env-и не
@@ -180,6 +187,7 @@ async function main() {
       })();
     } else {
       console.log("OpenClaw starting in long-poll mode…");
+      lifecycleBots.push({ label: "openclaw", bot: openclawBot });
       openclawPromise = (async () => {
         // If a previous deploy enabled webhook mode, Telegram still has
         // the webhook registered and `getUpdates` will fail with 409.
@@ -210,6 +218,14 @@ async function main() {
     );
     process.exit(1);
   }
+
+  // PR-46 (48-plan) — process-level lifecycle hooks. Catches
+  // `uncaughtException` / `unhandledRejection` outside grammy's
+  // `bot.catch()` (which only covers in-handler errors), and on
+  // SIGTERM/SIGINT calls `bot.stop()` so Telegram drops the long-poll
+  // slot immediately — avoids the next deploy's 409 retry window.
+  // Pain P9 (`docs/launch/tech/telegram-improvements-roadmap.md`).
+  registerProcessLifecycle({ bots: lifecycleBots });
 
   const promises: Array<Promise<void>> = [];
   if (consolePromise) promises.push(consolePromise);

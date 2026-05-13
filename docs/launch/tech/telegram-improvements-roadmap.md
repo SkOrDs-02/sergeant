@@ -1,6 +1,6 @@
 # Telegram surfaces — план покращень
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
@@ -59,18 +59,18 @@
 
 ## 2. Pain points — що зараз слабко
 
-| #   | Pain                                                                                  | Surface                        | Frequency       | Severity |
-| --- | ------------------------------------------------------------------------------------- | ------------------------------ | --------------- | -------- |
-| P1  | OpenClaw 100% reactive — не починає розмову, founder мусить йти питати                | OpenClaw DM                    | щодня           | high     |
-| P2  | Алерти у супергрупі без accountability — нема трекінгу хто бачив, коли                | `Sergeant_ops` (всі топіки)    | щодня           | high     |
-| P3  | WF-15 Railway deploy — повторюваний `Bad request` (3+/24h) шумить у `⚙️ Контрол-план` | `Sergeant_ops/⚙️ Контрол-план` | 3×/добу         | medium   |
-| P4  | Approval-кнопки повільні — long-poll latency 1-3с на callback                         | OpenClaw DM (write-tools)      | при approval    | medium   |
-| P5  | Alert-storm-и (Sentry spike, Railway flap) flood-ять топік без dedup-у                | `Sergeant_ops`                 | епізодично      | medium   |
-| P6  | `/audit` показує тільки 20 row-ів без time-window або CSV-export                      | OpenClaw DM                    | при post-mortem | low      |
-| P7  | Нема `/help` discovery — нові оператори не знатимуть command-set                      | OpenClaw DM                    | при onboarding  | low      |
-| P8  | `read_telegram_topic_history` — Phase 1 stub, повертає empty                          | OpenClaw → tool-call           | при tool-use    | low      |
-| P9  | Бот падає → 6+ хв backoff retry без leader-election                                   | OpenClaw DM                    | епізодично      | low      |
-| P10 | Console-service на Railway перейменовано → `sergeant-openclaw` (PR-47, per ADR-0032)  | Railway / DevOps               | —               | resolved |
+| #   | Pain                                                                                                                                                                                       | Surface                        | Frequency       | Severity |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | --------------- | -------- |
+| P1  | OpenClaw 100% reactive — не починає розмову, founder мусить йти питати                                                                                                                     | OpenClaw DM                    | щодня           | high     |
+| P2  | Алерти у супергрупі без accountability — нема трекінгу хто бачив, коли                                                                                                                     | `Sergeant_ops` (всі топіки)    | щодня           | high     |
+| P3  | WF-15 Railway deploy — повторюваний `Bad request` (3+/24h) шумить у `⚙️ Контрол-план`                                                                                                      | `Sergeant_ops/⚙️ Контрол-план` | 3×/добу         | medium   |
+| P4  | Approval-кнопки повільні — long-poll latency 1-3с на callback                                                                                                                              | OpenClaw DM (write-tools)      | при approval    | medium   |
+| P5  | Alert-storm-и (Sentry spike, Railway flap) flood-ять топік без dedup-у                                                                                                                     | `Sergeant_ops`                 | епізодично      | medium   |
+| P6  | `/audit` показує тільки 20 row-ів без time-window або CSV-export                                                                                                                           | OpenClaw DM                    | при post-mortem | low      |
+| P7  | Нема `/help` discovery — нові оператори не знатимуть command-set                                                                                                                           | OpenClaw DM                    | при onboarding  | low      |
+| P8  | `read_telegram_topic_history` — Phase 1 stub, повертає empty                                                                                                                               | OpenClaw → tool-call           | при tool-use    | low      |
+| P9  | Бот падає → 6+ хв backoff retry без leader-election _(PR-15 fix 409 backoff < 30s [#1469](https://github.com/Skords-01/Sergeant/pull/1469); PR-46 closes non-409 + SIGTERM graceful stop)_ | OpenClaw DM                    | епізодично      | low      |
+| P10 | Console-service на Railway перейменовано → `sergeant-openclaw` (PR-47, per ADR-0032)                                                                                                       | Railway / DevOps               | —               | resolved |
 
 ---
 
