@@ -1,7 +1,7 @@
 # PR-39: `tools/console` Anthropic SDK 0.36.3 → latest
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — cm. ADR-0057 § SDK v1 tracking.
 
 |                    |                                                                    |
 | ------------------ | ------------------------------------------------------------------ |
@@ -15,7 +15,7 @@
 
 ## Контекст
 
-`tools/console/package.json` має `"@anthropic-ai/sdk": "0.36.3"` (audit-доказана) — тимчасом як latest у 2026-05-07 ~ `1.x.x` (SDK GA-ed v1 десь у 2026-Q2).
+`tools/console/package.json` мав `"@anthropic-ai/sdk": "0.36.3"` (audit-доказана). На момент 2026-05-07 spec-а ми прогнозували latest ~ `1.x.x` (SDK мав GA-нути v1 десь у 2026-Q2). Прогноз не реалізувався — станом на 2026-05-13 `npm view @anthropic-ai/sdk dist-tags` показує `latest: 0.95.2` (released 2026-05-11). v1 все ще не GA-нула.
 
 Issues:
 
@@ -61,12 +61,12 @@ pnpm add @anthropic-ai/sdk@^1.0.0
 
 ## Acceptance criteria (DoD)
 
-- [ ] ADR-0057 (small) з migration plan.
-- [ ] `tools/console/package.json` має `@anthropic-ai/sdk@^1.0.0`.
-- [ ] All call-sites migrated (no v0-API references).
-- [ ] Tests pass у CI.
-- [ ] Manual smoke pass.
-- [ ] Optional: prompt caching enabled на heavy-prompt commands.
+- [x] ADR-0057 (small) з migration plan (оновлено: SDK v1 tracking секція + Prompt caching opt-in секція).
+- [ ] `tools/console/package.json` має `@anthropic-ai/sdk@^1.0.0`. **Блоковано: SDK v1 не GA на 2026-05-13.** Намість того pin-нуто до `^0.95.2` (latest stable). Чекаємо v1 GA в окремому follow-up PR; трек-ємо у ADR-0057 § SDK v1 tracking.
+- [x] All call-sites migrated (no v0-API references) — 0.36 → 0.95 міграція відбулась у попередньому PR з ADR-0057.
+- [x] Tests pass у CI — `pnpm --filter @sergeant/console test` → 300 passed.
+- [ ] Manual smoke pass — відкладено до v1 GA PR-у (поточний PR не міняє публічний API agent-loop в default-режимі).
+- [x] Optional: prompt caching enabled на heavy-prompt commands — enable-но у `run-agent-loop.ts` (під env-флаг `ANTHROPIC_PROMPT_CACHE=1`); 10 нових unit-тестів у `run-agent-loop.test.ts`.
 
 ## Тести
 

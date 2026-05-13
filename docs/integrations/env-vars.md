@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-05-08 by @claude. **Next review:** 2026-08-06.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -123,6 +123,10 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 ### `N8N_AGENT_DISPATCHER_WEBHOOK_URL` _(optional)_
 
 Console → n8n dispatcher webhook для Telegram-controlled AI agents. Скопіюйте production webhook URL з workflow 20 після імпорту в n8n. Приклад: `https://n8n.your-domain.com/webhook/agent-dispatcher`.
+
+### `ANTHROPIC_PROMPT_CACHE` _(optional, default off — `tools/console` only)_
+
+Опт-ін для prompt caching у `tools/console` agent-loop (PR-39, ADR-0057). Truthy values: `1`, `true`, `yes` (case-insensitive). Коли увімкнено, `tools/console/src/agents/run-agent-loop.ts` додає `cache_control: { type: "ephemeral" }` на (a) system prompt і (b) останній tool у `tools[]`. Cache TTL — 5 хвилин; net-cost-win починається з ≥2 викликів у вікні (tool-use loop або кілька slash-команд підряд). Affects лише `tools/console` (Telegram-bot процес у окремому Railway service); не впливає на `apps/server` Anthropic-клієнт.
 
 ---
 
