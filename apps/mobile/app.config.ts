@@ -190,6 +190,15 @@ const buildConfig = (): ExpoConfig => ({
     infoPlist: {
       UIBackgroundModes: ["remote-notification"],
       UIApplicationShortcutItems: IOS_SHORTCUT_ITEMS,
+      // Voice STT (Phase 8). `expo-speech-recognition` config plugin
+      // також виставляє ці ключі за нас, але дублюємо тут як safety-net
+      // на випадок ручного prebuild без плагіна (наприклад, у тестових
+      // pipeline-ах). UA-text — це те, що бачить юзер у permission
+      // prompt на iOS.
+      NSSpeechRecognitionUsageDescription:
+        "Sergeant використовує розпізнавання мовлення, щоб ти міг диктувати назву страви, повідомлення в чаті та інші поля голосом.",
+      NSMicrophoneUsageDescription:
+        "Sergeant використовує мікрофон для голосового вводу (диктовка страв і чату).",
     },
   },
   android: {
@@ -198,6 +207,12 @@ const buildConfig = (): ExpoConfig => ({
       backgroundColor: "#0b0d10",
     },
     package: ANDROID_PACKAGE,
+    // Android RECORD_AUDIO для голосового вводу (Phase 8). Плагін
+    // `expo-speech-recognition` додає цей дозвіл автоматично, але
+    // тримаємо тут як declarative safety-net — щоб `expo config` показав
+    // дозвіл навіть коли плагін з якоїсь причини не виконався (наприклад,
+    // у CI-only `expo prebuild --no-install` для smoke-тестів).
+    permissions: ["android.permission.RECORD_AUDIO"],
     // Two intent-filter groups:
     //
     //   1. Custom scheme (`sergeant://…`) — `autoVerify: false`, picked
@@ -259,6 +274,25 @@ const buildConfig = (): ExpoConfig => ({
         backgroundColor: "#0b0d10",
         image: "./assets/splash.png",
         imageWidth: 200,
+      },
+    ],
+    [
+      // Phase 8 voice — STT через native iOS Speech framework / Android
+      // SpeechRecognizer. Плагін додає:
+      //  - iOS: `NSSpeechRecognitionUsageDescription` +
+      //    `NSMicrophoneUsageDescription` у згенерований Info.plist.
+      //  - Android: `RECORD_AUDIO` + queries для
+      //    `com.google.android.googlequicksearchbox` (Google STT).
+      // Текст дозволів дублюємо в `ios.infoPlist` вище як safety-net.
+      "expo-speech-recognition",
+      {
+        microphonePermission:
+          "Sergeant використовує мікрофон для голосового вводу (диктовка страв і чату).",
+        speechRecognitionPermission:
+          "Sergeant використовує розпізнавання мовлення, щоб ти міг диктувати назву страви, повідомлення в чаті та інші поля голосом.",
+        androidSpeechServicePackages: [
+          "com.google.android.googlequicksearchbox",
+        ],
       },
     ],
     // Sentry native plugin — required by `@sentry/react-native` for
