@@ -54,6 +54,9 @@
 
 | [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md)                     | Dead code + hard-rules roast #9/10 (knip / dead-code:files / docs:check-links)                                                 | Active   | 11/13            | 2 ≈           | embedded §6 (knip Unlisted/Unresolved sweep + lighthouse-ci.yml workflow file)                 |
 
+| [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md)                     | Revenue / monetization / paywall roast — follow-up до 2026-05-04                                                               | Active   | 6/18             | 12             | self (Прогрес виконання) + [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) |
+
+
 
 | [`archive/2026-04-26-sergeant-audit-devin.md`](./archive/2026-04-26-sergeant-audit-devin.md)                 | Незалежний аудит Devin (historical record)                                                                                     | Archived | 30/31            | 1             | embedded таблиця у самому файлі                                                                |
 | [`archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит                                                                                                  | Archived | 12/18 ≈          | 6 ≈           | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)               |
