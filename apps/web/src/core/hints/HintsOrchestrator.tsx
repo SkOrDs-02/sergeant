@@ -9,6 +9,7 @@ import {
   type HintId,
 } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
+import { useShortcutGlyph } from "@shared/hooks";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
@@ -24,6 +25,7 @@ export function HintsOrchestrator({
   hasFirstRealEntry,
 }: HintsOrchestratorProps): null {
   const toast = useToast();
+  const { modK } = useShortcutGlyph();
   const [showHints] = useHubPref<boolean>("showHints", true);
   const shownThisMount = useRef<HintId | null>(null);
 
@@ -114,7 +116,7 @@ export function HintsOrchestrator({
       const msg = (() => {
         switch (next) {
           case "ftux_open_search":
-            return "Порада: відкрий пошук (⌘K) — швидко знаходить модулі та дії.";
+            return `Порада: відкрий пошук (${modK}) — швидко знаходить модулі та дії.`;
           case "ftux_open_chat":
             return "Порада: спитай у чаті «Що мені важливо сьогодні?»";
           case "ftux_switch_modules":
@@ -193,7 +195,7 @@ export function HintsOrchestrator({
         });
       }, HINT_TIMEOUT_MS);
     }
-  }, [candidates, ctx, hasFirstRealEntry, showHints, toast]);
+  }, [candidates, ctx, hasFirstRealEntry, modK, showHints, toast]);
 
   return null;
 }

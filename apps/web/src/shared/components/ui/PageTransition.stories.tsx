@@ -19,7 +19,9 @@ function Demo({ direction }: { direction: TransitionDirection }) {
     <div className="flex flex-col gap-4 items-center w-72">
       <PageTransition pageKey={String(index)} direction={direction}>
         <div className="w-72 h-32 bg-panel border border-line rounded-2xl flex items-center justify-center">
-          <span className="text-style-title text-text">{PAGES[index % PAGES.length]}</span>
+          <span className="text-style-title text-text">
+            {PAGES[index % PAGES.length]}
+          </span>
         </div>
       </PageTransition>
       <div className="flex gap-2">
@@ -30,10 +32,7 @@ function Demo({ direction }: { direction: TransitionDirection }) {
         >
           ← Назад
         </Button>
-        <Button
-          size="sm"
-          onClick={() => setIndex((i) => i + 1)}
-        >
+        <Button size="sm" onClick={() => setIndex((i) => i + 1)}>
           Вперед →
         </Button>
       </div>

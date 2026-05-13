@@ -21,7 +21,11 @@ export function getDebugEnabled(): boolean {
 
 export function setDebugEnabled(next: boolean): void {
   debugEnabled = next;
-  if (debugEnabled) {
+  if (debugEnabled && import.meta.env?.DEV) {
+    // DEV-only confirmation that the SW debug toggle was flipped. The
+    // canonical inspection path in production is `buildSwSnapshot()`
+    // (postMessage → PWASection); see `apps/web/AGENTS.md` and
+    // `docs/tech-debt/frontend.md §7`.
     console.log("[sw] debug enabled", { version: SW_VERSION });
   }
 }

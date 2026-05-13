@@ -7,11 +7,9 @@
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
-      "project": ["src/**/*.{js,jsx,ts,tsx}"],
-      "ignoreDependencies": ["tailwindcss", "web-vitals"]
+      "project": ["src/**/*.{js,jsx,ts,tsx}"]
     },
     "apps/server": {
-      "entry": ["src/index.ts", "build.mjs", "migrate.mjs"],
       "project": ["src/**/*.{js,ts}"],
       "ignoreDependencies": ["pino-pretty"]
     },
@@ -25,18 +23,10 @@
       ]
     },
     "apps/mobile-shell": {
-      "entry": [
-        "src/index.ts",
-        "src/platform.ts",
-        "src/barcodeNative.ts",
-        "src/auth-storage.ts",
-        "src/pushNative.ts",
-        "capacitor.config.ts"
-      ],
+      "entry": ["capacitor.config.ts"],
       "project": ["src/**/*.{ts,tsx}"]
     },
     "packages/api-client": {
-      "entry": ["src/index.ts", "src/react/index.ts"],
       "project": ["src/**/*.{ts,tsx}"]
     },
     "packages/config": {

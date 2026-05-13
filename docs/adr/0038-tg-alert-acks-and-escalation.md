@@ -292,4 +292,60 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 **Context:**
 
 - [`docs/launch/tech/telegram-improvements-roadmap.md` §3.2](../launch/tech/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2 context.
-- [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — WF-04/103/104 rows + footnotes ⁽⁵⁾⁽⁶⁾.
+- [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — WF-04/103/104/105/106 rows + footnotes ⁽⁵⁾⁽⁶⁾.
+
+## Follow-on — Sprint 6 escalation tiers (T2 @ 60 min, T3 @ 120 min)
+
+> **Status:** Active. **Added:** 2026-05-13 (Sprint 6 / alert-escalation-tiers).
+
+Initial ADR §3.2 ladder defined only **T1 (15-min DM)**. Sprint 6 extends to
+a **3-tier ladder** to give us off-channel fallback when founder is offline
+or Telegram is degraded:
+
+| Tier | Trigger                             | Action                                                                                 | Marker column      | Workflow            |
+| ---- | ----------------------------------- | -------------------------------------------------------------------------------------- | ------------------ | ------------------- |
+| T1   | unacked, 15 min                     | DM `@OpenClaw_sergeant_bot` (founder)                                                  | `escalated_at`     | WF-103 (`*/5 min`)  |
+| T2   | unacked, 60 min, not-repeated       | Re-broadcast у same topic з `⚠ REPEAT (Nхв без ack)` + snooze keyboard                 | `repeated_at`      | WF-105 (`*/15 min`) |
+| T3   | unacked, 120 min, not-sentry-warned | Server-side `Sentry.captureMessage(level=warning, tags.kind=unacked-alert-escalation)` | `sentry_warned_at` | WF-106 (`*/15 min`) |
+
+**Schema delta** (migration
+[`063_tg_alert_acks_escalation_tiers.sql`](../../apps/server/src/migrations/063_tg_alert_acks_escalation_tiers.sql)):
+
+```sql
+ALTER TABLE tg_alert_acks
+  ADD COLUMN IF NOT EXISTS repeated_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS sentry_warned_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS snoozed_until_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS tg_alert_acks_repeat_due_idx
+  ON tg_alert_acks (posted_at DESC)
+  WHERE ack_at IS NULL AND repeated_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS tg_alert_acks_sentry_due_idx
+  ON tg_alert_acks (posted_at DESC)
+  WHERE ack_at IS NULL AND sentry_warned_at IS NULL;
+```
+
+**Snooze (operator cancel).** WF-105 T2 message adds two snooze buttons
+(`🕐 Snooze 1h` / `🕓 Snooze 4h`) поряд із acknowledge. Snooze стампить
+`snoozed_until_at = NOW() + Nmin` через `POST /api/internal/alerts/snooze`
+(WF-104 нова snooze-гілка). WF-105 і WF-106 фільтрують
+`(snoozed_until_at IS NULL OR snoozed_until_at < NOW())` — pause без
+ack-deletion. T1 НЕ filtered by snooze, бо T1 завжди срабатує до того як
+юзер бачить T2 keyboard.
+
+**Idempotency invariant.** Усі mark-функції (`markAlertEscalated`,
+`markAlertRepeated`, `markAlertSentryWarned`) use the same
+`UPDATE … SET <col> = NOW() WHERE alert_id=$1 AND <col> IS NULL`
+паттерн — `rowCount=1` означає "перша cron-ітерація", retry safe.
+Snooze, на відміну, **latest-write-wins** (`SET snoozed_until_at = $2`
+без `IS NULL` guard) — оператор може swap 1h → 4h або extend.
+
+**Implementation refs:**
+
+- Migration: [`063_tg_alert_acks_escalation_tiers.sql`](../../apps/server/src/migrations/063_tg_alert_acks_escalation_tiers.sql)
+- Store: `markAlertRepeated`, `markAlertSentryWarned`, `markAlertSnoozed` у [`apps/server/src/modules/alerts/store.ts`](../../apps/server/src/modules/alerts/store.ts).
+- Routes: `POST /api/internal/alerts/repeat`, `/alerts/sentry-warn`, `/alerts/snooze` у [`apps/server/src/routes/internal/alerts.ts`](../../apps/server/src/routes/internal/alerts.ts).
+- Workflows: [`105-alert-repeat-ping-cron.json`](../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (T2), [`106-alert-sentry-warn-cron.json`](../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (T3); [`104-alert-callback-router.json`](../../ops/n8n-workflows/104-alert-callback-router.json) updated with snooze branch.
+- Runbook: [`docs/observability/runbook.md`](../observability/runbook.md) § "Alert-bot escalation ladder".
+- Lifecycle diagram + keyboard spec: [`docs/observability/alert-bot-routing.md`](../observability/alert-bot-routing.md) § "Acknowledgment lifecycle" + § "T2 repeat-ping inline keyboard".

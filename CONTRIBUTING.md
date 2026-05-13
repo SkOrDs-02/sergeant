@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -61,7 +61,7 @@ pnpm dev:web
 Опціонально:
 
 - `pnpm --filter @sergeant/mobile start`
-- `pnpm --filter @sergeant/console dev`
+- `pnpm --filter @sergeant/openclaw dev`
 
 ## Щоденний цикл
 
@@ -86,7 +86,7 @@ pnpm typecheck
 - `server/api`: `pnpm test`, `pnpm api:check-openapi`
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
-- `console`: `pnpm --filter @sergeant/console exec vitest run`
+- `console`: `pnpm --filter @sergeant/openclaw exec vitest run`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
 
 Якщо сценарій має окремий playbook, секція `Verification` у playbook має пріоритет над загальним списком вище.

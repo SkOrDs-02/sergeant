@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { privatApi, isApiError } from "@shared/api";
+import { logger } from "@shared/lib";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import {
@@ -297,7 +298,7 @@ export function usePrivatbank(enabled = true) {
         } catch (e) {
           const err = e as { name?: string; message?: string };
           if (err.name === "AuthError") throw e;
-          console.warn(`[privat] failed for account ${acc.id}:`, err.message);
+          logger.warn(`[privat] failed for account ${acc.id}:`, err.message);
         }
       }
 

@@ -86,3 +86,32 @@ export type ChartHexKey =
 
 /** Chart hex tokens — semantic names for inline-styled chart primitives. */
 export declare const chartHex: Readonly<Record<ChartHexKey, string>>;
+
+/** Semantic elevation levels — pair each level with the matching z-tier. */
+export type ElevationLevel = "e0" | "e1" | "e2" | "e3" | "e4" | "e5";
+
+/** Per-level shadow recipe with light + dark counterparts. */
+export interface ElevationStep {
+  readonly light: string;
+  readonly dark: string;
+}
+
+/**
+ * Elevation scale — semantic shadow contract. Consumers should prefer
+ * the `shadow-eN` Tailwind utility (backed by CSS vars defined in
+ * `apps/web/src/styles/theme.css`); this export exists for non-Tailwind
+ * call sites (e.g. raw `boxShadow` style props, mobile shadow-spec).
+ */
+export declare const elevation: Readonly<Record<ElevationLevel, ElevationStep>>;
+
+/** Semantic z-index tiers — match an `elevation.eN` level to its tier. */
+export type ZTier =
+  | "base"
+  | "dropdown"
+  | "sticky"
+  | "overlay"
+  | "modal"
+  | "toast";
+
+/** Z-index tier values (numeric strings) keyed by semantic tier. */
+export declare const zTier: Readonly<Record<ZTier, string>>;

@@ -455,3 +455,84 @@ describe("syncV2Pull · happy-path", () => {
     expect(args[2]).toBeNull();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// syncV2Push · NULL-origin telemetry (origin-device-id rollout gate)
+// ────────────────────────────────────────────────────────────────────────────
+//
+// Без `X-Origin-Device-Id` сервер кладе у `sync_op_log` row із
+// `origin_device_id = NULL`. Pull-filter `WHERE origin_device_id IS
+// DISTINCT FROM $3` для $3=NULL відсікає такі рядки повністю (PG:
+// `NULL IS DISTINCT FROM NULL` = FALSE) — multi-device convergence
+// silently broken. Counter `sync_op_log_null_origin_device_id_total`
+// — це observability-gate для регресії, щоб alert спрацьовував
+// до того, як клієнти почнуть масово втрачати ops через pull.
+
+describe("syncV2Push · NULL origin-device-id telemetry", () => {
+  async function readCounterValue(): Promise<number> {
+    const { syncOpLogNullOriginDeviceIdTotal } =
+      await import("../../obs/metrics.js");
+    const metric = await syncOpLogNullOriginDeviceIdTotal.get();
+    const sample = metric.values.find((v) => v.labels?.module === "v2");
+    return sample?.value ?? 0;
+  }
+
+  function validOp(idempotency_key: string) {
+    return {
+      table: "routine_entries",
+      op: "insert" as const,
+      row: { id: "x" },
+      client_ts: "2026-01-01T00:00:00.000Z",
+      idempotency_key,
+    };
+  }
+
+  it("не інкрементиться, коли клієнт прислав X-Origin-Device-Id", async () => {
+    const before = await readCounterValue();
+
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{ id: "21", status: "applied", reject_reason: null }],
+      }) // duplicate-replay (avoid actual INSERT path)
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({
+      body: { ops: [validOp("k-with-device")] },
+      headers: { "x-origin-device-id": "device-A" },
+    });
+    const res = makeRes();
+    await syncV2Push(req, res);
+
+    const after = await readCounterValue();
+    expect(after).toBe(before);
+  });
+
+  it("інкрементиться рівно ОДИН раз на push без X-Origin-Device-Id (per-request, не per-op)", async () => {
+    const before = await readCounterValue();
+
+    // Two-op push, both routed to duplicate-replay so we don't need
+    // to mock the full INSERT path. Counter MUST be +1 (not +2 — the
+    // signal is "client misconfigured", not "N ops were dropped"; per-
+    // op increments would explode cardinality on a busy push).
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{ id: "31", status: "applied", reject_reason: null }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ id: "32", status: "applied", reject_reason: null }],
+      })
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({
+      body: { ops: [validOp("k-no-device-1"), validOp("k-no-device-2")] },
+      // No `x-origin-device-id` header.
+    });
+    const res = makeRes();
+    await syncV2Push(req, res);
+
+    const after = await readCounterValue();
+    expect(after).toBe(before + 1);
+  });
+});

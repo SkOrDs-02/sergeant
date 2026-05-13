@@ -20,6 +20,14 @@
    `@import` statements MUST precede all other rules (CSS spec). The
    `@config` directive is a Tailwind-only hook processed away by PostCSS.
    ═══════════════════════════════════════════════════════════════════════ */
+/* DM Sans Variable — self-hosted, `font-display: swap` is baked into the
+   fontsource `@font-face` blocks, so there is no FOIT. Fonts are bundled
+   into the Vite build at hashed paths and served from same-origin: no
+   external preconnect required, and a `<link rel="preload">` in
+   `apps/web/index.html` would have to know the hashed URL, which Vite
+   resolves only at build time. Fallback metrics for DM Sans live in
+   `styles/theme.css` → `@font-face "DM Sans Fallback"` (size-adjust +
+   ascent/descent overrides) to suppress CLS during the swap window. */
 @import "@fontsource-variable/dm-sans" layer(base);
 @import "./styles/animations.css" layer(base);
 @import "./styles/background.css" layer(base);

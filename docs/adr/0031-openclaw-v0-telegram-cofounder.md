@@ -18,7 +18,7 @@
 OpenClaw — це майбутній co-founder AI-помічник для founder-а Sergeant (solo
 founder для початку). Він **не** end-user-facing продукт (для них є HubChat),
 **не** dashboard (для цього HubDashboard), **не** ops-bot (для цього
-`@Sergeant_alert_bot` + `tools/console`). Це **deep-dialogue** партнер для
+`@Sergeant_alert_bot` + `tools/openclaw`). Це **deep-dialogue** партнер для
 strategic thinking — синтезує дані з PG / n8n / GitHub / strategy docs у
 відповіді на ad-hoc питання founder-а в Telegram DM.
 
@@ -309,14 +309,14 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
 - [ ] Server: `apps/server/src/routes/internal/openclaw.ts` — 5 routes
       (recall, strategy-docs, query, decisions, invocations) behind
       `INTERNAL_API_KEY`.
-- [ ] Console: `tools/console/src/agents/openclaw.ts` — agent definition
+- [ ] Console: `tools/openclaw/src/agents/openclaw.ts` — agent definition
       with 7 tools (6 read + 1 narrow write).
-- [ ] Console: `tools/console/src/openclaw/` — bot handler (DM-only
+- [ ] Console: `tools/openclaw/src/openclaw/` — bot handler (DM-only
       enforcement, allowlist, multi-turn session, budget pre-check).
-- [ ] Console: refactor `tools/console/src/index.ts` → run two bots in
+- [ ] Console: refactor `tools/openclaw/src/index.ts` → run two bots in
       parallel (Console for ops/marketing, OpenClaw for cofounder).
 - [ ] Env additions у `apps/server/src/env.ts` + `.env.example` +
-      `tools/console/.env.example`.
+      `tools/openclaw/.env.example`.
 - [ ] `OPENCLAW_BOT_TOKEN` (org secret у Railway prod).
 - [ ] `OPENCLAW_FOUNDER_TG_USER_ID` (отримати через `getUpdates` після
       першого DM до бота).
@@ -324,7 +324,7 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
       allowlist, budget cap, recall namespace isolation.
 - [ ] Update `docs/launch/tech/openclaw-roadmap.md` §4.3 → Resolved decisions
       (link до цього ADR).
-- [ ] Update `tools/console/README.md` — другий bot.
+- [ ] Update `tools/openclaw/README.md` — другий bot.
 - [ ] CHANGELOG entry.
 
 ## Related

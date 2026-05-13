@@ -111,6 +111,6 @@ Expected: JSON з полями вище. Якщо `error.code=forbidden` — bot
 
 - ADR-0031 §5 — original `read_telegram_topic_history` spec.
 - PR-35 у [`docs/planning/pr-plan-2026-05.md`](../planning/pr-plan-2026-05.md) — рішення про Bot API probe + structured errors.
-- Tool-set overview: [`tools/console/src/agents/openclaw.ts`](../../tools/console/src/agents/openclaw.ts).
+- Tool-set overview: [`tools/openclaw/src/agents/openclaw.ts`](../../tools/openclaw/src/agents/openclaw.ts).
 - Server tests: [`apps/server/src/modules/openclaw/read-telegram-topic-history.test.ts`](../../apps/server/src/modules/openclaw/read-telegram-topic-history.test.ts), [`apps/server/src/modules/telegram/bot-client.test.ts`](../../apps/server/src/modules/telegram/bot-client.test.ts).
 - Adjacent write-tool: `postToTopic` (`apps/server/src/modules/openclaw/write-tools.ts`).

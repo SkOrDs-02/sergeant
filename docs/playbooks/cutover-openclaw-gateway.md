@@ -12,7 +12,7 @@
 ## Owner surface
 
 - Primary surface: `packages/openclaw-plugin/`, `ops/openclaw/`, Railway service `sergeant-openclaw-gateway`
-- Coupled surface: `tools/console/src/openclaw/`, `tools/console/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts`, Railway service `Sergeant` (env-vars)
+- Coupled surface: `tools/openclaw/src/openclaw/`, `tools/openclaw/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts`, Railway service `Sergeant` (env-vars)
 - Governing skill: `sergeant-deploy-and-observability`
 - Governing ADR: [ADR-0055](../adr/0055-openclaw-external-gateway.md) § cutover
 - Governing plan: [`openclaw-migration-plan.md`](../planning/openclaw-migration-plan.md) — Locked Decision #17
@@ -147,7 +147,7 @@ curl -s -H "Authorization: Bearer ${RAILWAY_TOKEN}" -H "Content-Type: applicatio
   }'
 ```
 
-Після redeploy `tools/console` покаже warning:
+Після redeploy `tools/openclaw` покаже warning:
 
 ```
 OpenClaw not started: OPENCLAW_BOT_TOKEN is not set (Phase 1 fail-closed).
@@ -222,12 +222,12 @@ curl -s https://sergeant-openclaw-gateway-production.up.railway.app/health
 
 ### 5. Видалення grammy-коду (cutover-day + 28 днів)
 
-> **Locked Decision #17:** видалення `tools/console/src/openclaw/` + `agents/{openclaw,personas,strategic-modes,dispatcher}.ts` через 28 днів після cutover-day.
+> **Locked Decision #17:** видалення `tools/openclaw/src/openclaw/` + `agents/{openclaw,personas,strategic-modes,dispatcher}.ts` через 28 днів після cutover-day.
 
 **5.1. Файли до видалення:**
 
 ```
-tools/console/src/openclaw/              # 27 файлів, ~4800 LOC
+tools/openclaw/src/openclaw/              # 27 файлів, ~4800 LOC
 ├── alerts-format.ts (+test)
 ├── approval-store.ts (+test)
 ├── audit-csv.ts (+test)
@@ -246,7 +246,7 @@ tools/console/src/openclaw/              # 27 файлів, ~4800 LOC
 ├── session.ts (+test)
 └── webhook.ts (+test)
 
-tools/console/src/agents/
+tools/openclaw/src/agents/
 ├── openclaw.ts (+test)           # grammy OpenClaw agent loop
 ├── personas.ts (+test)           # grammy persona definitions
 ├── strategic-modes.ts            # legacy primers (drift-gate source)
@@ -261,10 +261,10 @@ packages/openclaw-plugin/src/legacy/     # 107 файлів, ~12600 LOC
 ```bash
 # Перед видаленням — перевір що нічого не імпортує ці модулі ззовні
 grep -rn "openclaw/approval-store\|openclaw/policy\|openclaw/bootstrap\|openclaw/webhook\|openclaw/commands\|openclaw/handler\|openclaw/session\|openclaw/security\|openclaw/duration\|openclaw/audit-csv\|openclaw/alerts-format" \
-  --include="*.ts" --include="*.tsx" --include="*.mjs" . | grep -v node_modules | grep -v "tools/console/"
+  --include="*.ts" --include="*.tsx" --include="*.mjs" . | grep -v node_modules | grep -v "tools/openclaw/"
 ```
 
-**5.3. Оновлення `tools/console/src/index.ts`:**
+**5.3. Оновлення `tools/openclaw/src/index.ts`:**
 
 Видали:
 
@@ -284,9 +284,9 @@ grep -rn "openclaw/approval-store\|openclaw/policy\|openclaw/bootstrap\|openclaw
 
 **5.5. Drift-gate update:**
 
-Після видалення `tools/console/src/agents/strategic-modes.ts` (drift-gate source), оновити drift-gate тести у `packages/openclaw-plugin/`:
+Після видалення `tools/openclaw/src/agents/strategic-modes.ts` (drift-gate source), оновити drift-gate тести у `packages/openclaw-plugin/`:
 
-- `src/strategic-modes/index.test.ts` — drift-gate тести що читають з `tools/console/src/agents/strategic-modes.ts`
+- `src/strategic-modes/index.test.ts` — drift-gate тести що читають з `tools/openclaw/src/agents/strategic-modes.ts`
 - Зміни reference на canonical source в самому плагіні (primers стають standalone, не drift-locked)
 
 **5.6. Commit і PR:**
@@ -296,8 +296,8 @@ feat(openclaw): видалення grammy fallback (Stage 7 cleanup)
 
 Locked Decision #17: cutover-day + 28 днів.
 Видалено:
-- tools/console/src/openclaw/ (27 файлів, ~4800 LOC)
-- tools/console/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts
+- tools/openclaw/src/openclaw/ (27 файлів, ~4800 LOC)
+- tools/openclaw/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts
 - packages/openclaw-plugin/src/legacy/ (107 файлів, ~12600 LOC)
 - grammy-specific env-vars з Railway main Sergeant service
 

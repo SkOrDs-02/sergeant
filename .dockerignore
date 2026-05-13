@@ -6,9 +6,9 @@
 #
 # `**/node_modules` (а не `node_modules`) — patterns в .dockerignore матчать
 # точний path-segment від кореня контексту, тому `node_modules` excluded
-# тільки `/node_modules`, не `tools/console/node_modules` чи `apps/server/node_modules`.
+# тільки `/node_modules`, не `tools/openclaw/node_modules` чи `apps/server/node_modules`.
 # При COPY apps/server ./apps/server (PR-30 multi-stage build) збереження
-# host-side `tools/console/node_modules/dotenv/` як reg. directory колізіонило
+# host-side `tools/openclaw/node_modules/dotenv/` як reg. directory колізіонило
 # зі pnpm-створеним symlink-ом у container-i. `**/` префікс гарантує
 # рекурсивне виключення.
 **/node_modules

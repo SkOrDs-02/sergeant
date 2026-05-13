@@ -1,6 +1,6 @@
 # STRIDE threat model
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Закриває [I6 — Document the STRIDE threat model per module](./hardening/I6-threat-model.md).
@@ -114,9 +114,9 @@ native iOS/Android. Trust boundary: SPA ↔ native bridge.
 | Back-button on unsaved state          | T      | Confirmation dialog ([M20](./hardening/M20-mobile-back-button-confirm.md), Closed)                                                          | None                                                                                         |
 | Trusted origins                       | S      | `exp://` removed from production trusted origins ([H5](./hardening/H5-trusted-origins-exp-scheme.md), Closed)                               | None                                                                                         |
 
-### 4. Console / OpenClaw (Telegram bot, `tools/console`)
+### 4. Console / OpenClaw (Telegram bot, `tools/openclaw`)
 
-Ingress: Telegram → grammy → `tools/console/src/*`. Trust boundary:
+Ingress: Telegram → grammy → `tools/openclaw/src/*`. Trust boundary:
 Telegram authenticated user ↔ founder-only allowlist.
 
 | Surface                      | STRIDE | Existing controls                                                                                                                                               | Residual risk                                                                   |

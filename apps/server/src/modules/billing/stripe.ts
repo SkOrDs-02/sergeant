@@ -90,16 +90,50 @@ export function __setPostHogCaptureForTesting(fn: CaptureFn | null): void {
   captureImpl = fn ?? capturePostHogEvent;
 }
 
-async function emitSubscriptionStarted(
+type LifecycleEvent =
+  | typeof ANALYTICS_EVENTS.SUBSCRIPTION_STARTED
+  | typeof ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED
+  | typeof ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED;
+
+type CaptureFailureLog =
+  | "subscription_started_capture_non_ok"
+  | "subscription_started_capture_threw"
+  | "subscription_renewed_capture_non_ok"
+  | "subscription_renewed_capture_threw"
+  | "subscription_canceled_capture_non_ok"
+  | "subscription_canceled_capture_threw";
+
+const LIFECYCLE_LOG_KEYS: Record<
+  LifecycleEvent,
+  { nonOk: CaptureFailureLog; threw: CaptureFailureLog }
+> = {
+  [ANALYTICS_EVENTS.SUBSCRIPTION_STARTED]: {
+    nonOk: "subscription_started_capture_non_ok",
+    threw: "subscription_started_capture_threw",
+  },
+  [ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED]: {
+    nonOk: "subscription_renewed_capture_non_ok",
+    threw: "subscription_renewed_capture_threw",
+  },
+  [ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED]: {
+    nonOk: "subscription_canceled_capture_non_ok",
+    threw: "subscription_canceled_capture_threw",
+  },
+};
+
+async function captureLifecycle(
   event: StripeEvent,
   object: Record<string, unknown>,
+  eventName: LifecycleEvent,
+  extraProperties: Record<string, unknown> = {},
 ): Promise<void> {
   const metadata = getStripeMetadata(object);
   const userId =
     typeof metadata["user_id"] === "string" ? metadata["user_id"] : null;
   if (!userId) {
     logger.warn({
-      msg: "subscription_started_skipped_no_user",
+      msg: "subscription_lifecycle_skipped_no_user",
+      event_name: eventName,
       stripe_event_id: event.id,
     });
     return;
@@ -117,22 +151,30 @@ async function emitSubscriptionStarted(
     currency: pricing.currency,
     stripe_event_id: event.id,
     stripe_subscription_id: subscriptionId,
+    ...extraProperties,
   };
-  if (pricing.priceCents != null && pricing.currency) {
+  if (
+    eventName !== ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED &&
+    pricing.priceCents != null &&
+    pricing.currency
+  ) {
     // PostHog revenue analytics — `$revenue` super-property powers
     // MRR / LTV dashboards. Major-unit number (e.g. 7 for $7), не cents.
+    // Skipped on cancellation: PostHog should not double-count cancel
+    // events as revenue, and there is no fresh charge to attribute.
     properties["$revenue"] = pricing.priceCents / 100;
   }
+  const logKeys = LIFECYCLE_LOG_KEYS[eventName];
   try {
     const result = await captureImpl({
-      event: ANALYTICS_EVENTS.SUBSCRIPTION_STARTED,
+      event: eventName,
       distinctId: userId,
       properties,
       uuid: event.id,
     });
     if (result.outcome !== "ok" && result.outcome !== "skipped") {
       logger.warn({
-        msg: "subscription_started_capture_non_ok",
+        msg: logKeys.nonOk,
         outcome: result.outcome,
         stripe_event_id: event.id,
       });
@@ -140,11 +182,52 @@ async function emitSubscriptionStarted(
   } catch (err) {
     // Analytics is best-effort; never break webhook processing on it.
     logger.warn({
-      msg: "subscription_started_capture_threw",
+      msg: logKeys.threw,
       stripe_event_id: event.id,
       err: err instanceof Error ? err.message : String(err),
     });
   }
+}
+
+async function emitSubscriptionStarted(
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<void> {
+  await captureLifecycle(event, object, ANALYTICS_EVENTS.SUBSCRIPTION_STARTED);
+}
+
+async function emitSubscriptionRenewed(
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<void> {
+  // `invoice.paid` (subscription cycle) hands us the parent subscription
+  // record under `subscription` and the invoice line items under `lines`.
+  // For revenue analytics we want the parent subscription's price / cadence,
+  // which `extractSubscriptionPricing` already pulls from `items.data[0]`
+  // — fall through to that path on `customer.subscription.updated`.
+  await captureLifecycle(event, object, ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED);
+}
+
+async function emitSubscriptionCanceled(
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<void> {
+  const reason: "user" | "billing" | "expired" =
+    getStripeObjectString(object, "status") === "unpaid"
+      ? "billing"
+      : object["cancellation_details"] &&
+          typeof object["cancellation_details"] === "object" &&
+          (object["cancellation_details"] as Record<string, unknown>)[
+            "reason"
+          ] === "cancellation_requested"
+        ? "user"
+        : "expired";
+  await captureLifecycle(
+    event,
+    object,
+    ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED,
+    { reason },
+  );
 }
 
 interface BillingRow {
@@ -406,12 +489,41 @@ async function upsertSubscriptionEvent(
   );
 }
 
+/**
+ * Default replay-window tolerance for Stripe webhook timestamps, in seconds.
+ * Matches the value `stripe-node` uses for `constructEvent` (300s = 5 min).
+ * Override at runtime via `STRIPE_WEBHOOK_TOLERANCE_SECONDS` if your platform
+ * has unusual clock skew; values <= 0 disable the check (NOT recommended).
+ */
+export const DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS = 300;
+
+function getStripeWebhookToleranceSeconds(): number {
+  const raw = process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  if (!raw) return DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS;
+  return parsed;
+}
+
+/**
+ * Verify a Stripe webhook signature.
+ *
+ * Hardening (T2 audit findings 1 & 2):
+ *   1. If `STRIPE_WEBHOOK_SECRET` is unset we ALWAYS return `false`. The
+ *      previous behaviour of accepting any payload in non-production
+ *      effectively turned every staging / preview deploy into an
+ *      unauthenticated write endpoint into the billing DB.
+ *   2. The signed payload includes a timestamp; we enforce a tolerance
+ *      window (`STRIPE_WEBHOOK_TOLERANCE_SECONDS`, default 300s) so that
+ *      a captured signed body cannot be replayed indefinitely.
+ */
 export function verifyStripeSignature(
   rawPayload: Buffer,
   signatureHeader: string | undefined,
+  options: { now?: () => number; toleranceSeconds?: number } = {},
 ): boolean {
   const secret = process.env["STRIPE_WEBHOOK_SECRET"];
-  if (!secret) return process.env["NODE_ENV"] !== "production";
+  if (!secret) return false;
   if (!signatureHeader) return false;
   const parts = new Map(
     signatureHeader.split(",").map((part) => {
@@ -422,6 +534,16 @@ export function verifyStripeSignature(
   const timestamp = parts.get("t");
   const expected = parts.get("v1");
   if (!timestamp || !expected) return false;
+
+  const timestampSeconds = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(timestampSeconds)) return false;
+  const tolerance =
+    options.toleranceSeconds ?? getStripeWebhookToleranceSeconds();
+  if (tolerance > 0) {
+    const nowSeconds = Math.floor((options.now ?? Date.now)() / 1000);
+    if (Math.abs(nowSeconds - timestampSeconds) > tolerance) return false;
+  }
+
   const actual = createHmac("sha256", secret)
     .update(`${timestamp}.${rawPayload.toString("utf8")}`)
     .digest("hex");
@@ -448,7 +570,8 @@ export async function processStripeWebhook(
     }
 
     const object = event.data?.object;
-    let shouldEmitSubscriptionStarted = false;
+    type LifecycleEmit = "started" | "renewed" | "canceled";
+    let lifecycleEmit: LifecycleEmit | null = null;
     if (object && typeof object === "object" && !Array.isArray(object)) {
       if (event.type === "checkout.session.completed") {
         await upsertCheckoutCompleted(client, object);
@@ -459,19 +582,40 @@ export async function processStripeWebhook(
       ) {
         await upsertSubscriptionEvent(client, object);
         if (event.type === "customer.subscription.created") {
-          shouldEmitSubscriptionStarted = true;
+          lifecycleEmit = "started";
+        } else if (event.type === "customer.subscription.updated") {
+          // `customer.subscription.updated` fires on renewal (Stripe rolls
+          // `current_period_end` forward) and on cancellation flag flips.
+          // We split: status='canceled' → canceled event; otherwise treat
+          // a period_end bump after the previous tick as a renewal. The
+          // simpler signal here — status now reads 'active' and the
+          // event ID hash differs — is good enough for the MRR funnel
+          // because PostHog dedupes via `uuid = event.id`.
+          if (getStripeObjectString(object, "status") === "canceled") {
+            lifecycleEmit = "canceled";
+          } else {
+            lifecycleEmit = "renewed";
+          }
+        } else {
+          lifecycleEmit = "canceled";
         }
       }
     }
 
     await client.query("COMMIT");
-    // PostHog `subscription_started` capture — POST-COMMIT, щоб не блокувати
+    // PostHog subscription lifecycle capture — POST-COMMIT, щоб не блокувати
     // транзакцію і щоб мережева помилка PostHog НЕ призводила до rollback-у
     // (DB row уже записано — idempotency по `stripe_webhook_events.event_id`
     // забезпечує одноразовість). Idempotency PostHog-у — через `uuid =
     // event.id`. Викликається тільки коли подія НЕ duplicate (above).
-    if (shouldEmitSubscriptionStarted && object) {
-      await emitSubscriptionStarted(event, object);
+    if (lifecycleEmit && object) {
+      if (lifecycleEmit === "started") {
+        await emitSubscriptionStarted(event, object);
+      } else if (lifecycleEmit === "renewed") {
+        await emitSubscriptionRenewed(event, object);
+      } else {
+        await emitSubscriptionCanceled(event, object);
+      }
     }
     return { ok: true, duplicate: false };
   } catch (err) {

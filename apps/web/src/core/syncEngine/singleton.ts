@@ -1,4 +1,7 @@
+import { resolveOriginDeviceId } from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+
+import { webKVStore } from "@shared/lib/storage/storage";
 
 import { classifyOutboxBootOutcome } from "./outboxBoot";
 import {
@@ -173,9 +176,43 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     throw err;
   }
 
+  // Stable per-install device id. Without this, every push lands on
+  // the server with `origin_device_id = NULL`, and the pull/SSE filter
+  // `WHERE origin_device_id IS DISTINCT FROM $3` with $3=NULL drops
+  // every NULL-origin row (PG semantics: `NULL IS DISTINCT FROM NULL`
+  // is FALSE). The id is persisted under
+  // `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID` via `webKVStore` so it
+  // survives reloads, deploys, and the SQLite warm-cache hydration
+  // (pre-bootstrap reads fall through to `localStorage`).
+  const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
+  sentry.setSentryTag("sync.origin_device_id_present", "true");
+
+  // T3 audit HIGH#3: surface every poison-row quarantine via Sentry
+  // so SRE has visibility on the corruption class that was previously
+  // a silent head-of-line stall. The breadcrumb is enough — we do NOT
+  // captureException because a single corrupt row in an otherwise
+  // healthy outbox is not an "error" to alert on; the alerting layer
+  // builds a Grafana counter off these breadcrumbs.
+  const onOutboxQuarantine = (event: {
+    readonly id: number;
+    readonly tableName: string;
+    readonly op: string;
+    readonly reason: string;
+  }): void => {
+    sentry.addSentryBreadcrumb({
+      category: "sync",
+      level: "warning",
+      message: `sync_op_outbox.quarantine id=${event.id} table=${event.tableName} op=${event.op} reason=${event.reason}`,
+    });
+  };
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
-      drain: (options) => dbSchema.drainSyncOpOutbox(client, options),
+      drain: (options) =>
+        dbSchema.drainSyncOpOutbox(client, {
+          ...options,
+          onQuarantine: onOutboxQuarantine,
+        }),
       push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
       markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
       markRetry: (id, plan) => dbSchema.markOutboxRetry(client, id, plan),
@@ -195,5 +232,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       sentry.captureException(error, { extra: context }),
     intervalMs: 30_000,
     limit: 100,
+    originDeviceId,
   });
 }

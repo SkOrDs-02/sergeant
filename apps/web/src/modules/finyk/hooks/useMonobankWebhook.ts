@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { logger } from "@shared/lib";
 import {
   monoWebhookApi,
   isApiError,
@@ -231,7 +232,7 @@ export function useMonobankWebhook({
         await refreshFinykMonoMirrorState(client, userId);
         if (!cancelled) notifyFinykMonoMirrorRefresh();
       } catch (err) {
-        console.warn(
+        logger.warn(
           "[finyk.monoMirror] write transactions failed",
           err instanceof Error ? err.message : err,
         );
@@ -259,7 +260,7 @@ export function useMonobankWebhook({
         await refreshFinykMonoMirrorState(client, userId);
         if (!cancelled) notifyFinykMonoMirrorRefresh();
       } catch (err) {
-        console.warn(
+        logger.warn(
           "[finyk.monoMirror] write accounts failed",
           err instanceof Error ? err.message : err,
         );

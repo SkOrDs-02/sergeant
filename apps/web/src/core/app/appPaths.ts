@@ -37,6 +37,11 @@ export const PROFILE_PATH = "/profile";
 export const DESIGN_PATH = "/design";
 export const PRICING_PATH = "/pricing";
 
+// Anonymous public status page (`/status`). Renders the per-component
+// view from `/api/status`. No auth — same intent as `/pricing` (public
+// trust surface, must be reachable without a session).
+export const STATUS_PATH = "/status";
+
 // All URL paths the app handles. Anything outside this set **and** not
 // owned by a path-based module (`isPathBasedModulePath`) gets a 404
 // instead of silently falling through to the dashboard.
@@ -47,6 +52,7 @@ export const KNOWN_PATHS: ReadonlySet<string> = new Set([
   PROFILE_PATH,
   DESIGN_PATH,
   PRICING_PATH,
+  STATUS_PATH,
   ASSISTANT_PATH,
   CHAT_PATH,
   WELCOME_PATH,

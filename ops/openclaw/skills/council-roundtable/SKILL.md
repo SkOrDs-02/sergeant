@@ -98,5 +98,5 @@ Council orchestrator **не розширює** tool-allowlist персон. Ко
 
 - Migration plan: [`docs/planning/openclaw-migration-plan.md § Phase 5`](../../../../docs/planning/openclaw-migration-plan.md).
 - Locked decisions #4 (council cap `$2.0`) і #8 (default sequence): [`docs/planning/openclaw-migration-plan.md § Locked decisions`](../../../../docs/planning/openclaw-migration-plan.md#locked-decisions).
-- Legacy implementation reference (grammy bot fallback): [`tools/console/src/openclaw/handler-commands.ts`](../../../../tools/console/src/openclaw/handler-commands.ts) `bot.command("council", …)`.
+- Legacy implementation reference (grammy bot fallback): [`tools/openclaw/src/openclaw/handler-commands.ts`](../../../../tools/openclaw/src/openclaw/handler-commands.ts) `bot.command("council", …)`.
 - Plugin-side budget gate helper: [`packages/openclaw-plugin/src/hooks/council.ts`](../../../../packages/openclaw-plugin/src/hooks/council.ts).

@@ -13,7 +13,7 @@ import { OfflineBanner } from "./OfflineBanner";
 import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import { shouldShowOnboarding } from "../onboarding/OnboardingWizard";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { WhatsNewModal, useWhatsNew } from "../whatsNew";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";

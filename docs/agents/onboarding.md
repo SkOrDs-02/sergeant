@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -65,7 +65,7 @@ CI hard-rules ловляться різними механізмами. Стар
 ## 5. Plop generators (boilerplate без копіпаста)
 
 - `pnpm gen:adr` — створює `docs/adr/NNNN-<slug>.md` із валідною шапкою (Status / Date / Reviewers / Supersedes / Related). Номер обчислюється через `nextAdrNumber()` у [`plopfile.mjs`](../../plopfile.mjs), gaps пропускаються.
-- `pnpm gen new-skill` (PR 5.1, [#1796](https://github.com/Skords-01/Sergeant/pull/1796)), `pnpm gen new-playbook` (PR 5.1, [#1796](https://github.com/Skords-01/Sergeant/pull/1796)), `pnpm gen new-package` (PR 5.1b, [#1828](https://github.com/Skords-01/Sergeant/pull/1828)), `pnpm gen new-n8n-workflow` (PR 5.1b extras), `pnpm gen new-console-specialist` (PR 5.1b extras part 2) — інтерактивні prompt'и зі smoke-тестами на shape contract. `new-n8n-workflow` додатково оновлює `ops/n8n-workflows/manifest.json` так, що `scripts/n8n/validate-n8n-workflows.mjs` проходить одразу після генерації; `new-console-specialist` створює `tools/console/src/agents/<name>.ts` + `.test.ts` за патерном `ops.ts` / `marketing.ts` (system-prompt стаб + порожній `tools` array + делегація в `runAgentLoop`) і друкує next-steps інструкцію для wire-up у `router.ts` + `index.ts`.
+- `pnpm gen new-skill` (PR 5.1, [#1796](https://github.com/Skords-01/Sergeant/pull/1796)), `pnpm gen new-playbook` (PR 5.1, [#1796](https://github.com/Skords-01/Sergeant/pull/1796)), `pnpm gen new-package` (PR 5.1b, [#1828](https://github.com/Skords-01/Sergeant/pull/1828)), `pnpm gen new-n8n-workflow` (PR 5.1b extras), `pnpm gen new-console-specialist` (PR 5.1b extras part 2) — інтерактивні prompt'и зі smoke-тестами на shape contract. `new-n8n-workflow` додатково оновлює `ops/n8n-workflows/manifest.json` так, що `scripts/n8n/validate-n8n-workflows.mjs` проходить одразу після генерації; `new-console-specialist` створює `tools/openclaw/src/agents/<name>.ts` + `.test.ts` за патерном `ops.ts` / `marketing.ts` (system-prompt стаб + порожній `tools` array + делегація в `runAgentLoop`) і друкує next-steps інструкцію для wire-up у `router.ts` + `index.ts`.
 
 ## 6. Verification before PR
 

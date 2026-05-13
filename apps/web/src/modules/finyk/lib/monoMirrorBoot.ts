@@ -16,6 +16,7 @@
  * Idempotent — calling it twice is a no-op.
  */
 
+import { logger } from "@shared/lib";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
 import { refreshFinykMonoMirrorState } from "./monoMirrorReader.js";
@@ -44,7 +45,7 @@ export async function bootFinykMonoMirror(
     booted = true;
     return true;
   } catch (err) {
-    console.warn(
+    logger.warn(
       "[finyk.monoMirror] boot failed, falling back to LS",
       err instanceof Error ? err.message : err,
     );

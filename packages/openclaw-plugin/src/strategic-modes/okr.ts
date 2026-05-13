@@ -10,7 +10,7 @@
  * `topicRequired: false`.
  *
  * The primer is byte-for-byte equal to the legacy console primer at
- * `tools/console/src/agents/strategic-modes.ts` (the `okr` arm of
+ * `tools/openclaw/src/agents/strategic-modes.ts` (the `okr` arm of
  * `STRATEGIC_MODE_PRIMERS`). A drift-gate test in `index.test.ts`
  * reconstructs the legacy literal and compares.
  */

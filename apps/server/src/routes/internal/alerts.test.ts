@@ -14,14 +14,22 @@ const {
   recordAlertPostMock,
   recordAlertAckMock,
   markAlertEscalatedMock,
+  markAlertRepeatedMock,
+  markAlertSentryWarnedMock,
+  markAlertSnoozedMock,
   listPendingAlertsMock,
   postOrEditDedupedAlertMock,
+  sentryCaptureMessageMock,
 } = vi.hoisted(() => ({
   recordAlertPostMock: vi.fn(),
   recordAlertAckMock: vi.fn(),
   markAlertEscalatedMock: vi.fn(),
+  markAlertRepeatedMock: vi.fn(),
+  markAlertSentryWarnedMock: vi.fn(),
+  markAlertSnoozedMock: vi.fn(),
   listPendingAlertsMock: vi.fn(),
   postOrEditDedupedAlertMock: vi.fn(),
+  sentryCaptureMessageMock: vi.fn(),
 }));
 
 vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
@@ -32,10 +40,19 @@ vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
     recordAlertPost: recordAlertPostMock,
     recordAlertAck: recordAlertAckMock,
     markAlertEscalated: markAlertEscalatedMock,
+    markAlertRepeated: markAlertRepeatedMock,
+    markAlertSentryWarned: markAlertSentryWarnedMock,
+    markAlertSnoozed: markAlertSnoozedMock,
     listPendingAlerts: listPendingAlertsMock,
     postOrEditDedupedAlert: postOrEditDedupedAlertMock,
   };
 });
+
+vi.mock("../../sentry.js", () => ({
+  Sentry: {
+    captureMessage: sentryCaptureMessageMock,
+  },
+}));
 
 async function makeApp(options?: {
   telegramClient?: import("../../modules/alerts/index.js").TelegramApiClient;
@@ -280,6 +297,207 @@ describe("/api/internal/alerts/escalate", () => {
     const res = await request(app)
       .post("/api/internal/alerts/escalate")
       .send({ alertId: "ghost" });
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Sprint 6 / escalation tiers — T2 repeat, T3 sentry-warn, snooze
+// ─────────────────────────────────────────────────────────────────────
+
+describe("/api/internal/alerts/repeat", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    markAlertRepeatedMock.mockResolvedValue({
+      ok: true,
+      alreadyRepeated: false,
+      notFound: false,
+    });
+  });
+
+  it("marks a fresh alert as repeated (Tier 2 @ 60min)", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/repeat")
+      .send({ alertId: "wf-15:42" });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, alreadyRepeated: false });
+    expect(markAlertRepeatedMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "wf-15:42",
+    );
+  });
+
+  it("returns alreadyRepeated=true on cron retry", async () => {
+    markAlertRepeatedMock.mockResolvedValueOnce({
+      ok: true,
+      alreadyRepeated: true,
+      notFound: false,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/repeat")
+      .send({ alertId: "wf-15:42" });
+    expect(res.status).toBe(200);
+    expect(res.body.alreadyRepeated).toBe(true);
+  });
+
+  it("returns 404 for unknown alertId", async () => {
+    markAlertRepeatedMock.mockResolvedValueOnce({
+      ok: false,
+      alreadyRepeated: false,
+      notFound: true,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/repeat")
+      .send({ alertId: "ghost" });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("/api/internal/alerts/sentry-warn", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    markAlertSentryWarnedMock.mockResolvedValue({
+      ok: true,
+      alreadySentryWarned: false,
+      notFound: false,
+    });
+  });
+
+  it("fires Sentry.captureMessage with warning level + tag on first call", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/sentry-warn")
+      .send({ alertId: "wf-15:42" });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, alreadySentryWarned: false });
+    expect(sentryCaptureMessageMock).toHaveBeenCalledTimes(1);
+    const [msg, options] = sentryCaptureMessageMock.mock.calls[0]!;
+    expect(msg).toContain("unacked-alert-escalation");
+    expect(msg).toContain("wf-15:42");
+    expect(options).toEqual({
+      level: "warning",
+      tags: {
+        kind: "unacked-alert-escalation",
+        alertId: "wf-15:42",
+      },
+    });
+  });
+
+  it("does NOT re-fire Sentry on cron retry (idempotent)", async () => {
+    markAlertSentryWarnedMock.mockResolvedValueOnce({
+      ok: true,
+      alreadySentryWarned: true,
+      notFound: false,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/sentry-warn")
+      .send({ alertId: "wf-15:42" });
+    expect(res.status).toBe(200);
+    expect(res.body.alreadySentryWarned).toBe(true);
+    expect(sentryCaptureMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("absorbs Sentry capture failure (row still stamped — do not fail cron)", async () => {
+    sentryCaptureMessageMock.mockImplementationOnce(() => {
+      throw new Error("sentry-network-down");
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/sentry-warn")
+      .send({ alertId: "wf-15:42" });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, alreadySentryWarned: false });
+  });
+
+  it("returns 404 for unknown alertId", async () => {
+    markAlertSentryWarnedMock.mockResolvedValueOnce({
+      ok: false,
+      alreadySentryWarned: false,
+      notFound: true,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/sentry-warn")
+      .send({ alertId: "ghost" });
+    expect(res.status).toBe(404);
+    expect(sentryCaptureMessageMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("/api/internal/alerts/snooze", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    markAlertSnoozedMock.mockImplementation(async (_pool, input) => ({
+      ok: true,
+      notFound: false,
+      snoozedUntilAt: input.snoozedUntilAt.toISOString(),
+    }));
+  });
+
+  it("computes snoozed_until_at = now + duration and returns ISO", async () => {
+    const now = new Date("2026-05-13T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    try {
+      const app = await makeApp();
+      const res = await request(app)
+        .post("/api/internal/alerts/snooze")
+        .send({ alertId: "wf-15:42", durationMinutes: 60 });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        ok: true,
+        snoozedUntilAt: "2026-05-13T13:00:00.000Z",
+      });
+      const arg = markAlertSnoozedMock.mock.calls[0]?.[1];
+      expect(arg.alertId).toBe("wf-15:42");
+      expect(arg.snoozedUntilAt).toEqual(new Date("2026-05-13T13:00:00.000Z"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("accepts 240-min (4h) snooze", async () => {
+    const now = new Date("2026-05-13T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    try {
+      const app = await makeApp();
+      const res = await request(app)
+        .post("/api/internal/alerts/snooze")
+        .send({ alertId: "wf-15:42", durationMinutes: 240 });
+      expect(res.status).toBe(200);
+      expect(res.body.snoozedUntilAt).toBe("2026-05-13T16:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rejects durationMinutes out of [1, 24*60] range with 400", async () => {
+    const app = await makeApp();
+    const tooLarge = await request(app)
+      .post("/api/internal/alerts/snooze")
+      .send({ alertId: "wf-15:42", durationMinutes: 60 * 25 });
+    expect(tooLarge.status).toBe(400);
+    const negative = await request(app)
+      .post("/api/internal/alerts/snooze")
+      .send({ alertId: "wf-15:42", durationMinutes: -1 });
+    expect(negative.status).toBe(400);
+  });
+
+  it("returns 404 for unknown alertId", async () => {
+    markAlertSnoozedMock.mockResolvedValueOnce({
+      ok: false,
+      notFound: true,
+      snoozedUntilAt: null,
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/snooze")
+      .send({ alertId: "ghost", durationMinutes: 60 });
     expect(res.status).toBe(404);
   });
 });

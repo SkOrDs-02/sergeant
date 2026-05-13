@@ -119,7 +119,43 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 - `stub` — `StubProvider`, no-op повертає `{"ok":true,"stub":true}` JSON. Призначення: e2e-тести без real-Anthropic-калькування, локальний dev без ключа, інцидент-recovery під час Anthropic-outage (read-only OpenClaw paths-ів).
 - `openrouter` — зарезервовано під майбутню імплементацію (OpenRouter fallback). Поки що деградує у `stub`, щоб неочікуваний env не валив app.
 
-Wire-up call-sites — окремі PR-24 (OpenClaw `classify`) і PR-25 (`weekly-digest`). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+PR-24 wire-up: OpenClaw `classify`. PR-25 wire-up: `weekly-digest` (через окремий `LLM_DIGEST_PROVIDER` toggle — див. нижче). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+
+### `LLM_READONLY_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-24** — окремий provider для read-only OpenClaw paths (зараз: `before_dispatch` cheap-router classifier у [`apps/server/src/modules/openclaw/classify.ts`](../../apps/server/src/modules/openclaw/classify.ts); пізніше — інші read-only flows). Дозволяє перемкнути саме classifier у fallback-режим, **не зачіпаючи** основний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+
+Значення такі самі, як у `LLM_PROVIDER`:
+
+- `anthropic` (default) — повний шлях через `anthropicMessages()`.
+- `stub` — повертає plausible default `{"class":"chat"}` без HTTP-callu. Idey для:
+  - **Anthropic-outage:** classifier деградує у `chat`-default, чат-flow продовжує працювати окремо (Layer 2 повний agent).
+  - **Local-dev без `ANTHROPIC_API_KEY`:** не падає на classify-розі.
+  - **E2E-тести:** детермінований, безкоштовний шлях без витрат токенів.
+- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
+
+**Спостережуваність (PR-24).** Кожен виклик `LLMProvider.generate()` через обгортку [`invokeLLM()`](../../apps/server/src/lib/llm/provider.ts) інкрементує Prom-counter `llm_provider_invocations_total{provider,endpoint,outcome}` (outcome: `ok|error|missing_api_key|rate_limited|timeout`) + кладе Sentry breadcrumb `category=llm.provider, level=info|warning` з provider/endpoint/outcome/model. Дашборд `ai-cost` (PR-13) використовує цей counter для розщеплення runtime-distribution між Anthropic vs stub-режимами.
+
+### `LLM_DIGEST_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-25** — окремий provider для WF-08 weekly-digest endpoint-у (`POST /api/weekly-digest` у [`apps/server/src/modules/digest/weekly-digest.ts`](../../apps/server/src/modules/digest/weekly-digest.ts)). Дозволяє перемкнути саме digest у fallback-режим, **не зачіпаючи** ні головний `LLM_PROVIDER` (chat/coach/nutrition), ні `LLM_READONLY_PROVIDER` (OpenClaw classify).
+
+Значення такі самі, як у `LLM_PROVIDER`:
+
+- `anthropic` (default) — повний AI-аналіз через `AnthropicProvider`: модель `claude-sonnet-4-6`, `max_tokens=2500`, JSON-відповідь зі структурованими `summary`/`comment`/`recommendations` на кожну секцію (finyk/fizruk/nutrition/routine) + `overallRecommendations`.
+- `stub` — повертає **template-based digest** із raw тижневих метрик (числа тижня прямо у `summary` секції) і **порожніми `recommendations`/`overallRecommendations`** — `StubProvider` обслуговує запит без HTTP-call-у до Anthropic. Use-cases:
+  - **Anthropic-incident:** founder бачить тижневі числа без AI-коментарів. Краще, ніж 502 на digest-роуті.
+  - **Local-dev без `ANTHROPIC_API_KEY`:** endpoint не падає, digest-UI може dev-тестуватися з числами.
+  - **E2E-тести:** детермінований template-вихід без витрат токенів.
+- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
+
+### `LLM_DIGEST_FALLBACK_ON_ERROR` _(optional, default `true`)_
+
+**PR-25** — fail-soft toggle для weekly-digest. Коли `true` (default) і `LLM_DIGEST_PROVIDER=anthropic`, Anthropic-помилки (`5xx` / `rate_limited` / `timeout` / shape-mismatch / parse-error) ловляться у handler-і і digest повертається з template-репорту замість `502 ExternalServiceError`. Sentry breadcrumb `level=warning` + Prom-counter `llm_provider_invocations_total{outcome!=ok}` дають видимість для алертингу.
+
+Коли `false` — strict-mode, як у PR-12: handler кидає `ANTHROPIC_ERROR` / `ANTHROPIC_PARSE_ERROR` / `ANTHROPIC_SHAPE_MISMATCH` і клієнт отримує 502. Корисно для e2e-тестів які явно перевіряють Anthropic-error semantics, або для проектів, де founder воліє бачити порожній звіт через failed UI замість шаблонних чисел.
+
+Прийнятні значення: `1`/`true`/`yes` → on, інакше → off.
 
 ### `AI_TIMEOUT_MS`, `AI_MAX_RETRIES`, `AI_CIRCUIT_BREAKER_THRESHOLD`, `AI_CIRCUIT_BREAKER_RESET_MS` _(optional)_
 
@@ -134,9 +170,9 @@ Wire-up call-sites — окремі PR-24 (OpenClaw `classify`) і PR-25 (`weekl
 
 Console → n8n dispatcher webhook для Telegram-controlled AI agents. Скопіюйте production webhook URL з workflow 20 після імпорту в n8n. Приклад: `https://n8n.your-domain.com/webhook/agent-dispatcher`.
 
-### `ANTHROPIC_PROMPT_CACHE` _(optional, default off — `tools/console` only)_
+### `ANTHROPIC_PROMPT_CACHE` _(optional, default off — `tools/openclaw` only)_
 
-Опт-ін для prompt caching у `tools/console` agent-loop (PR-39, ADR-0057). Truthy values: `1`, `true`, `yes` (case-insensitive). Коли увімкнено, `tools/console/src/agents/run-agent-loop.ts` додає `cache_control: { type: "ephemeral" }` на (a) system prompt і (b) останній tool у `tools[]`. Cache TTL — 5 хвилин; net-cost-win починається з ≥2 викликів у вікні (tool-use loop або кілька slash-команд підряд). Affects лише `tools/console` (Telegram-bot процес у окремому Railway service); не впливає на `apps/server` Anthropic-клієнт.
+Опт-ін для prompt caching у `tools/openclaw` agent-loop (PR-39, ADR-0057). Truthy values: `1`, `true`, `yes` (case-insensitive). Коли увімкнено, `tools/openclaw/src/agents/run-agent-loop.ts` додає `cache_control: { type: "ephemeral" }` на (a) system prompt і (b) останній tool у `tools[]`. Cache TTL — 5 хвилин; net-cost-win починається з ≥2 викликів у вікні (tool-use loop або кілька slash-команд підряд). Affects лише `tools/openclaw` (Telegram-bot процес у окремому Railway service); не впливає на `apps/server` Anthropic-клієнт.
 
 ---
 
@@ -209,6 +245,15 @@ Per-source kill-switch для finyk-ingest з Mono webhook-у (PR-19). Subordina
 - `false` — Mono-webhook-source повністю обходиться; метрика `ai_memory_ingest_enqueued_total{mode="source_disabled", source="finyk"}` росте замість `mode="queued"`. Інші source-и (`digest`, `chat`, `fizruk`, `nutrition`, `routine`, `journal`) не зачіпаються.
 
 Decision-point Day 30 — [`docs/observability/runbook.md § AI memory activation & Day-30 decision-point`](../observability/runbook.md#ai-memory-activation--day-30-decision-point).
+
+### `MONO_AI_MEMORY_DIGEST_ENABLED` _(optional, default `false`, ⚠ prod required)_
+
+Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](../../ops/n8n-workflows/30-ai-memory-daily-digest.json) (PR-21). Cron 09:05 Europe/Kyiv → SELECT агрегати з `ai_memories` за rolling 24h → Telegram #digest. Aggregated-only payload (без `user_id` у тексті); Voyage cost estimate включений у текст digest-а.
+
+- Canonical-source — `apps/server/src/env/env.ts` (`boolFromEnv(false)`). Server-side digest-hook поки відсутній (PR-21 — n8n-only activation), але змінна парситься у server-env для парності з `MONO_AI_MEMORY_INGEST_ENABLED` і майбутніх metrics.
+- **Activation step:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` на n8n Railway env (Settings → Environment Variables), потім flip workflow toggle у self-hosted n8n UI. Без цього кроку workflow JSON залишається `active=false` у git per hard-rule [`validate-n8n-workflows.mjs`](../../scripts/n8n/validate-n8n-workflows.mjs) («workflows in git must be inactive by default»).
+- **Pre-requisites:** `AI_MEMORY_ENABLED=true` (master) + `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19 ingest) — щоб `ai_memories` наповнювалась. Без цього digest буде слати graceful «За добу нічого не записано» kожен ранок.
+- **Monitoring:** [`docs/observability/runbook.md § WF-30 AI memory daily digest (PR-21)`](../observability/runbook.md#wf-30-ai-memory-daily-digest-pr-21).
 
 ---
 
@@ -472,11 +517,11 @@ TTL in-memory дедуп-кешу для ідентичних GET-ів (key = up
 
 ## 20. OpenClaw v0 — Telegram-only co-founder bot (ADR-0031)
 
-> Server-side env. Token + Telegram allowlist живуть у `tools/console` (бот працює там). Сервер відповідає за tool execution + audit log.
+> Server-side env. Token + Telegram allowlist живуть у `tools/openclaw` (бот працює там). Сервер відповідає за tool execution + audit log.
 
 ### `OPENCLAW_FOUNDER_USER_ID` _(required for OpenClaw)_
 
-Better Auth `user.id` founder-а (для join-у з `ai_memories.user_id`, який партиціонується по `hash(user_id)`). Окремий від `OPENCLAW_FOUNDER_TG_USER_ID` (Telegram numeric `user_id`, у `tools/console/.env`).
+Better Auth `user.id` founder-а (для join-у з `ai_memories.user_id`, який партиціонується по `hash(user_id)`). Окремий від `OPENCLAW_FOUNDER_TG_USER_ID` (Telegram numeric `user_id`, у `tools/openclaw/.env`).
 
 ### `OPENCLAW_DAILY_USD_BUDGET` _(optional)_
 

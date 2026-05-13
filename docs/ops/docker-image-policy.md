@@ -55,11 +55,11 @@ Builder + deps stage-и залишаються на `node:20.20.2-alpine` — ї
 
 ### `Dockerfile.console` (Telegram bot, long-poll)
 
-| Stage     | Base                                          | Покликання                                                                          |
-| --------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `builder` | `node:20.20.2-alpine`                         | `pnpm install` (dev+prod), `pnpm --filter @sergeant/console build` (tsc → `dist/`). |
-| `deps`    | `node:20.20.2-alpine`                         | `pnpm install --prod --filter @sergeant/console...`. Cleanup CVE-noisy peers.       |
-| `runtime` | `gcr.io/distroless/nodejs20-debian12:nonroot` | `node_modules` (з deps) + `dist/` (з builder). NO HEALTHCHECK.                      |
+| Stage     | Base                                          | Покликання                                                                           |
+| --------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `builder` | `node:20.20.2-alpine`                         | `pnpm install` (dev+prod), `pnpm --filter @sergeant/openclaw build` (tsc → `dist/`). |
+| `deps`    | `node:20.20.2-alpine`                         | `pnpm install --prod --filter @sergeant/openclaw...`. Cleanup CVE-noisy peers.       |
+| `runtime` | `gcr.io/distroless/nodejs20-debian12:nonroot` | `node_modules` (з deps) + `dist/` (з builder). NO HEALTHCHECK.                       |
 
 ## Healthcheck політика
 
@@ -68,7 +68,7 @@ Distroless runtime НЕ містить shell-у і утиліт (`wget`, `curl`,
 **Як здоров'я моніториться без HEALTHCHECK:**
 
 - **Hub API**: Railway service-config має external HTTP probe на `https://<api-domain>/health` (вже існує — налаштовано через Railway dashboard за межами цього репо). Probe-fail → автоматичний restart container.
-- **Console / OpenClaw**: Long-poll grammy-боти НЕ слухають HTTP. Railway моніторить, що main process не вийшов (crashloop detection); якщо `node dist/index.js` exit-нув, container restart-иться. Дополнительно сам Sentry SDK у `tools/console/src/index.ts` flag-ає uncaught exceptions як `crash`-events із release-тегом.
+- **Console / OpenClaw**: Long-poll grammy-боти НЕ слухають HTTP. Railway моніторить, що main process не вийшов (crashloop detection); якщо `node dist/index.js` exit-нув, container restart-иться. Дополнительно сам Sentry SDK у `tools/openclaw/src/index.ts` flag-ає uncaught exceptions як `crash`-events із release-тегом.
 
 **Якщо у майбутньому потрібен containerized healthcheck**, варіанти:
 

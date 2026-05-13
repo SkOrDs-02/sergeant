@@ -253,14 +253,14 @@ describe("PLAN_PRIMER", () => {
   });
 
   it("matches the legacy console primer byte-for-byte (drift gate)", () => {
-    // The legacy primer lives in `tools/console/src/agents/strategic-modes.ts`.
+    // The legacy primer lives in `tools/openclaw/src/agents/strategic-modes.ts`.
     // We do NOT import it (the plugin must stay package-independent from the
     // console workspace) — we read the file and grep for the inline literal.
     // When the console bot retires in Stage 7, this test + the legacy file
     // can be deleted together.
     const legacyPath = resolve(
       __dirname,
-      "../../../../tools/console/src/agents/strategic-modes.ts",
+      "../../../../tools/openclaw/src/agents/strategic-modes.ts",
     );
     const legacySource = readFileSync(legacyPath, "utf8");
 
@@ -291,7 +291,7 @@ describe("ANALYZE_PRIMER", () => {
   it("matches the legacy console primer byte-for-byte (drift gate)", () => {
     const legacyPath = resolve(
       __dirname,
-      "../../../../tools/console/src/agents/strategic-modes.ts",
+      "../../../../tools/openclaw/src/agents/strategic-modes.ts",
     );
     const legacySource = readFileSync(legacyPath, "utf8");
     const blockMatch = legacySource.match(
@@ -317,7 +317,7 @@ describe("OKR_PRIMER", () => {
   it("matches the legacy console primer byte-for-byte (drift gate)", () => {
     const legacyPath = resolve(
       __dirname,
-      "../../../../tools/console/src/agents/strategic-modes.ts",
+      "../../../../tools/openclaw/src/agents/strategic-modes.ts",
     );
     const legacySource = readFileSync(legacyPath, "utf8");
     const blockMatch = legacySource.match(

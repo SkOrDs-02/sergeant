@@ -10,13 +10,13 @@
  * with the matching dispatch branches as you wire up real surfaces.
  *
  * To wire this agent into the Telegram router (so `/{{routeCommand}}`
- * messages reach it), edit `tools/console/src/agents/router.ts`:
+ * messages reach it), edit `tools/openclaw/src/agents/router.ts`:
  *
  *  1. Add `"{{name}}"` to `AgentType` union.
  *  2. Add a branch: if (trimmed.startsWith("/{{routeCommand}} ") || …)
  *     return { agent: "{{name}}", query: … }.
  *  3. Wire `run{{pascalName}}Agent` in the dispatch switch in
- *     `tools/console/src/index.ts` (or wherever `parseCommand()` is consumed).
+ *     `tools/openclaw/src/index.ts` (or wherever `parseCommand()` is consumed).
  */
 
 import type Anthropic from "@anthropic-ai/sdk";

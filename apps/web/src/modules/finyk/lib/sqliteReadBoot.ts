@@ -20,6 +20,7 @@
  * no-op on the second call.
  */
 
+import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
@@ -58,7 +59,7 @@ export async function bootFinykSqliteReadPath(
     booted = true;
     return true;
   } catch (err) {
-    console.warn(
+    logger.warn(
       "[finyk.sqliteRead] boot failed, falling back to LS",
       err instanceof Error ? err.message : err,
     );

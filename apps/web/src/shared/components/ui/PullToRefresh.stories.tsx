@@ -76,7 +76,10 @@ export const FinykVariant: Story = {
             Finyk — Emerald accent
           </p>
           {mockItems.slice(0, 8).map((item) => (
-            <div key={item.id} className="p-4 bg-panel rounded-2xl border border-finyk/30">
+            <div
+              key={item.id}
+              className="p-4 bg-panel rounded-2xl border border-finyk/30"
+            >
               <p className="text-sm text-text">{item.label}</p>
             </div>
           ))}
@@ -100,7 +103,10 @@ export const Disabled: Story = {
             Pull-to-refresh вимкнено (наприклад, під час відкритого Sheet)
           </p>
           {mockItems.slice(0, 5).map((item) => (
-            <div key={item.id} className="p-4 bg-panel rounded-2xl border border-line">
+            <div
+              key={item.id}
+              className="p-4 bg-panel rounded-2xl border border-line"
+            >
               <p className="text-sm text-text">{item.label}</p>
             </div>
           ))}

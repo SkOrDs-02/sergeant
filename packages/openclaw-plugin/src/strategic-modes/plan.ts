@@ -8,13 +8,13 @@
  * itself runs normally (full Layer 2 reasoning, no bypass).
  *
  * Trigger label `strategic_plan` lines up with the legacy console
- * implementation in `tools/console/src/agents/strategic-modes.ts` so a
+ * implementation in `tools/openclaw/src/agents/strategic-modes.ts` so a
  * future SQL roll-up can `GROUP BY trigger` across both surfaces during
  * the parallel-run window (Stage 6b).
  *
  * Primer text is duplicated from the legacy file rather than imported:
  * `@sergeant/openclaw-plugin` ships in its own Docker image and must
- * stay independent of `tools/console`. The legacy primer is the source
+ * stay independent of `tools/openclaw`. The legacy primer is the source
  * of truth until the console bot is retired (Stage 7 cutover); a tiny
  * gate test in `index.test.ts` keeps them in sync byte-for-byte.
  */

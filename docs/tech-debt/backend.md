@@ -389,7 +389,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 - `apps/server/src/**/*.ts` — 100% TS. `.js` у `apps/server/` лишилися тільки як deploy/build-glue (`migrate.mjs`, `build.mjs`).
 - `apps/web/src/**/*.{ts,tsx}` — 100% TS. У production-source `.js`/`.jsx` — 0 (перевірено `find apps/web/src -type f \( -name "*.js" -o -name "*.jsx" \)`).
-- `tools/console/src/**/*.ts` — 100% TS.
+- `tools/openclaw/src/**/*.ts` — 100% TS.
 - `apps/mobile/src/**/*.{ts,tsx}` + `apps/mobile/app/**/*.tsx` — 100% TS (mobile також прогнано).
 - `apps/mobile-shell/**/*.ts` — 100% TS.
 - `packages/**/src/**` — 100% TS (включно з 4 domain-пакетами та `@sergeant/api-client`).

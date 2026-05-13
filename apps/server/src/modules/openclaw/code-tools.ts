@@ -21,6 +21,7 @@
 import { env } from "../../env.js";
 import { logger } from "../../obs/logger.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
+import { assertOpenClawRepoAllowed } from "./repoAllowlist.js";
 
 const GITHUB_API_VERSION = "2022-11-28";
 const USER_AGENT = "OpenClaw-Bot";
@@ -51,7 +52,10 @@ async function callGithub(url: string): Promise<GithubResponse> {
 }
 
 function resolveRepo(input: { repo?: string | undefined }): string {
-  return input.repo ?? env.OPENCLAW_GITHUB_REPO;
+  // T2 audit #3 — the four code-understanding tools all flow through this
+  // helper, so allowlist enforcement at this single chokepoint covers
+  // github_search/tree/diff/prs in one place.
+  return assertOpenClawRepoAllowed(input.repo);
 }
 
 function resolveRef(input: { ref?: string | undefined }): string {

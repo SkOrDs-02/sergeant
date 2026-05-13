@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; `core/auth/AuthPage.tsx` декомпозовано 694 → 150 LOC). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; того ж дня декомпозовано `core/onboarding/OnboardingWizard.tsx` (691 → composition root 148 + state hook 283 + WelcomeOneScreen 178 + ModuleRow 130 + picksStorage 74); §7 — production console.\* purged до 3 DEV-only / documented call-sites). **Next review:** 2026-08-11.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
@@ -13,18 +13,16 @@
 > Двоступенева драбина у `apps/web/src/shared/lib/storage/storage.ts:resolveStore()`:
 > SQLite warm-cache (bootstrap-resolved) → `localStorage`-fallback (pre-bootstrap / SSR /
 > private mode). Out-of-scope follow-up з §2 закритий.
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **5 файлів >600 LOC** (раніше 14 на 2026-05-04;
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **6 файлів >600 LOC** (раніше 14 на 2026-05-04;
 > lookup-таблиця нижче синхронізована з `wc -l` 2026-05-13). Додатково декомпозовано (після 2026-05-04):
 > `RoutineApp.tsx`, `Progress.tsx` (fizruk), `useStorage.ts` (finyk), `HubDashboard.tsx` (676 → 115 LOC,
 > stale entry в `max-lines` allowlist прибрано у цьому PR),
 > `chatActions/types.ts`, `fizrukActions.ts`, `AssetsTable.tsx`, `Workouts.tsx` (fizruk),
-> `DailyPlanCard.tsx`, `Icon.tsx`, `NutritionApp.tsx`, `sw.ts`, `Exercise.tsx`, `LogCard.tsx`,
-> `core/auth/AuthPage.tsx` (694 → 150 LOC; винесено `LoginForm`, `RegisterForm`,
-> `ForgotPasswordPanel` + `useForgotPassword`, `GoogleSignInButton`, `authFormPrimitives`,
-> `authSchemas`).
+> `DailyPlanCard.tsx`, `Icon.tsx`, `NutritionApp.tsx`, `sw.ts`, `Exercise.tsx`, `LogCard.tsx`.
 > Нові leakers (раніше у doc не трекалися, тепер додані до таблиці §4):
-> `core/onboarding/OnboardingWizard.tsx` (691),
-> `modules/fizruk/lib/dualWrite/adapter.ts` (641). Початково запланований carry-over
+> `core/auth/AuthPage.tsx` (694), `modules/fizruk/lib/dualWrite/adapter.ts` (641).
+> `core/onboarding/OnboardingWizard.tsx` (691) декомпозовано в цьому ж циклі
+> (див. лог нижче). Початково запланований carry-over
 > з Initiative 0001 — лише `FinykApp.tsx` і `RoutineCalendarPanel.tsx` досі активні.
 > Розділ 9 (`any` типи) — таблиця з 10 файлів **повністю закрита**
 > (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452) + закриття
@@ -205,16 +203,12 @@ Codemod ідемпотентний: повторний запуск дасть `
 > PR #2517 round-2 0013). `max-lines` allowlist у `eslint.config.js` тепер
 > **порожній**. Активних carry-over залишилось **2**: `FinykApp.tsx`
 > (640 LOC) і `RoutineCalendarPanel.tsx` (602 LOC). Плюс **2 нових leakers**,
-> які з'явились після audit-у 0001: `OnboardingWizard.tsx`,
-> `dualWrite/adapter.ts` — поки що під `skipBlankLines + skipComments`
-> max-lines lint не падає (LOC > 600 raw, але <600 не-blank/не-comment),
-> моніторити окремо. `core/auth/AuthPage.tsx` (раніше 694 LOC) було
-> декомпозовано на `AuthPage.tsx` (150 — shell + mode-switch composition),
-> `LoginForm.tsx` (133), `RegisterForm.tsx` (152), `ForgotPasswordPanel.tsx`
-> (85), `useForgotPassword.ts` (87 — reset-panel state + 6-сек auto-close),
-> `GoogleSignInButton.tsx` (43), `authFormPrimitives.tsx` (99 — `FieldError` +
-> `PasswordStrengthBar` + `PasswordVisibilityToggle`), `authSchemas.ts` (38 —
-> zod-схеми login/register + типи). Всі < 200 LOC. Деталі — в Outcome секції
+> які з'явились після audit-у 0001: `AuthPage.tsx`, `dualWrite/adapter.ts` —
+> поки що під `skipBlankLines + skipComments` max-lines lint не падає
+> (LOC > 600 raw, але <600 не-blank/не-comment), моніторити окремо.
+> Третій leaker з цієї когорти — `OnboardingWizard.tsx` (691 raw) —
+> декомпозовано (composition root + state-machine hook + WelcomeOneScreen +
+> ModuleRow + picksStorage; кожен файл <300 LOC raw). Деталі — в Outcome секції
 > [`_0001-module-decomposition.md`](../initiatives/archive/_0001-module-decomposition.md).
 >
 > Свіжість таблиці нижче — на 2026-05-04; перерахунок виконується вручну
@@ -326,7 +320,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 | Рядків | Файл                                                  | Категорія                       |
 | ------ | ----------------------------------------------------- | ------------------------------- |
-| 691    | `core/onboarding/OnboardingWizard.tsx`                | Новий leaker (не в Init. 0001)  |
+| 694    | `core/auth/AuthPage.tsx`                              | Новий leaker (не в Init. 0001)  |
 | 641    | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001)  |
 | 640    | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over (активне) |
 | 602    | `modules/routine/components/RoutineCalendarPanel.tsx` | Init. 0001 carry-over (активне) |
@@ -384,39 +378,36 @@ quick actions, callback routing, weekly digest footer).
 
 ## 🟢 Nice-to-have
 
-### 7. `console.*` у production коді — 59 викликів у 38 файлах (re-audit 2026-05-13)
+### 7. `console.*` у production коді — 3 DEV-only / documented (purge 2026-05-13)
 
-**Re-audit 2026-05-13.** Скан `apps/web/src/**` (без тестів і `__tests__/`)
-дає **59 викликів у 38 production-файлах**. Зростання з 35 (2026-05-02) →
-59 — наслідок PR-ів #062 / #063 / #064 (SQLite kv-store bootstrap + cloud-sync
-residual-import path) та нового `chunkReload.ts`/`ShellDeepLinkBridge.tsx`
-logger-у:
+**Re-audit 2026-05-13 (post-purge).** Скан `apps/web/src/**` (без тестів і
+`__tests__/`) дає **3 виклики у 3 файлах**, усі — DEV-gated або
+physically-documented:
 
-- **SQLite kv-store boot** — `core/db/kvStoreBoot.ts` (2), `core/db/sqlite.ts` (4),
-  `shared/lib/storage/typedStore.ts` (2), `shared/lib/storage/storageManager.ts` (1),
-  `shared/lib/storage/createModuleStorage.ts` (1).
-- **Residual-import (cloud-sync legacy LS pull)** —
-  `modules/{finyk,fizruk,routine,nutrition}/lib/residualImport.ts` + `sqliteReadBoot.ts`.
-- **Chunk-reload UX** — `core/lib/chunkReload.ts` (3 — best-effort Sentry warn
-  на dynamic-import failure / refresh-budget).
-- **DualWrite (fizruk + routine adapters)** — `modules/fizruk/lib/dualWrite/{adapter,index}.ts`
-  - `modules/routine/lib/dualWrite/{adapter,index}.ts`.
-- **Push / monobank webhook** — `shared/hooks/usePushNotifications.ts` (4),
-  `modules/finyk/hooks/useMonobankWebhook.ts` (2).
+- `shared/lib/ui/perf.ts:35` — `console.debug` під `if (import.meta.env?.DEV)`,
+  додатково сховано за `hub_perf=1` LS-toggle (опціональна dev-діагностика).
+- `sw/debug.ts:30` — `console.log` під `if (debugEnabled && import.meta.env?.DEV)`;
+  канонічний production-шлях для SW-snapshot — `buildSwSnapshot()` (postMessage
+  → `PWASection`).
+- `core/observability/analytics.ts:56` — `console.log("[analytics]", event)` —
+  навмисна transport-фіча analytics-ring-buffer-у; описана в docstring
+  (`devtools` taps + PostHog).
 
-| Категорія                        | Файли                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | К-сть |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Debug-mode logger                | `core/cloudSync/logger.ts` (2), `shared/lib/perf.ts` (1), `core/observability/analytics.ts` (1)                                                                                                                                                                                                                                                                                                                                                                             | 4     |
-| Best-effort failure warn (catch) | `main.tsx` (1), `core/app/ShellDeepLinkBridge.tsx` (1), `core/insights/useWeeklyDigest.ts` (1), `core/lib/chatActions/nutritionActions.ts` (1), `core/cloudSync/engine/{initialSync,push}.ts` (3), `core/hooks/useSpeech.ts` (1), `modules/finyk/hooks/usePrivatbank.ts` (1), `modules/finyk/hooks/useStorage.ts` (1), `shared/hooks/usePushNotifications.ts` (4), `shared/lib/{createModuleStorage,storageManager,typedStore}.ts` (3), `shared/components/ui/Icon.tsx` (1) | 19    |
-| Fallback warn (sqlite probe)     | `core/db/sqlite.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | 4     |
-| User-facing debug toggle         | `core/settings/PWASection.tsx` (4 — кнопки «Діагностика SW» / «Очистити кеш SW»), `sw.ts` (1 — `[sw] debug enabled`)                                                                                                                                                                                                                                                                                                                                                        | 5     |
-| dualWrite structured logger      | `modules/routine/lib/dualWrite/{adapter,index}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                          | 2     |
-| JSON-parse error                 | `modules/nutrition/hooks/useNutritionLog.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                | 1     |
+Перехід виконано в PR #2583 (`chore(web): purge console.* from production
+code`) разом із sub-PR #2582 (`feat(web): add Sentry-backed logger helper in
+shared/lib/log`). Усі решта `console.warn`/`console.error`/`console.log` —
+~55 викликів у 28 файлах — переведено на новий `logger` helper з
+`shared/lib/log/`, який у production проксіює у Sentry breadcrumb /
+`captureException`, а у DEV пише в `console.*`.
 
-**Усі 35 — навмисні** (best-effort logging без Sentry-context або
-debug-mode toggles). Виправлень не потрібно. Як пастка для нових
-випадків — додати ESLint-правило `no-console` з allowlist на
-debug-logger/warn-патерни — окремий PR (Phase 6 candidate).
+| Категорія                                   | Файли (key examples)                                                                | К-сть |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- | ----- |
+| DEV-only debug toggle                       | `shared/lib/ui/perf.ts` (1 — `hub_perf` LS-flag), `sw/debug.ts` (1 — SW debug-flag) | 2     |
+| Documented analytics transport (ring + log) | `core/observability/analytics.ts` (1 — навмисно, devtools tap)                      | 1     |
+
+**Trackable follow-up:** немає. Як пастка для нових випадків — додати
+ESLint-правило `no-console` з allowlist на ці три рядки (та `*.test.*` /
+`__tests__/`) — окремий PR (Phase 6 candidate).
 
 ---
 
@@ -681,8 +672,8 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
   (override наслідуваного `true` з base) і прибрано
   `vite.config.js`/`vitest.config.js` з `include` (build-config-и не
   type-check-аються разом з src).
-* `tools/console/tsconfig.json` — додано explicit `"allowJs": false`
-  (у `tools/console/src` немає JS-файлів, прапор виставлено на майбутнє
+* `tools/openclaw/tsconfig.json` — додано explicit `"allowJs": false`
+  (у `tools/openclaw/src` немає JS-файлів, прапор виставлено на майбутнє
   без зміни поведінки).
 * `apps/web/src/modules/fizruk/lib/dualWrite/__tests__/adapter.test.ts` —
   drive-by фікс 18 pre-existing TS7053 помилок, що були прихованими
@@ -705,7 +696,7 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
   (single source of truth). Раніше base дозволяв JS-файлам неявно
   потрапляти у TS-pipeline через успадкування — `pnpm strict:coverage`
   на цьому показував `allowJs: ⚠️` для всіх пакетів окрім `apps/web`
-  / `tools/console`. Тепер base стрімкий.
+  / `tools/openclaw`. Тепер base стрімкий.
 - Explicit `allowJs: false` + `checkJs: false` додано на всі 12
   app/package tsconfig-и (`apps/server`, `apps/mobile`, `apps/mobile-shell`,
   `packages/{api-client,shared,db-schema,insights,finyk-domain,fizruk-domain,
@@ -803,7 +794,7 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 | `packages/shared`           |       26 |       7 | `false`  |
 | `apps/mobile`               |       25 |      14 | `false`  |
 | `packages/routine-domain`   |     ✅ 0 |       — | inherit  |
-| `tools/console`             |     ✅ 0 |       — | inherit  |
+| `tools/openclaw`            |     ✅ 0 |       — | inherit  |
 | `packages/db-schema`        |     ✅ 0 |       — | inherit  |
 | `apps/mobile-shell`         |     ✅ 0 |       — | inherit  |
 | **Total**                   | **1225** | **280** |          |

@@ -237,7 +237,7 @@ const MUST_BE_OWNED = [
 
   // Telegram bot agents — system prompts + routing logic
   {
-    path: "tools/console/src/agents",
+    path: "tools/openclaw/src/agents",
     kind: "tree",
     match: /\.ts$/,
     reason:

@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -385,7 +385,7 @@ nutrition-domain,routine-domain}` — explicit override). Після фліпу
   methods у `ErrorBoundary` / `ModuleErrorBoundary` /
   `SectionErrorBoundary` + `MigrationFailedError.cause` у
   `packages/db-schema/src/migrate/runner.ts`; explicit `allowJs: false`
-  на `apps/web` і `tools/console`. `pnpm strict:coverage` рапортує
+  на `apps/web` і `tools/openclaw`. `pnpm strict:coverage` рапортує
   13/13 пакетів (100%). Деталі — `docs/tech-debt/frontend.md` §11.
 
 - **Web: strict TS rollout — Phase 2.** `apps/web/tsconfig.strict.json`

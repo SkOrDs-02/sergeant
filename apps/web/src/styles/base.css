@@ -27,6 +27,29 @@
     overscroll-behavior: none;
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     OPEN-TYPE DEFAULTS — kerning + common ligatures + DM Sans stylistic
+     alternates (`ss01`). Applied at the html/body root so the whole UI
+     inherits a consistent, polished glyph baseline. Override per-element
+     via `font-feature-settings: normal;` for monospace runs that must
+     keep their literal glyph forms (e.g. code blocks, inside `.text-style-code`
+     where we explicitly reset).
+     ═══════════════════════════════════════════════════════════════════════ */
+  html {
+    text-rendering: optimizeLegibility;
+    -webkit-font-feature-settings:
+      "kern" 1,
+      "liga" 1,
+      "calt" 1,
+      "ss01" 1;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1,
+      "calt" 1,
+      "ss01" 1;
+    font-kerning: normal;
+  }
+
   body {
     @apply bg-bg text-text antialiased font-sans;
     margin: 0;

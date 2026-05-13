@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { KeyboardShortcutsModal, ShortcutRegistryProvider } from "./KeyboardShortcutsModal";
+import {
+  KeyboardShortcutsModal,
+  ShortcutRegistryProvider,
+} from "./KeyboardShortcutsModal";
 import { Button } from "./Button";
 
 /**
@@ -10,7 +13,9 @@ import { Button } from "./Button";
  * Підтримує динамічну реєстрацію модульних shortcuts через `ShortcutRegistryProvider`.
  */
 
-function ControlledDemo(props: Partial<React.ComponentProps<typeof KeyboardShortcutsModal>>) {
+function ControlledDemo(
+  props: Partial<React.ComponentProps<typeof KeyboardShortcutsModal>>,
+) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col items-center gap-4">
@@ -56,7 +61,11 @@ export const WithCustomShortcuts: Story = {
           { keys: ["Cmd", "B"], description: "Бюджети", category: "Finyk" },
           { keys: ["T"], description: "Нове тренування", category: "Fizruk" },
           { keys: ["H"], description: "Нова звичка", category: "Routine" },
-          { keys: ["M"], description: "Новий прийом їжі", category: "Nutrition" },
+          {
+            keys: ["M"],
+            description: "Новий прийом їжі",
+            category: "Nutrition",
+          },
           { keys: ["?"], description: "Ця підказка", category: "Загальні" },
           { keys: ["Esc"], description: "Закрити", category: "Загальні" },
         ]}

@@ -1,6 +1,6 @@
 # I1 — Add CodeQL SAST workflow
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-04)
 
 | Field          | Value                                                                                                                                                                          |
@@ -80,7 +80,7 @@ Pin every action by SHA per existing project convention.
 - `language: javascript-typescript` matrix (single value) with the
   `security-extended,security-and-quality` query suites — both
   explicitly recommended in the audit recommendation. Covers JSX/TSX
-  in `apps/web` + Node in `apps/server`, `tools/console`, `apps/mobile`
+  in `apps/web` + Node in `apps/server`, `tools/openclaw`, `apps/mobile`
   - every `packages/**` workspace.
 - `docs/security/codeql.md` (new) — runbook documenting triggers,
   configuration, action SHA pinning, triage protocol (false positive

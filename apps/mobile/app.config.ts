@@ -48,6 +48,28 @@ const isDetoxBuild =
 const ANDROID_PACKAGE = "com.sergeant.app";
 
 /**
+ * HTTPS hosts that should open the RN client as Universal Links (iOS)
+ * and verified App Links (Android).
+ *
+ * Source of truth — kept in lock-step with:
+ *   - `apps/mobile-shell/src/index.ts` → `DEEP_LINK_HTTPS_HOSTS`
+ *   - `apps/server/src/http/cors.ts` (production origins)
+ *   - `apps/web/public/.well-known/apple-app-site-association`
+ *   - `apps/web/public/.well-known/assetlinks.json`
+ *
+ * Add new hosts here AND in all four files above; the runtime
+ * `parseSergeantUrl()` allow-list (`src/lib/deepLinks.ts`) is the
+ * fifth co-ordinated surface.
+ *
+ * Bare host strings — no `https://` prefix. `applinks:` and the
+ * Android `intentFilters` shape add the scheme themselves.
+ */
+const UNIVERSAL_LINK_HOSTS = [
+  "sergeant.vercel.app",
+  "sergeant.2dmanager.com.ua",
+] as const;
+
+/**
  * Static Android app shortcuts (long-press on the launcher icon).
  *
  * Each shortcut fires a `sergeant://…` deep link which is consumed by
@@ -157,9 +179,26 @@ const buildConfig = (): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: ANDROID_PACKAGE,
+    // iOS Universal Links — pairs with `apple-app-site-association`
+    // served by `apps/web/public/.well-known/`. The `applinks:` prefix
+    // is mandatory and the host MUST be bare (no scheme, no path).
+    // The corresponding AASA `appIDs` entry is
+    // `<TEAM_ID>.com.sergeant.app`; the Team ID is filled in at
+    // deploy time (see `docs/mobile/capacitor-deep-links.md`) and
+    // intentionally stays as a placeholder in the committed file.
+    associatedDomains: UNIVERSAL_LINK_HOSTS.map((h) => `applinks:${h}`),
     infoPlist: {
       UIBackgroundModes: ["remote-notification"],
       UIApplicationShortcutItems: IOS_SHORTCUT_ITEMS,
+      // Voice STT (Phase 8). `expo-speech-recognition` config plugin
+      // також виставляє ці ключі за нас, але дублюємо тут як safety-net
+      // на випадок ручного prebuild без плагіна (наприклад, у тестових
+      // pipeline-ах). UA-text — це те, що бачить юзер у permission
+      // prompt на iOS.
+      NSSpeechRecognitionUsageDescription:
+        "Sergeant використовує розпізнавання мовлення, щоб ти міг диктувати назву страви, повідомлення в чаті та інші поля голосом.",
+      NSMicrophoneUsageDescription:
+        "Sergeant використовує мікрофон для голосового вводу (диктовка страв і чату).",
     },
   },
   android: {
@@ -168,23 +207,38 @@ const buildConfig = (): ExpoConfig => ({
       backgroundColor: "#0b0d10",
     },
     package: ANDROID_PACKAGE,
-    // Registers `sergeant://…` as an app link. Expo Router's
-    // file-based routes handle the specific deep-link targets; this
-    // manifest entry is what tells Android that our app is the default
-    // handler for URLs with this scheme. See `src/lib/useDeepLinks.ts`
-    // for the runtime side of the contract.
+    // Android RECORD_AUDIO для голосового вводу (Phase 8). Плагін
+    // `expo-speech-recognition` додає цей дозвіл автоматично, але
+    // тримаємо тут як declarative safety-net — щоб `expo config` показав
+    // дозвіл навіть коли плагін з якоїсь причини не виконався (наприклад,
+    // у CI-only `expo prebuild --no-install` для smoke-тестів).
+    permissions: ["android.permission.RECORD_AUDIO"],
+    // Two intent-filter groups:
     //
-    // TODO (Phase 10 follow-up): once `https://sergeant.2dmanager.com.ua`
-    // publishes `.well-known/assetlinks.json`, add a second intent
-    // filter with `autoVerify: true` + `data.scheme: "https"` so that
-    // web→native universal links work without a picker. iOS universal
-    // links (`associatedDomains: ["applinks:sergeant.2dmanager.com.ua"]`)
-    // are gated on the same prerequisite and intentionally deferred.
+    //   1. Custom scheme (`sergeant://…`) — `autoVerify: false`, picked
+    //      up by `Linking.getInitialURL()` / `addEventListener("url")`
+    //      and routed by `src/lib/useDeepLinks.ts`.
+    //
+    //   2. HTTPS App Links — `autoVerify: true`, paired with the
+    //      `assetlinks.json` hosted on each `UNIVERSAL_LINK_HOSTS`
+    //      origin. With `autoVerify` Android resolves the link
+    //      directly to our app, without showing the "Open with…"
+    //      picker, provided DAL verification passes (release-signed
+    //      APK + correct `sha256_cert_fingerprints`).
+    //
+    // Both filters reuse `parseSergeantUrl()` at runtime — see
+    // `src/lib/deepLinks.ts` for the path → route mapping.
     intentFilters: [
       {
         action: "VIEW",
         autoVerify: false,
         data: [{ scheme: "sergeant" }],
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: UNIVERSAL_LINK_HOSTS.map((host) => ({ scheme: "https", host })),
         category: ["BROWSABLE", "DEFAULT"],
       },
     ],
@@ -220,6 +274,25 @@ const buildConfig = (): ExpoConfig => ({
         backgroundColor: "#0b0d10",
         image: "./assets/splash.png",
         imageWidth: 200,
+      },
+    ],
+    [
+      // Phase 8 voice — STT через native iOS Speech framework / Android
+      // SpeechRecognizer. Плагін додає:
+      //  - iOS: `NSSpeechRecognitionUsageDescription` +
+      //    `NSMicrophoneUsageDescription` у згенерований Info.plist.
+      //  - Android: `RECORD_AUDIO` + queries для
+      //    `com.google.android.googlequicksearchbox` (Google STT).
+      // Текст дозволів дублюємо в `ios.infoPlist` вище як safety-net.
+      "expo-speech-recognition",
+      {
+        microphonePermission:
+          "Sergeant використовує мікрофон для голосового вводу (диктовка страв і чату).",
+        speechRecognitionPermission:
+          "Sergeant використовує розпізнавання мовлення, щоб ти міг диктувати назву страви, повідомлення в чаті та інші поля голосом.",
+        androidSpeechServicePackages: [
+          "com.google.android.googlequicksearchbox",
+        ],
       },
     ],
     // Sentry native plugin — required by `@sentry/react-native` for

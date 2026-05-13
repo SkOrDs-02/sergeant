@@ -75,13 +75,13 @@
 
 ### 2.2. Високі (P1) — значний tech-debt
 
-| ID       | Проблема                       | Деталі           | Статус                                                                                                                                                                                                                                     |
-| -------- | ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **P1-1** | Великі файли (>600 LOC)        | ~8 файлів >600   | Значний прогрес: ProfilePage 1060→95 ✅, HubChat ~800→145 ✅, ActiveWorkoutPanel 949→240 ✅, DesignShowcase 1064→72 ✅. Залишились: HubDashboard (743), Workouts (744), Overview (494), LogCard (736), NutritionApp (728), Progress (692). |
-| **P1-2** | TypeScript 6.0.3 bleeding edge | Tooling ризики   | Monitoring — поки стабільно                                                                                                                                                                                                                |
-| **P1-3** | Capacitor без boundary tests   | 0 тестів         | Не почато                                                                                                                                                                                                                                  |
-| **P1-4** | Prompt cache не активовано     | $$ waste         | ✅ **Закрито.** `cache_control: { type: "ephemeral" }` у `apps/server/src/modules/chat/chat.ts`.                                                                                                                                           |
-| **P1-5** | Немає distributed tracing      | Debug складність | ✅ **Закрито.** OpenTelemetry у `apps/server/src/obs/{tracing,spans,sampler}.ts` + `@sentry/node`.                                                                                                                                         |
+| ID       | Проблема                       | Деталі           | Статус                                                                                                                                                                                                                                                   |
+| -------- | ------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P1-1** | Великі файли (>600 LOC)        | ~8 файлів >600   | Значний прогрес: ProfilePage 1060→95 ✅, HubChat ~800→145 ✅, ActiveWorkoutPanel 949→240 ✅, DesignShowcase 1064→72 ✅, HubDashboard 743→115 ✅, Workouts 744→213 ✅, Overview 494→139 ✅, LogCard 736→216 ✅. Залишились: NutritionApp, Progress (692). |
+| **P1-2** | TypeScript 6.0.3 bleeding edge | Tooling ризики   | Monitoring — поки стабільно                                                                                                                                                                                                                              |
+| **P1-3** | Capacitor без boundary tests   | 0 тестів         | ✅ **Закрито.** 23 boundary тести у `apps/mobile-shell` ([PR #2538](https://github.com/Skords-01/Sergeant/pull/2538)).                                                                                                                                   |
+| **P1-4** | Prompt cache не активовано     | $$ waste         | ✅ **Закрито.** `cache_control: { type: "ephemeral" }` у `apps/server/src/modules/chat/chat.ts`.                                                                                                                                                         |
+| **P1-5** | Немає distributed tracing      | Debug складність | ✅ **Закрито.** OpenTelemetry у `apps/server/src/obs/{tracing,spans,sampler}.ts` + `@sentry/node`.                                                                                                                                                       |
 
 ### 2.3. Середні (P2) — DX-покращення
 
@@ -433,7 +433,7 @@ describe("Capacitor Boundary Tests", () => {
 
 ---
 
-#### Завдання 3.2: прибрати дублювання коду (backend) — частково закрито
+#### Завдання 3.2: прибрати дублювання коду (backend) — ✅ Закрито
 
 **Scope:** `apps/server/src/`
 
@@ -464,17 +464,17 @@ describe("Capacitor Boundary Tests", () => {
 
 ---
 
-#### Завдання 3.4: розбити великі файли (батч 2) — частково закрито
+#### Завдання 3.4: розбити великі файли (батч 2) — ✅ Закрито
 
-**Файли (оновлений стан 2026-05-05):**
+**Файли (оновлений стан 2026-05-13):**
 
-| Файл                     | LOC (було) | LOC (зараз) | Статус                 |
-| ------------------------ | ---------- | ----------- | ---------------------- |
-| `ActiveWorkoutPanel.tsx` | 949        | **240**     | ✅ Закрито             |
-| `HubChat.tsx`            | ~800       | **145**     | ✅ Закрито             |
-| `Overview.tsx`           | ~750       | **494**     | Частково (ще >400 LOC) |
-| `Workouts.tsx`           | 894        | **744**     | Мінімальний прогрес    |
-| `DesignShowcase.tsx`     | 1064       | **72**      | ✅ Закрито             |
+| Файл                     | LOC (було) | LOC (зараз) | Статус                                                                   |
+| ------------------------ | ---------- | ----------- | ------------------------------------------------------------------------ |
+| `ActiveWorkoutPanel.tsx` | 949        | **240**     | ✅ Закрито                                                               |
+| `HubChat.tsx`            | ~800       | **145**     | ✅ Закрито                                                               |
+| `Overview.tsx`           | ~750       | **139**     | ✅ Закрито ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547)) |
+| `Workouts.tsx`           | 894        | **213**     | ✅ Закрито ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)) |
+| `DesignShowcase.tsx`     | 1064       | **72**      | ✅ Закрито                                                               |
 
 ---
 
@@ -699,12 +699,12 @@ graph TD
 
 ### 7.2. Критерії завершення Спринту 2
 
-| Метрика                  | Було | Зараз (2026-05-05)        | Ціль | Статус          |
-| ------------------------ | ---- | ------------------------- | ---- | --------------- |
-| localStorage allowlist   | 42   | **~10**                   | 22   | ✅ Перевиконано |
-| HubDashboard LOC         | 902  | **743**                   | <150 | ⏳ В процесі    |
-| HubReports test coverage | 0%   | **~80%** (684 LOC тестів) | 80%  | ✅ Закрито      |
-| Capacitor boundary tests | 0    | **0**                     | 10+  | ❌ Не почато    |
+| Метрика                  | Було | Зараз (2026-05-05)        | Ціль | Статус                                                                   |
+| ------------------------ | ---- | ------------------------- | ---- | ------------------------------------------------------------------------ |
+| localStorage allowlist   | 42   | **~10**                   | 22   | ✅ Перевиконано                                                          |
+| HubDashboard LOC         | 902  | **115**                   | <150 | ✅ Закрито                                                               |
+| HubReports test coverage | 0%   | **~80%** (684 LOC тестів) | 80%  | ✅ Закрито                                                               |
+| Capacitor boundary tests | 0    | **23**                    | 10+  | ✅ Закрито ([PR #2538](https://github.com/Skords-01/Sergeant/pull/2538)) |
 
 ### 7.3. Критерії завершення Спринту 3
 
@@ -803,19 +803,19 @@ apps/web/src/routine/
 <details>
 <summary>Click to expand full list</summary>
 
-| #   | File                   | LOC      | Priority                                                    |
-| --- | ---------------------- | -------- | ----------------------------------------------------------- |
-| 1   | seedFoodsUk.ts         | 1614     | ✅ Done (data file)                                         |
-| 2   | Assets.tsx             | 1147     | ✅ Done                                                     |
-| 3   | DesignShowcase.tsx     | 1064→72  | ✅ Done                                                     |
-| 4   | ProfilePage.tsx        | 1060→95  | ✅ Done                                                     |
-| 5   | ActiveWorkoutPanel.tsx | 949→240  | ✅ Done                                                     |
-| 6   | seedDemoData.ts        | 907      | Low (data file)                                             |
-| 7   | HubDashboard.tsx       | 902→743  | ⏳ Частковий прогрес                                        |
-| 8   | Workouts.tsx           | 894→744  | ⏳ Мінімальний прогрес                                      |
-| 9   | HubChat.tsx            | ~800→145 | ✅ Done                                                     |
-| 10  | Overview.tsx           | ~750→494 | ⏳ Частковий прогрес                                        |
-| ... | (решта)                | 600-736  | Ongoing — LogCard (736), NutritionApp (728), Progress (692) |
+| #   | File                   | LOC      | Priority                                                                                                                                                                                          |
+| --- | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | seedFoodsUk.ts         | 1614     | ✅ Done (data file)                                                                                                                                                                               |
+| 2   | Assets.tsx             | 1147     | ✅ Done                                                                                                                                                                                           |
+| 3   | DesignShowcase.tsx     | 1064→72  | ✅ Done                                                                                                                                                                                           |
+| 4   | ProfilePage.tsx        | 1060→95  | ✅ Done                                                                                                                                                                                           |
+| 5   | ActiveWorkoutPanel.tsx | 949→240  | ✅ Done                                                                                                                                                                                           |
+| 6   | seedDemoData.ts        | 907      | Low (data file)                                                                                                                                                                                   |
+| 7   | HubDashboard.tsx       | 902→115  | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f))                                                                                                                     |
+| 8   | Workouts.tsx           | 894→213  | ✅ Done ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530))                                                                                                                             |
+| 9   | HubChat.tsx            | ~800→145 | ✅ Done                                                                                                                                                                                           |
+| 10  | Overview.tsx           | ~750→139 | ✅ Done ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547))                                                                                                                             |
+| ... | (решта)                | 600-736  | Ongoing — LogCard (736→216, [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)), NutritionApp (728, [`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67)), Progress (692) |
 
 </details>
 
@@ -859,4 +859,4 @@ pnpm --filter @sergeant/web build     # Web only
 
 ---
 
-**Документ оновлено 2026-05-05. Спринт 1 фактично завершено. Основні відкриті задачі: HubDashboard decomposition (завдання 2.2), Capacitor boundary tests (завдання 2.4), залишкові великі файли (Workouts.tsx, LogCard.tsx, NutritionApp.tsx), bundle size optimization (завдання 4.4), Lighthouse CI (завдання 4.5).**
+**Документ оновлено 2026-05-13. Спринт 1–3 завершено. Відкриті задачі: bundle size optimization (завдання 4.4), Lighthouse CI (завдання 4.5). Закрито: HubDashboard, Capacitor boundary tests, Workouts, LogCard, Overview, backend dedup.**

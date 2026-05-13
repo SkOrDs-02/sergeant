@@ -65,7 +65,9 @@ function buildMemoryContent(
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const amountStr = symbol ? `${sign}${formatted} ${symbol}` : `${sign}${formatted}`;
+  const amountStr = symbol
+    ? `${sign}${formatted} ${symbol}`
+    : `${sign}${formatted}`;
   const description = (item.description || "Без опису").trim().slice(0, 200);
   const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
   const categoryPart = categorySlug ? ` · ${categorySlug}` : "";

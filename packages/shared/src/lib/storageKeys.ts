@@ -63,6 +63,18 @@ export const STORAGE_KEYS = {
   // SYNC_MIGRATION_DONE ("hub_sync_migrated_users").
   // All were dead since PR #052b (cloudSync v1 engine drop). See
   // docs/planning/storage-roadmap.md § Stage 13 PR #077.
+  /**
+   * Per-install stable device ID forwarded as `X-Origin-Device-Id` on
+   * every sync v2 push / pull / stream request. Server uses it for
+   * own-write echo suppression (`origin_device_id IS DISTINCT FROM`)
+   * and for the future LWW tiebreaker. ULID-shape (≤64 chars).
+   *
+   * Versioned (`_v1`) so a future change in identity semantics (e.g.
+   * "tie device-id to better-auth session") can ship a new slot
+   * without colliding with the previous one. Reads/writes go through
+   * the platform's `KVStore` adapter (`webKVStore` / `mobileKVStore`).
+   */
+  SYNC_ORIGIN_DEVICE_ID: "sync_origin_device_id_v1",
 
   // ─── Finyk ────────────────────────────────────────────────────────────
   // Mono API cache keys — NOT dual-write-covered, kept as-is.

@@ -13,6 +13,23 @@ module.exports = {
     "<rootDir>/plugins/**/*.test.{ts,tsx}",
   ],
   setupFiles: ["<rootDir>/jest.setup.js"],
+  // Bound Jest's worker fan-out so the mobile suite doesn't run out of
+  // heap on default CI runners. With ~110 suites the default
+  // `os.cpus().length - 1` workers (≈ 7 on the GitHub `ubuntu-latest`
+  // runner) keep ~7 `react-native + jest-expo` workers alive
+  // simultaneously — each retains an `expo-modules-core`,
+  // `react-native`, `nativewind`, and Sentry RN module graph that
+  // measures ≈ 350-400 MB resident. The aggregate easily blows past
+  // the 4 GB v8 default heap and the runner OOMs with
+  // `FATAL ERROR: Reached heap limit Allocation failed`.
+  //
+  // `'50%'` (≈ 4 workers on a 8-vCPU runner, ≈ 6 on a 12-vCPU host)
+  // is the upstream `jest-expo` recommendation for Reanimated / Expo
+  // suites, and `workerIdleMemoryLimit: '512MB'` recycles each worker
+  // once it crosses the threshold so long-lived modules don't pile up
+  // across suite boundaries.
+  maxWorkers: "50%",
+  workerIdleMemoryLimit: "512MB",
   // `@sergeant/*-domain` packages use NodeNext `.js`-extension imports
   // inside their TS source (required so they compile cleanly under the
   // workspace `"module": "NodeNext"` toolchain). Jest resolves them

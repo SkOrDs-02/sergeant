@@ -1,7 +1,7 @@
 # Console container — multi-stage with distroless runtime (PR-30 / L3).
 #
-# Шлях `tools/console` (раніше `apps/console`) — internal ops tool, не product
-# surface. Ім'я npm-пакету `@sergeant/console` НЕ змінюється; Railway service
+# Шлях `tools/openclaw` (раніше `apps/console`) — internal ops tool, не product
+# surface. Ім'я npm-пакету `@sergeant/openclaw` НЕ змінюється; Railway service
 # був перейменований `sergeant-hubchat` → `sergeant-openclaw` per ADR-0032 /
 # Pain P10.
 #
@@ -37,17 +37,17 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/config/package.json ./packages/config/package.json
-COPY tools/console/package.json ./tools/console/package.json
+COPY tools/openclaw/package.json ./tools/openclaw/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
-      --filter @sergeant/console... \
+      --filter @sergeant/openclaw... \
       --filter @sergeant/config...
 
 # --- Джерела ---
 COPY packages/config ./packages/config
-COPY tools/console ./tools/console
+COPY tools/openclaw ./tools/openclaw
 
-WORKDIR /app/tools/console
+WORKDIR /app/tools/openclaw
 ENV NODE_ENV=production
 RUN pnpm build
 
@@ -61,10 +61,10 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/config/package.json ./packages/config/package.json
-COPY tools/console/package.json ./tools/console/package.json
+COPY tools/openclaw/package.json ./tools/openclaw/package.json
 
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
-      --filter @sergeant/console...
+      --filter @sergeant/openclaw...
 
 # Trim Trivy-flagged optional peers (vite/vitest/esbuild) — ми їх не виконуємо
 # у runtime, але `pnpm install --prod` тягне через peer-граф.
@@ -88,19 +88,19 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Production node_modules + workspace symlinks з deps-stage. pnpm symlinks
-# у `tools/console/node_modules` вказують у `/app/node_modules/.pnpm/...`,
+# у `tools/openclaw/node_modules` вказують у `/app/node_modules/.pnpm/...`,
 # тож обидва шляхи мають існувати для node module resolution.
 COPY --from=deps --chown=nonroot:nonroot /app/node_modules /app/node_modules
-COPY --from=deps --chown=nonroot:nonroot /app/tools/console/node_modules /app/tools/console/node_modules
+COPY --from=deps --chown=nonroot:nonroot /app/tools/openclaw/node_modules /app/tools/openclaw/node_modules
 
 # Manifest-и
 COPY --from=deps --chown=nonroot:nonroot /app/package.json /app/package.json
-COPY --from=deps --chown=nonroot:nonroot /app/tools/console/package.json /app/tools/console/package.json
+COPY --from=deps --chown=nonroot:nonroot /app/tools/openclaw/package.json /app/tools/openclaw/package.json
 
 # Build артефакт
-COPY --from=builder --chown=nonroot:nonroot /app/tools/console/dist /app/tools/console/dist
+COPY --from=builder --chown=nonroot:nonroot /app/tools/openclaw/dist /app/tools/openclaw/dist
 
-WORKDIR /app/tools/console
+WORKDIR /app/tools/openclaw
 
 # Distroless entrypoint = `/nodejs/bin/node`. CMD = args only. NO HEALTHCHECK
 # — long-poll bot не має HTTP-endpoint-у; Railway моніторить crashloop сам.

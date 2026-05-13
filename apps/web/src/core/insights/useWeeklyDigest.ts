@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { logger } from "@shared/lib";
 import { coachApi, weeklyDigestApi } from "@shared/api";
 import type { WeeklyDigestReport } from "@shared/api";
 import { STORAGE_KEYS, getWeekKey as sharedGetWeekKey } from "@sergeant/shared";
@@ -483,7 +484,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
             // non-fatal, але без логу не було видно серверних збоїв у
             // персоналізованому coach-контексті — digest генерувався, а
             // пам'ять мовчки не оновлювалася.
-            console.warn("[weeklyDigest] coachApi.postMemory failed", err);
+            logger.warn("[weeklyDigest] coachApi.postMemory failed", err);
           });
       } catch {
         /* non-fatal */

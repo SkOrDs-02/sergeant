@@ -30,8 +30,14 @@
  *     `class: "chat"` без `chat_response` і просто пропускає до Layer 2.
  */
 
+import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
-import { anthropicMessages } from "../../lib/anthropic.js";
+import {
+  getLLMProvider,
+  invokeLLM,
+  type LLMBreadcrumbFn,
+  type LLMProvider,
+} from "../../lib/llm/provider.js";
 
 /**
  * Allowed classification classes. Must stay in sync with the plugin-side
@@ -159,16 +165,42 @@ export function parseClassification(raw: string): CheapRouterClassification {
 }
 
 /**
- * Pure helper — calls Haiku, parses the response, returns the classification.
- * Throws on upstream not-ok (caller maps to 502). On parse failure or empty
- * content silently returns `{ class: "chat" }` so the plugin always gets a
+ * Default stub-response для read-only classifier-у: `class=chat` без
+ * `chat_response`. Caller (plugin hook) трактує це як "не вгадав, нехай
+ * Layer 2 повний agent відіграє". Підходить для:
+ *   - `LLM_READONLY_PROVIDER=stub` у production під час Anthropic outage;
+ *   - dev/preview без `ANTHROPIC_API_KEY`;
+ *   - e2e-тестів — детермінований, безкоштовний шлях.
+ */
+const STUB_CLASSIFY_RESPONSE = JSON.stringify({ class: "chat" });
+
+/**
+ * PR-24 optional knobs:
+ * - `provider` — підмінити provider у тестах (DI); default = factory
+ *   `getLLMProvider({ provider: env.LLM_READONLY_PROVIDER })`.
+ * - `addBreadcrumb` — підмінити Sentry breadcrumb emitter у тестах.
+ */
+export interface ClassifyMessageOptions {
+  provider?: LLMProvider;
+  addBreadcrumb?: LLMBreadcrumbFn;
+}
+
+/**
+ * Pure helper — calls Haiku через `LLMProvider`-абстракцію (PR-23/24),
+ * parses the response, returns the classification. Throws on upstream
+ * not-ok (caller maps to 502). On parse failure or empty content
+ * silently returns `{ class: "chat" }` so the plugin always gets a
  * predictable shape — failures should never crash a `before_dispatch` hook.
  *
  * `apiKey` parametrised for testability (mirrors `categorizeTransaction`).
+ * Provider override доступний через `options.provider` (для тестів). Якщо
+ * `env.LLM_READONLY_PROVIDER=stub` — повертає `{ class: "chat" }` без
+ * жодного HTTP-callu, що ідеально для Anthropic-outage / dev-без-ключа.
  */
 export async function classifyMessage(
   args: ClassifyMessageArgs,
   apiKey: string,
+  options: ClassifyMessageOptions = {},
 ): Promise<CheapRouterClassification> {
   const userMessage = args.userMessage?.trim();
   if (!userMessage) {
@@ -177,28 +209,35 @@ export async function classifyMessage(
 
   const systemPrompt = args.systemPrompt ?? DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT;
 
-  const { response, data } = await anthropicMessages(
-    apiKey,
+  const provider =
+    options.provider ??
+    getLLMProvider({
+      provider: env.LLM_READONLY_PROVIDER,
+      anthropicApiKey: apiKey,
+      stubResponse: { text: STUB_CLASSIFY_RESPONSE },
+    });
+
+  const result = await invokeLLM(
+    provider,
     {
       // claude-haiku-4-5 — найдешевший актуальний tier ($1 / $5 per M tokens
       // на 2026-05; ~$0.0002 / classification з 200/80 input/output split).
       // Той самий model, що використовує `routes/internal/categorize.ts`.
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 200,
+      maxTokens: 200,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
+      endpoint: "internal/openclaw/classify",
+      timeoutMs: 10_000,
     },
-    { endpoint: "internal/openclaw/classify", timeoutMs: 10_000 },
+    options.addBreadcrumb ? { addBreadcrumb: options.addBreadcrumb } : {},
   );
 
-  if (!response?.ok) {
-    const status = response?.status ?? 0;
-    throw new Error(`classifyMessage: upstream not ok (status=${status})`);
+  if (!result.ok) {
+    throw new Error(
+      `classifyMessage: provider error (code=${result.code ?? "unknown"}, status=${result.status ?? 0})`,
+    );
   }
 
-  const text =
-    (data as { content?: Array<{ type: string; text?: string }> }).content?.[0]
-      ?.text ?? "";
-
-  return parseClassification(text);
+  return parseClassification(result.text);
 }

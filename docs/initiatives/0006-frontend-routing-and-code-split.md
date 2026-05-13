@@ -116,7 +116,7 @@
 - [ ] Усі 8 top-level routes (Hub, Finyk, Fizruk, Nutrition, Routine, Insights, Settings, Onboarding) — окремі lazy-chunks. _Прогрес: 2/8 — `/nutrition/*` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)) + `/finyk/*` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Hub `/`, Fizruk `/fizruk/*`, Routine `/routine/*` лишаються через legacy `?module=` query-param + catch-all `path: "*"`._
 - [ ] Initial bundle ≤ 350 KB (gzip). _Прогрес: 666 KB / 194 KB gzip після Phase 2.b — реальний chunk-split move-ається у Phase 5._
 - [ ] Per-route bundle ≤ 250 KB (gzip) — для більшості; крупніші документуються.
-- [ ] `useHashRouter` повністю видалено з `apps/web/src/**`. _Прогрес: 2/4 — `nutrition/hooks/useNutritionHashRoute.ts` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)) і `finyk/hooks/useHashRouter.ts` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)) видалені. `apps/web/src/shared/hooks/useHashRoute.ts` (singular) лишається активним для fizruk + routine._
+- [x] `useHashRouter` повністю видалено з `apps/web/src/**`. 4/4: `nutrition/hooks/useNutritionHashRoute.ts` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)), `finyk/hooks/useHashRouter.ts` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)), shared `apps/web/src/shared/hooks/useHashRoute.ts` ([`f5caf1ee`](https://github.com/Skords-01/Sergeant/commit/f5caf1ee) `chore(web): remove unused useHashRoute hook + tests + exports`); fizruk і routine мають власні пер-модульні hooks (`useFizrukRoute.ts`, `useRoutineRoute.ts`).
 - [ ] Hash-URL compat shim тестується e2e (1 Playwright test). _Phase 3._
 - [ ] Route-loaders використовуються щонайменше у 4 модулях (prefetch RQ-data). _Phase 2/4 — поточно 0; route-loaders не введені бо Phase 2 PR-и тримали NOOP-міграцію без поведінкових регресій._
 - [ ] PostHog подія `route_change` логується для метрики p95. _Phase 4._
@@ -157,7 +157,7 @@
 - [`apps/web/src/modules/finyk/hooks/useFinykRoute.ts`](../../apps/web/src/modules/finyk/hooks/useFinykRoute.ts) — Phase 2.b path-router (replaces deleted `hooks/useHashRouter.ts`)
 - [`apps/web/src/modules/finyk/lib/finykRouter.ts`](../../apps/web/src/modules/finyk/lib/finykRouter.ts) — Phase 2.b parser/builder + legacy hash-compat dictionary
 - [`apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts`](../../apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts) — Phase 2.a path-router (replaces deleted `hooks/useNutritionHashRoute.ts`)
-- [`apps/web/src/shared/hooks/useHashRoute.ts`](../../apps/web/src/shared/hooks/useHashRoute.ts) — shared (singular) hash-route hook still in use by fizruk + routine until their Phase 2 PRs land
+- ~~`apps/web/src/shared/hooks/useHashRoute.ts`~~ — видалено в [`f5caf1ee`](https://github.com/Skords-01/Sergeant/commit/f5caf1ee) `chore(web): remove unused useHashRoute hook + tests + exports`; fizruk + routine мають власні пер-модульні hooks ([`useFizrukRoute.ts`](../../apps/web/src/modules/fizruk/hooks/useFizrukRoute.ts), [`useRoutineRoute.ts`](../../apps/web/src/modules/routine/hooks/useRoutineRoute.ts))
 - [`apps/web/src/core/app/`](../../apps/web/src/core/app/)
 - [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)
 - [`apps/web/vite.config.js`](../../apps/web/vite.config.js)
@@ -237,5 +237,5 @@ DOR для Phase 1 (`feat-react-router-setup`): після введення `<Ro
 - `react-router@7` не доданий — це Phase 1; rule свідомо стоїть до залежності, щоб зафіксувати baseline без ризику регресій рантайму.
 - `<HashRedirect />` shim не реалізовано — Phase 3, після per-route migration; інакше hash-redirect ламає `useHashRouter` під час перехідного стану.
 - Auto-fix-ера не додано — заміна `useHashRouter()` на `useNavigate()` потребує контексту (router-context, відсутній до Phase 1); ручна міграція робиться по одному модулю на PR (Phase 2).
-- Rule НЕ покриває `apps/mobile/**` / `apps/server/**` / `tools/console/**` — мобільний має React Navigation (інша stack), сервер — без DOM, console — Telegram bot.
+- Rule НЕ покриває `apps/mobile/**` / `apps/server/**` / `tools/openclaw/**` — мобільний має React Navigation (інша stack), сервер — без DOM, console — Telegram bot.
 - Rule НЕ блокує `addEventListener("hashchange", ...)` — підписка на hashchange валідна для compat-shim Phase 3 і тестів.

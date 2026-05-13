@@ -14,10 +14,12 @@ import {
   chartHex,
   chartPalette,
   chartPaletteList,
+  elevation,
   moduleAccentRgb,
   moduleColors,
   statusColors,
   statusHex,
+  zTier,
 } from "./tokens.js";
 import {
   colors as mobileColors,
@@ -68,6 +70,53 @@ describe("@sergeant/design-tokens — tokens.js", () => {
 
   it("chartPaletteList length === Object.keys(chartPalette).length", () => {
     expect(chartPaletteList.length).toBe(Object.keys(chartPalette).length);
+  });
+
+  it("elevation scale exposes the canonical e0..e5 keys with light+dark recipes", () => {
+    // Lock the public surface — adding a level (e.g. `e6`) is a
+    // breaking change for every consumer; renaming an existing one is
+    // not allowed without a coordinated docs/refactor pass.
+    expect(Object.keys(elevation)).toEqual([
+      "e0",
+      "e1",
+      "e2",
+      "e3",
+      "e4",
+      "e5",
+    ]);
+    for (const step of Object.values(elevation)) {
+      expect(typeof step.light).toBe("string");
+      expect(typeof step.dark).toBe("string");
+    }
+    // e0 is the only "flat" level — both themes resolve to `none`.
+    expect(elevation.e0.light).toBe("none");
+    expect(elevation.e0.dark).toBe("none");
+  });
+
+  it("elevation recipes snapshot — light + dark per level", () => {
+    expect(elevation).toMatchSnapshot();
+  });
+
+  it("zTier exposes the canonical base..toast stacking tier", () => {
+    expect(Object.keys(zTier)).toEqual([
+      "base",
+      "dropdown",
+      "sticky",
+      "overlay",
+      "modal",
+      "toast",
+    ]);
+    // Numerically monotonic — popovers must always sit below modals,
+    // modals always below toasts, etc. We compare as integers because
+    // CSS variables expect a unit-less string and a typo (e.g. "20O")
+    // would silently sort wrong as a string.
+    const ordered = ["base", "dropdown", "sticky", "overlay", "modal", "toast"];
+    const values = ordered.map((t) => Number(zTier[t]));
+    expect(values).toEqual([...values].sort((a, b) => a - b));
+  });
+
+  it("zTier snapshot — exact numeric assignment", () => {
+    expect(zTier).toMatchSnapshot();
   });
 });
 

@@ -404,4 +404,23 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     await (before as (input: unknown) => Promise<unknown>)(ctx);
     expect(ctx.body["revokeOtherSessions"]).toBeUndefined();
   });
+
+  /**
+   * PR-48 round-2 — session policy pinned до 7-денного hard-expiry з
+   * 1-денним rolling refresh. Якщо хтось випадково повернеться до 30d
+   * (старе значення) — тест відстрелить.
+   * Audit-док: `docs/security/better-auth-audit-2026-05.md`. ADR-0017.
+   */
+  it("PR-48: session.expiresIn = 7 діб", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          session?: { expiresIn?: number; updateAge?: number };
+        };
+      }
+    ).options;
+    expect(options.session?.expiresIn).toBe(60 * 60 * 24 * 7);
+    // Rolling refresh — 1 доба. Активний юзер ніколи не бачить logout.
+    expect(options.session?.updateAge).toBe(60 * 60 * 24);
+  });
 });

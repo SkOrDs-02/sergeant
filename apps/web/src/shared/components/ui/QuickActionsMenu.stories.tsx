@@ -31,19 +31,53 @@ export default meta;
 type Story = StoryObj<typeof QuickActionsMenu>;
 
 const finykActions = [
-  { id: "expense", icon: "wallet" as const, label: "Витрата", color: "#10b981", onClick: () => {} },
-  { id: "income", icon: "trending-up" as const, label: "Дохід", color: "#14b8a6", onClick: () => {} },
-  { id: "note", icon: "edit" as const, label: "Нотатка", color: "#6366f1", onClick: () => {} },
+  {
+    id: "expense",
+    icon: "wallet" as const,
+    label: "Витрата",
+    color: "#10b981",
+    onClick: () => {},
+  },
+  {
+    id: "income",
+    icon: "trending-up" as const,
+    label: "Дохід",
+    color: "#14b8a6",
+    onClick: () => {},
+  },
+  {
+    id: "note",
+    icon: "edit" as const,
+    label: "Нотатка",
+    color: "#6366f1",
+    onClick: () => {},
+  },
 ];
 
 const fizrukActions = [
-  { id: "workout", icon: "activity" as const, label: "Тренування", color: "#14b8a6", onClick: () => {} },
-  { id: "measure", icon: "ruler" as const, label: "Заміри", color: "#0d9488", onClick: () => {} },
+  {
+    id: "workout",
+    icon: "activity" as const,
+    label: "Тренування",
+    color: "#14b8a6",
+    onClick: () => {},
+  },
+  {
+    id: "measure",
+    icon: "ruler" as const,
+    label: "Заміри",
+    color: "#0d9488",
+    onClick: () => {},
+  },
 ];
 
 export const FinykMenu: Story = {
   args: {
-    trigger: <Button variant="finyk" size="md" iconOnly aria-label="Додати">+</Button>,
+    trigger: (
+      <Button variant="finyk" size="md" iconOnly aria-label="Додати">
+        +
+      </Button>
+    ),
     actions: finykActions,
     position: "top",
   },
@@ -51,7 +85,11 @@ export const FinykMenu: Story = {
 
 export const FizrukMenu: Story = {
   args: {
-    trigger: <Button variant="fizruk" size="md" iconOnly aria-label="Дії">⚡</Button>,
+    trigger: (
+      <Button variant="fizruk" size="md" iconOnly aria-label="Дії">
+        ⚡
+      </Button>
+    ),
     actions: fizrukActions,
     position: "top",
   },
@@ -59,10 +97,25 @@ export const FizrukMenu: Story = {
 
 export const TwoActions: Story = {
   args: {
-    trigger: <Button variant="secondary" size="md" iconOnly aria-label="Меню">⋮</Button>,
+    trigger: (
+      <Button variant="secondary" size="md" iconOnly aria-label="Меню">
+        ⋮
+      </Button>
+    ),
     actions: [
-      { id: "edit", icon: "edit" as const, label: "Редагувати", onClick: () => {} },
-      { id: "delete", icon: "trash" as const, label: "Видалити", color: "#ef4444", onClick: () => {} },
+      {
+        id: "edit",
+        icon: "edit" as const,
+        label: "Редагувати",
+        onClick: () => {},
+      },
+      {
+        id: "delete",
+        icon: "trash" as const,
+        label: "Видалити",
+        color: "#ef4444",
+        onClick: () => {},
+      },
     ],
     position: "top",
   },
@@ -70,7 +123,11 @@ export const TwoActions: Story = {
 
 export const BottomPosition: Story = {
   args: {
-    trigger: <Button variant="primary" size="md">Дії ↓</Button>,
+    trigger: (
+      <Button variant="primary" size="md">
+        Дії ↓
+      </Button>
+    ),
     actions: finykActions,
     position: "bottom",
   },

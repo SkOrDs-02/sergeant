@@ -15,6 +15,7 @@
  */
 
 import type { ReactNode, SVGAttributes } from "react";
+import { logger } from "@shared/lib";
 import { SYSTEM_PATHS } from "./Icon.paths.system";
 import { STATUS_PATHS } from "./Icon.paths.status";
 import { DOMAIN_PATHS } from "./Icon.paths.domain";
@@ -79,9 +80,7 @@ export function Icon({
 }: IconProps) {
   const body = (PATHS as Record<string, ReactNode>)[name];
   if (!body) {
-    if (import.meta.env?.DEV) {
-      console.warn(`[Icon] unknown name: ${name}`);
-    }
+    logger.warn(`[Icon] unknown name: ${name}`);
     return null;
   }
   const px = resolveIconSize(size);

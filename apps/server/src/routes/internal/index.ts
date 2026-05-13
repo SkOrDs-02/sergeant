@@ -15,6 +15,9 @@ import { createGovernanceInternalRouter } from "./governance.js";
 import { createOpenClawInternalRouter } from "./openclaw.js";
 import { createAlertsInternalRouter } from "./alerts.js";
 import { createMonoInternalRouter } from "./mono.js";
+import { createWebhookEventsInternalRouter } from "./webhook-events.js";
+import { createStrategicInternalRouter } from "./strategic.js";
+import { createAiMemoryInternalRouter } from "./ai-memory.js";
 
 /**
  * Mounts all /api/internal/* routes behind a shared bearer-token guard.
@@ -61,6 +64,9 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createOpenClawInternalRouter({ pool }));
   router.use(createAlertsInternalRouter({ pool }));
   router.use(createMonoInternalRouter({ pool }));
+  router.use(createWebhookEventsInternalRouter({ pool }));
+  router.use(createStrategicInternalRouter({ pool }));
+  router.use(createAiMemoryInternalRouter({ pool }));
 
   return router;
 }

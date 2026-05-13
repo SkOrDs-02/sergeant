@@ -105,6 +105,31 @@ describe("HubSettingsPage", () => {
     });
   });
 
+  it("mirrors the inner group tab to ?group= so reload keeps the user on Розділи", () => {
+    window.history.replaceState(null, "", "/?tab=settings&group=modules");
+
+    renderWithToast(
+      <HubSettingsPage
+        user={{
+          id: "u1",
+          email: null,
+          name: null,
+          image: null,
+          emailVerified: true,
+          createdAt: null,
+        }}
+      />,
+    );
+
+    // The «Розділи» tab renders module-scoped sections only. The
+    // default `general` tab would render `GeneralSection`, not
+    // `Routine section` / `Finyk section`, so the assertion confirms
+    // the inner tab was hydrated from the URL.
+    expect(screen.getByText("Routine section")).toBeInTheDocument();
+    expect(screen.getByText("Finyk section")).toBeInTheDocument();
+    expect(screen.queryByText("General section")).not.toBeInTheDocument();
+  });
+
   it("auto-expands the Дашборд section when navigated via #settings-dashboard", () => {
     // Tap on an inactive Bento card on the Hub dashboard dispatches
     // `HUB_OPEN_SETTINGS_EVENT` which navigates to

@@ -25,9 +25,7 @@ function makeHttp(
   });
 }
 
-function makeMessaging(
-  callbackData: string,
-): MessagingService {
+function makeMessaging(callbackData: string): MessagingService {
   const sentMessageId = "msg_001";
   return {
     send: vi.fn().mockResolvedValue({ messageId: sentMessageId }),

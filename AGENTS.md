@@ -35,7 +35,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 ## Repo overview
 
 - **pnpm 9** + **Turborepo** monorepo, **Node 20**, **TypeScript 6**.
-- 5 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/console`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
+- 5 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/openclaw`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
 - Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 - Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/architecture/repo-map.md`](./docs/architecture/repo-map.md).
 
@@ -48,7 +48,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | `apps/web/**`                            | `@Skords-01` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
 | `apps/server/**`                         | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
 | `apps/mobile/**`, `apps/mobile-shell/**` | `@Skords-01` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
-| `tools/console/**`                       | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
+| `tools/openclaw/**`                      | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
 | `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/architecture/module-ownership.md#packages)         |
 | `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/architecture/module-ownership.md#ops-surfaces) |
 
@@ -114,19 +114,19 @@ Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys
 
 ## Performance budgets
 
-CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)), plus the `Lighthouse CI` workflow ([T5](./docs/planning/sprint-roadmap-q2q3-2026.md#t5-lighthouse-ci-tech-s--first-pass-shipped)).
+CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)). Lighthouse CI runs locally only (`pnpm --filter @sergeant/web lighthouse` + [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json)); the GitHub Actions workflow is **planned** — see [T5 у тех-боргу](./docs/planning/sprint-roadmap-q2q3-2026.md).
 
-| Metric                                      | Budget                                                                   | Where enforced                                                              |
-| ------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                | **≤ 820 kB**                                                             | `pnpm --filter @sergeant/web exec size-limit` in CI                         |
-| `apps/web` CSS (brotli)                     | **≤ 28 kB**                                                              | same                                                                        |
-| `apps/web` LCP (median, 5 top-level routes) | **≤ 2000 ms** (warn; **`error` at > 3000 ms** after baseline tightening) | `.github/workflows/lighthouse-ci.yml` — config `apps/web/lighthouserc.json` |
-| `apps/web` FCP (median, 5 top-level routes) | **≤ 1500 ms** (warn)                                                     | same                                                                        |
-| `apps/web` TBT (median, 5 top-level routes) | **≤ 200 ms** (warn)                                                      | same                                                                        |
-| Backend `/health` p95                       | < 100 ms                                                                 | (informal; track in Railway logs)                                           |
-| Anthropic `/api/chat` p95 first token       | < 1.5 s                                                                  | (informal; will move to PostHog/Sentry once wired)                          |
+| Metric                                      | Budget                                                                   | Where enforced                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `apps/web` JS total (brotli)                | **≤ 900 kB**                                                             | `pnpm --filter @sergeant/web exec size-limit` in CI                                               |
+| `apps/web` CSS (brotli)                     | **≤ 28 kB**                                                              | same                                                                                              |
+| `apps/web` LCP (median, 5 top-level routes) | **≤ 2000 ms** (warn; **`error` at > 3000 ms** after baseline tightening) | `apps/web/lighthouserc.json` + `pnpm --filter @sergeant/web lighthouse` (CI workflow planned, T5) |
+| `apps/web` FCP (median, 5 top-level routes) | **≤ 1500 ms** (warn)                                                     | same                                                                                              |
+| `apps/web` TBT (median, 5 top-level routes) | **≤ 200 ms** (warn)                                                      | same                                                                                              |
+| Backend `/health` p95                       | < 100 ms                                                                 | (informal; track in Railway logs)                                                                 |
+| Anthropic `/api/chat` p95 first token       | < 1.5 s                                                                  | (informal; will move to PostHog/Sentry once wired)                                                |
 
-If you legitimately need to raise a limit (e.g. a major new dependency), bump the number in the same PR and call it out in the description. `size-limit` paths point through `apps/server/dist/assets/*` (Vite output is copied for unified-mode serving) — verify the layout if the server build pipeline changes. Lighthouse runs against `VERCEL=1` builds in `apps/web/dist/` via `vite preview` on 127.0.0.1:4173 — full details in [`apps/web/AGENTS.md § Lighthouse CI`](./apps/web/AGENTS.md#lighthouse-ci-perf-budget-gate).
+If you legitimately need to raise a limit (e.g. a major new dependency), bump the number in the same PR and call it out in the description. `size-limit` paths point through `apps/server/dist/assets/*` (Vite output is copied for unified-mode serving) — verify the layout if the server build pipeline changes. Lighthouse runs (today — local only) against `VERCEL=1` builds in `apps/web/dist/` via `vite preview` on 127.0.0.1:4173 — full details in [`apps/web/AGENTS.md § Lighthouse CI`](./apps/web/AGENTS.md#lighthouse-ci-perf-budget-gate).
 
 ## Soft rules (preferred)
 
@@ -138,7 +138,7 @@ If you legitimately need to raise a limit (e.g. a major new dependency), bump th
 
 ## Commit and PR conventions
 
-Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `console`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `eslint-plugins`, `openclaw-plugin`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
+Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `console` (deprecated alias — PR-47 phase 2 removes once `Dockerfile.console` / `railway.console.toml` are also renamed), `openclaw`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `eslint-plugins`, `openclaw-plugin`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
 
 Example commit subjects (= squash-merge PR titles):
 

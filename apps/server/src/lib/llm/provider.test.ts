@@ -16,9 +16,11 @@ import { anthropicMessages as anthropicMessagesMock } from "../anthropic.js";
 import {
   AnthropicProvider,
   getLLMProvider,
+  invokeLLM,
   StubProvider,
   type LLMGenerateOpts,
   type LLMGenerateResult,
+  type LLMProvider,
 } from "./provider.js";
 
 type AnthropicMock = ReturnType<typeof vi.fn> & {
@@ -273,5 +275,141 @@ describe("getLLMProvider factory", () => {
     const p = getLLMProvider();
     // Test runs without real ANTHROPIC_API_KEY → factory повертає stub.
     expect(p.name).toBe("stub");
+  });
+});
+
+describe("invokeLLM observability wrapper (PR-24)", () => {
+  function fakeProvider(
+    name: "anthropic" | "stub" | "openrouter",
+    result: LLMGenerateResult,
+  ): LLMProvider {
+    return {
+      name,
+      generate: () => Promise.resolve(result),
+    };
+  }
+
+  it("emits Sentry breadcrumb з category=llm.provider на ok-path", async () => {
+    const breadcrumbs: Array<{
+      category: string;
+      level: string;
+      data: Record<string, unknown>;
+    }> = [];
+
+    const result = await invokeLLM(
+      fakeProvider("anthropic", { ok: true, text: "hello" }),
+      { ...baseOpts({ endpoint: "internal/test" }) },
+      { addBreadcrumb: (b) => breadcrumbs.push(b) },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(breadcrumbs).toHaveLength(1);
+    expect(breadcrumbs[0]).toMatchObject({
+      category: "llm.provider",
+      level: "info",
+      data: {
+        provider: "anthropic",
+        endpoint: "internal/test",
+        outcome: "ok",
+        model: "claude-haiku-4-5-20251001",
+      },
+    });
+  });
+
+  it("emits Sentry breadcrumb level=warning + code/error на error-path", async () => {
+    const breadcrumbs: Array<{
+      level: string;
+      data: Record<string, unknown>;
+    }> = [];
+
+    const result = await invokeLLM(
+      fakeProvider("anthropic", {
+        ok: false,
+        error: "boom",
+        code: "anthropic_error",
+        status: 502,
+      }),
+      { ...baseOpts({ endpoint: "internal/test" }) },
+      { addBreadcrumb: (b) => breadcrumbs.push(b) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(breadcrumbs[0]).toMatchObject({
+      level: "warning",
+      data: {
+        outcome: "error",
+        code: "anthropic_error",
+        error: "boom",
+      },
+    });
+  });
+
+  it("outcome=missing_api_key коли AnthropicProvider не має ключа", async () => {
+    const breadcrumbs: Array<{
+      data: Record<string, unknown>;
+    }> = [];
+    const provider = new AnthropicProvider("");
+    await invokeLLM(
+      provider,
+      { ...baseOpts({ endpoint: "internal/test" }) },
+      { addBreadcrumb: (b) => breadcrumbs.push(b) },
+    );
+    expect(breadcrumbs[0]?.data).toMatchObject({
+      outcome: "missing_api_key",
+      code: "missing_api_key",
+    });
+  });
+
+  it("outcome=rate_limited при code=rate_limited", async () => {
+    const breadcrumbs: Array<{ data: Record<string, unknown> }> = [];
+    await invokeLLM(
+      fakeProvider("anthropic", {
+        ok: false,
+        error: "429",
+        code: "rate_limited",
+        status: 429,
+      }),
+      { ...baseOpts({ endpoint: "internal/test" }) },
+      { addBreadcrumb: (b) => breadcrumbs.push(b) },
+    );
+    expect(breadcrumbs[0]?.data).toMatchObject({ outcome: "rate_limited" });
+  });
+
+  it("outcome=timeout при code=timeout (AbortError)", async () => {
+    const breadcrumbs: Array<{ data: Record<string, unknown> }> = [];
+    await invokeLLM(
+      fakeProvider("anthropic", {
+        ok: false,
+        error: "aborted",
+        code: "timeout",
+      }),
+      { ...baseOpts({ endpoint: "internal/test" }) },
+      { addBreadcrumb: (b) => breadcrumbs.push(b) },
+    );
+    expect(breadcrumbs[0]?.data).toMatchObject({ outcome: "timeout" });
+  });
+
+  it("endpoint default-иться на 'unknown' коли opts.endpoint не передано", async () => {
+    const breadcrumbs: Array<{ data: Record<string, unknown> }> = [];
+    await invokeLLM(
+      fakeProvider("stub", { ok: true, text: "ok" }),
+      baseOpts(),
+      { addBreadcrumb: (b) => breadcrumbs.push(b) },
+    );
+    expect(breadcrumbs[0]?.data).toMatchObject({ endpoint: "unknown" });
+  });
+
+  it("повертає той самий result без модифікації (метрики — sidecar)", async () => {
+    const fixed: LLMGenerateResult = {
+      ok: true,
+      text: "hello",
+      usage: { inputTokens: 11, outputTokens: 22 },
+    };
+    const result = await invokeLLM(
+      fakeProvider("anthropic", fixed),
+      baseOpts(),
+      { addBreadcrumb: () => {} },
+    );
+    expect(result).toEqual(fixed);
   });
 });

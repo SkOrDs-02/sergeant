@@ -13,7 +13,10 @@ import { ApiClientProvider } from "@sergeant/api-client/react";
 
 import { apiClient } from "@/api/apiClient";
 import { installE2EAuthMock } from "@/auth/e2eAuthMock";
+import { ErrorBoundary as RootErrorBoundary } from "@/core/ErrorBoundary";
+import { SegmentErrorBoundary } from "@/core/SegmentErrorBoundary";
 import { SyncStatusOverlay } from "@/core/SyncStatusOverlay";
+import { useBackToExit } from "@/core/useBackToExit";
 import { bootSyncEngineWriter } from "@/core/syncEngine/singleton";
 import { ColorSchemeBridge } from "@/core/theme/ColorSchemeBridge";
 import { AnalyticsIdentityBridge } from "@/features/analytics/AnalyticsIdentityBridge";
@@ -65,6 +68,11 @@ installE2EAuthMock();
  */
 function RootShell() {
   useDeepLinks();
+  // Android hardware-back parity with the Capacitor shell
+  // (`apps/mobile-shell/src/index.ts:435`): first tap at the root
+  // surfaces a localised toast; the second tap inside
+  // `BACK_TO_EXIT_WINDOW_MS` exits. No-op on iOS / web.
+  useBackToExit();
 
   return (
     <View style={{ flex: 1 }}>
@@ -86,6 +94,10 @@ function RootShell() {
         />
         <Stack.Screen
           name="assistant"
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="hub-search"
           options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
@@ -112,11 +124,15 @@ export default function RootLayout() {
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
+    // Sentry init only — it never touches MMKV. PostHog is delayed
+    // until `bootstrapEncryptedStorage` resolves below (see the next
+    // effect) so `loadOrCreateAnonId` reads / writes its persisted
+    // `distinct_id` through the encrypted MMKV instance rather than
+    // the legacy plaintext one. Initialising PostHog here would race
+    // the encryption swap — and because `initPostHog()` is idempotent
+    // (first call wins), the first write would land on plaintext and
+    // subsequent calls become no-ops.
     initObservability();
-    // Boot PostHog after Sentry — fire-and-forget. Без
-    // `EXPO_PUBLIC_POSTHOG_KEY` це повний no-op (жодного fetch),
-    // тож локальний dev і CI без секрету не платять нічого.
-    void initPostHog();
   }, []);
 
   useEffect(() => {
@@ -188,22 +204,56 @@ export default function RootLayout() {
   }
 
   return (
+    // The boundary sits *inside* `GestureHandlerRootView` so the
+    // gesture-handler root is always mounted (a throw inside the
+    // providers below must not detach RNGH from the native side —
+    // otherwise the fallback's own `<Button>` press wouldn't work).
+    // Every other provider is below the boundary so a render-time
+    // throw in `QueryProvider`'s persister rehydration, the
+    // `ApiClientProvider`, or one of the side-effect bridges
+    // (`IdentityBridge`, `PushRegistrar`, …) is caught and routed
+    // through `captureError` instead of bubbling to Expo Router's
+    // red-box / a native crash.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryProvider>
-          <ApiClientProvider client={apiClient}>
-            <IdentityBridge />
-            <ToastProvider>
-              <ColorSchemeBridge />
-              <DynamicStatusBar />
-              <RootShell />
-              <ToastContainer />
-              <PushRegistrar />
-              <AnalyticsIdentityBridge />
-            </ToastProvider>
-          </ApiClientProvider>
-        </QueryProvider>
+        <RootErrorBoundary>
+          <QueryProvider>
+            <ApiClientProvider client={apiClient}>
+              <IdentityBridge />
+              <ToastProvider>
+                <ColorSchemeBridge />
+                <DynamicStatusBar />
+                <RootShell />
+                <ToastContainer />
+                <PushRegistrar />
+                <AnalyticsIdentityBridge />
+              </ToastProvider>
+            </ApiClientProvider>
+          </QueryProvider>
+        </RootErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
+/**
+ * Expo Router segment-level error boundary.
+ *
+ * Expo Router uses the named `ErrorBoundary` export from a layout
+ * file (`docs.expo.dev/router/error-handling/`) to render a fallback
+ * when *route children* throw during render. This is a different
+ * surface from the in-tree class boundary above:
+ *
+ * - The class boundary in `RootLayout` catches throws from the
+ *   providers (`QueryProvider`, `ApiClientProvider`, etc).
+ * - This named export catches throws from the screens declared inside
+ *   `<Stack>` (`(tabs)`, `(auth)`, `settings`, `assistant`, …).
+ *
+ * Together they form a defence-in-depth pair so no render-time error
+ * inside the mobile tree reaches Expo Router's default red-box.
+ *
+ * The actual fallback markup lives in `SegmentErrorBoundary` so it can
+ * be unit-tested without dragging the entire mobile provider stack
+ * into Jest.
+ */
+export const ErrorBoundary = SegmentErrorBoundary;

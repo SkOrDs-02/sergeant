@@ -72,6 +72,25 @@ describe("mobile posthog transport", () => {
   });
 
   describe("initPostHog", () => {
+    // Regression guard for the `_layout.tsx` race fix: `initPostHog`
+    // is the *only* entry-point that may touch the persisted
+    // `distinct_id` MMKV key. Module load, top-level imports, and any
+    // helper that's not `initPostHog` / `capturePostHogEvent` (via the
+    // queue flush) / `identifyPostHogUser` / `resetPostHog` must
+    // remain MMKV-cold so the root `_layout.tsx` can defer the first
+    // PostHog read until after `bootstrapEncryptedStorage` resolves
+    // the encrypted instance.
+    it("module import does NOT touch MMKV — only initPostHog reads / writes the distinct_id key", () => {
+      // The test file has already evaluated the module via the `import`
+      // statement at the top — `__resetPostHogForTests` resets only
+      // module-scope mutable state, not the import-time side effects.
+      // If a future regression adds a top-level
+      // `mobileKVStore.getString` call (e.g. eagerly reading the
+      // distinct_id at module evaluation), this assertion catches it.
+      expect(mockedStorage.mobileKVStore.getString).not.toHaveBeenCalled();
+      expect(mockedStorage.mobileKVStore.setString).not.toHaveBeenCalled();
+    });
+
     it("без EXPO_PUBLIC_POSTHOG_KEY — повний no-op (жодного fetch)", async () => {
       getKeyMock.mockReturnValue(undefined);
 
