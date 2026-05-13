@@ -119,7 +119,7 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 - `stub` — `StubProvider`, no-op повертає `{"ok":true,"stub":true}` JSON. Призначення: e2e-тести без real-Anthropic-калькування, локальний dev без ключа, інцидент-recovery під час Anthropic-outage (read-only OpenClaw paths-ів).
 - `openrouter` — зарезервовано під майбутню імплементацію (OpenRouter fallback). Поки що деградує у `stub`, щоб неочікуваний env не валив app.
 
-PR-25 (`weekly-digest`) — наступний wire-up. Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+PR-24 wire-up: OpenClaw `classify`. PR-25 wire-up: `weekly-digest` (через окремий `LLM_DIGEST_PROVIDER` toggle — див. нижче). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
 
 ### `LLM_READONLY_PROVIDER` _(optional, default `anthropic`)_
 
@@ -135,6 +135,27 @@ PR-25 (`weekly-digest`) — наступний wire-up. Інші Anthropic-call-
 - `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
 
 **Спостережуваність (PR-24).** Кожен виклик `LLMProvider.generate()` через обгортку [`invokeLLM()`](../../apps/server/src/lib/llm/provider.ts) інкрементує Prom-counter `llm_provider_invocations_total{provider,endpoint,outcome}` (outcome: `ok|error|missing_api_key|rate_limited|timeout`) + кладе Sentry breadcrumb `category=llm.provider, level=info|warning` з provider/endpoint/outcome/model. Дашборд `ai-cost` (PR-13) використовує цей counter для розщеплення runtime-distribution між Anthropic vs stub-режимами.
+
+### `LLM_DIGEST_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-25** — окремий provider для WF-08 weekly-digest endpoint-у (`POST /api/weekly-digest` у [`apps/server/src/modules/digest/weekly-digest.ts`](../../apps/server/src/modules/digest/weekly-digest.ts)). Дозволяє перемкнути саме digest у fallback-режим, **не зачіпаючи** ні головний `LLM_PROVIDER` (chat/coach/nutrition), ні `LLM_READONLY_PROVIDER` (OpenClaw classify).
+
+Значення такі самі, як у `LLM_PROVIDER`:
+
+- `anthropic` (default) — повний AI-аналіз через `AnthropicProvider`: модель `claude-sonnet-4-6`, `max_tokens=2500`, JSON-відповідь зі структурованими `summary`/`comment`/`recommendations` на кожну секцію (finyk/fizruk/nutrition/routine) + `overallRecommendations`.
+- `stub` — повертає **template-based digest** із raw тижневих метрик (числа тижня прямо у `summary` секції) і **порожніми `recommendations`/`overallRecommendations`** — `StubProvider` обслуговує запит без HTTP-call-у до Anthropic. Use-cases:
+  - **Anthropic-incident:** founder бачить тижневі числа без AI-коментарів. Краще, ніж 502 на digest-роуті.
+  - **Local-dev без `ANTHROPIC_API_KEY`:** endpoint не падає, digest-UI може dev-тестуватися з числами.
+  - **E2E-тести:** детермінований template-вихід без витрат токенів.
+- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
+
+### `LLM_DIGEST_FALLBACK_ON_ERROR` _(optional, default `true`)_
+
+**PR-25** — fail-soft toggle для weekly-digest. Коли `true` (default) і `LLM_DIGEST_PROVIDER=anthropic`, Anthropic-помилки (`5xx` / `rate_limited` / `timeout` / shape-mismatch / parse-error) ловляться у handler-і і digest повертається з template-репорту замість `502 ExternalServiceError`. Sentry breadcrumb `level=warning` + Prom-counter `llm_provider_invocations_total{outcome!=ok}` дають видимість для алертингу.
+
+Коли `false` — strict-mode, як у PR-12: handler кидає `ANTHROPIC_ERROR` / `ANTHROPIC_PARSE_ERROR` / `ANTHROPIC_SHAPE_MISMATCH` і клієнт отримує 502. Корисно для e2e-тестів які явно перевіряють Anthropic-error semantics, або для проектів, де founder воліє бачити порожній звіт через failed UI замість шаблонних чисел.
+
+Прийнятні значення: `1`/`true`/`yes` → on, інакше → off.
 
 ### `AI_TIMEOUT_MS`, `AI_MAX_RETRIES`, `AI_CIRCUIT_BREAKER_THRESHOLD`, `AI_CIRCUIT_BREAKER_RESET_MS` _(optional)_
 

@@ -360,7 +360,8 @@ const envSchema = z.object({
    *
    * Use-cases:
    * - Anthropic-incident: `LLM_READONLY_PROVIDER=stub` тимчасово; chat-flow
-   *   обслуговується головним provider-ом окремо (PR-25 wires weekly-digest).
+   *   обслуговується головним provider-ом окремо (weekly-digest має власний
+   *   `LLM_DIGEST_PROVIDER` toggle, налаштовується незалежно).
    * - Local-dev без `ANTHROPIC_API_KEY` — class-detection деградує у `chat`,
    *   решта endpoints працює як раніше.
    * - E2E-тести — детермінований шлях без витрат токенів.
@@ -368,6 +369,30 @@ const envSchema = z.object({
   LLM_READONLY_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
     .default("anthropic"),
+  /**
+   * PR-25 — окремий provider для weekly-digest (`POST /api/weekly-digest`,
+   * WF-08 ingest). Дозволяє перемкнути digest-генерацію у `stub`-mode, який
+   * повертає template-based звіт із raw-метрик секцій (без LLM-рекомендацій),
+   * НЕ зачіпаючи ні chat/coach/nutrition (`LLM_PROVIDER`), ні OpenClaw
+   * classify (`LLM_READONLY_PROVIDER`).
+   *
+   * Use-cases:
+   * - Anthropic-incident: `LLM_DIGEST_PROVIDER=stub` — користувач бачить
+   *   digest із числами, без AI-коментарів. Краще, ніж 502.
+   * - Local-dev без `ANTHROPIC_API_KEY` — endpoint не падає.
+   * - E2E-тести — детермінований template-вихід без витрат токенів.
+   */
+  LLM_DIGEST_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    .default("anthropic"),
+  /**
+   * PR-25 — fail-soft toggle для weekly-digest. Коли `true` (default), Anthropic-
+   * помилки (5xx / rate-limit / timeout) ловляться у handler-і й digest
+   * повертається з template-репорту замість 502. Sentry breadcrumb level=warning
+   * + Prom-counter `llm_provider_invocations_total{outcome!=ok}` дають видимість.
+   * Коли `false` — strict-mode як раніше (handler кидає `ExternalServiceError`).
+   */
+  LLM_DIGEST_FALLBACK_ON_ERROR: boolFromEnv(true),
   /** AI request timeout (мс). */
   AI_TIMEOUT_MS: intFromEnv(180_000),
   /** Max AI retries on transient errors. */
