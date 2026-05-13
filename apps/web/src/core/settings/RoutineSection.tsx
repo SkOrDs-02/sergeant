@@ -47,11 +47,13 @@ export function RoutineSection() {
       <SettingsSubGroup title="Календар">
         <ToggleRow
           label="Показувати тренування з Фізрука в календарі"
+          description="Заплановані тренування з Фізрука зʼявляться у місячному календарі поряд зі звичками."
           checked={routine.prefs?.showFizrukInCalendar !== false}
           onChange={(checked) => updatePref("showFizrukInCalendar", checked)}
         />
         <ToggleRow
           label="Показувати планові платежі підписок Фініка в календарі"
+          description="Майбутні списання за підписками зʼявлятимуться у календарі рутини поруч із завданнями дня."
           checked={routine.prefs?.showFinykSubscriptionsInCalendar !== false}
           onChange={(checked) =>
             updatePref("showFinykSubscriptionsInCalendar", checked)
@@ -61,7 +63,7 @@ export function RoutineSection() {
 
       <SettingsSubGroup title="Звички">
         <div className="space-y-4">
-          <p className="text-xs text-muted">
+          <p className="text-xs text-subtle leading-snug">
             Нові звички додаються через кнопку «+» в центрі нижньої навігації
             «Рутини». Тут можна редагувати, архівувати й видаляти наявні.
           </p>

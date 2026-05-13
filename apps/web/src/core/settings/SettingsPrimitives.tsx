@@ -165,7 +165,7 @@ export function ToggleRow({
       // на тлі. Тепер це явна tappable картка з бордером і фоном, явним
       // hover/active-стейтом, по всій ширині.
       className={cn(
-        "flex items-start justify-between gap-4 cursor-pointer group",
+        "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
         "p-3 rounded-2xl border border-line/60 bg-panel/60 shadow-soft",
         "hover:border-brand/40 hover:bg-panelHi/60 active:bg-panelHi",
         "transition-[background-color,border-color]",
@@ -181,7 +181,7 @@ export function ToggleRow({
           </p>
         )}
       </div>
-      <div className="shrink-0 pt-0.5">
+      <div className="shrink-0">
         <Switch checked={checked} onChange={onChange} />
       </div>
     </label>

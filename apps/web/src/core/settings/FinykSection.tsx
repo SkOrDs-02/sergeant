@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { Button } from "@shared/components/ui/Button";
+import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Icon } from "@shared/components/ui/Icon";
 import {
   privatApi,
   isApiError,
@@ -321,8 +323,13 @@ export function FinykSection() {
             ))}
           </ul>
         ) : (
-          // eslint-disable-next-line sergeant-design/no-bare-empty-text
-          <p className="text-xs text-muted">Поки немає власних категорій.</p>
+          <EmptyState
+            compact
+            module="finyk"
+            icon={<Icon name="tag" size={20} />}
+            title="Поки немає власних категорій"
+            description="Додай першу категорію вище — вона зʼявиться у списку транзакцій, сплітів і лімітів."
+          />
         )}
       </SettingsSubGroup>
 

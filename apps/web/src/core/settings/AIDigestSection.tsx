@@ -46,14 +46,12 @@ export function AIDigestSection() {
             </p>
           )}
         </div>
-        <div className="pt-2 border-t border-line">
-          <ToggleRow
-            label="Автогенерація щопонеділка"
-            description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням — інакше AI-виклик зʼїдається без твого запиту."
-            checked={mondayAuto}
-            onChange={handleToggleMondayAuto}
-          />
-        </div>
+        <ToggleRow
+          label="Автогенерація щопонеділка"
+          description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням — інакше AI-виклик зʼїдається без твого запиту."
+          checked={mondayAuto}
+          onChange={handleToggleMondayAuto}
+        />
       </div>
     </SettingsGroup>
   );
