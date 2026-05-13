@@ -176,7 +176,19 @@ sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))                   
 sum by (model) (rate(ai_cost_estimate_usd_total{provider="voyage"}[1d])) * 86400           # Voyage USD/day per model
 sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))
   / on(provider) sum by (provider) (infra_monthly_cost_usd{plan!="usage"})                 # actual vs budget
+
+# Per-release attribution via `app_build_info` join (див. §15a)
+sum by (model, release) (
+  rate(ai_tokens_total{provider="anthropic"}[5m])
+  * on() group_left(release) app_build_info
+)                                                                                          # tokens/s per model+release
+sum by (model, release) (
+  increase(ai_cost_estimate_usd_total{provider="anthropic"}[24h])
+  * on() group_left(release) app_build_info
+)                                                                                          # USD/24h per model+release
 ```
+
+Join-pattern із `app_build_info` (один gauge=1 на інстанс із лейблом `release`) дає per-release breakdown без копіювання `release` у кожен emitter — повний контракт цієї серії і ще приклади для `http_*` метрик див. [§15a](#15a-buildrelease-identity-app_build_info).
 
 **SLO/alerts**: [SLO.md §5](./SLO.md#5-ai-anthropic-slo-970-) · `AiErrorBudgetBurn{Fast,Slow}` · `AiLatencyP95High` · `AiQuotaStoreDown` — [runbook.md](./runbook.md#aierrorbudgetburn).
 
@@ -381,6 +393,8 @@ count(app_build_info) by (release)
 ```
 
 **Кардинальність**: **1** серія на інстанс (per-process), значення фіксується на стартапі і не змінюється. При rolling deploy-і Prometheus побачить дві серії на час перетину версій — це нормально і не порушує cardinality budget.
+
+Per-model AI-token / cost join-приклади (де `release` лейбл прокидається у бізнес-метрики Anthropic / Voyage) — див. [§6](#6-ai-anthropic--voyage).
 
 ---
 
