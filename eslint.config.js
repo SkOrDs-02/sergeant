@@ -165,20 +165,28 @@ export default [
       "sergeant-design/forbid-shell-only-feature": "error",
     },
   },
-  // Hash-router migration canary — initiative 0006 (frontend routing &
-  // code-split). `apps/web` зараз стоїть на самописному hash-router
-  // (`useHashRouter` / `useHashRoute` / raw `window.location.hash = ...`
-  // assignments) у ~14 модульних callsite-ах; план — поетапна міграція на
-  // `react-router@7` з route-based code-split. Поки міграція in-flight,
-  // ця rule працює як **warn-only canary**: підсвічує нові callsite-и в
-  // `apps/web/src/modules/**` (vite-overlay, lint-staged, CI lint), але
-  // НЕ блокує існуючі. Після завершення Phase 2 (per-domain route
-  // міграція) rule піднімається до `error`. Реалізація + поточний baseline
-  // у `docs/initiatives/0006-frontend-routing-and-code-split.md`.
+  // Hash-router migration gate — initiative 0006 (frontend routing &
+  // code-split). `apps/web/src/modules/**` мігровано з самописного
+  // hash-router (`useHashRouter` / `useHashRoute` / raw
+  // `window.location.hash = ...` assignments) на `react-router@7` з
+  // route-based code-split. Phase 2 закрита наступними PR-ами:
+  //   • nutrition — #2104
+  //   • finyk     — #2108
+  //   • fizruk    — #2541 (path-route) + #2570 (fizruk hash-cleanup)
+  //   • routine   — #2545
+  // Generic-hook видалено в #2551; Phase 3 compat-shim (`HashRedirect`)
+  // живе в #2549; Phase 4 ScrollRestoration — #2553.
+  //
+  // Усі callsite-и в `apps/web/src/modules/**` тепер ходять через
+  // path-based `useNutritionRoute` / `useFinykRoute` / `useFizrukRoute` /
+  // `useRoutineRoute` або через injected `onNavigate` prop із module
+  // shell-а. Rule піднята з `warn` (canary) до `error` — нові hash-
+  // assignments у модулях ламають lint і CI, як заплановано в
+  // `docs/initiatives/0006-frontend-routing-and-code-split.md` §Phase 2.
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
-      "sergeant-design/no-hash-router-in-modules": "warn",
+      "sergeant-design/no-hash-router-in-modules": "error",
     },
   },
   // Storybook coverage enforcement — initiative 0007 (Design-system

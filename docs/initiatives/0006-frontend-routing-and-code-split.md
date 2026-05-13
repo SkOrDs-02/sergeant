@@ -1,6 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** In progress — Phases 0+1+2.a+2.b shipped ([#1657](https://github.com/Skords-01/Sergeant/pull/1657), [#2100](https://github.com/Skords-01/Sergeant/pull/2100), [#2104](https://github.com/Skords-01/Sergeant/pull/2104), [#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Phase 2 next: fizruk + routine. Phases 3–5 pending.
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
@@ -82,7 +82,7 @@
   - У модулі видалити власний `useHashRouter`, замінити на `useNavigate / useParams / useLocation`.
   - Додати `loader` для prefetch критичного RQ-key (наприклад `useFinykOverviewQuery`).
   - Перевірити, що bundle-size guard падає на ≤350 KB initial.
-- ESLint rule `no-hash-router-in-modules` піднімається до error для всіх модулів, що мігрували.
+- ESLint rule `no-hash-router-in-modules` піднімається до error для всіх модулів, що мігрували. **Done — піднято в PR-і, що замикає Phase 2** (nutrition #2104, finyk #2108, fizruk #2541 + #2570 cleanup, routine #2545; generic-hook видалено в #2551, compat-shim — #2549, ScrollRestoration — #2553). Глобальний `apps/web/src/modules/**` glob тепер блокує нові hash-router callsite-и через `error` severity у `eslint.config.js`.
 
 ### Фаза 3 — hash-URL compat shim (1 PR)
 
