@@ -7,7 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
-import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
+import { pantryPromptSection } from "../../lib/prompt-builders.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -87,15 +87,14 @@ export default async function handler(
   const goal = String(prefs.goal || "balanced");
   const loc = String(locale || "uk-UA");
 
-  const pantry = formatPantryForPrompt(pantryIn, {
-    itemFormat: "nameOnly",
-    limit: 50,
-    joinWith: "\n- ",
+  const pantrySec = pantryPromptSection({
+    pantry: pantryIn,
+    preset: "weekPlan",
+    label: "Продукти вдома",
   });
 
   const prompt = `Мова: ${loc}. Ціль: ${goal}.
-Продукти вдома:
-- ${pantry}
+${pantrySec}
 
 Запропонуй приблизний план харчування на 7 днів і список покупок того, чого бракує (коротко, реалістично).`;
 

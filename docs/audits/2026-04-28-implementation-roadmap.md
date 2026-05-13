@@ -443,8 +443,8 @@ describe("Capacitor Boundary Tests", () => {
 | -------------------- | -------------------------- | ----------------------------------- | --------------------------------------------------------------- |
 | `elapsedMs(start)`   | 4+ файли                   | Extract to `lib/timing.ts`          | ✅ Закрито. `lib/timing.ts` існує, використовується у 12 файлах |
 | OFF/USDA normalizers | barcode.ts, food-search.ts | Already done (PR #882)              | ✅ Закрито раніше                                               |
-| `pantry → prompt`    | 3 файли                    | Extract to `lib/prompt-builders.ts` | Потребує перевірки                                              |
-| FNV-1a hashing       | 2 файли                    | Extract to `lib/hash.ts`            | Частково: консолідовано у `lib/backupKey.ts`                    |
+| `pantry → prompt`    | 4 файли                    | Extract to `lib/prompt-builders.ts` | ✅ Закрито. `prompt-builders.ts` + presets, 0 інлайн-дублікатів |
+| FNV-1a hashing       | 2 файли                    | Extract to `lib/hash.ts`            | ✅ Закрито. HMAC-SHA256 у `lib/backupKey.ts`, FNV-1a видалено   |
 
 ---
 

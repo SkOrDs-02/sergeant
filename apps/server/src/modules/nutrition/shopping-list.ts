@@ -7,7 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
-import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
+import { pantryPromptSection } from "../../lib/prompt-builders.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -72,10 +72,10 @@ export default async function handler(
   const { recipes, weekPlan, pantryItems, locale } = parsed.data;
   const loc = String(locale || "uk-UA");
 
-  const pantryStr = formatPantryForPrompt(pantryItems, {
-    itemFormat: "nameOnly",
-    joinWith: ", ",
-    fallbackWhenEmpty: "нічого",
+  const pantrySec = pantryPromptSection({
+    pantry: pantryItems,
+    preset: "shoppingList",
+    label: "Що вже є в коморі (НЕ додавай до списку покупок)",
   });
 
   let ingredientsList = "";
@@ -110,8 +110,7 @@ export default async function handler(
 
   const prompt = `Мова: ${loc}.
 
-Що вже є в коморі (НЕ додавай до списку покупок):
-${pantryStr}
+${pantrySec}
 
 Страви / рецепти з яких треба скласти список покупок:
 ${ingredientsList}
