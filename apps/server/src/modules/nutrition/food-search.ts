@@ -35,6 +35,10 @@ export function stableId(
   return `${prefix}_${(hash >>> 0).toString(36)}`;
 }
 
+export function hasErrorName(e: unknown, name: string): boolean {
+  return !!e && typeof e === "object" && (e as { name?: string }).name === name;
+}
+
 // SSOT for the `/api/food-search` response shape lives in
 // `@sergeant/shared/schemas/nutrition` (AGENTS.md Hard Rule #3).
 // Server derives its normalised row type via `z.infer<>` and asserts
@@ -42,10 +46,6 @@ export function stableId(
 // `res.json(...)` so drift from the api-client types surfaces at
 // test time.
 type NormalizedSearchProduct = FoodSearchProduct;
-
-function hasErrorName(e: unknown, name: string): boolean {
-  return !!e && typeof e === "object" && (e as { name?: string }).name === name;
-}
 
 // Перший токен запиту → англійський еквівалент для USDA / OFF-en пошуку
 const UK_TO_EN: Record<string, string> = {
