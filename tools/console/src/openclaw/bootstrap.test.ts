@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   registerOpenClawWebhook,
   shouldUseWebhook,
@@ -6,11 +6,15 @@ import {
   validateWebhookConfig,
 } from "./bootstrap.js";
 
-const { mockAddBreadcrumb } = vi.hoisted(() => ({
+const { mockAddBreadcrumb, mockCaptureMessage } = vi.hoisted(() => ({
   mockAddBreadcrumb: vi.fn(),
+  mockCaptureMessage: vi.fn(),
 }));
 vi.mock("../obs/sentry.js", () => ({
-  Sentry: { addBreadcrumb: mockAddBreadcrumb },
+  Sentry: {
+    addBreadcrumb: mockAddBreadcrumb,
+    captureMessage: mockCaptureMessage,
+  },
 }));
 
 const SECRET_OK = "a".repeat(32);
@@ -130,6 +134,42 @@ describe("validateWebhookConfig", () => {
 });
 
 describe("registerOpenClawWebhook", () => {
+  beforeEach(() => {
+    mockAddBreadcrumb.mockClear();
+    mockCaptureMessage.mockClear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /**
+   * Helper: drive a registerOpenClawWebhook() call to completion under
+   * `vi.useFakeTimers()`. The retry loop awaits each backoff via
+   * `setTimeout`, so we drain pending timers by interleaving
+   * `runAllTimersAsync` with the in-flight promise.
+   */
+  async function settleWithFakeTimers<T>(p: Promise<T>): Promise<T> {
+    let settled = false;
+    // Use `.then(onfulfilled, onrejected)` so we don't generate a new
+    // unhandled-rejection chain off `p` while we're still draining
+    // pending timers. The caller still `await`s `p` directly and
+    // observes the original resolution / rejection.
+    p.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+    while (!settled) {
+      await vi.advanceTimersByTimeAsync(60_000);
+      // yield to microtasks so the next attempt's setTimeout is scheduled
+      await Promise.resolve();
+    }
+    return p;
+  }
+
   it("calls setWebhook with secret_token + drop_pending_updates + allowed_updates and verifies via getWebhookInfo", async () => {
     const { bot, setWebhook, getWebhookInfo } = makeBotMock();
     await registerOpenClawWebhook(bot as never, {
@@ -159,7 +199,7 @@ describe("registerOpenClawWebhook", () => {
 
   it("emits Sentry breadcrumb on successful recovery after W4.1 race", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockAddBreadcrumb.mockClear();
+    vi.useFakeTimers();
     const { bot, getWebhookInfo } = makeBotMock();
     let calls = 0;
     getWebhookInfo.mockImplementation(async () => {
@@ -170,18 +210,39 @@ describe("registerOpenClawWebhook", () => {
         pending_update_count: 0,
       };
     });
-    await registerOpenClawWebhook(bot as never, {
-      url: "https://x.example/webhook",
-      secretToken: SECRET_OK,
-    });
-    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(1);
-    expect(mockAddBreadcrumb).toHaveBeenCalledWith(
+    await settleWithFakeTimers(
+      registerOpenClawWebhook(bot as never, {
+        url: "https://x.example/webhook",
+        secretToken: SECRET_OK,
+      }),
+    );
+    // Two breadcrumbs total: one warning on the inter-attempt retry,
+    // one info on successful recovery.
+    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(2);
+    expect(mockAddBreadcrumb).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        category: "openclaw.webhook",
+        level: "warning",
+        message: expect.stringMatching(/setWebhook retry.*reason=url_mismatch/),
+        data: expect.objectContaining({
+          attempt: 1,
+          maxAttempts: 5,
+          reason: "url_mismatch",
+          delayMs: 1_000,
+        }),
+      }),
+    );
+    expect(mockAddBreadcrumb).toHaveBeenNthCalledWith(
+      2,
       expect.objectContaining({
         category: "openclaw.webhook",
         level: "info",
         data: expect.objectContaining({ attempt: 2 }),
       }),
     );
+    // Recovery path — no error-level captureMessage.
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
   });
 
   it("does not emit Sentry breadcrumb on first-attempt success", async () => {
@@ -200,6 +261,7 @@ describe("registerOpenClawWebhook", () => {
     // verification read. The first verify returns url="", second
     // returns the expected URL.
     vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.useFakeTimers();
     const { bot, setWebhook, getWebhookInfo } = makeBotMock();
     let calls = 0;
     getWebhookInfo.mockImplementation(async () => {
@@ -210,10 +272,12 @@ describe("registerOpenClawWebhook", () => {
         pending_update_count: 0,
       };
     });
-    await registerOpenClawWebhook(bot as never, {
-      url: "https://x.example/webhook",
-      secretToken: SECRET_OK,
-    });
+    await settleWithFakeTimers(
+      registerOpenClawWebhook(bot as never, {
+        url: "https://x.example/webhook",
+        secretToken: SECRET_OK,
+      }),
+    );
     // Two setWebhook calls: first fails verification, second succeeds.
     expect(setWebhook).toHaveBeenCalledTimes(2);
     expect(getWebhookInfo).toHaveBeenCalledTimes(2);
@@ -227,8 +291,119 @@ describe("registerOpenClawWebhook", () => {
     });
   });
 
-  it("throws after WEBHOOK_VERIFY_MAX_ATTEMPTS if verification keeps failing", async () => {
+  // B.6 / O6 — retry semantics for Telegram API outage at boot.
+
+  it("retries setWebhook when the API call itself throws (transient outage, 2-retry success)", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.useFakeTimers();
+    const { bot, setWebhook, getWebhookInfo } = makeBotMock();
+    let attemptCount = 0;
+    setWebhook.mockReset();
+    setWebhook.mockImplementation(async (_url: string) => {
+      attemptCount += 1;
+      if (attemptCount === 1) {
+        throw new Error("ETIMEDOUT api.telegram.org");
+      }
+      // 2nd attempt succeeds — getWebhookInfo will then return the URL
+      // we expect.
+      return true;
+    });
+    getWebhookInfo.mockImplementation(async () => ({
+      url: attemptCount >= 2 ? "https://x.example/webhook" : "",
+      has_custom_certificate: false,
+      pending_update_count: 0,
+    }));
+    await settleWithFakeTimers(
+      registerOpenClawWebhook(bot as never, {
+        url: "https://x.example/webhook",
+        secretToken: SECRET_OK,
+      }),
+    );
+    expect(setWebhook).toHaveBeenCalledTimes(2);
+    // Retry breadcrumb (warning, api_error) + recovery breadcrumb (info).
+    expect(mockAddBreadcrumb).toHaveBeenCalledTimes(2);
+    expect(mockAddBreadcrumb).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        level: "warning",
+        message: expect.stringMatching(/setWebhook retry.*reason=api_error/),
+        data: expect.objectContaining({
+          attempt: 1,
+          reason: "api_error",
+          apiError: "ETIMEDOUT api.telegram.org",
+          delayMs: 1_000,
+        }),
+      }),
+    );
+    expect(mockAddBreadcrumb).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        level: "info",
+        data: expect.objectContaining({ attempt: 2 }),
+      }),
+    );
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
+  });
+
+  it("emits a breadcrumb on every retry, then an error-level captureMessage when all 5 attempts fail (api_error)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.useFakeTimers();
+    const { bot, setWebhook, getWebhookInfo } = makeBotMock();
+    // Every setWebhook throws — simulate permanent Telegram outage.
+    setWebhook.mockReset();
+    setWebhook.mockRejectedValue(new Error("ECONNREFUSED api.telegram.org"));
+    await expect(
+      settleWithFakeTimers(
+        registerOpenClawWebhook(bot as never, {
+          url: "https://x.example/webhook",
+          secretToken: SECRET_OK,
+        }),
+      ),
+    ).rejects.toThrow(
+      /registration failed after 5 attempts.*ECONNREFUSED api.telegram.org/,
+    );
+    expect(setWebhook).toHaveBeenCalledTimes(5);
+    // getWebhookInfo never runs because setWebhook always throws first.
+    expect(getWebhookInfo).not.toHaveBeenCalled();
+    // 4 inter-attempt warning breadcrumbs (one before each of attempts 2..5).
+    const warningBreadcrumbs = mockAddBreadcrumb.mock.calls.filter(
+      ([arg]) => arg.level === "warning",
+    );
+    expect(warningBreadcrumbs).toHaveLength(4);
+    // First retry uses 1s backoff, then 2s, 5s, 10s — schedule check.
+    expect(warningBreadcrumbs.map(([arg]) => arg.data.delayMs)).toEqual([
+      1_000, 2_000, 5_000, 10_000,
+    ]);
+    expect(
+      warningBreadcrumbs.every(([arg]) => arg.data.reason === "api_error"),
+    ).toBe(true);
+    // No info breadcrumb — nothing recovered.
+    expect(
+      mockAddBreadcrumb.mock.calls.some(([arg]) => arg.level === "info"),
+    ).toBe(false);
+    // Final captureMessage at error level with tags + extras.
+    expect(mockCaptureMessage).toHaveBeenCalledTimes(1);
+    expect(mockCaptureMessage).toHaveBeenCalledWith(
+      expect.stringMatching(/setWebhook failed after 5 attempts/),
+      expect.objectContaining({
+        level: "error",
+        tags: expect.objectContaining({
+          module: "openclaw",
+          op: "setWebhook",
+          reason: "api_error",
+        }),
+        extra: expect.objectContaining({
+          url: "https://x.example/webhook",
+          attempts: 5,
+          lastApiError: "ECONNREFUSED api.telegram.org",
+        }),
+      }),
+    );
+  });
+
+  it("throws after WEBHOOK_VERIFY_MAX_ATTEMPTS if verification keeps failing (url_mismatch)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.useFakeTimers();
     const { bot, setWebhook, getWebhookInfo } = makeBotMock();
     // Force every getWebhookInfo to keep reporting an empty URL.
     getWebhookInfo.mockResolvedValue({
@@ -237,13 +412,23 @@ describe("registerOpenClawWebhook", () => {
       pending_update_count: 0,
     });
     await expect(
-      registerOpenClawWebhook(bot as never, {
-        url: "https://x.example/webhook",
-        secretToken: SECRET_OK,
+      settleWithFakeTimers(
+        registerOpenClawWebhook(bot as never, {
+          url: "https://x.example/webhook",
+          secretToken: SECRET_OK,
+        }),
+      ),
+    ).rejects.toThrow(/verification failed after 5 attempts/);
+    expect(setWebhook).toHaveBeenCalledTimes(5);
+    expect(getWebhookInfo).toHaveBeenCalledTimes(5);
+    expect(mockCaptureMessage).toHaveBeenCalledTimes(1);
+    expect(mockCaptureMessage).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        level: "error",
+        tags: expect.objectContaining({ reason: "url_mismatch" }),
       }),
-    ).rejects.toThrow(/verification failed after 3 attempts/);
-    expect(setWebhook).toHaveBeenCalledTimes(3);
-    expect(getWebhookInfo).toHaveBeenCalledTimes(3);
+    );
   });
 });
 
