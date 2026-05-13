@@ -29,6 +29,8 @@ import {
 import { executeMuteCommand } from "./mute-runner.js";
 import { executeRitualCommand } from "./ritual-runner.js";
 import { executeOpenclawStatusCommand } from "./status-runner.js";
+import { parseOpenclawCommand } from "./status-format.js";
+import { executeOpenclawWhoisCommand } from "./whois-runner.js";
 import type { HandlerContext } from "./handler-context.js";
 import {
   HELP_TEXT,
@@ -518,6 +520,73 @@ export function registerInfoCommands(ctx: HandlerContext): void {
       parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
       c.from?.id ??
       0;
+
+    // PR /whois: dispatch до окремого runner-а, якщо `/openclaw whois …`.
+    // Парсер subcommand-ів живе у status-format.ts (`whois` додано
+    // exhaustive, разом з `status` / `help` / `unknown`).
+    const parsed = parseOpenclawCommand(argument);
+    if (parsed.subcommand === "whois") {
+      const whoisResult = await executeOpenclawWhoisCommand({
+        rawArgument: parsed.whoisArgs ?? "",
+        founderUserId,
+        founderTgUserId,
+        ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+        fetcher: {
+          async postWhoisLookup(input) {
+            const r = await postJson<{
+              tgUserId: number;
+              resolvedFrom: "numeric" | "username";
+              username: string | null;
+              firstName: string | null;
+              lastName: string | null;
+              inAllowlist: boolean;
+              isFounder: boolean;
+              invocations7d: number;
+              lastSeenIso: string | null;
+              topTools: Array<{ tool: string; count: number }>;
+              muteState: {
+                mutedUntilIso: string | null;
+                setAtIso: string;
+                reason: string | null;
+              } | null;
+              telegramError: {
+                code: "forbidden" | "rate_limit" | "api_error" | "not_found";
+                message: string;
+                retryAfter?: number;
+              } | null;
+            }>(
+              `${serverUrl}/api/internal/openclaw/whois`,
+              internalApiKey,
+              input,
+            );
+            return { ok: r.ok, status: r.status, data: r.data };
+          },
+          async openInvocation(input) {
+            const r = await postJson<{ invocationId: number | null }>(
+              `${serverUrl}/api/internal/openclaw/invocations/open`,
+              internalApiKey,
+              input,
+            );
+            return {
+              ok: r.ok,
+              status: r.status,
+              invocationId: r.data?.invocationId ?? null,
+            };
+          },
+          async finalizeInvocation(input) {
+            const r = await postJson(
+              `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+              internalApiKey,
+              input,
+            );
+            return { ok: r.ok, status: r.status };
+          },
+        },
+        addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+      });
+      await c.reply(whoisResult.reply, { parse_mode: "HTML" });
+      return;
+    }
 
     const result = await executeOpenclawStatusCommand({
       rawArgument: argument,

@@ -94,6 +94,8 @@ import {
   clearFounderMute,
   getFounderMute,
   isFounderMuted,
+  // PR /whois (debug): /openclaw whois aggregator.
+  lookupWhois,
   // PR-C1b: reminder store + FSM helpers.
   setReminder,
   listDueReminders,
@@ -103,6 +105,7 @@ import {
   listFounderReminders,
   ReminderValidationError,
 } from "../../modules/openclaw/index.js";
+import { createTelegramBotClient } from "../../modules/telegram/index.js";
 import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 import type {
   OpenClawStatus,
@@ -242,6 +245,30 @@ const MuteSetBody = z.object({
 const MuteFounderBody = z.object({
   founderUserId: z.string().min(1),
 });
+
+// PR /whois (debug): `/openclaw whois <tg_user_id|@username>` body.
+// Хоч один з `tgUserId` / `username` має бути присутній — Zod refine
+// гарантує це на boundary, щоб не пускати у `lookupWhois` пустий
+// lookup. `founderTgUserId` обов'язковий для `isFounder` check-у
+// (caller дістає з env).
+const WhoisLookupBody = z
+  .object({
+    founderUserId: z.string().min(1).max(128),
+    founderTgUserId: z.number().int().min(1),
+    tgUserId: z.number().int().min(1).optional(),
+    username: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^@?[A-Za-z0-9_]{3,64}$/)
+      .optional(),
+    windowDays: z.number().int().min(1).max(30).optional(),
+    topToolsLimit: z.number().int().min(1).max(20).optional(),
+  })
+  .strict()
+  .refine((d) => d.tgUserId !== undefined || d.username !== undefined, {
+    message: "tgUserId or username is required",
+  });
 
 // ADR-0032: ports of Sergeant Console (ADR-0027) ops/marketing tool I/O
 // schemas. Validation is intentionally loose — the upstream APIs (Stripe,
@@ -1340,6 +1367,42 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       if (!parsed.ok) return;
       const result = await isFounderMuted(pool, {
         founderUserId: parsed.data.founderUserId,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- whois ("/openclaw whois <tg_id|@username>" payload) ----
+  //
+  // Read-only aggregator. Telegram resolution через
+  // `SERGEANT_ALERT_BOT_TOKEN` (той самий бот, що read-telegram-topic
+  // -history-у). Якщо токен пустий — `telegramClient: null`, resolution
+  // skip-ується (consumer бачить `telegramError.code = "api_error"`
+  // тільки коли є client + getChat fail). Cache layer навмисно
+  // відсутній — invocations rollup має бути fresh для debug-у.
+  r.post(
+    "/api/internal/openclaw/whois",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WhoisLookupBody, req, res);
+      if (!parsed.ok) return;
+      const token = env.SERGEANT_ALERT_BOT_TOKEN;
+      const telegramClient = token ? createTelegramBotClient({ token }) : null;
+      const result = await lookupWhois(pool, {
+        founderUserId: parsed.data.founderUserId,
+        founderTgUserId: parsed.data.founderTgUserId,
+        ...(parsed.data.tgUserId !== undefined
+          ? { tgUserId: parsed.data.tgUserId }
+          : {}),
+        ...(parsed.data.username !== undefined
+          ? { username: parsed.data.username }
+          : {}),
+        ...(parsed.data.windowDays !== undefined
+          ? { windowDays: parsed.data.windowDays }
+          : {}),
+        ...(parsed.data.topToolsLimit !== undefined
+          ? { topToolsLimit: parsed.data.topToolsLimit }
+          : {}),
+        telegramClient,
       });
       res.json(result);
     }),

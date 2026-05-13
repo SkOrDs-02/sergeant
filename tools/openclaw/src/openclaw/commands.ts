@@ -110,7 +110,7 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
   },
   {
     command: "openclaw",
-    description: "Debug snapshot: persona / WF / invocations / budget",
+    description: "Debug snapshot or whois <tg_id|@username> (founder DM)",
   },
   {
     command: "mute",

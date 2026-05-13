@@ -21,13 +21,19 @@
 
 import type { OpenClawPersona } from "../agents/personas.js";
 
-export type OpenclawSubcommand = "status" | "help" | "unknown";
+export type OpenclawSubcommand = "status" | "help" | "whois" | "unknown";
 
 export interface ParsedOpenclawCommand {
   /** Розв'язана підкоманда. `unknown` коли token не зрозумілий. */
   subcommand: OpenclawSubcommand;
   /** Сирий argument-токен, як ввів user (для логування / debug-у). */
   rawArgument: string;
+  /**
+   * Для `subcommand === "whois"` — все, що після `whois` token-а
+   * (numeric id або `@username`). Trim-нутий. Pre-validation тут не
+   * виконуємо — `whois-format.ts :: parseWhoisTarget` decode-ить semantics.
+   */
+  whoisArgs?: string;
   /** Людський error-message для невідомого token-а. Undefined для valid. */
   error?: string;
 }
@@ -51,11 +57,15 @@ export function parseOpenclawCommand(
     case "status":
     case "help":
       return { subcommand: firstToken, rawArgument: trimmed };
+    case "whois": {
+      const rest = trimmed.slice("whois".length).trim();
+      return { subcommand: "whois", rawArgument: trimmed, whoisArgs: rest };
+    }
     default:
       return {
         subcommand: "unknown",
         rawArgument: trimmed,
-        error: `Невідома підкоманда «${firstToken}». Доступні: status, help.`,
+        error: `Невідома підкоманда «${firstToken}». Доступні: status, whois, help.`,
       };
   }
 }
@@ -70,6 +80,7 @@ export const OPENCLAW_HELP_TEXT = [
   "Usage:",
   "  <code>/openclaw</code> — те саме, що <code>/openclaw status</code>",
   "  <code>/openclaw status</code> — поточний state (persona / WF / invocations / budget / Sentry)",
+  "  <code>/openclaw whois &lt;tg_id|@username&gt;</code> — debug-snapshot per Telegram user",
   "  <code>/openclaw help</code> — ця довідка",
   "",
   "Snapshot включає:",

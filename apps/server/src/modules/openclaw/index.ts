@@ -253,3 +253,12 @@ export {
   isFounderMuted,
 } from "./mute-state.js";
 export type { MuteState, MuteCheckResult } from "./mute-state.js";
+
+// PR /whois (debug): /openclaw whois <user_id|@username> aggregator.
+export { lookupWhois } from "./whois.js";
+export type {
+  WhoisResult,
+  WhoisInput,
+  WhoisTelegramError,
+  ToolUsageRow,
+} from "./whois.js";
