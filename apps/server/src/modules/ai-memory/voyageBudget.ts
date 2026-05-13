@@ -44,8 +44,27 @@ export type VoyageCallCriticality = EmbeddingCallCriticality;
 interface BudgetState {
   /** Map<"YYYY-MM-DD", usdSum>. */
   perDayUsage: Map<string, number>;
-  /** Set<"YYYY-MM-DD:threshold"> — anti-spam flag для Sentry alert-у. */
+  /**
+   * Set<"YYYY-MM-DD:threshold"> — anti-spam flag для Sentry alert-у.
+   * `threshold` тут це actual USD value (наприклад `1`), а не tier-name —
+   * щоб зміна `VOYAGE_DAILY_BUDGET_USD_SOFT` на льоту (між рестартами)
+   * генерувала свіжий alert. Для tier-based dedup (`soft`/`hard`)
+   * див. `alertedTiers`.
+   */
   alertedKeys: Set<string>;
+  /**
+   * Set<"YYYY-MM-DD:soft|hard|monthly"> — додатковий anti-spam за tier-
+   * name-ом. Гарантує, що навіть якщо threshold value змінився на льоту,
+   * того самого дня шлемо ≤1 alert на tier (важливо для on-call досвіду:
+   * флапаючий env-var не повинен спамити Telegram).
+   */
+  alertedTiers: Set<string>;
+  /**
+   * Чи перевищили hard-cap у поточному UTC-дні. Sync-readable через
+   * `isVoyageBudgetHardExceeded()` для non-critical ingestion gate-у
+   * (`service.ts::remember`). Скидається на day-rollover (новий dayKey).
+   */
+  hardBreachedDayKey: string | null;
 }
 
 /**
@@ -55,6 +74,8 @@ interface BudgetState {
 const state: BudgetState = {
   perDayUsage: new Map(),
   alertedKeys: new Set(),
+  alertedTiers: new Set(),
+  hardBreachedDayKey: null,
 };
 
 /**
@@ -81,6 +102,47 @@ export function getVoyageUtcDayKey(now: number = Date.now()): string {
 export function getVoyageSoftBudgetUsd(): number {
   const cap = env.VOYAGE_DAILY_BUDGET_USD_SOFT;
   return Number.isFinite(cap) && cap > 0 ? cap : 0;
+}
+
+/**
+ * Поточний поріг hard-cap-у (USD/day). `<= 0` → вимкнено (no-op).
+ * Парний до `getVoyageSoftBudgetUsd()` — додано у Voyage daily cost
+ * alert PR (analogous to `ANTHROPIC_BUDGET_HARD_USD`).
+ */
+export function getVoyageHardBudgetUsd(): number {
+  const cap = env.VOYAGE_DAILY_BUDGET_USD_HARD;
+  return Number.isFinite(cap) && cap > 0 ? cap : 0;
+}
+
+/**
+ * Місячний budget envelope (USD/month). Не daily, а monthly — для
+ * projection-alert-у: якщо `today-spend × днів-у-місяці > monthly-cap`,
+ * шлемо warning з proj-spend для on-call.
+ *
+ * `VOYAGE_MONTHLY_BUDGET_USD` `<= 0` → projection-alert вимкнено.
+ */
+export function getVoyageMonthlyBudgetUsd(): number {
+  const cap = env.VOYAGE_MONTHLY_BUDGET_USD;
+  return Number.isFinite(cap) && cap > 0 ? cap : 0;
+}
+
+/**
+ * Sync-helper для не-критичних callsite-ів (`service.ts::remember`,
+ * background BullMQ-worker-ів): чи відстрелявся hard-cap сьогодні.
+ *
+ * Pause-ingestion гейт: коли true, caller повинен skip-нути embed-call
+ * замість виклику `embedBatch()` (надлишковий — soft-gate уже скіпне
+ * non-critical, а hard додатково гарантує, що навіть якщо soft вимкнено
+ * (`SOFT=0`), ingestion не йде).
+ *
+ * Auto-reset на day-rollover: якщо stored dayKey != today, прапор
+ * вважається застарілим (повертаємо false). Real-clear відбувається у
+ * `addVoyageDailyUsageUsd` при stale-prune (далі ще раз hard-check
+ * запалить flag заново якщо USD-спід продовжується).
+ */
+export function isVoyageBudgetHardExceeded(now: number = Date.now()): boolean {
+  if (!state.hardBreachedDayKey) return false;
+  return state.hardBreachedDayKey === getVoyageUtcDayKey(now);
 }
 
 /**
@@ -115,6 +177,22 @@ export function addVoyageDailyUsageUsd(
   // не потрібні (новий день → fresh alert allowed).
   for (const key of state.alertedKeys) {
     if (!key.startsWith(`${todayKey}:`)) state.alertedKeys.delete(key);
+  }
+  // Per-tier anti-spam ключі: daily — `YYYY-MM-DD:soft|hard`; monthly —
+  // `YYYY-MM:monthly`. Prune daily-ключі попередніх днів. Monthly
+  // лишаємо доки monthKey збігається (prune-имо тільки якщо month
+  // зрушився, що в межах одного інкременту відбувається ≤1 раз/місяць).
+  const todayMonthKey = todayKey.slice(0, 7);
+  for (const key of state.alertedTiers) {
+    if (key.endsWith(":monthly")) {
+      if (!key.startsWith(`${todayMonthKey}:`)) state.alertedTiers.delete(key);
+    } else if (!key.startsWith(`${todayKey}:`)) {
+      state.alertedTiers.delete(key);
+    }
+  }
+  // Hard-breach flag застаріває на day-rollover.
+  if (state.hardBreachedDayKey && state.hardBreachedDayKey !== todayKey) {
+    state.hardBreachedDayKey = null;
   }
   state.perDayUsage.set(todayKey, (state.perDayUsage.get(todayKey) ?? 0) + usd);
 }
@@ -182,41 +260,18 @@ export function checkVoyageSoftBudget(opts: {
     };
   }
 
-  // Anti-spam — одна Sentry-капча на (dayKey, threshold).
-  const alertKey = `${dayKey}:${threshold}`;
-  if (!state.alertedKeys.has(alertKey)) {
-    state.alertedKeys.add(alertKey);
-    try {
-      Sentry.captureMessage(
-        `Voyage soft daily budget exceeded ($${usage.toFixed(4)} > $${threshold.toFixed(4)})`,
-        {
-          level: "warning",
-          tags: {
-            module: "ai-memory",
-            op: "voyage_soft_budget_exceeded",
-            day_key: dayKey,
-          },
-          extra: {
-            usage_usd: usage,
-            threshold_usd: threshold,
-            day_key: dayKey,
-          },
-        },
-      );
-    } catch (err) {
-      // Sentry-капча не повинна ламати embedding-flow. Логуємо і їдемо далі.
-      logger.warn({
-        msg: "voyage_soft_budget_sentry_capture_failed",
-        err: { message: (err as Error)?.message ?? String(err) },
-      });
-    }
-    logger.warn({
-      msg: "voyage_soft_budget_exceeded",
-      day_key: dayKey,
-      usage_usd: usage,
-      threshold_usd: threshold,
-    });
-  }
+  fireVoyageBudgetAlertOnce({
+    tier: "soft",
+    dayKey,
+    usage,
+    threshold,
+  });
+
+  // Hard-check паралельно (а не «замість»): hard alert треба запалити
+  // одного разу за тих самих умов. Тут soft-tick не дає monthly
+  // projection — це окрема обчислювальна гілка нижче.
+  maybeFireHardAlert(dayKey, usage);
+  maybeFireMonthlyProjectionAlert(dayKey, usage, opts.now ?? Date.now());
 
   const allow = opts.criticality === "critical";
   return {
@@ -229,6 +284,191 @@ export function checkVoyageSoftBudget(opts: {
 }
 
 /**
+ * Зважує `usage` проти hard-cap-у. Якщо ≥ — fire one-shot error-level
+ * alert і взводимо `state.hardBreachedDayKey`. Викликається з двох місць:
+ *  1) preflight `checkVoyageSoftBudget` (коли soft уже перевищили й ми
+ *     все одно entered alert-логіку);
+ *  2) post-record check (`runVoyageBudgetTick`) — щоб hard alert fire-вся
+ *     навіть коли soft вимкнено (`SOFT=0`).
+ */
+function maybeFireHardAlert(dayKey: string, usage: number): void {
+  const hardCap = getVoyageHardBudgetUsd();
+  if (hardCap <= 0) return;
+  if (usage < hardCap) return;
+  // Запалюємо breach-flag навіть якщо alert уже відстрелявся раніше —
+  // це idempotent сигнал, не alert (читачі — pause-ingestion гейти).
+  state.hardBreachedDayKey = dayKey;
+  fireVoyageBudgetAlertOnce({
+    tier: "hard",
+    dayKey,
+    usage,
+    threshold: hardCap,
+  });
+}
+
+/**
+ * Projection-alert: проектуємо today-spend на повний місяць
+ * (`usage × днів-у-місяці`) і порівнюємо з `VOYAGE_MONTHLY_BUDGET_USD`.
+ * Якщо проекція ≥ monthly-cap — fire warning-level (один на (місяць, monthly)).
+ *
+ * Idempotency key — `YYYY-MM:monthly` (не daily), щоб alert не дублювався
+ * щодня при стабільному overspend-і.
+ */
+function maybeFireMonthlyProjectionAlert(
+  dayKey: string,
+  usage: number,
+  now: number,
+): void {
+  const monthly = getVoyageMonthlyBudgetUsd();
+  if (monthly <= 0 || usage <= 0) return;
+  const nowDate = new Date(now);
+  const daysInMonth = new Date(
+    nowDate.getUTCFullYear(),
+    nowDate.getUTCMonth() + 1,
+    0,
+  ).getUTCDate();
+  const projected = usage * daysInMonth;
+  if (projected < monthly) return;
+
+  const monthKey = dayKey.slice(0, 7);
+  const tierKey = `${monthKey}:monthly`;
+  if (state.alertedTiers.has(tierKey)) return;
+  state.alertedTiers.add(tierKey);
+
+  const summary =
+    `Voyage monthly budget projection breach: ` +
+    `projected $${projected.toFixed(2)} ≥ $${monthly.toFixed(2)} ` +
+    `(today $${usage.toFixed(4)} × ${daysInMonth} days, month ${monthKey})`;
+  try {
+    Sentry.captureMessage(summary, {
+      level: "warning",
+      tags: {
+        module: "ai-memory",
+        op: "voyage_monthly_projection_alert",
+        provider: "voyage",
+        threshold: "monthly",
+        error_signature: "voyage-monthly-budget-projection",
+        day_key: dayKey,
+        month_key: monthKey,
+      },
+      extra: {
+        usage_usd: usage,
+        projected_usd: projected,
+        monthly_budget_usd: monthly,
+        days_in_month: daysInMonth,
+        day_key: dayKey,
+        month_key: monthKey,
+      },
+    });
+  } catch (err) {
+    logger.warn({
+      msg: "voyage_monthly_projection_sentry_capture_failed",
+      err: { message: (err as Error)?.message ?? String(err) },
+    });
+  }
+  logger.warn({
+    msg: "voyage_monthly_projection_alert",
+    day_key: dayKey,
+    month_key: monthKey,
+    usage_usd: usage,
+    projected_usd: projected,
+    monthly_budget_usd: monthly,
+  });
+}
+
+/**
+ * Post-record check: викликається з `recordVoyageUsage` після кожного
+ * USD-інкременту, щоб hard alert (і monthly projection) fire-вся навіть
+ * коли soft вимкнено або коли caller не йшов через `checkVoyageSoftBudget`.
+ *
+ * Idempotent: alert fire-иться ≤1 раз на (dayKey, tier) через `alertedTiers`.
+ * Hard breach-flag stays raised до day-rollover-у.
+ */
+export function runVoyageBudgetTick(now: number = Date.now()): void {
+  const dayKey = getVoyageUtcDayKey(now);
+  const usage = getVoyageDailyUsageUsd(now);
+  if (usage <= 0) return;
+
+  // Soft alert тут не fire-имо, бо це шлях post-record для всіх викликів
+  // (включно з critical) — `checkVoyageSoftBudget` лишається owner-ом
+  // soft fire-логіки + non-critical skip-у. Тут тільки hard + monthly.
+  maybeFireHardAlert(dayKey, usage);
+  maybeFireMonthlyProjectionAlert(dayKey, usage, now);
+}
+
+/**
+ * One-shot Sentry alert + structured log для конкретного tier-у
+ * (`soft`/`hard`). Anti-spam через два ключі:
+ *  - `alertedKeys` — keyed на actual threshold value (legacy from PR-38);
+ *  - `alertedTiers` — keyed на tier-name (`soft`/`hard`), щоб флапаючий
+ *    env-var не перетворив на спам.
+ *
+ * `error_signature` tag (`voyage-daily-budget-soft|hard`) гарантує, що
+ * Sentry → n8n alert-routing → Telegram dedup-row дотягається до того ж
+ * cooldown-вікна (analogous до WF-98 "workflowId:error_signature" pattern,
+ * PR-15 #2535).
+ */
+function fireVoyageBudgetAlertOnce(input: {
+  tier: "soft" | "hard";
+  dayKey: string;
+  usage: number;
+  threshold: number;
+}): void {
+  const { tier, dayKey, usage, threshold } = input;
+  const tierKey = `${dayKey}:${tier}`;
+  const valueKey = `${dayKey}:${threshold}:${tier}`;
+  if (state.alertedTiers.has(tierKey)) return;
+  if (state.alertedKeys.has(valueKey)) return;
+  state.alertedTiers.add(tierKey);
+  state.alertedKeys.add(valueKey);
+
+  const errorSignature =
+    tier === "hard" ? "voyage-daily-budget-hard" : "voyage-daily-budget-soft";
+  const summary =
+    tier === "hard"
+      ? `Voyage HARD daily budget exceeded ($${usage.toFixed(4)} ≥ $${threshold.toFixed(4)})`
+      : `Voyage soft daily budget exceeded ($${usage.toFixed(4)} > $${threshold.toFixed(4)})`;
+  try {
+    Sentry.captureMessage(summary, {
+      level: tier === "hard" ? "error" : "warning",
+      tags: {
+        module: "ai-memory",
+        op:
+          tier === "hard"
+            ? "voyage_hard_budget_exceeded"
+            : "voyage_soft_budget_exceeded",
+        provider: "voyage",
+        threshold: tier,
+        error_signature: errorSignature,
+        day_key: dayKey,
+      },
+      extra: {
+        usage_usd: usage,
+        threshold_usd: threshold,
+        day_key: dayKey,
+      },
+    });
+  } catch (err) {
+    logger.warn({
+      msg:
+        tier === "hard"
+          ? "voyage_hard_budget_sentry_capture_failed"
+          : "voyage_soft_budget_sentry_capture_failed",
+      err: { message: (err as Error)?.message ?? String(err) },
+    });
+  }
+  logger.warn({
+    msg:
+      tier === "hard"
+        ? "voyage_hard_budget_exceeded"
+        : "voyage_soft_budget_exceeded",
+    day_key: dayKey,
+    usage_usd: usage,
+    threshold_usd: threshold,
+  });
+}
+
+/**
  * Test-only reset. НЕ викликати у production-code (state — module-singleton
  * by design). Експорт під `__`-prefix-ом — конвенція "private-export"
  * у решті кодбази (`__resetVoyageBudgetState` грепабельне з тестів).
@@ -236,4 +476,6 @@ export function checkVoyageSoftBudget(opts: {
 export function __resetVoyageBudgetState(): void {
   state.perDayUsage.clear();
   state.alertedKeys.clear();
+  state.alertedTiers.clear();
+  state.hardBreachedDayKey = null;
 }

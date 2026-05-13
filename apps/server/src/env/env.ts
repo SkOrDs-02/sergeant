@@ -941,6 +941,23 @@ const envSchema = z.object({
    * alert лишиться).
    */
   VOYAGE_DAILY_BUDGET_USD_SOFT: floatFromEnv(1),
+  /**
+   * Voyage **hard** daily-usage cap (USD). Аналогічний `ANTHROPIC_BUDGET_HARD_USD`
+   * (PR-14): коли today-spend ≥ cap — emit Sentry **error**-level alert
+   * (`error_signature='voyage-daily-budget-hard'`) і взводимо in-process
+   * прапор `isVoyageBudgetHardExceeded()`. Не-критичні шляхи (`remember()`
+   * background ingestion) самозатягують горло — skip embed-call ще до
+   * `embedBatch()`, бо повторно генерувати soft-warning + витрачати
+   * Voyage-квоту після hard-breach-у вже немає сенсу.
+   *
+   * Soft (`VOYAGE_DAILY_BUDGET_USD_SOFT`) лишається первинним сигналом
+   * (warning + skip non-critical у `embeddings.ts`). Hard — додатковий
+   * сигнал (error + pause-ingestion гейт у `service.ts::remember`).
+   *
+   * Default `5` USD — same ratio як Anthropic ($3 soft / $5 hard).
+   * Set `0` щоб вимкнути hard-gate (тоді тільки soft).
+   */
+  VOYAGE_DAILY_BUDGET_USD_HARD: floatFromEnv(5),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -24,6 +24,7 @@ import type {
 import {
   addVoyageDailyUsageUsd,
   checkVoyageSoftBudget,
+  runVoyageBudgetTick,
   type VoyageCallCriticality,
 } from "./voyageBudget.js";
 import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
@@ -89,6 +90,12 @@ export function recordVoyageUsage(
         // counter-у, бо counter monotonically накопичує since-start, а
         // soft-gate-у потрібна сума саме за поточну UTC-добу.
         addVoyageDailyUsageUsd(usd);
+        // Voyage daily cost alert — post-record check для hard threshold
+        // (`error_signature='voyage-daily-budget-hard'`) + monthly projection.
+        // Idempotent: ≤1 alert на (day, tier). Workflow для soft є у
+        // `checkVoyageSoftBudget()` preflight (pre-call); tick тут потрібен,
+        // щоб hard fire-вся навіть коли soft вимкнено (SOFT=0).
+        runVoyageBudgetTick();
       }
     }
   } catch {

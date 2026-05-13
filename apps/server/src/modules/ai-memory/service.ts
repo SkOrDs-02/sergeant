@@ -23,6 +23,7 @@ import type {
   VectorStore,
 } from "./types.js";
 import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
+import { isVoyageBudgetHardExceeded } from "./voyageBudget.js";
 
 /**
  * Параметри запису одного memory. Caller передає сирий `content`;
@@ -97,6 +98,20 @@ export function createAiMemoryService(
         return;
       }
       if (inputs.length === 0) return;
+
+      // Voyage hard daily budget pause-ingestion гейт. Якщо `VOYAGE_DAILY_BUDGET_USD_HARD`
+      // вже відстрелявся сьогодні — skip-аємо embed-call ще до `embedBatch()`,
+      // щоб не витрачати Voyage-квоту і не дублювати alert-и. Sentry-error
+      // уже відправлений у `voyageBudget.ts::maybeFireHardAlert`. На
+      // day-rollover flag скидається автоматично.
+      if (isVoyageBudgetHardExceeded()) {
+        logger.warn({
+          msg: "ai_memory_remember_skipped_hard_budget",
+          count: inputs.length,
+          sources: inputs.map((i) => i.source),
+        });
+        return;
+      }
 
       const texts = inputs.map((i) => i.content);
       let embeddings: Float32Array[];

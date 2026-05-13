@@ -10,7 +10,11 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const ENV_VARS = ["VOYAGE_DAILY_BUDGET_USD_SOFT"] as const;
+const ENV_VARS = [
+  "VOYAGE_DAILY_BUDGET_USD_SOFT",
+  "VOYAGE_DAILY_BUDGET_USD_HARD",
+  "VOYAGE_MONTHLY_BUDGET_USD",
+] as const;
 const savedEnv: Record<string, string | undefined> = {};
 
 const { captureMessageMock } = vi.hoisted(() => ({
@@ -313,5 +317,266 @@ describe("getVoyageUtcDayKey() — PR-38", () => {
     // 2026-05-14T00:01:00Z — вже "14".
     const utcAfterMidnight = Date.UTC(2026, 4, 14, 0, 1, 0);
     expect(getVoyageUtcDayKey(utcAfterMidnight)).toBe("2026-05-14");
+  });
+});
+
+// Voyage daily cost alert — hard threshold + monthly projection (analogous to PR-14).
+describe("getVoyageHardBudgetUsd() — Voyage daily cost alert", () => {
+  it("повертає $5 fallback коли env unset (Anthropic-parity)", async () => {
+    const { getVoyageHardBudgetUsd } = await import("./voyageBudget.js");
+    expect(getVoyageHardBudgetUsd()).toBe(5);
+  });
+
+  it("читає env-value коли валідне float-число", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "12.5";
+    const { getVoyageHardBudgetUsd } = await import("./voyageBudget.js");
+    expect(getVoyageHardBudgetUsd()).toBe(12.5);
+  });
+
+  it("повертає 0 (=вимкнено) коли env <= 0", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "0";
+    const { getVoyageHardBudgetUsd } = await import("./voyageBudget.js");
+    expect(getVoyageHardBudgetUsd()).toBe(0);
+  });
+});
+
+describe("runVoyageBudgetTick() — hard threshold", () => {
+  it("Precondition: usage < hard → жодного hard alert, flag не взводиться", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10"; // soft off-path
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      isVoyageBudgetHardExceeded,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(3);
+    runVoyageBudgetTick();
+    expect(captureMessageMock).not.toHaveBeenCalled();
+    expect(isVoyageBudgetHardExceeded()).toBe(false);
+  });
+
+  it("usage >= hard → fire-ить error-level alert + взводить hard-breach flag", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      isVoyageBudgetHardExceeded,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(5.25);
+    runVoyageBudgetTick();
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+    const [msg, opts] = captureMessageMock.mock.calls[0]!;
+    expect(msg).toMatch(/Voyage HARD daily budget exceeded/);
+    expect(opts.level).toBe("error");
+    expect(opts.tags).toMatchObject({
+      module: "ai-memory",
+      op: "voyage_hard_budget_exceeded",
+      threshold: "hard",
+      error_signature: "voyage-daily-budget-hard",
+    });
+    expect(opts.extra).toMatchObject({
+      threshold_usd: 5,
+    });
+    expect(isVoyageBudgetHardExceeded()).toBe(true);
+  });
+
+  it("hard alert idempotent — одна Sentry-капча на (day, hard) навіть при N тіках", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(6);
+    for (let i = 0; i < 50; i++) runVoyageBudgetTick();
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("hard=0 (вимкнено) → тік не fire-ить нічого", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "0";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      isVoyageBudgetHardExceeded,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(100);
+    runVoyageBudgetTick();
+    expect(captureMessageMock).not.toHaveBeenCalled();
+    expect(isVoyageBudgetHardExceeded()).toBe(false);
+  });
+
+  it("hard breach-flag скидається на day rollover", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      isVoyageBudgetHardExceeded,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+
+    const day1 = Date.UTC(2026, 4, 13, 23, 0, 0);
+    const day2 = Date.UTC(2026, 4, 14, 1, 0, 0);
+    addVoyageDailyUsageUsd(6, day1);
+    runVoyageBudgetTick(day1);
+    expect(isVoyageBudgetHardExceeded(day1)).toBe(true);
+
+    // На наступний день flag читається як неактуальний (sync-getter rolls
+    // forward навіть якщо state ще не зачищений).
+    expect(isVoyageBudgetHardExceeded(day2)).toBe(false);
+
+    // Real-clear відбувається при наступному add-у; alertedTiers prune-ниться.
+    addVoyageDailyUsageUsd(0.1, day2);
+    expect(isVoyageBudgetHardExceeded(day2)).toBe(false);
+  });
+
+  it("hard alert ще можна знову fire-нути на свіжому дні (anti-spam clears on rollover)", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+
+    const day1 = Date.UTC(2026, 4, 13, 12, 0, 0);
+    const day2 = Date.UTC(2026, 4, 14, 12, 0, 0);
+    addVoyageDailyUsageUsd(6, day1);
+    runVoyageBudgetTick(day1);
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+
+    addVoyageDailyUsageUsd(6, day2);
+    runVoyageBudgetTick(day2);
+    expect(captureMessageMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("runVoyageBudgetTick() — monthly projection", () => {
+  it("projection >= monthly → fire warning-level alert (один на (month, monthly))", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "100"; // soft off-path
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "100"; // hard off-path
+    process.env["VOYAGE_MONTHLY_BUDGET_USD"] = "30";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+
+    // May 2026 has 31 days. $1.2/day × 31 = $37.2 ≥ $30 → fire.
+    const may15 = Date.UTC(2026, 4, 15, 12, 0, 0);
+    addVoyageDailyUsageUsd(1.2, may15);
+    runVoyageBudgetTick(may15);
+
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+    const [msg, opts] = captureMessageMock.mock.calls[0]!;
+    expect(msg).toMatch(/Voyage monthly budget projection breach/);
+    expect(opts.level).toBe("warning");
+    expect(opts.tags).toMatchObject({
+      op: "voyage_monthly_projection_alert",
+      threshold: "monthly",
+      error_signature: "voyage-monthly-budget-projection",
+      month_key: "2026-05",
+    });
+    expect(opts.extra).toMatchObject({
+      monthly_budget_usd: 30,
+      days_in_month: 31,
+    });
+  });
+
+  it("monthly=0 (вимкнено) → projection alert не fire-иться", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "1000";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "1000";
+    process.env["VOYAGE_MONTHLY_BUDGET_USD"] = "0";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(50, Date.UTC(2026, 4, 15, 12, 0, 0));
+    runVoyageBudgetTick(Date.UTC(2026, 4, 15, 12, 0, 0));
+    expect(captureMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("monthly idempotent — один alert на місяць навіть при N тіках різних днів", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "100";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "100";
+    process.env["VOYAGE_MONTHLY_BUDGET_USD"] = "30";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+
+    const may13 = Date.UTC(2026, 4, 13, 12, 0, 0);
+    addVoyageDailyUsageUsd(1.5, may13);
+    runVoyageBudgetTick(may13);
+    runVoyageBudgetTick(may13);
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+
+    // Інший день того ж місяця — все ще скіпаємо.
+    const may14 = Date.UTC(2026, 4, 14, 12, 0, 0);
+    addVoyageDailyUsageUsd(1.5, may14);
+    runVoyageBudgetTick(may14);
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("month rollover → fresh projection alert allowed", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "100";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "100";
+    process.env["VOYAGE_MONTHLY_BUDGET_USD"] = "30";
+    const {
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+
+    const may15 = Date.UTC(2026, 4, 15, 12, 0, 0);
+    addVoyageDailyUsageUsd(1.5, may15);
+    runVoyageBudgetTick(may15);
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+
+    const jun01 = Date.UTC(2026, 5, 1, 12, 0, 0);
+    addVoyageDailyUsageUsd(1.5, jun01);
+    runVoyageBudgetTick(jun01);
+    expect(captureMessageMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("checkVoyageSoftBudget() — інтеграція з hard tier", () => {
+  it("usage > soft AND >= hard → шлемо ОБИДВА alerts (soft warning + hard error)", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "1";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      addVoyageDailyUsageUsd,
+      checkVoyageSoftBudget,
+      isVoyageBudgetHardExceeded,
+      __resetVoyageBudgetState,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(6);
+
+    const result = checkVoyageSoftBudget({ criticality: "non-critical" });
+    expect(result.allow).toBe(false);
+    expect(result.overSoftLimit).toBe(true);
+    expect(captureMessageMock).toHaveBeenCalledTimes(2);
+    const levels = captureMessageMock.mock.calls.map((c) => c[1]!.level).sort();
+    expect(levels).toEqual(["error", "warning"]);
+    expect(isVoyageBudgetHardExceeded()).toBe(true);
   });
 });
