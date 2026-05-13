@@ -1022,6 +1022,71 @@ export interface PoolSamplerOptions {
  * Sample pg pool gauges periodically. Call once at boot.
  * Returns an unref-ed interval handle so the process can still exit cleanly.
  */
+// ───────────────── RAG eval weekly (post-PR-20 automation) ────
+// Telemetry для weekly RAG-quality cron (`scripts/rag-eval-weekly.mjs`
+// + `POST /api/internal/eval/rag-weekly`). Сетяться один раз за
+// тиждень (Mon 06:00 Kyiv), затихають між run-ами — Prom-серверу
+// це безболісно бо staleness обчислюється по
+// `rag_eval_last_run_timestamp_seconds`.
+export const ragEvalRecallAt4 = new client.Gauge({
+  name: "rag_eval_recall_at_4",
+  help: "Mean recall@4 from last weekly RAG eval run (0..1)",
+  labelNames: ["mode"], // mock|simulate|live
+  registers: [register],
+});
+
+export const ragEvalPrecisionAt1 = new client.Gauge({
+  name: "rag_eval_precision_at_1",
+  help: "Mean precision@1 from last weekly RAG eval run (0..1)",
+  labelNames: ["mode"],
+  registers: [register],
+});
+
+export const ragEvalMrr = new client.Gauge({
+  name: "rag_eval_mrr",
+  help: "Mean reciprocal rank from last weekly RAG eval run (0..1)",
+  labelNames: ["mode"],
+  registers: [register],
+});
+
+export const ragEvalLastRunTimestampSeconds = new client.Gauge({
+  name: "rag_eval_last_run_timestamp_seconds",
+  help: "Unix-timestamp of last successful weekly RAG eval run",
+  registers: [register],
+});
+
+export const ragEvalLastRunStatus = new client.Gauge({
+  name: "rag_eval_last_run_status",
+  help: "Last RAG eval run status (0=pass, 1=warn, 2=kill, 3=error)",
+  labelNames: ["mode"],
+  registers: [register],
+});
+
+export const ragEvalRecordsTotal = new client.Counter({
+  name: "rag_eval_records_total",
+  help: "Total weekly RAG eval records received by internal endpoint",
+  labelNames: ["status"], // pass|warn|kill|error
+  registers: [register],
+});
+
+// ───────────────── Runtime kill-switches ──────────────────────
+// In-memory feature kill-switch registry
+// (`lib/featureFlags/runtimeKillSwitch.ts`). Активуються із RAG
+// quality gate (recall@4 < kill threshold) або вручну через runbook.
+export const runtimeKillSwitchActive = new client.Gauge({
+  name: "runtime_kill_switch_active",
+  help: "1 if runtime kill-switch is currently active, 0 otherwise",
+  labelNames: ["switch"], // mono_ai_memory_ingest|rag_retrieval|rag_eval_weekly
+  registers: [register],
+});
+
+export const runtimeKillSwitchActivationsTotal = new client.Counter({
+  name: "runtime_kill_switch_activations_total",
+  help: "Total runtime kill-switch state transitions",
+  labelNames: ["switch", "outcome"], // outcome: activate|reactivate|deactivate
+  registers: [register],
+});
+
 export function startPoolSampler(
   pool: Pool,
   { intervalMs = 10_000 }: PoolSamplerOptions = {},

@@ -412,6 +412,35 @@ describe("enqueueMemoryIngest — MONO_AI_MEMORY_INGEST_ENABLED (PR-19)", () => 
     );
   });
 
+  it("runtime kill-switch активний → finyk skipped, source_disabled-метрика", async () => {
+    // RAG eval automation post-PR-20: коли recall@4 < 0.4, endpoint
+    // /api/internal/eval/rag-weekly активує in-memory kill-switch
+    // `mono_ai_memory_ingest`. Цей kill-switch перебиває env-flag-у:
+    // навіть якщо `MONO_AI_MEMORY_INGEST_ENABLED=true`, finyk не enqueue-ить.
+    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
+    vi.resetModules();
+    const { activateKillSwitch, __resetKillSwitchesForTest } =
+      await import("../../lib/featureFlags/runtimeKillSwitch.js");
+    __resetKillSwitchesForTest();
+    activateKillSwitch("mono_ai_memory_ingest", {
+      reason: "test: kill-switch override",
+    });
+    const remember = vi.fn().mockResolvedValue(undefined);
+    const mod = await import("./ingestQueue.js");
+    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await mod.enqueueMemoryIngest(samplePayload);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(remember).not.toHaveBeenCalled();
+    const { aiMemoryIngestEnqueuedTotal: inc } =
+      await import("../../obs/metrics.js");
+    expect(
+      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
+    ).toHaveBeenCalledWith({ mode: "source_disabled", source: "finyk" });
+    __resetKillSwitchesForTest();
+  });
+
   it("master AI_MEMORY_ENABLED=false виграє у MONO_AI_MEMORY_INGEST_ENABLED=true (disabled-mode trumps)", async () => {
     process.env["AI_MEMORY_ENABLED"] = "false";
     process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";

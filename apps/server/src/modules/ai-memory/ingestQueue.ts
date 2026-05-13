@@ -29,6 +29,7 @@ import { Queue, Worker, type Job } from "bullmq";
 import type { Redis as IORedisClient } from "ioredis";
 
 import { env } from "../../env.js";
+import { isKillSwitchActive } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import {
   AI_MEMORY_INGEST_QUEUE_NAME,
   BULLMQ_QUEUE_PREFIX,
@@ -232,7 +233,17 @@ export async function enqueueMemoryIngest(
   // `webhook.ts`), щоб майбутні per-source flags для digest/chat
   // додавались в одному місці, з тим самим metric shape
   // (`mode="source_disabled"`).
-  if (payload.source === "finyk" && !env.MONO_AI_MEMORY_INGEST_ENABLED) {
+  //
+  // Runtime kill-switch (RAG eval automation post-PR-20): якщо weekly
+  // recall@4 < 0.4 → `POST /api/internal/eval/rag-weekly` активує
+  // in-memory kill-switch `mono_ai_memory_ingest`, який перебиває env
+  // до process-restart. Реальний permanent flip env-у на Railway —
+  // operator-task per runbook § «RagQualityGateKillSwitch».
+  if (
+    payload.source === "finyk" &&
+    (!env.MONO_AI_MEMORY_INGEST_ENABLED ||
+      isKillSwitchActive("mono_ai_memory_ingest"))
+  ) {
     aiMemoryIngestEnqueuedTotal.inc({
       mode: "source_disabled",
       source: sourceLabel,
@@ -240,6 +251,7 @@ export async function enqueueMemoryIngest(
     logger.debug({
       msg: "ai_memory_ingest_skipped_source_disabled",
       source: sourceLabel,
+      killSwitch: isKillSwitchActive("mono_ai_memory_ingest"),
     });
     return;
   }

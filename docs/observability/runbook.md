@@ -505,6 +505,74 @@ https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped
 **не** у RAG-pipeline. Виправити harness першочергово, kill-switch не
 вмикати.
 
+## RagEvalAutomationAlert (auto-kill-switch via /api/internal/eval/rag-weekly)
+
+**Що горить**: weekly cron-job (n8n WF-28 — Mon 06:00 Kyiv, або
+GH-Action `rag-quality-gate.yml` — Mon 08:00 UTC) запостив eval-summary
+на `POST /api/internal/eval/rag-weekly`, і endpoint **авто-активував
+in-memory kill-switch `mono_ai_memory_ingest`** (recall@4 < `kill_threshold`,
+default `0.4`). Це доповнює `RagQualityGateKillSwitch` (manual env-flip
+на Railway) автоматичним runtime-захистом, що блокує finyk-ingestion
+негайно до моменту permanent fix.
+
+**Рівень**: critical — RAG-injection у chat вже може повертати stale
+context, але новий Mono-webhook payload вже **НЕ** йде в ingestion-queue
+(in-memory гард у `apps/server/src/modules/ai-memory/ingestQueue.ts`).
+
+**Як перевірити kill-switch state**:
+
+```bash
+# Поточний стан (gauge=1 → активний)
+curl https://<server>/metrics | grep runtime_kill_switch_active
+# Hit-counter (cumulative transitions)
+curl https://<server>/metrics | grep runtime_kill_switch_activations_total
+
+# Last eval values (Prom)
+curl https://<server>/metrics | grep -E 'rag_eval_(recall|precision|mrr|last_run)'
+```
+
+**Реакція**:
+
+1. Глянь Sentry — endpoint capture-ить `RAG quality gate kill — recall@4=...`
+   з тегами `module=rag-eval`, `auto_disable_recommended=true`. У
+   `extra.baselineComparison` (якщо передано) — delta vs прошлого тижня.
+2. Сам Postgres-rec — `SELECT raw FROM n8n_failure_events
+WHERE workflow_id='rag-eval-weekly' ORDER BY created_at DESC LIMIT 1`
+   містить повний JSON-summary (з `metrics`, `perDomain`).
+3. **Промисловий kill-switch на Railway** — runtime-гард переживає лише
+   до process-restart. Якщо incident триває >1h:
+   - Set `MONO_AI_MEMORY_INGEST_ENABLED=false` на Railway dashboard;
+   - Redeploy → kill-switch стає permanent до зворотного flip-у;
+   - In-memory kill-switch після redeploy auto-clear-иться (Map reset),
+     і це **очікувано** — env-flag тепер є source-of-truth.
+4. Root-cause investigation: див. `RagQualityGateKillSwitch` § 5 вище
+   (embedding-model bump, schema-change, malformed ingestion).
+5. Після fix:
+   - Локально `pnpm eval:rag:weekly --mode=mock --skip-post` → перевір
+     status=`pass`;
+   - Manually trigger GH-Action `rag-quality-gate.yml` → endpoint
+     отримає summary, але **kill-switch не deactivate-ситься
+     автоматично**. Це навмисно — deactivation — operator decision.
+6. Deactivation: рестарт серверу (Railway redeploy після env-flip
+   `MONO_AI_MEMORY_INGEST_ENABLED=true`) очищає in-memory kill-switch.
+   Альтернативно майбутній `POST /api/internal/feature-flags/clear?switch=mono_ai_memory_ingest`
+   (не реалізовано — backlog).
+
+**Multi-instance ВИКРАСТУП**: kill-switch — in-memory у single Node-process.
+Railway-deploy зараз single-instance. Якщо ми scale-up до multi-replica —
+treat kill-switch як advisory (env-flag залишається authoritative).
+
+**Дзеркало метрик**:
+
+- `rag_eval_recall_at_4{mode}` — gauge, value останнього eval-run-у.
+- `rag_eval_precision_at_1{mode}`, `rag_eval_mrr{mode}` — peer-metrics.
+- `rag_eval_last_run_timestamp_seconds` — staleness alert (>10d без run-у → cron-failure).
+- `rag_eval_last_run_status{mode}` — 0=pass, 1=warn, 2=kill, 3=error.
+- `rag_eval_records_total{status}` — counter.
+- `runtime_kill_switch_active{switch}` — 0/1 поточний стан.
+- `runtime_kill_switch_activations_total{switch,outcome}` — counter
+  (outcome ∈ {activate, reactivate, deactivate}).
+
 ## OpenTelemetry traces (server-side OTLP)
 
 **Звідки:** [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) shipped 2026-05-05 (initiative [0004 Phase 2 + 4](../initiatives/archive/_0004-server-observability.md)). Server `apps/server/src/obs/{tracing,spans,sampler}.ts` — NodeSDK + auto-instrumentation для `http`, `express`, `pg`, `redis`, `undici`. Web `packages/api-client/src/httpClient.ts` додає `traceparent` header у кожний fetch.

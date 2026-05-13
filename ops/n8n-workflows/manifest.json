@@ -269,6 +269,20 @@
       "requiredCredentials": [],
       "notes": "Daily 07:00 Kyiv → POST /api/internal/openclaw/briefing/morning (PR-26 hardcoded-template; 5 sections: Stripe / PostHog / GitHub PR-queue / n8n workflows / Sentry) → POST /api/internal/webhook-events/record (PR-28 exec audit log) + DM founder via @OpenClaw_sergeant_bot raw HTTP. Activate after OPENCLAW_BOT_TOKEN + OPENCLAW_FOUNDER_TG_USER_ID set on n8n Railway. Briefing endpoint завжди 200 з graceful-degrade — секції з missing env-vars рендерять notConfigured-hint замість failing 5xx. LLM-summarization (PR-27 next-up у roadmap-у) поки НЕ підключений; cron шле raw template markdown."
     },
+    "28-rag-eval-weekly-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "ops",
+      "audienceTier": "P2",
+      "requiredEnv": [
+        "GITHUB_PAT",
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_OPS"
+      ],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Weekly Mon 06:00 Kyiv → POST GitHub workflow_dispatch /repos/Skords-01/Sergeant/actions/workflows/rag-quality-gate.yml/dispatches (з inputs mode=mock, thresholds, post_to_internal=true). GH Action (PR-22) запускає eval CLI + після успіху POST-ить summary на /api/internal/eval/rag-weekly (новий endpoint цього PR — record у n8n_failure_events + Prom gauges + Sentry + auto-flip kill-switch `mono_ai_memory_ingest` при recall@4 < 0.4). На non-204 GitHub response → Telegram alert у #ops topic. Requires GITHUB_PAT з workflow scope. Активувати у self-hosted n8n після того як GH Action PR-22 розширений `post_to_internal=true` input-ом (окремий follow-up PR через OAuth workflow-scope обмеження)."
+    },
     "30-ai-memory-daily-digest.json": {
       "owner": "ops",
       "status": "experimental",

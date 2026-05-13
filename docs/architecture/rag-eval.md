@@ -249,6 +249,92 @@ Threshold `regression: true` — drop recall@K mean більше ніж на **0
    ([`.github/workflows/rag-quality-gate.yml`](../../.github/workflows/rag-quality-gate.yml)).
 6. Update цей файл (нова секція з формулою).
 
+## Weekly automation layer (post-PR-20)
+
+Eval-harness — pure-function: bere golden-set + retrieval-call →
+повертає JSON summary. Automation-шар довкола ловить deviations і
+тригерить responsive actions:
+
+```
+┌────────────────────┐    cron Mon 06:00 Kyiv
+│  n8n WF-28         │ ─────────────────────────┐
+└────────────────────┘                          │
+                                                ▼
+                       POST workflow_dispatch (GitHub API)
+                                                │
+                                                ▼
+                       ┌──────────────────────────────────┐
+                       │  GH Action rag-quality-gate.yml  │
+                       │  Sun 08:00 UTC + n8n trigger     │
+                       │  → pnpm eval:rag (mock/live)     │
+                       │  → POST summary to API ▼          │
+                       └──────────────────────────────────┘
+                                                │
+                                                ▼
+       /api/internal/eval/rag-weekly   (apps/server/src/routes/internal/eval-rag.ts)
+       (bearer-token guard — INTERNAL_API_KEY)
+                ║
+                ║ 4 side-effects:
+                ║
+                ╠── 1. INSERT n8n_failure_events (workflow_id=rag-eval-weekly)
+                ║      raw=summary JSON для post-mortem
+                ║
+                ╠── 2. SET Prom gauges
+                ║      rag_eval_recall_at_4{mode}, rag_eval_p@1{mode},
+                ║      rag_eval_mrr{mode}, rag_eval_last_run_status{mode},
+                ║      rag_eval_last_run_timestamp_seconds
+                ║
+                ╠── 3. Sentry captureMessage if status != "pass"
+                ║      level=warning (warn) | level=error (kill)
+                ║      tags: module=rag-eval, auto_disable_recommended, mode
+                ║      extra.baselineComparison (delta vs прошлий тиждень)
+                ║
+                ╚── 4. activateKillSwitch("mono_ai_memory_ingest")
+                       only if status="kill"
+                       in-memory Map (apps/server/src/lib/featureFlags/
+                       runtimeKillSwitch.ts) — single-instance only
+```
+
+**Runtime kill-switch contract** (`apps/server/src/lib/featureFlags/
+runtimeKillSwitch.ts`):
+
+- `activateKillSwitch(name, {reason, context})` — set active=true,
+  inc counter, Sentry breadcrumb, log Pino warn.
+- `isKillSwitchActive(name)` — `O(1)` Map.get — викликається у
+  `apps/server/src/modules/ai-memory/ingestQueue.ts` перед env-flag-ом
+  `MONO_AI_MEMORY_INGEST_ENABLED`. Перебиває env у бік skip.
+- `deactivateKillSwitch(name)` — manual reset (operator action).
+- In-memory: Map<KillSwitchName, KillSwitchState>. **Reset на
+  process-restart** — це навмисно (operator може investigation-ити
+  fresh, env-flag залишається authoritative source-of-truth).
+
+**Wrapper script** (`scripts/rag-eval-weekly.mjs`, exposed via
+`pnpm eval:rag:weekly`):
+
+- Spawn-ить child-process `eval-rag-recall.mjs` з тим самим CLI-set-ом
+  (forward `--mode=`, `--baseline=` etc).
+- Парсить v2.0 JSON summary, POST-ить на
+  `${API_BASE_URL}/api/internal/eval/rag-weekly` з retry-loop
+  (exponential backoff 200/400/800ms, 2 retries за замовч.).
+- Exit codes: 0=pass, 1=warn, 2=kill, 3=hard-error. Mirror-ить eval
+  CLI поведінку — n8n / GH Action може gate-ити job-status за exit
+  code-ом.
+- `--skip-post` — local-debug-режим (не пошту); `--internal-api-key=`,
+  `--post-timeout-ms=`, `--post-retries=` — overrides.
+
+**Status decoder**:
+
+| Status | recall@4 vs threshold            | Action                                           |
+| ------ | -------------------------------- | ------------------------------------------------ |
+| pass   | mean ≥ `warn_threshold`          | Record. Жодного alert-у.                         |
+| warn   | `kill_threshold` ≤ mean < `warn` | Sentry warning. Recommend investigation.         |
+| kill   | mean < `kill_threshold` (= 0.4)  | Sentry error + **auto-flip kill-switch**.        |
+| error  | CLI hard-fail (exit ≥3)          | Endpoint не отримає payload — cron alert окремо. |
+
+**Reaction playbook**: [`docs/observability/runbook.md`](../observability/runbook.md)
+секції `RagQualityGateDegraded`, `RagQualityGateKillSwitch`,
+`RagEvalAutomationAlert`.
+
 ## See also
 
 - [`pr-plan-2026-05.md`](../planning/pr-plan-2026-05.md) § PR-20 / PR-22
@@ -258,3 +344,11 @@ Threshold `regression: true` — drop recall@K mean більше ніж на **0
   — real retrieval pipeline (consumer of golden-set @ PR-21)
 - [`docs/observability/runbook.md`](../observability/runbook.md) — alert
   reaction
+- [`apps/server/src/routes/internal/eval-rag.ts`](../../apps/server/src/routes/internal/eval-rag.ts) —
+  endpoint
+- [`apps/server/src/lib/featureFlags/runtimeKillSwitch.ts`](../../apps/server/src/lib/featureFlags/runtimeKillSwitch.ts) —
+  kill-switch registry
+- [`scripts/rag-eval-weekly.mjs`](../../scripts/rag-eval-weekly.mjs) —
+  weekly wrapper script
+- [`ops/n8n-workflows/28-rag-eval-weekly-cron.json`](../../ops/n8n-workflows/28-rag-eval-weekly-cron.json) —
+  n8n WF-28 cron
