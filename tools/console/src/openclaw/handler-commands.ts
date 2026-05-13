@@ -39,7 +39,11 @@ import {
 import { ApprovalStore, type ApprovalRecord } from "./approval-store.js";
 import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
 import { parseDuration } from "./duration.js";
-import { isFounderAllowed, isPrivateChat } from "./security.js";
+import {
+  isFounderAllowed,
+  isPrivateChat,
+  parseFounderTgUserId,
+} from "./security.js";
 import type { OpenClawSessionStore } from "./session.js";
 import type { AgentTurnRunner } from "./handler-agent-turn.js";
 import {
@@ -52,6 +56,7 @@ import {
   parseApprovalCallback,
   postJson,
   type BudgetResponse,
+  type OpenInvocationResponse,
   type WriteAuditListItem,
   type WriteAuditLogBody,
 } from "./handler-constants.js";
@@ -347,6 +352,7 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
   // `/api/internal/alerts/pending`. No `notYetEscalated` filter — the
   // founder wants to see *everything* still un-acked, including rows
   // that WF-103 already DM-pinged about (we mark those with `⚠️esc`).
+  // O5: audit row in `openclaw_invocations` for every call.
   // Syntax:
   //   /alerts pending [p0|p1|p2|p3] [topic] [N] [since=<dur>]
   bot.command("alerts", async (ctx) => {
@@ -383,6 +389,27 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
       return;
     }
 
+    // O5: open audit row before the data-fetch.
+    const founderTgUserId = parseFounderTgUserId(
+      process.env["OPENCLAW_FOUNDER_TG_USER_ID"],
+    );
+    const openRes = await postJson<OpenInvocationResponse>(
+      `${serverUrl}/api/internal/openclaw/invocations/open`,
+      internalApiKey,
+      {
+        founderUserId,
+        founderTgUserId: founderTgUserId ?? ctx.from?.id ?? 0,
+        trigger: "dm",
+        userMessage: `/alerts ${argument}`.trim(),
+        metadata: {
+          telegramChatId: ctx.chat?.id,
+          persona: "cofounder",
+          subcommand: parsed.subcommand,
+        },
+      },
+    );
+    const invocationId = openRes.data?.invocationId;
+
     const r = await postJson<{ alerts: PendingAlertItem[] }>(
       `${serverUrl}/api/internal/alerts/pending`,
       internalApiKey,
@@ -398,6 +425,20 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
       },
     );
     if (!r.ok || !r.data) {
+      if (invocationId) {
+        await postJson(
+          `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+          internalApiKey,
+          {
+            invocationId,
+            status: "error",
+            assistantResponse: null,
+            errorMessage: `alerts HTTP ${r.status}`,
+            inputTokens: 0,
+            outputTokens: 0,
+          },
+        );
+      }
       await ctx.reply(`Не зміг прочитати alerts (HTTP ${r.status}).`);
       return;
     }
@@ -407,6 +448,23 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
       sinceLabel: parsed.sinceLabel,
       filters: parsed.filters,
     });
+
+    // O5: finalize audit row with success.
+    if (invocationId) {
+      await postJson(
+        `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+        internalApiKey,
+        {
+          invocationId,
+          status: "success",
+          assistantResponse: reply,
+          errorMessage: null,
+          inputTokens: 0,
+          outputTokens: 0,
+        },
+      );
+    }
+
     await ctx.reply(reply);
   });
 

@@ -218,7 +218,7 @@ export function formatPendingReply(
   const filterEcho = filterParts.length ? ` (${filterParts.join(", ")})` : "";
 
   if (alerts.length === 0) {
-    return `Жодних unacked alert-ів${filterEcho}. 🟢`;
+    return `Всі алерти прочитані ✅${filterEcho}`;
   }
 
   const lines = alerts.map((a) => {

@@ -151,19 +151,19 @@ describe("formatAlertAge", () => {
 describe("formatPendingReply", () => {
   const NOW = new Date("2026-05-03T12:00:00.000Z");
 
-  it("returns a green-status message when list is empty", () => {
+  it("returns a clear-queue message when list is empty", () => {
     const out = formatPendingReply([], { now: NOW });
-    expect(out).toBe("Жодних unacked alert-ів. 🟢");
+    expect(out).toBe("Всі алерти прочитані ✅");
   });
 
-  it("echoes filters in empty-state header", () => {
+  it("echoes filters in empty-state message", () => {
     const out = formatPendingReply([], {
       now: NOW,
       sinceLabel: "24h",
       filters: { severity: "P0", topic: "incidents" },
     });
     expect(out).toBe(
-      "Жодних unacked alert-ів (since=24h, P0, topic=incidents). 🟢",
+      "Всі алерти прочитані ✅ (since=24h, P0, topic=incidents)",
     );
   });
 
