@@ -196,7 +196,10 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
   return (
     <div
       className={cn(
-        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-2xl shadow-float relative overflow-hidden",
+        // Elevation e5 — toast tier. Toasts are the top-most
+        // ephemeral surface; pairing with `z-toast` (300) keeps them
+        // above modals/sheets even when both stacks are visible.
+        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
         "flex items-center gap-2.5 outline-none",
         "focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "touch-pan-y", // allow vertical scroll, capture horizontal swipe

@@ -329,16 +329,73 @@ Tailwind `spacing` (базова шкала 4px) + кастомні:
 Правило: **одна картка — один радіус**. Не змішуй `rounded-xl`
 header + `rounded-2xl` body.
 
-### Тіні
+### Тіні (елеваційна шкала e0..e5)
 
-| Клас           | Джерело                   | Коли                     |
-| -------------- | ------------------------- | ------------------------ |
-| `shadow-soft`  | `--shadow-soft`           | Фонова підсвітка блоку   |
-| `shadow-card`  | `--shadow-card`           | Дефолт для `Card`        |
-| `shadow-float` | `--shadow-float`          | Hover, плаваючі елементи |
-| `shadow-glow`  | Tailwind (брендовий blur) | CTA, акценти, фокуси     |
+Семантична шкала єдине джерело правди для глибини. Розподіл рівнів —
+в [`packages/design-tokens/tokens.js`](../../packages/design-tokens/tokens.js) →
+`elevation`; CSS-змінні лежать в
+[`apps/web/src/styles/theme.css`](../../apps/web/src/styles/theme.css)
+і автоматично перемикаються в `.dark` — ніяких `dark:shadow-*`
+(Hard Rule #13).
 
-Темна тема має власні значення змінних — не додавай `dark:shadow-*`.
+| Клас        | Рівень      | Коли                                     | Z-tier       |
+| ----------- | ----------- | ---------------------------------------- | ------------ |
+| `shadow-e0` | Flat        | Фон сторінки, секції, інпути             | `z-base`     |
+| `shadow-e1` | Raised      | Дефолт `Card`, рядки списку, панелі      | `z-base`     |
+| `shadow-e2` | Interactive | Hover підйом карток / pressables         | `z-base`     |
+| `shadow-e3` | Overlay     | Popover, dropdown, tooltip, menu         | `z-dropdown` |
+| `shadow-e4` | Modal       | `<Modal>`, `<Sheet>`, drawer             | `z-modal`    |
+| `shadow-e5` | Toast       | `<Toast>`, snackbar (top-most ephemeral) | `z-toast`    |
+
+Парний z-index тір (`zTier` в токенах):
+
+| Семантика  | Клас         | Значення | Призначення                               |
+| ---------- | ------------ | -------- | ----------------------------------------- |
+| `base`     | `z-base`     | `0`      | Контент сторінки, картки, кнопки (e0..e2) |
+| `dropdown` | `z-dropdown` | `50`     | Попапи, меню, tooltip (e3)                |
+| `sticky`   | `z-sticky`   | `100`    | Sticky header / toolbar                   |
+| `overlay`  | `z-overlay`  | `150`    | Non-modal overlays, scrim під модалкою    |
+| `modal`    | `z-modal`    | `200`    | Modal, Sheet, drawer (e4)                 |
+| `toast`    | `z-toast`    | `300`    | Toast, snackbar (e5)                      |
+
+Правило: **рівень елевації рухається в парі з z-tier**. Якщо піднімаєш
+shadow до e4 — бери `z-modal`. Їх розсинхронізація = popover під модалкою
+або toast під drawer-ом.
+
+#### ДО ї НЕ ТРЕБА
+
+**ДО** — вибирай найменший рівень, який передає роль елемента. Дефолтний Card — e1.
+
+```tsx
+<Card prominence="interactive">  {/* shadow-e1, hover → shadow-e2 */}
+  <Stat label="Баланс" value="₴12 345" />
+</Card>
+
+<Modal>                            {/* shadow-e4 + z-modal */}
+  <CelebrationCopy />
+</Modal>
+
+<Toast>                            {/* shadow-e5 + z-toast */}
+  Запис збережено.
+</Toast>
+```
+
+**НЕ ТРЕБА** — не додавай `dark:shadow-*`, не копіюй raw `boxShadow` в inline-style,
+не бери `shadow-e4` для плоскої картки "щоб було popping". Що більший рівень —
+тим вище має бути z-tier.
+
+```tsx
+/* ⛔ НЕ ТРЕБА — вибиває візуальну ієрархію */
+<Card className="shadow-e4" />                          /* картка не має важити як Modal */
+<div className="shadow-card dark:shadow-2xl" />         /* парні dark: — Hard Rule #13 */
+<div className="shadow-e3 z-toast" />                   /* попап на toast тірі — розсинхрон з e3 */
+```
+
+#### Legacy aliases
+
+Наявні класи `shadow-soft / shadow-card / shadow-float / shadow-glow` продовжують
+працювати — вони внутрішньо мапляться на нову шкалу (`card → e1`,
+`float → e3`, `soft → e4`). Новий код має вживати явний `shadow-eN`.
 
 ---
 

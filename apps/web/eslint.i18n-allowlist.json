@@ -26,6 +26,7 @@
   "apps/web/src/core/designShowcase/sections/Celebration.tsx",
   "apps/web/src/core/designShowcase/sections/Colors.tsx",
   "apps/web/src/core/designShowcase/sections/DataDisplay.tsx",
+  "apps/web/src/core/designShowcase/sections/Elevation.tsx",
   "apps/web/src/core/designShowcase/sections/Feedback.tsx",
   "apps/web/src/core/designShowcase/sections/Forms.tsx",
   "apps/web/src/core/designShowcase/sections/Motion.tsx",

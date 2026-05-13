@@ -173,7 +173,11 @@ export function Sheet({
         style={panelStyle}
         onPointerDown={(e) => e.stopPropagation()}
         className={cn(
-          "relative w-full max-w-lg bg-panel border-t border-line rounded-t-3xl shadow-soft",
+          // Elevation e4 — same modal tier as <Modal>. Sheets are the
+          // mobile/coarse-pointer counterpart of Modal; they share the
+          // same z-modal stacking tier so a Sheet over a popover
+          // always reads as the higher surface.
+          "relative w-full max-w-lg bg-panel border-t border-line rounded-t-3xl shadow-e4",
           "flex flex-col max-h-[90vh]",
           "motion-safe:animate-slide-up",
           panelClassName,
