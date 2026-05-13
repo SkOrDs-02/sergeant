@@ -45,7 +45,7 @@
 | **Харчування** — log/water/meal   | ✅               | ✅              | 🟡                 | RN: AddMealSheet + scanner готові; shopping/pantry — Phase 7                                                                                                                                                                                            |
 | **Харчування** — barcode scan     | ✅               | ✅              | ✅                 | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode`                                                                                                                                                                                  |
 | **Харчування** — pantry           | ✅               | ✅              | ✅                 | RN: `useNutritionPantries` + `pages/Pantry` готові                                                                                                                                                                                                      |
-| **Харчування** — shopping list    | ✅               | ✅              | 🟡                 | RN: ручний список; AI-генерація з рецептів — Phase 7                                                                                                                                                                                                    |
+| **Харчування** — shopping list    | ✅               | ✅              | ✅                 | RN: ручний список + AI-генерація з рецептів через `apiClient.nutrition.shoppingList`; weekplan-джерело — TODO                                                                                                                                                                                                    |
 | **Харчування** — recipes (AI)\*\* | ✅               | ✅              | 🟥                 | RN: `recipe/[id].tsx` — заглушка, Phase 7                                                                                                                                                                                                               |
 | **Харчування** — photo-AI\*\*     | ✅               | ✅              | 🟥                 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`)                                                                                                                                                                                                |
 | **Detox / e2e on CI**             | n/a              | n/a             | ✅                 | `detox-ios.yml` (macos-14 sim) + `detox-android.yml` (ubuntu AVD `Pixel_5_API_34`) — full e2e suite: finyk-manual-expense, finyk-transactions (period-filter), routine-smoke, hub-ux-smoke; per-PR + nightly cron                                       |
@@ -55,7 +55,7 @@
 
 Три маяки мають бути **зеленими до T₀ = 2026-09-01**, інакше дата зсувається на 30 днів:
 
-- 🟥 **RN-Nutrition full parity** — `recipe/[id]`, photo-AI, AI-shopping. Зеленіє коли всі три рядки = `✅`
+- 🟥 **RN-Nutrition full parity** — `recipe/[id]`, photo-AI. (AI-shopping shipped — recipes source live; weekplan source чекає на mobile week-plan storage.) Зеленіє коли всі три рядки = `✅`
 - 🟥 **RN-Voice (STT/TTS)** — Phase 7+. Зеленіє коли Hub voice у RN = `✅`
 - 🟡 **Detox real e2e** — sign-in → module → sign-out × 4 модулі. Зеленіє коли Detox = `✅`
 
