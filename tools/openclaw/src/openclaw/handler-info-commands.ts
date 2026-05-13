@@ -25,6 +25,7 @@ import {
   type PendingAlertItem,
 } from "./alerts-format.js";
 import { executeRitualCommand } from "./ritual-runner.js";
+import { executeOpenclawStatusCommand } from "./status-runner.js";
 import type { HandlerContext } from "./handler-context.js";
 import {
   HELP_TEXT,
@@ -432,6 +433,118 @@ export function registerInfoCommands(ctx: HandlerContext): void {
             `${serverUrl}/api/internal/openclaw/briefing/morning`,
             internalApiKey,
             {},
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async openInvocation(input) {
+          const r = await postJson<OpenInvocationResponse>(
+            `${serverUrl}/api/internal/openclaw/invocations/open`,
+            internalApiKey,
+            input,
+          );
+          return {
+            ok: r.ok,
+            status: r.status,
+            invocationId: r.data?.invocationId ?? null,
+          };
+        },
+        async finalizeInvocation(input) {
+          const r = await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status };
+        },
+      },
+      addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+    });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
+  });
+
+  // PR-/openclaw-status: debug/health snapshot для founder DM.
+  //
+  // Implementation: всі 4 fetch-and-merge гілки + audit life-cycle
+  // живуть у pure `executeOpenclawStatusCommand` (status-runner.ts), щоб
+  // handler лишався thin shim над grammy. Compact Markdown payload
+  // (≤30 рядків) у founder DM — для smoke-test після redeploy і ad-hoc
+  // діагностики.
+  bot.command("openclaw", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (c.match ?? "").toString();
+    const founderTgUserId =
+      parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
+      c.from?.id ??
+      0;
+
+    const result = await executeOpenclawStatusCommand({
+      rawArgument: argument,
+      founderUserId,
+      founderTgUserId,
+      ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+      fetcher: {
+        async listInvocations() {
+          const r = await postJson<{
+            invocations: Array<{
+              id: number;
+              invoked_at: string;
+              trigger: string;
+              user_message: string;
+              status: string;
+              cost_usd: number;
+              duration_ms: number;
+              iterations: number;
+              tone_mode: string | null;
+            }>;
+          }>(
+            `${serverUrl}/api/internal/openclaw/invocations/list`,
+            internalApiKey,
+            { founderUserId, limit: 10 },
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async listN8nWorkflows() {
+          const r = await postJson<{
+            workflows: Array<{
+              id: string;
+              name: string;
+              active: boolean;
+              tier: string;
+              category: string | null;
+              updatedAt: string | null;
+            }>;
+            notConfigured?: boolean;
+          }>(`${serverUrl}/api/internal/openclaw/n8n/list`, internalApiKey, {});
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async getBudget() {
+          const r = await postJson<BudgetResponse>(
+            `${serverUrl}/api/internal/openclaw/budget`,
+            internalApiKey,
+            { founderUserId },
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async getSentryIssues() {
+          const r = await postJson<{
+            notConfigured?: boolean;
+            issues?: Array<{
+              title: string;
+              level: string;
+              count: string;
+              permalink: string;
+            }>;
+            note?: string;
+          }>(
+            `${serverUrl}/api/internal/openclaw/metrics/sentry`,
+            internalApiKey,
+            { level: "error", limit: 5 },
           );
           return { ok: r.ok, status: r.status, data: r.data };
         },

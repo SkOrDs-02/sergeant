@@ -178,6 +178,7 @@ export const HELP_TEXT = [
   "/budget — поточний денний spend",
   "/ritual [morning|weekly|monthly|help] — ad-hoc ritual trigger (WF-25 mirror)",
   "/ai_cost — AI-spend rollup: today/week/month + budget + top endpoints",
+  "/openclaw [status|help] — debug snapshot: persona / WF / invocations / budget / Sentry",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",

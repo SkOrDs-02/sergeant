@@ -226,6 +226,40 @@ category `openclaw.ritual` (events: `ritual.help`, `ritual.unknown_mode`,
 `ritual.<mode>.start`, `ritual.<mode>.success`, `ritual.<mode>.endpoint_failed`,
 `ritual.<mode>.not_implemented`).
 
+## Manual trigger — `/openclaw status`
+
+Sibling info-command для debug snapshot OpenClaw state-у. Handler — той
+самий файл (`handler-info-commands.ts`), pure runner — `status-runner.ts`,
+renderer — `status-format.ts`. Compact HTML payload (≤30 рядків) у founder
+DM, корисний для smoke-test після redeploy і ad-hoc діагностики.
+
+- `/openclaw` або `/openclaw status` — рендерить snapshot з 5 секцій:
+  - **Persona** — `DEFAULT_PERSONA` (`cofounder`) + список 4-х
+    спеціалістських persona-allowlist (ADR-0033 Phase 2.5).
+  - **Budget** — поточний `spentUsd / budgetUsd` + `remainingUsd` через
+    `POST /api/internal/openclaw/budget` (той самий що `/budget`).
+  - **n8n WF** — counts active/paused + перші 3 active WF-ID через
+    `POST /api/internal/openclaw/n8n/list`. Якщо credentials unset —
+    «n8n credentials not configured».
+  - **Last 10 invocations** — рядки з status-glyph + trigger + relative
+    time + truncated user-message через
+    `POST /api/internal/openclaw/invocations/list` (`limit: 10`).
+  - **Last error (Sentry)** — top-1 issue з level=error через
+    `POST /api/internal/openclaw/metrics/sentry`. Якщо `SENTRY_AUTH_TOKEN`
+    unset — «Sentry not configured».
+- `/openclaw help` — довідка з переліком підкоманд; audit-row НЕ
+  створюється.
+
+Audit-row у `openclaw_invocations` для `status`: `trigger="dm"` +
+`metadata.slashCommand="/openclaw"` + `metadata.subcommand="status"`.
+4 fetch-и запускаються паралельно (`Promise.all`); кожна секція
+fail-soft рендериться окремо — якщо одне джерело впало, інші
+рендеряться нормально.
+
+Sentry breadcrumb-и під category `openclaw.status` (events:
+`openclaw.help`, `openclaw.unknown_subcommand`, `openclaw.status.start`,
+`openclaw.status.success`).
+
 ## Error-handling
 
 - **rejected promise** (network error, 5xx upstream) → секція рендерить
