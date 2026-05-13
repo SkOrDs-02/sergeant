@@ -6,6 +6,7 @@ import {
   safeRemoveLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { BrandLogo } from "../app/BrandLogo";
@@ -258,6 +259,8 @@ function WelcomeOneScreen({
   ctaDisabled,
   emptyPicksHint,
   onSecondaryAction,
+  headingRef,
+  ctaBusy,
 }: {
   picks: string[];
   togglePick: (id: string) => void;
@@ -293,12 +296,32 @@ function WelcomeOneScreen({
    * card.
    */
   onSecondaryAction?: () => void;
+  /**
+   * Ref to the splash heading. Set by the wizard so the modal variant
+   * can move focus there on mount (WCAG 2.4.3 — focus must land
+   * inside the dialog so screen readers announce the new context
+   * instead of stranding the user on `<body>`).
+   */
+  headingRef?: React.RefObject<HTMLHeadingElement>;
+  /**
+   * Disable + mark the primary CTA busy while `finish()` is mid-flight.
+   * Synchronous today, but the flag keeps a double-click during the
+   * same React commit (route navigation, analytics flush) from
+   * firing the side-effects twice.
+   */
+  ctaBusy?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center text-center space-y-5">
       <div className="space-y-2">
         <BrandLogo size="md" variant="inline" className="mx-auto" />
-        <h2 className="text-style-hero text-text">{copy.title}</h2>
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-sm"
+        >
+          {copy.title}
+        </h2>
         <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
           {copy.subtitle}
         </p>
@@ -350,6 +373,7 @@ function WelcomeOneScreen({
         size="lg"
         className="w-full"
         disabled={ctaDisabled}
+        loading={ctaBusy}
       >
         {ctaLabelOverride ?? copy.primaryCta}
         <Icon name="chevron-right" size={16} />
@@ -413,12 +437,20 @@ function WelcomeOneScreen({
  *
  * Renders as a modal overlay (default) or inline card (`fullPage`
  * variant) inside the `/welcome` route.
+ *
+ * AI-CONTEXT: File is ~691 LOC raw / ~477 LOC non-blank/non-comment
+ * — just under the `max-lines: 600` ceiling (Hard Rule #18). Tracked
+ * by Initiative 0001 (decomposition) in `docs/tech-debt/frontend.md`
+ * § Великі файли. Do NOT split this file as part of a UX-polish
+ * change; new helpers must live inline until the dedicated
+ * decomposition initiative lands so the diff stays reviewable.
  */
 export function OnboardingWizard({
   onDone,
   variant = "modal",
   mode = "real",
   onSecondaryAction,
+  onDismiss,
 }: {
   onDone: (
     startModuleId: string | null,
@@ -443,6 +475,22 @@ export function OnboardingWizard({
    * happens by accident from in-app surfaces.
    */
   onSecondaryAction?: () => void;
+  /**
+   * Soft-pause dismissal handler for the modal variant. When Escape is
+   * pressed inside the dialog, real-mode wizards call this so the host
+   * can hide the modal without firing analytics or touching the
+   * `hub_onboarding_done_v1` gate. Picks are already persisted on
+   * every state change (see {@link persistPicks}), so reopening the
+   * wizard restores the in-progress selection exactly.
+   *
+   * Tour-mode replay ignores this prop — Escape there short-circuits
+   * to the same `onDone(null, { intent: "tour_replay" })` payload as
+   * the «Закрити» CTA so the dismissal path stays single-source.
+   *
+   * `fullPage` variant ignores this prop — the `/welcome` route owns
+   * the page chrome and there is no overlay to dismiss.
+   */
+  onDismiss?: () => void;
 }) {
   const isTour = mode === "tour";
 
@@ -472,6 +520,24 @@ export function OnboardingWizard({
     isTour ? [...ALL_MODULES] : loadPersistedPicks(defaultPicksVariant),
   );
   const [expanded, setExpanded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Refs for the modal-variant focus contract. `panelRef` is the
+  // scope passed to `useDialogFocusTrap` (Tab cycle + Escape).
+  // `headingRef` is the `<h2>` that receives initial focus so screen
+  // readers announce the new context (WCAG 2.4.3) instead of
+  // stranding the user on `<body>`.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Double-submit guard. `finish()` is synchronous today, but a
+  // double-tap on the primary CTA during the same React commit (e.g.
+  // route navigation kicks in between paint and unmount) would
+  // otherwise fire the analytics events / `saveVibePicks` /
+  // `markOnboardingDone` writes twice. Ref-based so it stays in
+  // sync inside the same tick — a `useState` flag would not block
+  // the second click before the next render flush.
+  const submittingRef = useRef(false);
 
   // Persist picks on every change. Payload is tiny (≤4 strings) so
   // unconditional writes are cheap and keep the resume-after-refresh
@@ -480,6 +546,24 @@ export function OnboardingWizard({
     if (isTour) return;
     persistPicks(picks);
   }, [picks, isTour]);
+
+  // Move initial focus into the dialog so keyboard / screen-reader
+  // users land on a sensible anchor instead of `<body>`. The heading
+  // is the safest target — the primary CTA may be disabled (S6.1
+  // empty-picks state) and focusing a disabled control would push
+  // focus right back out. `preventScroll: true` keeps the page from
+  // jumping when the wizard mounts mid-scroll. Fires once per mount;
+  // `headingRef.current` becomes available after the first paint.
+  useEffect(() => {
+    if (variant !== "modal") return;
+    const heading = headingRef.current;
+    if (!heading) return;
+    try {
+      heading.focus({ preventScroll: true });
+    } catch {
+      /* heading is detached or non-focusable — nothing to recover */
+    }
+  }, [variant]);
 
   // Real wizard: first paint counts as both `onboarding_started` and the
   // welcome step's `onboarding_step_viewed` so the funnel definition in
@@ -508,7 +592,16 @@ export function OnboardingWizard({
   }, []);
 
   const finish = useCallback(() => {
+    // Block re-entrant clicks: synchronous today, but the side-effects
+    // (analytics, storage writes, route navigation via `onDone`) are
+    // not idempotent. A second click during the same commit must be a
+    // no-op. The flag is never reset because the wizard unmounts
+    // immediately after the first successful call.
+    if (submittingRef.current) return;
+
     if (isTour) {
+      submittingRef.current = true;
+      setSubmitting(true);
       // Tour replay: no side effects on user state. Just emit the
       // dismissal event with a duration so PostHog can show "how long
       // does the user spend in replay" without polluting the FTUX
@@ -534,6 +627,9 @@ export function OnboardingWizard({
     if (hadEmptyPicks && defaultPicksVariant === "none") {
       return;
     }
+
+    submittingRef.current = true;
+    setSubmitting(true);
 
     // `all` arm (legacy): empty selection falls back to all modules
     // so the lazy "tap-through" path leaves every module visible on
@@ -625,6 +721,28 @@ export function OnboardingWizard({
   const ctaDisabled =
     !isTour && defaultPicksVariant === "none" && picks.length === 0;
 
+  // Escape closes the modal variant. Strategy = **soft-pause**: picks
+  // are persisted on every state change (see the persist effect
+  // above), so dismissing the modal mid-flow drops the user back
+  // wherever the host renders the wizard and a fresh mount restores
+  // the in-progress selection exactly. No `<ConfirmDialog>` step
+  // because nothing destructive happens — we just hide the overlay.
+  //
+  // Tour replay short-circuits to `finish()` so Escape mirrors the
+  // «Закрити» CTA exactly (single dismissal contract, single
+  // `onDone` payload). The hook also gives us a Tab cycle inside the
+  // panel and restores focus to whatever triggered the wizard.
+  const handleEscape = useCallback(() => {
+    if (isTour) {
+      finish();
+      return;
+    }
+    onDismiss?.();
+  }, [isTour, finish, onDismiss]);
+  useDialogFocusTrap(variant === "modal", panelRef, {
+    onEscape: handleEscape,
+  });
+
   // Tour replay never seeds demo data — `onSecondaryAction` is only
   // wired through in real mode so the read-only replay can never
   // accidentally trigger the demo seeder against the host's store.
@@ -643,6 +761,8 @@ export function OnboardingWizard({
         ctaDisabled={ctaDisabled}
         emptyPicksHint="Обери хоч один розділ"
         onSecondaryAction={secondaryAction}
+        headingRef={headingRef}
+        ctaBusy={submitting}
       />
     ),
     [
@@ -655,12 +775,14 @@ export function OnboardingWizard({
       isTour,
       ctaDisabled,
       secondaryAction,
+      submitting,
     ],
   );
 
   if (variant === "fullPage") {
     return (
       <div
+        ref={panelRef}
         className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
         aria-label="Вітальний екран"
       >
@@ -696,7 +818,10 @@ export function OnboardingWizard({
         aria-hidden="true"
       />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
-        <div className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter">
+        <div
+          ref={panelRef}
+          className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
+        >
           {content}
         </div>
       </div>
