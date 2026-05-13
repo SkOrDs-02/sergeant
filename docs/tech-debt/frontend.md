@@ -184,7 +184,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 6 файлів (тільки `apps/web/src`) — **Initiative 0001 closed; majority of carry-over decomposed**
+### 4. Великі файли (>600 рядків) — 5 файлів (тільки `apps/web/src`) — **Initiative 0001 closed; majority of carry-over decomposed**
 
 > **Status (2026-05-04):** [`Initiative 0001 — Module decomposition`](../initiatives/_0001-module-decomposition.md)
 > закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
@@ -195,17 +195,17 @@ Codemod ідемпотентний: повторний запуск дасть `
 > будь-який новий файл `apps/web/src/**` ≥ 600 LOC далі падає на `pnpm lint`.
 >
 > Carry-over status (2026-05-13). З 12 файлів, які Initiative 0001 переніс у
-> successor, **9 вже декомпозовано** після 2026-05-04: `Workouts.tsx`,
+> successor, **10 вже декомпозовано** після 2026-05-04: `Workouts.tsx`,
 > `LogCard.tsx`, `NutritionApp.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`,
 > `Exercise.tsx`, `Progress.tsx`, `AssetsTable.tsx`, плюс decomposition
-> `HubDashboard.tsx` (676 → 115 LOC). `hubChatContext.ts` (681) досі активне —
-> лишається єдиним легітимним entry в `max-lines` allowlist після очистки
-> stale `HubDashboard.tsx` entry. Активних carry-over залишилось **2**:
-> `FinykApp.tsx` (640 LOC) і `RoutineCalendarPanel.tsx` (602 LOC). Плюс
-> **3 нових leakers**, які з'явились після audit-у 0001:
-> `AuthPage.tsx`, `OnboardingWizard.tsx`, `dualWrite/adapter.ts` — поки що
-> під `skipBlankLines + skipComments` max-lines lint не падає (LOC > 600 raw,
-> але <600 не-blank/не-comment), моніторити окремо. Деталі — в Outcome секції
+> `HubDashboard.tsx` (676 → 115 LOC) і `hubChatContext.ts` (681 → 32 LOC,
+> PR #2517 round-2 0013). `max-lines` allowlist у `eslint.config.js` тепер
+> **порожній**. Активних carry-over залишилось **2**: `FinykApp.tsx`
+> (640 LOC) і `RoutineCalendarPanel.tsx` (602 LOC). Плюс **3 нових leakers**,
+> які з'явились після audit-у 0001: `AuthPage.tsx`, `OnboardingWizard.tsx`,
+> `dualWrite/adapter.ts` — поки що під `skipBlankLines + skipComments`
+> max-lines lint не падає (LOC > 600 raw, але <600 не-blank/не-comment),
+> моніторити окремо. Деталі — в Outcome секції
 > [`_0001-module-decomposition.md`](../initiatives/_0001-module-decomposition.md).
 >
 > Свіжість таблиці нижче — на 2026-05-04; перерахунок виконується вручну
@@ -319,7 +319,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | ------ | ----------------------------------------------------- | ------------------------------- |
 | 694    | `core/auth/AuthPage.tsx`                              | Новий leaker (не в Init. 0001)  |
 | 691    | `core/onboarding/OnboardingWizard.tsx`                | Новий leaker (не в Init. 0001)  |
-| 681    | `core/lib/hubChatContext.ts`                          | `max-lines` allowlist           |
 | 641    | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001)  |
 | 640    | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over (активне) |
 | 602    | `modules/routine/components/RoutineCalendarPanel.tsx` | Init. 0001 carry-over (активне) |

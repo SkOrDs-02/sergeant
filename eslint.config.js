@@ -1084,21 +1084,10 @@ export default [
       ],
     },
   },
-  // Allowlist for existing >600 LOC monoliths in `apps/web/src/**`.
-  // Each entry MUST stay paired with a Phase 2 PR in
-  // `docs/initiatives/_0001-module-decomposition.md`. When a file is
-  // decomposed below 600 LOC, drop its entry from this list — the
-  // top-level rule above will then enforce it going forward.
-  //
-  // TODO(0001-module-decomposition): deadline 2026-06-15 — drop entries
-  // as the matching PR (decomp-routine-app, decomp-finyk-storage, etc.)
-  // ships. The allowlist is intentionally explicit (not a glob) so each
-  // file shows up in `git blame` / `git log` against this rule.
-  {
-    files: ["apps/web/src/core/lib/hubChatContext.ts"],
-    rules: {
-      "max-lines": "off",
-    },
-  },
+  // Initiative 0001 carry-over allowlist for >600 LOC monoliths is now
+  // empty — `HubDashboard.tsx` was decomposed in #2515 and
+  // `hubChatContext.ts` in #2517 (0013 round-2). New leakers tracked in
+  // `docs/initiatives/0013-module-decomposition-round-2.md` and
+  // `docs/tech-debt/frontend.md § 4`.
   eslintConfigPrettier,
 ];
