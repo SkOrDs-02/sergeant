@@ -99,6 +99,7 @@ export function BudgetsLimitsSection({
       {limitsOpen && limitBudgets.length === 0 && (
         <EmptyState
           compact
+          module="finyk"
           icon={
             <svg
               width="20"
@@ -116,8 +117,8 @@ export function BudgetsLimitsSection({
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           }
-          title="Немає лімітів"
-          description="Встанови ліміт витрат на категорію, щоб не виходити за межі бюджету"
+          title="Поки немає лімітів"
+          description="Встанови ліміт витрат на категорію, щоб не виходити за межі бюджету — кнопка нижче."
         />
       )}
       {limitsOpen &&

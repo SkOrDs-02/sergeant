@@ -80,6 +80,7 @@ export function BudgetsGoalsSection({
       {goalsOpen && goalBudgets.length === 0 && (
         <EmptyState
           compact
+          module="finyk"
           icon={
             <svg
               width="20"
@@ -95,8 +96,8 @@ export function BudgetsGoalsSection({
               <polyline points="12 6 12 12 16 14" />
             </svg>
           }
-          title="Немає цілей"
-          description="Постав ціль накопичення і відстежуй прогрес"
+          title="Поки немає цілей"
+          description="Постав ціль накопичення і відстежуй прогрес — кнопка нижче."
         />
       )}
       {goalsOpen &&

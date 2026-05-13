@@ -3,7 +3,7 @@ import { GroupedVirtuoso } from "react-virtuoso";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
@@ -152,15 +152,29 @@ export function TransactionList({
     </div>
   );
 
-  const emptyFallback = (
-    <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
-      <EmptyState
-        icon={<FinykEmptyIllustration size={80} />}
-        title="Немає транзакцій"
-        description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
-      />
-    </div>
-  );
+  // Two empty surfaces share the same DataState slot:
+  //   • month-empty (`activeTx` itself has no rows) → tier-1 hero with the
+  //     module-tuned copy/illustration via `ModuleEmptyState`. No inline
+  //     action — the global "+ Додати витрату" FAB on `FinykApp` is the
+  //     primary CTA and duplicating it inside the empty-state would be
+  //     the anti-pattern called out in `docs/design/empty-states.md`.
+  //   • filter-empty (`activeTx` has rows but the user's filter zeroed
+  //     `filtered`) → keep the descriptive "Немає транзакцій" state and
+  //     just tint the leading icon container with the finyk accent so
+  //     the surface still feels owned by the module.
+  const emptyFallback =
+    activeTx.length === 0 ? (
+      <ModuleEmptyState module="finyk" />
+    ) : (
+      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+        <EmptyState
+          icon={<FinykEmptyIllustration size={80} />}
+          title="Немає транзакцій"
+          description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
+          module="finyk"
+        />
+      </div>
+    );
 
   const content = (
     <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">

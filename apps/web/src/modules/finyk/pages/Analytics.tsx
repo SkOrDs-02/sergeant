@@ -395,8 +395,9 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
           ) : distribution.length === 0 ? (
             <EmptyState
               compact
-              title="Немає витрат"
-              description="Транзакцій за цей місяць не знайдено"
+              module="finyk"
+              title="Поки немає витрат"
+              description="За цей місяць транзакцій не знайдено — обери інший період зверху."
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
@@ -416,8 +417,9 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
           ) : topMerchants.length === 0 ? (
             <EmptyState
               compact
-              title="Немає даних"
-              description="Транзакцій ще немає"
+              module="finyk"
+              title="Поки немає мерчантів"
+              description="Витрат за цей місяць ще не записано."
             />
           ) : (
             <MerchantList merchants={topMerchants} className="" />

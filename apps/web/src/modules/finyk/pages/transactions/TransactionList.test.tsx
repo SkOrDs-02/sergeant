@@ -115,6 +115,29 @@ describe("TransactionList — DataState routing", () => {
     expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
   });
 
+  it("renders the tier-1 ModuleEmptyState when not loading and activeTx itself is empty (first-run)", () => {
+    // When the user lands on Transactions with no rows for the entire
+    // month, surface the module-tuned hero from `ModuleEmptyState` so
+    // FTUX gets a proper hint about what Finyk does — not the filter-
+    // tuned "Немає транзакцій" copy which only makes sense once the
+    // user has data and has narrowed it down.
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[]}
+        filtered={[]}
+      />,
+    );
+
+    // Title comes from the curated finyk config inside
+    // `ModuleEmptyState` (MODULE_EMPTY_CONFIG.finyk.title).
+    expect(screen.getByText("Почни вести фінанси")).toBeInTheDocument();
+    // The filter-empty copy must NOT also render at the same time.
+    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+  });
+
   it("renders the virtualized list when filtered has rows", () => {
     render(
       <TransactionList
