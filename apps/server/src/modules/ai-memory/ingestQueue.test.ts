@@ -18,6 +18,16 @@ vi.mock("../../obs/logger.js", () => ({
   serializeError: vi.fn((err: unknown) => ({
     message: err instanceof Error ? err.message : String(err),
   })),
+  // PR-38: transitive chain (ingestQueue → embeddings → voyageBudget →
+  // sentry) тягне `redactKeyNames` із logger-у при module-load. Без
+  // цього експорту sentry.ts (`new Set(redactKeyNames.map(...))`) кидає.
+  redactKeyNames: [],
+}));
+
+// PR-38: voyageBudget → sentry. Mock — щоб real Sentry-init не активний
+// у unit-тестах (DSN-залежний side-effect).
+vi.mock("../../sentry.js", () => ({
+  Sentry: { captureMessage: vi.fn() },
 }));
 
 // Mock connection — без живого Redis. Default: null → fallback path.

@@ -784,6 +784,20 @@ const envSchema = z.object({
    * Default `true`.
    */
   ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
+  /**
+   * Voyage soft daily-usage cap (USD), enforced in-process (PR-38).
+   * Track-имо USD-витрати за поточну UTC-добу у in-memory лічильнику
+   * (`modules/ai-memory/voyageBudget.ts`); коли sum > cap — emit
+   * idempotent Sentry warning (1× на day+threshold) і опційно skip
+   * non-critical embeddings (RAG digests, background-цикли).
+   *
+   * Дефолт `1` USD — захищає від випадкового runaway loop у dev/staging,
+   * де `VOYAGE_DAILY_BUDGET_USD` (Prometheus-rule guard) часто не задано.
+   * У production підняти до бюджету фінансового плану (наприклад `5`).
+   * Set `0` щоб повністю вимкнути soft-gate (тоді тільки Prometheus-side
+   * alert лишиться).
+   */
+  VOYAGE_DAILY_BUDGET_USD_SOFT: floatFromEnv(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

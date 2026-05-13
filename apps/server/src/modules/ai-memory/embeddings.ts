@@ -16,7 +16,17 @@ import { logger } from "../../obs/logger.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { aiCostEstimateUsd, aiTokensTotal } from "../../obs/metrics.js";
 import { CircuitBreaker, CircuitOpenError } from "../../lib/circuitBreaker.js";
-import type { EmbeddingMetadata, EmbeddingProvider } from "./types.js";
+import type {
+  EmbedBatchOptions,
+  EmbeddingMetadata,
+  EmbeddingProvider,
+} from "./types.js";
+import {
+  addVoyageDailyUsageUsd,
+  checkVoyageSoftBudget,
+  type VoyageCallCriticality,
+} from "./voyageBudget.js";
+import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
 
 const VOYAGE_URL = "https://api.voyageai.com/v1/embeddings";
 
@@ -75,12 +85,21 @@ export function recordVoyageUsage(
       const usd = (tokenCount * pricePerMTok) / 1_000_000;
       if (usd > 0) {
         aiCostEstimateUsd.inc({ provider: "voyage", model, endpoint }, usd);
+        // PR-38 — feed in-process daily-budget accumulator. Окремо від
+        // counter-у, бо counter monotonically накопичує since-start, а
+        // soft-gate-у потрібна сума саме за поточну UTC-добу.
+        addVoyageDailyUsageUsd(usd);
       }
     }
   } catch {
     /* metrics must never break a request */
   }
 }
+
+// PR-38 — re-export для обратньої сумісності з call-sites, що чекають
+// `VoyageSoftBudgetExceededError` з `embeddings.js`. Сама класа живе у
+// окремому zero-import файлі (див. voyageBudgetError.ts coment-арій).
+export { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
 
 /**
  * Помилка коли `VOYAGE_API_KEY` не сконфігуровано. Окремо від
@@ -194,11 +213,36 @@ export function createVoyageEmbeddings(
     dim: env.VOYAGE_EMBEDDING_DIM,
   };
 
-  async function callVoyage(texts: string[]): Promise<Float32Array[]> {
+  async function callVoyage(
+    texts: string[],
+    criticality: VoyageCallCriticality,
+  ): Promise<Float32Array[]> {
     if (!env.VOYAGE_API_KEY) {
       throw new MissingVoyageApiKeyError();
     }
     if (texts.length === 0) return [];
+
+    // PR-38 — soft daily-budget gate. Сам check ідемпотентний
+    // (Sentry alert 1× на (day, threshold)); тут лиш вирішуємо,
+    // чи виконувати виклик. Critical-виклики (user-facing recall,
+    // explicit user write) йдуть навіть при overflow — alert
+    // фіксує факт, але UX не ламається.
+    const budget = checkVoyageSoftBudget({ criticality });
+    if (!budget.allow) {
+      logger.info({
+        msg: "voyage_call_skipped_soft_budget",
+        criticality,
+        usage_usd: budget.usage,
+        threshold_usd: budget.threshold,
+        day_key: budget.dayKey,
+        batch_size: texts.length,
+      });
+      throw new VoyageSoftBudgetExceededError({
+        usage: budget.usage,
+        threshold: budget.threshold,
+        dayKey: budget.dayKey,
+      });
+    }
 
     const maxAttempts = env.VOYAGE_MAX_RETRIES + 1;
     const retryDelayMs = [0, 250, 750, 2_000];
@@ -342,8 +386,13 @@ export function createVoyageEmbeddings(
 
   return {
     meta,
-    async embedBatch(texts: string[]): Promise<Float32Array[]> {
+    async embedBatch(
+      texts: string[],
+      options: EmbedBatchOptions = {},
+    ): Promise<Float32Array[]> {
       if (texts.length === 0) return [];
+      const criticality: VoyageCallCriticality =
+        options.criticality ?? "critical";
 
       // Розбиваємо на batch-и розміру VOYAGE_BATCH_SIZE.
       const batches: string[][] = [];
@@ -356,7 +405,7 @@ export function createVoyageEmbeddings(
       try {
         const results = await Promise.all(
           batches.map((batch) =>
-            voyageCircuitBreaker.execute(() => callVoyage(batch)),
+            voyageCircuitBreaker.execute(() => callVoyage(batch, criticality)),
           ),
         );
         return results.flat();
