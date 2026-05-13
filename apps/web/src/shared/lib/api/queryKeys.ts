@@ -105,6 +105,18 @@ export const strategicKeys = {
     ["strategic", "goals", "week", weekStart] as const,
 };
 
+// ─── Billing (Stripe checkout / subscription status) ──────────────────────
+//
+// Backed by `/api/billing/status` (`packages/api-client` → `billingApi.status`).
+// `usePlan` reads `billingKeys.status` and gates Pro-only UI; invalidation
+// is fanned out by `subscriptions.changed` realtime events (NOTIFY listener,
+// follow-up PR). For now invalidate manually after `createCheckout` returns
+// to `/pricing?checkout=success`.
+export const billingKeys = {
+  all: ["billing"] as const,
+  status: ["billing", "status"] as const,
+};
+
 // ─── Token hashing helper ─────────────────────────────────────────────────
 //
 // Не використовуємо криптографічну стійкість — потрібне лише стабільне,
