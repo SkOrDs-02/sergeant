@@ -757,6 +757,16 @@ const envSchema = z.object({
   N8N_API_URL: stringWithDefault(""),
   /** n8n personal API key sent as `X-N8N-API-KEY` header. */
   N8N_API_KEY: stringWithDefault(""),
+  /**
+   * Base URL n8n-інстансу для webhook-replay-у (PR-29). Replay-CLI /
+   * admin-API формує `${N8N_WEBHOOK_BASE_URL}/webhook/{path}` коли
+   * re-POST-ить збережений payload з `n8n_webhook_events`. Окрема env
+   * від `N8N_API_URL` бо n8n cloud-tier-и часом виставляють webhook-и
+   * на окремому домені (`webhook-{tenant}.n8n.cloud` vs
+   * `api-{tenant}.n8n.cloud`). Empty → replay-API повертає 503
+   * `not_configured`. Trailing-slash optional (helper-strip-ить).
+   */
+  N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
   // ── PR-C1b — SEO env-stubs (graceful fallback) ─────────────────────
   /** Google PageSpeed Insights API key. Empty → seo_psi_audit повертає `not_configured`. */
