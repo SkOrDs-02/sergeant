@@ -1,3 +1,15 @@
+/**
+ * @scaffolded — extracted from `AuthPage.tsx` by [a53e10b0](https://github.com/Skords-01/Sergeant/commit/a53e10b0)
+ *   for Hard Rule #18 (max-lines: 600). [PR #2586](https://github.com/Skords-01/Sergeant/pull/2586)
+ *   re-inlined AuthPage UX (autocomplete, password toggle, errors) and
+ *   reverted the decomposition — `AuthPage.tsx` is now 693 LOC again.
+ *   These helpers stay as the canonical re-decomposition target.
+ *
+ * @nextStep Re-wire `AuthPage.tsx` to import this module + the other
+ *   sibling `auth/*` helpers; bring AuthPage.tsx back below 600 LOC.
+ *   Tracked in 2026-05-13 dead-code roast § P1.6.
+ */
+
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";

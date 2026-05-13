@@ -1,8 +1,16 @@
 #!/usr/bin/env node
+// @scaffolded
 // Codemod: migrate inline UA JSX literals (text + attribute strings) to
 // references to the central message catalog
 // (`apps/web/src/shared/i18n/uk.ts`), and drop the corresponding entries
 // from `apps/web/eslint.i18n-allowlist.json`.
+//
+// Lifecycle: re-runnable burndown codemod (NOT one-shot, unlike
+// `strip-js-extensions/`). Marked @scaffolded — knip flags it as an unused
+// file because it's a CLI script with no runtime importer; the marker
+// makes `pnpm dead-code:files` skip it until the burndown completes and
+// the file gets deleted. Tracked in dead-code roast 2026-05-13.
+//
 //
 // This is the long-running burndown codemod for item #18 of
 // `docs/audits/2026-05-03-web-deep-dive/00-overview.md`. Unlike the

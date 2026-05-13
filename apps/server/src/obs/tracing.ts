@@ -40,7 +40,7 @@ import {
   W3CTraceContextPropagator,
 } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { Resource } from "@opentelemetry/resources";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   BatchSpanProcessor,
@@ -158,7 +158,7 @@ export function createTracingSdk(
       headers: c.headers,
     }),
 ): NodeSDK {
-  const resource = new Resource({
+  const resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: config.serviceName,
     ...(config.serviceVersion
       ? { [ATTR_SERVICE_VERSION]: config.serviceVersion }
