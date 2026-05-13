@@ -577,6 +577,67 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
 
+  migration-down-drill:
+    name: Migration down drill (AGENTS rule #4)
+    # PR-32 (`docs/planning/pr-plan-2026-05.md`). Static lint above guarantees
+    # sequential numbering + two-phase DROP, but down-migrations themselves
+    # are not validated by the linter — they could `DROP COLUMN` a column
+    # that no longer exists or forget a sequence created in the up, and the
+    # bug only surfaces during an emergency local rollback. This job runs
+    # `scripts/migration-down-drill.mjs` against a fresh pgvector container:
+    # apply all ups → apply every `.down.sql` in reverse → re-apply all ups
+    # → fingerprint-compare the two end states. Any drift fails the build.
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    services:
+      # Same image as `critical-flow` / `coverage` — migration 025 needs
+      # pgvector, and SHA-pinning matches docker-compose.yml so local +
+      # CI drills run against an identical binary.
+      postgres:
+        image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
+        env:
+          POSTGRES_USER: hub
+          POSTGRES_PASSWORD: hub
+          POSTGRES_DB: hub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hub -d hub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://hub:hub@127.0.0.1:5432/hub
+
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        # `pg` is hoisted to the workspace root via pnpm — the drill script
+        # at `scripts/migration-down-drill.mjs` resolves it from
+        # `node_modules/pg` without a workspace filter.
+        run: pnpm install --frozen-lockfile
+
+      - name: Pure-helper unit tests
+        # Cheap pre-flight: validates `downCompanion` / `diffSnapshots` so
+        # a broken helper fails fast before we spin up the integration drill.
+        run: node --test scripts/__tests__/migration-down-drill.test.mjs
+
+      - name: Run migration down drill
+        run: pnpm db:drill:down
+
   secret-scan:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest

@@ -196,7 +196,33 @@ Decision-tree коли щось «не працює»:
 | n8n workflows audit                            | Місячна               | `pnpm ops:n8n:validate` + manual review executions-tab                         |
 | `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                        |
 | Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md) |
+| Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                    |
 | Access review (хто має які доступи)            | Квартальна            | [`docs/playbooks/run-access-review.md`](../playbooks/run-access-review.md)     |
+
+### 8.1. Migration `down.sql` drill
+
+PR-32 з [`docs/planning/pr-plan-2026-05.md`](../planning/pr-plan-2026-05.md). Repo policy в Hard Rule #4 ([`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../governance/rules/04-sql-migrations-sequential-two-phase.md)): production **ніколи не запускає `.down.sql`** — production rollback завжди = compensating migration. Але `apps/server/src/migrations/NNN_*.down.sql` лишається обов'язковим інструментом для local rollback-у під час incident response / hotfix testing / DBA-recovery без backup-у.
+
+Раніше `.down.sql` валідувалися виключно `pnpm lint:migrations` (формальні `DROP`-правила два-фази + sequential numbering — статичний lint, що не виконує SQL). Drift в самих down-файлах — `DROP COLUMN` під колонку, яку перейменували, або забутий `DROP INDEX`, що дублює auto-drop через `CASCADE` — мовчав до моменту, коли DBA би відкочував руками вночі.
+
+`pnpm db:drill:down` (на CI — job `Migration down drill (AGENTS rule #4)` у [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) виконує round-trip drill на свіжому `pgvector/pgvector:pg16` (SHA-pinned, ідентичний docker-compose):
+
+1. **Phase A** — `DROP SCHEMA public CASCADE` → apply усі `NNN_*.sql` у lexicographic order → знімок схеми (tables, columns, indexes, constraints, sequences, enums) → SHA-256 fingerprint.
+2. **Phase B** — у **зворотному порядку** apply `NNN_*.down.sql` для кожної міграції. Міграції без `.down.sql` — info-skip (legacy baseline 001–005, 007, 011, 034, 047, 056, 057, де down не потрібен).
+3. **Phase C** — `DROP SCHEMA` ще раз → apply усі ups → знімок → fingerprint.
+4. **Phase D** — порівняння fingerprint-ів A vs C. Не співпали → drill валиться, в логи летить JSON-diff (`onlyInA` / `onlyInB` per category — tables/columns/indexes/...).
+
+**Локальний запуск** (швидше, ніж чекати CI):
+
+```bash
+pnpm db:up                                            # docker postgres
+DATABASE_URL=postgresql://hub:hub@127.0.0.1:5432/hub \
+  pnpm db:drill:down                                  # ~30s на 59 ups + 48 downs
+```
+
+Exit code `0` + останній рядок `drill_ok` з digest = pass. Exit code `1` + `drill_fingerprint_mismatch` або `drill_migration_failed` = впав; `file` поле каже, на якому `*.down.sql` зламалося.
+
+**Що drill не покриває:** seed data (drill бере чистий schema), partition state (нові партиції `module_data_*` створюються динамічно за межами `.sql`), application-level invariants (RLS policies, тригери, що залежать від app-state). Для них діє окремий `database-backup-restore` runbook ([§ 8 «Disaster-recovery drill»](#8-routine-maintenance)) — повний restore production-snapshot-у на read-replica раз на 6 міс.
 
 ## 9. Як написати postmortem
 
