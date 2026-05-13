@@ -276,6 +276,20 @@
       "requiredCredentials": [],
       "notes": "Daily 07:00 Kyiv → POST /api/internal/openclaw/briefing/morning (PR-26 hardcoded-template; 5 sections: Stripe / PostHog / GitHub PR-queue / n8n workflows / Sentry) → POST /api/internal/webhook-events/record (PR-28 exec audit log) + DM founder via @OpenClaw_sergeant_bot raw HTTP. Activate after OPENCLAW_BOT_TOKEN + OPENCLAW_FOUNDER_TG_USER_ID set on n8n Railway. Briefing endpoint завжди 200 з graceful-degrade — секції з missing env-vars рендерять notConfigured-hint замість failing 5xx. LLM-summarization (PR-27 next-up у roadmap-у) поки НЕ підключений; cron шле raw template markdown."
     },
+    "26-strategic-weekly.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "dm",
+      "audienceTier": "P2",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "STRATEGIC_FOUNDER_USER_ID"
+      ],
+      "requiredCredentials": [],
+      "notes": "PR-34 (pr-plan-2026-05) strategic mode skeleton. Weekly Mon 09:00 Kyiv → fan-out across 4 personas (finyk/fizruk/nutrition/routine) → POST /api/internal/strategic/weekly-checkin для кожної; кожен запит INSERT-ить placeholder-goal у `strategic_goals` (migration 062). Поки що — лише datalayer marker, без LLM conversation. Activate after STRATEGIC_FOUNDER_USER_ID set on n8n Railway (Better Auth opaque founder ID). PR-35+ replace placeholder з real planning conversation."
+    },
     "30-ai-memory-daily-digest.json": {
       "owner": "ops",
       "status": "experimental",
