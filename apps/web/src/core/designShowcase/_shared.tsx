@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui";
 
 export const NAV_SECTIONS = [
+  { id: "theming", label: "Теми" },
   { id: "colors", label: "Кольори" },
   { id: "typography", label: "Типографіка" },
   { id: "buttons", label: "Кнопки" },

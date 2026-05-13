@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { ThemeSwitcher } from "@shared/components/ui/ThemeSwitcher";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
-import { DarkModeToggle } from "./DarkModeToggle";
 import type { User } from "@sergeant/shared";
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
@@ -48,8 +48,6 @@ interface HubHeaderProps {
   user: User | null;
   authLoading?: boolean;
   onShowAuth?: () => void;
-  dark?: boolean;
-  onToggleDark?: () => void;
   hideAuthButton?: boolean;
 }
 
@@ -58,8 +56,6 @@ export function HubHeader({
   user,
   authLoading,
   onShowAuth,
-  dark,
-  onToggleDark,
   hideAuthButton = false,
 }: HubHeaderProps) {
   const greetingText = useMemo(() => {
@@ -113,14 +109,13 @@ export function HubHeader({
               dashboard FAB rendered by `HubHomeView`. ⌘K → «Запитати
               асистента» and the `/chat` deep-link continue to work. */}
 
-          {/* Dark-mode toggle: surfaced as a single-tap header affordance for
-              both signed-in and guest users. Previously buried inside the
-              `UserMenuButton` dropdown (3-tap path); profile actions now
-              live behind the bottom-nav `Профіль` tab, so the dropdown
-              was retired. */}
-          {dark !== undefined && onToggleDark && (
-            <DarkModeToggle dark={dark} onToggle={onToggleDark} />
-          )}
+          {/* Theme switcher: 4-mode (`light` / `dark` / `system` / `hc`)
+              segmented control surfaced as a single-tap header affordance
+              for both signed-in and guest users. Replaced the legacy
+              sun/moon toggle (#057 / Track 9) so OS-level color-scheme
+              changes propagate live and AAA-leaning users get a one-tap
+              path into high-contrast without diving into Settings. */}
+          <ThemeSwitcher className="mx-1" />
 
           {/* Sign-in entry-point for guests only. Signed-in users reach
               their account via the `Профіль` bottom-nav tab. */}

@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
-import { useDarkMode } from "@shared/hooks/useDarkMode";
+import { useTheme } from "@shared/hooks/useTheme";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
@@ -165,7 +165,11 @@ function AppInner() {
   const closeShortcuts = useCallback(() => setShortcutsOpen(false), []);
   const { pwaAction, setPwaAction, clearPwaAction, validActions } =
     usePwaActions(searchParams);
-  const { dark, toggle: toggleDark } = useDarkMode();
+  // Bootstrap the theme system (light/dark/system/HC). The hook owns the
+  // `dark` + `hc` classes on `<html>` and subscribes to OS-level color-
+  // scheme + cross-tab storage events. Mounting it once at the app root
+  // is enough — `<ThemeSwitcher />` reuses the same context-free hook.
+  useTheme();
   const keyboardShortcuts = useKeyboardShortcutsModal();
   const { canInstall, install, dismiss } = usePwaInstall();
   const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
@@ -242,8 +246,6 @@ function AppInner() {
         user={user}
         authLoading={authLoading}
         onOpenAuth={openAuth}
-        dark={dark}
-        onToggleDark={toggleDark}
         canInstall={canInstall}
         onInstall={install}
         onDismissInstall={dismiss}

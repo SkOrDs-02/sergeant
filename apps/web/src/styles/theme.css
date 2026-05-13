@@ -322,4 +322,167 @@
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
     --c-nutrition-border-dark: 176 230 54; /* lime-400 */
   }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     HIGH-CONTRAST THEME (AAA-leaning) — layered on top of the resolved
+     light/dark base via `html.hc { … }`. Activated by `useTheme()` /
+     `<ThemeSwitcher choice="hc">` and meant for users with low vision,
+     bright sunlight, or AAA-conformance audits. Contract:
+
+       1. Text vs. background ≥ 7:1 (WCAG AAA "Contrast (Enhanced)").
+       2. Dividers vs. background ≥ 4.5:1 — separators always read.
+       3. Focus ring uses a token-driven width (`--ring-width-hc: 3px`)
+          and brand-strong colour so the visible focus indicator
+          (Hard Rule #14) stays unambiguous at distance.
+       4. No low-opacity surfaces — "soft" status tints fall back to a
+          full-strength bordered surface so banners/badges stay legible.
+
+     The audit list (every semantic token that primitives consume) lives
+     in `docs/design/design-system.md § 8.2 High Contrast Audit`. Any new
+     semantic token MUST get an HC override below before shipping.
+     ═══════════════════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════════════════════
+     SCOPED THEME PREVIEWS — same semantic variables as `.dark` / `html.hc`,
+     but bound to a local container instead of `<html>`. Used exclusively
+     by `DesignShowcase` → `ThemingSection` to render side-by-side
+     light / dark / HC tiles without flipping the actual app theme.
+
+     Keep these blocks in 1:1 lockstep with the `:root`, `.dark`, `html.hc`,
+     and `html.hc.dark` declarations above — they exist purely to demo the
+     same tokens in a sandbox. If you add a new semantic token, mirror it
+     in every preview variant.
+     ═══════════════════════════════════════════════════════════════════════ */
+  [data-theme-preview="dark"] {
+    color-scheme: dark;
+    --c-bg: 23 20 18;
+    --c-panel: 32 28 25;
+    --c-panel-hi: 48 42 37;
+    --c-line: 82 74 65;
+    --c-text: 250 247 241;
+    --c-muted: 180 174 169;
+    --c-subtle: 135 128 121;
+    --c-primary: 250 247 241;
+    --c-border: var(--c-line);
+    --c-border-strong: 112 102 90;
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+    --c-brand-soft: 6 78 59;
+    --c-brand-soft-border: 6 95 70;
+    --shadow-card:
+      0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  [data-theme-preview="hc-light"] {
+    color-scheme: light;
+    --ring-width-hc: 3px;
+    --focus-ring-width: var(--ring-width-hc);
+    --c-bg: 253 249 243;
+    --c-panel: 255 255 255;
+    --c-panel-hi: 250 247 241;
+    --c-text: 0 0 0;
+    --c-muted: 31 28 25;
+    --c-subtle: 51 46 41;
+    --c-line: 87 75 60;
+    --c-border: var(--c-line);
+    --c-border-strong: 28 25 23;
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+    --c-brand-soft: 167 243 208;
+    --c-brand-soft-border: 6 95 70;
+  }
+
+  [data-theme-preview="hc-dark"] {
+    color-scheme: dark;
+    --ring-width-hc: 3px;
+    --focus-ring-width: var(--ring-width-hc);
+    --c-bg: 23 20 18;
+    --c-panel: 32 28 25;
+    --c-panel-hi: 48 42 37;
+    --c-text: 255 255 255;
+    --c-muted: 230 224 218;
+    --c-subtle: 207 199 191;
+    --c-line: 168 156 142;
+    --c-border: var(--c-line);
+    --c-border-strong: 234 226 215;
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+    --c-brand-soft: 4 120 87;
+    --c-brand-soft-border: 16 185 129;
+  }
+
+  html.hc {
+    /* Default focus-ring width swap — primitives that reference
+       `--focus-ring-width` get a thicker ring without changing their
+       Tailwind classes. */
+    --ring-width-hc: 3px;
+    --focus-ring-width: var(--ring-width-hc);
+    --focus-ring-color: rgb(var(--c-brand-strong, 4 120 87) / 0.85);
+
+    /* HC LIGHT — pure black text on warmer ivory so AAA contrast is
+       reached without burning the eyes with #ffffff. Borders are
+       deepened to a near-black so dividers / inputs / cards have a
+       clear edge instead of relying on shadow alone. */
+    --c-text: 0 0 0; /* #000000 — max contrast vs cream bg */
+    --c-muted: 31 28 25; /* #1f1c19 — near-black tertiary copy */
+    --c-subtle: 51 46 41; /* #332e29 — meets ≥7:1 on bg */
+    --c-line: 87 75 60; /* #574b3c — visible warm border (≥4.5:1) */
+    --c-border: var(--c-line);
+    --c-border-strong: 28 25 23; /* #1c1917 — near-black divider */
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+
+    /* Status soft surfaces flip to full-strength fills so banners /
+       badges keep WCAG AAA contrast for their text inside HC. */
+    --c-success-soft: 167 243 208; /* emerald-200 — bumped from emerald-100 */
+    --c-warning-soft: 252 211 77; /* amber-300   — bumped from amber-100 */
+    --c-danger-soft: 254 202 202; /* red-200     — bumped from red-100 */
+    --c-info-soft: 186 230 253; /* sky-200     — bumped from sky-100 */
+
+    /* Brand / module soft surfaces — bump one step deeper so HC light
+       still reads as accent vs. ivory bg. */
+    --c-brand-soft: 167 243 208; /* emerald-200 */
+    --c-brand-soft-border: 6 95 70; /* emerald-800 — solid edge */
+    --c-finyk-soft: 167 243 208;
+    --c-finyk-soft-border: 6 95 70;
+    --c-fizruk-soft: 153 246 228; /* teal-200 */
+    --c-fizruk-soft-border: 17 94 89;
+    --c-routine-soft: 255 210 200; /* coral-200 */
+    --c-routine-soft-border: 159 36 30;
+    --c-nutrition-soft: 217 249 157; /* lime-200 */
+    --c-nutrition-soft-border: 63 98 18;
+  }
+
+  html.hc.dark {
+    /* HC DARK — pure white text on warm charcoal; brand-emerald focus
+       ring colour stays solid (no /45 alpha) so it clears 3:1 vs. bg. */
+    --focus-ring-color: rgb(252 211 77 / 0.95); /* amber-300 */
+
+    --c-text: 255 255 255; /* #ffffff — max contrast vs dark bg */
+    --c-muted: 230 224 218; /* #e6e0da — bright warm gray */
+    --c-subtle: 207 199 191; /* #cfc7bf — readable tertiary at AAA */
+    --c-line: 168 156 142; /* #a89c8e — luminous warm border (≥4.5:1) */
+    --c-border: var(--c-line);
+    --c-border-strong: 234 226 215; /* near-white divider */
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+
+    /* Soft status surfaces flip to deeper, less-translucent dark fills
+       so the soft-banner contract still reads against the dark bg. */
+    --c-success-soft: 4 120 87; /* emerald-700 — bumped from emerald-900 */
+    --c-warning-soft: 180 83 9; /* amber-700   */
+    --c-danger-soft: 185 28 28; /* red-700     */
+    --c-info-soft: 3 105 161; /* sky-700     */
+
+    --c-brand-soft: 4 120 87;
+    --c-brand-soft-border: 16 185 129;
+    --c-finyk-soft: 4 120 87;
+    --c-finyk-soft-border: 16 185 129;
+    --c-fizruk-soft: 15 118 110; /* teal-700 */
+    --c-fizruk-soft-border: 20 184 166;
+    --c-routine-soft: 185 54 48; /* coral-800 */
+    --c-routine-soft-border: 255 140 120;
+    --c-nutrition-soft: 86 124 15; /* lime-700 */
+    --c-nutrition-soft-border: 176 230 54;
+  }
 }
