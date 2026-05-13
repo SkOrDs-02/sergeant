@@ -158,7 +158,13 @@ export function Modal({
         tabIndex={dismissOnOverlayClick ? 0 : -1}
         onClick={dismissOnOverlayClick ? onClose : undefined}
         onKeyDown={dismissOnOverlayClick ? handleOverlayKey : undefined}
-        className="absolute inset-0 bg-text/40 backdrop-blur-sm"
+        // `bg-text` resolves to a near-white in dark mode and a near-black
+        // in light mode, so `bg-text/40` *lightens* the page on dark and
+        // dims on light — opposite of what a modal scrim is supposed to
+        // do. Switch to the same `bg-black/40 backdrop-blur-sm` Sheet has
+        // used since portaling so both primitives behave consistently
+        // across themes.
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       />
       <div
         ref={panelRef}
