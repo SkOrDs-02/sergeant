@@ -35,6 +35,7 @@ import { Sentry } from "../../sentry.js";
 import {
   createTelegramApiClient,
   DEFAULT_DEDUP_WINDOW_MS,
+  getAlertHistoryStats,
   listPendingAlerts,
   markAlertEscalated,
   markAlertRepeated,
@@ -134,6 +135,17 @@ const SnoozeBody = z
       .int()
       .min(1)
       .max(24 * 60),
+  })
+  .strict();
+
+// `/alerts history` debug command (founder DM only). Reads aggregated
+// stats from `tg_alert_acks`: top-N noisiest workflows + summary. `days`
+// caps at 30 (matches `tg_alert_acks` retention thinking — we don't keep
+// raw alert rows forever; 30d window covers month-end ops review).
+const HistoryBody = z
+  .object({
+    days: z.number().int().min(1).max(30).optional(),
+    limit: z.number().int().min(1).max(50).optional(),
   })
   .strict();
 
@@ -260,6 +272,20 @@ export function createAlertsInternalRouter({
         limit: parsed.data.limit,
       });
       res.json({ alerts });
+    }),
+  );
+
+  // ---- history (OpenClaw `/alerts history <days>`) ----
+  r.post(
+    "/api/internal/alerts/history",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(HistoryBody, req, res);
+      if (!parsed.ok) return;
+      const result = await getAlertHistoryStats(pool, {
+        ...(parsed.data.days != null ? { daysBack: parsed.data.days } : {}),
+        ...(parsed.data.limit != null ? { limit: parsed.data.limit } : {}),
+      });
+      res.json(result);
     }),
   );
 

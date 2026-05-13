@@ -292,6 +292,201 @@ export async function listPendingAlerts(
 }
 
 // ───────────────────────────────────────────────────────────────────────
+// getAlertHistoryStats — `/alerts history` debug command
+// ───────────────────────────────────────────────────────────────────────
+
+export interface AlertHistoryWorkflowStats {
+  /**
+   * First `:`-segment of `alert_id` — n8n workflow identifier
+   * (e.g. `wf-15`, `wf08`, `wf98`). Free-form string; we just split, not
+   * validate, so legacy/test alerts with unusual shapes still show up.
+   */
+  workflowId: string;
+  /** Total rows in window (acked + unacked). */
+  total: number;
+  /** Subset where `ack_at IS NOT NULL`. */
+  acked: number;
+  /** Subset where `escalated_at IS NOT NULL` (T1 DM-ping fired). */
+  escalated: number;
+  /** Subset where `repeated_at IS NOT NULL` (T2 repeat-broadcast fired). */
+  repeated: number;
+  /** Subset where `sentry_warned_at IS NOT NULL` (T3 Sentry event fired). */
+  sentryWarned: number;
+  /**
+   * Ack ratio as a 0..100 integer. `total - acked` is the "still
+   * unanswered after the window" count — a workflow with a low `ackRate`
+   * is a tuning candidate (either too noisy, or too low-signal to merit
+   * an alert at all).
+   */
+  ackRatePct: number;
+  /**
+   * Average minutes between `posted_at` and `ack_at` (acked rows only).
+   * `null` when the workflow had no acked rows in the window. Rounded to
+   * one decimal place; nullable to keep the type honest.
+   */
+  avgTtaMinutes: number | null;
+}
+
+export interface AlertHistorySummary {
+  daysBack: number;
+  total: number;
+  acked: number;
+  escalated: number;
+  repeated: number;
+  sentryWarned: number;
+  ackRatePct: number;
+  avgTtaMinutes: number | null;
+  /**
+   * How many distinct `workflowId`s contributed rows in the window —
+   * useful in the slash-command footer ("12 workflows fired alerts").
+   */
+  workflowCount: number;
+}
+
+export interface GetAlertHistoryStatsInput {
+  /** Look-back window in whole days. Caller clamps; we still defensively
+   *  clamp 1..30 for safety. Default 7. */
+  daysBack?: number;
+  /** Max rows in the top-N table. 1..50, default 10. */
+  limit?: number;
+}
+
+export interface AlertHistoryStatsResult {
+  workflows: AlertHistoryWorkflowStats[];
+  summary: AlertHistorySummary;
+}
+
+/**
+ * Aggregates `tg_alert_acks` over the last N days for the `/alerts history`
+ * slash-command. Group key is `split_part(alert_id, ':', 1)` — the n8n
+ * workflow id (e.g. `wf-15`, `wf98`). Returns:
+ *
+ *   - `workflows`: top-N noisiest workflows by `total`, with per-status
+ *     counts, ack ratio, and avg TTA (time-to-ack, minutes).
+ *   - `summary`: overall aggregates across the full window (not limited
+ *     to the top-N) so the slash-command footer can show "X/Y acked" for
+ *     the whole period.
+ *
+ * Implementation notes:
+ *   - Two queries (top-N + window-total) so the summary stays correct
+ *     even when there are >50 distinct workflows.
+ *   - `COUNT(col)` counts non-NULLs — exactly what we want for acked /
+ *     escalated / repeated / sentry-warned breakdown.
+ *   - `EXTRACT(EPOCH FROM ack_at - posted_at) / 60` gives TTA minutes;
+ *     `FILTER (WHERE ack_at IS NOT NULL)` keeps the AVG sane (NULL when
+ *     no rows match — pg returns NULL, we map to `null`).
+ *   - `posted_at >= NOW() - make_interval(days => $1)` keeps the SQL
+ *     injection-safe even when caller forgets to clamp.
+ */
+export async function getAlertHistoryStats(
+  pool: Pool,
+  input: GetAlertHistoryStatsInput = {},
+): Promise<AlertHistoryStatsResult> {
+  const daysBack = Math.max(1, Math.min(30, Math.round(input.daysBack ?? 7)));
+  const limit = Math.max(1, Math.min(50, Math.round(input.limit ?? 10)));
+
+  const topWorkflowsResult = await pool.query<{
+    workflow_id: string;
+    total: string;
+    acked: string;
+    escalated: string;
+    repeated: string;
+    sentry_warned: string;
+    avg_tta_minutes: string | null;
+  }>(
+    `SELECT
+        split_part(alert_id, ':', 1) AS workflow_id,
+        COUNT(*) AS total,
+        COUNT(ack_at) AS acked,
+        COUNT(escalated_at) AS escalated,
+        COUNT(repeated_at) AS repeated,
+        COUNT(sentry_warned_at) AS sentry_warned,
+        AVG(EXTRACT(EPOCH FROM (ack_at - posted_at)) / 60.0)
+          FILTER (WHERE ack_at IS NOT NULL) AS avg_tta_minutes
+       FROM tg_alert_acks
+      WHERE posted_at >= NOW() - make_interval(days => $1)
+      GROUP BY workflow_id
+      ORDER BY total DESC, workflow_id ASC
+      LIMIT $2`,
+    [daysBack, limit],
+  );
+
+  const summaryResult = await pool.query<{
+    total: string;
+    acked: string;
+    escalated: string;
+    repeated: string;
+    sentry_warned: string;
+    avg_tta_minutes: string | null;
+    workflow_count: string;
+  }>(
+    `SELECT
+        COUNT(*) AS total,
+        COUNT(ack_at) AS acked,
+        COUNT(escalated_at) AS escalated,
+        COUNT(repeated_at) AS repeated,
+        COUNT(sentry_warned_at) AS sentry_warned,
+        AVG(EXTRACT(EPOCH FROM (ack_at - posted_at)) / 60.0)
+          FILTER (WHERE ack_at IS NOT NULL) AS avg_tta_minutes,
+        COUNT(DISTINCT split_part(alert_id, ':', 1)) AS workflow_count
+       FROM tg_alert_acks
+      WHERE posted_at >= NOW() - make_interval(days => $1)`,
+    [daysBack],
+  );
+
+  const summaryRow = summaryResult.rows[0];
+  const summaryTotal = summaryRow ? Number(summaryRow.total) : 0;
+  const summaryAcked = summaryRow ? Number(summaryRow.acked) : 0;
+
+  const workflows: AlertHistoryWorkflowStats[] = topWorkflowsResult.rows.map(
+    (row) => {
+      const total = Number(row.total);
+      const acked = Number(row.acked);
+      const avgTta =
+        row.avg_tta_minutes == null ? null : Number(row.avg_tta_minutes);
+      return {
+        workflowId: row.workflow_id || "(unknown)",
+        total,
+        acked,
+        escalated: Number(row.escalated),
+        repeated: Number(row.repeated),
+        sentryWarned: Number(row.sentry_warned),
+        ackRatePct: total === 0 ? 0 : Math.round((acked / total) * 100),
+        avgTtaMinutes:
+          avgTta == null || !Number.isFinite(avgTta)
+            ? null
+            : Math.round(avgTta * 10) / 10,
+      };
+    },
+  );
+
+  const summaryAvgTta = summaryRow?.avg_tta_minutes
+    ? Number(summaryRow.avg_tta_minutes)
+    : null;
+
+  return {
+    workflows,
+    summary: {
+      daysBack,
+      total: summaryTotal,
+      acked: summaryAcked,
+      escalated: summaryRow ? Number(summaryRow.escalated) : 0,
+      repeated: summaryRow ? Number(summaryRow.repeated) : 0,
+      sentryWarned: summaryRow ? Number(summaryRow.sentry_warned) : 0,
+      ackRatePct:
+        summaryTotal === 0
+          ? 0
+          : Math.round((summaryAcked / summaryTotal) * 100),
+      avgTtaMinutes:
+        summaryAvgTta == null || !Number.isFinite(summaryAvgTta)
+          ? null
+          : Math.round(summaryAvgTta * 10) / 10,
+      workflowCount: summaryRow ? Number(summaryRow.workflow_count) : 0,
+    },
+  };
+}
+
+// ───────────────────────────────────────────────────────────────────────
 // markAlertRepeated / markAlertSentryWarned / markAlertSnoozed
 // (Sprint 6 / escalation tiers — T2 + T3 + snooze)
 // ───────────────────────────────────────────────────────────────────────

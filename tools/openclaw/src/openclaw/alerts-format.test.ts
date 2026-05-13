@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   formatAlertAge,
+  formatHistoryReply,
   formatPendingReply,
   parseAlertsCommand,
   shortAlertId,
+  type HistoryReplyPayload,
+  type HistoryWorkflowStats,
   type PendingAlertItem,
 } from "./alerts-format.js";
 
@@ -106,6 +109,40 @@ describe("parseAlertsCommand", () => {
     expect(out.filters.olderThanMinutes).toBe(7 * 24 * 60);
     expect(out.filters.limit).toBe(10);
     expect(out.filters.severity).toBe("P1");
+  });
+
+  it("parses history subcommand with default 7d / top-10", () => {
+    const out = parseAlertsCommand("history");
+    expect(out.subcommand).toBe("history");
+    expect(out.historyFilters).toEqual({ days: 7, limit: 10 });
+    expect(out.error).toBeUndefined();
+  });
+
+  it("parses history with explicit days + limit", () => {
+    const out = parseAlertsCommand("history 14 limit=20");
+    expect(out.subcommand).toBe("history");
+    expect(out.historyFilters).toEqual({ days: 14, limit: 20 });
+  });
+
+  it("clamps history limit at 50", () => {
+    const out = parseAlertsCommand("history 3 limit=999");
+    expect(out.historyFilters).toEqual({ days: 3, limit: 50 });
+  });
+
+  it("rejects history days beyond 30", () => {
+    const out = parseAlertsCommand("history 60");
+    expect(out.subcommand).toBe("history");
+    expect(out.error).toContain("30 днів");
+  });
+
+  it("rejects history with unknown token", () => {
+    const out = parseAlertsCommand("history bogus");
+    expect(out.error).toContain("bogus");
+  });
+
+  it("rejects history limit=0 / negative", () => {
+    expect(parseAlertsCommand("history limit=0").error).toContain("limit=");
+    expect(parseAlertsCommand("history limit=-5").error).toContain("limit=");
   });
 });
 
@@ -231,5 +268,143 @@ describe("formatPendingReply", () => {
       now: NOW,
     });
     expect(out).toContain("??:??");
+  });
+});
+
+describe("formatHistoryReply", () => {
+  function wf(
+    overrides: Partial<HistoryWorkflowStats> = {},
+  ): HistoryWorkflowStats {
+    return {
+      workflowId: "wf-15",
+      total: 10,
+      acked: 7,
+      escalated: 2,
+      repeated: 1,
+      sentryWarned: 0,
+      ackRatePct: 70,
+      avgTtaMinutes: 12.5,
+      ...overrides,
+    };
+  }
+
+  function payload(
+    overrides: Partial<HistoryReplyPayload> = {},
+  ): HistoryReplyPayload {
+    return {
+      workflows: [wf()],
+      summary: {
+        daysBack: 7,
+        total: 10,
+        acked: 7,
+        escalated: 2,
+        repeated: 1,
+        sentryWarned: 0,
+        ackRatePct: 70,
+        avgTtaMinutes: 12.5,
+        workflowCount: 1,
+      },
+      ...overrides,
+    };
+  }
+
+  it("renders empty-state when summary.total=0", () => {
+    const out = formatHistoryReply({
+      workflows: [],
+      summary: {
+        daysBack: 14,
+        total: 0,
+        acked: 0,
+        escalated: 0,
+        repeated: 0,
+        sentryWarned: 0,
+        ackRatePct: 0,
+        avgTtaMinutes: null,
+        workflowCount: 0,
+      },
+    });
+    expect(out).toContain("last 14d");
+    expect(out).toContain("0 broadcasts");
+    expect(out).toContain("Жодного алерту");
+  });
+
+  it("renders header + per-workflow rows + totals footer", () => {
+    const out = formatHistoryReply(payload());
+    const lines = out.split("\n");
+    expect(lines[0]).toContain(
+      "Alert history — last 7d (10 broadcasts, 1 workflows)",
+    );
+    expect(lines[1]).toContain("🟢 wf-15");
+    expect(lines[1]).toContain("7/10 acked (70%)");
+    expect(lines[1]).toContain("avg-tta 13m");
+    // Tier counters surfaced when > 0.
+    expect(lines[1]).toContain("[T1×2 T2×1]");
+    // Footer with totals.
+    expect(out).toContain("———");
+    expect(out).toContain("Totals: 7/10 acked (70%)");
+    expect(out).toContain("T1 2 · T2 1 · T3 0");
+  });
+
+  it("uses 🟡 glyph in 30..69% ack-rate band and 🔴 below", () => {
+    const out = formatHistoryReply(
+      payload({
+        workflows: [
+          wf({ workflowId: "wf-22", ackRatePct: 50 }),
+          wf({ workflowId: "wf-08", ackRatePct: 20 }),
+        ],
+      }),
+    );
+    expect(out).toContain("🟡 wf-22");
+    expect(out).toContain("🔴 wf-08");
+  });
+
+  it("omits tier-counter brackets when all tiers are zero", () => {
+    const out = formatHistoryReply(
+      payload({
+        workflows: [
+          wf({ escalated: 0, repeated: 0, sentryWarned: 0, ackRatePct: 100 }),
+        ],
+      }),
+    );
+    const row = out.split("\n")[1] ?? "";
+    expect(row).not.toContain("[T");
+  });
+
+  it("renders avg-tta in hours + minutes when ≥60 min", () => {
+    const out = formatHistoryReply(
+      payload({
+        workflows: [wf({ avgTtaMinutes: 95 })],
+      }),
+    );
+    expect(out).toContain("avg-tta 1h 35m");
+  });
+
+  it("renders em-dash when avg-tta is null", () => {
+    const out = formatHistoryReply(
+      payload({
+        workflows: [wf({ avgTtaMinutes: null, acked: 0 })],
+        summary: {
+          daysBack: 7,
+          total: 10,
+          acked: 0,
+          escalated: 0,
+          repeated: 0,
+          sentryWarned: 0,
+          ackRatePct: 0,
+          avgTtaMinutes: null,
+          workflowCount: 1,
+        },
+      }),
+    );
+    expect(out).toContain("avg-tta —");
+  });
+
+  it("truncates very long workflow ids past 18 chars", () => {
+    const out = formatHistoryReply(
+      payload({
+        workflows: [wf({ workflowId: "abcdefghijklmnopqrstuvwxyz" })],
+      }),
+    );
+    expect(out).toContain("abcdefghijklmnopq…");
   });
 });

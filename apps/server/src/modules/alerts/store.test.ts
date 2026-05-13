@@ -8,6 +8,7 @@ import type { Pool } from "pg";
 
 import {
   findRecentDedupMatch,
+  getAlertHistoryStats,
   incrementOccurrence,
   listPendingAlerts,
   markAlertEscalated,
@@ -281,6 +282,185 @@ describe("listPendingAlerts", () => {
       "(snoozed_until_at IS NULL OR snoozed_until_at < NOW())",
     );
     expect(params).toEqual([120, 50]);
+  });
+});
+
+describe("getAlertHistoryStats", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("issues two queries (top-N + summary) clamped to defaults", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          total: "0",
+          acked: "0",
+          escalated: "0",
+          repeated: "0",
+          sentry_warned: "0",
+          avg_tta_minutes: null,
+          workflow_count: "0",
+        },
+      ],
+    });
+    const result = await getAlertHistoryStats(pool as unknown as Pool);
+    expect(pool.query).toHaveBeenCalledTimes(2);
+    const [topSql, topParams] = pool.query.mock.calls[0]!;
+    expect(topSql).toContain("split_part(alert_id, ':', 1) AS workflow_id");
+    expect(topSql).toContain("GROUP BY workflow_id");
+    expect(topSql).toContain("ORDER BY total DESC");
+    // Defaults: 7 days, top-10.
+    expect(topParams).toEqual([7, 10]);
+    const [summarySql, summaryParams] = pool.query.mock.calls[1]!;
+    expect(summarySql).toContain(
+      "COUNT(DISTINCT split_part(alert_id, ':', 1))",
+    );
+    expect(summaryParams).toEqual([7]);
+    expect(result.workflows).toEqual([]);
+    expect(result.summary).toEqual({
+      daysBack: 7,
+      total: 0,
+      acked: 0,
+      escalated: 0,
+      repeated: 0,
+      sentryWarned: 0,
+      ackRatePct: 0,
+      avgTtaMinutes: null,
+      workflowCount: 0,
+    });
+  });
+
+  it("clamps days into 1..30 and limit into 1..50", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{}] });
+    await getAlertHistoryStats(pool as unknown as Pool, {
+      daysBack: 999,
+      limit: 999,
+    });
+    expect(pool.query.mock.calls[0]![1]).toEqual([30, 50]);
+
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{}] });
+    await getAlertHistoryStats(pool as unknown as Pool, {
+      daysBack: 0,
+      limit: 0,
+    });
+    expect(pool.query.mock.calls[2]![1]).toEqual([1, 1]);
+  });
+
+  it("maps rows -> camelCase stats with rounded ackRate and avg-tta", async () => {
+    pool.query.mockResolvedValueOnce({
+      rowCount: 2,
+      rows: [
+        {
+          workflow_id: "wf-15",
+          total: "10",
+          acked: "7",
+          escalated: "2",
+          repeated: "1",
+          sentry_warned: "0",
+          avg_tta_minutes: "12.46",
+        },
+        {
+          workflow_id: "wf08",
+          total: "4",
+          acked: "1",
+          escalated: "3",
+          repeated: "2",
+          sentry_warned: "1",
+          avg_tta_minutes: null,
+        },
+      ],
+    });
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          total: "14",
+          acked: "8",
+          escalated: "5",
+          repeated: "3",
+          sentry_warned: "1",
+          avg_tta_minutes: "10.0",
+          workflow_count: "2",
+        },
+      ],
+    });
+
+    const result = await getAlertHistoryStats(pool as unknown as Pool, {
+      daysBack: 14,
+      limit: 5,
+    });
+    expect(result.workflows).toEqual([
+      {
+        workflowId: "wf-15",
+        total: 10,
+        acked: 7,
+        escalated: 2,
+        repeated: 1,
+        sentryWarned: 0,
+        ackRatePct: 70,
+        avgTtaMinutes: 12.5,
+      },
+      {
+        workflowId: "wf08",
+        total: 4,
+        acked: 1,
+        escalated: 3,
+        repeated: 2,
+        sentryWarned: 1,
+        ackRatePct: 25,
+        avgTtaMinutes: null,
+      },
+    ]);
+    expect(result.summary).toEqual({
+      daysBack: 14,
+      total: 14,
+      acked: 8,
+      escalated: 5,
+      repeated: 3,
+      sentryWarned: 1,
+      ackRatePct: 57,
+      avgTtaMinutes: 10,
+      workflowCount: 2,
+    });
+  });
+
+  it("substitutes (unknown) when workflow_id is empty string", async () => {
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          workflow_id: "",
+          total: "1",
+          acked: "0",
+          escalated: "0",
+          repeated: "0",
+          sentry_warned: "0",
+          avg_tta_minutes: null,
+        },
+      ],
+    });
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          total: "1",
+          acked: "0",
+          escalated: "0",
+          repeated: "0",
+          sentry_warned: "0",
+          avg_tta_minutes: null,
+          workflow_count: "1",
+        },
+      ],
+    });
+    const result = await getAlertHistoryStats(pool as unknown as Pool);
+    expect(result.workflows[0]!.workflowId).toBe("(unknown)");
   });
 });
 

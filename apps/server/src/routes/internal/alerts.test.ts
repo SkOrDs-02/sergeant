@@ -18,6 +18,7 @@ const {
   markAlertSentryWarnedMock,
   markAlertSnoozedMock,
   listPendingAlertsMock,
+  getAlertHistoryStatsMock,
   postOrEditDedupedAlertMock,
   sentryCaptureMessageMock,
 } = vi.hoisted(() => ({
@@ -28,6 +29,7 @@ const {
   markAlertSentryWarnedMock: vi.fn(),
   markAlertSnoozedMock: vi.fn(),
   listPendingAlertsMock: vi.fn(),
+  getAlertHistoryStatsMock: vi.fn(),
   postOrEditDedupedAlertMock: vi.fn(),
   sentryCaptureMessageMock: vi.fn(),
 }));
@@ -44,6 +46,7 @@ vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
     markAlertSentryWarned: markAlertSentryWarnedMock,
     markAlertSnoozed: markAlertSnoozedMock,
     listPendingAlerts: listPendingAlertsMock,
+    getAlertHistoryStats: getAlertHistoryStatsMock,
     postOrEditDedupedAlert: postOrEditDedupedAlertMock,
   };
 });
@@ -251,6 +254,104 @@ describe("/api/internal/alerts/pending", () => {
     expect(res.status).toBe(200);
     expect(res.body.alerts).toHaveLength(1);
     expect(res.body.alerts[0].alert_id).toBe("wf-15:1");
+  });
+});
+
+describe("/api/internal/alerts/history", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getAlertHistoryStatsMock.mockResolvedValue({
+      workflows: [],
+      summary: {
+        daysBack: 7,
+        total: 0,
+        acked: 0,
+        escalated: 0,
+        repeated: 0,
+        sentryWarned: 0,
+        ackRatePct: 0,
+        avgTtaMinutes: null,
+        workflowCount: 0,
+      },
+    });
+  });
+
+  it("forwards default body (empty) to store with no overrides", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/history")
+      .send({});
+    expect(res.status).toBe(200);
+    expect(getAlertHistoryStatsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+    );
+  });
+
+  it("forwards days + limit overrides", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/history")
+      .send({ days: 14, limit: 5 });
+    expect(res.status).toBe(200);
+    expect(getAlertHistoryStatsMock).toHaveBeenCalledWith(expect.anything(), {
+      daysBack: 14,
+      limit: 5,
+    });
+  });
+
+  it("returns 400 when days exceeds 30", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/history")
+      .send({ days: 60 });
+    expect(res.status).toBe(400);
+    expect(getAlertHistoryStatsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when limit exceeds 50", async () => {
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/history")
+      .send({ limit: 100 });
+    expect(res.status).toBe(400);
+    expect(getAlertHistoryStatsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the store payload verbatim", async () => {
+    getAlertHistoryStatsMock.mockResolvedValueOnce({
+      workflows: [
+        {
+          workflowId: "wf-15",
+          total: 3,
+          acked: 2,
+          escalated: 1,
+          repeated: 0,
+          sentryWarned: 0,
+          ackRatePct: 67,
+          avgTtaMinutes: 5.0,
+        },
+      ],
+      summary: {
+        daysBack: 7,
+        total: 3,
+        acked: 2,
+        escalated: 1,
+        repeated: 0,
+        sentryWarned: 0,
+        ackRatePct: 67,
+        avgTtaMinutes: 5,
+        workflowCount: 1,
+      },
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/alerts/history")
+      .send({});
+    expect(res.status).toBe(200);
+    expect(res.body.workflows).toHaveLength(1);
+    expect(res.body.workflows[0].workflowId).toBe("wf-15");
+    expect(res.body.summary.workflowCount).toBe(1);
   });
 });
 

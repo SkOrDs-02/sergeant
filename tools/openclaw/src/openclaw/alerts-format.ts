@@ -51,13 +51,22 @@ export interface AlertsPendingFilters {
   limit?: number;
 }
 
+export interface AlertsHistoryFilters {
+  /** Days look-back window, 1..30. Default 7. */
+  days: number;
+  /** Top-N noisy workflows to surface, 1..50. Default 10. */
+  limit: number;
+}
+
 export interface ParsedAlertsCommand {
   /**
-   * `pending` — list unacked. `help` — show usage hint. `unknown` — caller
-   * should reply with usage.
+   * `pending` — list unacked. `history` — stats for past N days.
+   * `help` — usage hint. `unknown` — caller should reply with usage.
    */
-  subcommand: "pending" | "help" | "unknown";
+  subcommand: "pending" | "history" | "help" | "unknown";
   filters: AlertsPendingFilters;
+  /** Set when `subcommand === "history"`. Pre-validated + clamped. */
+  historyFilters?: AlertsHistoryFilters | undefined;
   /** Verbatim `since=<dur>` token (e.g. `24h`) for echo in the header. */
   sinceLabel?: string | undefined;
   /** Set when token parsing detected an unrecoverable error. */
@@ -66,6 +75,11 @@ export interface ParsedAlertsCommand {
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
+
+const HISTORY_DEFAULT_DAYS = 7;
+const HISTORY_MAX_DAYS = 30;
+const HISTORY_DEFAULT_LIMIT = 10;
+const HISTORY_MAX_LIMIT = 50;
 
 /**
  * Tokenises `/alerts <args>` payload. Argument-order is permissive (same
@@ -84,6 +98,9 @@ export function parseAlertsCommand(rawArgument: string): ParsedAlertsCommand {
 
   const tokens = argument.split(/\s+/);
   const first = tokens[0]?.toLowerCase();
+  if (first === "history") {
+    return parseAlertsHistory(tokens.slice(1));
+  }
   if (first !== "pending") {
     // Future-proofing: subcommand router so we can add `/alerts ack <id>`
     // or `/alerts mute <topic> <dur>` without breaking parsing.
@@ -93,7 +110,7 @@ export function parseAlertsCommand(rawArgument: string): ParsedAlertsCommand {
     return {
       subcommand: "unknown",
       filters: {},
-      error: `Невідома підкоманда \`${tokens[0]}\`. Спробуй \`/alerts pending\`.`,
+      error: `Невідома підкоманда \`${tokens[0]}\`. Спробуй \`/alerts pending\` або \`/alerts history\`.`,
     };
   }
 
@@ -136,6 +153,61 @@ export function parseAlertsCommand(rawArgument: string): ParsedAlertsCommand {
   }
 
   return { subcommand: "pending", filters, sinceLabel };
+}
+
+/**
+ * Tokenises `/alerts history [<days>] [limit=<N>]`. Permissive:
+ *   - a bare positive integer → `days` (1..30)
+ *   - `limit=<N>` → top-N noisy workflows (1..50)
+ *   - anything else surfaces an error so the founder doesn't silently
+ *     get the default window when they typo'd a flag.
+ */
+function parseAlertsHistory(tokens: readonly string[]): ParsedAlertsCommand {
+  let days = HISTORY_DEFAULT_DAYS;
+  let limit = HISTORY_DEFAULT_LIMIT;
+  let daysSet = false;
+
+  for (const tok of tokens) {
+    const lower = tok.toLowerCase();
+    if (lower.startsWith("limit=")) {
+      const n = Number(tok.slice("limit=".length));
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+        return {
+          subcommand: "history",
+          filters: {},
+          error:
+            "Невалідний `limit=` параметр. Приклади: `limit=5`, `limit=20`. Max 50.",
+        };
+      }
+      limit = Math.min(HISTORY_MAX_LIMIT, n);
+      continue;
+    }
+    const n = Number(tok);
+    if (Number.isFinite(n) && Number.isInteger(n) && n > 0) {
+      if (n > HISTORY_MAX_DAYS) {
+        return {
+          subcommand: "history",
+          filters: {},
+          error: `Максимум вікно — ${HISTORY_MAX_DAYS} днів. Отримав: ${n}.`,
+        };
+      }
+      days = n;
+      daysSet = true;
+      continue;
+    }
+    return {
+      subcommand: "history",
+      filters: {},
+      error: `Невідомий токен \`${tok}\`. Приклад: \`/alerts history 14 limit=20\`.`,
+    };
+  }
+
+  return {
+    subcommand: "history",
+    filters: {},
+    historyFilters: { days, limit },
+    sinceLabel: daysSet ? `${days}d` : `${HISTORY_DEFAULT_DAYS}d`,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -233,4 +305,113 @@ export function formatPendingReply(
 
   const header = `${alerts.length} unacked alert${alerts.length === 1 ? "" : "s"}${filterEcho}:`;
   return [header, ...lines].join("\n");
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// `/alerts history` reply rendering
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Wire shape of one row in `GET /api/internal/alerts/history`. Mirrors
+ * `AlertHistoryWorkflowStats` in `apps/server/src/modules/alerts/store.ts`
+ * — kept duplicated so the console package has zero server dep (same
+ * pattern as `PendingAlertItem` above).
+ */
+export interface HistoryWorkflowStats {
+  workflowId: string;
+  total: number;
+  acked: number;
+  escalated: number;
+  repeated: number;
+  sentryWarned: number;
+  ackRatePct: number;
+  avgTtaMinutes: number | null;
+}
+
+export interface HistorySummary {
+  daysBack: number;
+  total: number;
+  acked: number;
+  escalated: number;
+  repeated: number;
+  sentryWarned: number;
+  ackRatePct: number;
+  avgTtaMinutes: number | null;
+  workflowCount: number;
+}
+
+export interface HistoryReplyPayload {
+  workflows: readonly HistoryWorkflowStats[];
+  summary: HistorySummary;
+}
+
+/**
+ * Picks the warning glyph for a row by its ack-rate. Mirrors operator
+ * intuition: <30% acked is "this workflow is noise"; 30..69% is "needs
+ * tuning"; ≥70% is "healthy". Glyphs land on the row to make eyeballing
+ * a 10-row list possible without reading every number.
+ */
+function ackRateGlyph(ratePct: number, total: number): string {
+  if (total === 0) return "⚪";
+  if (ratePct >= 70) return "🟢";
+  if (ratePct >= 30) return "🟡";
+  return "🔴";
+}
+
+/**
+ * Compact workflow-id for the table — n8n raw ids can be long UUIDs.
+ * Anything >18 chars truncates; common `wf-XX` / `wfNN` ids pass through
+ * unmodified.
+ */
+function shortWorkflowId(id: string): string {
+  if (id.length <= 18) return id;
+  return `${id.slice(0, 17)}…`;
+}
+
+/**
+ * Renders avg TTA in human terms. <1m → `<1m`, 1..59 → `Xm`, 1h+ → `Xh Ym`.
+ * Returns `—` when null (no acks in window).
+ */
+function formatTta(minutes: number | null): string {
+  if (minutes == null) return "—";
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${Math.round(minutes)}m`;
+  const hours = Math.floor(minutes / 60);
+  const remMin = Math.round(minutes - hours * 60);
+  return remMin === 0 ? `${hours}h` : `${hours}h ${remMin}m`;
+}
+
+/**
+ * Renders the full reply text for `/alerts history <days>`. Plaintext to
+ * match `/alerts pending`. Keeps the body ≤30 lines (per O5-style spec):
+ * up to 10 workflow rows + header + footer summary.
+ */
+export function formatHistoryReply(payload: HistoryReplyPayload): string {
+  const { summary } = payload;
+  const header =
+    `Alert history — last ${summary.daysBack}d ` +
+    `(${summary.total} broadcasts, ${summary.workflowCount} workflows)`;
+
+  if (summary.total === 0) {
+    return `${header}\nЖодного алерту за період ✅`;
+  }
+
+  const rows = payload.workflows.map((w) => {
+    const glyph = ackRateGlyph(w.ackRatePct, w.total);
+    const ackPart = `${w.acked}/${w.total} acked (${w.ackRatePct}%)`;
+    const tierParts: string[] = [];
+    if (w.escalated > 0) tierParts.push(`T1×${w.escalated}`);
+    if (w.repeated > 0) tierParts.push(`T2×${w.repeated}`);
+    if (w.sentryWarned > 0) tierParts.push(`T3×${w.sentryWarned}`);
+    const tiers = tierParts.length === 0 ? "" : ` [${tierParts.join(" ")}]`;
+    const tta = `avg-tta ${formatTta(w.avgTtaMinutes)}`;
+    return `${glyph} ${shortWorkflowId(w.workflowId)} — ${ackPart}, ${tta}${tiers}`;
+  });
+
+  const footer =
+    `———\nTotals: ${summary.acked}/${summary.total} acked ` +
+    `(${summary.ackRatePct}%), avg-tta ${formatTta(summary.avgTtaMinutes)}, ` +
+    `T1 ${summary.escalated} · T2 ${summary.repeated} · T3 ${summary.sentryWarned}`;
+
+  return [header, ...rows, footer].join("\n");
 }

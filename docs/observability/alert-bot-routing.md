@@ -187,6 +187,14 @@ The same `/alerts/pending` endpoint powers the `/alerts pending` slash-command
 (O5 / PR #2507), which calls без filter prefs і renders усі open ack-rows у
 founder DM.
 
+For post-mortem debugging, `/alerts history [<days>] [limit=<N>]` (this PR)
+hits the sibling `POST /api/internal/alerts/history` endpoint. It runs two
+SQL aggregates against `tg_alert_acks` — top-N noisiest workflows (grouped by
+`split_part(alert_id, ':', 1)`) plus a window-wide summary (totals, ack-rate,
+avg time-to-ack, tier counts). Defaults: 7d look-back, top-10 workflows.
+Same founder-only allowlist + 3/min rate-limit + `openclaw_invocations`
+audit row as `/alerts pending`.
+
 ## T2 repeat-ping inline keyboard
 
 Кнопки T2 message (WF-105) — три callback-action-buttons:
