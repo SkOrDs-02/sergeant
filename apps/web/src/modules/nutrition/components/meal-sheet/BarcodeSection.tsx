@@ -41,16 +41,16 @@ export function BarcodeSection({
         />
         <Button
           type="button"
-          variant="ghost"
-          className="h-9 text-xs"
+          variant="secondary"
+          size="sm"
           onClick={() => handleBarcodeLookup(barcode)}
         >
           Знайти
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          className="h-9 text-xs"
+          variant="secondary"
+          size="sm"
           onClick={() => handleBarcodeBind(barcode)}
         >
           Прив{"'"}язати
