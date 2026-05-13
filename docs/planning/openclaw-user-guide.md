@@ -153,14 +153,6 @@ openclaw pairing approve <код>
 
 ## Крок 6: Підключи інші канали (опціонально)
 
-### WhatsApp
-
-```bash
-openclaw setup whatsapp
-```
-
-Тобі покажуть QR-код — скануй його камерою WhatsApp (як WhatsApp Web).
-
 ### Slack
 
 ```bash

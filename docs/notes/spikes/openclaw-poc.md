@@ -115,7 +115,7 @@ audit trail, error paths.
    tool-name + key params + estimated cost + retry/cancel-кнопки. SDK-default
    (Variant A/C) — single-line confirm. PR-D мусить переформулювати
    approval-tекст під кожного persona — Variant B дає це з коробки.
-2. **Multi-channel readiness:** Phase 8 (whatsapp) приходить швидше,
+2. **Multi-channel readiness:** якщо Phase 8 multi-channel приходить швидше,
    ніж SDK-вендор додасть multi-channel approval primitive. Variant B
    реформатує keyboard сам.
 3. **Audit on rejection:** у Variant A/C SDK-блок виконується **до**
@@ -248,7 +248,7 @@ Phase 4 (PR-D) — extends `create_github_issue` PoC на 6+ write-tools
 1. **Real `@openclaw/plugin-sdk` swap:** коли SDK ship-неться (Q3 estimate),
    `sdk-types.ts` стає re-export-ом. Чи потрібен shim-shape файл, якщо
    real SDK розходиться з нашим contract-ом? Phase 1 review гейт.
-2. **Multi-channel approval (Variant B):** Phase 8 (whatsapp) — чи
+2. **Multi-channel approval (Variant B):** якщо Phase 8 додасть канали — чи
    plugin reformatе keyboard сам, чи SDK додасть `Channel`-aware abstraction?
 3. **Persistence на plugin restart (Variant B):** PR-D має додати
    `openclaw_write_audit` write-state так, що `tool_call_pre` checks
