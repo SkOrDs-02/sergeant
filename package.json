@@ -59,6 +59,7 @@
     "db:migrate": "pnpm --filter @sergeant/server db:migrate",
     "dev:db": "pnpm db:up && pnpm db:migrate",
     "replay:webhook": "node scripts/replay-webhook.mjs",
+    "replay:dlq": "node scripts/replay-dlq.mjs",
     "ai-memory:backfill": "node scripts/ai-memory-backfill.mjs",
     "licenses:gen": "node scripts/generate-licenses.mjs",
     "licenses:check": "node scripts/generate-licenses.mjs check",

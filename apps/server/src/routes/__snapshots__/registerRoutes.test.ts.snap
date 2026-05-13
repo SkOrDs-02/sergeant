@@ -42,6 +42,8 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "POST /api/coach/insight",
   "POST /api/coach/memory",
   "POST /api/csp-report",
+  "POST /api/internal/ai-memory-dlq/list",
+  "POST /api/internal/ai-memory-dlq/replay",
   "POST /api/internal/ai-memory/backfill/batch",
   "POST /api/internal/ai-memory/backfill/finalize",
   "POST /api/internal/ai-memory/backfill/start",

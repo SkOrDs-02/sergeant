@@ -18,6 +18,7 @@ import { createMonoInternalRouter } from "./mono.js";
 import { createWebhookEventsInternalRouter } from "./webhook-events.js";
 import { createStrategicInternalRouter } from "./strategic.js";
 import { createAiMemoryInternalRouter } from "./ai-memory.js";
+import { createAiMemoryDlqInternalRouter } from "./ai-memory-dlq.js";
 
 /**
  * Mounts all /api/internal/* routes behind a shared bearer-token guard.
@@ -67,6 +68,7 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createWebhookEventsInternalRouter({ pool }));
   router.use(createStrategicInternalRouter({ pool }));
   router.use(createAiMemoryInternalRouter({ pool }));
+  router.use(createAiMemoryDlqInternalRouter({ pool }));
 
   return router;
 }
