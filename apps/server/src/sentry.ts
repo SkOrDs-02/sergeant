@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 import type { Express } from "express";
+import { scrubPII as sharedScrubPII } from "@sergeant/shared";
 import { als } from "./obs/requestContext.js";
-import { redactKeyNames } from "./obs/logger.js";
 import { redactSensitiveUrl } from "./obs/sensitiveUrl.js";
 
 function parseRate(val: string | undefined, fallback: number): number {
@@ -133,43 +133,15 @@ export function resolveSentryRelease(
 }
 
 /**
- * Рекурсивно ходить по об'єкту і маскує значення для ключів з
- * `redactKeyNames` (case-insensitive). Контракт синхронізований з
- * Pino-redaction (`logger.ts`): один список — два енфорсера.
+ * Рекурсивний PII-скрабер. З 2026-05-13 (audit
+ * `2026-05-13-security-observability-roast.md`) канонічна імплементація
+ * живе у `@sergeant/shared/lib/pii.ts` — це дозволяє web-Sentry SDK ділити
+ * той самий контракт без копіпасти серверного коду в браузерний бандл.
  *
- * Sentry-payload-и можуть бути nested як завгодно (`event.contexts.runtime`,
- * `event.extra.user.profile.email`), тому regex-pino-paths не працюють.
- * Беремо ім'я ключа замість шляху.
- *
- * Цикли об'єктів захищені через WeakSet (Sentry payload не повинен
- * містити їх, але Error.cause і подібні самопосилання — можливі).
+ * Експорт лишений як named function — щоб юніт-тести (`sentry.test.ts`)
+ * могли імпортувати `scrubPII` напряму, як і раніше.
  */
-const REDACT_KEY_SET = new Set(redactKeyNames.map((k) => k.toLowerCase()));
-const PII_REDACTED = "[redacted]";
-
-export function scrubPII(
-  value: unknown,
-  seen: WeakSet<object> = new WeakSet(),
-): void {
-  if (value == null || typeof value !== "object") return;
-  if (seen.has(value as object)) return;
-  seen.add(value as object);
-
-  if (Array.isArray(value)) {
-    for (const item of value) scrubPII(item, seen);
-    return;
-  }
-
-  const obj = value as Record<string, unknown>;
-  for (const key of Object.keys(obj)) {
-    if (REDACT_KEY_SET.has(key.toLowerCase())) {
-      // Зберігаємо тип (string vs object) щоб Sentry UI не падав.
-      obj[key] = typeof obj[key] === "object" ? null : PII_REDACTED;
-      continue;
-    }
-    scrubPII(obj[key], seen);
-  }
-}
+export const scrubPII = sharedScrubPII;
 
 const dsn = process.env["SENTRY_DSN"];
 

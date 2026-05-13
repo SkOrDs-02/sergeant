@@ -1,6 +1,85 @@
-import { getPlatform, isCapacitor } from "@sergeant/shared";
+import { getPlatform, isCapacitor, scrubPII } from "@sergeant/shared";
 
 type SentryModule = typeof import("@sentry/react");
+
+/**
+ * Structural shape of Sentry events that `applyWebBeforeSend` mutates.
+ * Defined as a minimal subset of `Sentry.ErrorEvent` (no `[key: string]`
+ * index signatures) so a real `Sentry.ErrorEvent` is directly assignable
+ * — the `beforeSend` callback can pass `event` without `as unknown as`
+ * casts. The helper is unit-tested without pulling SDK type fixtures.
+ */
+export interface WebBeforeSendEvent {
+  request?: {
+    cookies?: unknown;
+    data?: unknown;
+    headers?: unknown;
+    url?: unknown;
+  };
+  extra?: unknown;
+  contexts?: unknown;
+  breadcrumbs?: Array<{ data?: unknown }>;
+  user?: {
+    id?: string | number;
+    ip_address?: string;
+  };
+}
+
+/**
+ * Browser counterpart of `applyBeforeSend` (`apps/server/src/sentry.ts`).
+ *
+ * Прожарка 2026-05-13 §6.5: до цього рефактору web-`beforeSend` тільки
+ * викидав `request.cookies`, тоді як серверний хук рекурсивно скрабив
+ * `request.headers`, `extra`, `contexts`, `breadcrumbs.data` і нормалізував
+ * `event.user` до `{ id }`. Усі ці канали (особливо XHR breadcrumbs з
+ * `Authorization` header-ом і ручні `Sentry.setExtra('payload', body)`)
+ * однаково існують у браузерному SDK, тож контракт PII-handling-у
+ * (`docs/security/pii-handling.md`) тримався тільки на сервері.
+ *
+ * Сигнатура — `WebBeforeSendEvent` (локальний structural type), щоб
+ * не тягнути `@sentry/react` runtime у головний бандл і одночасно
+ * лишити type-safety під час колл-сайту. `Sentry.Event` структурно
+ * сумісний з цим інтерфейсом.
+ */
+export function applyWebBeforeSend(
+  event: WebBeforeSendEvent,
+): WebBeforeSendEvent {
+  const request = event.request;
+  if (request) {
+    if ("cookies" in request) delete request["cookies"];
+    // Body / form-data may carry passwords or PII — drop wholesale; the
+    // few stack traces that genuinely need request body should add it
+    // back via Sentry.setExtra after explicit scrubbing.
+    if ("data" in request) delete request["data"];
+    if (request.headers) scrubPII(request.headers);
+  }
+  // Deep recursive scrub of extra / contexts / breadcrumbs.data. The
+  // browser SDK also auto-collects `xhr` / `fetch` breadcrumbs whose
+  // `data` field includes the request body — that path now matches the
+  // server contract instead of leaking through.
+  if (event.extra) scrubPII(event.extra);
+  if (event.contexts) scrubPII(event.contexts);
+  if (Array.isArray(event.breadcrumbs)) {
+    for (const bc of event.breadcrumbs) {
+      if (bc && bc.data) scrubPII(bc.data);
+    }
+  }
+  // `event.user` can carry `email` / `phone` from `Sentry.setUser({...})`
+  // or auth-state debug. Normalise to `{ id }` only — Sentry's
+  // `sendDefaultPii=false` already does most of this, but duplicate
+  // defence is cheap and survives accidental `setUser` regressions.
+  if (event.user) {
+    const safe: { id?: string | number } = {};
+    if (
+      typeof event.user.id === "string" ||
+      typeof event.user.id === "number"
+    ) {
+      safe.id = event.user.id;
+    }
+    event.user = safe;
+  }
+  return event;
+}
 
 let initialized = false;
 let sentryModule: SentryModule | null = null;
@@ -93,8 +172,11 @@ export async function initSentry() {
       0,
     ),
     replaysOnErrorSampleRate: 1.0,
+    // PII / secret scrubbing — see `applyWebBeforeSend` above.
+    // `WebBeforeSendEvent` is a minimal structural subset of Sentry's
+    // `ErrorEvent`, so the SDK's `event` passes through without any cast.
     beforeSend(event) {
-      if (event.request?.cookies) delete event.request.cookies;
+      applyWebBeforeSend(event);
       return event;
     },
   });
