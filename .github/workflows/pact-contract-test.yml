@@ -1,0 +1,108 @@
+name: Pact contract tests
+
+# Owner: @Skords-01. Adds a **runtime, wire-level** contract check on
+# top of the existing **type-level** sync gates (`pnpm api:check-openapi`
+# / `pnpm api:check-openapi-types`).
+#
+# Pipeline:
+#   1. `consumer` job (packages/api-client) runs the contract Vitest
+#      suite, which spins up Pact mock servers and emits the merged pact
+#      JSON to `packages/api-client/pacts/`. The artifact is uploaded so
+#      a future `provider-publish` job (or a Pact Broker push) can
+#      consume it without re-running the consumer suite.
+#   2. `provider` job (apps/server) downloads the artifact and runs the
+#      provider-replay Vitest suite, which mounts `createApp()` with
+#      mocks and replays every consumer interaction against the real
+#      handlers — see `apps/server/src/__tests__/contracts/provider.test.ts`.
+#
+# Both jobs are also covered by the umbrella `pnpm check` in the
+# existing `ci.yml`; this dedicated workflow exists so the pact artifact
+# is discoverable on every PR and so contract regressions are easy to
+# triage at-a-glance (one red check, not a `pnpm test` haystack).
+#
+# Background: see docs/planning/pr-plan-2026-05.md PR-42 and
+# docs/architecture/api-contracts.md.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pact-contract-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Turborepo remote cache — matches `ci.yml` so consumer/provider
+  # vitest runs hit warm caches across CI invocations. Both vars are
+  # optional; turbo falls back to local cache when unset.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+jobs:
+  consumer:
+    name: Consumer contract tests (packages/api-client)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening,
+      # matches ci.yml convention).
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned).
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned).
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Consumer pact tests
+        # Pact V4 mock server binds to 127.0.0.1 on a random port per
+        # interaction. No external network — safe in restricted runners.
+        run: pnpm --filter @sergeant/api-client test -- --run src/__tests__/contracts/
+
+      - name: Upload pact artifact
+        # actions/upload-artifact v4.6.2 (SHA-pinned).
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pacts
+          path: packages/api-client/pacts/
+          retention-days: 14
+          # If the consumer suite emitted nothing, the provider job
+          # MUST fail loudly rather than skip — guard against an empty
+          # artifact.
+          if-no-files-found: error
+
+  provider:
+    name: Provider contract replay (apps/server)
+    runs-on: ubuntu-latest
+    needs: consumer
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Download pact artifact
+        # actions/download-artifact v4.3.0 (SHA-pinned).
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pacts
+          path: packages/api-client/pacts/
+
+      - name: Provider pact replay
+        # Reads the artifact and replays every interaction against
+        # `createApp()` via supertest. Drift between the consumer's
+        # expected wire shape and the real handler output fails here.
+        run: pnpm --filter @sergeant/server test -- --run src/__tests__/contracts/provider.test.ts

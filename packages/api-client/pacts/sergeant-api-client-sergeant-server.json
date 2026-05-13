@@ -1,0 +1,230 @@
+{
+  "consumer": {
+    "name": "sergeant-api-client"
+  },
+  "interactions": [
+    {
+      "description": "a GET /api/v1/me request",
+      "providerStates": [
+        {
+          "name": "an authenticated session for user-pact-001 exists"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me"
+      },
+      "response": {
+        "body": {
+          "user": {
+            "createdAt": "2026-01-15T08:30:00.000Z",
+            "email": "pact-consumer@sergeant.test",
+            "emailVerified": true,
+            "id": "user-pact-001",
+            "image": null,
+            "name": "Pact Consumer"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/mono/accounts request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 1 connected mono account with balance 123450 (in minor units)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/mono/accounts"
+      },
+      "response": {
+        "body": [
+          {
+            "balance": 123450,
+            "cashbackType": "UAH",
+            "creditLimit": 0,
+            "currencyCode": 980,
+            "iban": "UA213996220000026007233566001",
+            "lastSeenAt": "2026-05-13T08:30:00.000Z",
+            "maskedPan": [
+              "537541******1234"
+            ],
+            "monoAccountId": "acct-pact-001",
+            "sendId": "abc123",
+            "type": "black",
+            "userId": "user-pact-001"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/chat request without tool-calls (non-streaming)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with a clean conversation; Anthropic stub returns fixed assistant text"
+        }
+      ],
+      "request": {
+        "body": {
+          "context": "hub",
+          "messages": [
+            {
+              "content": "Привіт, як справи?",
+              "role": "user"
+            }
+          ],
+          "stream": false
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/chat"
+      },
+      "response": {
+        "body": {
+          "text": "Все ок, що треба зробити?"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/nutrition/analyze-photo request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 within nutrition daily quota; Anthropic stub returns the deterministic borscht fixture"
+        }
+      ],
+      "request": {
+        "body": {
+          "imageBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAAD-pact-fixture",
+          "locale": "uk-UA",
+          "mimeType": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/nutrition/analyze-photo"
+      },
+      "response": {
+        "body": {
+          "rawText": null,
+          "result": {
+            "confidence": 0.87,
+            "dishName": "Борщ із сметаною",
+            "ingredients": [
+              {
+                "name": "буряк",
+                "notes": null
+              },
+              {
+                "name": "капуста",
+                "notes": null
+              },
+              {
+                "name": "м'ясо",
+                "notes": "телятина"
+              }
+            ],
+            "macros": {
+              "carbs_g": 22,
+              "fat_g": 12,
+              "kcal": 280,
+              "protein_g": 18
+            },
+            "portion": {
+              "gramsApprox": 350,
+              "label": "тарілка"
+            },
+            "questions": [
+              "Чи був хліб?",
+              "Скільки сметани було?"
+            ]
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/push/register request (platform=web)",
+      "providerStates": [
+        {
+          "name": "authenticated session for user-pact-001 with no prior push token"
+        }
+      ],
+      "request": {
+        "body": {
+          "keys": {
+            "auth": "FAKE-AUTH-PACT-CONTRACT-TEST-VECTOR-=",
+            "p256dh": "BFx8e_X-3FAKE-PUBKEY-NOT-A-REAL-CRED-pact-test-vector-="
+          },
+          "platform": "web",
+          "token": "https://fcm.googleapis.com/fcm/send/cZ4VGTbVtps:APA91bF…example"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/push/register"
+      },
+      "response": {
+        "body": {
+          "ok": true,
+          "platform": "web"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "16.4.0"
+    },
+    "pactRust": {
+      "ffi": "0.5.4",
+      "models": "1.3.11"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "sergeant-server"
+  }
+}
