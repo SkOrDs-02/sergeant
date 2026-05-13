@@ -13,6 +13,7 @@ import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { messages } from "@shared/i18n/uk";
 
 interface WorkoutsProps {
   /**
@@ -45,7 +46,7 @@ export function Workouts({
       className="space-y-3"
       role="status"
       aria-live="polite"
-      aria-label="Завантажую тренування"
+      aria-label={messages.loadingActions.loadingWorkouts}
     >
       <Skeleton className="h-28 w-full" />
       <Skeleton className="h-20 w-full" />
