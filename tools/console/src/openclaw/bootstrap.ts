@@ -30,22 +30,39 @@ const MIN_SECRET_LEN = 32;
 const SECRET_RE = /^[A-Za-z0-9_-]+$/;
 
 /**
- * W4.1 hardening (docs/deploy/console.md, observed 2026-05-03 21:26 UTC):
- * during the first long-poll → webhook migration, the old long-poll
- * container's graceful-shutdown `getUpdates` raced with the new
- * container's `setWebhook` and silently cleared the webhook on
- * Telegram's side (`getWebhookInfo` then returned `url=""`). The bot
- * accepted updates again only after a manual second `setWebhook`.
+ * W4.1 / B.6 hardening (sprint-roadmap O6, tg-improvements-roadmap
+ * §4.4, observed 2026-05-03 21:26 UTC):
  *
- * To make this self-healing on every redeploy, after `setWebhook` we
- * verify with `getWebhookInfo` that Telegram actually retained the URL
- * we just set, and retry up to N times with exponential backoff if the
- * stored URL is wrong / empty. Caps total wall time so a permanent
- * Telegram outage doesn't block container start indefinitely.
+ * Two failure-modes are folded into one retry loop:
+ *
+ *   1. **URL-mismatch race.** During the first long-poll → webhook
+ *      migration, the old long-poll container's graceful-shutdown
+ *      `getUpdates` raced with the new container's `setWebhook` and
+ *      silently cleared the webhook on Telegram's side
+ *      (`getWebhookInfo` then returned `url=""`). The bot accepted
+ *      updates again only after a manual second `setWebhook`.
+ *   2. **Transient Telegram API outage at cold start.** A single
+ *      `setWebhook` call at boot used to be optimistic — if
+ *      `api.telegram.org` was unreachable for ~1s the bot started
+ *      _without_ a webhook and the operator only noticed when an
+ *      update never arrived. Now we retry both the `setWebhook` AND
+ *      the `getWebhookInfo` verification on any thrown error.
+ *
+ * Caps total wall time so a permanent Telegram outage doesn't block
+ * container start indefinitely (sum of the schedule below ≈ 48s).
  */
-const WEBHOOK_VERIFY_MAX_ATTEMPTS = 3;
-const WEBHOOK_VERIFY_BASE_DELAY_MS = 500;
-const WEBHOOK_VERIFY_MAX_DELAY_MS = 4_000;
+const WEBHOOK_VERIFY_MAX_ATTEMPTS = 5;
+/**
+ * Exponential backoff schedule applied _between_ attempts. With
+ * {@link WEBHOOK_VERIFY_MAX_ATTEMPTS} = 5 we use indices `0..3`
+ * (cumulative wall ≈ 18s). Index `4` (30s) is reserved so we can bump
+ * `MAX_ATTEMPTS` to 6 in the future without touching the constants.
+ *
+ * Ordered to match the user-spec — `[1s, 2s, 5s, 10s, 30s]`.
+ */
+const WEBHOOK_VERIFY_BACKOFF_DELAYS_MS = [
+  1_000, 2_000, 5_000, 10_000, 30_000,
+] as const;
 
 /**
  * Validate a `(url, secretToken)` pair the way Telegram does, _before_
@@ -90,15 +107,38 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Stringify an error for logs / Sentry breadcrumb. We deliberately do
+ * NOT include `err.stack` — Sentry already attaches the stack via
+ * `captureMessage` extras and a 4 KiB breadcrumb is too noisy.
+ */
+function errMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return typeof err === "string" ? err : JSON.stringify(err);
+}
+
+/**
  * Register the webhook with Telegram. Drops any pending updates queued
  * during long-poll mode so the founder doesn't receive a flood of stale
  * messages on the first boot after migration.
  *
  * After `setWebhook` we read back `getWebhookInfo` and confirm the URL
- * stuck — see W4.1 race comment above. On mismatch we retry the
- * `setWebhook` call (max {@link WEBHOOK_VERIFY_MAX_ATTEMPTS} attempts).
- * Verification failures are thrown so caller (`tools/console/src/index.ts`)
- * can decide between `process.exit(1)` and falling back to long-poll.
+ * stuck — see W4.1 / B.6 race + outage comments above. On mismatch OR
+ * any thrown error from the Telegram API we retry the whole pair (max
+ * {@link WEBHOOK_VERIFY_MAX_ATTEMPTS} attempts, backoff per
+ * {@link WEBHOOK_VERIFY_BACKOFF_DELAYS_MS}). Verification exhaustion
+ * is thrown so caller (`tools/console/src/index.ts`) can decide between
+ * `process.exit(1)` and falling back to long-poll.
+ *
+ * Observability:
+ *
+ *   - Each retry emits a `level="warning"` Sentry breadcrumb with the
+ *     failure reason (`api_error` vs `url_mismatch`).
+ *   - Final exhaustion emits a `level="error"` `Sentry.captureMessage`
+ *     so on-call sees "webhook never registered" as a first-class
+ *     Sentry issue (not just a process crash).
+ *   - Successful recovery after any retry still emits the existing
+ *     `[openclaw] webhook recovered after race` breadcrumb for parity
+ *     with W4.1.
  */
 export async function registerOpenClawWebhook(
   bot: Bot,
@@ -106,37 +146,91 @@ export async function registerOpenClawWebhook(
 ): Promise<void> {
   validateWebhookConfig(config);
   let lastInfoUrl = "";
+  let lastFailureReason: "api_error" | "url_mismatch" = "url_mismatch";
+  let lastApiError: string | undefined;
   for (let attempt = 1; attempt <= WEBHOOK_VERIFY_MAX_ATTEMPTS; attempt += 1) {
-    await bot.api.setWebhook(config.url, {
-      secret_token: config.secretToken,
-      drop_pending_updates: attempt === 1,
-      allowed_updates: ["message", "callback_query"],
-    });
-    const info = await bot.api.getWebhookInfo();
-    lastInfoUrl = info.url ?? "";
-    if (lastInfoUrl === config.url) {
-      if (attempt > 1) {
-        Sentry.addBreadcrumb({
-          category: "openclaw.webhook",
-          message: `[openclaw] webhook recovered after race (attempt ${attempt})`,
-          level: "info",
-          data: { url: config.url, attempt },
-        });
+    try {
+      await bot.api.setWebhook(config.url, {
+        secret_token: config.secretToken,
+        drop_pending_updates: attempt === 1,
+        allowed_updates: ["message", "callback_query"],
+      });
+      const info = await bot.api.getWebhookInfo();
+      lastInfoUrl = info.url ?? "";
+      if (lastInfoUrl === config.url) {
+        if (attempt > 1) {
+          Sentry.addBreadcrumb({
+            category: "openclaw.webhook",
+            message: `[openclaw] webhook recovered after race (attempt ${attempt})`,
+            level: "info",
+            data: { url: config.url, attempt },
+          });
+        }
+        return;
       }
-      return;
+      lastFailureReason = "url_mismatch";
+      lastApiError = undefined;
+    } catch (err) {
+      lastFailureReason = "api_error";
+      lastApiError = errMessage(err);
     }
     if (attempt >= WEBHOOK_VERIFY_MAX_ATTEMPTS) break;
-    const delayMs = Math.min(
-      WEBHOOK_VERIFY_BASE_DELAY_MS * 2 ** (attempt - 1),
-      WEBHOOK_VERIFY_MAX_DELAY_MS,
-    );
+    const delayMs =
+      WEBHOOK_VERIFY_BACKOFF_DELAYS_MS[attempt - 1] ??
+      WEBHOOK_VERIFY_BACKOFF_DELAYS_MS[
+        WEBHOOK_VERIFY_BACKOFF_DELAYS_MS.length - 1
+      ] ??
+      1_000;
+    const reasonDetail =
+      lastFailureReason === "api_error"
+        ? `api_error=${lastApiError ?? "<unknown>"}`
+        : `expected=${config.url} actual=${lastInfoUrl || "<empty>"}`;
+    Sentry.addBreadcrumb({
+      category: "openclaw.webhook",
+      message: `[openclaw] setWebhook retry (attempt ${attempt}/${WEBHOOK_VERIFY_MAX_ATTEMPTS}, reason=${lastFailureReason})`,
+      level: "warning",
+      data: {
+        url: config.url,
+        attempt,
+        maxAttempts: WEBHOOK_VERIFY_MAX_ATTEMPTS,
+        delayMs,
+        reason: lastFailureReason,
+        ...(lastApiError ? { apiError: lastApiError } : {}),
+      },
+    });
     console.warn(
-      `[openclaw] getWebhookInfo url mismatch after setWebhook ` +
+      `[openclaw] setWebhook ${lastFailureReason} ` +
         `(attempt ${attempt}/${WEBHOOK_VERIFY_MAX_ATTEMPTS}). ` +
-        `expected=${config.url} actual=${lastInfoUrl || "<empty>"}. ` +
-        `retrying in ${delayMs}ms (W4.1 race).`,
+        `${reasonDetail}. retrying in ${delayMs}ms (W4.1/B.6).`,
     );
     await sleep(delayMs);
+  }
+  // All attempts exhausted — surface to Sentry at error-level so
+  // on-call sees "webhook never registered" instead of just a process
+  // crash log line on Railway.
+  Sentry.captureMessage(
+    `[openclaw] setWebhook failed after ${WEBHOOK_VERIFY_MAX_ATTEMPTS} attempts`,
+    {
+      level: "error",
+      tags: {
+        module: "openclaw",
+        op: "setWebhook",
+        reason: lastFailureReason,
+      },
+      extra: {
+        url: config.url,
+        attempts: WEBHOOK_VERIFY_MAX_ATTEMPTS,
+        lastInfoUrl: lastInfoUrl || null,
+        lastApiError: lastApiError ?? null,
+      },
+    },
+  );
+  if (lastFailureReason === "api_error") {
+    throw new Error(
+      `OpenClaw webhook registration failed after ${WEBHOOK_VERIFY_MAX_ATTEMPTS} attempts: ` +
+        `Telegram API error — ${lastApiError ?? "<unknown>"}. ` +
+        `Check api.telegram.org reachability + OPENCLAW_BOT_TOKEN, then redeploy.`,
+    );
   }
   throw new Error(
     `OpenClaw webhook verification failed after ${WEBHOOK_VERIFY_MAX_ATTEMPTS} attempts: ` +
