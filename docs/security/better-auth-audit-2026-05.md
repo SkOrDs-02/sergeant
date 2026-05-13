@@ -166,6 +166,7 @@ passwordless launch — без блокуючого впливу.
 | F3  | MEDIUM        | FIXED        | rate-limit `api:auth:sensitive` 20/60s → 5/60s + env wiring |
 | F4  | INFORMATIONAL | OK           | scrypt + min/max password length (ADR-0042)                 |
 | F5  | INFORMATIONAL | OK           | INTERNAL_API_KEY — non-leakage validated                    |
+| F5b | MEDIUM        | FIXED        | INTERNAL_API_KEY — HMAC defence-in-depth (see below)        |
 | F6  | N/A           | NOT IN SCOPE | magic-link — plugin not enabled                             |
 
 **Net effect:** 2 medium fixes applied у тому самому PR-і. 0
@@ -176,6 +177,36 @@ high-severity findings; 4 OK / N/A. Pinned-тести у CI:
 - Existing: `obs/logger.test.ts > authorization header redaction`,
   `http/safeCompare.test.ts > safeStringEqual`,
   `routes/internal.test.ts > fails closed when INTERNAL_API_KEY is not configured`.
+
+## F5b — `INTERNAL_API_KEY` HMAC defence-in-depth (follow-up)
+
+**Перевірено та виправлено у follow-up PR після round 2:**
+
+Round-2 F5 показав, що bearer-token guard на `/api/internal/*` працює
+коректно (timing-safe compare, fail-closed, Pino redaction). Але це
+single-factor — leak самого ключа через n8n Function-node `console.log`,
+CI env-dump чи Sentry breadcrumb (з `redact` помилкою) дає атакеру повний
+доступ до machine-to-machine endpoint-ів. Тому додано другий шар:
+HMAC-SHA256 signed requests з timestamp anti-replay.
+
+- **Wire-protocol**: `X-Signature: hex(HMAC-SHA256(WEBHOOK_HMAC_SECRET, "<X-Timestamp>.<rawBody>"))`
+  - `X-Timestamp: <unix-seconds>`. Server side — нова middleware
+    [`apps/server/src/http/verifyWebhookSignature.ts`](../../apps/server/src/http/verifyWebhookSignature.ts)
+    (mount-нута в `routes/internal/index.ts` ПІСЛЯ bearer guard).
+- **Replay window**: 5 хв (Stripe/GitHub/Slack convention,
+  `WEBHOOK_HMAC_TS_TOLERANCE_SEC`).
+- **Constant-time compare**: `safeStringEqual` → `crypto.timingSafeEqual`.
+- **Roll-out playbook**: [`docs/security/api-internal-hmac.md`](./api-internal-hmac.md).
+  30-day grace window (`WEBHOOK_HMAC_REQUIRED=false`, default) — server
+  warn-logs `webhook_hmac_mismatch` на mismatch, але пропускає запит,
+  щоб n8n workflows можна було мігрувати по одному. Після `hmacSigned: true`
+  на всіх 25 workflow-ах (`manifest.json`) — flip `WEBHOOK_HMAC_REQUIRED=true`.
+- **Manifest validator** (`scripts/n8n/validate-n8n-workflows.mjs`): якщо
+  `hmacSigned: true`, тоді `WEBHOOK_HMAC_SECRET` обов'язково в
+  `requiredEnv` — щоб ops не забули виставити змінну на n8n Railway.
+
+**Verdict:** FIXED. Server middleware live; rollout до n8n
+залишається operational (per-workflow follow-up sub-PRs).
 
 ## Rollout
 
