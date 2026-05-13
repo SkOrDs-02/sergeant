@@ -1,0 +1,340 @@
+/**
+ * `/ai_cost` slash-command backend — aggregator coverage.
+ *
+ * Pure logic тестується без DB / Prometheus:
+ *   - Kyiv-helper-и (day/week/month/days-in-month) — table-driven.
+ *   - `fetchAnthropicCostsForRange` — мокаємо `pool.query`, перевіряємо
+ *     SQL-форму + параметри + rows->aggregate.
+ *   - `buildAiCostSummary` — повний end-to-end happy + fail-soft.
+ *   - Prom-counter helpers — `register.getSingleMetric` через прямий
+ *     інкремент counter-а у тестовому процесі.
+ */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  buildAiCostSummary,
+  fetchAnthropicCostsForRange,
+  fetchTopEndpointsFromProm,
+  fetchVoyageCumulativeFromProm,
+  kyivDayKey,
+  kyivDaysInMonth,
+  kyivMonthEnd,
+  kyivMonthStart,
+  kyivWeekStart,
+} from "./aiCostSummary.js";
+
+function makePool(rows: unknown[] | (() => unknown[])) {
+  const queryMock = vi.fn(async () => ({
+    rows: typeof rows === "function" ? rows() : rows,
+    rowCount: typeof rows === "function" ? rows().length : rows.length,
+  }));
+  return { pool: { query: queryMock } as never, queryMock };
+}
+
+describe("Kyiv date helpers", () => {
+  it("kyivDayKey форматує YYYY-MM-DD у Europe/Kyiv", () => {
+    // 2026-05-13 06:00 UTC = 2026-05-13 09:00 Kyiv → день 13
+    const utcMorning = new Date(Date.parse("2026-05-13T06:00:00Z"));
+    expect(kyivDayKey(utcMorning)).toBe("2026-05-13");
+    // 2026-05-12 23:30 UTC = 2026-05-13 02:30 Kyiv → день 13 (Kyiv обігнав UTC)
+    const utcLateNight = new Date(Date.parse("2026-05-12T23:30:00Z"));
+    expect(kyivDayKey(utcLateNight)).toBe("2026-05-13");
+  });
+
+  it("kyivWeekStart повертає понеділок ISO-тижня (середа → понеділок)", () => {
+    expect(kyivWeekStart("2026-05-13")).toBe("2026-05-11");
+  });
+
+  it("kyivWeekStart на понеділку повертає той самий день", () => {
+    expect(kyivWeekStart("2026-05-11")).toBe("2026-05-11");
+  });
+
+  it("kyivWeekStart на неділю повертає попередній понеділок", () => {
+    expect(kyivWeekStart("2026-05-17")).toBe("2026-05-11");
+  });
+
+  it("kyivMonthStart/End на середину місяця", () => {
+    expect(kyivMonthStart("2026-05-13")).toBe("2026-05-01");
+    expect(kyivMonthEnd("2026-05-13")).toBe("2026-05-31");
+  });
+
+  it("kyivMonthEnd враховує лютий високосного / звичайного року", () => {
+    expect(kyivMonthEnd("2024-02-15")).toBe("2024-02-29"); // високосний
+    expect(kyivMonthEnd("2025-02-15")).toBe("2025-02-28");
+  });
+
+  it("kyivDaysInMonth — 28/29/30/31", () => {
+    expect(kyivDaysInMonth("2026-01-15")).toBe(31);
+    expect(kyivDaysInMonth("2026-04-15")).toBe(30);
+    expect(kyivDaysInMonth("2025-02-15")).toBe(28);
+    expect(kyivDaysInMonth("2024-02-15")).toBe(29);
+  });
+});
+
+describe("fetchAnthropicCostsForRange — SQL shape + aggregation", () => {
+  it("формує coalesced SUM по моделях за inclusive Kyiv-day range", async () => {
+    const { pool, queryMock } = makePool([
+      {
+        bucket: "anthropic:claude-sonnet-4-5",
+        request_count: "12",
+        input_tokens: "120000",
+        output_tokens: "30000",
+        total_tokens: "150000",
+        est_cost_usd: "0.825",
+      },
+      {
+        bucket: "anthropic:claude-haiku-3-5",
+        request_count: "200",
+        input_tokens: "400000",
+        output_tokens: "60000",
+        total_tokens: "460000",
+        est_cost_usd: "0.124",
+      },
+    ]);
+
+    const result = await fetchAnthropicCostsForRange(
+      pool,
+      "2026-05-01",
+      "2026-05-13",
+    );
+
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    const call = queryMock.mock.calls[0] as unknown as [string, unknown[]];
+    const sql = call[0];
+    const params = call[1];
+    expect(sql).toMatch(/FROM ai_usage_daily/);
+    expect(sql).toMatch(/subject_key = 'provider:anthropic'/);
+    expect(sql).toMatch(/bucket LIKE 'anthropic:%'/);
+    expect(sql).toMatch(/GROUP BY bucket/);
+    expect(params).toEqual(["2026-05-01", "2026-05-13"]);
+
+    expect(result.startDay).toBe("2026-05-01");
+    expect(result.endDay).toBe("2026-05-13");
+    expect(result.models).toHaveLength(2);
+    expect(result.models[0]?.model).toBe("claude-sonnet-4-5");
+    expect(result.models[0]?.estCostUsd).toBeCloseTo(0.825, 6);
+    expect(result.models[1]?.model).toBe("claude-haiku-3-5");
+    expect(result.totalCostUsd).toBeCloseTo(0.949, 6);
+    expect(result.totalTokens).toBe(610_000);
+  });
+
+  it("повертає порожні нулі коли rows[]=[]", async () => {
+    const { pool } = makePool([]);
+    const result = await fetchAnthropicCostsForRange(
+      pool,
+      "2026-05-13",
+      "2026-05-13",
+    );
+    expect(result.models).toEqual([]);
+    expect(result.totalCostUsd).toBe(0);
+    expect(result.totalTokens).toBe(0);
+  });
+
+  it("парсить числа-як-рядки (numeric→string у pg-драйвері)", async () => {
+    const { pool } = makePool([
+      {
+        bucket: "anthropic:claude-opus-4",
+        request_count: "1",
+        input_tokens: "100",
+        output_tokens: "50",
+        total_tokens: "150",
+        est_cost_usd: "1.500000",
+      },
+    ]);
+    const result = await fetchAnthropicCostsForRange(
+      pool,
+      "2026-05-13",
+      "2026-05-13",
+    );
+    expect(result.models[0]?.estCostUsd).toBe(1.5);
+    expect(result.models[0]?.requestCount).toBe(1);
+  });
+});
+
+describe("Prom counter snapshots — endpoint top-3 + Voyage", () => {
+  beforeEach(async () => {
+    // Скидаємо counter перед кожним тестом, щоб label-набори
+    // попередніх тестів не «текли» сюди.
+    const { register } = await import("../../obs/metrics.js");
+    register.resetMetrics();
+  });
+
+  it("fetchTopEndpointsFromProm повертає top-N посортовано за USD", async () => {
+    const { aiCostEstimateUsd } = await import("../../obs/metrics.js");
+    aiCostEstimateUsd.inc(
+      { provider: "anthropic", model: "claude-sonnet-4-5", endpoint: "chat" },
+      0.5,
+    );
+    aiCostEstimateUsd.inc(
+      { provider: "voyage", model: "voyage-3", endpoint: "embed" },
+      0.1,
+    );
+    aiCostEstimateUsd.inc(
+      { provider: "anthropic", model: "claude-haiku-3-5", endpoint: "coach" },
+      0.3,
+    );
+    aiCostEstimateUsd.inc(
+      {
+        provider: "anthropic",
+        model: "claude-sonnet-4-5",
+        endpoint: "nutrition",
+      },
+      0.2,
+    );
+
+    const top = await fetchTopEndpointsFromProm(3);
+    expect(top).toHaveLength(3);
+    expect(top[0]?.endpoint).toBe("chat");
+    expect(top[0]?.estCostUsd).toBeCloseTo(0.5, 6);
+    expect(top[1]?.endpoint).toBe("coach");
+    expect(top[2]?.endpoint).toBe("nutrition");
+  });
+
+  it("fetchTopEndpointsFromProm пропускає zero-value rows", async () => {
+    const top = await fetchTopEndpointsFromProm(3);
+    expect(top).toEqual([]);
+  });
+
+  it("fetchVoyageCumulativeFromProm агрегує по всіх voyage labels", async () => {
+    const { aiCostEstimateUsd } = await import("../../obs/metrics.js");
+    aiCostEstimateUsd.inc(
+      { provider: "voyage", model: "voyage-3", endpoint: "embed" },
+      0.05,
+    );
+    aiCostEstimateUsd.inc(
+      { provider: "voyage", model: "voyage-3-lite", endpoint: "embed" },
+      0.02,
+    );
+    aiCostEstimateUsd.inc(
+      { provider: "anthropic", model: "claude-haiku-3-5", endpoint: "chat" },
+      0.1,
+    );
+
+    const snapshot = await fetchVoyageCumulativeFromProm();
+    expect(snapshot.cumulativeSinceRestartUsd).toBeCloseTo(0.07, 6);
+  });
+});
+
+describe("buildAiCostSummary — end-to-end", () => {
+  beforeEach(async () => {
+    const { register } = await import("../../obs/metrics.js");
+    register.resetMetrics();
+  });
+
+  it("збирає today/week/month + projection із 3 DB-fetch-ів", async () => {
+    const todayRows = [
+      {
+        bucket: "anthropic:claude-sonnet-4-5",
+        request_count: "5",
+        input_tokens: "10000",
+        output_tokens: "5000",
+        total_tokens: "15000",
+        est_cost_usd: "0.105",
+      },
+    ];
+    const weekRows = [
+      {
+        bucket: "anthropic:claude-sonnet-4-5",
+        request_count: "30",
+        input_tokens: "70000",
+        output_tokens: "30000",
+        total_tokens: "100000",
+        est_cost_usd: "0.66",
+      },
+    ];
+    const monthRows = [
+      {
+        bucket: "anthropic:claude-sonnet-4-5",
+        request_count: "100",
+        input_tokens: "300000",
+        output_tokens: "120000",
+        total_tokens: "420000",
+        est_cost_usd: "2.7",
+      },
+      {
+        bucket: "anthropic:claude-haiku-3-5",
+        request_count: "500",
+        input_tokens: "800000",
+        output_tokens: "100000",
+        total_tokens: "900000",
+        est_cost_usd: "0.34",
+      },
+    ];
+
+    let call = 0;
+    const queryMock = vi.fn(async () => {
+      call += 1;
+      if (call === 1) return { rows: todayRows, rowCount: todayRows.length };
+      if (call === 2) return { rows: weekRows, rowCount: weekRows.length };
+      return { rows: monthRows, rowCount: monthRows.length };
+    });
+
+    // 2026-05-13 09:00 Kyiv (06:00 UTC).
+    const now = new Date(Date.parse("2026-05-13T06:00:00Z"));
+    const result = await buildAiCostSummary({
+      pool: { query: queryMock } as never,
+      now,
+      budget: {
+        anthropicMonthlyBudgetUsd: 50,
+        voyageMonthlyBudgetUsd: 10,
+      },
+    });
+
+    expect(queryMock).toHaveBeenCalledTimes(3);
+    expect(result.todayKyiv).toBe("2026-05-13");
+    expect(result.today.totalCostUsd).toBeCloseTo(0.105, 6);
+    expect(result.week.startDay).toBe("2026-05-11");
+    expect(result.week.endDay).toBe("2026-05-13");
+    expect(result.month.startDay).toBe("2026-05-01");
+    expect(result.month.endDay).toBe("2026-05-31");
+    expect(result.month.totalCostUsd).toBeCloseTo(3.04, 6);
+    // 3.04 / 13 днів = 0.2338... avg
+    expect(result.projection.avgDailySpendThisMonthUsd).toBeCloseTo(
+      3.04 / 13,
+      6,
+    );
+    // 0.2338... × 31 days
+    expect(result.projection.eomProjectionUsd).toBeCloseTo((3.04 / 13) * 31, 6);
+    expect(result.projection.daysElapsedInMonth).toBe(13);
+    expect(result.projection.daysInMonth).toBe(31);
+    expect(result.budget.anthropicMonthlyBudgetUsd).toBe(50);
+  });
+
+  it("fail-soft: коли pool.query кидає, period повертається порожнім", async () => {
+    const queryMock = vi.fn(async () => {
+      throw new Error("connection refused");
+    });
+    const now = new Date(Date.parse("2026-05-13T06:00:00Z"));
+    const result = await buildAiCostSummary({
+      pool: { query: queryMock } as never,
+      now,
+      budget: { anthropicMonthlyBudgetUsd: 0, voyageMonthlyBudgetUsd: 0 },
+    });
+    expect(result.today.totalCostUsd).toBe(0);
+    expect(result.week.totalCostUsd).toBe(0);
+    expect(result.month.totalCostUsd).toBe(0);
+    expect(result.topEndpoints).toEqual([]);
+    expect(result.projection.eomProjectionUsd).toBe(0);
+  });
+
+  it("включає top-3 endpoints із Prom-counter-а", async () => {
+    const { aiCostEstimateUsd } = await import("../../obs/metrics.js");
+    aiCostEstimateUsd.inc(
+      { provider: "anthropic", model: "claude-sonnet-4-5", endpoint: "chat" },
+      0.5,
+    );
+    aiCostEstimateUsd.inc(
+      { provider: "anthropic", model: "claude-haiku-3-5", endpoint: "coach" },
+      0.2,
+    );
+
+    const queryMock = vi.fn(async () => ({ rows: [], rowCount: 0 }));
+    const now = new Date(Date.parse("2026-05-13T06:00:00Z"));
+    const result = await buildAiCostSummary({
+      pool: { query: queryMock } as never,
+      now,
+      budget: { anthropicMonthlyBudgetUsd: 0, voyageMonthlyBudgetUsd: 0 },
+    });
+    expect(result.topEndpoints).toHaveLength(2);
+    expect(result.topEndpoints[0]?.endpoint).toBe("chat");
+  });
+});

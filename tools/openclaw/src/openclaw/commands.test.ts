@@ -25,6 +25,7 @@ describe("OPENCLAW_BOT_COMMANDS registry", () => {
     expect(names).toContain("cofounder");
     expect(names).toContain("council");
     expect(names).toContain("budget");
+    expect(names).toContain("ai_cost");
     expect(names).toContain("alerts");
   });
 

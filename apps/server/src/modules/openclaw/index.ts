@@ -18,6 +18,29 @@ export {
 } from "./store.js";
 export type { RecordWriteAuditInput, ListWriteAuditFilters } from "./store.js";
 export { checkDailyBudget, estimateClaudeSonnetCostUsd } from "./budget.js";
+
+// `/ai_cost` slash-command aggregator — PR continuation of #2567 (PR-12)
+// and #2590 (PR-13). DB-side rollup + in-process Prom snapshot.
+export {
+  buildAiCostSummary,
+  fetchAnthropicCostsForRange,
+  fetchTopEndpointsFromProm,
+  fetchVoyageCumulativeFromProm,
+  kyivDayKey,
+  kyivWeekStart,
+  kyivMonthStart,
+  kyivMonthEnd,
+  kyivDaysInMonth,
+} from "./aiCostSummary.js";
+export type {
+  AiCostSummary,
+  BudgetSnapshot,
+  BuildAiCostSummaryInput,
+  EndpointCostRow,
+  ModelCostBreakdown,
+  PeriodCostSummary,
+  VoyageSnapshot,
+} from "./aiCostSummary.js";
 export {
   recallCofounderMemory,
   readStrategyDoc,

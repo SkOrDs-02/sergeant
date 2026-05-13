@@ -351,10 +351,6 @@ export const messages = {
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",
-    dashboard: {
-      weeklyGoalTitle: "Ціль тижня",
-      weeklyVolumeTitle: "Активність тижня",
-    },
   },
 
   nutrition: {

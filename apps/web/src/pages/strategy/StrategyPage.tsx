@@ -9,6 +9,11 @@
  * UI потрібен лише щоб бачити, що goals реально INSERT-ються (через cron
  * або через seed-script) і щоб дев міг створити test-goal руками без n8n.
  *
+ * @scaffolded — landed by PR-34 (strategic mode datalayer + endpoint + WF-26
+ *   skeleton); router wire-up deferred до PR-35+ conversation UI.
+ * @nextStep PR-35+ — wire `StrategyPage` into `apps/web/src/core/app/router.tsx`
+ *   under `/strategy` route + add conversation flow + status-controls.
+ *
  * Domain invariants:
  *   * `weekStart` = понеділок ISO-тижня у Kyiv local (`YYYY-MM-DD`).
  *   * `founderUserId` — Better Auth opaque string ID (читаємо з AuthContext-у).

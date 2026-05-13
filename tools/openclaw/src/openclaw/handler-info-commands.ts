@@ -12,6 +12,10 @@
 
 import { InputFile } from "grammy";
 import { Sentry } from "../obs/sentry.js";
+import {
+  formatAiCostMarkdown,
+  type AiCostSummaryResponse,
+} from "./aiCostFormat.js";
 import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
 import { parseDuration } from "./duration.js";
 import { parseFounderTgUserId } from "./security.js";
@@ -80,6 +84,34 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     await c.reply(
       `Сьогодні: $${spentUsd.toFixed(4)} / $${budgetUsd.toFixed(2)} (залишок $${remainingUsd.toFixed(4)}).`,
     );
+  });
+
+  // `/ai_cost` — realtime AI-spend rollup for founder DM.
+  // Backend: `/api/internal/openclaw/ai-cost-summary` (PR-26 continuation
+  // of PR-12 #2567 + PR-13 #2590). Body не передаємо — endpoint
+  // ferments out-of-the-box з env-конфігу та DB.
+  //
+  // Telegram allows `^[a-z0-9_]{1,32}$` only — `/ai-cost` (з дефісом)
+  // мовчки відкидається на стороні Telegram, тому реальна команда —
+  // `/ai_cost` (з underscore).
+  bot.command("ai_cost", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    const r = await postJson<AiCostSummaryResponse>(
+      `${serverUrl}/api/internal/openclaw/ai-cost-summary`,
+      internalApiKey,
+      {},
+    );
+    if (!r.ok || !r.data) {
+      await c.reply(`Не зміг прочитати ai-cost (HTTP ${r.status}).`);
+      return;
+    }
+    await c.reply(formatAiCostMarkdown(r.data), {
+      parse_mode: "HTML",
+      // Markdown lines довгі — `disable_web_page_preview` зайвий, але
+      // ховаємо link-preview якщо EOM-projection прокинеться у вигляді
+      // числа з http-схожою маскою (паранойя).
+      link_preview_options: { is_disabled: true },
+    });
   });
 
   bot.command("decisions", async (c) => {

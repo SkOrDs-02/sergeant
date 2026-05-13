@@ -32,6 +32,7 @@ import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  buildAiCostSummary,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -713,6 +714,31 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.tzName,
       );
       res.json(result);
+    }),
+  );
+
+  // ---- ai-cost-summary (`/ai_cost` slash-command backend) ----
+  //
+  // Realtime AI-spend rollup for founder DM. Sources:
+  //   - Anthropic per-day/-week/-month — `ai_usage_daily` ledger
+  //     (PR-12 #2567) у Europe/Kyiv-добу.
+  //   - Voyage cumulative + top-3 endpoints — in-process Prom-counter
+  //     `ai_cost_estimate_usd_total` (since process restart).
+  //   - Budget envelopes — `ANTHROPIC_MONTHLY_BUDGET_USD` /
+  //     `VOYAGE_MONTHLY_BUDGET_USD` env-vars (PR-13 #2590).
+  // Body порожній — endpoint без аргументів, founder-bound по
+  // internal-API-bearer guard.
+  r.post(
+    "/api/internal/openclaw/ai-cost-summary",
+    asyncHandler(async (_req, res) => {
+      const summary = await buildAiCostSummary({
+        pool,
+        budget: {
+          anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
+          voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
+        },
+      });
+      res.json(summary);
     }),
   );
 

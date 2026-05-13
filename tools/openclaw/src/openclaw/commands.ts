@@ -104,6 +104,10 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
     command: "ritual",
     description: "Run morning/weekly/monthly briefing on demand",
   },
+  {
+    command: "ai_cost",
+    description: "AI spend rollup: today/week/month + budget + top endpoints",
+  },
   { command: "reset", description: "Start a new cofounder session" },
 ];
 

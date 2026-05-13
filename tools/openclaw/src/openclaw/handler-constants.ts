@@ -177,6 +177,7 @@ export const HELP_TEXT = [
   "       <code>/strategy add finyk: &lt;text&gt;</code>; <code>/strategy list active</code>.",
   "/budget — поточний денний spend",
   "/ritual [morning|weekly|monthly|help] — ad-hoc ritual trigger (WF-25 mirror)",
+  "/ai_cost — AI-spend rollup: today/week/month + budget + top endpoints",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",
