@@ -20,7 +20,7 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
 
   return (
     <div className="mt-3 space-y-1.5">
-      <SectionHeading as="div" size="xs">
+      <SectionHeading as="div" size="xs" variant="nutrition">
         Відсоткове співвідношення макро
       </SectionHeading>
       <div className="flex rounded-xl overflow-hidden h-5">

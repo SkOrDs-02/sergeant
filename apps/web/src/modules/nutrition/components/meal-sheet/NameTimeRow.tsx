@@ -53,6 +53,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
           <SectionHeading
             as="div"
             size="xs"
+            variant="nutrition"
             className="mb-1 flex items-center gap-2"
           >
             Назва страви
@@ -73,7 +74,12 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
         </div>
         {timeVisible && (
           <div>
-            <SectionHeading as="div" size="xs" className="mb-1">
+            <SectionHeading
+              as="div"
+              size="xs"
+              variant="nutrition"
+              className="mb-1"
+            >
               Час
             </SectionHeading>
             <Input

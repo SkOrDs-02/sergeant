@@ -148,8 +148,8 @@ export function ShoppingListCard({
                 {checkedItems.length > 0 && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    className="h-8 text-xs text-nutrition-strong dark:text-nutrition"
+                    variant="secondary"
+                    size="sm"
                     onClick={onAddCheckedToPantry}
                   >
                     + До складу
@@ -158,8 +158,8 @@ export function ShoppingListCard({
                 {checked > 0 && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    className="h-8 text-xs text-subtle"
+                    variant="secondary"
+                    size="sm"
                     onClick={onClearChecked}
                   >
                     Видалити ✓
@@ -167,8 +167,8 @@ export function ShoppingListCard({
                 )}
                 <Button
                   type="button"
-                  variant="ghost"
-                  className="h-8 text-xs text-muted"
+                  variant="secondary"
+                  size="sm"
                   onClick={onClearAll}
                 >
                   Очистити

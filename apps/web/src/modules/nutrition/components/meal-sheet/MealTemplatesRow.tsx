@@ -18,7 +18,7 @@ export function MealTemplatesRow({
   if (!Array.isArray(mealTemplates) || mealTemplates.length === 0) return null;
   return (
     <div className="mb-4">
-      <SectionHeading as="div" size="xs" className="mb-2">
+      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
         {messages.nutrition.templates}
       </SectionHeading>
       <div className="flex flex-wrap gap-2">

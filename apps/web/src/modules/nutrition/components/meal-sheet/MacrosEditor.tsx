@@ -66,7 +66,7 @@ export function MacrosEditor({
   return (
     <div className="mb-1">
       <div className="flex items-center justify-between mb-2">
-        <SectionHeading as="div" size="xs">
+        <SectionHeading as="div" size="xs" variant="nutrition">
           {pickedFood ? "КБЖВ (редагувати вручну)" : "КБЖВ"}
         </SectionHeading>
         {hasPhotoMacros && (

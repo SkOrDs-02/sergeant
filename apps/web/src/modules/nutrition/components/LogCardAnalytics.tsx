@@ -38,7 +38,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
   return (
     <div className="rounded-2xl border border-line bg-panel/40 px-3 py-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <SectionHeading as="div" size="xs">
+        <SectionHeading as="div" size="xs" variant="nutrition">
           Аналітика (тренди)
         </SectionHeading>
         <div className="flex gap-2">
@@ -80,7 +80,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
       </div>
 
       <div className="bg-panelHi rounded-2xl px-3 py-3">
-        <SectionHeading as="div" size="xs" className="mb-2">
+        <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
           Калорії по днях (останні {Math.min(statsRange, statsRows.length)})
         </SectionHeading>
         {statsRows.length === 0 ? (
@@ -110,7 +110,12 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div className="bg-panelHi rounded-2xl px-3 py-3">
-          <SectionHeading as="div" size="xs" className="mb-2">
+          <SectionHeading
+            as="div"
+            size="xs"
+            variant="nutrition"
+            className="mb-2"
+          >
             Топ страв
           </SectionHeading>
           {statsTop.length === 0 ? (
@@ -133,7 +138,12 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           )}
         </div>
         <div className="bg-panelHi rounded-2xl px-3 py-3">
-          <SectionHeading as="div" size="xs" className="mb-2">
+          <SectionHeading
+            as="div"
+            size="xs"
+            variant="nutrition"
+            className="mb-2"
+          >
             Розподіл прийомів
           </SectionHeading>
           {Object.keys(statsMealTypes).length === 0 ? (

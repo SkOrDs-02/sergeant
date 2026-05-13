@@ -261,16 +261,17 @@ export function RecipesCard({
                         <div className="flex gap-2 shrink-0 flex-wrap">
                           <Button
                             type="button"
-                            variant="ghost"
-                            className="h-9 text-xs"
+                            variant="secondary"
+                            size="sm"
                             onClick={() => void addRecipeAsMeal(r, key)}
                           >
                             + У журнал
                           </Button>
                           <Button
                             type="button"
-                            variant="ghost"
-                            className="h-9 text-xs text-danger"
+                            variant="secondary"
+                            size="sm"
+                            className="text-danger"
                             onClick={() => setDeleteRecipeConfirm(r)}
                           >
                             Видалити
@@ -484,8 +485,8 @@ export function RecipesCard({
                     <div className="flex gap-2 flex-wrap basis-full sm:basis-auto">
                       <Button
                         type="button"
-                        variant="ghost"
-                        className="h-9 text-xs"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => void saveOne(r)}
                         disabled={busy}
                       >
@@ -493,8 +494,8 @@ export function RecipesCard({
                       </Button>
                       <Button
                         type="button"
-                        variant="ghost"
-                        className="h-9 text-xs"
+                        variant="secondary"
+                        size="sm"
                         onClick={() =>
                           void addRecipeAsMeal(
                             r,

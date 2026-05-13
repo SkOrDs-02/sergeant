@@ -23,7 +23,7 @@ export function FromPantryRow({
   if (!pantryItems || pantryItems.length === 0) return null;
   return (
     <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
-      <SectionHeading as="div" size="xs" className="mb-2">
+      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
         {messages.nutrition.fromPantry}
         {fromPantryItem && (
           <span className="ml-2 text-nutrition-strong dark:text-nutrition font-semibold normal-case tracking-normal">

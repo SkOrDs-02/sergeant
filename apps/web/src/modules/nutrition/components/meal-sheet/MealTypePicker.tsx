@@ -13,7 +13,7 @@ interface MealTypePickerProps {
 export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
   return (
     <div className="mb-4">
-      <SectionHeading as="div" size="xs" className="mb-2">
+      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
         {messages.nutrition.mealType}
       </SectionHeading>
       <div className="flex gap-2 flex-wrap">
