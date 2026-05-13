@@ -251,3 +251,82 @@ describe("deep-link bridge — resilience", () => {
     expect(w.__sergeantShellDeepLinkQueue).toEqual(["/welcome", "/profile"]);
   });
 });
+
+describe("deep-link bridge — BroadcastChannel canonical path (PR-29)", () => {
+  it("publishes parsed path on `sergeant-shell-deeplink` channel alongside window-global fallback", async () => {
+    const mocks = installCapacitorMocks();
+    const bcReceiver = new BroadcastChannel("sergeant-shell-deeplink");
+    const received: Array<{
+      url: unknown;
+      source: unknown;
+      protocolVersion: unknown;
+    }> = [];
+    bcReceiver.onmessage = (ev: MessageEvent): void => {
+      received.push({
+        url: (ev.data as Record<string, unknown>)["url"],
+        source: (ev.data as Record<string, unknown>)["source"],
+        protocolVersion: (ev.data as Record<string, unknown>)[
+          "protocolVersion"
+        ],
+      });
+    };
+
+    const cb = await captureUrlOpenCallback(mocks);
+    cb({ url: "com.sergeant.shell://finyk/transactions/42" });
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual({
+      url: "/finyk/transactions/42",
+      source: "shell",
+      protocolVersion: 1,
+    });
+
+    bcReceiver.close();
+  });
+
+  it("does NOT post to BroadcastChannel when `options.navigate` is provided (test-injection short-circuit)", async () => {
+    const mocks = installCapacitorMocks();
+    const bcReceiver = new BroadcastChannel("sergeant-shell-deeplink");
+    const received: unknown[] = [];
+    bcReceiver.onmessage = (ev: MessageEvent): void => {
+      received.push(ev.data);
+    };
+    const optionsNav = vi.fn();
+
+    const cb = await captureUrlOpenCallback(mocks, { navigate: optionsNav });
+    cb({ url: "com.sergeant.shell://profile" });
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(optionsNav).toHaveBeenCalledWith("/profile");
+    expect(received).toHaveLength(0);
+
+    bcReceiver.close();
+  });
+
+  it("falls back gracefully when BroadcastChannel constructor is absent in the WebView", async () => {
+    // Симулюємо iOS <15.4 / дуже стару Android System WebView: API
+    // повністю відсутня у globalThis. dispatchDeepLink має тихо
+    // пройти через window-global path.
+    const mocks = installCapacitorMocks();
+    const originalBC = globalThis.BroadcastChannel;
+    delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+
+    try {
+      const w = window as BridgeWindow;
+      const bridgeNav = vi.fn();
+      w.__sergeantShellNavigate = bridgeNav;
+
+      const cb = await captureUrlOpenCallback(mocks);
+      cb({ url: "com.sergeant.shell://welcome" });
+
+      expect(bridgeNav).toHaveBeenCalledWith("/welcome");
+    } finally {
+      (
+        globalThis as { BroadcastChannel?: typeof BroadcastChannel }
+      ).BroadcastChannel = originalBC;
+    }
+  });
+});

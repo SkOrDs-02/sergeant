@@ -138,3 +138,8 @@ export * from "./hooks/useVisualKeyboardInset";
 // `./contract-fixtures/README.md` and the diagnostic in
 // `docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §7.4.
 export * from "./contract-fixtures";
+
+// Shell deep-link bridge (PR-29 у `docs/initiatives/stack-pulse-2026-05/`).
+// BroadcastChannel-based cross-context navigation для mobile-shell → web;
+// з null-channel fallback для старих WebView без BroadcastChannel-у.
+export * from "./shell/deepLinkChannel";
