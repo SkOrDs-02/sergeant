@@ -17,6 +17,8 @@ import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import { calcCardioMetrics } from "./activeWorkoutLib";
 import { SupersetBadge } from "./SupersetBadge";
 
+import { useFizrukRoute } from "../../hooks/useFizrukRoute";
+
 type LastByExerciseEntry = WorkoutItem & { _startedAt?: string };
 
 export type WorkoutItemCardProps = {
@@ -70,6 +72,13 @@ export function WorkoutItemCard({
   setRestTimer,
   getDefaultForGroup,
 }: WorkoutItemCardProps) {
+  // Path-based deep-link into the Exercise detail page. The legacy
+  // `window.location.hash = "#exercise/<id>"` callsite became a silent
+  // no-op once Fizruk migrated to react-router under initiative 0006
+  // §Phase 2.c (#2541): pathname stays `/fizruk/workouts`, so the
+  // hash change never re-renders the router. Routing through
+  // `useFizrukRoute()` (path-based) keeps the deep-link working.
+  const { navigate } = useFizrukRoute();
   const last = it.exerciseId
     ? (lastByExerciseId[it.exerciseId] as LastByExerciseEntry | undefined)
     : undefined;
@@ -135,9 +144,7 @@ export function WorkoutItemCard({
               type="button"
               className="text-style-label text-text truncate text-left hover:underline"
               onClick={() => {
-                if (it.exerciseId)
-                  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-                  window.location.hash = `#exercise/${it.exerciseId}`;
+                if (it.exerciseId) navigate(`exercise/${it.exerciseId}`);
               }}
             >
               {it.nameUk}

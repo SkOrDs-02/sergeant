@@ -53,7 +53,14 @@ export interface FizrukRouterProps {
   activateProgram: (id: string) => void;
   deactivateProgram: () => void;
   todaySession: RouterTodaySession | null;
-  onNavigate: (page: FizrukPage) => void;
+  /**
+   * Switch the active Fizruk page. Accepts either a typed `FizrukPage`
+   * (`onNavigate("workouts")`) or a `<page>/<segment>` deep-link string
+   * (`onNavigate("exercise/abc-123")`) — mirrors the shape exposed by
+   * `useFizrukRoute().navigate` so call-sites can hand-roll a path-based
+   * deep-link without reaching into `window.location.hash`.
+   */
+  onNavigate: (target: FizrukPage | string) => void;
   onStartProgramWorkout: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
@@ -82,6 +89,7 @@ function renderPage(props: FizrukRouterProps) {
           activeProgram={activeProgram}
           todaySession={todaySession}
           onStartProgramWorkout={onStartProgramWorkout}
+          onNavigate={onNavigate}
         />
       );
     case "atlas":
@@ -98,7 +106,7 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "progress":
-      return <Progress />;
+      return <Progress onNavigate={onNavigate} />;
     case "measurements":
       return <Measurements />;
     case "programs":
@@ -119,7 +127,7 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "exercise":
-      return <Exercise exerciseId={exerciseId ?? ""} />;
+      return <Exercise exerciseId={exerciseId ?? ""} onNavigate={onNavigate} />;
     default:
       return null;
   }

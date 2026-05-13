@@ -1,3 +1,7 @@
+import type { FizrukPage } from "../shell/fizrukRoute";
+// FizrukPage is referenced in the JSDoc above and in the onNavigate type
+// signature — keep the import even when TS doesn't track JSDoc refs.
+
 import { safeWriteLS } from "@shared/lib/storage/storage";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -40,6 +44,18 @@ interface DashboardProps {
     session: ProgramSessionDef,
     program: TrainingProgramDef,
   ) => void;
+  /**
+   * Path-based navigation handler injected by `FizrukRouter`. Each of the
+   * five quick-action shortcuts on the Dashboard («Лог», «Шаблони»,
+   * «План», «Прогрес», «Тіло») needs to switch the Fizruk page without
+   * touching `window.location.hash` — the module migrated to react-router
+   * in initiative 0006 §Phase 2.c (#2541) and hash assignments became a
+   * silent no-op (pathname unchanged ⇒ no re-render). Accepts the wider
+   * `FizrukPage | string` shape to mirror `useFizrukRoute().navigate` and
+   * keep the existing «План» CTA (was hash “#plan” — not a real page,
+   * silent no-op then; remains a no-op now via `parseFizrukSegments`).
+   */
+  onNavigate: (target: FizrukPage | string) => void;
 }
 
 export function Dashboard({
@@ -47,6 +63,7 @@ export function Dashboard({
   activeProgram,
   todaySession,
   onStartProgramWorkout,
+  onNavigate,
 }: DashboardProps) {
   const today = new Date().toLocaleDateString("uk-UA", {
     weekday: "long",
@@ -115,8 +132,7 @@ export function Dashboard({
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "log");
     } catch {}
-    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-    window.location.hash = "#workouts";
+    onNavigate("workouts");
   };
 
   const tryStartPlan = (picks: unknown[], templateId?: string | null) => {
@@ -296,27 +312,22 @@ export function Dashboard({
     } catch {
       /* non-fatal: default view is still reachable */
     }
-    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-    window.location.hash = "#workouts";
+    onNavigate("workouts");
   };
   const openTemplates = () => {
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "templates");
     } catch {}
-    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-    window.location.hash = "#workouts";
+    onNavigate("workouts");
   };
   const openPlan = () => {
-    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-    window.location.hash = "#plan";
+    onNavigate("plan");
   };
   const openProgress = () => {
-    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-    window.location.hash = "#progress";
+    onNavigate("progress");
   };
   const openBody = () => {
-    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-    window.location.hash = "#body";
+    onNavigate("body");
   };
 
   return (

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { FizrukPage } from "../shell/fizrukRoute";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -28,7 +29,19 @@ interface HistoryEntry {
 // shadowing the global `Set<T>` with `type Set = any`.
 type WorkoutSetWithMeta = WorkoutSet & { _at?: string };
 
-export function Exercise({ exerciseId }: { exerciseId: string }) {
+interface ExerciseProps {
+  exerciseId: string;
+  /**
+   * Path-based navigation back to the journal. Used by the «Перейти до
+   * журналу» CTA at the bottom of the exercise card. We can’t hash-
+   * assign anymore (initiative 0006 §Phase 2.c migrated Fizruk to
+   * react-router; `window.location.hash = ...` only updates the URL
+   * hash and does not trigger a re-render).
+   */
+  onNavigate: (page: FizrukPage) => void;
+}
+
+export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
   const { exercises, musclesUk } = useExerciseCatalog();
   const { workouts } = useWorkouts();
 
@@ -368,8 +381,7 @@ export function Exercise({ exerciseId }: { exerciseId: string }) {
             <button
               type="button"
               className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white"
-              // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
-              onClick={() => (window.location.hash = "#workouts")}
+              onClick={() => onNavigate("workouts")}
             >
               Перейти до журналу
             </button>

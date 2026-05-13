@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { FizrukPage } from "../shell/fizrukRoute";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
@@ -21,7 +22,19 @@ function weekStartMs(d: number | string | Date) {
   return x.getTime();
 }
 
-export function Progress() {
+interface ProgressProps {
+  /**
+   * Path-based navigation injected by `FizrukRouter`. The PRs list at the
+   * bottom of the page lets the user deep-link into a single exercise
+   * detail card via `onNavigate("exercise/<id>")` — used to mutate
+   * `window.location.hash` directly but Fizruk migrated to react-router
+   * in initiative 0006 §Phase 2.c (#2541), and hash mutations after the
+   * initial mount are a silent no-op.
+   */
+  onNavigate: (target: FizrukPage | string) => void;
+}
+
+export function Progress({ onNavigate }: ProgressProps) {
   const { workouts } = useWorkouts();
   const { entries } = useMeasurements();
   const { exercises, musclesUk } = useExerciseCatalog();
@@ -527,8 +540,7 @@ export function Progress() {
                         type="button"
                         className="w-full text-left border border-line rounded-2xl p-3 bg-bg hover:bg-panelHi transition-colors"
                         onClick={() => {
-                          // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing exercise deep-link; whole module migrates to react-router under initiative 0006
-                          window.location.hash = `#exercise/${p.id}`;
+                          onNavigate(`exercise/${p.id}`);
                         }}
                       >
                         <div className="flex items-center justify-between gap-2">
