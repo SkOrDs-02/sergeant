@@ -17,7 +17,7 @@
  * залежать від цього стану — readiness сама-собою обірве трафік через
  * `pool.end()` → DB ping впаде).
  *
- * Initiative: docs/initiatives/_0008-platform-hardening.md § Phase 1.
+ * Initiative: docs/initiatives/archive/_0008-platform-hardening.md § Phase 1.
  */
 export interface AppState {
   /** Стартова послідовність (env, Sentry, listen) завершилася успішно. */

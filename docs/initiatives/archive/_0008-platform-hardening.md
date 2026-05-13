@@ -1,11 +1,11 @@
 # 0008 — Platform hardening: rate-limit, health endpoints, Renovate, supply-chain
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Closed (5/5 phases merged 2026-05-04; carry-overs у § Що НЕ увійшло)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 1 week
-> **Sources:** Design Review 2026-05-03 §10 (Security/Platform), §12 (CI/Ops), [`docs/tech-debt/backend.md`](../tech-debt/backend.md)
+> **Sources:** Design Review 2026-05-03 §10 (Security/Platform), §12 (CI/Ops), [`docs/tech-debt/backend.md`](../../tech-debt/backend.md)
 
 ## TL;DR
 
@@ -24,7 +24,7 @@
 - Auth-flow атакували brute-force (~ 200 req/sec за 5 хв) — rate-limit спрацював, але без `Retry-After` клієнти retry-ять у тугому циклі. Кращий UX — `Retry-After: 60`.
 - За 2026-04 був CVE у `@anthropic-ai/sdk` (medium); ми його взяли на третій день після disclosure. Renovate / Dependabot би в auto-PR за годину.
 - Supply-chain: ми вже pin-нули actions по SHA, але **тільки під час** Q4 2025 incident response. Немає policy. `pnpm audit` running-у в CI нема.
-- Готуємось до growth (FTUX rollout згідно [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md)). Operational baseline треба перед, не після, scale-up.
+- Готуємось до growth (FTUX rollout згідно [`docs/launch/product-os/ftux-sprint-plan.md`](../../launch/product-os/ftux-sprint-plan.md)). Operational baseline треба перед, не після, scale-up.
 
 ## Скоуп
 
@@ -35,10 +35,10 @@
    - `/health/readiness` — DB/Redis ping ОК, dependencies здорові (200/503).
    - `/health/startup` — initial migrations/warmup завершено (200/503; `failureThreshold: 30` у k8s).
 2. **Rate-limit:**
-   - Перенести limit-конфіг у [`apps/server/src/config/rateLimit.ts`](../../apps/server/src/config/) (per-route map).
+   - Перенести limit-конфіг у [`apps/server/src/config/rateLimit.ts`](../../../apps/server/src/config) (per-route map).
    - Додати `Retry-After` header у 429.
    - `RateLimit-*` headers (X-RateLimit-Limit / Remaining / Reset) — RFC 6585.
-   - Тести: інтеграційний у [`apps/server/src/http/`](../../apps/server/src/http/) (напр. `rateLimit.test.ts`, `rateLimit.headers.test.ts`) — флуд auth-route, перевірити 429 + headers.
+   - Тести: інтеграційний у [`apps/server/src/http/`](../../../apps/server/src/http) (напр. `rateLimit.test.ts`, `rateLimit.headers.test.ts`) — флуд auth-route, перевірити 429 + headers.
 3. **Renovate:**
    - `renovate.json` (або `.github/renovate.json5`) з:
      - `extends: ['config:base', 'docker:enableMajor']`
@@ -107,7 +107,7 @@
 
 - `renovate.json5` як описано вище.
 - Activate Renovate GitHub App у репо.
-- README-замітка у [`docs/ops/renovate.md`](../ops/) — як обробляти Renovate PR-и (auto-merge dev-deps; manual review для major / @anthropic / Better Auth).
+- README-замітка у [`docs/ops/renovate.md`](../../ops) — як обробляти Renovate PR-и (auto-merge dev-deps; manual review для major / @anthropic / Better Auth).
 - Decision ADR-0043 — Renovate vs Dependabot.
 
 ### Фаза 4 — supply-chain audit gate + SBOM (1 PR)
@@ -123,12 +123,12 @@
 
 **PR `docs-platform-hardening-runbook`:**
 
-- [`docs/observability/runbook.md`](../observability/runbook.md) — додати секції:
+- [`docs/observability/runbook.md`](../../observability/runbook.md) — додати секції:
   - «Як інтерпретувати 429 алерт у Grafana»
   - «Що робити, якщо readiness probe FAIL»
   - «Як обробити Renovate PR із breaking change»
   - «Що таке SBOM і де його шукати на release»
-- README у [`docs/ops/`](../ops/) — індекс операційних документів.
+- README у [`docs/ops/`](../../ops) — індекс операційних документів.
 
 ## Критерії DONE
 
@@ -136,22 +136,22 @@
 - [x] ~~Render/k8s конфіг~~ → N/A: Sergeant на Railway buildpacks, не k8s. Див. **Що НЕ увійшло**.
 - [x] ~~Старий `/health` → 308 redirect~~ → N/A: реалізовано через nested-aliases без redirect-hop. Див. **Що НЕ увійшло**.
 - [x] Rate-limit policy у `config/rateLimit.ts`, 429-відповіді мають `Retry-After`.
-- [x] Renovate (primary) + Dependabot (security-only daily) активні за [ADR-0044](../adr/0044-renovate-vs-dependabot.md); `anthropic`/`sentry`/`opentelemetry` groups додано.
+- [x] Renovate (primary) + Dependabot (security-only daily) активні за [ADR-0044](../../adr/0044-renovate-vs-dependabot.md); `anthropic`/`sentry`/`opentelemetry` groups додано.
 - [x] ~~`pnpm audit` PR-gate~~ → N/A: existing `nightly-audit.yml` + auto-issue на critical/high покриває. Див. **Що НЕ увійшло**.
 - [x] SBOM генерується на release (SPDX + CycloneDX, anchore/sbom-action).
-- [x] [ADR-0044](../adr/0044-renovate-vs-dependabot.md) (Renovate vs Dependabot) змерджено. Sigstore signing — паркнуто (опт-ін). Див. **Що НЕ увійшло**.
+- [x] [ADR-0044](../../adr/0044-renovate-vs-dependabot.md) (Renovate vs Dependabot) змерджено. Sigstore signing — паркнуто (опт-ін). Див. **Що НЕ увійшло**.
 - [x] Runbook оновлено з 4 platform-hardening FAQ-секціями.
 
 ## Ризики та митиґація
 
-| Ризик                                                           | Мітигація                                                                                                                                                              |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Readiness probe виявляє слабке місце (DB ping fails) → flapping | Cache `pgPing` result 5 секунд (debounce). Алерт на «3 поспіль readiness=503» замість per-fail.                                                                        |
-| Renovate флудить PR-ами і втомлює maintainer                    | `prHourlyLimit: 4`, `prConcurrentLimit: 10`, групи (`@anthropic-ai/*`). Auto-merge на dev-deps + patches знижує шум.                                                   |
-| `pnpm audit` фейлить на transitive CVE без фіксу                | `--audit-level=moderate` (не на low). Allow-list через `pnpm.overrides` для точкових false-positives.                                                                  |
-| `Retry-After` header змінює клієнтську поведінку                | Web/мобайл клієнти у [`apps/web/src/shared/lib/api/queryClient.ts`](../../apps/web/src/shared/lib/api/queryClient.ts) повинні parse-ити `Retry-After`. Координація PR. |
-| SBOM contains paths/secrets                                     | `cyclonedx-bom` з `--exclude-dev`, `--exclude-paths`. Reviewer перевіряє SBOM перед публікацією.                                                                       |
-| Sigstore release-signing збільшує release time                  | Опт-ін у ADR-0044; default off, on тільки для prod tags `v*.*.*`.                                                                                                      |
+| Ризик                                                           | Мітигація                                                                                                                                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Readiness probe виявляє слабке місце (DB ping fails) → flapping | Cache `pgPing` result 5 секунд (debounce). Алерт на «3 поспіль readiness=503» замість per-fail.                                                                           |
+| Renovate флудить PR-ами і втомлює maintainer                    | `prHourlyLimit: 4`, `prConcurrentLimit: 10`, групи (`@anthropic-ai/*`). Auto-merge на dev-deps + patches знижує шум.                                                      |
+| `pnpm audit` фейлить на transitive CVE без фіксу                | `--audit-level=moderate` (не на low). Allow-list через `pnpm.overrides` для точкових false-positives.                                                                     |
+| `Retry-After` header змінює клієнтську поведінку                | Web/мобайл клієнти у [`apps/web/src/shared/lib/api/queryClient.ts`](../../../apps/web/src/shared/lib/api/queryClient.ts) повинні parse-ити `Retry-After`. Координація PR. |
+| SBOM contains paths/secrets                                     | `cyclonedx-bom` з `--exclude-dev`, `--exclude-paths`. Reviewer перевіряє SBOM перед публікацією.                                                                          |
+| Sigstore release-signing збільшує release time                  | Опт-ін у ADR-0044; default off, on тільки для prod tags `v*.*.*`.                                                                                                         |
 
 ## Метрики
 
@@ -172,27 +172,27 @@
 ## Посилання
 
 - Design Review 2026-05-03 — §10, §12
-- [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — записи «no Retry-After», «no Renovate», «single /health»
+- [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) — записи «no Retry-After», «no Renovate», «single /health»
 - [Renovate docs](https://docs.renovatebot.com/)
 - [Dependabot docs](https://docs.github.com/en/code-security/dependabot)
 - [k8s probes guide](https://kubernetes.io/docs/concepts/configuration/liveness-readiness-startup-probes/)
 - [CycloneDX SBOM](https://cyclonedx.org/)
 - [sigstore](https://www.sigstore.dev/)
-- [`apps/server/src/routes/health.ts`](../../apps/server/src/routes/health.ts)
-- [`apps/server/src/http/`](../../apps/server/src/http/)
+- [`apps/server/src/routes/health.ts`](../../../apps/server/src/routes/health.ts)
+- [`apps/server/src/http/`](../../../apps/server/src/http)
 - Координується з ініціативою 0004 (server observability) — алерти Grafana використовують ці metric labels.
 
 ## Outcome
 
 > **Update 2026-05-04:** статус → **`Done`**. Усі 5 фаз змерджено на `main` в один день (#1634 → #1638 → #1641 → #1639 → #1642). Carry-overs (sigstore signing, container-SBOM, server-side per-route migration `policyOptions(...)` для ~20 inline-лімітів) зафіксовано в **Що НЕ увійшло**.
 
-| Фаза                          | PR                                                                                                           | Що зроблено                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1** — health probes   | [#1634](https://github.com/Skords-01/Sergeant/pull/1634)                                                     | `/startupz` (Kubernetes-стандартне ім'я) + nested aliases `/health/liveness`, `/health/readiness`, `/health/startup`. `markStartupComplete()` тригериться у `app.listen` callback. 6 нових smoke-тестів покривають всі path-и + idempotency повторного marking-у.                                                                                                                                                                                                                                   |
-| **Phase 2** — rate-limit      | [#1638](https://github.com/Skords-01/Sergeant/pull/1638)                                                     | `apps/server/src/config/rateLimit.ts` — централізований реєстр policy з типобезпечним `policyOptions(name, overrides?)`. RFC-9239 `RateLimit-Limit/Remaining/Reset` headers + legacy `X-RateLimit-Remaining` для backward-compat. `authMiddleware` мігровано на `policyOptions("api:auth:sensitive", ...)` без зміни metric-key (Grafana/alert dashboards безперервні). 12 нових тестів.                                                                                                            |
-| **Phase 3** — Renovate        | [#1641](https://github.com/Skords-01/Sergeant/pull/1641) + [ADR-0044](../adr/0044-renovate-vs-dependabot.md) | Розподіл ролей: Renovate primary для regular weekly bumps, Dependabot security-only daily fallback. Видаляє ~12 duplicate-PR/тиждень. Renovate отримав missing groups `anthropic`, `sentry`, `opentelemetry` (initiative spec). Dependabot npm scope скорочено до `applies-to: security-updates`.                                                                                                                                                                                                   |
-| **Phase 4** — SBOM на release | [#1639](https://github.com/Skords-01/Sergeant/pull/1639)                                                     | `.github/workflows/release-sbom.yml` тригериться на `release: published` / `push: tags v*.*.*` / `workflow_dispatch`. SPDX-JSON + CycloneDX-JSON одночасно через `anchore/sbom-action@v0.24.0` (SHA-pinned). Артефакти 90 днів у Actions; на published release auto-attach обох форматів через `gh release upload --clobber`. Step Summary з component count. `docs/security/hardening/I3-sbom-generation.md` оновлено: Phase 1 live, Phase 2 (container-SBOM) + Phase 3 (sigstore) лишаються Open. |
-| **Phase 5** — runbook + docs  | [#1642](https://github.com/Skords-01/Sergeant/pull/1642)                                                     | Окрема секція «Platform hardening — operational FAQ» у `docs/observability/runbook.md` з 4 how-to: інтерпретація 429-алерт + RFC headers, дії при `/health/readiness=503`, decision-table для Renovate-PR-ів (regular vs major vs security vs duplicate-of-Renovate-PR), знайти SBOM на release і використати при CVE-disclosure.                                                                                                                                                                   |
+| Фаза                          | PR                                                                                                              | Що зроблено                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** — health probes   | [#1634](https://github.com/Skords-01/Sergeant/pull/1634)                                                        | `/startupz` (Kubernetes-стандартне ім'я) + nested aliases `/health/liveness`, `/health/readiness`, `/health/startup`. `markStartupComplete()` тригериться у `app.listen` callback. 6 нових smoke-тестів покривають всі path-и + idempotency повторного marking-у.                                                                                                                                                                                                                                   |
+| **Phase 2** — rate-limit      | [#1638](https://github.com/Skords-01/Sergeant/pull/1638)                                                        | `apps/server/src/config/rateLimit.ts` — централізований реєстр policy з типобезпечним `policyOptions(name, overrides?)`. RFC-9239 `RateLimit-Limit/Remaining/Reset` headers + legacy `X-RateLimit-Remaining` для backward-compat. `authMiddleware` мігровано на `policyOptions("api:auth:sensitive", ...)` без зміни metric-key (Grafana/alert dashboards безперервні). 12 нових тестів.                                                                                                            |
+| **Phase 3** — Renovate        | [#1641](https://github.com/Skords-01/Sergeant/pull/1641) + [ADR-0044](../../adr/0044-renovate-vs-dependabot.md) | Розподіл ролей: Renovate primary для regular weekly bumps, Dependabot security-only daily fallback. Видаляє ~12 duplicate-PR/тиждень. Renovate отримав missing groups `anthropic`, `sentry`, `opentelemetry` (initiative spec). Dependabot npm scope скорочено до `applies-to: security-updates`.                                                                                                                                                                                                   |
+| **Phase 4** — SBOM на release | [#1639](https://github.com/Skords-01/Sergeant/pull/1639)                                                        | `.github/workflows/release-sbom.yml` тригериться на `release: published` / `push: tags v*.*.*` / `workflow_dispatch`. SPDX-JSON + CycloneDX-JSON одночасно через `anchore/sbom-action@v0.24.0` (SHA-pinned). Артефакти 90 днів у Actions; на published release auto-attach обох форматів через `gh release upload --clobber`. Step Summary з component count. `docs/security/hardening/I3-sbom-generation.md` оновлено: Phase 1 live, Phase 2 (container-SBOM) + Phase 3 (sigstore) лишаються Open. |
+| **Phase 5** — runbook + docs  | [#1642](https://github.com/Skords-01/Sergeant/pull/1642)                                                        | Окрема секція «Platform hardening — operational FAQ» у `docs/observability/runbook.md` з 4 how-to: інтерпретація 429-алерт + RFC headers, дії при `/health/readiness=503`, decision-table для Renovate-PR-ів (regular vs major vs security vs duplicate-of-Renovate-PR), знайти SBOM на release і використати при CVE-disclosure.                                                                                                                                                                   |
 
 ### Що НЕ увійшло (з обґрунтуванням)
 

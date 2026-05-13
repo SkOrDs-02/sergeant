@@ -43,7 +43,7 @@ CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint
 - Інші TS-прапори, які не входять у `GUARDED_OPTIONS` (e.g. `noImplicitOverride`, `useDefineForClassFields`).
 - Allowlist-entries з активним `expires` у майбутньому — це temporary debt, і саме для цього існує allowlist.
 
-Tracked у [Initiative 0012 — Perfect TS strictness rollout](../../initiatives/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md).
+Tracked у [Initiative 0012 — Perfect TS strictness rollout](../../initiatives/archive/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md).
 
 ## Related
 

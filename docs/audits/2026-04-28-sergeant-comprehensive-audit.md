@@ -1,7 +1,7 @@
 # Sergeant — Комплексний Генеральний Аудит
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** Active
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Status:** Closed (historical record — outstanding items відстежуються у [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md))
 
 > **Дата аудиту:** 2026-04-28
 > **Аудитор:** v0 AI Assistant

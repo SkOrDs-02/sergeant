@@ -5,7 +5,7 @@
 > **Priority:** P1 (subordinate to 0010-revenue-first-launch scope-freeze)
 > **Owner:** `@Skords-01`
 > **ETA:** 7 тижнів (Phase 1 — паралельно з 0010 freeze; Phases 2–4 — після 0010 launch)
-> **Sources:** Vector assessment 2026-05-04 (внутрішній звіт-прожарка по 100 PR #1564–#1664), [`docs/initiatives/0010-revenue-first-launch.md`](./0010-revenue-first-launch.md) (governing freeze), [`docs/initiatives/_0007-design-system-tooling.md`](./_0007-design-system-tooling.md), [`docs/initiatives/_0008-platform-hardening.md`](./_0008-platform-hardening.md), [`docs/initiatives/0009-agent-os-hardening.md`](./0009-agent-os-hardening.md), [`docs/governance/hard-rules.json`](../governance/hard-rules.json)
+> **Sources:** Vector assessment 2026-05-04 (внутрішній звіт-прожарка по 100 PR #1564–#1664), [`docs/initiatives/0010-revenue-first-launch.md`](./0010-revenue-first-launch.md) (governing freeze), [`docs/initiatives/archive/_0007-design-system-tooling.md`](./archive/_0007-design-system-tooling.md), [`docs/initiatives/archive/_0008-platform-hardening.md`](./archive/_0008-platform-hardening.md), [`docs/initiatives/archive/_0009-agent-os-hardening.md`](./archive/_0009-agent-os-hardening.md), [`docs/governance/hard-rules.json`](../governance/hard-rules.json)
 
 ## TL;DR
 
@@ -27,7 +27,7 @@
 1. **Foundation-adoption (Phase 2):** перевести існуючі форми / RQ-екрани / fetch-сайти на `useApiForm` / `<DataState>` / типізований OpenAPI-клієнт; додати ESLint-deprecation для старих API; обмежити drift через `eslint-plugin-sergeant-design`.
 2. **Process discipline (Phase 1):** CI-guards проти PR-template-violation, cross-branch migration-collision, deployment-конфіг drift без staging-перевірки.
 3. **Retrospective audit (Phase 3):** доручитись щодо CSP_DISABLE-периоду (incident-document); pen-test для high-CVSS hardening cards (H5/H6/H8/H9), закритих 2026-05-04 за 1 день; soft-gate sweep plan для legacy-юзерів з `email_verified=false` (PR #1608).
-4. **Storybook adoption hand-off (Phase 4):** **передати** Storybook-coverage-метрику у [0007 design-system-tooling](./_0007-design-system-tooling.md) як власну. Тут — лише визначити CI-baseline і метрику, а виконання — у 0007.
+4. **Storybook adoption hand-off (Phase 4):** **передати** Storybook-coverage-метрику у [0007 design-system-tooling](./archive/_0007-design-system-tooling.md) як власну. Тут — лише визначити CI-baseline і метрику, а виконання — у 0007.
 
 **Out:**
 
@@ -96,7 +96,7 @@
 - `<DataState>`: **0 active consumers** (тільки сама компонента + storybook + test).
 - Manual `isLoading || isError` патерни: **15 файлів** з 31 RQ-користувачів.
 - Raw `fetch('/api/...')` у `apps/web/src/modules/`: **0 файлів** (вже на типізованому клієнті).
-- Storybook: **37 shared/ui + 5 module-level stories** (закрито 0007 round-10, см. [`_0007-design-system-tooling.md`](./_0007-design-system-tooling.md)).
+- Storybook: **37 shared/ui + 5 module-level stories** (закрито 0007 round-10, см. [`_0007-design-system-tooling.md`](./archive/_0007-design-system-tooling.md)).
 
 **PR 2.1 — `refactor(web): migrate ManualExpenseSheet from useFormValidation to useApiForm`** (P0) — **DONE (round-13, без окремого PR)**
 
@@ -246,6 +246,6 @@ Coverage-thermometer-PR (`scripts/<check-storybook-coverage>.mjs`) **зняти�
 - **Foundation source PRs:** [#1614 useApiForm](https://github.com/Skords-01/Sergeant/pull/1614), [#1588 DataState](https://github.com/Skords-01/Sergeant/pull/1588), [#1647 Storybook 10](https://github.com/Skords-01/Sergeant/pull/1647), [#1629 OpenAPI typed client](https://github.com/Skords-01/Sergeant/pull/1629).
 - **Process-incident PRs:** [#1571 empty body](https://github.com/Skords-01/Sergeant/pull/1571), [#1595 Vercel SSOT flip](https://github.com/Skords-01/Sergeant/pull/1595) → [#1600 hot-fix](https://github.com/Skords-01/Sergeant/pull/1600), [#1652 migration collision](https://github.com/Skords-01/Sergeant/pull/1652), [#1631 CSP_DISABLE removal](https://github.com/Skords-01/Sergeant/pull/1631).
 - **Hardening PRs (verification scope):** [#1604 H5](https://github.com/Skords-01/Sergeant/pull/1604), [#1606 H8](https://github.com/Skords-01/Sergeant/pull/1606), [#1608 H6](https://github.com/Skords-01/Sergeant/pull/1608), [#1567 H9-prod](https://github.com/Skords-01/Sergeant/pull/1567), [#1613 H9-transcribe](https://github.com/Skords-01/Sergeant/pull/1613).
-- **Related initiatives:** [0010 revenue-first-launch](./0010-revenue-first-launch.md) (governing freeze; цей doc підпорядкований), [0007 design-system-tooling](./_0007-design-system-tooling.md) (Storybook owner), [0008 platform-hardening](./_0008-platform-hardening.md) (security-cards source), [0009 agent-os-hardening](./0009-agent-os-hardening.md) (process-discipline neighbor).
+- **Related initiatives:** [0010 revenue-first-launch](./0010-revenue-first-launch.md) (governing freeze; цей doc підпорядкований), [0007 design-system-tooling](./archive/_0007-design-system-tooling.md) (Storybook owner), [0008 platform-hardening](./archive/_0008-platform-hardening.md) (security-cards source), [0009 agent-os-hardening](./archive/_0009-agent-os-hardening.md) (process-discipline neighbor).
 - **Hard rules:** [`docs/governance/hard-rules.json`](../governance/hard-rules.json), [`docs/governance/hard-rules-matrix.md`](../governance/hard-rules-matrix.md).
 - **Existing scripts (extend, не замінювати):** [`scripts/lint-migrations.mjs`](../../scripts/lint-migrations.mjs), [`scripts/check-vercel-config.sh`](../../scripts/check-vercel-config.sh), [`scripts/check-skill-shape.mjs`](../../scripts/check-skill-shape.mjs).

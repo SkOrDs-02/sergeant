@@ -5,10 +5,10 @@ lang-reason: Superseded stub kept only as historical anchor (`Status: Deprecated
 
 # Playbook: Respond to Suspected Account Compromise
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Deprecated
 
-> **Superseded by:** [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.4).
+> **Superseded by:** [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) — merged 2026-05-04 (initiative [0009](../initiatives/archive/_0009-agent-os-hardening.md) PR 2.4).
 
 **Trigger:** historical anchor — open [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) instead.
 

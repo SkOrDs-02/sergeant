@@ -9,13 +9,13 @@
 // Why this exists:
 //   Before this script, `computedHash` in skills-lock.json was always "" — so
 //   the lockfile was decorative and could not detect tampering. PR 1.1 of
-//   docs/initiatives/0009-agent-os-hardening.md restores integrity by making
+//   docs/initiatives/archive/_0009-agent-os-hardening.md restores integrity by making
 //   the lockfile a real fingerprint of the SKILL.md contents.
 //
 // CI usage:
 //   `pnpm lint:skills` calls this script in check mode after `check-skill-shape.mjs`.
 //
-// Linked initiative: docs/initiatives/0009-agent-os-hardening.md (PR 1.1).
+// Linked initiative: docs/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).
 
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";

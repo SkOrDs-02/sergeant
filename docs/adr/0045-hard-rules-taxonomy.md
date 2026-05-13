@@ -7,7 +7,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/0009-agent-os-hardening.md`](../initiatives/0009-agent-os-hardening.md) §Phase 3.1
+  - [`docs/initiatives/archive/_0009-agent-os-hardening.md`](../initiatives/archive/_0009-agent-os-hardening.md) §Phase 3.1
   - [`docs/governance/hard-rules.json`](../governance/hard-rules.json) — реєстр (single source of truth для скриптів)
   - [`docs/governance/hard-rules-matrix.md`](../governance/hard-rules-matrix.md) — auto-generated enforcement-матриця
   - [`AGENTS.md`](../../AGENTS.md) §Hard rules + §Lint-enforced design conventions

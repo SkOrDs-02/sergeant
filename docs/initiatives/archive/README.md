@@ -1,7 +1,7 @@
 # Initiatives — Архів
 
-> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-08-09.
-> **Status:** Archive prep — batch 2026-08-02 scheduled (6/6 initiatives ready).
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Active — batch 2026-05-13 виконано (7 initiatives архівовано раніше запланованої дати 2026-08-02; 90-day waiting period skipped за рішенням founder-а).
 
 Цей каталог тримає **архівовані ініціативи** — файли, що пройшли повний lifecycle `Proposed → In progress → Done → Closed → Archived` та лежали ≥90 днів без регресій / нових follow-up-ів. Архівація — це **фізичний переніс** файлу з `docs/initiatives/<file>.md` сюди, з 1-рядковим redirect-stub-ом у [`../README.md` § Архів](../README.md#архів).
 
@@ -25,27 +25,28 @@
 
 ## Batch archival schedule
 
-### 📅 2026-08-02 (22 дні)
+### ✅ 2026-05-13 (executed early)
 
-Шість initiatives готові до архівації (≥90 днів від Done/Closed):
+Сім initiatives архівовано в одному PR-і — founder прийняв рішення про fast-forward, 90-day waiting period skipped:
 
-| Initiative                      | Done/Closed | Days | Successor / Canonical                                           | Action                                                   |
-| ------------------------------- | ----------- | ---- | --------------------------------------------------------------- | -------------------------------------------------------- |
-| **0001** Module decomposition   | 2026-05-04  | 90   | Successor: 0013                                                 | → `_0001-module-decomposition.md`                        |
-| **0004** Server observability   | 2026-05-04  | 90   | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) | → `_0004-server-observability.md`                        |
-| **0005** AI cost (prompt cache) | 2026-05-04  | 90   | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md)     | → `_0005-ai-cost-and-prompt-cache.md`                    |
-| **0008** Platform hardening     | 2026-05-04  | 90   | `RATE_LIMIT_POLICIES` registry                                  | → `_0008-platform-hardening.md`                          |
-| **0012** Perfect TS strictness  | 2026-05-04  | 90   | Hard Rule #19 + allowlist                                       | → `_0012-perfect-strictness-rollout.md`                  |
-| **0007** Design-system tooling  | 2026-05-05  | 89   | Storybook live deployment                                       | → `_0007-design-system-tooling.md` (defer to 2026-08-03) |
+| Initiative                      | Done/Closed | Successor / Canonical                                                                  | Archive path                                                                   |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **0001** Module decomposition   | 2026-05-04  | Hard Rule #18 + Successor [0013](../0013-module-decomposition-round-2.md)              | [`_0001-module-decomposition.md`](./_0001-module-decomposition.md)             |
+| **0004** Server observability   | 2026-05-04  | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md)                        | [`_0004-server-observability.md`](./_0004-server-observability.md)             |
+| **0005** AI cost (prompt cache) | 2026-05-04  | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md)                            | [`_0005-ai-cost-and-prompt-cache.md`](./_0005-ai-cost-and-prompt-cache.md)     |
+| **0007** Design-system tooling  | 2026-05-05  | Storybook live deploy + [ADR-0046](../../adr/0046-storybook-vrt-scope.md)              | [`_0007-design-system-tooling.md`](./_0007-design-system-tooling.md)           |
+| **0008** Platform hardening     | 2026-05-04  | `RATE_LIMIT_POLICIES` registry + [ADR-0044](../../adr/0044-renovate-vs-dependabot.md)  | [`_0008-platform-hardening.md`](./_0008-platform-hardening.md)                 |
+| **0009** Agent-OS hardening     | 2026-05-09  | AGENTS.md slim (907 → 137 LOC) + `docs/governance/rules/` (canonical Hard Rule bodies) | [`_0009-agent-os-hardening.md`](./_0009-agent-os-hardening.md)                 |
+| **0012** Perfect TS strictness  | 2026-05-04  | Hard Rule #19 + `tools/tsconfig-guard/allowlist.json`                                  | [`_0012-perfect-strictness-rollout.md`](./_0012-perfect-strictness-rollout.md) |
 
-**Prep checklist:**
+**Verification (2026-05-13):**
 
-- [ ] Перевірити, що усі carry-over items закриті / передані successors
-- [ ] Перевірити, що Hard Rules / ADRs / lint-правила вже live у AGENTS.md / docs/governance/
-- [ ] Побудувати batch-PR для одночасного переносу 6 файлів
-- [ ] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` pass
-- [ ] Merge до 2026-08-03
+- [x] Усі carry-over items закриті або передані successor-ам
+- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/governance/
+- [x] Batch-PR побудовано (7 файлів + README оновлення + comment-refs)
+- [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` pass
+- [x] Merge виконано 2026-05-13
 
 ## Поточний вміст
 
-_Архів поки порожній; batch 2026-08-02 в підготовці._
+7 archived initiatives — див. таблицю вище. Канонічні правила з цих initiatives продовжують жити у [`AGENTS.md`](../../../AGENTS.md) Hard Rules + [`docs/governance/`](../../governance/) — файли нижче — **історичний контекст**, не джерело правди.

@@ -1,11 +1,11 @@
 # 0004 — Server observability (Sentry server-side + OpenTelemetry traces)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Done. Phase 1 (Sentry server-side) shipped 2026-05-04. Phase 3 (Grafana dashboards) shipped 2026-05-04. **Phase 2 + 4 (OpenTelemetry SDK + custom sampler) shipped 2026-05-05** — vendor-agnostic OTLP/HTTP, graceful no-op коли `OTEL_EXPORTER_OTLP_ENDPOINT` не заданий, route-aware `RouteAwareSampler`. Backend-vendor (Honeycomb / Grafana Cloud Tempo / self-hosted) вибирається через env (см. ADR-0035 "Implementation").
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 1 week
-> **Sources:** Design Review 2026-05-03 §11, [`docs/tech-debt/backend.md`](../tech-debt/backend.md)
+> **Sources:** Design Review 2026-05-03 §11, [`docs/tech-debt/backend.md`](../../tech-debt/backend.md)
 
 ## TL;DR
 
@@ -13,7 +13,7 @@
 
 ## Чому зараз
 
-- У [audit 2026-04-28](../audits/2026-04-28-sergeant-comprehensive-audit.md) і design-review 2026-05-03 окремо позначено: **server errors only in Pino**, тобто розбираємось вручну.
+- У [audit 2026-04-28](../../audits/2026-04-28-sergeant-comprehensive-audit.md) і design-review 2026-05-03 окремо позначено: **server errors only in Pino**, тобто розбираємось вручну.
 - Helmet, CSP, AES-GCM token encryption — все є; але `apps/server/src/index.ts` не має `Sentry.init`, відповідно error-events не прокидаються на dashboard, alert-and-tracing pipeline відсутній.
 - Anthropic-/OpenAI-таймаути, retry-loops і циркулярні tool-calls (chatActions) часто видно тільки коли користувач скаржиться. Distributed traces закривають це — кожен AI-call із `aiSpan` + `model`, `prompt_cache_hit`, `tokens_in/out`, `latency_ms`.
 - Без сервер-spans неможливо нормально відлагодити sync v2 (ініціатива 0003) — там же і LWW conflicts, і dual-mode diverge, і queue-lag.
@@ -63,7 +63,7 @@
   });
   ```
 - Додати `Sentry.errorHandler()` у `app.use()` після всіх routes, перед `errorHandler`.
-- Додати docs-фрагмент у [`docs/observability/runbook.md`](../observability/runbook.md): як читати Sentry server events, як зробити replay/sample.
+- Додати docs-фрагмент у [`docs/observability/runbook.md`](../../observability/runbook.md): як читати Sentry server events, як зробити replay/sample.
 
 ### Фаза 2 — OpenTelemetry (1 PR)
 
@@ -93,7 +93,7 @@
   - `error-rate > 1%` за 5 хв → Telegram `#alerts`.
   - `p99 latency > 2s` за 10 хв → Telegram `#alerts-warn`.
   - `Anthropic 429 rate > 5%` за 1 хв → Telegram `#ai-ops`.
-- Запис у [`docs/observability/runbook.md`](../observability/runbook.md): «як інтерпретувати алерти».
+- Запис у [`docs/observability/runbook.md`](../../observability/runbook.md): «як інтерпретувати алерти».
 
 ### Фаза 4 — sampling config + cleanup (1 PR)
 
@@ -114,7 +114,7 @@
 - [x] У Grafana dashboard `server.json` усі 8 panels live.
 - [x] Alert «error-rate > 1%» спрацьовує (можна тестово знизити поріг до 0.01% і перевірити).
 - [x] У `apps/server/src/observability/otel.ts` сервер не падає при відсутності `OTEL_EXPORTER_OTLP_ENDPOINT` (graceful no-op).
-- [x] Sampling rates документовані у [`docs/observability/runbook.md`](../observability/runbook.md).
+- [x] Sampling rates документовані у [`docs/observability/runbook.md`](../../observability/runbook.md).
 - [x] CI lint-checks проходять без warnings.
 
 ## Ризики та митиґація
@@ -145,10 +145,10 @@
 ## Посилання
 
 - Design Review 2026-05-03 — §11 Observability
-- [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — запис «No server-side Sentry / no traces»
-- [`docs/observability/`](../observability/) — існуючий runbook (буде розширений)
-- [`apps/server/src/index.ts`](../../apps/server/src/index.ts)
-- [`apps/web/src/shared/lib/api/queryClient.ts`](../../apps/web/src/shared/lib/api/queryClient.ts) — місце для `traceparent` injection
+- [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) — запис «No server-side Sentry / no traces»
+- [`docs/observability/`](../../observability) — існуючий runbook (буде розширений)
+- [`apps/server/src/index.ts`](../../../apps/server/src/index.ts)
+- [`apps/web/src/shared/lib/api/queryClient.ts`](../../../apps/web/src/shared/lib/api/queryClient.ts) — місце для `traceparent` injection
 - [Sentry Node SDK](https://docs.sentry.io/platforms/javascript/guides/node/)
 - [OpenTelemetry Node SDK](https://opentelemetry.io/docs/languages/js/getting-started/nodejs/)
 - W3C Trace Context — https://www.w3.org/TR/trace-context/
@@ -159,25 +159,25 @@
 
 **Phase 1 — Sentry server-side: ✅ DONE**
 
-- [`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts) (152 LOC) — `Sentry.init()` на module top-level (виконується **до** будь-якого `import express` через ESM depth-first eval), із:
+- [`apps/server/src/sentry.ts`](../../../apps/server/src/sentry.ts) (152 LOC) — `Sentry.init()` на module top-level (виконується **до** будь-якого `import express` через ESM depth-first eval), із:
   - `dsn`, `environment`, `release` (з `RAILWAY_GIT_COMMIT_SHA`).
   - `tracesSampleRate` через `SENTRY_TRACES_SAMPLE_RATE` env (default `0.1`); знакове `0` поважається — не fallback-имо.
   - `sendDefaultPii: false` + кастомний рекурсивний `scrubPII()` що ходить по nested `event.request.headers`, `event.extra`, `event.contexts`, `event.breadcrumbs.data` і маскує ключі зі спільного списку `redactKeyNames` (єдине джерело істини з Pino redaction — `apps/server/src/obs/logger.ts`).
   - `beforeSend()` зчитує ALS-context (`requestId`, `module`, `userId`) і прокидає тегами в Sentry-event — кореляція web↔server без OTEL.
-- [`apps/server/src/index.ts`](../../apps/server/src/index.ts):1 — `import "./sentry.js"` стоїть **першим**, до всіх інших імпортів. Коментарний блок пояснює чому (ESM hoisting + auto-instrumentation hooks).
-- [`apps/server/src/http/errorHandler.ts`](../../apps/server/src/http/errorHandler.ts) — інтегрований із Sentry; `attachSentryErrorHandler(app)` з `Sentry.setupExpressErrorHandler` чіпляється в [`apps/server/src/app.ts`](../../apps/server/src/app.ts) перед власним handler-ом.
-- Тести: [`apps/server/src/http/errorHandler.test.ts`](../../apps/server/src/http/errorHandler.test.ts) — мокає Sentry.captureException і фіксує що Sentry-handled events не дублюються в Pino.
+- [`apps/server/src/index.ts`](../../../apps/server/src/index.ts):1 — `import "./sentry.js"` стоїть **першим**, до всіх інших імпортів. Коментарний блок пояснює чому (ESM hoisting + auto-instrumentation hooks).
+- [`apps/server/src/http/errorHandler.ts`](../../../apps/server/src/http/errorHandler.ts) — інтегрований із Sentry; `attachSentryErrorHandler(app)` з `Sentry.setupExpressErrorHandler` чіпляється в [`apps/server/src/app.ts`](../../../apps/server/src/app.ts) перед власним handler-ом.
+- Тести: [`apps/server/src/http/errorHandler.test.ts`](../../../apps/server/src/http/errorHandler.test.ts) — мокає Sentry.captureException і фіксує що Sentry-handled events не дублюються в Pino.
 
 **Phase 1.5 — `traceparent` propagation: ✅ DONE (через ALS, не через OTEL)**
 
-- [`apps/server/src/http/traceContext.ts`](../../apps/server/src/http/traceContext.ts) — `traceMiddleware` парсить W3C `traceparent` (regex `00-<32hex>-<16hex>-<2hex>`), fallback на `x-trace-id`, fallback на `randomUUID().replace(/-/g, "")`. ALS-store отримує `traceId`; response echo-ить `X-Trace-Id`.
-- Маунтиться у [`apps/server/src/app.ts`](../../apps/server/src/app.ts):103-104 одразу після `withRequestContext`.
+- [`apps/server/src/http/traceContext.ts`](../../../apps/server/src/http/traceContext.ts) — `traceMiddleware` парсить W3C `traceparent` (regex `00-<32hex>-<16hex>-<2hex>`), fallback на `x-trace-id`, fallback на `randomUUID().replace(/-/g, "")`. ALS-store отримує `traceId`; response echo-ить `X-Trace-Id`.
+- Маунтиться у [`apps/server/src/app.ts`](../../../apps/server/src/app.ts):103-104 одразу після `withRequestContext`.
 - Pino-логи всіх запитів автоматично несуть `traceId` через ALS.
 - Sentry events корелюються з трейсом через `event.tags.traceId` (за `beforeSend`).
 
 **Phase 3 — Grafana dashboards: ✅ DONE**
 
-Дашборди живуть у [`docs/observability/dashboards/`](../observability/dashboards/) (а не `ops/grafana/dashboards/` як у плані — `ops/grafana/dashboards/` лишається для n8n/operational), 9 готових JSON-ів:
+Дашборди живуть у [`docs/observability/dashboards/`](../../observability/dashboards) (а не `ops/grafana/dashboards/` як у плані — `ops/grafana/dashboards/` лишається для n8n/operational), 9 готових JSON-ів:
 
 | Dashboard            | Purpose                                                            |
 | -------------------- | ------------------------------------------------------------------ |

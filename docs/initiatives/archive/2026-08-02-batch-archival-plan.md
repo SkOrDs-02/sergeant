@@ -1,10 +1,12 @@
-# Batch Archival Plan — 2026-08-02
+# Batch Archival Plan — 2026-08-02 (executed early 2026-05-13)
 
-> **Last validated:** 2026-05-12 by Devin. **Next review:** 2026-08-02.
-> **Status:** Planned (execute 2026-08-02)
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Closed (executed 2026-05-13 — batch виконано раніше запланованої дати 2026-08-02; founder прийняв рішення про fast-forward, 90-денний waiting period skipped; 0009 додано до батча)
 > **Owner:** @Skords-01
-> **ETA:** 2026-08-02 (3 hours estimated)
+> **ETA:** 2026-08-02 (3 hours estimated) — фактично виконано 2026-05-13 в одному PR-і.
 > **Related:** [initiatives/archive/README.md](./README.md), [AGENTS.md Hard Rules](../../../AGENTS.md#hard-rules-do-not-break)
+
+> **Outcome (2026-05-13):** Архівовано 7 initiatives (6 з оригінального batch + 0009 Agent-OS hardening, Closed 2026-05-09). 90-day waiting period skipped за рішенням founder-а після перевірки, що всі carry-over items закриті або передані successor-ам (Hard Rule #18 для 0001, ADR-0035 для 0004, ADR-0039 для 0005, Storybook live + ADR-0046 для 0007, `RATE_LIMIT_POLICIES` registry + ADR-0044 для 0008, AGENTS.md slim + `docs/governance/rules/` для 0009, Hard Rule #19 + `tools/tsconfig-guard/allowlist.json` для 0012). Нижче — історичний листинг лишається для аудит сліду.
 
 Одночасна архівація 6 initiatives, які пройшли 90 днів від Done/Closed статусу без регресій.
 
