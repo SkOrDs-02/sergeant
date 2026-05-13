@@ -114,19 +114,19 @@ Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys
 
 ## Performance budgets
 
-CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)), plus the `Lighthouse CI` workflow ([T5](./docs/planning/sprint-roadmap-q2q3-2026.md#t5-lighthouse-ci-tech-s--first-pass-shipped)).
+CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)). Lighthouse CI runs locally only (`pnpm --filter @sergeant/web lighthouse` + [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json)); the GitHub Actions workflow is **planned** — see [T5 у тех-боргу](./docs/planning/sprint-roadmap-q2q3-2026.md).
 
-| Metric                                      | Budget                                                                   | Where enforced                                                              |
-| ------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                | **≤ 900 kB**                                                             | `pnpm --filter @sergeant/web exec size-limit` in CI                         |
-| `apps/web` CSS (brotli)                     | **≤ 28 kB**                                                              | same                                                                        |
-| `apps/web` LCP (median, 5 top-level routes) | **≤ 2000 ms** (warn; **`error` at > 3000 ms** after baseline tightening) | `.github/workflows/lighthouse-ci.yml` — config `apps/web/lighthouserc.json` |
-| `apps/web` FCP (median, 5 top-level routes) | **≤ 1500 ms** (warn)                                                     | same                                                                        |
-| `apps/web` TBT (median, 5 top-level routes) | **≤ 200 ms** (warn)                                                      | same                                                                        |
-| Backend `/health` p95                       | < 100 ms                                                                 | (informal; track in Railway logs)                                           |
-| Anthropic `/api/chat` p95 first token       | < 1.5 s                                                                  | (informal; will move to PostHog/Sentry once wired)                          |
+| Metric                                      | Budget                                                                   | Where enforced                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `apps/web` JS total (brotli)                | **≤ 900 kB**                                                             | `pnpm --filter @sergeant/web exec size-limit` in CI                                               |
+| `apps/web` CSS (brotli)                     | **≤ 28 kB**                                                              | same                                                                                              |
+| `apps/web` LCP (median, 5 top-level routes) | **≤ 2000 ms** (warn; **`error` at > 3000 ms** after baseline tightening) | `apps/web/lighthouserc.json` + `pnpm --filter @sergeant/web lighthouse` (CI workflow planned, T5) |
+| `apps/web` FCP (median, 5 top-level routes) | **≤ 1500 ms** (warn)                                                     | same                                                                                              |
+| `apps/web` TBT (median, 5 top-level routes) | **≤ 200 ms** (warn)                                                      | same                                                                                              |
+| Backend `/health` p95                       | < 100 ms                                                                 | (informal; track in Railway logs)                                                                 |
+| Anthropic `/api/chat` p95 first token       | < 1.5 s                                                                  | (informal; will move to PostHog/Sentry once wired)                                                |
 
-If you legitimately need to raise a limit (e.g. a major new dependency), bump the number in the same PR and call it out in the description. `size-limit` paths point through `apps/server/dist/assets/*` (Vite output is copied for unified-mode serving) — verify the layout if the server build pipeline changes. Lighthouse runs against `VERCEL=1` builds in `apps/web/dist/` via `vite preview` on 127.0.0.1:4173 — full details in [`apps/web/AGENTS.md § Lighthouse CI`](./apps/web/AGENTS.md#lighthouse-ci-perf-budget-gate).
+If you legitimately need to raise a limit (e.g. a major new dependency), bump the number in the same PR and call it out in the description. `size-limit` paths point through `apps/server/dist/assets/*` (Vite output is copied for unified-mode serving) — verify the layout if the server build pipeline changes. Lighthouse runs (today — local only) against `VERCEL=1` builds in `apps/web/dist/` via `vite preview` on 127.0.0.1:4173 — full details in [`apps/web/AGENTS.md § Lighthouse CI`](./apps/web/AGENTS.md#lighthouse-ci-perf-budget-gate).
 
 ## Soft rules (preferred)
 

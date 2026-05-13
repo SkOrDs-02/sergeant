@@ -1,7 +1,7 @@
 # Alert-bot routing — n8n broadcast workflows → `tg_alert_acks`
 
 > **Status:** Active. **Owner:** ops. **Last refreshed:** 2026-05-13 (O9 batch).
-> **Spec:** [`docs/adr/0038-alert-bot-accountability.md`](../adr/0038-alert-bot-accountability.md)
+> **Spec:** [`docs/adr/0038-tg-alert-acks-and-escalation.md`](../adr/0038-tg-alert-acks-and-escalation.md)
 > §3.2; reporting matrix footnote 5 in
 > [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md).
 
@@ -9,7 +9,7 @@ This file documents how each Sergeant n8n broadcast workflow maps onto the
 alert-bot accountability layer. It is the canonical wire-map for:
 
 - the `tg_alert_acks` table (migration 060,
-  [`apps/server/src/db/migrations/060_tg_alert_acks_dedup_signature.sql`](../../apps/server/src/db/migrations/060_tg_alert_acks_dedup_signature.sql)),
+  [`apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql`](../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql)),
 - the `POST /api/internal/alerts/post` writer
   ([`apps/server/src/modules/alerts/store.ts`](../../apps/server/src/modules/alerts/store.ts)),
 - WF-103 alert-escalation cron + WF-104 alert-callback router,

@@ -610,9 +610,27 @@ Android — локальний config-плагін
 ### 6.5 Голосовий ввід і speech (Q6)
 
 - Web: Web Speech API (`SpeechRecognition` в Chrome).
-- Mobile: вирішено — `expo-speech-recognition` як primary,
-  server-side Whisper як fallback (`POST /api/v1/speech/transcribe`)
-  для пристроїв без on-device STT або для невдалих фолбеків.
+- Mobile (⚠️ partial, Phase 8): `expo-speech-recognition` як primary STT
+  (iOS `SFSpeechRecognizer`, Android `SpeechRecognizer`), `expo-speech` —
+  TTS. Хуки на полиці:
+  - `apps/mobile/src/lib/voice/useSpeechRecognition.ts` —
+    лазі-permission, UA-text помилок, `start/stop/toggle`, `listening`
+    - `supported` стейт, `onResult` тільки на final.
+  - `apps/mobile/src/lib/voice/useTextToSpeech.ts` — `speak()`,
+    `stop()`, `muted`/`toggleMute` persist-ить у MMKV
+    (`sergeant.voice.tts.muted`), default locale `uk-UA`.
+  - `apps/mobile/src/components/ui/VoiceMicButton.tsx` — sm/md/lg
+    варіанти, haptic-фідбек, accessibility-labels.
+- Wired: `apps/mobile/src/modules/nutrition/.../meal-sheet/NameTimeRow.tsx`
+  (AddMealSheet → mic поруч з полем назви).
+- Follow-up: HubChat-композер ще не існує на mobile (Phase 8 #1) —
+  після його лендингу wire-аємо `VoiceMicButton` у composer + кнопку
+  Mute (через `useTextToSpeech.toggleMute`). Server-side Whisper
+  fallback (`POST /api/v1/speech/transcribe`) для пристроїв без
+  on-device STT — TODO той самий follow-up.
+- iOS / Android permissions у `apps/mobile/app.config.ts`:
+  `NSSpeechRecognitionUsageDescription`,
+  `NSMicrophoneUsageDescription`, `android.permission.RECORD_AUDIO`.
 - `speechParsers` — pure, переносимо as-is.
 
 ### 6.6 Камера / штрихкод / фото-аналіз

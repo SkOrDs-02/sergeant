@@ -19,7 +19,7 @@ Cross-refs:
 Web-додаток має **дві канонічні writer-доріжки**:
 
 1. **UI mutation path** (`useMutation` → API). Користувач натискає кнопку / submit form → React-компонент викликає мутацію → `apiClient.<module>.<action>(...)` → on success: інвалідація RQ-ключів того ж модуля → optimistic-state synchronizes.
-2. **AI tool-call path** (`chatActions/<module>Actions.ts` → API → tool_result). LLM emit-ає `tool_use` block з `name` і `input` → клієнтський dispatcher у [`apps/web/src/core/lib/chatActions/index.ts`](../../apps/web/src/core/lib/chatActions/index.ts) знаходить handler → handler виконує точно ту саму API-мутацію → повертає `string` для `tool_result` → клієнт шле `POST /api/chat` із `tool_result` → LLM продовжує stream і узагальнює зміну.
+2. **AI tool-call path** (`chatActions/<module>Actions.ts` → API → tool_result). LLM emit-ає `tool_use` block з `name` і `input` → клієнтський dispatcher у [`apps/web/src/core/lib/hubChatActions.ts`](../../apps/web/src/core/lib/hubChatActions.ts) знаходить handler → handler виконує точно ту саму API-мутацію → повертає `string` для `tool_result` → клієнт шле `POST /api/chat` із `tool_result` → LLM продовжує stream і узагальнює зміну.
 
 Обидві доріжки повинні **закінчуватися на тому самому API endpoint** (через `apiClient`), щоб серверні invariants (валідація, права, миграція даних) фає рівно одне місце. Локальний кеш — RQ — invalidate-иться через `apiQueryKeys` / `<module>Keys` з [`queryKeys.ts`](../../apps/web/src/shared/lib/api/queryKeys.ts).
 
@@ -60,7 +60,7 @@ const create = useMutation({
 LLM (Anthropic) ──┐
                   │  tool_use { name: "finyk.create_transaction", input: { amount, ... } }
                   ▼
-core/lib/chatActions/index.ts:dispatch
+core/lib/hubChatActions.ts:dispatch
   │
   ├─ resolve handler by `name`
   │
@@ -101,7 +101,7 @@ LLM continues stream → final assistant message
 
 1. **RQ-keys factory only** — Hard Rule #2 ([`docs/governance/hard-rules.json`](../governance/hard-rules.json) + ESLint `sergeant-design/no-inline-rq-keys`). Жодного інлайнового `["finyk", "transactions"]` у `queryKey` / `setQueryData` / `invalidateQueries`. Усе йде через `<module>Keys` з [`queryKeys.ts`](../../apps/web/src/shared/lib/api/queryKeys.ts).
 2. **`no-raw-local-storage`** — Hard Rule (`sergeant-design/no-raw-local-storage`). Production-allowlist у [`eslint.config.js`](../../eslint.config.js) — порожній; усі write-и йдуть через `webKVStore` / `safeReadLS` / `safeWriteLS` з `@shared/lib/storage/storage`. Це робить **Канал 1 → API** єдиним шляхом до durable state — навіть якщо handler хоче кешувати, він робить це через KV-store з cross-tab `onChange`.
-3. **chatActions handlers повертають `string`** — статичний контракт у `chatActions/index.ts:dispatch`. Якщо handler потрібно повернути JSON, він серіалізує його в текст для LLM (`JSON.stringify(...)` обгорнутий у природне речення).
+3. **chatActions handlers повертають `string`** — статичний контракт у `hubChatActions.ts:dispatch`. Якщо handler потрібно повернути JSON, він серіалізує його в текст для LLM (`JSON.stringify(...)` обгорнутий у природне речення).
 4. **chatActions-тести покривають happy path + error path** для кожного handler-а — [`docs/architecture/module-ownership.md`](./module-ownership.md) row `apps/web/src/core/lib/chatActions/**` контракт. `fizrukActions.test.ts` / `finykActions.test.ts` / `nutritionActions.test.ts` / `routineActions.test.ts` — `pnpm --filter @sergeant/web test src/core/lib/chatActions` має 0 fail.
 
 ## Anti-patterns (НЕ роби)

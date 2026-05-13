@@ -54,16 +54,16 @@
 
 Шість initiatives готові до архівації (≥90 днів від Done/Closed):
 
-| Initiative                      | Done/Closed | Archive date | Prep status  | Canonical location                                           |
-| ------------------------------- | ----------- | ------------ | ------------ | ------------------------------------------------------------ |
-| **0001** Module decomposition   | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #18                                                |
-| **0004** Server observability   | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) |
-| **0005** AI cost (prompt cache) | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md)     |
-| **0008** Platform hardening     | 2026-05-04  | 2026-08-02   | ✅ Prep done | `RATE_LIMIT_POLICIES` registry                               |
-| **0012** Perfect TS strictness  | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #19                                                |
-| **0007** Design-system tooling  | 2026-05-05  | 2026-08-03   | ✅ Prep done | [ADR-0046](../adr/0046-storybook-vrt-scope.md)               |
+| Initiative                      | Done/Closed | Archive date | Prep status  | Canonical location                                              |
+| ------------------------------- | ----------- | ------------ | ------------ | --------------------------------------------------------------- |
+| **0001** Module decomposition   | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #18                                                   |
+| **0004** Server observability   | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) |
+| **0005** AI cost (prompt cache) | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md)     |
+| **0008** Platform hardening     | 2026-05-04  | 2026-08-02   | ✅ Prep done | `RATE_LIMIT_POLICIES` registry                                  |
+| **0012** Perfect TS strictness  | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #19                                                   |
+| **0007** Design-system tooling  | 2026-05-05  | 2026-08-03   | ✅ Prep done | [ADR-0046](../../adr/0046-storybook-vrt-scope.md)               |
 
-**Execution plan:** [`docs/initiatives/archive/2026-08-02-batch-archival-plan.md`](../initiatives/archive/2026-08-02-batch-archival-plan.md) — готов до виконання 2026-08-02.
+**Execution plan:** [`docs/initiatives/archive/2026-08-02-batch-archival-plan.md`](../../initiatives/archive/2026-08-02-batch-archival-plan.md) — готов до виконання 2026-08-02.
 
 ---
 

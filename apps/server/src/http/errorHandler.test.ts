@@ -34,7 +34,7 @@ type Recorded = Parameters<LogFn>[0];
 
 import * as Sentry from "@sentry/node";
 import { errorHandler } from "./errorHandler.js";
-import { AppError } from "../obs/errors.js";
+import { AppError, ValidationError } from "../obs/errors.js";
 
 function makeReqRes() {
   const headers: Record<string, string> = {};
@@ -173,5 +173,61 @@ describe("errorHandler → response body shape", () => {
         code: "INTERNAL",
       }),
     );
+  });
+
+  it("витягує `details` із cause для ValidationError (parseBody/parseQuery)", () => {
+    // `parseBody`/`parseQuery` з `http/validate.ts` кидають
+    // `ValidationError(msg, { cause: { details } })`. errorHandler має
+    // підняти `details` у відповідь клієнту, щоб контракт залишився
+    // ідентичним до старого `validateBody`-sentinel response shape.
+    const { req, res } = makeReqRes();
+    const err = new ValidationError("Некоректні дані запиту", {
+      cause: {
+        details: [
+          { path: "amount", message: "expected number" },
+          { path: "currency", message: "required" },
+        ],
+      },
+    });
+    errorHandler(err, req, res, () => {});
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        error: "Некоректні дані запиту",
+        code: "VALIDATION",
+        details: [
+          { path: "amount", message: "expected number" },
+          { path: "currency", message: "required" },
+        ],
+      }),
+    );
+  });
+
+  it("НЕ surfaces cause для 5xx (programmer error → cause може містити PII/stack)", () => {
+    const { req, res } = makeReqRes();
+    // Симулюємо випадок: внутрішня ExternalServiceError-like з 500
+    // статусом і обʼєктом-cause-ом. На 5xx деталі мусять зникнути з
+    // body — це програмерська помилка, клієнт побачить лише generic
+    // повідомлення.
+    const err = new AppError("internal blew up", {
+      status: 500,
+      code: "INTERNAL",
+      cause: { details: [{ path: "secretField", message: "leaked stack" }] },
+    });
+    // Викидаємо `isOperationalError`-флаг руками — `AppError` сам по собі
+    // operational, тому тут треба підкласти простий Error з прокинутими
+    // полями, щоб симулювати програмерську помилку зі status=500.
+    const programmerErr = Object.assign(new Error("blew up"), {
+      status: 500,
+      code: "INTERNAL",
+      cause: err.cause,
+    });
+    errorHandler(programmerErr, req, res, () => {});
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        error: "Server error",
+        code: "INTERNAL",
+      }),
+    );
+    expect(res.body).not.toHaveProperty("details");
   });
 });

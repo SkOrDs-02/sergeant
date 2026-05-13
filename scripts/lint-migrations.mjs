@@ -21,6 +21,13 @@ const MIGRATION_FILE_RE = /^(\d{3})_.+\.sql$/;
 const DOWN_FILE_RE = /\.down\.sql$/;
 const DROP_RE = /\bDROP\s+(COLUMN|TABLE)\b/i;
 const ALLOW_DROP_RE = /^--[ \t]*ALLOW_DROP:[ \t]*\S.*/m;
+// Placeholder text emitted by `plop migration` — leftovers in checked-in
+// `.down.sql` files mean the contributor never wrote the rollback body.
+const DOWN_PLACEHOLDER_RE = /TODO:\s*write\s+your\s+DOWN/i;
+// Explicit opt-out for migrations that genuinely cannot be rolled back
+// (`DROP TABLE` of a deprecated schema, irreversible data backfill, etc.).
+// Same shape as `ALLOW_DROP:` — a reason after the colon is mandatory.
+const NO_ROLLBACK_RE = /^--[ \t]*NO_ROLLBACK:[ \t]*\S.*/m;
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -46,6 +53,38 @@ export function findDropLines(content) {
  */
 export function hasAllowDropEscapeHatch(content) {
   return ALLOW_DROP_RE.test(content);
+}
+
+/**
+ * Returns `true` when the file content contains at least one
+ * `-- NO_ROLLBACK: <reason>` comment (the escape-hatch). Used by the
+ * empty-down check to allow migrations that genuinely cannot be rolled
+ * back (irreversible data writes, `DROP TABLE` of obsolete schemas).
+ */
+export function hasNoRollbackEscapeHatch(content) {
+  return NO_ROLLBACK_RE.test(content);
+}
+
+/**
+ * Returns `true` when a `.down.sql` body has no executable SQL — only
+ * blank lines, single-line `--` comments, or the plop-generated
+ * `TODO: write your DOWN` placeholder. Empty rollbacks slip past code
+ * review because the file is committed; this check is the lint-time
+ * safety net behind AGENTS.md rule #4's two-phase DROP guarantee.
+ *
+ * The matching escape hatch is `-- NO_ROLLBACK: <reason>` — see
+ * `hasNoRollbackEscapeHatch()`. The caller is responsible for skipping
+ * this check when the hatch is present.
+ */
+export function isEmptyDownMigration(content) {
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (line.length === 0) continue;
+    if (isCommentLine(line)) continue;
+    if (DOWN_PLACEHOLDER_RE.test(line)) continue;
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -209,7 +248,8 @@ export function run({
     mainFiles = listMigrationsOnRef(migrationsDir, baseRef);
   }
 
-  // 2. Check DROP statements in new/changed files (skip .down.sql)
+  // 2. Check DROP statements in new/changed files (skip .down.sql).
+  //    `.down.sql` files get a separate empty-body check below.
   for (const filePath of changedFiles) {
     const name = basename(filePath);
 
@@ -239,6 +279,45 @@ export function run({
         );
       }
     }
+  }
+
+  // 2b. Empty-rollback check for new/changed `.down.sql` files.
+  //     Closes PR-T38 from `docs/testing/2026-05-05-tests-pr-plan.md`
+  //     ("migration rollback за замовчуванням") — the plop generator
+  //     emits a `-- TODO: write your DOWN` placeholder which contributors
+  //     historically leave in place, defeating the two-phase DROP
+  //     guarantee. We only check files actually touched by the PR so
+  //     pre-existing empty-down sins don't block unrelated work.
+  for (const filePath of changedFiles) {
+    const name = basename(filePath);
+
+    if (!DOWN_FILE_RE.test(name)) continue;
+
+    let content;
+    try {
+      content = readFileSync(filePath, "utf8");
+    } catch {
+      continue;
+    }
+
+    if (!isEmptyDownMigration(content)) continue;
+    if (hasNoRollbackEscapeHatch(content)) continue;
+
+    errors.push(
+      [
+        `❌ ${filePath}: rollback body is empty.`,
+        `   AGENTS.md rule #4 requires every migration to ship with a`,
+        `   working DOWN script so we can revert a deploy without a manual`,
+        `   schema surgery. Either:`,
+        `   1. Replace the \`-- TODO: write your DOWN\` placeholder with`,
+        `      SQL that reverses the matching UP migration, OR`,
+        `   2. Add an explicit escape-hatch comment if rollback is truly`,
+        `      impossible (irreversible data write, dropping an obsolete`,
+        `      table, etc.):`,
+        `        -- NO_ROLLBACK: <reason> (due: YYYY-MM-DD)`,
+        `   Ref: https://github.com/Skords-01/Sergeant/blob/main/docs/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+      ].join("\n"),
+    );
   }
 
   // 2a. Cross-branch collision check: catch numbers that exist on `main`

@@ -338,6 +338,12 @@ const envSchema = z.object({
   RAILWAY_ENVIRONMENT: z.string().optional(),
   RAILWAY_SERVICE_NAME: z.string().optional(),
   RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
+  /** Generic CI commit SHA fallback (GitHub Actions, GitLab, тощо). */
+  GIT_COMMIT: z.string().optional(),
+  /** Vercel build commit SHA — fallback для Sentry / app_build_info. */
+  VERCEL_GIT_COMMIT_SHA: z.string().optional(),
+  /** Версія пакета (npm/pnpm проставляють під час `pnpm run`-у). */
+  npm_package_version: z.string().optional(),
 
   // ── AI (Anthropic) ─────────────────────────────────────────────────
   /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */

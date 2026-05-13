@@ -30,7 +30,7 @@
 | **Auth — Google OAuth**           | ✅               | ✅              | ✅                 | Shell і RN ходять через ASWebAuthenticationSession / Custom Tab                                                                                                                                                                                         |
 | **Hub dashboard**                 | ✅               | ✅              | ✅                 | RN-варіант — `apps/mobile/src/core/dashboard/`                                                                                                                                                                                                          |
 | **Hub chat (text)**               | ✅               | ✅              | ✅                 | Один `/api/v1/coach/*` контракт для всіх трьох                                                                                                                                                                                                          |
-| **Hub voice (STT + TTS)**         | ✅               | 🟡              | 🟥                 | Shell успадковує web (Web Speech API працює тільки в iOS 14.5+)                                                                                                                                                                                         |
+| **Hub voice (STT + TTS)**         | ✅               | 🟡              | 🟡                 | RN: `useSpeechRecognition` / `useTextToSpeech` готові, AddMealSheet — wired; HubChat-композер — Phase 8 follow-up                                                                                                                                       |
 | **Hub search**                    | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/core/hub/search/`                                                                                                                                                                                                                 |
 | **OnboardingWizard**              | ✅               | ✅              | 🟡                 | RN-stack має скорочений wizard; повний крок «AI-customize» — Phase 7                                                                                                                                                                                    |
 | **WeeklyDigestCard**              | ✅               | ✅              | ✅                 | Усі три тримають `getWeeklyDigest()` через api-client                                                                                                                                                                                                   |
@@ -57,7 +57,7 @@
 
 - 🟥 **RN-Nutrition full parity** — `recipe/[id]`, photo-AI, AI-shopping. Зеленіє коли всі три рядки = `✅`
 - 🟥 **RN-Voice (STT/TTS)** — Phase 7+. Зеленіє коли Hub voice у RN = `✅`
-- ✅ **Detox real e2e** — всі чотири suite-и (`finyk-manual-expense`, `finyk-transactions` period-filter, `routine-smoke`, `hub-ux-smoke`) зелені на iOS (`macos-14`) і Android (`ubuntu-latest` AVD `Pixel_5_API_34`); перевіряються пер PR + nightly cron.
+- 🟡 **Detox real e2e** — sign-in → module → sign-out × 4 модулі. Зеленіє коли Detox = `✅`
 
 ---
 
@@ -104,7 +104,7 @@
 - **Nutrition решта** — `recipe/[id].tsx` заглушка; shopping generate, photo/day plan — Phase 7
 - **Voice/Speech** — потребує `expo-speech` + платформний STT (iOS Speech framework / Android SpeechRecognizer)
 - **App Store/Play метадані** — store-listing, іконки, privacy manifest (iOS), data safety (Android)
-- **Detox e2e** — `detox-ios.yml` + `detox-android.yml` запускають повний suite (finyk × 2, routine, hub-ux) per-PR + nightly
+- **Detox e2e** — `detox-ios.yml`/`detox-android.yml` тільки smoke-build; реальні сценарії待機
 
 **Що варто покращити:**
 
@@ -157,7 +157,7 @@
 1. **Web + мобільний shell (Android)** — найшвидший до користувача: web live, shell потребує workflow + підпис. **2–3 PR-и.**
 2. **Native RN Nutrition-порт** — найдорожчий (Phase 7), блокує App Store/Play реліз. **4–6 PR-ів.**
 3. **iOS shell** — потребує Mac у CI (EAS / macOS runner), досі заблоковано Xcode-env.
-4. ~~**Detox e2e** — зараз smoke; треба реальні сценарії, інакше false confidence.~~ ✅ Done — finyk × 2 + routine + hub-ux suite-и зелені на iOS і Android (per-PR + nightly).
+4. **Detox e2e** — зараз smoke; треба реальні сценарії, інакше false confidence.
 
 ---
 
