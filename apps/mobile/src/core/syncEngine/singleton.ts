@@ -85,6 +85,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     dbSchema,
     netInfoModule,
     netInfoBridge,
+    { authClient },
   ] = await Promise.all([
     import("@/core/db/sqlite"),
     import("@/api/apiClient"),
@@ -92,6 +93,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     import("@sergeant/db-schema/sqlite"),
     import("@react-native-community/netinfo"),
     import("./netInfoEventTarget"),
+    import("@/auth/authClient"),
   ]);
 
   const client = await getSqliteMigrationClient();
@@ -99,9 +101,22 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     netInfoModule.default,
   );
 
+  // Per-tick userId resolver. The runtime itself is user-agnostic; the
+  // drain wrapper closes over `authClient.getSession()` to scope reads
+  // to the currently signed-in user (Hard finding T3#2). When no user
+  // is signed in we return an empty drain — the next tick will retry.
+  const resolveUserId = async (): Promise<string | null> => {
+    const session = await authClient.getSession();
+    return session.data?.user?.id ?? null;
+  };
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
-      drain: (drainOptions) => dbSchema.drainSyncOpOutbox(client, drainOptions),
+      drain: async (drainOptions) => {
+        const userId = await resolveUserId();
+        if (!userId) return [];
+        return dbSchema.drainSyncOpOutbox(client, { ...drainOptions, userId });
+      },
       push: (ops, pushOptions) => apiClient.syncV2.pushV2(ops, pushOptions),
       markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
       markRetry: (id, plan) => dbSchema.markOutboxRetry(client, id, plan),

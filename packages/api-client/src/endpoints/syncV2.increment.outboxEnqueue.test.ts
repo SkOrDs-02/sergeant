@@ -33,9 +33,11 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
 
     const input = mapSyncV2IncrementOpToOutboxInput(
       built.op as SyncV2IncrementPushOp,
+      "u-1",
     );
 
     expect(input).toEqual({
+      userId: "u-1",
       table: "routine_streaks",
       row: { delta: 1 },
       clientTs: "2026-05-05T00:00:00.000Z",
@@ -43,7 +45,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
     });
   });
 
-  it("locks the four-key field set — no missing, no extras", () => {
+  it("locks the five-key field set — no missing, no extras", () => {
     // Drift-tripwire: any rename / addition on either side
     // (api-client `SyncV2PushOp` or db-schema `OutboxIncrementInput`)
     // changes this list and fails the assert before propagating into
@@ -59,6 +61,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
 
     const input = mapSyncV2IncrementOpToOutboxInput(
       built.op as SyncV2IncrementPushOp,
+      "u-1",
     );
 
     expect(Object.keys(input).sort()).toEqual([
@@ -66,6 +69,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
       "idempotencyKey",
       "row",
       "table",
+      "userId",
     ]);
   });
 
@@ -86,6 +90,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
 
     const input = mapSyncV2IncrementOpToOutboxInput(
       built.op as SyncV2IncrementPushOp,
+      "u-1",
     );
 
     // Same reference — no defensive copy.
@@ -113,6 +118,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
 
     const input = mapSyncV2IncrementOpToOutboxInput(
       built.op as SyncV2IncrementPushOp,
+      "u-1",
     );
     expect((input.row as { delta: number }).delta).toBe(1000);
   });
@@ -130,6 +136,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — runtime assertion", () => {
     expect(() =>
       mapSyncV2IncrementOpToOutboxInput(
         lwwOp as unknown as SyncV2IncrementPushOp,
+        "u-1",
       ),
     ).toThrowError(/expected op='increment'/);
   });
@@ -145,8 +152,30 @@ describe("mapSyncV2IncrementOpToOutboxInput — runtime assertion", () => {
     expect(() =>
       mapSyncV2IncrementOpToOutboxInput(
         insertOp as unknown as SyncV2IncrementPushOp,
+        "u-1",
       ),
     ).toThrowError(/expected op='increment', got "insert"/);
+  });
+
+  it("throws when userId is missing or empty (HIGH-#2 of T3 audit)", () => {
+    // Drift-tripwire: the mapper signature requires `userId` because
+    // `sync_op_outbox.user_id` is NOT NULL since migration 005, and a
+    // missing user_id at enqueue time is the exact bug the migration
+    // is closing. The DI layer (`submitSyncV2IncrementOp`) plumbs the
+    // current session userId; an empty string is not a valid Better
+    // Auth opaque user id.
+    const built = buildSyncV2IncrementOp({
+      table: "routine_streaks",
+      delta: 1,
+      clientTs: "2026-05-05T00:00:00.000Z",
+      idempotencyKey: "01HXZW8K6T7N4QV5R3J2P1G8MN",
+    });
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+
+    expect(() =>
+      mapSyncV2IncrementOpToOutboxInput(built.op as SyncV2IncrementPushOp, ""),
+    ).toThrowError(/userId is required/);
   });
 });
 
@@ -159,6 +188,7 @@ describe("OutboxIncrementInputShape ↔ db-schema OutboxIncrementInput", () => {
   // either the structural assignability below fails at typecheck time,
   // or the runtime equality check fails.
   interface DbSchemaOutboxIncrementInputMirror {
+    readonly userId: string;
     readonly table: string;
     readonly row: Readonly<Record<string, unknown>>;
     readonly clientTs: string;
@@ -167,6 +197,7 @@ describe("OutboxIncrementInputShape ↔ db-schema OutboxIncrementInput", () => {
 
   it("OutboxIncrementInputShape and db-schema mirror are mutually assignable", () => {
     const fromMapper: OutboxIncrementInputShape = {
+      userId: "u-1",
       table: "routine_streaks",
       row: { delta: 1 },
       clientTs: "2026-05-05T00:00:00.000Z",
@@ -195,6 +226,7 @@ describe("OutboxIncrementInputShape ↔ db-schema OutboxIncrementInput", () => {
 
     const mapped = mapSyncV2IncrementOpToOutboxInput(
       built.op as SyncV2IncrementPushOp,
+      "u-1",
     );
 
     // Compile-time + runtime: the mapper's output passes structurally
@@ -203,6 +235,7 @@ describe("OutboxIncrementInputShape ↔ db-schema OutboxIncrementInput", () => {
     const forDbSchema: DbSchemaOutboxIncrementInputMirror = mapped;
 
     expect(forDbSchema).toEqual({
+      userId: "u-1",
       table: "routine_streaks",
       row: { delta: 2 },
       clientTs: "2026-05-05T00:00:00.000Z",

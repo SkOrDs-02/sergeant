@@ -91,6 +91,17 @@ export const APPLY_REJECT_REASONS = [
   "delete_not_supported",
   // Authorization
   "user_id_mismatch",
+  /**
+   * `row.user_id` was absent on a client envelope. Tightened by
+   * HIGH-#2 of the T3 audit
+   * (https://app.devin.ai/sessions/8574143f172540b7be52c314facfc0c5):
+   * previously the apply-fn would silently substitute the session
+   * userId, which was the vector for the shared-device leak
+   * (user A's queued ops applied as user B's data after a session
+   * swap). New contract — every applied op MUST carry an explicit
+   * `row.user_id` that matches the session.
+   */
+  "missing_user_id",
   "fk_violation",
   // Required payload fields
   "missing_id",
@@ -433,7 +444,10 @@ async function applyRoutineEntries(
   // Cross-user ownership check. Якщо клієнт надіслав `user_id` у row,
   // воно мусить збігатись із сесією; якщо ні — підставляємо у DML
   // server-side userId, щоб не дозволяти smuggle через payload.
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -556,7 +570,10 @@ async function applyRoutineStreaks(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -736,7 +753,10 @@ async function applyFizrukWorkouts(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -864,7 +884,10 @@ async function applyFizrukItems(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1017,7 +1040,10 @@ async function applyFizrukSets(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1142,7 +1168,10 @@ async function applyFizrukCustomExercises(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1234,7 +1263,10 @@ async function applyFizrukMeasurements(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1425,7 +1457,10 @@ async function applyNutritionMeals(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1600,7 +1635,10 @@ async function applyNutritionPantries(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1692,7 +1730,10 @@ async function applyNutritionPantryItems(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1822,7 +1863,10 @@ async function applyNutritionPrefs(
 
   const row = op.row;
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1876,7 +1920,10 @@ async function applyNutritionRecipes(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2009,7 +2056,10 @@ async function applyFinykTombstone(
   const extId = typeof row[extColumn] === "string" ? row[extColumn] : null;
   if (!extId) return { status: "rejected", reason: "missing_ext_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2125,7 +2175,10 @@ async function applyFinykPerRowBlob(
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2317,7 +2370,10 @@ async function applyFinykTxCategories(
     typeof row["transaction_id"] === "string" ? row["transaction_id"] : null;
   if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2379,7 +2435,10 @@ async function applyFinykPerTxJsonbArray(
     typeof row["transaction_id"] === "string" ? row["transaction_id"] : null;
   if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2468,7 +2527,10 @@ async function applyFinykNetworthHistory(
     return { status: "rejected", reason: "invalid_month" };
   }
 
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2532,7 +2594,10 @@ async function applyFinykPrefs(
   }
 
   const row = op.row;
-  if (row["user_id"] != null && row["user_id"] !== userId) {
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 

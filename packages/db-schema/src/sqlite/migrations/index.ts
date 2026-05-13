@@ -247,6 +247,111 @@ CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
 `;
 
 /**
+ * Stage 5 / PR HIGH-#2 migration: add `user_id TEXT NOT NULL` column
+ * to `sync_op_outbox` so client-side drain queries can be scoped by
+ * the currently-authenticated user, and a shared-device session swap
+ * cannot silently push the previous user's queued ops under the new
+ * user's session cookie.
+ *
+ * Background — the original SPIKE shape (`001_routine_spike.sql`,
+ * PR #022) had no `user_id` column. Stage 5 / PR #040 added the
+ * retry columns but not `user_id`. PR #042d-prep / `003` extended the
+ * `op` CHECK constraint with `'increment'`. None of the prior
+ * migrations gave the outbox a per-user scope, so the engine layer
+ * (`drainSyncOpOutbox`) could not filter — and the server's apply
+ * functions had to fall back to `userId = session.userId` whenever
+ * `row.user_id` was absent. That fallback is exactly how a
+ * cross-account leak happens: user A enqueues N ops while signed in,
+ * signs out, user B signs in on the same device, the periodic 30s
+ * drain pushes those rows under B's session, the server has no
+ * authoritative `user_id` on the envelope and writes them as B's
+ * data. See HIGH-#2 finding in the T3 audit
+ * (https://app.devin.ai/sessions/8574143f172540b7be52c314facfc0c5).
+ *
+ * Pending rows are **dropped on migration** rather than backfilled —
+ * the outbox is a transient queue (not durable user data); ops are
+ * idempotent on `(user_id, idempotency_key)` server-side, so any
+ * lost-on-migration row will be re-enqueued by the next dual-write
+ * tick from the canonical (LS/MMKV) store. Backfilling from the
+ * current session cookie would be **wrong**: at migration time the
+ * client cannot know which user owned a given row, and guessing is
+ * precisely the bug we are closing.
+ *
+ * Terminal rows (`'rejected'` / `'dead_letter'`) are preserved with a
+ * synthetic `user_id='__legacy__'` placeholder so forensic value
+ * (status, reject_reason, last_error, attempts) survives the
+ * rebuild. The placeholder cannot match any real session user, so
+ * the drain helper's `WHERE user_id = ?` clause will never surface
+ * these rows to the push-loop, even by accident. The recover-helper
+ * (`syncOpOutboxRecover`) explicitly targets `'dead_letter'` rows by
+ * id and is safe to keep operating on the legacy set; the dev panel
+ * can still triage them. This is the same trade-off the prior
+ * 12-step migrations (002, 003, 004) made for their copy-forward
+ * sets — forensic stability over a clean wipe.
+ *
+ * SQLite cannot add a `NOT NULL` column without a default in place,
+ * so we follow the same "12-step ALTER" recipe as `002` and `003`:
+ * rename → create-new → copy-rows (but only those we keep) → drop
+ * legacy → recreate indexes. Recreating indexes is needed because
+ * `ALTER TABLE … RENAME` drops indexes by name; the runner installs
+ * BEGIN/COMMIT around the whole migration so a partial failure
+ * leaves the prior shape intact.
+ */
+const SYNC_OP_OUTBOX_USER_ID_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         TEXT NOT NULL,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL
+                  CHECK (op IN ('insert','update','delete','increment')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Preserve terminal rows (forensic value) with a synthetic user_id
+-- placeholder that cannot match any Better Auth opaque user id, so
+-- the drain helper's WHERE user_id = ? clause never resurfaces
+-- them to a live push-loop. Pending rows are dropped -- see the
+-- migration docstring for the rationale.
+INSERT INTO sync_op_outbox
+  (user_id, table_name, op, row, client_ts, idempotency_key,
+   status, reject_reason, attempts, next_retry_at, last_error,
+   created_at)
+SELECT '__legacy__', table_name, op, row, client_ts, idempotency_key,
+       status, reject_reason, attempts, next_retry_at, last_error,
+       created_at
+  FROM sync_op_outbox_legacy
+ WHERE status IN ('rejected', 'dead_letter');
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_user_pending_idx_lite
+  ON sync_op_outbox (user_id, next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
  * Stage 10 / PR #070r-schema migration: extend Routine SQLite schema
  * to full LS-state coverage.
  *
@@ -384,6 +489,10 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
     sql: SYNC_OP_OUTBOX_INCREMENT_OP_SQL,
   },
   { name: "004_routine_full_state.sql", sql: ROUTINE_004_FULL_STATE_SQL },
+  {
+    name: "005_sync_op_outbox_user_id.sql",
+    sql: SYNC_OP_OUTBOX_USER_ID_SQL,
+  },
 ] as const;
 
 /**

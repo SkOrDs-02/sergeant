@@ -76,25 +76,32 @@ describe("drainSyncOpOutbox", () => {
     it("returns pending rows in insertion order (id ASC)", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       const c = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
         idempotencyKey: "idem-C",
       });
       const a = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T10:00:00.000+00:00",
         idempotencyKey: "idem-A",
       });
       const b = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:30:00.000+00:00",
         idempotencyKey: "idem-B",
       });
 
-      const drained = await drainSyncOpOutbox(client, { limit: 100, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 100,
+        now,
+      });
       expect(drained.map((r) => r.id)).toEqual([c.id, a.id, b.id]);
       expect(drained.map((r) => r.idempotencyKey)).toEqual([
         "idem-C",
@@ -106,18 +113,21 @@ describe("drainSyncOpOutbox", () => {
     it("skips rows with status='rejected' or status='dead_letter'", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       const ok = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
         idempotencyKey: "idem-ok",
       });
       const rej = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
         idempotencyKey: "idem-rej",
       });
       const dead = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
@@ -131,25 +141,32 @@ describe("drainSyncOpOutbox", () => {
         dead.id,
       );
 
-      const drained = await drainSyncOpOutbox(client, { limit: 100, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 100,
+        now,
+      });
       expect(drained.map((r) => r.id)).toEqual([ok.id]);
     });
 
     it("returns next_retry_at IS NULL and next_retry_at <= now together; skips next_retry_at > now", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       const fresh = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
         idempotencyKey: "idem-fresh",
       });
       const due = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
         idempotencyKey: "idem-due",
       });
       const future = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
@@ -162,7 +179,11 @@ describe("drainSyncOpOutbox", () => {
         `UPDATE sync_op_outbox SET attempts = ?, next_retry_at = ?, last_error = ? WHERE id = ?`,
       ).run(1, "2026-05-05T12:30:00.000Z", "http_503", future.id);
 
-      const drained = await drainSyncOpOutbox(client, { limit: 100, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 100,
+        now,
+      });
       expect(drained.map((r) => r.idempotencyKey)).toEqual([
         "idem-fresh",
         "idem-due",
@@ -173,6 +194,7 @@ describe("drainSyncOpOutbox", () => {
     it("returns a row whose next_retry_at equals exactly now (boundary inclusive)", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       const exact = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
@@ -182,7 +204,11 @@ describe("drainSyncOpOutbox", () => {
         `UPDATE sync_op_outbox SET attempts = ?, next_retry_at = ?, last_error = ? WHERE id = ?`,
       ).run(1, "2026-05-05T12:00:00.000Z", "http_503", exact.id);
 
-      const drained = await drainSyncOpOutbox(client, { limit: 100, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 100,
+        now,
+      });
       expect(drained.map((r) => r.id)).toEqual([exact.id]);
     });
   });
@@ -193,6 +219,7 @@ describe("drainSyncOpOutbox", () => {
       const ids: number[] = [];
       for (let i = 0; i < 5; i += 1) {
         const r = await enqueueOutboxIncrement(client, {
+          userId: "u-test",
           table: "routine_streaks",
           row: { delta: 1 },
           clientTs: "2026-05-05T11:00:00.000+00:00",
@@ -200,13 +227,18 @@ describe("drainSyncOpOutbox", () => {
         });
         ids.push(r.id);
       }
-      const drained = await drainSyncOpOutbox(client, { limit: 3, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 3,
+        now,
+      });
       expect(drained.map((r) => r.id)).toEqual(ids.slice(0, 3));
     });
 
     it("returns [] for non-positive or non-finite limits without touching the table", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-05T11:00:00.000+00:00",
@@ -216,16 +248,20 @@ describe("drainSyncOpOutbox", () => {
       // circuits before issuing a SELECT for non-positive limits.
       db.exec("DROP TABLE sync_op_outbox");
       await expect(
-        drainSyncOpOutbox(client, { limit: 0, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: 0, now }),
       ).resolves.toEqual([]);
       await expect(
-        drainSyncOpOutbox(client, { limit: -1, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: -1, now }),
       ).resolves.toEqual([]);
       await expect(
-        drainSyncOpOutbox(client, { limit: Number.NaN, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: Number.NaN, now }),
       ).resolves.toEqual([]);
       await expect(
-        drainSyncOpOutbox(client, { limit: Number.POSITIVE_INFINITY, now }),
+        drainSyncOpOutbox(client, {
+          userId: "u-test",
+          limit: Number.POSITIVE_INFINITY,
+          now,
+        }),
       ).resolves.toEqual([]);
     });
 
@@ -234,6 +270,7 @@ describe("drainSyncOpOutbox", () => {
       const ids: number[] = [];
       for (let i = 0; i < 4; i += 1) {
         const r = await enqueueOutboxIncrement(client, {
+          userId: "u-test",
           table: "routine_streaks",
           row: { delta: 1 },
           clientTs: "2026-05-05T11:00:00.000+00:00",
@@ -241,7 +278,11 @@ describe("drainSyncOpOutbox", () => {
         });
         ids.push(r.id);
       }
-      const drained = await drainSyncOpOutbox(client, { limit: 2.9, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 2.9,
+        now,
+      });
       expect(drained.map((r) => r.id)).toEqual(ids.slice(0, 2));
     });
   });
@@ -255,13 +296,18 @@ describe("drainSyncOpOutbox", () => {
         meta: { source: "habit-undo", attempts: [1, 2, 3] },
       };
       const enq = await enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: payload,
         clientTs: "2026-05-05T11:30:00.000+00:00",
         idempotencyKey: "idem-shape",
       });
 
-      const drained = await drainSyncOpOutbox(client, { limit: 10, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+      });
       expect(drained).toHaveLength(1);
       const only = drained[0]!;
       expect(only.id).toBe(enq.id);
@@ -284,16 +330,21 @@ describe("drainSyncOpOutbox", () => {
       // catches drift if a future PR narrows drainSyncOpOutbox.
       db.prepare(
         `INSERT INTO sync_op_outbox
-           (table_name, op, row, client_ts, idempotency_key)
-         VALUES (?, 'delete', ?, ?, ?)`,
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'delete', ?, ?, ?)`,
       ).run(
+        "u-test",
         "routine_entries",
         JSON.stringify({ id: "habit-1:2026-05-05" }),
         "2026-05-05T11:00:00.000+00:00",
         "idem-legacy",
       );
 
-      const drained = await drainSyncOpOutbox(client, { limit: 10, now });
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+      });
       expect(drained).toHaveLength(1);
       expect(drained[0]).toMatchObject({
         table: "routine_entries",
@@ -312,16 +363,17 @@ describe("drainSyncOpOutbox", () => {
       // database file rather than a misuse of the public helper.
       db.prepare(
         `INSERT INTO sync_op_outbox
-           (table_name, op, row, client_ts, idempotency_key)
-         VALUES (?, 'increment', ?, ?, ?)`,
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
       ).run(
+        "u-test",
         "routine_streaks",
         "{not-json",
         "2026-05-05T11:00:00.000+00:00",
         "idem-broken",
       );
       await expect(
-        drainSyncOpOutbox(client, { limit: 10, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
       ).rejects.toThrow(/unparseable JSON/);
     });
 
@@ -329,16 +381,17 @@ describe("drainSyncOpOutbox", () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       db.prepare(
         `INSERT INTO sync_op_outbox
-           (table_name, op, row, client_ts, idempotency_key)
-         VALUES (?, 'increment', ?, ?, ?)`,
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
       ).run(
+        "u-test",
         "routine_streaks",
         JSON.stringify([1, 2, 3]),
         "2026-05-05T11:00:00.000+00:00",
         "idem-array",
       );
       await expect(
-        drainSyncOpOutbox(client, { limit: 10, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
       ).rejects.toThrow(/non-object/);
     });
 
@@ -346,16 +399,17 @@ describe("drainSyncOpOutbox", () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       db.prepare(
         `INSERT INTO sync_op_outbox
-           (table_name, op, row, client_ts, idempotency_key)
-         VALUES (?, 'increment', ?, ?, ?)`,
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
       ).run(
+        "u-test",
         "routine_streaks",
         "null",
         "2026-05-05T11:00:00.000+00:00",
         "idem-null",
       );
       await expect(
-        drainSyncOpOutbox(client, { limit: 10, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
       ).rejects.toThrow(/non-object/);
     });
 
@@ -369,6 +423,7 @@ describe("drainSyncOpOutbox", () => {
       db.exec(`
         CREATE TABLE sync_op_outbox (
           id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id         TEXT NOT NULL,
           table_name      TEXT NOT NULL,
           op              TEXT NOT NULL,
           row             TEXT NOT NULL,
@@ -384,16 +439,17 @@ describe("drainSyncOpOutbox", () => {
       `);
       db.prepare(
         `INSERT INTO sync_op_outbox
-           (table_name, op, row, client_ts, idempotency_key)
-         VALUES (?, 'merge', ?, ?, ?)`,
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'merge', ?, ?, ?)`,
       ).run(
+        "u-test",
         "routine_streaks",
         JSON.stringify({ delta: 1 }),
         "2026-05-05T11:00:00.000+00:00",
         "idem-bad-op",
       );
       await expect(
-        drainSyncOpOutbox(client, { limit: 10, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
       ).rejects.toThrow(/unsupported op/);
     });
 
@@ -401,7 +457,7 @@ describe("drainSyncOpOutbox", () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       db.exec("DROP TABLE sync_op_outbox");
       await expect(
-        drainSyncOpOutbox(client, { limit: 10, now }),
+        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
       ).rejects.toThrow(/sync_op_outbox/);
     });
   });

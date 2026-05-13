@@ -137,7 +137,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // більшість табл/reason-пар не зустрічаються одночасно). Якщо сума
     // елементів у двох масивах drift-ує — оновити cardinality calc у
     // metrics.md + dashboard top-10 reject reasons panel.
-    expect(APPLY_REJECT_REASONS.length).toBe(47);
+    expect(APPLY_REJECT_REASONS.length).toBe(48);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,

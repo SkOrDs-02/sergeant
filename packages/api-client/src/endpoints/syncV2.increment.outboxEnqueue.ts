@@ -42,6 +42,16 @@ export type SyncV2IncrementPushOp = SyncV2PushOp & { readonly op: "increment" };
  * if the db-schema interface drifts, the assertion fails in CI.
  */
 export interface OutboxIncrementInputShape {
+  /**
+   * Owner of the row — the currently-authenticated user's id.
+   * Persisted into `sync_op_outbox.user_id` (NOT NULL since migration
+   * `005_sync_op_outbox_user_id.sql`, HIGH-#2 of the T3 audit). The
+   * mapper does NOT read it off the `SyncV2PushOp.row` payload — the
+   * caller (sync-engine writer / increment submitter) supplies it
+   * explicitly so the column is always populated even when callers
+   * choose to omit `user_id` from the row payload itself.
+   */
+  readonly userId: string;
   readonly table: string;
   readonly row: Readonly<Record<string, unknown>>;
   readonly clientTs: string;
@@ -71,13 +81,21 @@ export interface OutboxIncrementInputShape {
  */
 export function mapSyncV2IncrementOpToOutboxInput(
   op: SyncV2IncrementPushOp,
+  userId: string,
 ): OutboxIncrementInputShape {
   if (op.op !== "increment") {
     throw new Error(
       `mapSyncV2IncrementOpToOutboxInput: expected op='increment', got ${JSON.stringify(op.op)}`,
     );
   }
+  if (typeof userId !== "string" || userId.length === 0) {
+    throw new Error(
+      `mapSyncV2IncrementOpToOutboxInput: userId is required — ` +
+        `sync_op_outbox.user_id is NOT NULL since migration 005.`,
+    );
+  }
   return {
+    userId,
     table: op.table,
     row: op.row,
     clientTs: op.client_ts,

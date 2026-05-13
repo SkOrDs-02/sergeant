@@ -97,9 +97,10 @@ describe("repairPartialOutboxMigration", () => {
     // sync_op_outbox is still present and writable.
     db.prepare(
       `INSERT INTO sync_op_outbox
-         (table_name, op, row, client_ts, idempotency_key)
-       VALUES (?, ?, ?, ?, ?)`,
+         (user_id, table_name, op, row, client_ts, idempotency_key)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     ).run(
+      "u-test",
       "routine_entries",
       "insert",
       "{}",
@@ -209,6 +210,7 @@ describe("repairPartialOutboxMigration", () => {
       "002_sync_op_outbox_retry.sql",
       "003_sync_op_outbox_increment_op.sql",
       "004_routine_full_state.sql",
+      "005_sync_op_outbox_user_id.sql",
     ]);
     expect(rerun.skipped).toEqual(["001_routine_spike.sql"]);
 
@@ -217,6 +219,7 @@ describe("repairPartialOutboxMigration", () => {
       .all() as { name: string }[];
     expect(cols.map((c) => c.name)).toEqual([
       "id",
+      "user_id",
       "table_name",
       "op",
       "row",
@@ -230,30 +233,22 @@ describe("repairPartialOutboxMigration", () => {
       "created_at",
     ]);
 
-    // Stranded row is still there after 002's INSERT SELECT carries
-    // it forward into the rebuilt table with the new columns
-    // defaulted.
+    // The stranded row was a *pending* SPIKE-shape row. Migration 002
+    // / 003 / 004 carry it forward verbatim, but migration 005
+    // (HIGH-#2 of the T3 audit) drops pending rows that lack a
+    // `user_id` — they have no owner and a backfill from the current
+    // session cookie would be unsafe. So after the end-to-end re-run
+    // the stranded row is *gone*. Forensic rows (`'rejected'` /
+    // `'dead_letter'`) would have survived under the synthetic
+    // `__legacy__` user_id placeholder; the unrelated repair-helper
+    // contract is otherwise unchanged.
     const recovered = db
       .prepare(
-        `SELECT idempotency_key, status, attempts, next_retry_at, last_error
+        `SELECT idempotency_key
            FROM sync_op_outbox WHERE idempotency_key = ?`,
       )
-      .all("idem-stranded") as {
-      idempotency_key: string;
-      status: string;
-      attempts: number;
-      next_retry_at: string | null;
-      last_error: string | null;
-    }[];
-    expect(recovered).toEqual([
-      {
-        idempotency_key: "idem-stranded",
-        status: "pending",
-        attempts: 0,
-        next_retry_at: null,
-        last_error: null,
-      },
-    ]);
+      .all("idem-stranded") as { idempotency_key: string }[];
+    expect(recovered).toEqual([]);
   });
 
   it("running the helper twice on the same DB is safe (second call is a no-op)", async () => {

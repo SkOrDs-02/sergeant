@@ -88,6 +88,7 @@ describe("enqueueOutboxIncrement", () => {
 
   it("inserts a fresh row with op='increment' and schema defaults", async () => {
     const result = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: 1 },
       clientTs: "2026-05-04T12:00:00.000+00:00",
@@ -124,6 +125,7 @@ describe("enqueueOutboxIncrement", () => {
 
   it("returns inserted=false on a replay and does not stomp the prior row", async () => {
     const first = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: 1 },
       clientTs: "2026-05-04T12:00:00.000+00:00",
@@ -136,6 +138,7 @@ describe("enqueueOutboxIncrement", () => {
     // bug or genuine replay after partial-state confusion. Helper
     // must not overwrite the stored envelope; the original wins.
     const second = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: 99 },
       clientTs: "2026-05-04T12:00:01.000+00:00",
@@ -161,12 +164,14 @@ describe("enqueueOutboxIncrement", () => {
 
   it("treats distinct idempotency_keys as separate rows with monotonic ids", async () => {
     const a = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: 1 },
       clientTs: "2026-05-04T12:00:00.000+00:00",
       idempotencyKey: "idem-A",
     });
     const b = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: -1 },
       clientTs: "2026-05-04T12:00:01.000+00:00",
@@ -206,6 +211,7 @@ describe("enqueueOutboxIncrement", () => {
       meta: { source: "habit-undo", attempts: [1, 2, 3] },
     };
     const result = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: payload,
       clientTs: "2026-05-04T12:34:56.789+00:00",
@@ -226,6 +232,7 @@ describe("enqueueOutboxIncrement", () => {
     // Setup: enqueue once, then mutate retry-state out-of-band to
     // mimic an engine that bumped attempts after a failed push.
     const first = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: 1 },
       clientTs: "2026-05-04T12:00:00.000+00:00",
@@ -243,6 +250,7 @@ describe("enqueueOutboxIncrement", () => {
     // `planRetry`'s job, not enqueue's. Replays of an already-
     // pending envelope are no-ops.
     const replay = await enqueueOutboxIncrement(client, {
+      userId: "u-test",
       table: "routine_streaks",
       row: { user_id: "user-1", delta: 1 },
       clientTs: "2026-05-04T12:00:00.000+00:00",
@@ -277,6 +285,7 @@ describe("enqueueOutboxIncrement", () => {
 
     await expect(
       enqueueOutboxIncrement(client, {
+        userId: "u-test",
         table: "routine_streaks",
         row: { delta: 1 },
         clientTs: "2026-05-04T12:00:00.000+00:00",

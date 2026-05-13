@@ -66,11 +66,12 @@ describe("submitSyncV2IncrementOp — happy path", () => {
   it("builds → maps → enqueues with byte-aligned camelCase fields", async () => {
     const { submit, calls } = makeSubmitSpy({ id: 7, inserted: true });
 
-    const result = await submitSyncV2IncrementOp(submit, HAPPY_INPUT);
+    const result = await submitSyncV2IncrementOp(submit, HAPPY_INPUT, "u-1");
 
     expect(result).toEqual({ ok: true, id: 7, inserted: true });
     expect(calls).toHaveLength(1);
     expect(calls[0]).toEqual({
+      userId: "u-1",
       table: "routine_streaks",
       row: { delta: 1 },
       clientTs: "2026-05-05T00:00:00.000Z",
@@ -85,7 +86,7 @@ describe("submitSyncV2IncrementOp — happy path", () => {
     // — replay is a successful no-op, not an error.
     const { submit } = makeSubmitSpy({ id: 99, inserted: false });
 
-    const result = await submitSyncV2IncrementOp(submit, HAPPY_INPUT);
+    const result = await submitSyncV2IncrementOp(submit, HAPPY_INPUT, "u-1");
 
     expect(result).toEqual({ ok: true, id: 99, inserted: false });
   });
@@ -96,10 +97,14 @@ describe("submitSyncV2IncrementOp — happy path", () => {
     // copy / no key sort — so the helper must preserve that pin.
     const { submit, calls } = makeSubmitSpy();
 
-    await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      extraRow: { user_id: "u-1", aux: { z: 1, a: 2 } },
-    });
+    await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        extraRow: { user_id: "u-1", aux: { z: 1, a: 2 } },
+      },
+      "u-1",
+    );
 
     expect(calls).toHaveLength(1);
     expect(Object.keys(calls[0]!.row)).toEqual(["user_id", "aux", "delta"]);
@@ -113,10 +118,14 @@ describe("submitSyncV2IncrementOp — happy path", () => {
   it("supports negative deltas at the magnitude boundary", async () => {
     const { submit, calls } = makeSubmitSpy({ id: 1, inserted: true });
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      delta: -1000,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        delta: -1000,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: true, id: 1, inserted: true });
     expect((calls[0]!.row as { delta: number }).delta).toBe(-1000);
@@ -127,12 +136,16 @@ describe("submitSyncV2IncrementOp — short-circuits on builder reject", () => {
   it("propagates `op_not_supported` and does NOT call submit", async () => {
     const { submit, calls } = makeSubmitSpy();
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      table: "routine_entries", // not in INCREMENT_OP_SUPPORTED_TABLES
-      delta: 1,
-      clientTs: HAPPY_INPUT.clientTs,
-      idempotencyKey: HAPPY_INPUT.idempotencyKey,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        table: "routine_entries", // not in INCREMENT_OP_SUPPORTED_TABLES
+        delta: 1,
+        clientTs: HAPPY_INPUT.clientTs,
+        idempotencyKey: HAPPY_INPUT.idempotencyKey,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: false, reason: "op_not_supported" });
     expect(calls).toHaveLength(0);
@@ -142,10 +155,14 @@ describe("submitSyncV2IncrementOp — short-circuits on builder reject", () => {
   it("propagates `missing_delta` (delta=null) and does NOT call submit", async () => {
     const { submit, calls } = makeSubmitSpy();
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      delta: null,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        delta: null,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: false, reason: "missing_delta" });
     expect(calls).toHaveLength(0);
@@ -154,10 +171,14 @@ describe("submitSyncV2IncrementOp — short-circuits on builder reject", () => {
   it("propagates `missing_delta` (delta=undefined) and does NOT call submit", async () => {
     const { submit, calls } = makeSubmitSpy();
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      delta: undefined,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        delta: undefined,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: false, reason: "missing_delta" });
     expect(calls).toHaveLength(0);
@@ -166,10 +187,14 @@ describe("submitSyncV2IncrementOp — short-circuits on builder reject", () => {
   it("propagates `invalid_delta` for non-finite delta and does NOT call submit", async () => {
     const { submit, calls } = makeSubmitSpy();
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      delta: Number.POSITIVE_INFINITY,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        delta: Number.POSITIVE_INFINITY,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: false, reason: "invalid_delta" });
     expect(calls).toHaveLength(0);
@@ -178,10 +203,14 @@ describe("submitSyncV2IncrementOp — short-circuits on builder reject", () => {
   it("propagates `invalid_delta` for non-integer delta", async () => {
     const { submit, calls } = makeSubmitSpy();
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      delta: 1.5,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        delta: 1.5,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: false, reason: "invalid_delta" });
     expect(calls).toHaveLength(0);
@@ -190,10 +219,14 @@ describe("submitSyncV2IncrementOp — short-circuits on builder reject", () => {
   it("propagates `invalid_delta` for delta beyond +/- INCREMENT_DELTA_MAX_ABS", async () => {
     const { submit, calls } = makeSubmitSpy();
 
-    const result = await submitSyncV2IncrementOp(submit, {
-      ...HAPPY_INPUT,
-      delta: 1001,
-    });
+    const result = await submitSyncV2IncrementOp(
+      submit,
+      {
+        ...HAPPY_INPUT,
+        delta: 1001,
+      },
+      "u-1",
+    );
 
     expect(result).toEqual({ ok: false, reason: "invalid_delta" });
     expect(calls).toHaveLength(0);
@@ -211,9 +244,9 @@ describe("submitSyncV2IncrementOp — error pass-through", () => {
       throw new Error("sqlite disk full");
     });
 
-    await expect(submitSyncV2IncrementOp(submit, HAPPY_INPUT)).rejects.toThrow(
-      /sqlite disk full/,
-    );
+    await expect(
+      submitSyncV2IncrementOp(submit, HAPPY_INPUT, "u-1"),
+    ).rejects.toThrow(/sqlite disk full/);
     expect(submit).toHaveBeenCalledOnce();
   });
 });
@@ -234,7 +267,7 @@ describe("submitSyncV2IncrementOp — reject-reason cardinality lock", () => {
 
     for (const input of cases) {
       const { submit } = makeSubmitSpy();
-      const result = await submitSyncV2IncrementOp(submit, input);
+      const result = await submitSyncV2IncrementOp(submit, input, "u-1");
       if (!result.ok) reasons.add(result.reason);
     }
 

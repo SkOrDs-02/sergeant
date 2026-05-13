@@ -82,6 +82,18 @@ import { SYNC_OP_OUTBOX_OPS, type SyncOpOutboxOp } from "./routine.js";
 
 export interface DrainSyncOpOutboxOptions {
   /**
+   * Scope: only rows whose `sync_op_outbox.user_id` equals this id
+   * are returned. Added by HIGH-#2 of the T3 audit — without this
+   * filter, a shared-device session swap (user A signs out, user B
+   * signs in) would silently push user A's pending rows under user
+   * B's session cookie. When the singleton's `getCurrentUserId()`
+   * returns `null` the writer-runtime must NOT call `drain` at all
+   * (no authenticated user → nothing should leave the device); the
+   * helper has no `null` short-circuit so callers cannot accidentally
+   * widen the scope. Empty string is rejected.
+   */
+  readonly userId: string;
+  /**
    * Maximum number of rows to return. Non-positive values short-
    * circuit to `[]` without hitting the database. Typical production
    * value is `100` (matches the server's per-push payload cap from
@@ -169,7 +181,14 @@ export async function drainSyncOpOutbox(
   client: SqliteMigrationClient,
   options: DrainSyncOpOutboxOptions,
 ): Promise<DrainedOutboxRow[]> {
-  const { limit, now } = options;
+  const { userId, limit, now } = options;
+  if (typeof userId !== "string" || userId.length === 0) {
+    throw new Error(
+      `drainSyncOpOutbox: userId is required (HIGH-#2 of the T3 audit). ` +
+        `Skip the drain tick entirely when no user is authenticated; ` +
+        `do not pass an empty string.`,
+    );
+  }
   if (!Number.isFinite(limit) || limit <= 0) {
     return [];
   }
@@ -181,10 +200,11 @@ export async function drainSyncOpOutbox(
             attempts, next_retry_at, last_error, created_at
        FROM sync_op_outbox
       WHERE status = 'pending'
+        AND user_id = ?
         AND (next_retry_at IS NULL OR next_retry_at <= ?)
       ORDER BY id ASC
       LIMIT ?`,
-    [nowIso, cap],
+    [userId, nowIso, cap],
   );
 
   return rows.map(parseDrainedRow);

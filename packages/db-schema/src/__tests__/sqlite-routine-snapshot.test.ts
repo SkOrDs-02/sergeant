@@ -173,6 +173,7 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
     const columnNames = config.columns.map((c) => c.name);
     expect(columnNames).toEqual([
       "id",
+      "user_id",
       "table_name",
       "op",
       "row",
@@ -196,6 +197,12 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
     expect(columnMap["id"]!.dataType).toBe("number");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.notNull).toBe(true);
+
+    // user_id TEXT NOT NULL — added by migration 005 (HIGH-#2 of the
+    // T3 audit), scopes the drain query so a session-swap on a shared
+    // device cannot push user A's queued ops under user B's cookie.
+    expect(columnMap["user_id"]!.dataType).toBe("string");
+    expect(columnMap["user_id"]!.notNull).toBe(true);
 
     // table_name TEXT NOT NULL
     expect(columnMap["table_name"]!.dataType).toBe("string");
@@ -245,11 +252,16 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
     expect(columnMap["created_at"]!.hasDefault).toBe(true);
   });
 
-  it("declares all three indexes (UNIQUE idem, partial pending, partial pending+due)", () => {
+  it("declares all four indexes (UNIQUE idem, partial pending, partial pending+due, partial user+due)", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("sync_op_outbox_idem_uniq_lite");
     expect(indexNames).toContain("sync_op_outbox_pending_idx_lite");
     expect(indexNames).toContain("sync_op_outbox_pending_due_idx_lite");
+    // Added by migration 005 (HIGH-#2 of the T3 audit) — the drain
+    // query filters by `(user_id, next_retry_at, id)` so this index
+    // lets the engine retrieve due pending rows for the current user
+    // without a full-table scan.
+    expect(indexNames).toContain("sync_op_outbox_user_pending_idx_lite");
   });
 
   it("idempotency_key index is UNIQUE", () => {
@@ -513,8 +525,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(4);
+  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration, then the HIGH-#2 user-id migration", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(5);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -599,6 +611,25 @@ describe("sqlite/migrations exports", () => {
     expect(ROUTINE_CLIENT_MIGRATIONS[3]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_completion_notes/,
     );
+
+    // HIGH-#2 of the T3 audit — sync_op_outbox.user_id NOT NULL +
+    // partial index on (user_id, next_retry_at, id). The migration
+    // also preserves terminal rows from the pre-005 shape under the
+    // synthetic `__legacy__` user_id placeholder so forensic value
+    // survives the rebuild without resurfacing across users.
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.name).toBe(
+      "005_sync_op_outbox_user_id.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /user_id\s+TEXT NOT NULL/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /sync_op_outbox_user_pending_idx_lite/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(/'__legacy__'/);
   });
 
   it("uses the standard `__migrations` ledger table", () => {

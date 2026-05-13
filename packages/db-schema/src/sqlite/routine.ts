@@ -319,6 +319,16 @@ export const syncOpOutbox = sqliteTable(
   "sync_op_outbox",
   {
     id: integer().primaryKey({ autoIncrement: true }),
+    /**
+     * Owner of the queued op. Added in `005_sync_op_outbox_user_id.sql`
+     * (HIGH-#2 of the T3 audit) — the drain helper filters by this
+     * column so a shared-device session swap cannot push the previous
+     * user's pending rows under the new user's cookie. Server-side,
+     * `applyXxx` enforces that the envelope's `row.user_id` matches
+     * the session — see `missing_user_id` / `user_id_mismatch` reject
+     * reasons in `apps/server/src/modules/sync/syncV2.ts`.
+     */
+    userId: text("user_id").notNull(),
     tableName: text("table_name").notNull(),
     op: text({ enum: SYNC_OP_OUTBOX_OPS }).notNull(),
     row: text().notNull(),
@@ -342,6 +352,9 @@ export const syncOpOutbox = sqliteTable(
       .where(sql`${table.status} = 'pending'`),
     index("sync_op_outbox_pending_due_idx_lite")
       .on(table.nextRetryAt, table.id)
+      .where(sql`${table.status} = 'pending'`),
+    index("sync_op_outbox_user_pending_idx_lite")
+      .on(table.userId, table.nextRetryAt, table.id)
       .where(sql`${table.status} = 'pending'`),
   ],
 );
