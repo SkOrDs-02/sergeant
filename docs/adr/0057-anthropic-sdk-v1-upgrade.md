@@ -54,4 +54,4 @@ call-sites (`new Anthropic({ apiKey })`, `client.messages.create()`, type-only i
 
 ## Links
 
-- [Anthropic SDK changelog](https://github.com/anthropics/anthropic-sdk-node/releases)
+- [Anthropic SDK changelog](https://github.com/anthropics/anthropic-sdk-typescript/releases)

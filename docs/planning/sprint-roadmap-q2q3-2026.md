@@ -29,50 +29,50 @@
 
 **Останнє оновлення:** 2026-05-12 00:30 UTC — синхронізовано з main (commit d8d21aa).
 
-| ID | Задача | Деталь | Статус |
-|----|--------|--------|--------|
-| T1 | HubDashboard decomposition | `HubDashboard.tsx` 743 LOC → ~100 LOC | ⏳ Очікує Sprint 6 |
-| T2 | Capacitor boundary tests | 0 тестів → 10+ у `apps/mobile-shell` | ❌ Не почато (Sprint 7) |
-| T3 | Великі файли (батч 3) | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | ❌ Не почато (Sprint 7) |
-| T4 | Bundle size | 615 KB (brotli) → 550 KB (brotli) | ⏳ Очікує Sprint 8 |
-| T5 | Lighthouse CI | LCP < 2.0s у CI, error на LCP > 3.0s | ❌ Не почато (Sprint 8) |
-| T6 | Backend dedup verification | `pantry → prompt-builders.ts` consolidation | ⏳ Очікує Sprint 8 |
-| T7 | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453) | ⏳ Очікує 20-run CI verification |
+| ID  | Задача                             | Деталь                                                        | Статус                           |
+| --- | ---------------------------------- | ------------------------------------------------------------- | -------------------------------- |
+| T1  | HubDashboard decomposition         | `HubDashboard.tsx` 743 LOC → ~100 LOC                         | ⏳ Очікує Sprint 6               |
+| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                          | ❌ Не почато (Sprint 7)          |
+| T3  | Великі файли (батч 3)              | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | ❌ Не почато (Sprint 7)          |
+| T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                             | ⏳ Очікує Sprint 8               |
+| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                          | ❌ Не почато (Sprint 8)          |
+| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                   | ⏳ Очікує Sprint 8               |
+| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)              | ⏳ Очікує 20-run CI verification |
 
 ### 1.2. Продуктові задачі (відкриті)
 
 Повний контекст — у [`openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) та [`telegram-improvements-roadmap.md`](../launch/tech/telegram-improvements-roadmap.md).
 
-| ID | Задача | Джерело | Wave | Effort | Статус |
-|----|--------|---------|------|--------|--------|
-| O1 | Phase 2.A: Ранкова повістка 08:30 Kyiv | openclaw §Phase 2 | W2 | M | ❌ Не почато (Sprint 5) |
-| O2 | C.2: Sentry breadcrumbs у tool-calls | tg-improvements §4.3 | W2 | XS | ❌ Не почато (Sprint 5) |
-| O3 | Phase 2.B: Friday weekly + monthly OKR | openclaw §Phase 2 | W3 | M | ⏳ Очікує Sprint 6 |
-| O4 | B.1: Alert dedup / occurrence-counter (10-min window) | tg-improvements §4.2 | W3 | M | ⏳ Очікує Sprint 6 |
-| O5 | W3 PR-3: `/alerts pending` slash-команда | tg-improvements §3.2 | W3 | S | ❌ Не почато (Sprint 5) |
-| O6 | W4.1: bootstrap setWebhook poll-and-retry hardening | tg-improvements §3.5.1 | W4 | XS | ⏳ Очікує Sprint 7 |
-| O7 | A.6+A.7: `/help` discovery + persona quick-row | tg-improvements §4.1 | W4 | S | ⏳ Очікує Sprint 7 |
-| O8 | Phase 3: `/plan`, `/analyze`, `/okr` | openclaw §Phase 3 | Later | L | ⏳ Очікує Sprint 8 (partial) |
-| O9 | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2 | W3+ | M | ⏳ В очікуванні (Sprint 6) |
+| ID  | Задача                                                        | Джерело                | Wave  | Effort | Статус                       |
+| --- | ------------------------------------------------------------- | ---------------------- | ----- | ------ | ---------------------------- |
+| O1  | Phase 2.A: Ранкова повістка 08:30 Kyiv                        | openclaw §Phase 2      | W2    | M      | ❌ Не почато (Sprint 5)      |
+| O2  | C.2: Sentry breadcrumbs у tool-calls                          | tg-improvements §4.3   | W2    | XS     | ❌ Не почато (Sprint 5)      |
+| O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | ⏳ Очікує Sprint 6           |
+| O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ⏳ Очікує Sprint 6           |
+| O5  | W3 PR-3: `/alerts pending` slash-команда                      | tg-improvements §3.2   | W3    | S      | ❌ Не почато (Sprint 5)      |
+| O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ⏳ Очікує Sprint 7           |
+| O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ⏳ Очікує Sprint 7           |
+| O8  | Phase 3: `/plan`, `/analyze`, `/okr`                          | openclaw §Phase 3      | Later | L      | ⏳ Очікує Sprint 8 (partial) |
+| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ⏳ В очікуванні (Sprint 6)   |
 
 ### 1.3. Вже зроблено (довідка)
 
-| Компонент | Що закрито |
-|-----------|------------|
-| TypeScript strict | ✅ 13/13 пакетів = 100% (Спринти 1–3) |
-| localStorage migration | ✅ ~90% (ESLint `no-raw-local-storage: error`, allowlist ~10 файлів) |
-| Sentry | ✅ web + mobile + server |
-| Prompt cache | ✅ `cache_control: ephemeral` у `chat.ts` |
-| OpenTelemetry | ✅ distributed tracing у `apps/server/src/obs/` |
-| OpenClaw Phase 1+1.5+2.5+4 | ✅ shipped (ADR-0031/32/33/36/37) |
-| Alert ACK-button foundation | ✅ `tg_alert_acks` table + WF-04/103/104 (ADR-0038) |
-| `/audit since=` + CSV | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462) |
-| WF-15 Bad request fix | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469) |
+| Компонент                     | Що закрито                                                                   |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| TypeScript strict             | ✅ 13/13 пакетів = 100% (Спринти 1–3)                                        |
+| localStorage migration        | ✅ ~90% (ESLint `no-raw-local-storage: error`, allowlist ~10 файлів)         |
+| Sentry                        | ✅ web + mobile + server                                                     |
+| Prompt cache                  | ✅ `cache_control: ephemeral` у `chat.ts`                                    |
+| OpenTelemetry                 | ✅ distributed tracing у `apps/server/src/obs/`                              |
+| OpenClaw Phase 1+1.5+2.5+4    | ✅ shipped (ADR-0031/32/33/36/37)                                            |
+| Alert ACK-button foundation   | ✅ `tg_alert_acks` table + WF-04/103/104 (ADR-0038)                          |
+| `/audit since=` + CSV         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                  |
+| WF-15 Bad request fix         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                  |
 | Webhook delivery для OpenClaw | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514), live 2026-05-03 |
-| dev-stack top-15 | ✅ 15/15 закрито |
-| i18n Phase 1+2+3 | ✅ sync/zod migrated, `no-cyrillic-jsx-literal` ESLint rule (#1942) |
-| CloudSync engine | ✅ lifecycle, push loop, scheduler, DLQ (#1929–#1941) |
-| Agent OS hardening | ✅ Initiative 0009 (#1949) |
+| dev-stack top-15              | ✅ 15/15 закрито                                                             |
+| i18n Phase 1+2+3              | ✅ sync/zod migrated, `no-cyrillic-jsx-literal` ESLint rule (#1942)          |
+| CloudSync engine              | ✅ lifecycle, push loop, scheduler, DLQ (#1929–#1941)                        |
+| Agent OS hardening            | ✅ Initiative 0009 (#1949)                                                   |
 
 ---
 
@@ -88,6 +88,7 @@
 #### O1: Ранкова повістка 08:30 Kyiv (Phase 2.A) `Продукт` `M`
 
 **Що:** cron (Railway scheduler або n8n WF-101) → `POST /api/internal/openclaw/ritual/morning` → DM ≤8 рядків з:
+
 - Stripe MRR delta (24h)
 - PostHog signups (24h)
 - Sentry new issues (24h)
@@ -96,12 +97,13 @@
 - 1 пропозиція дня (з cofounder-memory recall)
 
 **Acceptance:**
+
 - [ ] DM до founder щодня 08:30 Kyiv (будні)
 - [ ] Idempotency — skip якщо сьогодні вже надсилав
 - [ ] Failover — якщо ritual не вдався → пост у `⚙️ Контрол-план` через alert-bot
 - [ ] LLM cost ~$0.10 на ritual (в межах `OPENCLAW_DAILY_USD_BUDGET=$5`)
 
-**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), [ADR-0039](../adr/0039-openclaw-proactive-cron-rituals.md) (draft)
+**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), ADR-0039-openclaw-proactive-cron-rituals (draft, не комічений)
 
 ---
 
@@ -112,6 +114,7 @@
 **Файл:** `tools/console/src/agents/openclaw.ts` — у `runAgentTurn` helper.
 
 **Acceptance:**
+
 - [ ] Sentry event для помилки у tool-call містить breadcrumb з `tool_name` tag
 - [ ] Немає performance overhead > 1ms на tool-call
 
@@ -124,6 +127,7 @@
 **Файл:** `tools/console/src/openclaw/handler.ts`
 
 **Acceptance:**
+
 - [ ] `/alerts pending` → список unacked P0/P1 alert-ів з часом з моменту публікації
 - [ ] Якщо немає unacked → "Всі алерти прочитані ✅"
 - [ ] Audit row у `openclaw_invocations` для кожного виклику
@@ -135,10 +139,12 @@
 **Що:** верифікувати що `isReduceMotionEnabled` mock pattern виправлено у CI.
 
 **Файли:**
+
 - `apps/mobile/src/core/dashboard/WeeklyDigestFooter.test.tsx`
 - `apps/mobile/src/core/settings/HubSettingsPage.test.tsx`
 
 **Acceptance:**
+
 - [ ] CI mobile job — 100% pass rate за останні 20 run-ів
 - [ ] Якщо flaky — застосувати pattern з `OnboardingWizard` fix (commit `53853e00`)
 
@@ -156,11 +162,13 @@
 #### O3: Friday weekly review + monthly OKR (Phase 2.B) `Продукт` `M`
 
 **Що:**
+
 - **Friday 18:00 Kyiv:** тиждень в цифрах vs. попередній + closed PRs + 2-3 priorities на наступний тиждень.
 - **1-го числа місяця 09:00 Kyiv:** OKR progress з `docs/strategy/` + risks/blockers + recalibration suggestion.
 - Broadcast у `📊 Дайджести` topic (per [ADR-0031 §6 resolved decision](../launch/tech/openclaw-roadmap.md)).
 
 **Acceptance:**
+
 - [ ] П'ятниця 18:00 — DM weekly review
 - [ ] 1-го числа 09:00 — DM monthly OKR review
 - [ ] Broadcast у `📊 Дайджести` при weekly і monthly review
@@ -174,6 +182,7 @@
 **Що:** перш ніж слати новий alert з того самого `workflow_id`, перевірити чи не було повідомлення за останні 10 хвилин. Якщо було — edit існуючого повідомлення: додати occurrence-counter `(×3)` замість нового.
 
 **Схема:**
+
 ```sql
 -- нова колонка у tg_alert_acks або окрема таблиця dedup
 ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS occurrence_count INT NOT NULL DEFAULT 1;
@@ -181,6 +190,7 @@ ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS last_occurrence_at TIMESTAMPT
 ```
 
 **Acceptance:**
+
 - [ ] Не більше 1 нового повідомлення / 10 хв по одному workflow
 - [ ] Occurrence counter видно у message-і (`⚠️ WF-15 failed (×4)`)
 - [ ] Dedup не блокує escalation (P0 unacked 15min → ескалація незалежно від dedup-у)
@@ -190,14 +200,17 @@ ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS last_occurrence_at TIMESTAMPT
 #### O9: 17 workflow ACK-wirings `Продукт` `M`
 
 **Що:** дотягнути pattern із WF-04 (reference wiring з W3 PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480)) до решти broadcast workflows. Кожен WF що шле P0/P1 alert має:
+
 1. Формувати payload через `POST /api/internal/alerts/post`
 2. Отримувати inline-keyboard `[ ✅ Прочитав | 🔄 Розбираю | 🔕 Замутити 30хв ]`
 
 **Пріоритет wirings:**
+
 1. WF-03 (Sentry P0), WF-18 (Railway crash), WF-22 (DB alerts) — критичні
 2. WF-01/02/05..14/16/17/19..21 — решта
 
 **Acceptance:**
+
 - [ ] Всі P0/P1 workflows мають 3-кнопковий row при нових alert-ах
 - [ ] WF-103 (escalation cron) коректно знаходить unacked-и від всіх wired workflows
 - [ ] `ops/n8n-workflows/` JSON оновлені у git (`"active": false` → staging → prod toggle)
@@ -209,6 +222,7 @@ ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS last_occurrence_at TIMESTAMPT
 **Scope:** `apps/web/src/core/hub/HubDashboard.tsx` (743 LOC → ~100 LOC)
 
 **Запропонована структура:**
+
 ```
 apps/web/src/core/hub/
 ├── HubDashboard.tsx          # Container (~100 LOC)
@@ -222,6 +236,7 @@ apps/web/src/core/hub/
 ```
 
 **Acceptance:**
+
 - [ ] `HubDashboard.tsx` < 150 LOC
 - [ ] Всі існуючі тести проходять
 - [ ] Жодних circular dependencies (перевірити `pnpm lint`)
@@ -243,6 +258,7 @@ apps/web/src/core/hub/
 **Що:** після `bot.api.setWebhook(...)` — `getWebhookInfo`, перевірити `url === expected`, при mismatch → retry з backoff (max 3 спроби: 1s / 2s / 4s).
 
 **Acceptance:**
+
 - [ ] Unit test: mismatch on first attempt → recovery on second
 - [ ] Sentry breadcrumb `[openclaw] webhook recovered after race` при retry-успіху
 - [ ] Smoke: long-poll → webhook → long-poll → webhook redeploy без ручного curl-у
@@ -256,10 +272,12 @@ apps/web/src/core/hub/
 **Scope:** `tools/console/src/openclaw/handler.ts`
 
 **Що:**
+
 - **`/help`** — inline-keyboard або форматований текст з усіма доступними командами та персонами.
 - **Persona quick-row** — у boot-message (ранкова повістка) — одна кнопка-рядок для переходу до персони (`/ops`, `/growth`, `/eng`, `/finance`).
 
 **Acceptance:**
+
 - [ ] `/help` → повний список команд (`/ops`, `/growth`, `/eng`, `/finance`, `/cofounder`, `/council`, `/status`, `/metrics`, `/digest`, `/logs`, `/review`, `/audit`, `/alerts`, `/help`)
 - [ ] Persona quick-row видно у ранковому повідомленні
 
@@ -270,6 +288,7 @@ apps/web/src/core/hub/
 **Scope:** `apps/mobile-shell/tests/boundary.test.ts` (новий файл)
 
 **Що:**
+
 ```typescript
 describe("Capacitor Boundary Tests", () => {
   describe("Web Compatibility", () => {
@@ -290,6 +309,7 @@ describe("Capacitor Boundary Tests", () => {
 ```
 
 **Acceptance:**
+
 - [ ] 10+ boundary tests, CI зелений
 - [ ] `pnpm --filter @sergeant/mobile-shell test` проходить
 
@@ -305,6 +325,7 @@ describe("Capacitor Boundary Tests", () => {
 | `modules/nutrition/NutritionApp.tsx` | 728 | < 250 |
 
 **Acceptance:**
+
 - [ ] Кожен файл < 250 LOC
 - [ ] `pnpm typecheck` без нових помилок
 - [ ] Всі існуючі тести проходять
@@ -323,16 +344,17 @@ describe("Capacitor Boundary Tests", () => {
 
 **Стратегії (за savings):**
 
-| Стратегія | Потенційна економія |
-|-----------|---------------------|
-| Lazy load Recharts | ~30 KB |
-| Tree-shake date-fns | ~15 KB |
-| Split code by route | ~20 KB |
-| Remove unused icons | ~10 KB |
+| Стратегія           | Потенційна економія |
+| ------------------- | ------------------- |
+| Lazy load Recharts  | ~30 KB              |
+| Tree-shake date-fns | ~15 KB              |
+| Split code by route | ~20 KB              |
+| Remove unused icons | ~10 KB              |
 
 **Команда:** `pnpm --filter @sergeant/web build && pnpm size-limit`
 
 **Acceptance:**
+
 - [ ] `pnpm size-limit` проходить (ліміт 550 KB brotli)
 - [ ] Жодних регресій LCP > 2.5s у Lighthouse
 
@@ -341,6 +363,7 @@ describe("Capacitor Boundary Tests", () => {
 #### T5: Lighthouse CI `Tech` `S`
 
 **Що:**
+
 ```yaml
 # .github/workflows/lighthouse.yml
 name: Lighthouse CI
@@ -357,6 +380,7 @@ jobs:
 ```
 
 **Acceptance:**
+
 - [ ] LCP < 2.0s у CI
 - [ ] PR блокується якщо LCP > 2.5s (warn) або > 3.0s (error)
 
@@ -369,6 +393,7 @@ jobs:
 **Що:** верифікувати і довершити consolidation `pantry → lib/prompt-builders.ts`. FNV-1a hashing — перевірити `lib/backupKey.ts` на повноту.
 
 **Acceptance:**
+
 - [ ] 0 дублікатів шаблону `pantry → prompt` у `apps/server/src/`
 - [ ] `pnpm --filter @sergeant/server typecheck` без нових помилок
 
@@ -379,6 +404,7 @@ jobs:
 **Scope:** `tools/console/src/openclaw/handler.ts` + `apps/server/src/modules/openclaw/`
 
 **Що (Phase 3 перший crescent):**
+
 - `docs/strategy/` — нова директорія з YAML-frontmatter (`objective`, `kr[]`, `current_state`, `last_review_at`).
 - `/plan <topic>` — структурований 4-step session:
   1. Goal — уточнення цілі
@@ -387,6 +413,7 @@ jobs:
   4. Decision → `record_decision` + suggest-PR до `docs/strategy/<slug>.md`
 
 **Acceptance:**
+
 - [ ] `/plan churn-reduction` → 4-step session → PR з `docs/strategy/churn-reduction.md`
 - [ ] ADR-0040 задрафтовано і approve-нуто перед реалізацією
 
@@ -398,40 +425,40 @@ jobs:
 
 ### OpenClaw / Telegram
 
-| ID | Задача | Effort | ADR |
-|----|--------|--------|-----|
-| A.2 | Phase 3: `/analyze` + `/okr` modes | L | 0040 |
-| A.3 | "Approve all" batch button для write-tools | M | — |
-| A.4 | Diff-preview для `commit_to_strategy_doc` | M | — |
-| A.5 | Voice notes input (Whisper transcription) | M | — |
-| A.8 | `/forget {topic}` — memory-write з approval | M | — |
-| A.10 | Edit message → re-run loop | S | — |
-| A.11 | Reply threading (`reply_to_message_id`) | M | — |
-| A.12 | Nightly self-summary 02:00 Kyiv | S | — |
-| B.2 | `/silence WF-15 30m` topic command | M | — |
-| B.4 | Daily P0/P1/P2 pinned message у `⚙️ Контрол-план` | M | — |
-| C.1 | Multi-instance failover / Postgres advisory leader | L | 0042 |
-| C.3 | Bot token rotation policy | M | 0043 |
+| ID   | Задача                                             | Effort | ADR  |
+| ---- | -------------------------------------------------- | ------ | ---- |
+| A.2  | Phase 3: `/analyze` + `/okr` modes                 | L      | 0040 |
+| A.3  | "Approve all" batch button для write-tools         | M      | —    |
+| A.4  | Diff-preview для `commit_to_strategy_doc`          | M      | —    |
+| A.5  | Voice notes input (Whisper transcription)          | M      | —    |
+| A.8  | `/forget {topic}` — memory-write з approval        | M      | —    |
+| A.10 | Edit message → re-run loop                         | S      | —    |
+| A.11 | Reply threading (`reply_to_message_id`)            | M      | —    |
+| A.12 | Nightly self-summary 02:00 Kyiv                    | S      | —    |
+| B.2  | `/silence WF-15 30m` topic command                 | M      | —    |
+| B.4  | Daily P0/P1/P2 pinned message у `⚙️ Контрол-план`  | M      | —    |
+| C.1  | Multi-instance failover / Postgres advisory leader | L      | 0042 |
+| C.3  | Bot token rotation policy                          | M      | 0043 |
 
 ### Технічний борг
 
-| ID | Задача | Effort |
-|----|--------|--------|
-| T8 | i18n Phase 4+ (після Phase 1-3 shipped) | L |
-| T9 | localStorage allowlist → 0 (cloudSync internals review) | S |
-| T10 | `Overview.tsx` (494 LOC → < 250) | M |
-| T11 | DB-persistence pending approvals (Phase 5 multi-operator) | L |
+| ID  | Задача                                                    | Effort |
+| --- | --------------------------------------------------------- | ------ |
+| T8  | i18n Phase 4+ (після Phase 1-3 shipped)                   | L      |
+| T9  | localStorage allowlist → 0 (cloudSync internals review)   | S      |
+| T10 | `Overview.tsx` (494 LOC → < 250)                          | M      |
+| T11 | DB-persistence pending approvals (Phase 5 multi-operator) | L      |
 
 ---
 
 ## Метрики по спринтах
 
-| Спринт | Продуктові задачі | Tech задачі | Загальний effort |
-|--------|-------------------|-------------|-----------------|
-| Спринт 5 | O1, O2, O5 | T7 | ~5–6 днів |
-| Спринт 6 | O3, O4, O9 | T1 | ~8–10 днів |
-| Спринт 7 | O6, O7 | T2, T3 | ~7–9 днів |
-| Спринт 8 | O8-start | T4, T5, T6 | ~8–10 днів |
+| Спринт   | Продуктові задачі | Tech задачі | Загальний effort |
+| -------- | ----------------- | ----------- | ---------------- |
+| Спринт 5 | O1, O2, O5        | T7          | ~5–6 днів        |
+| Спринт 6 | O3, O4, O9        | T1          | ~8–10 днів       |
+| Спринт 7 | O6, O7            | T2, T3      | ~7–9 днів        |
+| Спринт 8 | O8-start          | T4, T5, T6  | ~8–10 днів       |
 
 ---
 

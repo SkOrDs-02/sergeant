@@ -1,6 +1,6 @@
 # Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7)
 
-> **Last validated:** 2026-05-12 by Devin. **Next review:** 2026-08-10.
+> **Last validated:** 2026-05-12 by @Skords-01. **Next review:** 2026-08-10.
 > **Status:** Active
 
 **Trigger:** Stage 6b parallel-run завершений, founder підтвердив паритет Gateway з grammy-ботом. Готовність до перемикання production-трафіку з `@OpenClaw_sergeant_bot` (grammy) на `@kOPENCLAW_GATEWAY_BOT` (OpenClaw Gateway).
@@ -78,22 +78,22 @@ curl -s "https://api.telegram.org/bot${OPENCLAW_GATEWAY_BOT_TOKEN}/getWebhookInf
 
 - [ ] **Railway env-vars повні** (для `sergeant-openclaw-gateway` service):
 
-| Змінна | Очікуване |
-|---|---|
-| `ANTHROPIC_API_KEY` | `sk-ant-api03-…` |
-| `INTERNAL_API_KEY` | 64-char hex |
-| `SERVER_INTERNAL_URL` | `http://sergeant.railway.internal:8080` |
-| `OPENCLAW_GATEWAY_AUTH_TOKEN` | 48-char hex |
-| `OPENCLAW_GATEWAY_BOT_TOKEN` | Telegram bot token |
-| `OPENCLAW_FOUNDER_TG_USER_ID` | `319824665` |
-| `OPENCLAW_FOUNDER_USER_ID` | Better Auth opaque string |
-| `OPENCLAW_DAILY_USD_BUDGET` | `5.0` |
-| `OPENCLAW_COUNCIL_USD_BUDGET` | `2.0` |
-| `OPENCLAW_MAX_ITERATIONS` | `8` |
-| `OPENCLAW_USE_WEBHOOK` | `true` |
-| `OPENCLAW_WEBHOOK_URL` | `https://…/webhook/openclaw` |
-| `OPENCLAW_WEBHOOK_SECRET` | ≥32 chars |
-| `OPENCLAW_RATE_LIMIT_PER_MIN` | `10` |
+| Змінна                        | Очікуване                               |
+| ----------------------------- | --------------------------------------- |
+| `ANTHROPIC_API_KEY`           | `sk-ant-api03-…`                        |
+| `INTERNAL_API_KEY`            | 64-char hex                             |
+| `SERVER_INTERNAL_URL`         | `http://sergeant.railway.internal:8080` |
+| `OPENCLAW_GATEWAY_AUTH_TOKEN` | 48-char hex                             |
+| `OPENCLAW_GATEWAY_BOT_TOKEN`  | Telegram bot token                      |
+| `OPENCLAW_FOUNDER_TG_USER_ID` | `319824665`                             |
+| `OPENCLAW_FOUNDER_USER_ID`    | Better Auth opaque string               |
+| `OPENCLAW_DAILY_USD_BUDGET`   | `5.0`                                   |
+| `OPENCLAW_COUNCIL_USD_BUDGET` | `2.0`                                   |
+| `OPENCLAW_MAX_ITERATIONS`     | `8`                                     |
+| `OPENCLAW_USE_WEBHOOK`        | `true`                                  |
+| `OPENCLAW_WEBHOOK_URL`        | `https://…/webhook/openclaw`            |
+| `OPENCLAW_WEBHOOK_SECRET`     | ≥32 chars                               |
+| `OPENCLAW_RATE_LIMIT_PER_MIN` | `10`                                    |
 
 - [ ] **Persistent volume** mounted — `RAILWAY_VOLUME_MOUNT_PATH=/root/.openclaw`, 5 GB.
 - [ ] **Morning-digest cron** working — `~/.openclaw/cron/jobs.json` має `digest-day` job, schedule `"0 9 * * *"` Europe/Kyiv.
@@ -164,6 +164,7 @@ curl -s "https://api.telegram.org/bot${OLD_OPENCLAW_BOT_TOKEN}/deleteWebhook"
 **2.5. Зафіксуй cutover-day:**
 
 Онови `docs/planning/openclaw-migration-plan.md`:
+
 - Stage 7 row: `⬜` → `✅`
 - Додай: `cutover-day: YYYY-MM-DD`
 
@@ -198,14 +199,14 @@ curl -s https://sergeant-openclaw-gateway-production.up.railway.app/health
 
 ### 4. Моніторинг перших 7 днів
 
-| День | Перевірка |
-|---|---|
-| D+0 | Усі 6 smoke-команд з §3 працюють |
-| D+1 | Morning-digest прийшов о 09:00 Kyiv |
-| D+1 | Railway logs: 0 unhandled exceptions |
-| D+3 | `/budget` — daily spend у нормі (< $5/day) |
-| D+3 | `openclaw_invocations` table — рядки з'являються (audit working) |
-| D+7 | Founder feedback: «все ок, паритет» |
+| День | Перевірка                                                        |
+| ---- | ---------------------------------------------------------------- |
+| D+0  | Усі 6 smoke-команд з §3 працюють                                 |
+| D+1  | Morning-digest прийшов о 09:00 Kyiv                              |
+| D+1  | Railway logs: 0 unhandled exceptions                             |
+| D+3  | `/budget` — daily spend у нормі (< $5/day)                       |
+| D+3  | `openclaw_invocations` table — рядки з'являються (audit working) |
+| D+7  | Founder feedback: «все ок, паритет»                              |
 
 **Якщо щось не так — rollback:**
 
@@ -261,6 +262,7 @@ grep -rn "openclaw/approval-store\|openclaw/policy\|openclaw/bootstrap\|openclaw
 **5.3. Оновлення `tools/console/src/index.ts`:**
 
 Видали:
+
 - `import { attachOpenClawHandlers } from "./openclaw/index.js";`
 - `import { registerOpenClawWebhook, shouldUseWebhook, unregisterOpenClawWebhook } from "./openclaw/bootstrap.js";`
 - `import { registerOpenClawBotCommands } from "./openclaw/commands.js";`
@@ -270,6 +272,7 @@ grep -rn "openclaw/approval-store\|openclaw/policy\|openclaw/bootstrap\|openclaw
 **5.4. Railway env-var cleanup (main Sergeant service):**
 
 Видали (якщо ще лишилися):
+
 - `OPENCLAW_BOT_TOKEN` (має бути вже пустий з §2.2)
 - `OPENCLAW_FOUNDER_TG_USER_ID` — залиш, якщо server-side OpenClaw tools ще використовують
 - `OPENCLAW_USE_WEBHOOK`, `OPENCLAW_WEBHOOK_URL`, `OPENCLAW_WEBHOOK_SECRET`, `OPENCLAW_WEBHOOK_PATH` — grammy-specific, Gateway має свої
@@ -277,6 +280,7 @@ grep -rn "openclaw/approval-store\|openclaw/policy\|openclaw/bootstrap\|openclaw
 **5.5. Drift-gate update:**
 
 Після видалення `tools/console/src/agents/strategic-modes.ts` (drift-gate source), оновити drift-gate тести у `packages/openclaw-plugin/`:
+
 - `src/strategic-modes/index.test.ts` — drift-gate тести що читають з `tools/console/src/agents/strategic-modes.ts`
 - Зміни reference на canonical source в самому плагіні (primers стають standalone, не drift-locked)
 
@@ -340,5 +344,5 @@ pnpm dead-code:files
 - [ADR-0055](../adr/0055-openclaw-external-gateway.md) — Phase 0 infra + cutover architecture
 - [`openclaw-migration-plan.md`](../planning/openclaw-migration-plan.md) — повний Stage tracker
 - [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md) — ротація GitHub App credentials
-- [`cleanup-dead-code.md`](./cleanup-dead-code.md) — generic dead-code removal process
-- [`release-web-and-api.md`](./release-web-and-api.md) — deploy process for Sergeant main service
+- [`cleanup-dead-code.md`](./cleanup-dead-code.md) — загальний процес видалення мертвого коду
+- [`release-web-and-api.md`](./release-web-and-api.md) — процес деплою основного сервісу Sergeant

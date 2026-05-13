@@ -102,7 +102,7 @@ pnpm --filter @sergeant/openclaw-plugin test          # vitest unit tests
 pnpm --filter @sergeant/openclaw-plugin typecheck     # tsc --noEmit
 ```
 
-Для повного e2e (Gateway → plugin → server) використовуй `Dockerfile.openclaw-gateway` локально або встановлюй OpenClaw глобально (`npm i -g openclaw`) — див. [`ops/openclaw/README.md`](../../ops/openclaw/README.md).
+Для повного e2e (Gateway → plugin → server) використовуй `Dockerfile.openclaw-gateway` локально або встановлюй OpenClaw глобально (`npm i -g openclaw`) — див. [`docs/playbooks/cutover-openclaw-gateway.md`](../../docs/playbooks/cutover-openclaw-gateway.md) та [`docs/adr/0055-openclaw-external-gateway.md`](../../docs/adr/0055-openclaw-external-gateway.md).
 
 ## Наступні кроки
 

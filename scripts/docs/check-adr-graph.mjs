@@ -74,6 +74,13 @@ export const KNOWN_NUMBERING_GAPS = new Set([
   // standalone ADR was never written. See `docs/adr/README.md`
   // § «Note on missing 0040».
   "0040",
+  // 2026-05-11: ADR-0056 was reserved by the README «Note on next ADR»
+  // header but never filled in — the next merged ADR was 0057
+  // (`cfb20ecb feat(console): upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x`,
+  // which named itself 0057 directly). ADRs are not renumbered
+  // retroactively, so `0056` stays a known gap. See `docs/adr/README.md`
+  // «Note on missing 0056».
+  "0056",
 ]);
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
