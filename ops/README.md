@@ -12,6 +12,10 @@ ops/
 ├── docker-compose.ops.yml      # n8n + Postgres (compose stack)
 ├── .env.ops.example            # Шаблон env-змінних
 ├── README.md                   # Цей файл
+├── posthog/                              # PostHog dashboards as portable manifests (PR-10+)
+│   ├── README.md                         # Folder contract + import workflow
+│   └── dashboards/
+│       └── founder-pulse.json            # Founder Pulse — WF-60 growth dashboard
 └── n8n-workflows/
     │  — Revenue / Billing —
     ├── 01-billing-pipeline.json          # Stripe → DB → Telegram

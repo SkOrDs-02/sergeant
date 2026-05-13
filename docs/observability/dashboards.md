@@ -1,6 +1,6 @@
 # Мінімальні Grafana-дашборди (Prometheus)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Це "starter pack" панелей, яких достатньо, щоб швидко зрозуміти: **що саме горить**
@@ -8,6 +8,11 @@
 
 > Порада: для інцидентів завжди корелюй з логами Pino за `requestId`
 > (див. `X-Request-Id` у відповідях API) та Sentry issue.
+
+> **PostHog продукт-дашборди** (growth-funnel, FTUX, активація) — окремий шар і живуть у власних runbook-ах:
+>
+> - [`posthog-founder-pulse.md`](./posthog-founder-pulse.md) — Founder Pulse: DAU/WAU/MAU, WF-60 funnel (signup → onboarding → first_action → subscription), per-module funnel, D1/D7/D30 retention, activation rate, new-MRR, funnel-ZEROES canary. Portable manifest у [`ops/posthog/dashboards/founder-pulse.json`](../../ops/posthog/dashboards/founder-pulse.json).
+> - [`posthog-ftux-dashboards.md`](./posthog-ftux-dashboards.md) — FTUX overview: activation funnel, TTV histogram, vibe→first-entry matrix, D1/D7 retention by signup-cohort, celebration drop-off.
 
 ## HTTP (RED)
 

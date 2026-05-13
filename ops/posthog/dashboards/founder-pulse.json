@@ -1,0 +1,230 @@
+{
+  "$schema": "../schema/dashboard.schema.json",
+  "version": 1,
+  "key": "founder-pulse",
+  "name": "Founder Pulse",
+  "description": "WF-60 growth-funnel overview for founder/on-call. Aggregates DAU/WAU/MAU, signup→onboarding→first_action activation funnel (overall + per module), MRR / new-subscriptions, D1/D7/D30 retention and activation rate from the canonical events declared in packages/shared/src/lib/analyticsEvents.ts. Runbook: docs/observability/posthog-founder-pulse.md.",
+  "timezone": "Europe/Kyiv",
+  "events_contract": {
+    "signup_completed": {
+      "payload": { "method": "email | google" },
+      "fired_by": "apps/web/src/core/auth/AuthContext.tsx",
+      "introduced_by": "PR-06 (#1983)"
+    },
+    "onboarding_completed": {
+      "payload": {
+        "intent": "vibe_picked | vibe_empty",
+        "picksCount": "number"
+      },
+      "fired_by": "apps/web/src/core/onboarding/OnboardingWizard.tsx finish()",
+      "idempotency": "hub_onboarding_completed_v1 KV flag (once per account)",
+      "introduced_by": "PR-07 (#2566)"
+    },
+    "first_action_completed": {
+      "payload": { "module": "finyk | fizruk | routine | nutrition" },
+      "fired_by": "packages/shared/src/lib/firstRealEntry.ts detectFirstActionCompletedPerModule",
+      "idempotency": "hub_first_action_completed_v1:<module> KV flag (once per module per account)",
+      "introduced_by": "PR-08 (#2025)"
+    },
+    "subscription_started": {
+      "payload": {
+        "plan": "string",
+        "cadence": "monthly | yearly",
+        "source": "stripe_webhook",
+        "status": "string",
+        "price_cents": "number",
+        "currency": "string",
+        "$revenue": "number (major units, e.g. 7 for $7)",
+        "stripe_event_id": "string",
+        "stripe_subscription_id": "string"
+      },
+      "fired_by": "apps/server/src/modules/billing/stripe.ts",
+      "idempotency": "uuid = event.id (PostHog dedupe) + stripe_webhook_events.event_id (DB)",
+      "introduced_by": "PR-09 (#2525)"
+    }
+  },
+  "super_properties": ["platform", "is_capacitor"],
+  "person_properties": ["vibe", "plan", "locale", "signup_date"],
+  "panels": [
+    {
+      "key": "active-users",
+      "name": "Active users — DAU / WAU / MAU",
+      "type": "trends",
+      "size": "wide",
+      "description": "Rolling unique-user counts over yesterday-anchored 1d / 7d / 30d windows. Cohort is `any event in window`, not just `$pageview`, so backend-only events (Stripe webhook → `subscription_started`) still count the user as active.",
+      "rationale": "DAU/WAU/MAU is the load-bearing health signal for the product. WAU/DAU ratio (stickiness) and MAU month-over-month trajectory live downstream of this panel.",
+      "targets": {
+        "DAU": "growth ≥0 WoW",
+        "WAU/DAU stickiness": "≥0.35 (P2 below)",
+        "MAU MoM growth": "≥5% / month (P2 below; P1 if negative two months in a row)"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT 'DAU' AS metric, uniq(distinct_id) AS users FROM events WHERE timestamp >= toStartOfDay(now() - INTERVAL 1 DAY) AND timestamp < toStartOfDay(now()) UNION ALL SELECT 'WAU' AS metric, uniq(distinct_id) AS users FROM events WHERE timestamp >= toStartOfDay(now() - INTERVAL 7 DAY) AND timestamp < toStartOfDay(now()) UNION ALL SELECT 'MAU' AS metric, uniq(distinct_id) AS users FROM events WHERE timestamp >= toStartOfDay(now() - INTERVAL 30 DAY) AND timestamp < toStartOfDay(now())"
+      },
+      "breakdown": {
+        "type": "super_property",
+        "key": "platform",
+        "comment": "Web vs ios vs android via the platform super-property registered in apps/web/src/core/observability/posthog.ts."
+      }
+    },
+    {
+      "key": "wf60-funnel-overall",
+      "name": "WF-60 activation funnel — signup → onboarding → first_action",
+      "type": "funnel",
+      "size": "wide",
+      "description": "Strict-sequence funnel over the four canonical activation milestones. Conversion window: 7 days from signup. Time range: last 28 days. Use to spot WoW regressions in any single step.",
+      "rationale": "PR-06/07/08/09 wire these events. The funnel here is the single chart that compresses 'are new sign-ups becoming activated users?' into one number. Cross-references `60-growth-funnel-snapshot.json` n8n cron which snapshots the same four steps daily.",
+      "targets": {
+        "signup → onboarding": "≥70% within 24h (P2 below 50%, P1 below 30%)",
+        "onboarding → first_action": "≥60% within 7 days (P2 below 40%, P1 below 20%)",
+        "first_action → subscription": "≥3% within 30 days (baseline TBD post-paywall)"
+      },
+      "steps": [
+        { "event": "signup_completed" },
+        { "event": "onboarding_completed" },
+        { "event": "first_action_completed" },
+        { "event": "subscription_started" }
+      ],
+      "conversion_window": { "hours": 168 },
+      "breakdown": {
+        "type": "person_property",
+        "key": "vibe",
+        "comment": "Person-property `vibe` is an array of module picks. PostHog flattens — each user contributes once per pick. Off-diagonal funnel mass spots vibe-blind onboarding."
+      }
+    },
+    {
+      "key": "wf60-funnel-per-module",
+      "name": "WF-60 activation funnel per module",
+      "type": "funnel",
+      "size": "wide",
+      "description": "Same funnel as `wf60-funnel-overall` but breaks down step 3 (`first_action_completed`) by the event-payload `module` field. Returns four funnels — one per Hub module (finyk, fizruk, routine, nutrition).",
+      "rationale": "Audit failure mode: a user picks `finyk` in onboarding but the first real action is logged in `nutrition`. Module-bucketed funnel quantifies that misalignment per module so module-specific FTUX fixes (PR-08 `markFirstActionCompletedForModule`) can be triaged on data, not guesses.",
+      "targets": {
+        "per-module signup → first_action": "Each of finyk/fizruk/routine/nutrition ≥40% within 7 days (P2 below)",
+        "module skew": "If any single module captures >70% of first_actions and another <10%, the onboarding recommendation engine is leaking — file Linear ticket."
+      },
+      "steps": [
+        { "event": "signup_completed" },
+        { "event": "onboarding_completed" },
+        {
+          "event": "first_action_completed",
+          "breakdown": "properties.module",
+          "module_values": ["finyk", "fizruk", "routine", "nutrition"]
+        }
+      ],
+      "conversion_window": { "hours": 168 }
+    },
+    {
+      "key": "activation-rate",
+      "name": "Activation rate (D1)",
+      "type": "hogql",
+      "size": "narrow",
+      "description": "Share of users who completed any `first_action_completed` event within 24h of `signup_completed`. Computed daily for the last 28 days and plotted as a line — the curve is the canary for onboarding regressions.",
+      "rationale": "Activation rate compresses the funnel into a single percentage. Crossing the D1 boundary is the textbook signal that the FTUX promise was kept on session-1. Below, the AARRR funnel collapses regardless of upstream signup volume.",
+      "targets": {
+        "D1 activation": "≥30% (P2 below 20%, P1 below 10%)",
+        "regression alert": "drops ≥10pp WoW → P1 (page on-call; likely deploy regression in `first_action_completed` instrumentation or KV-flag namespace drift)"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "WITH signups AS (SELECT distinct_id, min(timestamp) AS signed_at FROM events WHERE event = 'signup_completed' AND timestamp >= now() - INTERVAL 28 DAY GROUP BY distinct_id), first_actions AS (SELECT distinct_id, min(timestamp) AS acted_at FROM events WHERE event = 'first_action_completed' GROUP BY distinct_id) SELECT toDate(s.signed_at) AS cohort_day, count() AS signups, countIf(fa.acted_at IS NOT NULL AND fa.acted_at <= s.signed_at + INTERVAL 1 DAY) AS activated, round(activated * 1.0 / signups, 4) AS d1_activation_rate FROM signups s LEFT JOIN first_actions fa ON s.distinct_id = fa.distinct_id GROUP BY cohort_day ORDER BY cohort_day"
+      }
+    },
+    {
+      "key": "new-subscriptions",
+      "name": "New subscriptions — count + new MRR",
+      "type": "hogql",
+      "size": "wide",
+      "description": "Daily count of `subscription_started` events plus the new-MRR contribution (monthly-equivalent revenue) split by cadence. PostHog `$revenue` super-property is set in `apps/server/src/modules/billing/stripe.ts` and stores the major-unit amount.",
+      "rationale": "Until a renewals/cancellations feed is wired into PostHog (TBD), the new-MRR contribution per day is the cleanest revenue-pulse signal. Yearly subs are normalised by /12 so monthly + yearly stack on the same axis. Active-MRR (cumulative) is computed downstream in n8n (WF-60) — this panel is the per-day delta.",
+      "targets": {
+        "new-MRR run-rate": "≥$50/month aggregated over trailing 7 days (P2 below; baseline tracked in docs/launch/business/01-monetization-and-pricing.md)",
+        "subscription_started ZEROES": "If new subs = 0 over 7 days while ≥10 signups/day → Stripe webhook regression. P1."
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT toDate(timestamp) AS day, properties.cadence AS cadence, count() AS new_subs, sum(toFloat(properties.$revenue) * if(properties.cadence = 'yearly', 1.0/12, 1.0)) AS new_mrr_usd FROM events WHERE event = 'subscription_started' AND timestamp >= now() - INTERVAL 28 DAY AND properties.status IN ('active', 'trialing') GROUP BY day, cadence ORDER BY day, cadence"
+      }
+    },
+    {
+      "key": "retention-d1-d7-d30",
+      "name": "Cohort retention — D1 / D7 / D30",
+      "type": "retention",
+      "size": "wide",
+      "description": "Retention from `signup_completed` cohort. Returning event = any event (matches DAU contract). Cohort granularity = day, period = 30 days back, 30 days forward.",
+      "rationale": "Three retention floors gate the entire growth thesis: D1 (came back at all), D7 (FTUX promise sustained beyond curiosity), D30 (subscription-conversion window). Together they describe the shape of the leaky bucket — same metric the AARRR canon and Reichheld retention math use.",
+      "targets": {
+        "D1": "≥35%",
+        "D7": "≥15%",
+        "D30": "≥8% (baseline TBD post-billing; update with first 90 days of data)"
+      },
+      "cohortizing_event": "signup_completed",
+      "returning_event": "$any_event",
+      "period": "day",
+      "total_intervals": 31,
+      "breakdown": {
+        "type": "person_property",
+        "key": "vibe",
+        "comment": "Same vibe segmentation as funnel-overall — keeps retention readable per onboarding intent."
+      }
+    },
+    {
+      "key": "funnel-zeroes-canary",
+      "name": "Funnel ZEROES — per-step daily count",
+      "type": "hogql",
+      "size": "narrow",
+      "description": "Daily count of each canonical funnel event over the last 14 days. Single-tile early-warning for `count() = 0` regressions on any of the four steps.",
+      "rationale": "Every previous PostHog outage where canonical events stopped firing took 3–9 days to detect through funnel-shape alone (per posthog-ftux-dashboards.md §5 'Funnel ZEROES'). A raw daily-count tile is the cheapest leading indicator — if any cell flips to 0 unexpectedly, page on-call.",
+      "targets": {
+        "any step = 0 / 24h while previous 7d > 0": "P1 — deploy broke `trackEvent` calls or KV namespace drifted."
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT toDate(timestamp) AS day, countIf(event = 'signup_completed') AS signups, countIf(event = 'onboarding_completed') AS onboardings, countIf(event = 'first_action_completed') AS first_actions, countIf(event = 'subscription_started') AS subscriptions FROM events WHERE timestamp >= now() - INTERVAL 14 DAY GROUP BY day ORDER BY day"
+      }
+    }
+  ],
+  "alerts": [
+    {
+      "key": "funnel-zeroes",
+      "panel": "funnel-zeroes-canary",
+      "condition": "any one of signups / onboardings / first_actions / subscriptions = 0 over 24h while the previous 7-day window had > 0",
+      "severity": "P1",
+      "channel": "Telegram #ops (via n8n WF-16) + PostHog subscription"
+    },
+    {
+      "key": "activation-rate-collapse",
+      "panel": "activation-rate",
+      "condition": "d1_activation_rate < 0.10 over the last 7 days",
+      "severity": "P1",
+      "channel": "Telegram #growth + PostHog subscription"
+    },
+    {
+      "key": "new-mrr-stall",
+      "panel": "new-subscriptions",
+      "condition": "sum(new_subs) = 0 over 7 rolling days while signups/day average > 10",
+      "severity": "P1",
+      "channel": "Telegram #ops + PostHog subscription"
+    },
+    {
+      "key": "d1-regression",
+      "panel": "retention-d1-d7-d30",
+      "condition": "D1 retention drops > 5pp from the 28-day baseline for any signup-cohort",
+      "severity": "P2",
+      "channel": "Telegram #growth"
+    }
+  ],
+  "umbrella_dashboard": {
+    "name": "Founder Pulse",
+    "tiles": [
+      { "panel": "active-users", "row": 1, "width": "full" },
+      { "panel": "wf60-funnel-overall", "row": 2, "width": "full" },
+      { "panel": "wf60-funnel-per-module", "row": 3, "width": "full" },
+      { "panel": "activation-rate", "row": 4, "width": "half" },
+      { "panel": "new-subscriptions", "row": 4, "width": "half" },
+      { "panel": "retention-d1-d7-d30", "row": 5, "width": "full" },
+      { "panel": "funnel-zeroes-canary", "row": 6, "width": "full" }
+    ]
+  }
+}
