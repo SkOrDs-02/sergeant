@@ -781,6 +781,21 @@ export const monoEnrichmentDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// Rule-based MCC lookup outcome — PR-17 (WF-06 mono optimization).
+// `matched`   — MCC знайдений у `apps/server/src/lib/mcc/mccMap.ts`,
+//               category-результат повернувся миттєво БЕЗ Anthropic-виклику.
+// `unknown`   — MCC=0/null/undefined або відсутній у мапі → caller
+//               провалюється у AI-fallback (`categorizeTransaction` →
+//               `anthropicMessages`).
+// Hit-rate (`matched / (matched + unknown)`) — це бюджет економії Claude:
+// чим вищий — тим менше викликів у `categorize` proceed-нуть до AI.
+export const monoMccMatchTotal = new client.Counter({
+  name: "mono_mcc_match_total",
+  help: "Rule-based MCC → category lookup outcome (matched|unknown)",
+  labelNames: ["outcome"], // matched|unknown
+  registers: [register],
+});
+
 // ───────────────────────── Auth-mail jobs (BullMQ) ────────────
 export const authMailJobsEnqueuedTotal = new client.Counter({
   name: "auth_mail_jobs_enqueued_total",

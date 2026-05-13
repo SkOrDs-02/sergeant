@@ -153,6 +153,81 @@ describe("/api/internal/*", () => {
     expect(JSON.stringify(payload)).not.toContain("test@example.com");
   });
 
+  it("rule-based MCC fast-path skips Anthropic for known supermarket MCC", async () => {
+    const { app } = await makeApp("secret");
+
+    const res = await request(app)
+      .post("/api/internal/categorize")
+      .set("Authorization", "Bearer secret")
+      .send({ description: "СІЛЬПО Київ", amount: -54321, mcc: 5411 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ category: "groceries", confidence: 1 });
+    // Critical: AI fallback MUST NOT be invoked when MCC is known.
+    expect(anthropicMessagesMock).not.toHaveBeenCalled();
+  });
+
+  it("rule-based MCC fast-path skips Anthropic for known fuel-station MCC", async () => {
+    const { app } = await makeApp("secret");
+
+    const res = await request(app)
+      .post("/api/internal/categorize")
+      .set("Authorization", "Bearer secret")
+      .send({ description: "WOG Kyiv", amount: -120000, mcc: 5541 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ category: "transport", confidence: 1 });
+    expect(anthropicMessagesMock).not.toHaveBeenCalled();
+  });
+
+  it("falls through to Anthropic when MCC is unknown", async () => {
+    const { app } = await makeApp("secret");
+    anthropicMessagesMock.mockResolvedValueOnce({
+      response: { ok: true },
+      data: {
+        content: [
+          {
+            type: "text",
+            text: '{"category":"other","confidence":0.42}',
+          },
+        ],
+      },
+    });
+
+    const res = await request(app)
+      .post("/api/internal/categorize")
+      .set("Authorization", "Bearer secret")
+      .send({ description: "some merchant", amount: -1000, mcc: 1234 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ category: "other", confidence: 0.42 });
+    expect(anthropicMessagesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls through to Anthropic when MCC is 0 / absent", async () => {
+    const { app } = await makeApp("secret");
+    anthropicMessagesMock.mockResolvedValueOnce({
+      response: { ok: true },
+      data: {
+        content: [
+          {
+            type: "text",
+            text: '{"category":"shopping","confidence":0.7}',
+          },
+        ],
+      },
+    });
+
+    const res = await request(app)
+      .post("/api/internal/categorize")
+      .set("Authorization", "Bearer secret")
+      .send({ description: "p2p transfer", amount: -500 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ category: "shopping", confidence: 0.7 });
+    expect(anthropicMessagesMock).toHaveBeenCalledTimes(1);
+  });
+
   // ── n8n base endpoints (PR — base for SEO/growth/marketing/governance) ──
 
   it("rejects /api/internal/seo/gsc-snapshot without a valid date", async () => {

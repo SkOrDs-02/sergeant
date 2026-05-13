@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { asyncHandler } from "../../http/index.js";
 import { anthropicMessages } from "../../lib/anthropic.js";
+import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
+import { monoMccMatchTotal } from "../../obs/metrics.js";
 import { env } from "../../env.js";
 
 export const CATEGORIES = [
@@ -77,6 +79,19 @@ export async function categorizeTransaction(
   if (!description) {
     throw new Error("categorizeTransaction: description is required");
   }
+
+  // Rule-based MCC fast-path (PR-17, WF-06 mono optimization). Більшість
+  // українських терміналів шлють відомі ISO 18245 MCC, які можна резолвити
+  // детерміністично без Anthropic-виклику. Confidence фіксований на 1.0 —
+  // ISO-таблиця не «майже впевнена», вона авторитетна. AI-fallback нижче
+  // лишається для unknown / нульових MCC.
+  const mccCategory = lookupMccCategory(args.mcc);
+  if (mccCategory !== null) {
+    monoMccMatchTotal.inc({ outcome: "matched" });
+    return { category: mccCategory, confidence: 1 };
+  }
+  monoMccMatchTotal.inc({ outcome: "unknown" });
+
   const safeDescription = maskPii(description);
   const amountUah =
     args.amount != null ? Math.abs(Number(args.amount) / 100) : null;
