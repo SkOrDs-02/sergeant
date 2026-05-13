@@ -58,7 +58,6 @@
 
 
 
-||||||| parent of e773597f (docs(docs): add 2026-05-13 revenue & monetization roast)
 | [`archive/2026-04-26-sergeant-audit-devin.md`](./archive/2026-04-26-sergeant-audit-devin.md)                 | Незалежний аудит Devin (historical record)                                                                                     | Archived | 30/31            | 1             | embedded таблиця у самому файлі                                                                |
 | [`archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит                                                                                                  | Archived | 12/18 ≈          | 6 ≈           | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)               |
 | [`archive/2026-04-28-ux-ui-audit.md`](./archive/2026-04-28-ux-ui-audit.md)                                   | UX/UI аудит 2026                                                                                                               | Archived | —                | —             | [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md)                     |
