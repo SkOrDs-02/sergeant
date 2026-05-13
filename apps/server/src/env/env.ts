@@ -568,6 +568,19 @@ const envSchema = z.object({
   /** Максимум спроб до того, як queue.row.status='failed'. */
   MONO_ENRICHMENT_MAX_ATTEMPTS: intFromEnv(5),
 
+  // ── Mono MCC hourly batch fallback (PR-18 of pr-plan-2026-05) ──────
+  // Коли увімкнено, unknown-MCC tx-и (ті, що не зматчились у
+  // `apps/server/src/lib/mcc/mccMap.ts`) буферяться у пам'яті і батчуються
+  // в один Anthropic-виклик раз на годину замість per-row. Це різко
+  // зменшує AI-витрати; latency категоризації не критичний.
+  // Default off — щоб увімкнути потрібен явний opt-in у Railway env.
+  /** Вмикає hourly batch flow для unknown-MCC tx у enrichment-worker-і. */
+  MCC_BATCH_HOURLY_ENABLED: boolFromEnv(false),
+  /** Максимум tx-ів у одному batch-Anthropic-виклику. */
+  MCC_BATCH_MAX_SIZE: intFromEnv(100),
+  /** Інтервал між batch-tick-ами (мс). За замовч. 1 година. */
+  MCC_BATCH_INTERVAL_MS: intFromEnv(3_600_000),
+
   // ── AI memory (pgvector + Voyage embeddings, ADR-0028) ─────────────
   /** Майстер-вимикач AI memory pipeline. */
   AI_MEMORY_ENABLED: boolFromEnv(false),

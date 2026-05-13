@@ -50,6 +50,10 @@ import {
   startMonoEnrichmentWorker,
   type StartedWorker,
 } from "./modules/mono/enrichmentWorker.js";
+import {
+  startMonoMccBatchWorker,
+  type StartedBatchWorker,
+} from "./modules/mono/batchEnrichmentWorker.js";
 import { logger, serializeError } from "./obs/logger.js";
 // Імпорт ініціалізує `registerAuthMailDispatcher` як side-effect, тож worker
 // має кому делегувати job-и. Винесено вище за `startAuthMailWorker`, щоб
@@ -110,6 +114,29 @@ if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
   logger.warn({
     msg: "mono_enrichment_worker_disabled_no_api_key",
     reason: "ANTHROPIC_API_KEY is not configured",
+  });
+}
+
+// Hourly batch fallback worker для unknown-MCC tx (PR-18 з pr-plan-2026-05,
+// WF-06 mono optimization). Дренажить in-memory буфер, заповнений
+// `enrichmentWorker`-ом, і батчить в один Anthropic-виклик. Default off;
+// при вимкненому flag-у enrichmentWorker працює по-старому (per-row).
+let mccBatchWorker: StartedBatchWorker | null = null;
+if (
+  env.MCC_BATCH_HOURLY_ENABLED &&
+  env.MONO_ENRICHMENT_WORKER_ENABLED &&
+  env.ANTHROPIC_API_KEY
+) {
+  mccBatchWorker = startMonoMccBatchWorker(pool, {
+    batchSize: env.MCC_BATCH_MAX_SIZE,
+    intervalMs: env.MCC_BATCH_INTERVAL_MS,
+  });
+} else if (env.MCC_BATCH_HOURLY_ENABLED) {
+  logger.warn({
+    msg: "mono_mcc_batch_worker_disabled",
+    reason: !env.MONO_ENRICHMENT_WORKER_ENABLED
+      ? "MONO_ENRICHMENT_WORKER_ENABLED is false (batch worker depends on per-row producer)"
+      : "ANTHROPIC_API_KEY is not configured",
   });
 }
 
@@ -265,6 +292,19 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
       } catch (err) {
         logger.warn({
           msg: "mono_enrichment_worker_stop_error",
+          err: serializeError(err, { includeStack: false }),
+        });
+      }
+    }
+
+    if (mccBatchWorker) {
+      try {
+        // Stop ПІСЛЯ enrichmentWorker, щоб batch-worker не дренажив
+        // буфер, який enrichmentWorker все ще наповнює.
+        await mccBatchWorker.stop();
+      } catch (err) {
+        logger.warn({
+          msg: "mono_mcc_batch_worker_stop_error",
           err: serializeError(err, { includeStack: false }),
         });
       }

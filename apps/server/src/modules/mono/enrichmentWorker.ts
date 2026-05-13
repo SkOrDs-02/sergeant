@@ -3,10 +3,14 @@ import {
   monoEnrichmentDurationMs,
   monoEnrichmentProcessedTotal,
   monoEnrichmentQueueDepth,
+  monoMccBatchProcessedTotal,
 } from "../../obs/metrics.js";
 import { logger, serializeError } from "../../obs/logger.js";
 import { categorizeTransaction } from "../../routes/internal/categorize.js";
 import type { CategorizeResult } from "../../routes/internal/categorize.js";
+import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
+import { maskPii } from "../../lib/pii-mask.js";
+import { enqueueUnknownMcc } from "../../lib/mcc/unknownQueue.js";
 import { env } from "../../env.js";
 
 /**
@@ -64,6 +68,13 @@ export interface EnrichmentTickResult {
   ok: number;
   failed: number;
   missingTx: number;
+  /**
+   * Items routed into the in-memory MCC batch buffer (PR-18). Queue.row
+   * лишається у `processing` — batch-worker закриває її. `picked === ok +
+   * failed + missingTx + buffered + skipped + dropped` (skipped/dropped не
+   * мають свого field-у, бо лічаться лише у counter).
+   */
+  buffered: number;
 }
 
 interface QueueRow {
@@ -152,6 +163,7 @@ export async function runEnrichmentTick(
     ok: 0,
     failed: 0,
     missingTx: 0,
+    buffered: 0,
   };
 
   let picked: QueueRow[] = [];
@@ -211,6 +223,43 @@ export async function runEnrichmentTick(
         await pool.query(MARK_DONE_SQL, [row.id]);
         monoEnrichmentProcessedTotal.inc({ outcome: "skipped" });
         continue;
+      }
+
+      // ── Hourly batch fallback (PR-18 з pr-plan-2026-05) ──
+      // Коли feature-flag увімкнено і MCC НЕ зматчився rule-based,
+      // запушуємо item у in-memory буфер замість per-row Anthropic-виклику.
+      // Queue.row лишається у `status='processing'` (PICK_BATCH_SQL не
+      // підбирає такі) — batch-worker write-back-ить `done` при успіху
+      // або redirect-ить через `MARK_RETRY_SQL` при фейлі. Якщо буфер
+      // переповнений (`MCC_BATCH_MAX_SIZE × 10`) — `enqueueUnknownMcc()`
+      // повертає false, і ми фолбекаємо на per-row Claude нижче (legacy
+      // behaviour). PR-17 fast-path лишається в `categorizeTransaction()`,
+      // тож matched-MCC і далі резолвиться миттєво без буфер-у.
+      if (env.MCC_BATCH_HOURLY_ENABLED && lookupMccCategory(tx.mcc) === null) {
+        const buffered = enqueueUnknownMcc(
+          {
+            queueId: typeof row.id === "number" ? row.id : Number(row.id),
+            userId: row.user_id,
+            monoTxId: row.mono_tx_id,
+            // Mask PII до того, як description опиниться у Anthropic-prompt-і.
+            description: maskPii(tx.description),
+            amount: tx.amount != null ? Number(tx.amount) : null,
+            mcc: tx.mcc,
+            enqueuedAt: Date.now(),
+            attempts: 0,
+          },
+          env.MCC_BATCH_MAX_SIZE,
+        );
+        if (buffered) {
+          monoEnrichmentProcessedTotal.inc({ outcome: "buffered" });
+          monoEnrichmentDurationMs.observe({ outcome: "ok" }, Date.now() - t0);
+          result.buffered += 1;
+          // Свідомо НЕ оновлюємо queue.row — лишаємо у `processing`, поки
+          // batch-worker не закриє його.
+          continue;
+        }
+        // Буфер переповнений → drop і фолбек на per-row Claude.
+        monoMccBatchProcessedTotal.inc({ outcome: "dropped" });
       }
 
       const cat: CategorizeResult = await categorize({

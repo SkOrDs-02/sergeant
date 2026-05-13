@@ -24,6 +24,8 @@ vi.mock("../../obs/metrics.js", () => ({
   monoEnrichmentQueueDepth: { set: vi.fn(), reset: vi.fn() },
   monoEnrichmentProcessedTotal: { inc: vi.fn() },
   monoEnrichmentDurationMs: { observe: vi.fn() },
+  monoMccBatchProcessedTotal: { inc: vi.fn() },
+  monoMccBufferDepth: { set: vi.fn() },
 }));
 
 import { categorizeTransaction as _categorize } from "../../routes/internal/categorize.js";
@@ -36,6 +38,16 @@ import {
   sampleEnrichmentQueueDepth,
   startMonoEnrichmentWorker,
 } from "./enrichmentWorker.js";
+import {
+  __resetForTests as resetUnknownQueue,
+  currentBufferSize,
+} from "../../lib/mcc/unknownQueue.js";
+import { env as _env } from "../../env.js";
+
+const env = _env as unknown as {
+  MCC_BATCH_HOURLY_ENABLED: boolean;
+  MCC_BATCH_MAX_SIZE: number;
+};
 
 const categorize = _categorize as unknown as Mock;
 const processedInc = (_processed as unknown as { inc: Mock }).inc;
@@ -67,7 +79,13 @@ describe("runEnrichmentTick — empty queue", () => {
       batchSize: 5,
     });
 
-    expect(result).toEqual({ picked: 0, ok: 0, failed: 0, missingTx: 0 });
+    expect(result).toEqual({
+      picked: 0,
+      ok: 0,
+      failed: 0,
+      missingTx: 0,
+      buffered: 0,
+    });
     expect(categorize).not.toHaveBeenCalled();
     expect(processedInc).not.toHaveBeenCalled();
   });
@@ -78,7 +96,13 @@ describe("runEnrichmentTick — empty queue", () => {
 
     const result = await runEnrichmentTick(pool as unknown as Pool);
 
-    expect(result).toEqual({ picked: 0, ok: 0, failed: 0, missingTx: 0 });
+    expect(result).toEqual({
+      picked: 0,
+      ok: 0,
+      failed: 0,
+      missingTx: 0,
+      buffered: 0,
+    });
   });
 });
 
@@ -164,7 +188,13 @@ describe("runEnrichmentTick — happy path", () => {
       categorize,
     });
 
-    expect(result).toEqual({ picked: 1, ok: 0, failed: 0, missingTx: 1 });
+    expect(result).toEqual({
+      picked: 1,
+      ok: 0,
+      failed: 0,
+      missingTx: 1,
+      buffered: 0,
+    });
     expect(categorize).not.toHaveBeenCalled();
     expect(processedInc).toHaveBeenCalledWith({ outcome: "missing_tx" });
   });
@@ -451,5 +481,108 @@ describe("startMonoEnrichmentWorker — non-overlapping ticks + graceful stop", 
     expect(stopResolved).toBe(true);
 
     vi.useRealTimers();
+  });
+});
+
+// ── PR-18: hourly batch fallback enqueue branch ────────────────────
+
+describe("runEnrichmentTick — MCC_BATCH_HOURLY_ENABLED enqueue branch", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetUnknownQueue();
+  });
+
+  it("при unknown MCC + flag=true → push у буфер, НЕ викликає categorize, queue.row лишається у processing", async () => {
+    env.MCC_BATCH_HOURLY_ENABLED = true;
+    env.MCC_BATCH_MAX_SIZE = 100;
+    try {
+      const pool = makePool() as unknown as MockPool;
+
+      // PICK → 1 row.
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { id: 99, user_id: "u1", mono_tx_id: "tx_unknown", attempts: 0 },
+        ],
+      });
+      // FETCH_TX → unknown MCC 1234 (не у mccMap).
+      pool.query.mockResolvedValueOnce({
+        rows: [{ description: "Mystery shop", amount: -5000, mcc: 1234 }],
+      });
+
+      const result = await runEnrichmentTick(pool as unknown as Pool, {
+        categorize,
+      });
+
+      expect(result.picked).toBe(1);
+      expect(result.buffered).toBe(1);
+      expect(result.ok).toBe(0);
+      expect(categorize).not.toHaveBeenCalled();
+
+      // PICK + FETCH_TX, але без WRITE_BACK / MARK_DONE.
+      expect(pool.query.mock.calls).toHaveLength(2);
+
+      expect(currentBufferSize()).toBe(1);
+      expect(processedInc).toHaveBeenCalledWith({ outcome: "buffered" });
+    } finally {
+      env.MCC_BATCH_HOURLY_ENABLED = false;
+    }
+  });
+
+  it("при ВІДОМОМУ MCC (5411 supermarket) → НЕ buffered, працює як раніше", async () => {
+    env.MCC_BATCH_HOURLY_ENABLED = true;
+    try {
+      const pool = makePool() as unknown as MockPool;
+      pool.query.mockResolvedValueOnce({
+        rows: [{ id: 1, user_id: "u1", mono_tx_id: "tx_known", attempts: 0 }],
+      });
+      pool.query.mockResolvedValueOnce({
+        rows: [{ description: "Сільпо", amount: -12500, mcc: 5411 }],
+      });
+      pool.query.mockResolvedValueOnce({ rowCount: 1 }); // WRITE_BACK
+      pool.query.mockResolvedValueOnce({ rowCount: 1 }); // MARK_DONE
+
+      categorize.mockResolvedValueOnce({
+        category: "groceries",
+        confidence: 1,
+      });
+
+      const result = await runEnrichmentTick(pool as unknown as Pool, {
+        categorize,
+      });
+
+      expect(result.buffered).toBe(0);
+      expect(result.ok).toBe(1);
+      expect(categorize).toHaveBeenCalledTimes(1);
+      expect(currentBufferSize()).toBe(0);
+    } finally {
+      env.MCC_BATCH_HOURLY_ENABLED = false;
+    }
+  });
+
+  it("при flag=false (default) — НЕ buffered навіть для unknown MCC (legacy path)", async () => {
+    expect(env.MCC_BATCH_HOURLY_ENABLED).toBe(false);
+
+    const pool = makePool() as unknown as MockPool;
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: 1, user_id: "u1", mono_tx_id: "tx", attempts: 0 }],
+    });
+    pool.query.mockResolvedValueOnce({
+      rows: [{ description: "shop", amount: -100, mcc: 1234 }],
+    });
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    categorize.mockResolvedValueOnce({
+      category: "other",
+      confidence: 0.3,
+    });
+
+    const result = await runEnrichmentTick(pool as unknown as Pool, {
+      categorize,
+    });
+    expect(result.buffered).toBe(0);
+    expect(result.ok).toBe(1);
+    expect(categorize).toHaveBeenCalledTimes(1);
+    expect(currentBufferSize()).toBe(0);
   });
 });

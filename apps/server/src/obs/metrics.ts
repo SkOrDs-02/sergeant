@@ -796,6 +796,52 @@ export const monoMccMatchTotal = new client.Counter({
   registers: [register],
 });
 
+// Hourly batch fallback для unknown-MCC — PR-18 (WF-06 mono optimization).
+// `ok`         — Anthropic-batch повернув валідну category, ai_category_slug
+//                записано у `mono_transaction`, queue.row → done.
+// `missing`    — index відсутній у Claude-response або category поза enum-ом;
+//                item повернувся у буфер до наступного tick-у.
+// `requeued`   — item після N missed tick-ів redirect-нутий назад у per-row
+//                queue (`MARK_RETRY_SQL`), щоб уникнути infinite-buffer-у.
+// `failed`     — Anthropic 5xx / timeout / parse-throw; ВЕСЬ batch повернутий
+//                у per-row queue (старий behaviour, як у specs PR-18).
+// `dropped`    — overflow `MCC_BATCH_MAX_SIZE × 10`, caller вже зробив
+//                fallback на per-row Anthropic у `enrichmentWorker`.
+export const monoMccBatchProcessedTotal = new client.Counter({
+  name: "mono_mcc_batch_processed_total",
+  help: "MCC hourly batch fallback per-item outcomes",
+  labelNames: ["outcome"], // ok|missing|requeued|failed|dropped
+  registers: [register],
+});
+
+// Розмір окремого batch-Anthropic-виклику. p50/p95 показують, наскільки
+// часто буфер заповнюється до `MCC_BATCH_MAX_SIZE` (sweet spot) проти
+// маленьких batch-ів коли трафік низький.
+export const monoMccBatchSize = new client.Histogram({
+  name: "mono_mcc_batch_size",
+  help: "Items per MCC hourly batch Anthropic call",
+  buckets: [1, 5, 10, 25, 50, 75, 100, 150, 250],
+  registers: [register],
+});
+
+// Тривалість одного batch-tick-у (drain → Anthropic → write-back).
+export const monoMccBatchDurationMs = new client.Histogram({
+  name: "mono_mcc_batch_duration_ms",
+  help: "Per-tick MCC hourly batch duration (ms): drain → Anthropic → write-back",
+  labelNames: ["outcome"], // ok|failed
+  buckets: [100, 500, 1000, 2500, 5000, 10000, 25000, 60000],
+  registers: [register],
+});
+
+// Поточна глибина in-memory буфер-у unknown-MCC items. Gauge оновлюється
+// при кожному enqueue/drain. Якщо stuck-високий — batch-worker не запущений
+// або фейлить підряд.
+export const monoMccBufferDepth = new client.Gauge({
+  name: "mono_mcc_buffer_depth",
+  help: "Current size of in-memory unknown-MCC buffer",
+  registers: [register],
+});
+
 // ───────────────────────── Auth-mail jobs (BullMQ) ────────────
 export const authMailJobsEnqueuedTotal = new client.Counter({
   name: "auth_mail_jobs_enqueued_total",
