@@ -111,6 +111,16 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 - `AI_QUOTA_TOOL_DEFAULT_LIMIT=60` (default).
 - `AI_QUOTA_TOOL_LIMITS={"change_category":30,"create_debt":10,"create_receivable":10,"hide_transaction":30,"set_budget_limit":10,"set_monthly_plan":5,"mark_habit_done":30,"plan_workout":10,"create_habit":10}` — JSON з лімітами на кожен tool. Tool-и, не вказані у JSON, беруть `AI_QUOTA_TOOL_DEFAULT_LIMIT` (або unlimited якщо пусто).
 
+### `LLM_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-23** — pluggable LLM-провайдер за [`apps/server/src/lib/llm/provider.ts`](../../apps/server/src/lib/llm/provider.ts). Дозволяє переключити сервер у fail-soft режим без зміни call-sites:
+
+- `anthropic` (default) — `AnthropicProvider`, тонкий wrapper навколо `anthropicMessages()` із PR-12 logic (retry, timeout, prompt-caching, USD-ledger). Якщо `ANTHROPIC_API_KEY` пустий → factory деградує у `stub` (warn-log на startup-і).
+- `stub` — `StubProvider`, no-op повертає `{"ok":true,"stub":true}` JSON. Призначення: e2e-тести без real-Anthropic-калькування, локальний dev без ключа, інцидент-recovery під час Anthropic-outage (read-only OpenClaw paths-ів).
+- `openrouter` — зарезервовано під майбутню імплементацію (OpenRouter fallback). Поки що деградує у `stub`, щоб неочікуваний env не валив app.
+
+Wire-up call-sites — окремі PR-24 (OpenClaw `classify`) і PR-25 (`weekly-digest`). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+
 ### `AI_TIMEOUT_MS`, `AI_MAX_RETRIES`, `AI_CIRCUIT_BREAKER_THRESHOLD`, `AI_CIRCUIT_BREAKER_RESET_MS` _(optional)_
 
 Тюнінг Anthropic-клієнта.
