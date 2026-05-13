@@ -136,7 +136,8 @@
       "postcss": ">=8.5.10",
       "uuid": "^14.0.0",
       "@tootallnate/once": ">=3.0.1",
-      "@types/node": "^20"
+      "@types/node": "^20",
+      "protobufjs@>=8.0.0 <8.0.2": ">=8.0.2"
     },
     "patchedDependencies": {
       "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"

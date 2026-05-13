@@ -40,7 +40,7 @@ import {
   W3CTraceContextPropagator,
 } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { Resource } from "@opentelemetry/resources";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   BatchSpanProcessor,
@@ -158,7 +158,7 @@ export function createTracingSdk(
       headers: c.headers,
     }),
 ): NodeSDK {
-  const resource = new Resource({
+  const resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: config.serviceName,
     ...(config.serviceVersion
       ? { [ATTR_SERVICE_VERSION]: config.serviceVersion }
@@ -235,8 +235,11 @@ export function createTracingSdk(
           // text-ом (notes, descriptions) можуть нести PII.
           enhancedDatabaseReporting: false,
         },
+        // `@opentelemetry/instrumentation-redis-4` (node-redis v4 split)
+        // was folded back into `@opentelemetry/instrumentation-redis` in
+        // auto-instrumentations-node 0.65+, so only the canonical key
+        // remains in InstrumentationConfigMap.
         "@opentelemetry/instrumentation-redis": { enabled: true },
-        "@opentelemetry/instrumentation-redis-4": { enabled: true },
         "@opentelemetry/instrumentation-ioredis": { enabled: true },
         "@opentelemetry/instrumentation-undici": { enabled: true },
       }),
