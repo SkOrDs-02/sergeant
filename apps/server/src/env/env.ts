@@ -692,6 +692,36 @@ const envSchema = z.object({
    * `voyage_daily_budget_usd > 0` як guard).
    */
   VOYAGE_DAILY_BUDGET_USD: floatFromEnv(0),
+  /**
+   * PR-14 (48-plan) — Anthropic daily budget alert thresholds (USD).
+   *
+   * Soft (`ANTHROPIC_BUDGET_SOFT_USD`, default `3`) — warning у Sentry +
+   * Telegram-фоллоап через існуючий alert-pipeline (Sentry → n8n WF-22).
+   * Hard (`ANTHROPIC_BUDGET_HARD_USD`, default `5`) — `level=error`
+   * captureMessage + взводить in-process throttle-flag для не-критичних
+   * шляхів (`isAnthropicBudgetHardExceeded()`). Сам hard alert НЕ зупиняє
+   * AI-роути — це лише сигнал для batch worker-ів (mono enrichment,
+   * AI-memory ingestion) самозатягнути горло.
+   *
+   * Sentry `level=warning|error` повний контракт + Telegram routing
+   * описаний у `apps/server/src/obs/anthropicBudgetGuard.ts` JSDoc.
+   *
+   * `0` для будь-якого порога вимикає відповідний alert (kill-switch).
+   */
+  ANTHROPIC_BUDGET_SOFT_USD: floatFromEnv(3),
+  ANTHROPIC_BUDGET_HARD_USD: floatFromEnv(5),
+  /**
+   * Період polling-у Anthropic budget guard (мс). Default 5 хв — достатньо
+   * щоб зловити breach у межах 1 deploy cycle, але не спамити Sentry.
+   */
+  ANTHROPIC_BUDGET_CHECK_INTERVAL_MS: intFromEnv(300_000),
+  /**
+   * Kill-switch для daily budget alert loop. У `false` scheduler не
+   * стартує (Prometheus counter все одно інкрементується, але алертів
+   * не буде). Призначений для CI / staging, де не хочемо palaving-у.
+   * Default `true`.
+   */
+  ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
 });
 
 export type Env = z.infer<typeof envSchema>;

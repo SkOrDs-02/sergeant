@@ -64,6 +64,7 @@ import {
   unhandledRejectionsTotal,
 } from "./obs/metrics.js";
 import { applyInfraMonthlyCosts, applyVoyageDailyBudget } from "./obs/cost.js";
+import { anthropicBudgetGuard } from "./obs/anthropicBudgetGuard.js";
 import { Sentry } from "./sentry.js";
 
 const app = createApp({
@@ -83,6 +84,13 @@ applyInfraMonthlyCosts();
 // `VOYAGE_DAILY_BUDGET_USD` ≤ 0.
 applyVoyageDailyBudget();
 connectRedis();
+// PR-14 (48-plan) — Anthropic daily budget alert ($3 soft / $5 hard).
+// Periodic background tick рахує `aiCostEstimateUsd{provider="anthropic"}`
+// delta за поточну UTC-добу і кидає Sentry-event при перевищенні
+// порогів. Sentry → n8n WF-22 alert-routing → Telegram (existing pipeline).
+// Idempotency через Redis `SET NX EX` з fallback на in-memory Set.
+// No-op коли `ANTHROPIC_BUDGET_ALERT_ENABLED=false`.
+anthropicBudgetGuard.start();
 
 // Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.
 // Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:
@@ -260,6 +268,16 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           err: serializeError(err, { includeStack: false }),
         });
       }
+    }
+
+    try {
+      // Anthropic budget guard timer — synchronous stop, не блокує shutdown.
+      anthropicBudgetGuard.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "anthropic_budget_guard_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
     }
 
     try {

@@ -356,6 +356,8 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 
 **Alerts**: [`voyage-cost.yml`](../../ops/prometheus/rules/voyage-cost.yml) — `VoyageDailyBudgetSoftBreach` (warn @ 80% × `voyage_daily_budget_usd`, after 10m) і `VoyageDailyBudgetHardBreach` (page @ 100%, after 5m). Маршрут — той самий, що й інші sergeant-server alerts: Alertmanager → WF-98 → Telegram-топік `🟠 Контрол-план`.
 
+**PR-14 — Anthropic daily budget alert ($3 soft / $5 hard).** На відміну від Voyage, для Anthropic не використовуємо Prometheus alert rule, а робимо in-process loop у [`obs/anthropicBudgetGuard.ts`](../../apps/server/src/obs/anthropicBudgetGuard.ts) — Sentry → n8n WF-22 → Telegram pipeline уже live, тоді як Prometheus → Alertmanager → Telegram routing для production-deploy-у ще не змонтований. Loop читає `aiCostEstimateUsd{provider="anthropic"}` через `Counter#get()`, тримає baseline-snapshot на початок UTC-доби (`dailyBaseline`), рахує delta кожні `ANTHROPIC_BUDGET_CHECK_INTERVAL_MS` мс. Soft → `Sentry.captureMessage(level="warning", tags={op:"anthropic_budget_alert", threshold:"soft"})`, Hard → `level="error"` + взводить `isAnthropicBudgetHardExceeded()` для не-критичних шляхів. Idempotency: Redis `SET NX EX 36h` під key `anthropic_budget_alert_v1:<YYYY-MM-DD>:<soft|hard>` з in-memory fallback. Налаштовується через `ANTHROPIC_BUDGET_SOFT_USD` / `ANTHROPIC_BUDGET_HARD_USD` / `ANTHROPIC_BUDGET_ALERT_ENABLED` (див. [`env-vars.md`](../integrations/env-vars.md#ai-budget-envelopes)).
+
 ---
 
 ## Бюджет кардинальності / bad-smell-и
