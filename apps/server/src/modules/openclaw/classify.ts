@@ -101,7 +101,7 @@ export const DEFAULT_CHEAP_ROUTER_SYSTEM_PROMPT = [
   "- Identity-питання («хто ти», «ти Claude?», «представся», «who are you», similar) → ЗАВЖДИ class=thinking, persona=cofounder, chat_response=null. Ніколи не відповідай verbatim — Layer 2 з повною persona stack з SKILL.md відіграє identity з тоном Сергія.",
   "- If class=chat (тільки small-talk, НЕ identity): chat_response — 1-2 речення українською ВІД ІМЕНІ Сергія (cofounder, прямий tone). НЕ представляйся як Claude / AI / language model / assistant.",
   "- If class=thinking, optionally suggest persona (eng/growth/finance/devops/pm/data/content/seo/cs/cofounder).",
-  "- If class starts with routine_, suggest the most appropriate shortcut slug.",
+  "- If class starts with routine\\_, suggest the most appropriate shortcut slug.",
   "- shortcut slugs: metrics, runway, status, sentry, stripe, posthog, prs, releases, builds, workflows, refresh_metrics, heartbeat, recall, decisions, digest, remind.",
   "- Output ONLY valid JSON, no markdown fencing.",
 ].join("\n");

@@ -6,6 +6,12 @@ import type { Mock } from "vitest";
 
 vi.mock("../../db.js", () => ({
   query: vi.fn(),
+  // `connectHandler` triggers `historyFetch.ts` via `setImmediate(...)`,
+  // which calls `pool.query(...)` after the handler returns. The mock
+  // pool resolves to an empty row-set so the deferred backfill is a no-op
+  // (Vitest otherwise reports "No 'pool' export is defined" as an
+  // unhandled exception even though every test itself passes).
+  pool: { query: vi.fn().mockResolvedValue({ rows: [] }) },
 }));
 
 vi.mock("../../obs/logger.js", () => ({
@@ -22,12 +28,19 @@ vi.mock("../../obs/metrics.js", () => ({
   monoWebhookDurationMs: { observe: vi.fn() },
 }));
 
-const mockEnv = {
-  MONO_WEBHOOK_ENABLED: true,
-  MONO_TOKEN_ENC_KEY:
-    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-  PUBLIC_API_BASE_URL: "https://api.example.com",
-};
+// `mockEnv` lives inside `vi.hoisted()` so it is initialised before the
+// `vi.mock("../../env/env.js", …)` factory runs — `vi.mock` is hoisted to
+// the top of the module by Vitest's transformer, so a plain top-level
+// `const mockEnv = …` declaration is observed as TDZ inside the factory
+// (`ReferenceError: Cannot access 'mockEnv' before initialization`).
+const { mockEnv } = vi.hoisted(() => ({
+  mockEnv: {
+    MONO_WEBHOOK_ENABLED: true,
+    MONO_TOKEN_ENC_KEY:
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    PUBLIC_API_BASE_URL: "https://api.example.com",
+  },
+}));
 
 vi.mock("../../env/env.js", () => ({
   env: new Proxy(
