@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last validated:** 2026-05-10 by @Skords-01 / Devin. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.

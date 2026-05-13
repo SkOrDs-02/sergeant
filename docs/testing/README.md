@@ -1,6 +1,6 @@
 # Testing
 
-> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Meta-документація на тестову стратегію Sergeant — правила, threshold-и, як додавати

@@ -1,6 +1,6 @@
 # Еволюція хостингу — що де хоститься і коли мігрувати
 
-> **Last validated:** 2026-04-27 by Devin (automated). **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-13 by Devin (automated). **Next review:** 2026-08-11.
 > **Status:** Active
 
 Reference-документ: де зараз живе кожен сервіс Sergeant, коли має сенс

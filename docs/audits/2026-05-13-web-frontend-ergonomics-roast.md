@@ -1,8 +1,8 @@
 # Прожарка #2/10: Web Frontend Ergonomics
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11. **Status:** Active
-
-**Скоуп:** Web UI ergonomics — форми, accessibility, control-flow, error-boundaries, loading states, empty states, мікро-копірайт.
+> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Status:** Active
+> **Скоуп:** Web UI ergonomics — форми, accessibility, control-flow, error-boundaries, loading states, empty states, мікро-копірайт.
 
 **Code-area фокус:** `apps/web/src/**`, `packages/eslint-plugin-sergeant-design/**`.
 

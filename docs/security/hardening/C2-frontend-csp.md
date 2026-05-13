@@ -1,6 +1,6 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** In progress — Phase 1 (Report-Only canary + report sink + meta fallback) shipped 2026-05-04; Phase 2 (enforce mode + nonce flow) still open.
 
 | Field              | Value                                                                                                   |

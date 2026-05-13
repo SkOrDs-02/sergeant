@@ -1,6 +1,6 @@
 # Sprint 4 — Low severity sweep and structural hardening
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Planned
 
 Sprint 4 closes the **Low-severity sweep** (L1–L14 — paper cuts, defence in

@@ -1,6 +1,6 @@
 # PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Planned
 
 |                    |                                                                               |

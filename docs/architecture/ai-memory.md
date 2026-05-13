@@ -10,7 +10,7 @@
 | Surface      | File / table                                                                                                               | Roles                                                                                                                                                                                               |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Storage      | [`apps/server/src/migrations/025_ai_memories_pgvector.sql`](../../apps/server/src/migrations/025_ai_memories_pgvector.sql) | pgvector HALFVEC(1024) partitioned by user_id; CHECK source IN (`chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal`, `digest`, `cofounder`).                                               |
-| Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/obs/voyageBudgetGuard.ts`](../../apps/server/src/obs/voyageBudgetGuard.ts).                                               |
+| Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../apps/server/src/modules/ai-memory/voyageBudget.ts).                             |
 | Service      | [`apps/server/src/modules/ai-memory/service.ts`](../../apps/server/src/modules/ai-memory/service.ts)                       | `remember()` + `recall()` орchestrator. Викликається BullMQ-worker-ом + recall-route.                                                                                                               |
 | Ingest queue | [`apps/server/src/modules/ai-memory/ingestQueue.ts`](../../apps/server/src/modules/ai-memory/ingestQueue.ts)               | BullMQ `ai-memory-ingest`. `enqueueMemoryIngest()` — public producer. Per-source gating через `AI_MEMORY_ENABLED` (master) + `MONO_AI_MEMORY_INGEST_ENABLED` (finyk).                               |
 | Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`packages/openclaw-plugin/src/legacy/tools/recall-memory.ts`](../../packages/openclaw-plugin/src/legacy/tools/recall-memory.ts). |
@@ -135,7 +135,7 @@ WHERE sent_at > NOW() - ($N::int * INTERVAL '1 day')
 
 ## Related ADRs
 
-- [ADR-0028](../adr/0028-ai-memory-pgvector.md) — initial design (storage + Voyage).
-- [ADR-0031](../adr/0031-openclaw-cofounder-bot.md) §3 — cofounder source strict isolation.
+- [ADR-0028](../adr/0028-pgvector-ai-memory.md) — initial design (storage + Voyage).
+- [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) §3 — cofounder source strict isolation.
 - PR-19 (#2605) — ingest activation + per-source gating.
 - PR-21 (#2625) — WF-30 weekly digest activation.

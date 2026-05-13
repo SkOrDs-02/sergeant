@@ -1,4 +1,4 @@
--- 063 down: drop ai_memory_backfill_state.
+-- 065 down: drop ai_memory_backfill_state.
 --
 -- Local-only rollback. Production runs forward-only migrate (Railway).
 -- Drop CASCADE because both indexes (started_at, active_uniq) are owned

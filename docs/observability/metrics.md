@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).

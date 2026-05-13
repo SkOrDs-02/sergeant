@@ -1,6 +1,6 @@
 # Mobile E2E тестування — Detox vs Maestro
 
-> **Last validated:** 2026-05-03. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13. **Next review:** 2026-08-11.
 > **Status:** Рекомендація підготовлена, впровадження не розпочато.
 > **Owner:** @Skords-01
 

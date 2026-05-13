@@ -1,6 +1,6 @@
 # Pino logging redaction policy
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Active.
 > **Hard rule:** [#21 — Pino redaction policy enforced](../../AGENTS.md#21-pino-redaction-policy-enforced).
 > **Stack-pulse initiative:** [PR-16](../initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md).

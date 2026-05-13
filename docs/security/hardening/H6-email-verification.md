@@ -1,6 +1,6 @@
 # H6 — Email verification disabled, sensitive actions not gated
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (partial — Mono connect gated, sign-in gate behind ops flip)
 
 | Field          | Value                                                               |

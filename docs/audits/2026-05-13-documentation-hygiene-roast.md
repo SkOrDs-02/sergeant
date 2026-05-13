@@ -1,7 +1,7 @@
 # Doc-hygiene roast — 2026-05-13
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11. **Status:** Active
-
+> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Status:** Active
 > **Cross-refs:**
 > [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md) — попередній doc-hygiene прохід ·
 > [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md) — gap-analysis README ·

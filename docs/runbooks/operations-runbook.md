@@ -1,6 +1,6 @@
 # Operations runbook — як оперувати Sergeant без `@Skords-01`
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`

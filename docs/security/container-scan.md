@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Active
 
 ## Огляд

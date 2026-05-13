@@ -1,6 +1,6 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last validated:** 2026-05-05 by @Skords-01 / Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Робочі документи запуску — згруповані за логікою у три піддерева:

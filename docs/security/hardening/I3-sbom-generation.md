@@ -1,6 +1,6 @@
 # I3 — Generate SBOM during container build
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Phase 1 + Phase 3 implemented (workspace-level SBOM + SLSA L1 build-provenance attestation on release)
 
 | Field          | Value                                                                        |

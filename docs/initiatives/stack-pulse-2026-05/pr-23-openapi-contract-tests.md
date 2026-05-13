@@ -1,6 +1,6 @@
 # PR-23: OpenAPI spec contract-tested vs runtime
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Planned
 
 |                    |                                                                           |

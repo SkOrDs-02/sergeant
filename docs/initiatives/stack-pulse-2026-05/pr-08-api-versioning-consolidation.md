@@ -1,6 +1,6 @@
 # PR-08: API versioning consolidation (видалити v1-rewrite-shim)
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../notes/spikes/2026-05-api-v1-usage.md))
 
 |              |                                                                       |

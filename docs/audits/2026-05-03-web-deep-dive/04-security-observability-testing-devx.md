@@ -1,6 +1,6 @@
 # Web deep-dive — Security, observability, testing & DevX
 
-> **Last validated:** 2026-05-04 by @Skords-01.
+> **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Active
 > **Scope:** PII у логах, Sentry↔requestId correlation, CSP, contract тести, mutation testing, Storybook, C4-діаграми, CHANGELOG, Hard Rules registry, agent onboarding, audit docs status.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/`, `docs/security/`, `docs/agents/`.

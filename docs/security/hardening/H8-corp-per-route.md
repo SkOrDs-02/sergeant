@@ -1,6 +1,6 @@
 # H8 — `Cross-Origin-Resource-Policy: cross-origin` without per-route guards
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-04 — `requireSession*` overrides CORP to `same-origin` on every session-protected response, including 401s).
 
 | Field          | Value                                                                                                                                                       |

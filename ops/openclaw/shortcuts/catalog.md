@@ -1,6 +1,6 @@
 # Layer 0 Shortcuts Catalog
 
-> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Scaffolded (PR-A v3).
 
 17 детермінованих shortcut-ів. Кожен — окремий файл `packages/openclaw-plugin/src/shortcuts/<slug>.ts`. Жодного LLM-call на Layer 0. Зміна — `~30 хв` (новий файл + регулярка + canned template + тест).

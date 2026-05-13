@@ -1,4 +1,4 @@
--- 063: ai_memory_backfill_state — resumable progress ledger for AI memory
+-- 065: ai_memory_backfill_state — resumable progress ledger for AI memory
 -- backfill runs. Drives `scripts/ai-memory-backfill.mjs` (CLI) +
 -- `apps/server/src/modules/ai-memory/backfill.ts` (server orchestrator).
 --

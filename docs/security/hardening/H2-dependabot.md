@@ -1,6 +1,6 @@
 # H2 — Немає Dependabot / Renovate (відсутність авто-оновлень залежностей)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (Sprint 1 deliverable complete; remaining items moved to follow-up cards)
 
 | Field              | Value                                                                                                                                                                             |

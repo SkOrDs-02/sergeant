@@ -1,6 +1,6 @@
 # S1 — Чесний value-prop · post-mortem (live)
 
-> **Last validated:** 2026-05-04 by @Skords-01 (S1.3 + S1.4 + S1.5 виконані; cherry-pick S2.4 + S3.4 також).
+> **Last validated:** 2026-05-13 by @Skords-01 (S1.3 + S1.4 + S1.5 виконані; cherry-pick S2.4 + S3.4 також).
 > **Status:** Active — спринт у роботі. Документ оновлюється після кожного S×.× merge-у.
 
 > Зворотний зв'язок до [`docs/launch/ftux-sprint-plan.md` §3](../ftux-sprint-plan.md#3-sprint-1--честний-value-prop-2-тижні).
