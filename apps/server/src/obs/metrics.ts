@@ -141,6 +141,31 @@ export const infraMonthlyCostUsd = new client.Gauge({
   registers: [register],
 });
 
+/**
+ * PR-38 (48-plan) — soft daily-burn threshold for Voyage embeddings (USD).
+ *
+ * Виставляється з env `VOYAGE_DAILY_BUDGET_USD` через
+ * `applyVoyageDailyBudget()` у bootstrap-у (`apps/server/src/index.ts`).
+ * Зчитується Prometheus-rule-ом `voyage-cost.yml`:
+ *
+ *   - `VoyageDailyBudgetSoftBreach`: 24h-burn > 80% × threshold (warn)
+ *   - `VoyageDailyBudgetHardBreach`: 24h-burn ≥ 100% × threshold (page)
+ *
+ * Окрема gauge (а не `infra_monthly_cost_usd{plan="daily-budget"}`), бо
+ * семантика різна (daily soft cap vs monthly subscription) і alert-rule
+ * `voyage_daily_budget_usd > 0` як guard простіший, ніж filter по plan.
+ *
+ * Unlabeled Gauge → prom-client завжди публікує серію зі значенням `0`
+ * за замовчанням (на відміну від labeled gauge-ів, де лейбли-комбінації
+ * без `.set()` відсутні). Тому alert-expr має guard `voyage_daily_budget_usd > 0`
+ * — на dev/staging без env-конфігу значення `0` не тригерить.
+ */
+export const voyageDailyBudgetUsd = new client.Gauge({
+  name: "voyage_daily_budget_usd",
+  help: 'Soft daily-burn threshold for Voyage embeddings in USD (PR-38). When >0, Prometheus rule voyage-cost.yml compares against increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]).',
+  registers: [register],
+});
+
 export const anthropicPromptCacheHitTotal = new client.Counter({
   name: "anthropic_prompt_cache_hit_total",
   help: "Anthropic prompt cache hit/miss per request",

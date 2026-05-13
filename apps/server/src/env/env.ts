@@ -683,6 +683,15 @@ const envSchema = z.object({
   VOYAGE_MONTHLY_BUDGET_USD: floatFromEnv(0),
   /** Voyage billing tier. */
   VOYAGE_PLAN: stringWithDefault("usage"),
+  /**
+   * Voyage soft daily budget threshold (USD). PR-38 (48-plan): коли
+   * `increase(ai_cost_estimate_usd_total{provider="voyage"}[24h])`
+   * перевищує цей поріг — Prometheus rule `VoyageDailyBudget*Breach`
+   * фейрить (warn @ 80%, page @ 100%). Default `0` → правило не
+   * активне (gauge не публікується, alert expr включає
+   * `voyage_daily_budget_usd > 0` як guard).
+   */
+  VOYAGE_DAILY_BUDGET_USD: floatFromEnv(0),
 });
 
 export type Env = z.infer<typeof envSchema>;
