@@ -1,5 +1,6 @@
 import type { Dispatch, Ref, SetStateAction } from "react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { NutritionDashboard } from "../components/NutritionDashboard";
@@ -76,15 +77,46 @@ export function NutritionStartPage({
             if (!e.currentTarget.open) setPhotoCardForceOpen(false);
           }}
         >
-          <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-style-label text-text">
+          <Card
+            as="summary"
+            module="nutrition"
+            prominence="tinted"
+            padding="md"
+            radius="xl"
+            className="flex items-center gap-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden"
+          >
+            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-nutrition/15 shrink-0">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-nutrition-strong"
+                aria-hidden
+              >
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-style-label text-text">
+                Аналіз фото страви
+              </div>
+              <div className="text-xs text-subtle mt-0.5">
+                ШІ визначить КБЖВ за фото
+              </div>
+            </div>
             <Icon
               name="chevron-right"
               size={16}
-              className="transition-transform group-open:rotate-90"
+              className="text-muted transition-transform group-open:rotate-90 shrink-0"
             />
-            Аналіз фото страви
-          </summary>
-          <div className="pt-1">
+          </Card>
+          <div className="pt-2">
             <PhotoAnalyzeCard
               busy={busy}
               analyzePhoto={photo.analyzePhoto}
