@@ -468,9 +468,51 @@ const envSchema = z.object({
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
 
   // ── Push Notifications ─────────────────────────────────────────────
+  /** VAPID public key (URL-safe base64). Без нього `/api/push/*` → 503. */
   VAPID_PUBLIC_KEY: z.string().optional(),
+  /** VAPID private key (URL-safe base64). Парний до публічного. */
   VAPID_PRIVATE_KEY: z.string().optional(),
+  /**
+   * Контакт-email для `webpush.setVapidDetails`. У production без нього
+   * `resolveVapidEmail()` повертає `null` і кидає `vapid_email_missing` —
+   * push-сервіси відмовляються від запитів без routable контакту.
+   * У dev/test fallback `mailto:admin@example.com`.
+   */
   VAPID_EMAIL: z.string().optional(),
+  /**
+   * **M14** — per-target rate-limit для `/api/push/send`. Default 10/хв/recipient
+   * відповідає
+   * [`docs/security/hardening/M14-internal-push-ip-allowlist.md`](../../../../docs/security/hardening/M14-internal-push-ip-allowlist.md).
+   * Невалідне / `0` / відʼємне значення → silent fallback на default (legacy-семантика).
+   */
+  PUSH_SEND_TARGET_LIMIT: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return 10;
+      const n = Number.parseInt(v, 10);
+      return Number.isFinite(n) && n > 0 ? n : 10;
+    }),
+  /**
+   * **M14** — sliding window для `PUSH_SEND_TARGET_LIMIT` (мс). Default 60_000.
+   * Невалідне / `0` / відʼємне значення → silent fallback на default.
+   */
+  PUSH_SEND_TARGET_WINDOW_MS: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return 60_000;
+      const n = Number.parseInt(v, 10);
+      return Number.isFinite(n) && n > 0 ? n : 60_000;
+    }),
+  /**
+   * **M14** — allowlist для `/api/push/send` (internal-only fan-out).
+   * Comma- / newline-separated CIDR-и та IP-и. На Railway типово
+   * `100.64.0.0/10` + явні IPv4/IPv6 n8n-worker-ів. Loopback завжди
+   * implicit (loopback dev-доступ). Порожньо → fail-open у non-prod,
+   * fail-closed (503) у production. Деталі — `requireInternalIp`.
+   */
+  PUSH_INTERNAL_ALLOWED_IPS: stringWithDefault(""),
   /** Base64-encoded APNs .p8 key file content. */
   APNS_P8_KEY: z.string().optional(),
   APNS_KEY_ID: z.string().optional(),
