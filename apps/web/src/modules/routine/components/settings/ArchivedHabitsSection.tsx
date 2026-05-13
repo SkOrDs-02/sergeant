@@ -44,9 +44,9 @@ export function ArchivedHabitsSection({
             <div className="flex flex-wrap gap-1.5">
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
-                className="h-9! px-3! text-xs! border border-line"
+                className="h-9! px-3! text-xs!"
                 onClick={() =>
                   setRoutine((s) => setHabitArchived(s, h.id, false))
                 }
@@ -55,9 +55,9 @@ export function ArchivedHabitsSection({
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
-                className="h-9! px-3! text-xs! text-danger border border-danger/25"
+                className="h-9! px-3! text-xs! text-danger"
                 onClick={() =>
                   onRequestDelete({ id: h.id, name: h.name, archived: true })
                 }

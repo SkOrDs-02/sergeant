@@ -373,8 +373,7 @@ export function RoutineCalendarPanel({
             action={
               <Button
                 type="button"
-                variant="ghost"
-                className="border border-line"
+                variant="secondary"
                 onClick={() => {
                   setTagFilter(null);
                   setListQuery("");
@@ -512,8 +511,8 @@ export function RoutineCalendarPanel({
                           {e.fizruk && (
                             <Button
                               size="sm"
-                              variant="ghost"
-                              className="h-9! px-3! text-xs! border border-sky-400/30 bg-sky-500/5"
+                              variant="secondary"
+                              className="h-9! px-3! text-xs! bg-sky-500/5"
                               type="button"
                               onClick={() => setFizrukPlanDateKey(e.date)}
                             >
@@ -523,8 +522,8 @@ export function RoutineCalendarPanel({
                           {e.finykSub && typeof onOpenModule === "function" && (
                             <Button
                               size="sm"
-                              variant="ghost"
-                              className="h-9! px-3! text-xs! border border-emerald-500/25 bg-emerald-500/5"
+                              variant="secondary"
+                              className="h-9! px-3! text-xs! bg-emerald-500/5"
                               type="button"
                               onClick={() =>
                                 onOpenModule("finyk", { hash: "assets" })

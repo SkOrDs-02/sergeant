@@ -276,7 +276,7 @@ function AddBudgetFormComponent({
               type="button"
               className="flex-1"
               size="sm"
-              variant="ghost"
+              variant="secondary"
               onClick={onCancel}
             >
               Скасувати
@@ -383,7 +383,7 @@ function AddBudgetFormComponent({
               type="button"
               className="flex-1"
               size="sm"
-              variant="ghost"
+              variant="secondary"
               onClick={onCancel}
             >
               Скасувати

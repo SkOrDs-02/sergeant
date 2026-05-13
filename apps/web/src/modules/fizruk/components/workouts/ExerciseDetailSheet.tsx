@@ -228,7 +228,7 @@ export function ExerciseDetailSheet({
           Закрити
         </Button>
         <Button
-          variant="ghost"
+          variant="secondary"
           className={cn("h-12")}
           onClick={() => {
             navigator.clipboard

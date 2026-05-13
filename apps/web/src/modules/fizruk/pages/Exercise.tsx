@@ -185,7 +185,7 @@ export function Exercise({ exerciseId }: { exerciseId: string }) {
 
         <div className="grid grid-cols-2 gap-3">
           <Card radius="lg">
-            <SectionHeading as="div" size="xs">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               Особистий рекорд
             </SectionHeading>
             <div className="text-style-hero text-text mt-1 tabular-nums">
@@ -207,7 +207,7 @@ export function Exercise({ exerciseId }: { exerciseId: string }) {
             )}
           </Card>
           <Card radius="lg">
-            <SectionHeading as="div" size="xs">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               Наступного разу
             </SectionHeading>
             <div className="text-style-hero text-text mt-1 tabular-nums">

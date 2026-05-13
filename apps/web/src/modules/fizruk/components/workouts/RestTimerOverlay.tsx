@@ -62,7 +62,7 @@ export function RestTimerOverlay({
             </svg>
           </div>
           <div>
-            <SectionHeading as="div" size="xs">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.workoutRest}
             </SectionHeading>
             <div
@@ -76,7 +76,7 @@ export function RestTimerOverlay({
           </div>
         </div>
         <Button
-          variant="ghost"
+          variant="secondary"
           className="h-11 min-h-[44px] px-4"
           type="button"
           onClick={onCancel}

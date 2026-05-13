@@ -58,7 +58,7 @@ export function ActiveWorkoutHeader({
           </Button>
         ) : onCollapse ? (
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             className="h-9 px-4"
             type="button"

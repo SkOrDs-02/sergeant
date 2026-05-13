@@ -234,7 +234,7 @@ export function QuickStartSheet({
       zIndex={90}
       headerRight={
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
           className="h-9 min-h-[44px]"
           onClick={() => setStep("choose")}
@@ -246,7 +246,7 @@ export function QuickStartSheet({
       footer={
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
-            variant="ghost"
+            variant="secondary"
             className="h-12 min-h-[44px] sm:flex-1"
             onClick={onClose}
           >

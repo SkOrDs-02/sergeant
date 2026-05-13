@@ -85,8 +85,7 @@ export function ActiveHabitsSection({
             typeof onOpenCalendar === "function" ? (
               <Button
                 type="button"
-                variant="ghost"
-                className="border border-line"
+                variant="secondary"
                 onClick={onOpenCalendar}
               >
                 Перейти до календаря

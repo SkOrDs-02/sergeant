@@ -131,7 +131,11 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           >
             {confirmLabel}
           </Button>
-          <Button variant="ghost" className="w-full h-12" onClick={onCancel}>
+          <Button
+            variant="secondary"
+            className="w-full h-12"
+            onClick={onCancel}
+          >
             {cancelLabel}
           </Button>
         </div>

@@ -86,7 +86,7 @@ export function SubscriptionForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="ghost"
+          variant="secondary"
           onClick={() => setShowSubForm(false)}
         >
           Скасувати
@@ -170,7 +170,7 @@ export function ReceivableForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="ghost"
+          variant="secondary"
           onClick={() => setShowRecvForm(false)}
         >
           Скасувати
@@ -264,7 +264,7 @@ export function AssetForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="ghost"
+          variant="secondary"
           onClick={() => setShowAssetForm(false)}
         >
           Скасувати
@@ -382,7 +382,7 @@ export function DebtForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="ghost"
+          variant="secondary"
           onClick={() => setShowDebtForm(false)}
         >
           Скасувати

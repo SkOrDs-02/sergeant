@@ -334,7 +334,12 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
             </div>
 
             <div>
-              <SectionHeading as="p" size="xs" className="mb-2">
+              <SectionHeading
+                as="p"
+                size="xs"
+                variant="fizruk"
+                className="mb-2"
+              >
                 Рівень енергії
               </SectionHeading>
               <div
@@ -361,7 +366,12 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
             </div>
 
             <div>
-              <SectionHeading as="p" size="xs" className="mb-2">
+              <SectionHeading
+                as="p"
+                size="xs"
+                variant="fizruk"
+                className="mb-2"
+              >
                 Настрій
               </SectionHeading>
               <div className="flex gap-1.5" role="group" aria-label="Настрій">

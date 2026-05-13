@@ -195,7 +195,12 @@ export function WorkoutTemplatesSection({
             aria-label="Назва шаблону"
           />
           <div>
-            <SectionHeading as="div" size="xs" className="mb-2">
+            <SectionHeading
+              as="div"
+              size="xs"
+              variant="fizruk"
+              className="mb-2"
+            >
               Додати вправу з каталогу
             </SectionHeading>
             <Input
@@ -225,7 +230,7 @@ export function WorkoutTemplatesSection({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <SectionHeading as="div" size="xs">
+              <SectionHeading as="div" size="xs" variant="fizruk">
                 Порядок ({orderIds.length})
               </SectionHeading>
               {orderIds.length >= 2 && !groupSelectMode && (
@@ -385,7 +390,7 @@ export function WorkoutTemplatesSection({
               Зберегти
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 setEditingId(null);
@@ -447,7 +452,7 @@ export function WorkoutTemplatesSection({
                 )}
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="secondary"
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => startEdit(t)}
                 >

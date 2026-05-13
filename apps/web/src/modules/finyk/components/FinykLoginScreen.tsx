@@ -243,7 +243,7 @@ export function FinykLoginScreen({
           {typeof onBackToHub === "function" && (
             <Button
               type="button"
-              variant="ghost"
+              variant="secondary"
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >

@@ -96,7 +96,7 @@ export function WorkoutsHome({
               ▶︎ Почати тренування
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               className="h-12 text-base"
               onClick={onOpenRetro}
             >
@@ -104,7 +104,7 @@ export function WorkoutsHome({
             </Button>
             {onOpenSchedule && (
               <Button
-                variant="ghost"
+                variant="secondary"
                 className="h-12 text-base"
                 onClick={onOpenSchedule}
               >

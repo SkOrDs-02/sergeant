@@ -209,7 +209,7 @@ export function WorkoutJournalSection({
               + Нове
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               className="flex-1 h-11"
               onClick={() => setMode("templates")}
             >
@@ -338,7 +338,12 @@ export function WorkoutJournalSection({
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <SectionHeading as="div" size="xs" className="mb-1">
+                <SectionHeading
+                  as="div"
+                  size="xs"
+                  variant="fizruk"
+                  className="mb-1"
+                >
                   Дата
                 </SectionHeading>
                 <input
@@ -349,7 +354,12 @@ export function WorkoutJournalSection({
                 />
               </div>
               <div>
-                <SectionHeading as="div" size="xs" className="mb-1">
+                <SectionHeading
+                  as="div"
+                  size="xs"
+                  variant="fizruk"
+                  className="mb-1"
+                >
                   Час початку
                 </SectionHeading>
                 <input

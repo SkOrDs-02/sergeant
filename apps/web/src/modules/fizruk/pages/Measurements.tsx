@@ -136,7 +136,12 @@ export function Measurements() {
           <div className="grid grid-cols-2 gap-2">
             {MEASURE_FIELDS.map((f) => (
               <div key={f.id} className="space-y-1">
-                <SectionHeading as="div" size="xs" className="px-1">
+                <SectionHeading
+                  as="div"
+                  size="xs"
+                  variant="fizruk"
+                  className="px-1"
+                >
                   {f.label} · {f.unit}
                 </SectionHeading>
                 <input
@@ -196,7 +201,7 @@ export function Measurements() {
                   key={f.id}
                   className="bg-bg border border-line rounded-2xl p-3"
                 >
-                  <SectionHeading as="div" size="xs">
+                  <SectionHeading as="div" size="xs" variant="fizruk">
                     {f.label}
                   </SectionHeading>
                   <div className="text-lg font-extrabold tabular-nums text-text mt-1">

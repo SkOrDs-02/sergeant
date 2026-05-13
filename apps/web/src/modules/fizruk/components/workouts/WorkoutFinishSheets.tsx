@@ -75,7 +75,12 @@ export function WorkoutFinishSheets({
               Оціни по шкалі 1–5 (можна пропустити).
             </p>
             <div>
-              <SectionHeading as="div" size="xs" className="mb-2">
+              <SectionHeading
+                as="div"
+                size="xs"
+                variant="fizruk"
+                className="mb-2"
+              >
                 Енергія
               </SectionHeading>
               <div className="flex flex-wrap gap-2">
@@ -100,7 +105,12 @@ export function WorkoutFinishSheets({
               </div>
             </div>
             <div>
-              <SectionHeading as="div" size="xs" className="mb-2">
+              <SectionHeading
+                as="div"
+                size="xs"
+                variant="fizruk"
+                className="mb-2"
+              >
                 Настрій
               </SectionHeading>
               <div className="flex flex-wrap gap-2">
@@ -126,7 +136,7 @@ export function WorkoutFinishSheets({
             </div>
             <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="secondary"
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
                 onClick={() =>
@@ -259,7 +269,7 @@ export function WorkoutFinishSheets({
               )}
               <div className="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   className="flex-1 h-12 min-h-[44px] rounded-full"
                   type="button"
                   onClick={() =>

@@ -8,7 +8,7 @@ import { useRoutinePushups } from "../hooks/useRoutinePushups";
 import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
 
 const C = {
-  primary: "bg-routine! hover:bg-routine-hover! text-white! border-0",
+  primary: "bg-routine-strong! hover:bg-routine-hover! text-white! border-0",
   barToday: "bg-routine",
   barOther: "bg-routine/35",
 };

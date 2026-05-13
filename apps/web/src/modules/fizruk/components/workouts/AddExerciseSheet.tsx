@@ -122,7 +122,12 @@ export function AddExerciseSheet({
         </div>
 
         <label className="block">
-          <SectionHeading as="div" size="xs" className="mb-1.5">
+          <SectionHeading
+            as="div"
+            size="xs"
+            variant="fizruk"
+            className="mb-1.5"
+          >
             Основна група
           </SectionHeading>
           <select
@@ -147,7 +152,7 @@ export function AddExerciseSheet({
         </label>
 
         <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
-          <SectionHeading as="div" size="xs">
+          <SectionHeading as="div" size="xs" variant="fizruk">
             Обладнання
           </SectionHeading>
           <div className="py-2 flex flex-wrap gap-2">
@@ -179,7 +184,7 @@ export function AddExerciseSheet({
         </div>
 
         <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
-          <SectionHeading as="div" size="xs">
+          <SectionHeading as="div" size="xs" variant="fizruk">
             Основні мʼязи
           </SectionHeading>
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -207,7 +212,7 @@ export function AddExerciseSheet({
         </div>
 
         <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
-          <SectionHeading as="div" size="xs">
+          <SectionHeading as="div" size="xs" variant="fizruk">
             Супутні мʼязи
           </SectionHeading>
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -288,7 +293,7 @@ export function AddExerciseSheet({
           Зберегти
         </Button>
         <Button
-          variant="ghost"
+          variant="secondary"
           className="h-12 min-h-[44px]"
           onClick={handleClose}
         >

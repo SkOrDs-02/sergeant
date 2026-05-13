@@ -159,7 +159,7 @@ export function RecoveryFocusCard({
           />
 
           <div className="mt-4 pt-3 border-t border-line">
-            <SectionHeading as="p" size="xs" className="mb-2">
+            <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">
               Пріоритет після відпочинку
             </SectionHeading>
             <div className="flex flex-wrap gap-2">

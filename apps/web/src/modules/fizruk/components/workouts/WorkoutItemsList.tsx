@@ -171,7 +171,12 @@ export function WorkoutItemsList({
         {groupItems.map((gIt: WorkoutItem) => renderItem(gIt))}
         {!activeWorkout.endedAt && (
           <div className="flex flex-wrap items-center gap-2 px-1 pt-1 border-t border-success/20">
-            <SectionHeading as="span" size="xs" className="w-full">
+            <SectionHeading
+              as="span"
+              size="xs"
+              variant="fizruk"
+              className="w-full"
+            >
               Спільний таймер відпочинку між колами
             </SectionHeading>
             <button

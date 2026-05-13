@@ -344,7 +344,7 @@ export function ManualExpenseSheet({
       footer={
         <div className="flex gap-3">
           <Button
-            variant="ghost"
+            variant="secondary"
             className="flex-1"
             onClick={onClose}
             disabled={isSubmitting}

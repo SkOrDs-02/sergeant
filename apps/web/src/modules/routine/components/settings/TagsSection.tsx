@@ -91,8 +91,8 @@ export function TagsSection({
         />
         <Button
           type="button"
-          variant="ghost"
-          className="min-h-[44px] shrink-0 border border-line px-4"
+          variant="secondary"
+          className="min-h-[44px] shrink-0 px-4"
           onClick={() => {
             setRoutine((s) => createTag(s, tagDraft));
             setTagDraft("");

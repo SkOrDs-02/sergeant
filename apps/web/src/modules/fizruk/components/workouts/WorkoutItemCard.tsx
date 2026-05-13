@@ -194,7 +194,7 @@ export function WorkoutItemCard({
 
       <div className="mt-2">
         <div className="rounded-2xl border border-line bg-panelHi px-3">
-          <SectionHeading as="div" size="xs" className="pt-2">
+          <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
             Тип
           </SectionHeading>
           <select
@@ -300,7 +300,7 @@ export function WorkoutItemCard({
           {!isReadOnly && (
             <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="secondary"
                 className="flex-1 h-10 min-h-[44px]"
                 type="button"
                 onClick={() =>
@@ -353,7 +353,7 @@ export function WorkoutItemCard({
           {!activeWorkout.endedAt && !group && (
             <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-line">
               <div className="flex items-center justify-between w-full gap-1">
-                <SectionHeading as="span" size="xs">
+                <SectionHeading as="span" size="xs" variant="fizruk">
                   Таймер відпочинку
                 </SectionHeading>
                 <span className="text-2xs text-muted">

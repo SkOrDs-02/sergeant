@@ -8,7 +8,8 @@
 
 import { useMemo } from "react";
 import { Card } from "@shared/components/ui/Card";
-import { ls } from "@app/core/lib/hubChatUtils";
+import { messages } from "@shared/i18n/uk";
+import { ls } from "../../../../core/lib/hubChatUtils";
 
 interface WeeklyGoalCardProps {
   readonly weeklyCount: number;
@@ -16,9 +17,10 @@ interface WeeklyGoalCardProps {
 }
 
 function getWeeklyGoal(): number {
-  const goals = ls<
-    Array<{ workoutsPerWeek?: number; createdAt: string }>
-  >("hub_goals_v1", []);
+  const goals = ls<Array<{ workoutsPerWeek?: number; createdAt: string }>>(
+    "hub_goals_v1",
+    [],
+  );
   const withGoal = [...goals]
     .reverse()
     .find((g) => g.workoutsPerWeek != null && Number(g.workoutsPerWeek) > 0);
@@ -31,7 +33,7 @@ function DayDot({ filled, today }: { filled: boolean; today?: boolean }) {
       className={[
         "w-7 h-7 rounded-full flex items-center justify-center text-2xs font-semibold transition-colors",
         filled
-          ? "bg-fizruk text-white"
+          ? "bg-fizruk-strong text-white"
           : today
             ? "border-2 border-fizruk/40 text-muted"
             : "bg-panelHi text-subtle",
@@ -58,11 +60,7 @@ export function WeeklyGoalCard({
   }, [done, goal]);
 
   const tone =
-    done >= goal
-      ? "text-fizruk"
-      : done > 0
-        ? "text-text"
-        : "text-subtle";
+    done >= goal ? "text-fizruk" : done > 0 ? "text-text" : "text-subtle";
 
   return (
     <button
@@ -97,7 +95,9 @@ export function WeeklyGoalCard({
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
             </span>
-            <span className="text-style-label text-text">Ціль тижня</span>
+            <span className="text-style-label text-text">
+              {messages.fizruk.weeklyGoal}
+            </span>
           </div>
           <span className={`text-xs font-semibold ${tone}`}>
             {done}/{goal}
@@ -123,7 +123,6 @@ export function WeeklyGoalCard({
         <div className="flex gap-1.5">
           {Array.from({ length: goal }).map((_, i) => (
             <DayDot
-              // eslint-disable-next-line react/no-array-index-key
               key={i}
               filled={i < done}
               today={i === done && done < goal}

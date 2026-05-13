@@ -195,7 +195,7 @@ interface ProgramDetailsProps {
 function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
   return (
     <div className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50">
-      <SectionHeading as="div" size="xs">
+      <SectionHeading as="div" size="xs" variant="fizruk">
         Розклад та вправи
       </SectionHeading>
       {prog.schedule.map((schedEntry: ProgramScheduleEntry) => {

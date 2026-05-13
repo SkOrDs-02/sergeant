@@ -430,7 +430,7 @@ export function Dashboard({
         footer={
           <div className="flex gap-2">
             <Button
-              variant="ghost"
+              variant="secondary"
               className="flex-1 h-12 min-h-[44px]"
               onClick={closePlanConfirm}
             >

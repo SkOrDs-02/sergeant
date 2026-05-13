@@ -432,8 +432,8 @@ export function HabitForm({
         {editingId && (
           <Button
             type="button"
-            variant="ghost"
-            className="flex-1 border border-line"
+            variant="secondary"
+            className="flex-1"
             onClick={onCancel}
           >
             Скасувати
