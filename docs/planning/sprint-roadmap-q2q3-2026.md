@@ -1,6 +1,6 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-13 15:00 UTC by Devin (Sprint 5 close-out: O2/O5/T1/O8 закриті, Stage 6b + Phase 3 closed, WhatsApp descoped). **Next review:** 2026-07-01.
+> **Last validated:** 2026-05-13 19:30 UTC by Devin (T3 batch 3 close-out: Workouts/LogCard decomp shipped in PR #2530). **Next review:** 2026-07-01.
 > **Status:** Active — усі Wave-2/3 задачи верифіковані на предмет залежностей та PR-статусу
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
@@ -27,17 +27,17 @@
 
 Повний контекст і деталі реалізації — у [`2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md).
 
-**Останнє оновлення:** 2026-05-13 15:00 UTC — синхронізовано з main після Sprint 5 close-out.
+**Останнє оновлення:** 2026-05-13 19:30 UTC — T3 батч 3 закрито (PR #2530).
 
-| ID  | Задача                             | Деталь                                                        | Статус                                                                                                                            |
-| --- | ---------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| T1  | HubDashboard decomposition         | `HubDashboard.tsx` 837 → 115 LOC                              | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5)                                           |
-| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                          | ❌ Не почато (Sprint 7)                                                                                                           |
-| T3  | Великі файли (батч 3)              | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | 🚧 NutritionApp decomp shipped ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67)); Workouts/LogCard — Sprint 7 |
-| T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                             | ⏳ Очікує Sprint 8                                                                                                                |
-| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                          | ❌ Не почато (Sprint 8)                                                                                                           |
-| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                   | ⏳ Очікує Sprint 8                                                                                                                |
-| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)              | ⏳ Очікує 20-run CI verification                                                                                                  |
+| ID  | Задача                             | Деталь                                                                     | Статус                                                                                                                                                                   |
+| --- | ---------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T1  | HubDashboard decomposition         | `HubDashboard.tsx` 837 → 115 LOC                                           | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5)                                                                                  |
+| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                                       | ❌ Не почато (Sprint 7)                                                                                                                                                  |
+| T3  | Великі файли (батч 3)              | `Workouts.tsx` 744→213, `LogCard.tsx` 736→216, `NutritionApp.tsx` 728→<250 | ✅ Done ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) NutritionApp; [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) Workouts+LogCard) |
+| T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                                          | ⏳ Очікує Sprint 8                                                                                                                                                       |
+| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | ❌ Не почато (Sprint 8)                                                                                                                                                  |
+| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ⏳ Очікує Sprint 8                                                                                                                                                       |
+| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | ⏳ Очікує 20-run CI verification                                                                                                                                         |
 
 ### 1.2. Продуктові задачі (відкриті)
 
@@ -321,20 +321,20 @@ describe("Capacitor Boundary Tests", () => {
 
 ---
 
-#### T3: Великі файли — батч 3 `Tech` `M`
+#### T3: Великі файли — батч 3 `Tech` `M` ✅ Done
 
 **Файли:**
-| Файл | LOC зараз | Ціль |
-|------|-----------|------|
-| `modules/fizruk/pages/Workouts.tsx` | 744 | < 250 |
-| `modules/fizruk/components/LogCard.tsx` | 736 | < 250 |
-| `modules/nutrition/NutritionApp.tsx` | 728 | < 250 |
+| Файл | LOC було | LOC зараз | Ціль | Закрито |
+|------|----------|-----------|------|---------|
+| `modules/nutrition/NutritionApp.tsx` | 728 | < 250 | < 250 | [`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) |
+| `modules/fizruk/pages/Workouts.tsx` | 744 | 213 | < 250 | [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) |
+| `modules/nutrition/components/LogCard.tsx` | 736 | 216 | < 250 | [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) |
 
 **Acceptance:**
 
-- [ ] Кожен файл < 250 LOC
-- [ ] `pnpm typecheck` без нових помилок
-- [ ] Всі існуючі тести проходять
+- [x] Кожен файл < 250 LOC
+- [x] `pnpm typecheck` без нових помилок
+- [x] Всі існуючі тести проходять
 
 ---
 
@@ -449,7 +449,7 @@ jobs:
 | -------- | ----------------- | ----------- | ---------------- |
 | Спринт 5 | O1, O2, O5        | T7          | ~5–6 днів        |
 | Спринт 6 | O3, O4, O9        | T1          | ~8–10 днів       |
-| Спринт 7 | O6, O7            | T2, T3      | ~7–9 днів        |
+| Спринт 7 | O6, O7            | T2          | ~7–9 днів        |
 | Спринт 8 | O8-start          | T4, T5, T6  | ~8–10 днів       |
 
 ---
