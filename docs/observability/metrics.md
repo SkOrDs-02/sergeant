@@ -328,24 +328,33 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 
 ---
 
-## 16. Cost monitoring (PR-33)
+## 16. Cost monitoring (PR-33 · PR-38)
 
-| Metric                   | Type  | Labels              | Emitter                                                                             |
-| ------------------------ | ----- | ------------------- | ----------------------------------------------------------------------------------- |
-| `infra_monthly_cost_usd` | Gauge | `provider` · `plan` | [obs/cost.ts](../../apps/server/src/obs/cost.ts) `applyInfraMonthlyCosts()` (PR-33) |
+| Metric                    | Type  | Labels              | Emitter                                                                             |
+| ------------------------- | ----- | ------------------- | ----------------------------------------------------------------------------------- |
+| `infra_monthly_cost_usd`  | Gauge | `provider` · `plan` | [obs/cost.ts](../../apps/server/src/obs/cost.ts) `applyInfraMonthlyCosts()` (PR-33) |
+| `voyage_daily_budget_usd` | Gauge | —                   | [obs/cost.ts](../../apps/server/src/obs/cost.ts) `applyVoyageDailyBudget()` (PR-38) |
 
 `provider` — фіксована множина: `railway` · `vercel` · `posthog` · `sentry` · `anthropic` · `voyage`. `plan` — стандартні tiers (`free` · `hobby` · `pro` · `team` · `business` · `enterprise` · `usage` · `budget`); конкретний рядок задається через `*_PLAN` env-vars. Для `railway`/`vercel`/`posthog`/`sentry` — реальна subscription cost; для `anthropic`/`voyage` — **budget envelope**, target для алертів run-rate-у.
 
 Виставляється один раз на старті процесу з env-vars (`RAILWAY_MONTHLY_COST_USD`, `VERCEL_MONTHLY_COST_USD`, `POSTHOG_MONTHLY_COST_USD`, `SENTRY_MONTHLY_COST_USD`, `ANTHROPIC_MONTHLY_BUDGET_USD`, `VOYAGE_MONTHLY_BUDGET_USD`) у [`index.ts`](../../apps/server/src/index.ts). Невиставлене / нульове значення → серія НЕ зʼявляється у `/metrics` (gauge не пре-allocate-имо нулі, бо це б змусило в PromQL фільтрувати). Cardinality cap: 6 providers × ~7 plans = **~42** серій (реально 1–6, бо у поточному deployment-і кожен provider має один tier).
+
+**`voyage_daily_budget_usd` (PR-38)** — soft daily-burn threshold для Voyage embeddings (USD/day). Виставляється з `VOYAGE_DAILY_BUDGET_USD` через `applyVoyageDailyBudget()`. Unlabeled gauge → серія завжди публікується (за замовчанням `0`); alert-rule [`voyage-cost.yml`](../../ops/prometheus/rules/voyage-cost.yml) guard-иться через `voyage_daily_budget_usd > 0` — на dev/staging без env-конфігу значення `0` не тригерить.
 
 ```promql
 sum(infra_monthly_cost_usd{provider=~"railway|vercel|posthog|sentry"})       # фіксований monthly burn
 sum by (provider) (infra_monthly_cost_usd{provider=~"anthropic|voyage"})     # AI budget envelopes
 sum(increase(ai_cost_estimate_usd_total[30d]))
   + sum(infra_monthly_cost_usd{provider=~"railway|vercel|posthog|sentry"})   # combined 30d run-rate
+
+# PR-38 — Voyage 24h burn vs daily soft cap
+sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
+  / on() group_left sum(voyage_daily_budget_usd > 0)                          # 1.0 = соблюдено, >1.0 = breach
 ```
 
 **Dashboard**: [`dashboards/cost-monitoring.json`](./dashboards/cost-monitoring.json) — пай-чарти cost-by-provider, daily AI burn timeseries, run-rate vs budget bargauge, fail-open guards (mirror з ai-cost dashboard для cost-context awareness).
+
+**Alerts**: [`voyage-cost.yml`](../../ops/prometheus/rules/voyage-cost.yml) — `VoyageDailyBudgetSoftBreach` (warn @ 80% × `voyage_daily_budget_usd`, after 10m) і `VoyageDailyBudgetHardBreach` (page @ 100%, after 5m). Маршрут — той самий, що й інші sergeant-server alerts: Alertmanager → WF-98 → Telegram-топік `🟠 Контрол-план`.
 
 ---
 
