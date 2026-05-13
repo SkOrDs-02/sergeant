@@ -36,6 +36,7 @@
       "@sergeant/insights": ["../../packages/insights/src/index.ts"],
       "@sergeant/insights/*": ["../../packages/insights/src/*"],
       "@shared/*": ["./src/shared/*"],
+      "@assets/*": ["./src/assets/*"],
       "@finyk": ["./src/modules/finyk/index.ts"],
       "@finyk/*": ["./src/modules/finyk/*"],
       "@fizruk": ["./src/modules/fizruk/index.ts"],

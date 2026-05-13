@@ -1,5 +1,5 @@
 /**
- * Pure `sergeant://` deep-link parser + builder.
+ * Pure `sergeant://` + HTTPS-Universal-Link deep-link parser + builder.
  *
  * Source of truth for the URL schemes this module supports is
  * `docs/mobile/overview.md` (section "Deep links"). Keep that table and the
@@ -16,6 +16,25 @@ import type { Href } from "expo-router";
 export const SERGEANT_SCHEME = "sergeant://";
 
 /**
+ * Allow-list of hosts that may open the RN app via iOS Universal
+ * Links / Android verified App Links. The same list lives in:
+ *
+ *   - `apps/mobile/app.config.ts` (`UNIVERSAL_LINK_HOSTS`)
+ *   - `apps/mobile-shell/src/index.ts` (`DEEP_LINK_HTTPS_HOSTS`)
+ *   - `apps/web/public/.well-known/apple-app-site-association`
+ *   - `apps/web/public/.well-known/assetlinks.json`
+ *
+ * Strict equality match (case-insensitive) on the URL `host` —
+ * **no suffix wildcard** so `sergeant.vercel.app.evil.com` never
+ * passes for `sergeant.vercel.app`. Mirrors the hardening in
+ * `apps/mobile-shell` (M19 — `docs/security/hardening/`).
+ */
+export const UNIVERSAL_LINK_HOSTS: readonly string[] = Object.freeze([
+  "sergeant.vercel.app",
+  "sergeant.2dmanager.com.ua",
+]);
+
+/**
  * Structured representation of every deep link the mobile client
  * currently accepts. Adding a new scheme = extending this union +
  * adding a case in `parseSergeantUrl` / `buildSergeantUrl` /
@@ -23,6 +42,7 @@ export const SERGEANT_SCHEME = "sergeant://";
  */
 export type SergeantDeepLink =
   | { type: "hub" }
+  | { type: "hub-chat" }
   | { type: "workout-new" }
   | { type: "workout"; id: string }
   | { type: "food-log" }
@@ -38,15 +58,21 @@ export type SergeantDeepLink =
 
 /**
  * Parse a raw URL string into a `SergeantDeepLink`. Returns `null`
- * for anything that is not a well-formed `sergeant://…` URL the
- * client knows how to route.
+ * for anything the client does not know how to route.
  *
- * Contract:
- *   - Scheme must be exactly `sergeant://`. `http(s)://`, `exp://`,
- *     and bare strings all return `null`.
+ * Accepted shapes:
+ *   - **Custom scheme** — `sergeant://<path>?<query>#<frag>`. The
+ *     scheme must be exactly lower-case `sergeant://`; `SERGEANT://`,
+ *     `sergeant:/…`, etc. all return `null`.
+ *   - **HTTPS Universal / App Link** — `https://<host>/<path>` where
+ *     `<host>` is an exact case-insensitive match against
+ *     `UNIVERSAL_LINK_HOSTS`. `http://`, `exp://`, and hosts outside
+ *     the allow-list return `null`.
+ *
+ * Common contract (both shapes share the path/query semantics):
  *   - Leading / trailing slashes on the path are ignored, so
  *     `sergeant://routine`, `sergeant://routine/`, and
- *     `sergeant:///routine/` all parse identically.
+ *     `https://sergeant.vercel.app/routine/` all parse identically.
  *   - Dynamic segments (`{id}`) preserve whatever string the caller
  *     passed, including zero-padded IDs (`workout/007`) and
  *     percent-encoded UUIDs — callers are responsible for decoding
@@ -61,14 +87,10 @@ export function parseSergeantUrl(
   raw: string | null | undefined,
 ): SergeantDeepLink | null {
   if (!raw || typeof raw !== "string") return null;
-  if (!raw.startsWith(SERGEANT_SCHEME)) return null;
 
-  const rest = raw.slice(SERGEANT_SCHEME.length);
-  const hashIdx = rest.indexOf("#");
-  const withoutHash = hashIdx >= 0 ? rest.slice(0, hashIdx) : rest;
-  const queryIdx = withoutHash.indexOf("?");
-  const pathPart = queryIdx >= 0 ? withoutHash.slice(0, queryIdx) : withoutHash;
-  const queryPart = queryIdx >= 0 ? withoutHash.slice(queryIdx + 1) : "";
+  const parsed = extractPathAndQuery(raw);
+  if (!parsed) return null;
+  const { pathPart, queryPart } = parsed;
 
   const tokens = pathPart
     .split("/")
@@ -82,6 +104,12 @@ export function parseSergeantUrl(
   const [a, b, c, ...rest4] = tokens;
 
   switch (a) {
+    case "hub-chat": {
+      if (b === undefined && c === undefined && rest4.length === 0) {
+        return { type: "hub-chat" };
+      }
+      return null;
+    }
     case "workout": {
       if (rest4.length > 0) return null;
       if (b === "new" && c === undefined) return { type: "workout-new" };
@@ -139,6 +167,8 @@ export function buildSergeantUrl(link: SergeantDeepLink): string {
   switch (link.type) {
     case "hub":
       return "sergeant://";
+    case "hub-chat":
+      return "sergeant://hub-chat";
     case "workout-new":
       return "sergeant://workout/new";
     case "workout":
@@ -188,6 +218,8 @@ export function hrefForDeepLink(link: SergeantDeepLink): Href | null {
   switch (link.type) {
     case "hub":
       return "/(tabs)";
+    case "hub-chat":
+      return "/hub-chat";
     case "workout-new":
       return "/(tabs)/fizruk/workout/new";
     case "workout":
@@ -227,6 +259,130 @@ export function hrefForDeepLink(link: SergeantDeepLink): Href | null {
       // visible route push is required.
       return null;
   }
+}
+
+/**
+ * Alias map applied to HTTPS Universal Links so a user who taps the
+ * **web** URL (`https://sergeant.vercel.app/finyk/tx/42`) lands on
+ * the same RN screen as a user who launches the **custom-scheme**
+ * URL (`sergeant://finance/tx/42`).
+ *
+ * Custom-scheme uses the cross-platform _domain_ names (`finance`,
+ * `food`); the web (`apps/web`) uses the user-facing _module_ slugs
+ * (`finyk`, `nutrition`, etc.). The aliases below convert the
+ * web slug to the domain name so the rest of the parser sees the
+ * canonical shape.
+ *
+ * `fizruk` has no top-level deep-link target — the RN side only
+ * exposes specific `workout/{id}` and `workout/new` routes — so
+ * `fizruk/workout/...` strips the `fizruk` prefix and leaves
+ * `workout/...` for the regular parser. Bare `https://host/fizruk`
+ * deliberately returns `null` and the caller falls back to the hub.
+ */
+const HTTPS_FIRST_SEGMENT_ALIASES: Readonly<Record<string, string>> = {
+  finyk: "finance",
+  nutrition: "food",
+};
+
+/**
+ * Split `raw` into its `pathPart` (no leading slash, no query, no
+ * fragment) and `queryPart` (no leading `?`). Returns `null` for
+ * inputs that are neither a recognised custom-scheme URL nor an
+ * allow-listed HTTPS Universal Link.
+ *
+ * For HTTPS URLs the first path segment is additionally rewritten
+ * via `HTTPS_FIRST_SEGMENT_ALIASES` so web slugs (`/finyk`,
+ * `/nutrition`) route to the same `SergeantDeepLink` variants as
+ * the canonical custom-scheme paths (`sergeant://finance`,
+ * `sergeant://food`).
+ *
+ * The HTTPS host match is strict (case-insensitive equality against
+ * `UNIVERSAL_LINK_HOSTS`) and rejects `userinfo@host` shapes — the
+ * latter mirrors the M19 hardening in `apps/mobile-shell` so a
+ * carefully crafted `https://evil@sergeant.vercel.app/...` cannot
+ * smuggle a deep link through the parser.
+ */
+function extractPathAndQuery(
+  raw: string,
+): { pathPart: string; queryPart: string } | null {
+  if (raw.startsWith(SERGEANT_SCHEME)) {
+    return splitPathAndQuery(raw.slice(SERGEANT_SCHEME.length));
+  }
+
+  if (raw.startsWith("https://")) {
+    const afterScheme = raw.slice("https://".length);
+    // Reject `userinfo@host` — both `:` (port) / `?` (query) /
+    // `#` (fragment) / `/` (path) terminate the authority. If `@`
+    // appears before any of those, the URL is using `userinfo` and
+    // we treat it as untrusted.
+    const authorityEnd = firstIndexOfAny(afterScheme, "/?#");
+    const authority =
+      authorityEnd < 0 ? afterScheme : afterScheme.slice(0, authorityEnd);
+    if (authority.includes("@")) return null;
+
+    // Strip an optional `:port`. We do not enforce a specific port;
+    // production traffic is on `:443` (the default), but tests / a
+    // future preview proxy might serve over a custom port.
+    const colonIdx = authority.indexOf(":");
+    const host = colonIdx >= 0 ? authority.slice(0, colonIdx) : authority;
+
+    const hostLower = host.toLowerCase();
+    const matches = UNIVERSAL_LINK_HOSTS.some(
+      (allowed) => allowed.toLowerCase() === hostLower,
+    );
+    if (!matches) return null;
+
+    const tail = authorityEnd < 0 ? "" : afterScheme.slice(authorityEnd);
+    // `tail` starts with `/`, `?`, or `#`. Normalise so the shared
+    // path/query splitter sees the same shape as the custom-scheme
+    // branch.
+    const normalised = tail.startsWith("/") ? tail.slice(1) : tail;
+    const split = splitPathAndQuery(normalised);
+    return {
+      pathPart: rewriteHttpsFirstSegment(split.pathPart),
+      queryPart: split.queryPart,
+    };
+  }
+
+  return null;
+}
+
+function rewriteHttpsFirstSegment(pathPart: string): string {
+  if (!pathPart) return pathPart;
+  const slashIdx = pathPart.indexOf("/");
+  const head = slashIdx >= 0 ? pathPart.slice(0, slashIdx) : pathPart;
+  const tail = slashIdx >= 0 ? pathPart.slice(slashIdx) : "";
+  // `fizruk` is special-cased — the RN side has no top-level
+  // `fizruk` deep link, only `workout/...`. Strip the `fizruk`
+  // prefix so `fizruk/workout/123` collapses to `workout/123`;
+  // bare `fizruk` (no tail) is left as-is so the regular parser
+  // returns `null` and the caller falls back to the hub.
+  if (head === "fizruk" && tail.length > 0) {
+    return tail.replace(/^\//, "");
+  }
+  const aliased = HTTPS_FIRST_SEGMENT_ALIASES[head];
+  return aliased === undefined ? pathPart : aliased + tail;
+}
+
+function firstIndexOfAny(s: string, chars: string): number {
+  let min = -1;
+  for (const c of chars) {
+    const i = s.indexOf(c);
+    if (i >= 0 && (min < 0 || i < min)) min = i;
+  }
+  return min;
+}
+
+function splitPathAndQuery(rest: string): {
+  pathPart: string;
+  queryPart: string;
+} {
+  const hashIdx = rest.indexOf("#");
+  const withoutHash = hashIdx >= 0 ? rest.slice(0, hashIdx) : rest;
+  const queryIdx = withoutHash.indexOf("?");
+  const pathPart = queryIdx >= 0 ? withoutHash.slice(0, queryIdx) : withoutHash;
+  const queryPart = queryIdx >= 0 ? withoutHash.slice(queryIdx + 1) : "";
+  return { pathPart, queryPart };
 }
 
 function parseQuery(q: string): Record<string, string> {

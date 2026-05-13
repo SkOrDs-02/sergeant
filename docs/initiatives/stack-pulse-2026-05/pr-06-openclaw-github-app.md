@@ -1,6 +1,6 @@
 # PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) — in review (current PR)
 
 |              |                                                                              |

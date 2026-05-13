@@ -71,7 +71,7 @@ async function enqueueFresh(
 function setStatus(
   db: BetterSqliteDatabase,
   id: number,
-  status: "pending" | "rejected" | "dead_letter",
+  status: "pending" | "rejected" | "dead_letter" | "quarantined",
 ): void {
   db.prepare(`UPDATE sync_op_outbox SET status = ? WHERE id = ?`).run(
     status,
@@ -116,6 +116,7 @@ describe("countOutboxByStatus", () => {
         pending: 0,
         rejected: 0,
         dead_letter: 0,
+        quarantined: 0,
       });
     });
 
@@ -125,6 +126,7 @@ describe("countOutboxByStatus", () => {
       expect(Object.keys(counts).sort()).toEqual([
         "dead_letter",
         "pending",
+        "quarantined",
         "rejected",
       ]);
     });
@@ -148,6 +150,7 @@ describe("countOutboxByStatus", () => {
         pending: 1,
         rejected: 0,
         dead_letter: 0,
+        quarantined: 0,
       });
     });
 
@@ -164,8 +167,25 @@ describe("countOutboxByStatus", () => {
         pending: 1,
         rejected: 1,
         dead_letter: 1,
+        quarantined: 0,
       });
       // Pinning: the surviving pending row is `a`.
+      expect(a).toBeGreaterThan(0);
+    });
+
+    it("counts quarantined rows in their own bucket", async () => {
+      const a = await enqueueFresh(client, "idem-A");
+      const b = await enqueueFresh(client, "idem-B");
+      setStatus(db, b, "quarantined");
+
+      const counts = await countOutboxByStatus(client);
+
+      expect(counts).toEqual({
+        pending: 1,
+        rejected: 0,
+        dead_letter: 0,
+        quarantined: 1,
+      });
       expect(a).toBeGreaterThan(0);
     });
   });
@@ -182,6 +202,7 @@ describe("countOutboxByStatus", () => {
         pending: 5,
         rejected: 0,
         dead_letter: 0,
+        quarantined: 0,
       });
     });
 
@@ -201,6 +222,7 @@ describe("countOutboxByStatus", () => {
         pending: 3,
         rejected: 2,
         dead_letter: 1,
+        quarantined: 0,
       });
     });
 
@@ -214,6 +236,7 @@ describe("countOutboxByStatus", () => {
       expect(counts.pending).toBe(50);
       expect(counts.rejected).toBe(0);
       expect(counts.dead_letter).toBe(0);
+      expect(counts.quarantined).toBe(0);
     });
   });
 
@@ -231,6 +254,7 @@ describe("countOutboxByStatus", () => {
         pending: 1,
         rejected: 0,
         dead_letter: 0,
+        quarantined: 0,
       });
     });
 
@@ -246,6 +270,7 @@ describe("countOutboxByStatus", () => {
         pending: 2,
         rejected: 0,
         dead_letter: 0,
+        quarantined: 0,
       });
       expect(a).toBeGreaterThan(0);
       expect(b).toBeGreaterThan(0);
@@ -305,7 +330,12 @@ describe("countOutboxByStatus", () => {
 
       expect(a).toEqual(b);
       expect(b).toEqual(c);
-      expect(a).toEqual({ pending: 2, rejected: 0, dead_letter: 0 });
+      expect(a).toEqual({
+        pending: 2,
+        rejected: 0,
+        dead_letter: 0,
+        quarantined: 0,
+      });
     });
 
     it("reflects counts changes after lifecycle mutations between reads", async () => {
@@ -313,15 +343,30 @@ describe("countOutboxByStatus", () => {
       const b = await enqueueFresh(client, "idem-B");
 
       const before = await countOutboxByStatus(client);
-      expect(before).toEqual({ pending: 2, rejected: 0, dead_letter: 0 });
+      expect(before).toEqual({
+        pending: 2,
+        rejected: 0,
+        dead_letter: 0,
+        quarantined: 0,
+      });
 
       setStatus(db, a, "rejected");
       const mid = await countOutboxByStatus(client);
-      expect(mid).toEqual({ pending: 1, rejected: 1, dead_letter: 0 });
+      expect(mid).toEqual({
+        pending: 1,
+        rejected: 1,
+        dead_letter: 0,
+        quarantined: 0,
+      });
 
       setStatus(db, b, "dead_letter");
       const after = await countOutboxByStatus(client);
-      expect(after).toEqual({ pending: 0, rejected: 1, dead_letter: 1 });
+      expect(after).toEqual({
+        pending: 0,
+        rejected: 1,
+        dead_letter: 1,
+        quarantined: 0,
+      });
     });
 
     it("returns to the empty shape after the table is fully drained", async () => {
@@ -330,7 +375,12 @@ describe("countOutboxByStatus", () => {
 
       const counts = await countOutboxByStatus(client);
 
-      expect(counts).toEqual({ pending: 0, rejected: 0, dead_letter: 0 });
+      expect(counts).toEqual({
+        pending: 0,
+        rejected: 0,
+        dead_letter: 0,
+        quarantined: 0,
+      });
     });
   });
 
@@ -386,7 +436,12 @@ describe("countOutboxByStatus", () => {
 
       const counts = await countOutboxByStatus(wrappedClient);
 
-      expect(counts).toEqual({ pending: 2, rejected: 0, dead_letter: 0 });
+      expect(counts).toEqual({
+        pending: 2,
+        rejected: 0,
+        dead_letter: 0,
+        quarantined: 0,
+      });
     });
 
     it("throws when the driver hands back a non-finite count", async () => {

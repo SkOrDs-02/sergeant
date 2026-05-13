@@ -140,6 +140,24 @@ export interface VectorStore {
 }
 
 /**
+ * PR-38 — criticality classifier для embedding-викликів. Background
+ * ingestion (digest, RAG-prep) має передавати `"non-critical"`, щоб
+ * `embedBatch` міг fail-soft-нути при overflow-і soft daily-budget-у.
+ * User-facing recall / explicit user write — `"critical"` (default).
+ */
+export type EmbeddingCallCriticality = "critical" | "non-critical";
+
+/**
+ * Per-call options для `embedBatch`. Окрема структура (а не позиційні
+ * args) — щоб майбутні extension points (наприклад, `signal`, `timeoutMs`)
+ * не ламали call-sites.
+ */
+export interface EmbedBatchOptions {
+  /** Default — `"critical"`. */
+  criticality?: EmbeddingCallCriticality;
+}
+
+/**
  * Embedд'инг-провайдер. Окремий від `VectorStore`: store зберігає
  * вектори, provider їх генерує. Розділення дозволяє мокати у тестах
  * (in-memory store + fake embeddings) без дотику до Voyage API.
@@ -151,6 +169,14 @@ export interface EmbeddingProvider {
    * Embed-ить batch текстів. Якщо API не доступне — кидає
    * `MissingVoyageApiKeyError` / `VoyageHttpError`. Caller має
    * вирішувати, чи ретраїти (BullMQ-attempt у PR2).
+   *
+   * PR-38: коли `options.criticality === "non-critical"` І денний
+   * Voyage USD-burn перевищив `VOYAGE_DAILY_BUDGET_USD_SOFT` →
+   * `VoyageSoftBudgetExceededError`. Caller (background-ingestion)
+   * має ловити її як "skip without retry".
    */
-  embedBatch(texts: string[]): Promise<Float32Array[]>;
+  embedBatch(
+    texts: string[],
+    options?: EmbedBatchOptions,
+  ): Promise<Float32Array[]>;
 }

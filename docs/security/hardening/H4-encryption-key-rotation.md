@@ -1,6 +1,6 @@
 # H4 — No rotation procedure for AES-256-GCM data-encryption keys
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Phase 1 closed (2026-05-04) — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679); Phase 2 (Mono `mono_connection.token_*`) tracked as follow-up.
 
 | Field          | Value                                                                                                                                                                                                                                      |

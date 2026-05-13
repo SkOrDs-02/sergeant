@@ -1,4 +1,7 @@
+import { resolveOriginDeviceId } from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+
+import { webKVStore } from "@shared/lib/storage/storage";
 
 import { classifyOutboxBootOutcome } from "./outboxBoot";
 import {
@@ -186,12 +189,54 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     return session.data?.user?.id ?? null;
   };
 
+  // Stable per-install device id. Without this, every push lands on
+  // the server with `origin_device_id = NULL`, and the pull/SSE filter
+  // `WHERE origin_device_id IS DISTINCT FROM $3` with $3=NULL drops
+  // every NULL-origin row (PG semantics: `NULL IS DISTINCT FROM NULL`
+  // is FALSE). The id is persisted under
+  // `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID` via `webKVStore` so it
+  // survives reloads, deploys, and the SQLite warm-cache hydration
+  // (pre-bootstrap reads fall through to `localStorage`).
+  const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
+  sentry.setSentryTag("sync.origin_device_id_present", "true");
+
+  // Per-install ±20% interval randomization. After a fleet-wide outage
+  // every client resumes its periodic drain on the same wall-clock
+  // grid (30s base), which produces a synchronized thundering herd at
+  // each boundary. Picking the period once at boot from `[24s, 36s]`
+  // desynchronizes the fleet without changing average throughput per
+  // device (T3 audit MEDIUM finding; pairs with `jitterMs` below).
+  const intervalMs = randomizeIntervalMs(30_000, 0.2);
+
+  // T3 audit HIGH#3: surface every poison-row quarantine via Sentry
+  // so SRE has visibility on the corruption class that was previously
+  // a silent head-of-line stall. The breadcrumb is enough — we do NOT
+  // captureException because a single corrupt row in an otherwise
+  // healthy outbox is not an "error" to alert on; the alerting layer
+  // builds a Grafana counter off these breadcrumbs.
+  const onOutboxQuarantine = (event: {
+    readonly id: number;
+    readonly tableName: string;
+    readonly op: string;
+    readonly reason: string;
+  }): void => {
+    sentry.addSentryBreadcrumb({
+      category: "sync",
+      level: "warning",
+      message: `sync_op_outbox.quarantine id=${event.id} table=${event.tableName} op=${event.op} reason=${event.reason}`,
+    });
+  };
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: async (options) => {
         const userId = await resolveUserId();
         if (!userId) return [];
-        return dbSchema.drainSyncOpOutbox(client, { ...options, userId });
+        return dbSchema.drainSyncOpOutbox(client, {
+          ...options,
+          userId,
+          onQuarantine: onOutboxQuarantine,
+        });
       },
       push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
       markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
@@ -200,6 +245,13 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
         dbSchema.markOutboxRejected(client, id, reason),
       planRetry: dbSchema.planRetry,
       now: () => new Date(),
+      // Retry jitter on transient batch failures. Spreads each row's
+      // `next_retry_at` across `[0, SYNC_OP_JITTER_WINDOW_MS]` so a
+      // batch that fails together does not retry together. Called once
+      // per `planRetry` invocation within a tick (per-row, not
+      // per-batch) — the caching boundary is the `now` value pinned at
+      // the tick start, NOT the jitter sample.
+      jitterMs: () => Math.random() * dbSchema.SYNC_OP_JITTER_WINDOW_MS,
     },
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
@@ -210,7 +262,19 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     addBreadcrumb: sentry.addSentryBreadcrumb,
     captureException: (error, context) =>
       sentry.captureException(error, { extra: context }),
-    intervalMs: 30_000,
+    intervalMs,
     limit: 100,
+    originDeviceId,
   });
+}
+
+/**
+ * Returns `baseMs * (1 + uniform(-spread, +spread))`, clamped to a
+ * positive integer. `spread=0.2` yields a value in `[baseMs*0.8,
+ * baseMs*1.2]`. Used once per boot to desynchronize fleet-wide drain
+ * ticks; not re-sampled across the lifetime of a runtime instance.
+ */
+function randomizeIntervalMs(baseMs: number, spread: number): number {
+  const factor = 1 + (Math.random() * 2 - 1) * spread;
+  return Math.max(1, Math.floor(baseMs * factor));
 }

@@ -1,6 +1,6 @@
 # M2 — `trust proxy = 1` is hard-coded
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)
 
 | Field          | Value                                                                                                                                                                                                                            |

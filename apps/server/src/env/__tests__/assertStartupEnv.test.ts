@@ -3,9 +3,20 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // Re-imports `env/env.ts` from scratch each test so the zod schema reads the
 // current `process.env` snapshot. Without this every test would see whatever
 // state the first import froze.
+//
+// T2 audit finding #11 — Hard Rule #20 (`assertStartupEnv`) inspects
+// `process.env.Git_PAT` / `process.env.OPENCLAW_GITHUB_PAT` directly to
+// catch leftover platform secrets that bypass Zod. Devin/CI runners
+// inherit `Git_PAT` from the parent shell, which leaked into the
+// "does NOT throw in production" baseline cases and flipped them to
+// failures non-deterministically by host env. We explicitly stub both
+// keys to empty BEFORE applying `envOverrides`, so the negative-path
+// cases (which set them non-empty themselves) still win.
 async function loadAssertStartupEnv(
   envOverrides: Record<string, string> = {},
 ): Promise<() => void> {
+  vi.stubEnv("Git_PAT", "");
+  vi.stubEnv("OPENCLAW_GITHUB_PAT", "");
   for (const [k, v] of Object.entries(envOverrides)) vi.stubEnv(k, v);
   vi.resetModules();
   const mod = await import("../env.js");
@@ -15,11 +26,16 @@ async function loadAssertStartupEnv(
 const PROD_BASELINE = {
   // Minimum env that lets `assertStartupEnv()` proceed past the unrelated
   // production checks (DATABASE_URL, BETTER_AUTH_TOKEN_ENC_KEY,
-  // NUTRITION_BACKUP_KEY_SECRET) before reaching the AI_QUOTA_DISABLED gate.
+  // NUTRITION_BACKUP_KEY_SECRET, METRICS_TOKEN) before reaching the
+  // AI_QUOTA_DISABLED gate.
   NODE_ENV: "production",
   DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
   BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
   NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+  // T2 audit #4 — METRICS_TOKEN is required in production. Tests that
+  // exercise the negative path for this gate live in a dedicated
+  // `describe` block below and DELETE this key from the baseline.
+  METRICS_TOKEN: "c".repeat(64),
 };
 
 describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
@@ -166,6 +182,142 @@ describe("assertStartupEnv — Hard Rule #20: no OpenClaw PAT in production", ()
     const assertStartupEnv = await loadAssertStartupEnv({
       NODE_ENV: "test",
       OPENCLAW_GITHUB_PAT: "ghp_ci_token",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // PROD_BASELINE only stubs the keys it sets — Devin/CI shells may export
+  // `Git_PAT` / `OPENCLAW_GITHUB_PAT`, which would trigger Hard Rule #20 and
+  // make these tests non-hermetic. Stub them to empty explicitly.
+  const STRIPE_BASELINE = {
+    ...PROD_BASELINE,
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...STRIPE_BASELINE,
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+    });
+    expect(() => assertStartupEnv()).toThrow(/STRIPE_WEBHOOK_SECRET/);
+  });
+
+  it("does NOT throw in production when both Stripe vars are set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...STRIPE_BASELINE,
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in production when neither Stripe var is set (billing not wired)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(STRIPE_BASELINE);
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when STRIPE_SECRET_KEY is set without webhook secret", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      STRIPE_SECRET_KEY: "sk_test_xxx",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // Strip METRICS_TOKEN from the prod baseline so we can exercise the
+  // negative path. The legacy PATs are also cleared because the same
+  // PROD_BASELINE inherits the Git_PAT gate.
+  const METRICS_BASELINE = {
+    NODE_ENV: "production" as const,
+    DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
+    NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when METRICS_TOKEN is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(METRICS_BASELINE);
+    expect(() => assertStartupEnv()).toThrow(/METRICS_TOKEN/);
+  });
+
+  it("does NOT throw in production when METRICS_TOKEN is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...METRICS_BASELINE,
+      METRICS_TOKEN: "c".repeat(64),
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when METRICS_TOKEN is missing (legacy warning-only path)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — HTTPS scheme hard-fail (T2 audit #6)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  const HTTPS_BASELINE = {
+    ...PROD_BASELINE,
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when BETTER_AUTH_URL uses http://", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...HTTPS_BASELINE,
+      BETTER_AUTH_URL: "http://api.example.com",
+    });
+    expect(() => assertStartupEnv()).toThrow(/BETTER_AUTH_URL/);
+  });
+
+  it("throws in production when PUBLIC_API_BASE_URL uses http://", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...HTTPS_BASELINE,
+      PUBLIC_API_BASE_URL: "http://api.example.com",
+    });
+    expect(() => assertStartupEnv()).toThrow(/PUBLIC_API_BASE_URL/);
+  });
+
+  it("does NOT throw in production when both URLs use https://", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...HTTPS_BASELINE,
+      BETTER_AUTH_URL: "https://api.example.com",
+      PUBLIC_API_BASE_URL: "https://api.example.com",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in production when both URLs are unset (Better Auth derives them)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(HTTPS_BASELINE);
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when BETTER_AUTH_URL uses http://localhost", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      BETTER_AUTH_URL: "http://localhost:3000",
     });
     expect(() => assertStartupEnv()).not.toThrow();
   });

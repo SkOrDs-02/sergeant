@@ -5,7 +5,7 @@ description: Strategic mode — `/okr`. Огляд активних OKR з пр�
 
 # Strategic mode: OKR — `/okr`
 
-> **Last validated:** 2026-05-10 by Devin (PR-C3). **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by Devin (PR-C3). **Next review:** 2026-08-11.
 > **Status:** Active (PR-C3, opt-in per Locked decision #6). Live SKILL is copied to `~/.openclaw/workspace/skills/sergeant-mode-okr/SKILL.md` on Gateway start.
 
 ## Призначення
@@ -14,7 +14,7 @@ Strategic mode — orthogonal до persona. `/okr` запускає огляд �
 
 Trigger: повідомлення з префіксом `/okr` (без аргументів). Якщо founder додає `<topic>` (наприклад `/okr q3 retention`) — звужуй scope до відповідного KR.
 
-Audit trigger label (per [`tools/console/src/agents/strategic-modes.ts`](../../../../tools/console/src/agents/strategic-modes.ts)): `strategic_okr`.
+Audit trigger label (per [`tools/openclaw/src/agents/strategic-modes.ts`](../../../../tools/openclaw/src/agents/strategic-modes.ts)): `strategic_okr`.
 
 ## Phase 3 skeleton — обмеження
 
@@ -70,4 +70,4 @@ Strategic mode НЕ розширює tool-allowlist persona. `/okr` працює
 
 ## Reference
 
-Primer-джерело: [`tools/console/src/agents/strategic-modes.ts`](../../../../tools/console/src/agents/strategic-modes.ts) `OKR_PRIMER`. Текст у цьому SKILL.md — canonical у OpenClaw runtime.
+Primer-джерело: [`tools/openclaw/src/agents/strategic-modes.ts`](../../../../tools/openclaw/src/agents/strategic-modes.ts) `OKR_PRIMER`. Текст у цьому SKILL.md — canonical у OpenClaw runtime.

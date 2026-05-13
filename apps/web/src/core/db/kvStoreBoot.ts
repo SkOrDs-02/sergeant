@@ -53,6 +53,7 @@ import type {
 } from "@sergeant/shared";
 import { createSqliteKVStore } from "@sergeant/shared";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
+import { logger } from "@shared/lib";
 import { getSqliteDb, type SqliteDbHandle } from "./sqlite.js";
 
 /**
@@ -256,7 +257,7 @@ export async function bootstrapKvStore(
   const onError =
     opts.onError ??
     ((stage, err) => {
-      console.warn(`[kvStoreBoot] ${stage} failed`, err);
+      logger.warn(`[kvStoreBoot] ${stage} failed`, err);
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",
@@ -330,7 +331,7 @@ export async function bootstrapKvStore(
     boot: kvStoreBoot,
     ...(kvStoreCrossTab !== null ? { crossTab: kvStoreCrossTab } : {}),
     onWriteError: (op, key, error) => {
-      console.warn(`[kvStoreBoot] sqlite ${op} for "${key}" failed`, error);
+      logger.warn(`[kvStoreBoot] sqlite ${op} for "${key}" failed`, error);
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",

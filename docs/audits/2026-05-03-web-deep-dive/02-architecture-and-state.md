@@ -1,9 +1,9 @@
 # Web deep-dive — Architecture & state
 
-> **Last validated:** 2026-05-04 by @Skords-01.
+> **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Active
 > **Scope:** Provider tree, routing, sync v1↔v2, `index.css`, in-process workers, React Query patterns, `localStorage` migration, CloudSync split-brain risk, `useCloudSync` shape.
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/tech-debt/frontend.md`, `docs/audits/2026-04-28-sergeant-comprehensive-audit.md`.
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/tech-debt/frontend.md`, `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`.
 
 Архітектурний шар у Sergeant — найсильніший на сервері (factory `createApp`, granular guards, graceful shutdown). На фронті — нерівномірно: provider-tree без інваріантів, імперативний роутер, гігантська stylesheet. Нижче — точкова прожарка.
 

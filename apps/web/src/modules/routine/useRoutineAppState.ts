@@ -314,7 +314,16 @@ export function useRoutineAppState({
   // state into localStorage.
   const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
   const handlePullRefreshError = useCallback(() => {
-    toast.error("Не вдалося оновити дані. Перевір з'єднання.");
+    // PTR-fail: surface the canonical recovery path (retry the pull) so
+    // the error toast is actionable per docs/ui/toast-policy.md. The
+    // retry callback fires the same `requestCloudPull` the PTR gesture
+    // used, so the user does not need to remember the gesture.
+    toast.error("Не вдалося оновити дані. Перевір з'єднання.", undefined, {
+      label: "Повторити",
+      onClick: () => {
+        void requestCloudPull(2500);
+      },
+    });
   }, [toast]);
 
   const calendarData = useMemo<RoutineCalendarData>(

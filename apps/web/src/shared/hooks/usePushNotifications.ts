@@ -5,6 +5,7 @@ import type { PushRegisterRequest } from "@sergeant/api-client";
 import { getPlatform, isCapacitor } from "@sergeant/shared";
 import { isApiError, pushApi } from "@shared/api";
 import { pushKeys } from "@shared/lib/api/queryKeys";
+import { logger } from "@shared/lib";
 import {
   safeReadStringLS,
   safeRemoveLS,
@@ -194,7 +195,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const message = isApiError(e)
         ? e.serverMessage || `Server error ${e.status}`
         : (e as Error).message;
-      console.warn("[push] subscribe failed:", message);
+      logger.warn("[push] subscribe failed:", message);
     },
   });
 
@@ -222,10 +223,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
             .catch((err: unknown) => {
               // best-effort — локально вже розписалися, але хочемо бачити
               // серверні збої у Sentry/DevTools замість глухого silent fail.
-              console.warn(
-                "[push] native unregister failed (best-effort)",
-                err,
-              );
+              logger.warn("[push] native unregister failed (best-effort)", err);
             });
         }
         safeRemoveLS(PUSH_SUB_KEY);
@@ -254,7 +252,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         await pushUnregister
           .mutateAsync({ platform: "web", endpoint })
           .catch((err: unknown) => {
-            console.warn("[push] web unregister failed (best-effort)", err);
+            logger.warn("[push] web unregister failed (best-effort)", err);
           });
       }
       safeRemoveLS(PUSH_SUB_KEY);
@@ -265,7 +263,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const message = isApiError(e)
         ? e.serverMessage || `Server error ${e.status}`
         : (e as Error).message;
-      console.warn("[push] unsubscribe failed:", message);
+      logger.warn("[push] unsubscribe failed:", message);
     },
   });
 

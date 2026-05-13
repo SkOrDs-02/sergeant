@@ -58,6 +58,7 @@ export default function SignInScreen() {
           value={email}
           onChangeText={setEmail}
           size="lg"
+          testID="auth-sign-in-email"
         />
 
         <View>
@@ -76,6 +77,7 @@ export default function SignInScreen() {
             onChangeText={setPassword}
             secureTextEntry={!showPass}
             size="lg"
+            testID="auth-sign-in-password"
             suffix={
               <Pressable
                 onPress={() => setShowPass((v) => !v)}
@@ -94,7 +96,11 @@ export default function SignInScreen() {
           />
         </View>
 
-        {error ? <Text className="text-danger text-xs">{error}</Text> : null}
+        {error ? (
+          <Text className="text-danger text-xs" testID="auth-sign-in-error">
+            {error}
+          </Text>
+        ) : null}
 
         <Button
           variant="primary"
@@ -102,6 +108,7 @@ export default function SignInScreen() {
           loading={loading}
           disabled={!email || !password}
           onPress={onSubmit}
+          testID="auth-sign-in-submit"
         >
           Увійти
         </Button>

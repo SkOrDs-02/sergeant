@@ -26,6 +26,24 @@ const i18nAllowlist = JSON.parse(
   ),
 );
 
+// Toast-policy burndown gate (audit 2026-05-13 § 1 P0). Files exempt
+// from `sergeant-design/require-toast-error-action` — i.e. legacy
+// `toast.error(...)` call-sites without an `action: { label, onClick }`.
+// New error-toasts MUST include an action; existing ones are tracked
+// here and removed as they are refactored. When the array becomes
+// `[]`, promote the rule from "warn" to "error". See
+// `docs/ui/toast-policy.md` and audit
+// `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F1.
+const toastErrorActionAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.toast-error-action-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
 export default [
   ...baseline,
   // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
@@ -111,6 +129,17 @@ export default [
       // future import-style refactors. Place new utils in the right
       // subdir, or import via the `@shared/lib` barrel.
       "sergeant-design/no-flat-shared-lib": "error",
+      // `require-toast-error-action` — audit 2026-05-13 § F1 (P0):
+      // every error-toast must include an `action: { label, onClick }`
+      // so the user has a recovery path. Bare `toast.error("...")`
+      // calls are tracked in `apps/web/eslint.toast-error-action-allowlist.json`
+      // and removed as they are refactored. When the file becomes `[]`,
+      // promote this rule from "warn" to "error".
+      // See `docs/ui/toast-policy.md`.
+      "sergeant-design/require-toast-error-action": [
+        "warn",
+        { allowlist: toastErrorActionAllowlist },
+      ],
     },
   },
   // Stack-pulse PR-07 — body-size declarative policy.
@@ -259,7 +288,7 @@ export default [
   {
     files: [
       "apps/web/src/**/*.{ts,tsx,js,jsx}",
-      "tools/console/src/**/*.{ts,tsx,js,jsx}",
+      "tools/openclaw/src/**/*.{ts,tsx,js,jsx}",
       "apps/mobile/src/**/*.{ts,tsx,js,jsx}",
       "apps/mobile/app/**/*.{ts,tsx,js,jsx}",
       "apps/mobile-shell/src/**/*.{ts,tsx,js,jsx}",
@@ -315,6 +344,10 @@ export default [
       "sergeant-design/no-bare-empty-text": "off",
       "sergeant-design/prefer-text-style": "off",
       "sergeant-design/no-arbitrary-text-size": "off",
+      // Test fixtures for `require-toast-error-action` feed bare
+      // `toast.error(...)` strings to the linter; turn the rule off so
+      // the plugin doesn't self-flag its own fixtures.
+      "sergeant-design/require-toast-error-action": "off",
     },
   },
   // Jest setup / test files need jest globals.
@@ -524,14 +557,14 @@ export default [
   // and web bundles do not touch `fs` / `eval`; web XSS is governed
   // by the existing CSP card (C2).
   {
-    files: ["apps/server/src/**/*.{js,ts}", "tools/console/src/**/*.{js,ts}"],
+    files: ["apps/server/src/**/*.{js,ts}", "tools/openclaw/src/**/*.{js,ts}"],
     ignores: [
       "apps/server/src/**/*.test.{js,ts}",
       "apps/server/src/**/*.integration.test.{js,ts}",
       "apps/server/src/**/__tests__/**",
       "apps/server/src/test/**",
-      "tools/console/src/**/*.test.{js,ts}",
-      "tools/console/src/**/__tests__/**",
+      "tools/openclaw/src/**/*.test.{js,ts}",
+      "tools/openclaw/src/**/__tests__/**",
     ],
     plugins: { security },
     rules: {
@@ -615,7 +648,7 @@ export default [
   // also live on `tools/console/**`. See
   // `docs/security/hardening/M16-telegram-markdown-v2.md`.
   {
-    files: ["tools/console/src/**/*.{js,ts}"],
+    files: ["tools/openclaw/src/**/*.{js,ts}"],
     rules: {
       "sergeant-design/no-legacy-telegram-parse-mode": "error",
     },
@@ -688,10 +721,10 @@ export default [
       "apps/mobile/src/modules/fizruk/hooks/useCustomExercises.ts",
       "apps/mobile/src/modules/fizruk/hooks/useRecovery.ts",
       "apps/mobile/src/modules/fizruk/pages/Exercise.tsx",
-      // Notifications API — Expo trigger union widened in SDK 52, mobile
-      // codebase hasn't caught up yet. Drop after `expo-notifications`
-      // type alignment.
-      "apps/mobile/src/modules/routine/hooks/useRoutineReminders.ts",
+      // Notifications API allowlist entry for `useRoutineReminders.ts`
+      // was dropped on 2026-05-13: M5 (mobile.md roadmap) is done and the
+      // hook now builds a typed `WeeklyTriggerInput` inline. Re-adding it
+      // would mask future regressions.
     ],
     rules: {
       "sergeant-design/no-strict-bypass": "error",

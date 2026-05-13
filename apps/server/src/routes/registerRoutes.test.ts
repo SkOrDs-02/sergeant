@@ -96,21 +96,72 @@ function extractRoutes(app: Express): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
+async function buildAppWithRoutes(): Promise<Express> {
+  // Required env for routers that throw on missing config during module init.
+  process.env["ANTHROPIC_API_KEY"] = "test-key";
+  process.env["BETTER_AUTH_SECRET"] = "x".repeat(32);
+  process.env["INTERNAL_API_KEY"] = "internal-test";
+
+  const { registerRoutes } = await import("./index.js");
+  const app = express();
+  registerRoutes(app, { pool: mockPool as never });
+  return app;
+}
+
 describe("registerRoutes", () => {
   it("mounts the stable set of /api/* endpoints (snapshot)", async () => {
-    // Required env for routers that throw on missing config during module init.
-    process.env["ANTHROPIC_API_KEY"] = "test-key";
-    process.env["BETTER_AUTH_SECRET"] = "x".repeat(32);
-    process.env["INTERNAL_API_KEY"] = "internal-test";
-
-    const { registerRoutes } = await import("./index.js");
-    const app = express();
-    registerRoutes(app, { pool: mockPool as never });
-
+    const app = await buildAppWithRoutes();
     const routes = extractRoutes(app);
 
     // Snapshot the full path set. If this fails, see the header comment above
     // for resolution steps (Hard Rule #3 — API contract must move together).
     expect(routes).toMatchSnapshot();
+  });
+
+  // Structural invariants — додатково до snapshot-у. Snapshot ловить будь-яку
+  // зміну інвентаря (треба окремо переглянути). Тести нижче — це машинні
+  // інваріанти, які НЕ повинні зламатися ніколи, навіть якщо snapshot
+  // оновили.
+
+  it("реєструє щонайменше 60 ендпоінтів — sanity проти пустого роутера", async () => {
+    const app = await buildAppWithRoutes();
+    expect(extractRoutes(app).length).toBeGreaterThan(60);
+  });
+
+  it("кожен роут живе або під `/api/`, або під коротким health/metrics-альясом", async () => {
+    // root-shortcut-и (`/livez`, `/readyz`, `/healthz`, `/metrics`,
+    // `/health/...`, `/startupz`) свідомо живуть поза `/api`-простором —
+    // це контракт з platform health-probe-ами і Prometheus scrape-ом. Усе
+    // інше повинне мати `/api/`-префікс, інакше CORS / rate-limit / CSRF
+    // middleware, що mount-яться на `app.use("/api", …)`, мовчки його
+    // обходять.
+    const app = await buildAppWithRoutes();
+    const rootShortcut =
+      /^\/(livez|readyz|startupz|healthz|metrics|health(\/|$))/;
+    const offending = extractRoutes(app)
+      .map((r) => r.replace(/^[A-Z_]+\s+/, ""))
+      .filter((p) => !p.startsWith("/api/") && !rootShortcut.test(p));
+    expect(offending).toEqual([]);
+  });
+
+  it("`/api/internal/*` не дублюються у public `/api/*` namespace-і", async () => {
+    // `/api/internal/*` — це n8n-machine-to-machine ендпоінти, захищені
+    // `requireInternalIp` + INTERNAL_API_KEY. Якщо ті ж suffix-и випадково
+    // зʼявляються під голим `/api/foo` — public endpoint обходить захист.
+    // Цей тест — fast-fail для такої регресії.
+    const app = await buildAppWithRoutes();
+    const paths = extractRoutes(app).map((r) => r.replace(/^[A-Z_]+\s+/, ""));
+    const internalSuffixes = paths
+      .filter((p) => p.startsWith("/api/internal/"))
+      .map((p) => p.slice("/api/internal".length));
+    const publicPaths = new Set(
+      paths.filter(
+        (p) => p.startsWith("/api/") && !p.startsWith("/api/internal/"),
+      ),
+    );
+    const leaks = internalSuffixes.filter((suffix) =>
+      publicPaths.has(`/api${suffix}`),
+    );
+    expect(leaks).toEqual([]);
   });
 });

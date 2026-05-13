@@ -141,6 +141,8 @@ export function ResetPasswordPage() {
                   type="password"
                   placeholder="Мінімум 10 символів"
                   autoComplete="new-password"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- standalone reset page, first required input
+                  autoFocus
                   error={!!formState.errors.password}
                   aria-invalid={!!formState.errors.password}
                   aria-describedby={
@@ -150,7 +152,11 @@ export function ResetPasswordPage() {
                   {...register("password")}
                 />
                 {formState.errors.password?.message && (
-                  <p id="reset-pw-error" className="text-xs text-danger">
+                  <p
+                    id="reset-pw-error"
+                    role="alert"
+                    className="text-xs text-danger"
+                  >
                     {formState.errors.password.message}
                   </p>
                 )}
@@ -177,7 +183,11 @@ export function ResetPasswordPage() {
                   {...register("confirm")}
                 />
                 {formState.errors.confirm?.message && (
-                  <p id="reset-confirm-error" className="text-xs text-danger">
+                  <p
+                    id="reset-confirm-error"
+                    role="alert"
+                    className="text-xs text-danger"
+                  >
                     {formState.errors.confirm.message}
                   </p>
                 )}

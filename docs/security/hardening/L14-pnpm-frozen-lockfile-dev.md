@@ -1,6 +1,6 @@
 # L14 — `pnpm install --frozen-lockfile` in dev workflow
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed
 
 | Field          | Value                                                     |

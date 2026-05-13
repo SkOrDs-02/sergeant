@@ -30,15 +30,17 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_THRESHOLD_DAYS = 60;
 const DEFAULT_FILES = [
   "docs/tech-debt/frontend.md",
+  "docs/tech-debt/backend.md",
   "docs/tech-debt/mobile.md",
 ];
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // ── Marker grammar ──────────────────────────────────────────────────────────
 //
-// Match either of (case-insensitive):
+// Match any of (case-insensitive):
 //   `> **Оновлено YYYY-MM-DD.** …`
 //   `> **Last reviewed: YYYY-MM-DD by …**`
+//   `> **Last validated:** YYYY-MM-DD by …` (canonical repo freshness header)
 //   `Last reviewed: YYYY-MM-DD by …` (AGENTS.md style — no quote prefix)
 //
 // We pick the **first** matching date in the file head (first 30 lines)
@@ -48,6 +50,7 @@ const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}/;
 const MARKER_PATTERNS = [
   /^>\s*\*\*Оновлено\s+(\d{4}-\d{2}-\d{2})\b/im,
   /^>\s*\*\*Last reviewed:\s*(\d{4}-\d{2}-\d{2})\b/im,
+  /^>\s*\*\*Last validated:\*\*\s*(\d{4}-\d{2}-\d{2})\b/im,
   /^Last reviewed:\s*(\d{4}-\d{2}-\d{2})\b/im,
 ];
 const HEADER_LINE_LIMIT = 30;

@@ -1,7 +1,7 @@
 # Paywall implementation plan — PR-20 gate + sub-PR breakdown
 
-> **Last validated:** 2026-05-06 by @Skords-01.
-> **Next review:** 2026-06-06 (post-0010 phase 3 review).
+> **Last validated:** 2026-05-13 by @Skords-01.
+> **Next review:** 2026-08-11 (post-0010 phase 3 review).
 > **Status:** Active — gating doc для tracker `PR-20` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 > **Owner:** @Skords-01 + Devin (planning session 2026-05-06).
 

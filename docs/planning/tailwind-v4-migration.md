@@ -1,6 +1,6 @@
 # Міграція Tailwind CSS v3 → v4
 
-> **Last validated:** 2026-05-05. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13. **Next review:** 2026-08-11.
 > **Status:** Phase 1 (web) — ✅ done ([#1495](https://github.com/Skords-01/Sergeant/pull/1495), follow-up [#1499](https://github.com/Skords-01/Sergeant/pull/1499)). Phase 2 (mobile/NativeWind) — blocked, чекаємо NativeWind 5. Phase 3 (design tokens — preset decision + docs) — ✅ done. Phase 4 (cleanup) — ✅ done крім фінального переключення статусу на Completed (чекає закриття Phase 2).
 > **Owner:** @Skords-01
 > **Пріоритет:** Medium — запланувати на Q3–Q4 2026.

@@ -1,17 +1,17 @@
 # PR-27: `INTERNAL_API_KEY` rotation мechanism
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Planned
 
-|                    |                                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| **Severity**       | Medium (M12)                                                                                                     |
-| **Linked finding** | M12 (`00-overview.md`)                                                                                           |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                                                        |
-| **Effort**         | 2 дні                                                                                                            |
-| **Risk**           | Medium (rotation процедура потребує zero-downtime; mistake = locked-out internal admin)                          |
-| **Touches**        | `apps/server/src/env/env.ts`, `apps/server/src/http/requireInternalIp.ts`, `tools/console`, `ops/n8n-workflows/` |
-| **Trigger**        | next security audit OR suspected leak                                                                            |
+|                    |                                                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **Severity**       | Medium (M12)                                                                                                      |
+| **Linked finding** | M12 (`00-overview.md`)                                                                                            |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                                                         |
+| **Effort**         | 2 дні                                                                                                             |
+| **Risk**           | Medium (rotation процедура потребує zero-downtime; mistake = locked-out internal admin)                           |
+| **Touches**        | `apps/server/src/env/env.ts`, `apps/server/src/http/requireInternalIp.ts`, `tools/openclaw`, `ops/n8n-workflows/` |
+| **Trigger**        | next security audit OR suspected leak                                                                             |
 
 ## Контекст
 
@@ -27,7 +27,7 @@
 Risk:
 
 - Leak detection — нема способу побачити «цей key compromised» без full env-search у logs.
-- Rotation вимагає coordinated update у Railway + n8n + tools/console + Monobank webhook secret.
+- Rotation вимагає coordinated update у Railway + n8n + tools/openclaw + Monobank webhook secret.
 - Жоден internal-call не tagged для post-mortem.
 
 ## Scope
@@ -74,7 +74,7 @@ CREATE INDEX internal_api_keys_name_active_idx
 
 ### 4. CLI tool
 
-`tools/console` — telegram bot з commands:
+`tools/openclaw` — telegram bot з commands:
 
 - `/internal-key list` — список (name, expires, last_used)
 - `/internal-key create <name> <ttl-days> <scopes>` — generate + return raw key (одноразово)
@@ -99,7 +99,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 - [ ] Migration `048_internal_api_keys.sql` merged.
 - [ ] `apps/server/src/http/requireInternalApiKey.ts` (rename middleware) працює з DB-lookup + bcrypt.
 - [ ] All `apps/server/src/routes/internal/*` consume new middleware.
-- [ ] `tools/console` має `/internal-key` group commands з role-check `ops`.
+- [ ] `tools/openclaw` має `/internal-key` group commands з role-check `ops`.
 - [ ] Bootstrap-row seeded з env-INTERNAL_API_KEY на startup.
 - [ ] Sentry tag `internal_key_name` додається на кожен internal request.
 - [ ] `docs/security/internal-api-keys.md` з rotation runbook.
@@ -108,7 +108,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 ## Тести
 
 - `apps/server/src/__tests__/internal-api-key.integration.test.ts` (Testcontainers).
-- `tools/console/src/__tests__/internal-key-commands.test.ts`.
+- `tools/openclaw/src/__tests__/internal-key-commands.test.ts`.
 - Manual: 30-day key expiry → 401 з clear error message.
 
 ## Rollout
@@ -135,7 +135,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 - `apps/server/src/routes/internal/alerts.ts`
 - `apps/server/src/migrations/048_internal_api_keys.sql` — new
 - `apps/server/src/env/env.ts` — INTERNAL_API_KEY lишається 30d (bootstrap)
-- `tools/console/src/agents/ops/internalKey.ts` — new commands
+- `tools/openclaw/src/agents/ops/internalKey.ts` — new commands
 - `ops/n8n-workflows/03-sentry-alert-routing.json` — update header to use new key
 - `ops/n8n-workflows/18-nightly-security-audit.json` — те саме
 - `docs/security/internal-api-keys.md` — new

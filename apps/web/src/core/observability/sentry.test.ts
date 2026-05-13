@@ -102,6 +102,27 @@ describe("initSentry", () => {
     // rate і ігнорує sampler.
     expect(cfg.tracesSampleRate).toBeUndefined();
   });
+
+  it("реєструє beforeSend, який рекурсивно скрабить PII (audit 2026-05-13)", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+    const cfg = sentryInit.mock.calls[0]?.[0];
+    expect(typeof cfg.beforeSend).toBe("function");
+
+    // Прикручений хук має повертати event і одночасно почистити чутливі поля.
+    const event = {
+      request: {
+        cookies: { sid: "y" },
+        headers: { Authorization: "Bearer xxx" } as Record<string, unknown>,
+      },
+      extra: { token: "leaked" } as Record<string, unknown>,
+    };
+    const out = cfg.beforeSend(event, {});
+    expect(out).toBe(event);
+    expect("cookies" in event.request).toBe(false);
+    expect(event.request.headers["Authorization"]).toBe("[redacted]");
+    expect(event.extra["token"]).toBe("[redacted]");
+  });
 });
 
 describe("setSentryTag", () => {
@@ -145,6 +166,103 @@ describe("setSentryTag", () => {
   });
 });
 
+describe("applyWebBeforeSend (PII scrub)", () => {
+  it("drops request.cookies and request.data wholesale", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      request: {
+        cookies: { sid: "yyy" },
+        data: { password: "p1", email: "e@x.com" },
+        url: "https://app.sergeant.app/api/me",
+      },
+    };
+    applyWebBeforeSend(event);
+    expect("cookies" in event.request).toBe(false);
+    expect("data" in event.request).toBe(false);
+    expect(event.request.url).toBe("https://app.sergeant.app/api/me");
+  });
+
+  it("recursively scrubs request.headers (Authorization, Cookie, X-CSRF-Token)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      request: {
+        headers: {
+          Authorization: "Bearer xxx",
+          Cookie: "auth=yyy",
+          "X-CSRF-Token": "csrf-zzz",
+          "Content-Type": "application/json",
+        } as Record<string, unknown>,
+      },
+    };
+    applyWebBeforeSend(event);
+    expect(event.request.headers["Authorization"]).toBe("[redacted]");
+    expect(event.request.headers["Cookie"]).toBe("[redacted]");
+    expect(event.request.headers["X-CSRF-Token"]).toBe("[redacted]");
+    expect(event.request.headers["Content-Type"]).toBe("application/json");
+  });
+
+  it("recursively scrubs event.extra / event.contexts (deep nesting)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const payload: Record<string, unknown> = {
+      email: "leak@example.com",
+      deep: { token: "leaked", keep: "ok" } as Record<string, unknown>,
+    };
+    const secrets: Record<string, unknown> = {
+      connectionString: "postgres://…",
+    };
+    const event = {
+      extra: { payload },
+      contexts: {
+        runtime: { name: "browser" },
+        secrets,
+      },
+    };
+    applyWebBeforeSend(event);
+    expect(payload["email"]).toBe("[redacted]");
+    const deep = payload["deep"] as Record<string, unknown>;
+    expect(deep["token"]).toBe("[redacted]");
+    expect(deep["keep"]).toBe("ok");
+    expect(secrets["connectionString"]).toBe("[redacted]");
+  });
+
+  it("scrubs breadcrumbs[].data (xhr / fetch auto-capture)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const data: Record<string, unknown> = {
+      url: "/api/me",
+      request_body: { password: "p" } as Record<string, unknown>,
+      headers: { Authorization: "Bearer xxx" } as Record<string, unknown>,
+    };
+    const event = {
+      breadcrumbs: [{ category: "xhr", data }],
+    };
+    applyWebBeforeSend(event);
+    const rb = data["request_body"] as Record<string, unknown>;
+    expect(rb["password"]).toBe("[redacted]");
+    const headers = data["headers"] as Record<string, unknown>;
+    expect(headers["Authorization"]).toBe("[redacted]");
+  });
+
+  it("normalises event.user to { id } only (strips email/phone)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      user: {
+        id: "user-abc",
+        email: "leak@example.com",
+        phone: "+380",
+        username: "leak",
+      },
+    };
+    applyWebBeforeSend(event);
+    expect(event.user).toEqual({ id: "user-abc" });
+  });
+
+  it("survives events without request/extra/contexts/breadcrumbs/user", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {} as Record<string, never>;
+    expect(() => applyWebBeforeSend(event)).not.toThrow();
+  });
+});
+
 describe("pickWebTracesSampleRate", () => {
   it("samples pageload at 100% (first paint)", async () => {
     const { pickWebTracesSampleRate } = await import("./sentry");
@@ -157,7 +275,7 @@ describe("pickWebTracesSampleRate", () => {
     expect(pickWebTracesSampleRate({ op: "pageload" }, 0.05)).toBe(1.0);
   });
 
-  it("samples navigation at 10% (SPA route changes)", async () => {
+  it("samples navigation at 10% by default (no route name)", async () => {
     const { pickWebTracesSampleRate } = await import("./sentry");
     expect(
       pickWebTracesSampleRate(
@@ -165,6 +283,70 @@ describe("pickWebTracesSampleRate", () => {
         0.05,
       ),
     ).toBe(0.1);
+  });
+
+  it("samples navigation to /onboarding at 100% (first-run UX)", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          name: "/onboarding",
+        },
+        0.05,
+      ),
+    ).toBe(1.0);
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          name: "/onboarding/welcome",
+        },
+        0.05,
+      ),
+    ).toBe(1.0);
+  });
+
+  it("samples navigation to /fizruk and /finyk at 50% (active tuning)", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        { attributes: { "sentry.op": "navigation" }, name: "/fizruk" },
+        0.05,
+      ),
+    ).toBe(0.5);
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          name: "/finyk/transactions",
+        },
+        0.05,
+      ),
+    ).toBe(0.5);
+  });
+
+  it("samples navigation to the Hub root (/) at 5% (most visited)", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        { attributes: { "sentry.op": "navigation" }, name: "/" },
+        0.5,
+      ),
+    ).toBe(0.05);
+  });
+
+  it("reads route name from transactionContext.name when top-level name is missing", async () => {
+    const { pickWebTracesSampleRate } = await import("./sentry");
+    expect(
+      pickWebTracesSampleRate(
+        {
+          attributes: { "sentry.op": "navigation" },
+          transactionContext: { name: "/fizruk/workout/123" },
+        },
+        0.05,
+      ),
+    ).toBe(0.5);
   });
 
   it("samples http.client at 1% (chatty XHR/fetch)", async () => {
@@ -191,5 +373,61 @@ describe("pickWebTracesSampleRate", () => {
     expect(
       pickWebTracesSampleRate({ attributes: { "sentry.op": 42 } }, 0.05),
     ).toBe(0.05);
+  });
+});
+
+describe("defaultWebSampleRate", () => {
+  it("returns 0.05 (prod baseline) when no env vars are set", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(defaultWebSampleRate({})).toBe(0.05);
+  });
+
+  it("reads VITE_SENTRY_SAMPLE_PROFILE=minimal as 0.01", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(
+      defaultWebSampleRate({ VITE_SENTRY_SAMPLE_PROFILE: "minimal" }),
+    ).toBe(0.01);
+  });
+
+  it("reads VITE_SENTRY_SAMPLE_PROFILE=aggressive as 0.2", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(
+      defaultWebSampleRate({ VITE_SENTRY_SAMPLE_PROFILE: "aggressive" }),
+    ).toBe(0.2);
+  });
+
+  it("explicit VITE_SENTRY_TRACES_SAMPLE_RATE wins over profile (kill-switch)", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(
+      defaultWebSampleRate({
+        VITE_SENTRY_SAMPLE_PROFILE: "aggressive",
+        VITE_SENTRY_TRACES_SAMPLE_RATE: "0",
+      }),
+    ).toBe(0);
+  });
+
+  it("unknown profile collapses to prod (0.05)", async () => {
+    const { defaultWebSampleRate } = await import("./sentry");
+    expect(defaultWebSampleRate({ VITE_SENTRY_SAMPLE_PROFILE: "banana" })).toBe(
+      0.05,
+    );
+  });
+});
+
+describe("resolveWebSampleProfile", () => {
+  it("accepts the three documented profile names", async () => {
+    const { resolveWebSampleProfile } = await import("./sentry");
+    expect(resolveWebSampleProfile("minimal")).toBe("minimal");
+    expect(resolveWebSampleProfile("prod")).toBe("prod");
+    expect(resolveWebSampleProfile("aggressive")).toBe("aggressive");
+  });
+
+  it("defaults to prod when unset / unknown / wrong type", async () => {
+    const { resolveWebSampleProfile } = await import("./sentry");
+    expect(resolveWebSampleProfile(undefined)).toBe("prod");
+    expect(resolveWebSampleProfile(null)).toBe("prod");
+    expect(resolveWebSampleProfile("")).toBe("prod");
+    expect(resolveWebSampleProfile("banana")).toBe("prod");
+    expect(resolveWebSampleProfile(42)).toBe("prod");
   });
 });

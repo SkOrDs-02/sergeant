@@ -355,29 +355,61 @@ describe("drainSyncOpOutbox", () => {
     });
   });
 
-  describe("invariant violations", () => {
-    it("throws when the row column is unparseable JSON", async () => {
+  describe("poison-row quarantine (T3 audit HIGH#3)", () => {
+    it("quarantines a row with unparseable JSON and continues draining", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       // Bypass enqueueOutboxIncrement which enforces JSON.stringify;
       // raw INSERT with a malformed payload mimics a corrupted
       // database file rather than a misuse of the public helper.
       db.prepare(
         `INSERT INTO sync_op_outbox
-           (user_id, table_name, op, row, client_ts, idempotency_key)
-         VALUES (?, ?, 'increment', ?, ?, ?)`,
+           (id, user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, ?, 'increment', ?, ?, ?)`,
       ).run(
+        1,
         "u-test",
         "routine_streaks",
         "{not-json",
         "2026-05-05T11:00:00.000+00:00",
         "idem-broken",
       );
-      await expect(
-        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
-      ).rejects.toThrow(/unparseable JSON/);
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (id, user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        2,
+        "u-test",
+        "routine_streaks",
+        JSON.stringify({ delta: 1 }),
+        "2026-05-05T11:00:01.000+00:00",
+        "idem-good",
+      );
+
+      const events: Array<{ id: number; reason: string }> = [];
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ id: e.id, reason: e.reason }),
+      });
+
+      // Poison row is quarantined; the healthy row still drains.
+      expect(drained.map((r) => r.id)).toEqual([2]);
+      expect(events).toHaveLength(1);
+      expect(events[0]?.id).toBe(1);
+      expect(events[0]?.reason).toMatch(/^parse_failed:/);
+
+      const poisonRow = db
+        .prepare(
+          `SELECT status, reject_reason FROM sync_op_outbox WHERE id = ?`,
+        )
+        .get(1) as { status: string; reject_reason: string };
+      expect(poisonRow.status).toBe("quarantined");
+      expect(poisonRow.reject_reason).toMatch(/^parse_failed:/);
     });
 
-    it("throws when the row column parses to a non-object (array)", async () => {
+    it("quarantines a row whose payload parses to an array", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       db.prepare(
         `INSERT INTO sync_op_outbox
@@ -390,12 +422,19 @@ describe("drainSyncOpOutbox", () => {
         "2026-05-05T11:00:00.000+00:00",
         "idem-array",
       );
-      await expect(
-        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
-      ).rejects.toThrow(/non-object/);
+      const events: Array<{ reason: string }> = [];
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ reason: e.reason }),
+      });
+      expect(drained).toHaveLength(0);
+      expect(events).toHaveLength(1);
+      expect(events[0]?.reason).toBe("non_object_payload:array");
     });
 
-    it("throws when the row column parses to null", async () => {
+    it("quarantines a row whose payload parses to null", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       db.prepare(
         `INSERT INTO sync_op_outbox
@@ -408,12 +447,19 @@ describe("drainSyncOpOutbox", () => {
         "2026-05-05T11:00:00.000+00:00",
         "idem-null",
       );
-      await expect(
-        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
-      ).rejects.toThrow(/non-object/);
+      const events: Array<{ reason: string }> = [];
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ reason: e.reason }),
+      });
+      expect(drained).toHaveLength(0);
+      expect(events).toHaveLength(1);
+      expect(events[0]?.reason).toBe("non_object_payload:null");
     });
 
-    it("throws when an op literal sits outside SYNC_OP_OUTBOX_OPS", async () => {
+    it("quarantines a row whose op sits outside SYNC_OP_OUTBOX_OPS", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       // The CHECK constraint blocks an out-of-tuple INSERT, so drop
       // the constraint by recreating the table — this mimics a
@@ -448,9 +494,40 @@ describe("drainSyncOpOutbox", () => {
         "2026-05-05T11:00:00.000+00:00",
         "idem-bad-op",
       );
-      await expect(
-        drainSyncOpOutbox(client, { userId: "u-test", limit: 10, now }),
-      ).rejects.toThrow(/unsupported op/);
+      const events: Array<{ reason: string }> = [];
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ reason: e.reason }),
+      });
+      expect(drained).toHaveLength(0);
+      expect(events).toHaveLength(1);
+      expect(events[0]?.reason).toBe("unsupported_op:merge");
+    });
+
+    it("does not invoke onQuarantine when no rows are poisoned", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        JSON.stringify({ delta: 1 }),
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-good",
+      );
+      const events: Array<unknown> = [];
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push(e),
+      });
+      expect(drained).toHaveLength(1);
+      expect(events).toHaveLength(0);
     });
 
     it("propagates SQL errors when the table is missing", async () => {

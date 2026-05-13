@@ -312,6 +312,7 @@ export const SYNC_OP_OUTBOX_STATUSES = [
   "pending",
   "rejected",
   "dead_letter",
+  "quarantined",
 ] as const;
 export type SyncOpOutboxStatus = (typeof SYNC_OP_OUTBOX_STATUSES)[number];
 

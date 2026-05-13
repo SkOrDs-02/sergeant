@@ -10,12 +10,16 @@
  * (e.g. `* on (instance) group_left(version, commit) http_request_duration_ms`)
  * — тут ми ловимо drift, який інакше з'явився б тільки під alert-evaluator-ом.
  */
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import type { Request, Response } from "express";
 import {
   register,
   appBuildInfo,
   aiRequestDurationMs,
   aiRequestsTotal,
+  metricsHandler,
+  n8nWebhookReplayAttemptsTotal,
+  n8nWebhookReplayDurationMs,
   syncOpLogApplyTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
@@ -24,6 +28,7 @@ import {
   APPLY_REJECT_REASONS,
   ENGINE_REJECT_REASONS,
 } from "../modules/sync/syncV2.js";
+import { env } from "../env/env.js";
 
 describe("metrics registry — `app_build_info` gauge", () => {
   it("реєструється у спільному `register`-і з ім'ям `app_build_info`", () => {
@@ -175,5 +180,155 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="100"\}/);
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="5000"\}/);
     expect(text).toMatch(/sync_op_log_pull_queue_depth_bucket\{le="200"\}/);
+  });
+});
+
+describe("metrics registry — n8n webhook-events replay (PR-29)", () => {
+  it("реєструє `n8n_webhook_replay_attempts_total` counter з labels {workflow_id, outcome}", () => {
+    const metric = register.getSingleMetric(
+      "n8n_webhook_replay_attempts_total",
+    );
+    expect(metric).toBe(n8nWebhookReplayAttemptsTotal);
+  });
+
+  it("реєструє `n8n_webhook_replay_duration_ms` histogram з labels {workflow_id, outcome}", () => {
+    const metric = register.getSingleMetric("n8n_webhook_replay_duration_ms");
+    expect(metric).toBe(n8nWebhookReplayDurationMs);
+  });
+
+  it("counter інкрементується per (workflow_id, outcome) і експортується з повним label-set-ом", async () => {
+    n8nWebhookReplayAttemptsTotal.inc({
+      workflow_id: "01-billing-pipeline",
+      outcome: "ok",
+    });
+    n8nWebhookReplayAttemptsTotal.inc({
+      workflow_id: "06-mono-webhook-enrichment",
+      outcome: "http_error",
+    });
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE n8n_webhook_replay_attempts_total counter");
+    // Дашборд `n8n-webhook-events.json` робить
+    // `sum by (workflow_id, outcome) (rate(...))` — фіксуємо лейбли.
+    expect(text).toMatch(
+      /n8n_webhook_replay_attempts_total\{workflow_id="01-billing-pipeline",outcome="ok"\} \d+/,
+    );
+    expect(text).toMatch(
+      /n8n_webhook_replay_attempts_total\{workflow_id="06-mono-webhook-enrichment",outcome="http_error"\} \d+/,
+    );
+  });
+
+  it("histogram експортує buckets під 10s timeout (DEFAULT_TIMEOUT_MS у replayWebhookEvent)", async () => {
+    n8nWebhookReplayDurationMs.observe(
+      { workflow_id: "02-failed-payment-recovery", outcome: "ok" },
+      120,
+    );
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE n8n_webhook_replay_duration_ms histogram");
+    // SLO-margin: 250ms = healthy p50, 5000ms = почати turbулізуватися
+    // до timeout-у. Фіксуємо щоб дашборд p95-панелі не drift-нула.
+    expect(text).toMatch(
+      /n8n_webhook_replay_duration_ms_bucket\{le="250",workflow_id="02-failed-payment-recovery",outcome="ok"\}/,
+    );
+    expect(text).toMatch(
+      /n8n_webhook_replay_duration_ms_bucket\{le="5000",workflow_id="02-failed-payment-recovery",outcome="ok"\}/,
+    );
+    expect(text).toMatch(
+      /n8n_webhook_replay_duration_ms_bucket\{le="10000",workflow_id="02-failed-payment-recovery",outcome="ok"\}/,
+    );
+  });
+});
+
+describe("metricsHandler — bearer token (T2 audit #4)", () => {
+  function mkReq(authHeader: string | undefined): Request {
+    return {
+      get: (name: string): string | undefined =>
+        name.toLowerCase() === "authorization" ? authHeader : undefined,
+    } as unknown as Request;
+  }
+
+  function mkRes(): {
+    res: Response;
+    statusMock: ReturnType<typeof vi.fn>;
+    sendMock: ReturnType<typeof vi.fn>;
+    typeMock: ReturnType<typeof vi.fn>;
+    setHeaderMock: ReturnType<typeof vi.fn>;
+  } {
+    const sendMock = vi.fn();
+    const typeMock = vi.fn(() => ({ send: sendMock }));
+    const statusMock = vi.fn(() => ({ type: typeMock, send: sendMock }));
+    const setHeaderMock = vi.fn();
+    const res = {
+      status: statusMock,
+      type: typeMock,
+      send: sendMock,
+      setHeader: setHeaderMock,
+    } as unknown as Response;
+    return { res, statusMock, sendMock, typeMock, setHeaderMock };
+  }
+
+  // metricsHandler now reads `env.METRICS_TOKEN` (parsed once at startup),
+  // not `process.env.METRICS_TOKEN`, so `vi.stubEnv` doesn't reach the
+  // handler. Mutate the parsed env directly and restore in afterEach.
+  // (This is the same pattern that env.NODE_ENV stubs in other tests use.)
+  const savedToken = env.METRICS_TOKEN;
+  afterEach(() => {
+    const e = env as { METRICS_TOKEN?: string | undefined };
+    if (savedToken === undefined) delete e.METRICS_TOKEN;
+    else e.METRICS_TOKEN = savedToken;
+  });
+
+  function setToken(value: string | undefined): void {
+    const e = env as { METRICS_TOKEN?: string | undefined };
+    if (value === undefined) delete e.METRICS_TOKEN;
+    else e.METRICS_TOKEN = value;
+  }
+
+  it("returns 401 when METRICS_TOKEN is set and the request has no auth header", async () => {
+    setToken("secret_token_value");
+    const { res, statusMock, sendMock } = mkRes();
+    metricsHandler(mkReq(undefined), res);
+    expect(statusMock).toHaveBeenCalledWith(401);
+    expect(sendMock).toHaveBeenCalledWith("unauthorized");
+  });
+
+  it("returns 401 when the bearer token does not match (timing-safe compare path)", async () => {
+    setToken("secret_token_value");
+    const { res, statusMock } = mkRes();
+    metricsHandler(mkReq("Bearer wrong_token_value"), res);
+    expect(statusMock).toHaveBeenCalledWith(401);
+  });
+
+  it("returns 401 when the bearer is the right prefix but wrong length (length-mismatch path)", async () => {
+    setToken("secret_token_value");
+    const { res, statusMock } = mkRes();
+    // `safeStringEqual` rejects length-mismatch before constructing buffers
+    // — this exercises the early-return path explicitly.
+    metricsHandler(mkReq("Bearer secret_token"), res);
+    expect(statusMock).toHaveBeenCalledWith(401);
+  });
+
+  it("does NOT return 401 when bearer matches METRICS_TOKEN (proceeds to register.metrics())", async () => {
+    setToken("secret_token_value");
+    const { res, statusMock, setHeaderMock } = mkRes();
+    metricsHandler(mkReq("Bearer secret_token_value"), res);
+    // Need to wait a microtask because register.metrics() is async.
+    await new Promise((r) => setImmediate(r));
+    expect(statusMock).not.toHaveBeenCalledWith(401);
+    expect(setHeaderMock).toHaveBeenCalledWith(
+      "Content-Type",
+      register.contentType,
+    );
+  });
+
+  it("skips auth entirely when METRICS_TOKEN is unset (legacy dev/local behaviour)", async () => {
+    setToken(undefined);
+    const { res, statusMock, setHeaderMock } = mkRes();
+    metricsHandler(mkReq(undefined), res);
+    await new Promise((r) => setImmediate(r));
+    expect(statusMock).not.toHaveBeenCalledWith(401);
+    expect(setHeaderMock).toHaveBeenCalledWith(
+      "Content-Type",
+      register.contentType,
+    );
   });
 });

@@ -1,6 +1,6 @@
 # Round-13 Burndown Sprint — закриття KPI items #6 / #8 / #15
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Superseded — round 14 ревізія підтвердила, що всі три KPI items закриті без потреби в R13.1–R13.7 PR-послідовності, описаній нижче. Канонічне джерело статусу — [`./00-overview.md` §11.5 (round 14)](./00-overview.md#§115-залишок-роботи-до-повного-закриття-18-items-станом-на-2026-05-05-round-14).
 >
 > **Що сталося насправді:**
@@ -180,7 +180,7 @@ contract-schema), R13.6 — паралельно. R13.1–R13.4 — парале
 - **Form-engine для `InputDialog`** — utility-component без external API,
   out-of-scope per §3 risks вище.
 - **`tsconfig.strict` для tooling-package-iв** (`packages/scripts/*`,
-  `tools/console/*`) — окремий backlog, не fronted-burndown.
+  `tools/openclaw/*`) — окремий backlog, не fronted-burndown.
 
 ---
 

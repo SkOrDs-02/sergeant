@@ -9,7 +9,7 @@
   - [`apps/web/tests/a11y/ds-visual-qa.spec.ts`](../../apps/web/tests/a11y/ds-visual-qa.spec.ts) — design-system spec (4 viewports × 2 themes × 7 hub surfaces = 56 screenshots).
   - [`.github/workflows/visual-regression.yml`](../../.github/workflows/visual-regression.yml) — CI job.
   - [ADR-0020](./0020-testing-pyramid.md) — testing pyramid (visual regression сидить як 6-й шар поверх a11y/smoke).
-  - [`docs/audits/2026-04-28-sergeant-comprehensive-audit.md`](../audits/2026-04-28-sergeant-comprehensive-audit.md) §P3-1 — audit row, що тригернув формалізацію.
+  - [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1 — audit row, що тригернув формалізацію.
 
 ---
 
@@ -119,6 +119,6 @@ Sergeant не має Storybook (свідоме рішення: компонен�
 
 ## 7. Links
 
-- Audit row: [`docs/audits/2026-04-28-sergeant-comprehensive-audit.md`](../audits/2026-04-28-sergeant-comprehensive-audit.md) §P3-1.
+- Audit row: [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1.
 - Argos docs: <https://argos-ci.com/docs>.
 - Playwright visual comparisons: <https://playwright.dev/docs/test-snapshots>.

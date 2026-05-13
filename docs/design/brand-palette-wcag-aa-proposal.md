@@ -1,6 +1,6 @@
 # Brand-палітра → WCAG AA — пропозиція
 
-> **Last validated:** 2026-05-06 by @Skords-01.
+> **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Implemented — historical contract. Поточна канонічна реалізація
 > описана в [`brandbook.md` § Кольорова система → WCAG-AA `-strong`-тір](./brandbook.md#wcag-aa-тір--strong)
 > та [`design-system.md` § 2](./design-system.md). Цей документ зберігається

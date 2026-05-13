@@ -1,3 +1,4 @@
+import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 import { recordExternalHttp } from "./externalHttp.js";
 import { elapsedMs, isAbortError } from "./timing.js";
@@ -85,12 +86,11 @@ export async function capturePostHogEvent(
     return { outcome: "error", error: "distinctId is required" };
   }
 
-  const apiKey = options.apiKey ?? process.env["POSTHOG_PROJECT_API_KEY"];
-  const host = (
-    options.host ??
-    process.env["POSTHOG_HOST"] ??
-    DEFAULT_HOST
-  ).replace(/\/+$/, "");
+  const apiKey = options.apiKey ?? env.POSTHOG_PROJECT_API_KEY;
+  const host = (options.host ?? env.POSTHOG_HOST ?? DEFAULT_HOST).replace(
+    /\/+$/,
+    "",
+  );
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const fetchImpl = options.fetchImpl ?? fetch;
 

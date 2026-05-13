@@ -1,4 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger as webLogger } from "@shared/lib";
 
 import type {
   FinykBlobEntry,
@@ -55,7 +56,7 @@ export interface ApplyDualWriteResult {
 
 const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
   if (level === "warn") {
-    console.warn(`[finyk.dualWrite] ${message}`, meta ?? {});
+    webLogger.warn(`[finyk.dualWrite] ${message}`, meta ?? {});
   }
 };
 

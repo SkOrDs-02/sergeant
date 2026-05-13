@@ -5,7 +5,7 @@ description: Strategic mode — `/plan <topic>`. Веде structured 4-step plan
 
 # Strategic mode: Plan — `/plan <topic>`
 
-> **Last validated:** 2026-05-10 by Devin (PR-C3). **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by Devin (PR-C3). **Next review:** 2026-08-11.
 > **Status:** Active (PR-C3, opt-in per Locked decision #6). Live SKILL is copied to `~/.openclaw/workspace/skills/sergeant-mode-plan/SKILL.md` on Gateway start.
 
 ## Призначення
@@ -14,7 +14,7 @@ Strategic mode — orthogonal до persona. Persona визначає **хто д
 
 Trigger: повідомлення, що починається з `/plan <topic>`. Без `<topic>` — попроси одне речення про що планувати.
 
-Audit trigger label (per [`tools/console/src/agents/strategic-modes.ts`](../../../../tools/console/src/agents/strategic-modes.ts)): `strategic_plan`.
+Audit trigger label (per [`tools/openclaw/src/agents/strategic-modes.ts`](../../../../tools/openclaw/src/agents/strategic-modes.ts)): `strategic_plan`.
 
 ## Framework — 4 кроки
 
@@ -62,4 +62,4 @@ Strategic mode НЕ розширює tool-allowlist persona. Якщо persona н
 
 ## Reference
 
-Primer-джерело: [`tools/console/src/agents/strategic-modes.ts`](../../../../tools/console/src/agents/strategic-modes.ts) `PLAN_PRIMER`. Текст у цьому SKILL.md — canonical у OpenClaw runtime; primer у внутрішньому боті залишається до Phase 7 cutover.
+Primer-джерело: [`tools/openclaw/src/agents/strategic-modes.ts`](../../../../tools/openclaw/src/agents/strategic-modes.ts) `PLAN_PRIMER`. Текст у цьому SKILL.md — canonical у OpenClaw runtime; primer у внутрішньому боті залишається до Phase 7 cutover.

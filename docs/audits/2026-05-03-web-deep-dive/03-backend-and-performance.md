@@ -1,6 +1,6 @@
 # Web deep-dive — Backend, API & performance
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Active
 > **Scope:** Express factory, request validation, route registry, error handling + `requestId`, rate limiting, graceful shutdown, OpenAPI / typed client drift, Vite chunking, lazy module FCP, Service Worker reminder loop.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/architecture/`, `docs/audits/2026-04-28-implementation-roadmap.md`.

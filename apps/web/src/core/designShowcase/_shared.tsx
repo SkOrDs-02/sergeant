@@ -3,19 +3,24 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui";
 
 export const NAV_SECTIONS = [
+  { id: "theming", label: "Теми" },
   { id: "colors", label: "Кольори" },
   { id: "typography", label: "Типографіка" },
   { id: "buttons", label: "Кнопки" },
   { id: "badges", label: "Бейджі" },
   { id: "cards", label: "Карти" },
+  { id: "elevation", label: "Елевація" },
   { id: "forms", label: "Форми" },
   { id: "data", label: "Дані" },
   { id: "navigation", label: "Навігація" },
   { id: "overlays", label: "Overlays" },
+  { id: "primitives", label: "Tooltip & Popover" },
+  { id: "menus", label: "Menus" },
   { id: "feedback", label: "Фідбек" },
   { id: "celebration", label: "Святкування" },
   { id: "onboarding", label: "Онбординг" },
   { id: "motion", label: "Motion" },
+  { id: "empty-states", label: "EmptyState" },
 ] as const;
 
 export function Sec({

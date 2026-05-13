@@ -1,4 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger as webLogger } from "@shared/lib";
 
 import {
   recordDualWriteOutcome,
@@ -189,7 +190,8 @@ function logSafe(
 ): void {
   try {
     if (ctx.logger) ctx.logger(level, msg, meta);
-    else if (level === "warn") console.warn(`[fizruk.dualWrite] ${msg}`, meta);
+    else if (level === "warn")
+      webLogger.warn(`[fizruk.dualWrite] ${msg}`, meta);
   } catch {
     /* noop — logging must never throw */
   }

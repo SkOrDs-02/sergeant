@@ -70,7 +70,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "002_sync_op_outbox_retry.sql",
       "003_sync_op_outbox_increment_op.sql",
       "004_routine_full_state.sql",
-      "005_sync_op_outbox_user_id.sql",
+      "005_sync_op_outbox_quarantine.sql",
+      "006_sync_op_outbox_user_id.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -216,7 +217,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "002_sync_op_outbox_retry.sql",
       "003_sync_op_outbox_increment_op.sql",
       "004_routine_full_state.sql",
-      "005_sync_op_outbox_user_id.sql",
+      "005_sync_op_outbox_quarantine.sql",
+      "006_sync_op_outbox_user_id.sql",
     ]);
   });
 

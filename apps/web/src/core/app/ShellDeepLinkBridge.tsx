@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@shared/lib";
 import {
   createDeepLinkChannel,
   isCapacitor,
@@ -53,6 +54,7 @@ const ALLOWED_PATH_PREFIXES: readonly string[] = [
   "/profile",
   "/design",
   "/pricing",
+  "/status",
   "/assistant",
   "/chat",
   "/help",
@@ -136,7 +138,7 @@ export function ShellDeepLinkBridge(): null {
       source: "broadcast" | "window" | "queue",
     ): void {
       if (!isSafeNavPath(path)) {
-        console.warn("[shell-deep-link] rejected unsafe path", {
+        logger.warn("[shell-deep-link] rejected unsafe path", {
           path,
           source,
         });
@@ -156,7 +158,7 @@ export function ShellDeepLinkBridge(): null {
       try {
         navigate(path);
       } catch (err) {
-        console.warn("[shell-deep-link] navigate failed", { source, err });
+        logger.warn("[shell-deep-link] navigate failed", { source, err });
       }
     }
 

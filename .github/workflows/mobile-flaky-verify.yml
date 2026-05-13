@@ -1,0 +1,127 @@
+name: Mobile flaky-tests verification (20-run)
+
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+#
+# Scope: T7 з `docs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 — Tech-борг.
+#
+# Що це робить: запускає `pnpm --filter @sergeant/mobile test` 20 разів
+# поспіль в одному CI job-і. Якщо хоч один прогон фейлить — job червоніє і
+# зупиняється на першому ж failure-і. Якщо всі 20 проходять — суїт офіційно
+# вважається не-flaky і можна знімати позначку "⏳ Очікує 20-run CI
+# verification" з roadmap-у та з `docs/tech-debt/mobile.md § Tests`.
+#
+# Чому окремий workflow, а не gate всередині `ci.yml`:
+#   * `pnpm test` у `ci.yml > check` job-і вже виконується щоразу на PR і
+#     обов'язковий до merge — це green-gate першого прогону.
+#   * 20× прогін на кожен PR — це ~10–15 хв CPU за кожен commit, чого ми
+#     явно не хочемо. Verification — це periodic/manual гейт baseline-у,
+#     запускається через `workflow_dispatch` або по weekly cron.
+#   * Окремий workflow дає чисту history на сторінці Actions ("3 успішних
+#     20-run-и поспіль за останній місяць" — це уже signal для зняття
+#     "flaky" tag-у).
+#
+# Як запускати вручну:
+#   1. Actions → `Mobile flaky-tests verification (20-run)` → Run workflow
+#   2. (опційно) вказати `iterations` ≠ 20 для smoke-перевірки локального fix-у
+#
+# Acceptance criteria (sprint-roadmap T7):
+#   * 20/20 passes за останні 20 run-ів → flag T7 ✅ Done
+#   * Якщо < 20/20 — лог fail-rate (X/20) у `docs/tech-debt/mobile.md`
+#     як baseline і застосувати OnboardingWizard fix-pattern (commit
+#     `53853e00` — `mockResolvedValue(false)` замість never-resolving
+#     promise для `AccessibilityInfo.isReduceMotionEnabled()`).
+
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: "Скільки прогонів jest робити (default: 20)"
+        required: false
+        default: "20"
+        type: string
+  schedule:
+    # Weekly Monday 05:00 UTC (07:00–08:00 Kyiv) — до того як founder
+    # дивиться у понеділок на спринт-стейтус. Свідомо НЕ на щодня:
+    # baseline у нас ще не "20-run green поспіль" і ми не хочемо
+    # створювати ілюзію зеленості за рахунок дешевих ретраїв.
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-flaky-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Run mobile jest suite N times
+    runs-on: ubuntu-latest
+    # 20 runs × ~30s install + ~30–60s per jest = ~10–15 min worst-case.
+    # `timeout-minutes: 30` дає двукратний headroom без overload-у
+    # вільних runner-slot-ів.
+    timeout-minutes: 30
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      # Version is read from `packageManager` in root package.json.
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run mobile jest suite N times (fail-fast)
+        # Цикл свідомо НЕ ретраїть фейли (no `continue`, no `|| true`).
+        # Перший же fail вилазить наверх з exit-code ≠ 0 — це і є
+        # сигнал "ще flaky". Tee у `/tmp/mobile-flaky-run-*.log` дає
+        # post-mortem у failed-run-і (артефакт зберігається нижче).
+        env:
+          ITERATIONS: ${{ github.event.inputs.iterations || '20' }}
+          # CI=true і `--ci` змушують Jest падати на snapshot drift
+          # замість silent-write-у (це базовий захист, але дублюємо
+          # явно — щоб verification-run завжди мав однакову поведінку,
+          # навіть якщо хтось колись зніме `CI` env у runner-і).
+          CI: "true"
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mobile-flaky-logs
+          n="${ITERATIONS:-20}"
+          echo "::notice::Mobile flaky-verify: running jest suite $n times"
+          failed=0
+          for i in $(seq 1 "$n"); do
+            log="/tmp/mobile-flaky-logs/run-$(printf '%02d' "$i").log"
+            echo "::group::Run $i/$n"
+            if pnpm --filter @sergeant/mobile test -- --ci 2>&1 | tee "$log"; then
+              echo "::endgroup::"
+              echo "::notice::Run $i/$n: PASS"
+            else
+              echo "::endgroup::"
+              failed=$i
+              echo "::error::Run $i/$n FAILED — see log artifact for jest output"
+              break
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::Mobile flaky-verify FAILED at run $failed/$n"
+            exit 1
+          fi
+          echo "::notice::Mobile flaky-verify PASSED: $n/$n runs green"
+
+      - name: Upload jest run logs (always, last few)
+        if: always()
+        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: mobile-flaky-logs-${{ github.run_number }}
+          path: /tmp/mobile-flaky-logs/
+          if-no-files-found: warn
+          retention-days: 30

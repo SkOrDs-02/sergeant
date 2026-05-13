@@ -143,33 +143,17 @@
   @apply text-[2.75rem] leading-none font-black tracking-tight tabular-nums;
 }
 
-@utility text-style-hero {
-  /* ── Semantic text-style utilities (design-system.md § Typography) ──────
-     Owned shorthand classes: each bundles size + weight (+ optional
-     tracking) so design-token changes propagate automatically.
-     Referenced by the `prefer-text-style` ESLint rule.              ─── */
-  @apply text-2xl font-bold tracking-tight;
-}
-
-@utility text-style-title {
-  @apply text-xl font-semibold leading-snug;
-}
-
-@utility text-style-body {
-  @apply text-base font-normal leading-relaxed;
-}
-
-@utility text-style-label {
-  @apply text-sm font-medium leading-snug;
-}
-
-@utility text-style-caption {
-  @apply text-xs font-medium leading-snug;
-}
-
-@utility text-style-overline {
-  @apply text-[0.6875rem] font-semibold tracking-[0.08em] uppercase;
-}
+/* ── Semantic `.text-style-*` utilities ────────────────────────────────────
+   The canonical 12-slot fluid type scale (display, headline, title-lg,
+   title, subtitle, body-lg, body, body-sm, label, caption, overline,
+   code) is registered by the `semanticTypography` plugin in
+   `packages/design-tokens/tailwind-preset.js`. Each slot is a `clamp()`
+   across the 320→1280px viewport range with role-specific line-height
+   and letter-spacing, respecting the 12px floor (Hard Rule #16).
+   `.text-style-hero` remains as a back-compat alias of `headline`.
+   `.tnum` (font-variant-numeric: tabular-nums) is registered alongside.
+   Referenced by the `prefer-text-style` ESLint rule.
+   ─────────────────────────────────────────────────────────────────────── */
 
 @utility text-celebration {
   /* Celebration — achievement moments: XP gains, streaks, confetti title */

@@ -1,7 +1,7 @@
 /**
  * Per-day cost budget enforcement для OpenClaw (ADR-0031 §7).
  *
- * Pre-call check: caller (tools/console DM-handler) запитує цей модуль
+ * Pre-call check: caller (tools/openclaw DM-handler) запитує цей модуль
  * "чи можу я зробити ще один Claude-call?" — модуль читає `getDailyCostUsd`
  * + порівнює з `OPENCLAW_DAILY_USD_BUDGET`. Якщо ratio > threshold (default
  * 0.95 — 5% buffer для current call) — fail-closed.

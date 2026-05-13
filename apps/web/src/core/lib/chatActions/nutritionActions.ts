@@ -1,4 +1,5 @@
 import { ls, lsSet } from "../hubChatUtils";
+import { logger } from "@shared/lib";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import type {
   LogMealAction,
@@ -165,7 +166,7 @@ export function handleNutritionAction(
       void saveRecipeToBook(payload).catch((err: unknown) => {
         // fire-and-forget, але повний silent не хочемо — збої збереження
         // рецепту у книгу з чату були невидимі для UX/саппорту.
-        console.warn("[hubChat] saveRecipeToBook failed", err);
+        logger.warn("[hubChat] saveRecipeToBook failed", err);
       });
       return `Рецепт "${t}" збережено в книгу рецептів.`;
     }

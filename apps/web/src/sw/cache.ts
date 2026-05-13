@@ -13,6 +13,7 @@ import { NetworkFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { CACHE_NAMES } from "./version";
+import { shouldUseRuntimeCache } from "./cachePolicy";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
@@ -47,15 +48,12 @@ export function setupCacheRoutes(): void {
   // cached session could make the app believe a user is still authenticated
   // after logout or session expiry.
   registerRoute(
-    ({ url, request }) =>
-      url.pathname.startsWith("/api/") &&
-      !url.pathname.startsWith("/api/auth/") &&
-      // Volatile endpoints: caching these tends to create "ghost state"
-      // after deploys / logins / sync retries.
-      !url.pathname.startsWith("/api/sync/") &&
-      !url.pathname.startsWith("/api/coach") &&
-      !url.pathname.startsWith("/api/weekly-digest") &&
-      request.method === "GET",
+    // Predicate lives in `./cachePolicy` so it can be unit-tested
+    // without dragging workbox imports into the jsdom env. See
+    // `cachePolicy.ts` for the canonical volatile-prefix list +
+    // rationale (T3 audit MEDIUM finding — `/api/v2/sync/*` was
+    // previously cacheable and silently desynced pullV2/SSE).
+    ({ url, request }) => shouldUseRuntimeCache(url.pathname, request.method),
     new NetworkFirst({
       cacheName: CACHE_NAMES.api,
       networkTimeoutSeconds: 5,

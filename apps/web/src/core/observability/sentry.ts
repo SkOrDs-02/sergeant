@@ -1,6 +1,85 @@
-import { getPlatform, isCapacitor } from "@sergeant/shared";
+import { getPlatform, isCapacitor, scrubPII } from "@sergeant/shared";
 
 type SentryModule = typeof import("@sentry/react");
+
+/**
+ * Structural shape of Sentry events that `applyWebBeforeSend` mutates.
+ * Defined as a minimal subset of `Sentry.ErrorEvent` (no `[key: string]`
+ * index signatures) so a real `Sentry.ErrorEvent` is directly assignable
+ * — the `beforeSend` callback can pass `event` without `as unknown as`
+ * casts. The helper is unit-tested without pulling SDK type fixtures.
+ */
+export interface WebBeforeSendEvent {
+  request?: {
+    cookies?: unknown;
+    data?: unknown;
+    headers?: unknown;
+    url?: unknown;
+  };
+  extra?: unknown;
+  contexts?: unknown;
+  breadcrumbs?: Array<{ data?: unknown }>;
+  user?: {
+    id?: string | number;
+    ip_address?: string;
+  };
+}
+
+/**
+ * Browser counterpart of `applyBeforeSend` (`apps/server/src/sentry.ts`).
+ *
+ * Прожарка 2026-05-13 §6.5: до цього рефактору web-`beforeSend` тільки
+ * викидав `request.cookies`, тоді як серверний хук рекурсивно скрабив
+ * `request.headers`, `extra`, `contexts`, `breadcrumbs.data` і нормалізував
+ * `event.user` до `{ id }`. Усі ці канали (особливо XHR breadcrumbs з
+ * `Authorization` header-ом і ручні `Sentry.setExtra('payload', body)`)
+ * однаково існують у браузерному SDK, тож контракт PII-handling-у
+ * (`docs/security/pii-handling.md`) тримався тільки на сервері.
+ *
+ * Сигнатура — `WebBeforeSendEvent` (локальний structural type), щоб
+ * не тягнути `@sentry/react` runtime у головний бандл і одночасно
+ * лишити type-safety під час колл-сайту. `Sentry.Event` структурно
+ * сумісний з цим інтерфейсом.
+ */
+export function applyWebBeforeSend(
+  event: WebBeforeSendEvent,
+): WebBeforeSendEvent {
+  const request = event.request;
+  if (request) {
+    if ("cookies" in request) delete request["cookies"];
+    // Body / form-data may carry passwords or PII — drop wholesale; the
+    // few stack traces that genuinely need request body should add it
+    // back via Sentry.setExtra after explicit scrubbing.
+    if ("data" in request) delete request["data"];
+    if (request.headers) scrubPII(request.headers);
+  }
+  // Deep recursive scrub of extra / contexts / breadcrumbs.data. The
+  // browser SDK also auto-collects `xhr` / `fetch` breadcrumbs whose
+  // `data` field includes the request body — that path now matches the
+  // server contract instead of leaking through.
+  if (event.extra) scrubPII(event.extra);
+  if (event.contexts) scrubPII(event.contexts);
+  if (Array.isArray(event.breadcrumbs)) {
+    for (const bc of event.breadcrumbs) {
+      if (bc && bc.data) scrubPII(bc.data);
+    }
+  }
+  // `event.user` can carry `email` / `phone` from `Sentry.setUser({...})`
+  // or auth-state debug. Normalise to `{ id }` only — Sentry's
+  // `sendDefaultPii=false` already does most of this, but duplicate
+  // defence is cheap and survives accidental `setUser` regressions.
+  if (event.user) {
+    const safe: { id?: string | number } = {};
+    if (
+      typeof event.user.id === "string" ||
+      typeof event.user.id === "number"
+    ) {
+      safe.id = event.user.id;
+    }
+    event.user = safe;
+  }
+  return event;
+}
 
 let initialized = false;
 let sentryModule: SentryModule | null = null;
@@ -12,26 +91,69 @@ function parseRate(val: unknown, fallback: number): number {
 }
 
 /**
- * Per-op sampling rates for the browser Sentry SDK
+ * Per-op + per-route sampling rates for the browser Sentry SDK
  * (stack-pulse PR-12 / H6).
  *
- * The browser-side `samplingContext` exposes `attributes["sentry.op"]`
- * (page navigation telemetry) and `attributes["http.url"]` (XHR/fetch
- * spans). Picker lives here so it can be unit-tested without booting
- * the SDK and mirrors the server-side declarative rule table.
+ * Browser `samplingContext` exposes:
+ *   - `attributes["sentry.op"]` — transaction op (`pageload`,
+ *     `navigation`, `http.client`, …).
+ *   - `attributes["http.url"]` — outbound XHR/fetch URL.
+ *   - `name` / `transactionContext.name` — SPA route path for
+ *     `pageload` + `navigation` spans (e.g. `"/finyk"`).
  *
- * Rationale:
- *   - `pageload` 100% — first-paint perf is the most actionable signal
- *     and only fires once per session.
- *   - `navigation` 10% — SPA route changes are frequent; 10% is enough
- *     for trend without burning quota.
- *   - `http.client` 1% — outbound API calls are the noisiest spans.
- *   - everything else → fallback (env-tunable).
+ * Sampling strategy (“MAX wins”, i.e. the higher rate of op vs route):
+ *   - `pageload` 100% — first-paint perf, fires once per session.
+ *   - `http.client` 1% — outbound spans are the noisiest.
+ *   - For `navigation` we then apply a **route-aware** rate so onboarding
+ *     navigations get 100% while hub navigations stay at 5%.
+ *
+ * Route table (longest-prefix-first):
+ *   - `/onboarding` 100% — first-run UX is critical, low volume.
+ *   - `/fizruk` / `/finyk` 50% — module flows we tune actively.
+ *   - `/` (root — Hub overview) 5% — most-visited route, low value to
+ *     re-sample each navigation.
+ *   - other routes — fallback (env-tunable).
  */
 export type WebSentrySamplingContext = {
   attributes?: Record<string, unknown>;
   op?: unknown;
+  name?: unknown;
+  transactionContext?: { name?: unknown };
 };
+
+type WebRouteRule = { readonly match: string; readonly rate: number };
+
+/**
+ * SPA route prefixes — longest-prefix-first. Each entry matches the
+ * `name` (transaction path) of a `navigation` or `pageload` span.
+ * Keep in sync with `apps/web/src/core/app/router.tsx` paths and
+ * `docs/observability/sentry-sampling.md`.
+ */
+export const WEB_SENTRY_ROUTE_RULES: readonly WebRouteRule[] = [
+  { match: "/onboarding", rate: 1.0 },
+  { match: "/fizruk", rate: 0.5 },
+  { match: "/finyk", rate: 0.5 },
+  // Hub overview is the SPA root (“/”). Exact match handled below — we
+  // do NOT include it in the prefix table because every other path also
+  // starts with “/” and a prefix match would shadow them all.
+] as const;
+
+function pickRouteRate(name: string): number | null {
+  if (name === "/" || name === "") return 0.05;
+  for (const rule of WEB_SENTRY_ROUTE_RULES) {
+    if (name === rule.match || name.startsWith(`${rule.match}/`))
+      return rule.rate;
+  }
+  return null;
+}
+
+function pickRouteName(c: WebSentrySamplingContext): string | null {
+  const explicit = c.name;
+  if (typeof explicit === "string" && explicit.length > 0) return explicit;
+  const ctxName = c.transactionContext?.name;
+  if (typeof ctxName === "string" && ctxName.length > 0) return ctxName;
+  return null;
+}
 
 export function pickWebTracesSampleRate(
   ctx: WebSentrySamplingContext | unknown,
@@ -42,10 +164,69 @@ export function pickWebTracesSampleRate(
   const op =
     (c.attributes && (c.attributes["sentry.op"] as unknown)) ?? c.op ?? "";
   if (typeof op !== "string") return fallback;
+
   if (op === "pageload") return 1.0;
-  if (op === "navigation") return 0.1;
   if (op === "http.client") return 0.01;
+
+  if (op === "navigation") {
+    const name = pickRouteName(c);
+    if (name) {
+      const routeRate = pickRouteRate(name);
+      if (routeRate != null) return routeRate;
+    }
+    return 0.1;
+  }
+
   return fallback;
+}
+
+/**
+ * Sentry sampling preset for the web SDK — mirrors the server-side
+ * profile selector but uses the `VITE_SENTRY_SAMPLE_PROFILE` env var
+ * (must be `VITE_`-prefixed so Vite inlines it into the client bundle).
+ * Values map 1‑1 to `apps/server/src/sentry.ts`:
+ *   - `minimal` (0.01), `prod` (0.05), `aggressive` (0.2).
+ *
+ * Numeric `VITE_SENTRY_TRACES_SAMPLE_RATE` overrides the profile when set.
+ */
+export const WEB_SENTRY_SAMPLE_PROFILES = {
+  minimal: 0.01,
+  prod: 0.05,
+  aggressive: 0.2,
+} as const;
+
+export type WebSentrySampleProfile = keyof typeof WEB_SENTRY_SAMPLE_PROFILES;
+
+export function resolveWebSampleProfile(raw: unknown): WebSentrySampleProfile {
+  if (raw === "minimal" || raw === "aggressive" || raw === "prod") return raw;
+  return "prod";
+}
+
+/**
+ * Resolve fallback sample rate.
+ *
+ * Accepts an optional `env` arg so tests can pass a plain object. The
+ * default reads `import.meta.env` via a Record-typed lookup keyed by the
+ * env var names — Vite inlines string literals at build time, so the
+ * generic `Record<string, unknown>` shape is safe here even though
+ * `import.meta.env` carries a richer type.
+ */
+export function defaultWebSampleRate(env?: Record<string, unknown>): number {
+  const source: Record<string, unknown> = env ?? {
+    VITE_SENTRY_TRACES_SAMPLE_RATE: import.meta.env
+      .VITE_SENTRY_TRACES_SAMPLE_RATE,
+    VITE_SENTRY_SAMPLE_PROFILE: import.meta.env.VITE_SENTRY_SAMPLE_PROFILE,
+  };
+  const explicit = source["VITE_SENTRY_TRACES_SAMPLE_RATE"];
+  if (
+    explicit != null &&
+    explicit !== "" &&
+    (typeof explicit === "string" || typeof explicit === "number")
+  ) {
+    return parseRate(explicit, 0.05);
+  }
+  const profile = resolveWebSampleProfile(source["VITE_SENTRY_SAMPLE_PROFILE"]);
+  return WEB_SENTRY_SAMPLE_PROFILES[profile];
 }
 
 /**
@@ -79,22 +260,26 @@ export async function initSentry() {
         blockAllMedia: true,
       }),
     ],
-    // Dynamic per-op sampler (stack-pulse PR-12 / H6). The fallback is
-    // env-tunable via `VITE_SENTRY_TRACES_SAMPLE_RATE` (kill-switch =
-    // setting it to `0` zeroes out unmatched ops while pageload/nav
-    // still get their explicit rates from `pickWebTracesSampleRate`).
+    // Dynamic per-op + per-route sampler (stack-pulse PR-12 / H6).
+    // Fallback rate resolves through `defaultWebSampleRate` — either
+    // an explicit `VITE_SENTRY_TRACES_SAMPLE_RATE` (deploy override /
+    // kill-switch when set to `0`), or the
+    // `VITE_SENTRY_SAMPLE_PROFILE` preset (`minimal` / `prod` /
+    // `aggressive`). Per-op rates (pageload=100%, http.client=1%) and
+    // navigation route rates (onboarding=100%, fizruk/finyk=50%,
+    // hub=5%) are applied independent of fallback.
     tracesSampler: (samplingContext) =>
-      pickWebTracesSampleRate(
-        samplingContext,
-        parseRate(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE, 0.05),
-      ),
+      pickWebTracesSampleRate(samplingContext, defaultWebSampleRate()),
     replaysSessionSampleRate: parseRate(
       import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE,
       0,
     ),
     replaysOnErrorSampleRate: 1.0,
+    // PII / secret scrubbing — see `applyWebBeforeSend` above.
+    // `WebBeforeSendEvent` is a minimal structural subset of Sentry's
+    // `ErrorEvent`, so the SDK's `event` passes through without any cast.
     beforeSend(event) {
-      if (event.request?.cookies) delete event.request.cookies;
+      applyWebBeforeSend(event);
       return event;
     },
   });

@@ -1,6 +1,6 @@
 # Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)
 
-> **Last validated:** 2026-05-07 by @Skords-01 / Devin (status sync — PR-10, PR-12, PR-23, PR-32, PR-36 змерджено). **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin (status sync — PR-10, PR-12, PR-23, PR-32, PR-36 змерджено). **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Cross-refs:**

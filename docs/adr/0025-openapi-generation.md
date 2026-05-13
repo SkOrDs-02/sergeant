@@ -12,7 +12,7 @@
   - [`scripts/api/check-openapi-fresh.mjs`](../../scripts/api/check-openapi-fresh.mjs) — CI freshness check.
   - `.github/workflows/openapi-freshness.yml` — PR gate (додасть user manually після merge цього PR; шаблон у тілі цього ADR).
   - AGENTS.md → "Hard rules" → rule #3 — API contract drift.
-  - PR-історія: PR-4.D (audit `docs/audits/2026-04-26-sergeant-audit-devin.md`).
+  - PR-історія: PR-4.D (audit `docs/audits/archive/2026-04-26-sergeant-audit-devin.md`).
 
 ---
 
@@ -33,7 +33,7 @@
 - `monoTransactions` додав `merchantCategory`, але типи в `api-client` оновили на тиждень пізніше.
 - `coachInsight` змінив форму `snapshot`, типи розійшлися з runtime-парсингом.
 
-Аудит-документ (`docs/audits/2026-04-26-sergeant-audit-devin.md`, рядок PR-4.D) вимагає codegen-рішення.
+Аудит-документ (`docs/audits/archive/2026-04-26-sergeant-audit-devin.md`, рядок PR-4.D) вимагає codegen-рішення.
 
 ## 2. Decision
 

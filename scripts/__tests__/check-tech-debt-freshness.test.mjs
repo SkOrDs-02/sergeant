@@ -52,10 +52,12 @@ describe("parseTechDebtFiles", () => {
   it("returns the default list when the env var is missing", () => {
     assert.deepEqual(parseTechDebtFiles(undefined), [
       "docs/tech-debt/frontend.md",
+      "docs/tech-debt/backend.md",
       "docs/tech-debt/mobile.md",
     ]);
     assert.deepEqual(parseTechDebtFiles(""), [
       "docs/tech-debt/frontend.md",
+      "docs/tech-debt/backend.md",
       "docs/tech-debt/mobile.md",
     ]);
   });
@@ -76,6 +78,7 @@ describe("parseTechDebtFiles", () => {
   it("returns the default when only commas are provided", () => {
     assert.deepEqual(parseTechDebtFiles(",,,"), [
       "docs/tech-debt/frontend.md",
+      "docs/tech-debt/backend.md",
       "docs/tech-debt/mobile.md",
     ]);
   });
@@ -109,6 +112,15 @@ describe("extractMarkerDate", () => {
     assert.deepEqual(extractMarkerDate(content), {
       date: "2026-03-15",
       line: 2,
+    });
+  });
+
+  it("parses the `> **Last validated:** YYYY-MM-DD` canonical freshness header", () => {
+    const content =
+      "# Backend Tech Debt\n\n> **Last validated:** 2026-05-11 by @maintainer (reason).";
+    assert.deepEqual(extractMarkerDate(content), {
+      date: "2026-05-11",
+      line: 3,
     });
   });
 

@@ -58,6 +58,8 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @sergeant/server db:migrate",
     "dev:db": "pnpm db:up && pnpm db:migrate",
+    "replay:webhook": "node scripts/replay-webhook.mjs",
+    "ai-memory:backfill": "node scripts/ai-memory-backfill.mjs",
     "licenses:gen": "node scripts/generate-licenses.mjs",
     "licenses:check": "node scripts/generate-licenses.mjs check",
     "strict:coverage": "node scripts/strict-coverage.mjs",
@@ -85,7 +87,9 @@
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
     "lint:overrides": "node scripts/check-pnpm-overrides-staleness.mjs",
     "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
-    "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs"
+    "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs",
+    "eval:rag": "node scripts/eval-rag-recall.mjs",
+    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
@@ -138,7 +142,9 @@
       "uuid": "^14.0.0",
       "@tootallnate/once": ">=3.0.1",
       "@types/node": "^20",
-      "protobufjs@>=8.0.0 <8.0.2": ">=8.0.2"
+      "protobufjs@>=8.0.0 <8.0.2": ">=8.0.2",
+      "esbuild@<0.25.0": ">=0.25.0",
+      "ajv@>=7.0.0-alpha.0 <8.18.0": ">=8.18.0"
     },
     "patchedDependencies": {
       "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"

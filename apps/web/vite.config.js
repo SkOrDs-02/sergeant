@@ -231,57 +231,13 @@ export default defineConfig(({ mode }) => {
               if (id.includes("react-router")) return "vendor-router";
               if (id.includes("react-virtuoso")) return "vendor-virtuoso";
               if (id.includes("@zxing")) return "vendor-zxing";
-              // `react-markdown` тягне за собою стек remark/mdast/hast
-              // (~150 KB у source-graph: `mdast-util-to-hast`,
-              // `micromark*`, `hast-util-*`, `property-information`,
-              // `unified`, `vfile`, `unist-util-*`, `decode-named-character-reference`,
-              // `character-entities*`, `space-separated-tokens`,
-              // `comma-separated-tokens`, `style-to-js`, `devlop`,
-              // `bail`, `is-plain-obj`, `trough`, `zwitch`,
-              // `ccount`, `escape-string-regexp`, `markdown-table`,
-              // `mdast-util-find-and-replace`, `mdast-util-from-markdown`,
-              // `mdast-util-to-string`). Сам `react-markdown` зустрічається
-              // лише у HubChat-у (async chunk), тож увесь цей граф має
-              // переїхати у `vendor-markdown` разом із ним — інакше Rollup
-              // лишить транзитиви у головному `vendor`-у, який жадібно
-              // вантажиться на старті (саме це підіймає `vendor` >500 KB
-              // у docs/audits/2026-05-07-full-app-regression-ux-audit.md
-              // item 9).
-              if (
-                id.includes("react-markdown") ||
-                id.includes("/node_modules/remark-") ||
-                id.includes("/node_modules/rehype-") ||
-                id.includes("/node_modules/mdast-") ||
-                id.includes("/node_modules/hast-") ||
-                id.includes("/node_modules/micromark") ||
-                id.includes("/node_modules/unist-util-") ||
-                id.includes("/node_modules/property-information/") ||
-                id.includes("/node_modules/unified/") ||
-                id.includes("/node_modules/vfile") ||
-                id.includes(
-                  "/node_modules/decode-named-character-reference/",
-                ) ||
-                id.includes("/node_modules/character-entities") ||
-                id.includes("/node_modules/space-separated-tokens/") ||
-                id.includes("/node_modules/comma-separated-tokens/") ||
-                id.includes("/node_modules/style-to-js/") ||
-                id.includes("/node_modules/style-to-object/") ||
-                id.includes("/node_modules/inline-style-parser/") ||
-                id.includes("/node_modules/devlop/") ||
-                id.includes("/node_modules/bail/") ||
-                id.includes("/node_modules/is-plain-obj/") ||
-                id.includes("/node_modules/trough/") ||
-                id.includes("/node_modules/zwitch/") ||
-                id.includes("/node_modules/ccount/") ||
-                id.includes("/node_modules/escape-string-regexp/") ||
-                id.includes("/node_modules/markdown-table/") ||
-                id.includes("/node_modules/longest-streak/") ||
-                id.includes("/node_modules/parse-entities/") ||
-                id.includes("/node_modules/html-void-elements/") ||
-                id.includes("/node_modules/web-namespaces/") ||
-                id.includes("/node_modules/@ungap/structured-clone/")
-              )
-                return "vendor-markdown";
+              // `react-markdown` (та весь стек remark/mdast/hast/micromark)
+              // прибрано у T4-B: `AssistantMessageBody.tsx` тепер містить
+              // власний tiny inline-парсер для bold/italic/list/code/link/
+              // headings/blockquotes (~6 KB raw), що покриває весь набір
+              // фічей, які асистент насправді надсилає у чат. Економія —
+              // ~25 KB brotli з eager-preload-у (`vendor-markdown` chunk
+              // зник, разом із транзитивами в `vendor`-у).
               // React Query + persist-client (~40 KB gzip). Використовується
               // у багатьох async chunk-ах, але стек великий — окремий
               // chunk дозволяє кешувати його між deploy-ами незалежно
@@ -388,6 +344,7 @@ export default defineConfig(({ mode }) => {
           "../../packages/api-client/src/index.ts",
         ),
         "@shared": resolve(__dirname, "src/shared"),
+        "@assets": resolve(__dirname, "src/assets"),
         "@finyk": resolve(__dirname, "src/modules/finyk"),
         "@fizruk": resolve(__dirname, "src/modules/fizruk"),
         "@routine": resolve(__dirname, "src/modules/routine"),

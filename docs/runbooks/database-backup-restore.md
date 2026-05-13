@@ -1,6 +1,6 @@
 # Database backup / restore — runbook (PR #049)
 
-> **Last validated:** 2026-05-04 by Devin. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Закриває **docs portion** з [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI винесений в окремий PR #049b (потребує `RAILWAY_TOKEN` у GH Secrets + dedicated staging instance).

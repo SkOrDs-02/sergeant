@@ -1,6 +1,6 @@
 # C1 — System Context
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Sergeant у контексті користувача та зовнішніх систем.
@@ -15,7 +15,7 @@ flowchart TB
         MobileApp["apps/mobile<br/><i>Expo (iOS / Android)</i>"]
         ShellApp["apps/mobile-shell<br/><i>Capacitor wrapper</i>"]
         Server["apps/server<br/><i>Express API + BullMQ workers</i>"]
-        Console["tools/console<br/><i>Telegram бот (ops + marketing)</i>"]
+        Console["tools/openclaw<br/><i>Telegram бот (ops + marketing)</i>"]
     end
 
     Postgres[("🗄️ PostgreSQL<br/><i>Railway managed</i>")]
@@ -63,7 +63,7 @@ flowchart TB
 
 - Всі external systems — managed: Railway (Postgres, Redis, n8n self-host), Vercel (web hosting), Sentry SaaS, Anthropic SaaS, Monobank — банк-партнер.
 - Sergeant як software system НЕ зберігає секрети у браузері; cookies сесії — `httpOnly` + `secure` (Better Auth standard).
-- `tools/console` — окремий surface для внутрішніх ops/marketing задач, не для kінцевого користувача.
+- `tools/openclaw` — окремий surface для внутрішніх ops/marketing задач, не для kінцевого користувача.
 - `apps/mobile-shell` обгортає `apps/web` через Capacitor; це той самий фронтенд-bundle, тільки з нативними API (camera, push).
 
 ## Поверхні-каталог

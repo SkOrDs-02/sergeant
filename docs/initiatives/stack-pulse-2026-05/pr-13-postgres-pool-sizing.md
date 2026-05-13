@@ -1,6 +1,6 @@
 # PR-13: PG pool sizing + monitoring + alerts
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Closed — implementation merged. Observability стек уже мав
 > Prometheus pool-gauges (`db_pool_*`) і алерти (`DbPoolWaitingSustained` +
 > `DbPoolSaturated`) до старту PR-13; цей PR довіз: бамп `PG_POOL_SIZE`

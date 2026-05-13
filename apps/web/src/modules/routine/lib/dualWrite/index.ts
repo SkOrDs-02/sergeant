@@ -1,5 +1,6 @@
 import type { RoutineState } from "@sergeant/routine-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger as webLogger } from "@shared/lib";
 
 import {
   recordDualWriteOutcome,
@@ -65,7 +66,7 @@ export interface RoutineDualWriteContext {
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   /** Returns the timestamp written to `created_at` / `updated_at`. */
   getNow(): string;
-  /** Optional structured logger. Defaults to `console.warn` wrapper. */
+  /** Optional structured logger. Defaults to `webLogger.warn` wrapper. */
   logger?: DualWriteLogger;
 }
 
@@ -219,7 +220,8 @@ function logSafe(
 ): void {
   try {
     if (ctx.logger) ctx.logger(level, msg, meta);
-    else if (level === "warn") console.warn(`[routine.dualWrite] ${msg}`, meta);
+    else if (level === "warn")
+      webLogger.warn(`[routine.dualWrite] ${msg}`, meta);
   } catch {
     /* noop — logging must never throw */
   }

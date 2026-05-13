@@ -36,6 +36,7 @@
  *   - `description` — однорядковий коментар, чому саме такі цифри.
  */
 
+import { env } from "../env.js";
 import type { RateLimitOptions } from "../http/rateLimit.js";
 
 /**
@@ -52,15 +53,18 @@ export interface RateLimitPolicy extends Omit<
 
 /**
  * Вузький білий список іменних policy. Додавати нові — через окремий PR
- * з review-justification у `description`. `as const satisfies` фіксує
- * значення для type-narrow і ловить друкарські помилки на типчекеру.
+ * з review-justification у `description`. `satisfies` фіксує форму запису
+ * і ловить друкарські помилки на типчекеру; самі `limit`/`windowMs` можуть
+ * бути не літерали (тягнуться з env), тож без `as const`.
  */
 export const RATE_LIMIT_POLICIES = {
   /**
    * Better-Auth sensitive POST: sign-in / sign-up / forget-password /
-   * reset-password. Поточне значення (limit=20 / 60s, fail-closed) існує у
-   * `apps/server/src/http/authMiddleware.ts` ще до реєстру; тримаємо тут
-   * один-в-один, щоб міграція не змінювала поведінку.
+   * reset-password. Default 5 спроб / 60s / IP, fail-closed — узгоджено з
+   * OWASP ASVS V11.1.3 для credential flow. Конкретні числа беруться з env
+   * (`AUTH_RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_WINDOW_SEC`), щоб ops міг
+   * дополнити ліміт без redeploy-у. Аудит: PR-48 round-2,
+   * `docs/security/better-auth-audit-2026-05.md`.
    *
    * **Чому ім'я з `api:` префіксом:** воно потрапляє у `key` лейбл метрики
    * `rate_limit_hits_total` і використовується у:
@@ -71,13 +75,13 @@ export const RATE_LIMIT_POLICIES = {
    * успадковує існуючий `api:auth:sensitive` як SoT.
    */
   "api:auth:sensitive": {
-    limit: 20,
-    windowMs: 60_000,
+    limit: env.AUTH_RATE_LIMIT_MAX,
+    windowMs: env.AUTH_RATE_LIMIT_WINDOW_SEC * 1000,
     failMode: "closed",
     description:
-      "Better-Auth POST /sign-in|/sign-up|/forget-password|/reset-password — fail-closed щоб N×limit-амплификація при degraded limiter не прискорювала credential-stuffing.",
+      "Better-Auth POST /sign-in|/sign-up|/forget-password|/reset-password — fail-closed щоб N×limit-амплификація при degraded limiter не прискорювала credential-stuffing. Default 5/60s з `AUTH_RATE_LIMIT_MAX` + `AUTH_RATE_LIMIT_WINDOW_SEC` (PR-48 round-2, `docs/security/better-auth-audit-2026-05.md`).",
   },
-} as const satisfies Record<string, RateLimitPolicy>;
+} satisfies Record<string, RateLimitPolicy>;
 
 /**
  * Усі імена policy. Споживачі типізують свої параметри через

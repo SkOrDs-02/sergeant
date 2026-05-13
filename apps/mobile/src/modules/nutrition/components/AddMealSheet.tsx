@@ -400,6 +400,7 @@ export function AddMealSheet({
             }}
             accessibilityLabel="Ввести вручну"
             disabled={photoBusy}
+            testID="add-meal-source-manual"
           >
             Ввести вручну
           </Button>
@@ -502,7 +503,11 @@ export function AddMealSheet({
           ) : null}
 
           <View className="mt-5 gap-2">
-            <Button variant="nutrition" onPress={handleSave}>
+            <Button
+              variant="nutrition"
+              onPress={handleSave}
+              testID="add-meal-save"
+            >
               Зберегти
             </Button>
             <Button variant="ghost" onPress={onClose}>

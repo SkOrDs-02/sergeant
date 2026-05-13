@@ -16,6 +16,7 @@ import {
   chartPalette,
   moduleColors,
   statusColors,
+  zTier,
 } from "./tokens.js";
 
 /** @type {import('tailwindcss').Config} */
@@ -317,12 +318,36 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BOX SHADOWS — Soft, layered, premium feel
+      // BOX SHADOWS — Semantic elevation scale e0..e5
+      //
+      // The `e0..e5` scale is the canonical elevation contract — see
+      // `elevation` token in `./tokens.js` for the per-level light/dark
+      // recipe. CSS variables `--shadow-e0..--shadow-e5` are defined in
+      // `apps/web/src/styles/theme.css` and flip with `.dark`, so call
+      // sites use a single `shadow-eN` utility — never `dark:shadow-*`.
+      //
+      // Legacy aliases (`soft` / `card` / `float`) are preserved as
+      // pointers into the new scale so existing call sites keep
+      // working unchanged: `shadow-card === shadow-e1`,
+      // `shadow-float === shadow-e3`, `shadow-soft === shadow-e4`.
+      // New code should prefer `shadow-eN` for the explicit semantic
+      // level. See docs/design/design-system.md § 4.
       // ═══════════════════════════════════════════════════════════════════
       boxShadow: {
-        soft: "var(--shadow-soft)",
-        card: "var(--shadow-card)",
-        float: "var(--shadow-float)",
+        // Semantic elevation scale (preferred for new code).
+        e0: "var(--shadow-e0)",
+        e1: "var(--shadow-e1)",
+        e2: "var(--shadow-e2)",
+        e3: "var(--shadow-e3)",
+        e4: "var(--shadow-e4)",
+        e5: "var(--shadow-e5)",
+        // Legacy aliases — kept for back-compat, mapped 1:1 to the new
+        // scale via the same CSS vars (so a theme tweak to `--shadow-eN`
+        // propagates to every consumer regardless of which name they
+        // import).
+        soft: "var(--shadow-e4)",
+        card: "var(--shadow-e1)",
+        float: "var(--shadow-e3)",
         glow: "0 0 0 3px rgba(16, 185, 129, 0.15)", // emerald glow
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
@@ -468,36 +493,50 @@ const preset = {
       // RULE: A screen should never run more than 1 AMBIENT + 1 RESPONSE simultaneously.
       // Stagger animations count as 1 RESPONSE regardless of child count.
       animation: {
-        // Entry animations
-        "fade-in": "fadeIn 0.2s ease-out",
-        "slide-up": "slideUp 0.3s ease-out",
-        "slide-down": "slideDown 0.3s ease-out",
-        "scale-in": "scaleIn 0.2s ease-out",
-        // Success/completion
-        "check-pop": "checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        "success-pulse": "successPulse 0.6s ease-out",
-        // Interaction feedback
-        "press-scale": "pressScale 0.15s ease-out",
-        "hover-lift": "hoverLift 0.2s ease-out forwards",
-        // Loading states
-        shimmer: "shimmer 1.5s infinite",
-        "pulse-soft": "pulseSoft 2s infinite",
-        // Progress ring
-        "progress-fill": "progressFill 1s ease-out forwards",
-        // Bounce for notifications
-        "bounce-in": "bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        // Stagger enter — children use animation-delay: ${index * 50}ms
+        // Entry animations (RESPONSE tier)
+        "fade-in":
+          "fadeIn var(--motion-duration-fast) var(--motion-ease-decelerate)",
+        "slide-up":
+          "slideUp var(--motion-duration-slow) var(--motion-ease-decelerate)",
+        "slide-down":
+          "slideDown var(--motion-duration-slow) var(--motion-ease-decelerate)",
+        "scale-in":
+          "scaleIn var(--motion-duration-base) var(--motion-ease-decelerate)",
+        // Success / completion (CELEBRATE tier)
+        "check-pop":
+          "checkPop var(--motion-duration-slower) var(--motion-ease-overshoot)",
+        "success-pulse":
+          "successPulse var(--motion-duration-slowest) var(--motion-ease-decelerate)",
+        // Interaction feedback (RESPONSE tier)
+        "press-scale":
+          "pressScale var(--motion-duration-fast) var(--motion-ease-decelerate)",
+        "hover-lift":
+          "hoverLift var(--motion-duration-fast) var(--motion-ease-decelerate) forwards",
+        // Loading states (AMBIENT tier — infinite loops)
+        shimmer: "shimmer var(--motion-duration-loop) infinite",
+        "pulse-soft": "pulseSoft var(--motion-duration-loop-glow) infinite",
+        // Progress ring (RESPONSE tier)
+        "progress-fill":
+          "progressFill var(--motion-duration-loop-spin) var(--motion-ease-decelerate) forwards",
+        // Bounce for notifications (CELEBRATE tier)
+        "bounce-in":
+          "bounceIn var(--motion-duration-slower) var(--motion-ease-overshoot)",
+        // Stagger enter — children use animation-delay: index × 30 ms,
+        // capped at 150 ms total (Hard Rule #17).
         "stagger-in":
-          "fadeSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both",
-        // Celebration modal animations
-        "fade-out": "fadeOut 0.2s ease-out forwards",
-        "scale-out": "scaleOut 0.2s ease-out forwards",
-        "draw-check": "drawCheck 0.4s ease-out 0.2s forwards",
-        // iOS-style "edit mode" wiggle for sortable bento cards. Looped,
-        // very subtle (±0.6°) so it signals "I am draggable" without
-        // becoming an attention sink. `motion-safe:` variants in
-        // consumers handle the reduced-motion case.
-        wiggle: "wiggle 0.45s ease-in-out infinite",
+          "fadeSlideUp var(--motion-duration-slow) var(--motion-ease-standard) both",
+        // Modal / sheet exits (RESPONSE tier)
+        "fade-out":
+          "fadeOut var(--motion-duration-fast) var(--motion-ease-accelerate) forwards",
+        "scale-out":
+          "scaleOut var(--motion-duration-fast) var(--motion-ease-accelerate) forwards",
+        "draw-check":
+          "drawCheck var(--motion-duration-slower) var(--motion-ease-decelerate) 0.2s forwards",
+        // iOS-style "edit mode" wiggle for sortable bento cards. AMBIENT
+        // tier — gated by `motion-safe:` in consumers so the
+        // reduced-motion strategy pauses it.
+        wiggle:
+          "wiggle var(--motion-duration-slower) var(--motion-ease-standard) infinite",
       },
       keyframes: {
         fadeIn: {
@@ -579,18 +618,34 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // TRANSITIONS — Consistent timing
+      // TRANSITIONS — Consistent timing.
+      // Hard Rule #17 motion tokens — single source of truth lives in
+      // `apps/web/src/styles/theme.css` (CSS custom properties); these
+      // mappings forward them through Tailwind so authors write
+      // `duration-base ease-standard` instead of raw `duration-[220ms]`
+      // or inline `cubic-bezier(...)`. Raw timing values in `className`
+      // are forbidden (e.g. `duration-[230ms]` is a Hard Rule #17 violation).
       // ═══════════════════════════════════════════════════════════════════
       transitionDuration: {
-        DEFAULT: "200ms",
-        fast: "150ms",
-        slow: "300ms",
-        slower: "400ms",
+        DEFAULT: "var(--motion-duration-base)",
+        instant: "var(--motion-duration-instant)", // 75ms — micro-feedback
+        fast: "var(--motion-duration-fast)", // 150ms — exit / dismissal
+        base: "var(--motion-duration-base)", // 220ms — default enter
+        slow: "var(--motion-duration-slow)", // 320ms — sheet / list reveal
+        slower: "var(--motion-duration-slower)", // 480ms — CELEBRATE pop
+        slowest: "var(--motion-duration-slowest)", // 680ms — CELEBRATE burst
       },
       transitionTimingFunction: {
-        bounce: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-        smooth: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-        spring: "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+        standard: "var(--motion-ease-standard)",
+        emphasized: "var(--motion-ease-emphasized)",
+        accelerate: "var(--motion-ease-accelerate)",
+        decelerate: "var(--motion-ease-decelerate)",
+        overshoot: "var(--motion-ease-overshoot)",
+        // Legacy aliases — alias to canonical tokens. Do not introduce
+        // new usages; prefer the names above.
+        bounce: "var(--motion-ease-overshoot)",
+        smooth: "var(--motion-ease-standard)",
+        spring: "var(--motion-ease-overshoot)",
       },
 
       // ═══════════════════════════════════════════════════════════════════
@@ -607,18 +662,39 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // Z-INDEX — Layering system
+      // Z-INDEX — Semantic stacking tier (paired with elevation scale)
+      //
+      // Authoring rule: an element at elevation `eN` must use the
+      // matching `z-*` tier. e0/e1/e2 → `z-base`, e3 → `z-dropdown`,
+      // e4 → `z-modal`, e5 → `z-toast`. Mismatched pairs are how
+      // popovers slide under modals and toasts get hidden by drawers.
+      // See docs/design/design-system.md § 4 and `zTier` in tokens.js.
+      //
+      // Legacy numeric scale (`z-100`/`200`/`300`/`400` and the
+      // `z-header`/`modal`/`toast`/`tooltip` aliases) is preserved so
+      // existing call sites keep working unchanged.
       // ═══════════════════════════════════════════════════════════════════
       zIndex: {
+        // Raw numeric scale (legacy — kept for back-compat).
         0: "0",
         10: "10",
         20: "20",
         30: "30",
         40: "40",
         50: "50",
-        header: "100",
-        modal: "200",
-        toast: "300",
+        100: "100",
+        // Semantic tier — preferred for new code.
+        base: zTier.base,
+        dropdown: zTier.dropdown,
+        sticky: zTier.sticky,
+        overlay: zTier.overlay,
+        modal: zTier.modal,
+        toast: zTier.toast,
+        // Legacy tier aliases (kept so existing `z-header` / `z-modal`
+        // / `z-toast` / `z-tooltip` call sites keep working). `header`
+        // is an alias of `sticky`; `tooltip` is an alias of `toast`
+        // (highest non-modal tier — preserves the historical order).
+        header: zTier.sticky,
         tooltip: "400",
       },
     },
@@ -626,27 +702,46 @@ const preset = {
   // ═══════════════════════════════════════════════════════════════════════
   // PLUGINS
   //   1. Semantic typography utilities (`.text-style-*`).
-  //   2. Touch-target floors (`.touch-target`, `.touch-target-48`).
+  //   2. Tabular numerics helper (`.tnum`).
+  //   3. Touch-target floors (`.touch-target`, `.touch-target-48`).
   // ═══════════════════════════════════════════════════════════════════════
   //
   // The `.text-style-*` utilities below are the canonical way to apply
-  // a typographic role. They bundle font-size, line-height, weight,
-  // letter-spacing, and casing into a single class so layouts can't
-  // drift on any one axis (e.g. shipping the hero size with the wrong
-  // weight). Prefer these over re-deriving the values from the raw
-  // `text-xs / text-sm / …` scale whenever a slot has a documented
-  // role:
+  // a typographic role. They bundle font-size (fluid via `clamp()`),
+  // line-height, weight, letter-spacing, and casing into a single class
+  // so layouts can't drift on any one axis. Prefer these over re-deriving
+  // the values from the raw `text-xs / text-sm / …` scale whenever a slot
+  // has a documented role.
   //
-  //   .text-style-hero      — page H1s and hero stat numbers
-  //   .text-style-title     — section headings, card titles
-  //   .text-style-body      — main body copy
-  //   .text-style-label     — form labels, button text
-  //   .text-style-caption   — metadata, timestamps, helper text
-  //   .text-style-overline  — uppercase section kickers / eyebrows
+  // Twelve canonical slots:
   //
-  // Minimum text size in the design system is 12px (`text-style-caption`);
-  // `text-2xs` (10px) is reserved for chart ticks and decorative
-  // metadata badges.
+  //   .text-style-display    — landing hero / splash heading (32→56px)
+  //   .text-style-headline   — page H1s, hero stat numbers   (26→36px)
+  //   .text-style-title-lg   — large section heading         (22→28px)
+  //   .text-style-title      — section heading, card title   (18→22px)
+  //   .text-style-subtitle   — sub-heading                   (16→18px)
+  //   .text-style-body-lg    — emphasised body copy          (16→18px)
+  //   .text-style-body       — default body copy             (15→16px)
+  //   .text-style-body-sm    — secondary body, descriptions  (13→14px)
+  //   .text-style-label      — form labels, button text      (13→14px)
+  //   .text-style-caption    — metadata, timestamps          (12px floor)
+  //   .text-style-overline   — uppercase kickers / eyebrows  (12px floor)
+  //   .text-style-code       — inline code / monospace stat  (13→14px)
+  //
+  // Fluid clamp() formula targets the 320→1280px viewport range so the
+  // scale grows smoothly from compact mobile to comfortable desktop while
+  // respecting the **12px floor** (Hard Rule #16): no slot drops below
+  // `caption` / `overline`. `.text-style-hero` is preserved as a
+  // back-compat alias on top of `headline`.
+  //
+  // Minimum text size in the design system is 12px; `text-2xs` (10px)
+  // is reserved for chart ticks and decorative metadata badges and is
+  // NOT a `text-style-*` slot.
+  //
+  // The `.tnum` utility toggles `font-variant-numeric: tabular-nums` on
+  // numeric columns / stats so digits stay column-aligned regardless of
+  // the surrounding text-style. Sibling to `.tabular-nums` defined in
+  // `apps/web/src/styles/base.css` (kept for back-compat).
   //
   // The `.touch-target*` plugin enforces WCAG 2.5.5 / Apple HIG ≥44×44px
   // on `(pointer: coarse)` — see the inline comment on the plugin for the
@@ -654,39 +749,90 @@ const preset = {
   plugins: [
     function semanticTypography({ addUtilities }) {
       addUtilities({
-        ".text-style-hero": {
-          fontSize: "26px",
-          lineHeight: "32px",
+        ".text-style-display": {
+          fontSize: "clamp(2rem, 1.572rem + 2.143vw, 3.5rem)",
+          lineHeight: "1.05",
+          fontWeight: "700",
+          letterSpacing: "-0.025em",
+        },
+        ".text-style-headline": {
+          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
+          lineHeight: "1.15",
           fontWeight: "700",
           letterSpacing: "-0.02em",
         },
+        // Back-compat alias — `.text-style-hero` was the prior name for
+        // the page-H1 / hero-stat slot. New code should reach for
+        // `.text-style-headline`; existing call-sites keep working.
+        ".text-style-hero": {
+          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
+          lineHeight: "1.15",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
+        },
+        ".text-style-title-lg": {
+          fontSize: "clamp(1.375rem, 1.268rem + 0.536vw, 1.75rem)",
+          lineHeight: "1.25",
+          fontWeight: "600",
+          letterSpacing: "-0.015em",
+        },
         ".text-style-title": {
-          fontSize: "20px",
-          lineHeight: "28px",
+          fontSize: "clamp(1.125rem, 1.054rem + 0.357vw, 1.375rem)",
+          lineHeight: "1.3",
           fontWeight: "600",
           letterSpacing: "-0.01em",
         },
+        ".text-style-subtitle": {
+          fontSize: "clamp(1rem, 0.964rem + 0.179vw, 1.125rem)",
+          lineHeight: "1.4",
+          fontWeight: "500",
+          letterSpacing: "-0.005em",
+        },
+        ".text-style-body-lg": {
+          fontSize: "clamp(1rem, 0.964rem + 0.179vw, 1.125rem)",
+          lineHeight: "1.55",
+          fontWeight: "400",
+        },
         ".text-style-body": {
-          fontSize: "16px",
-          lineHeight: "24px",
+          fontSize: "clamp(0.9375rem, 0.920rem + 0.089vw, 1rem)",
+          lineHeight: "1.55",
+          fontWeight: "400",
+        },
+        ".text-style-body-sm": {
+          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
+          lineHeight: "1.55",
           fontWeight: "400",
         },
         ".text-style-label": {
-          fontSize: "14px",
-          lineHeight: "20px",
+          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
+          lineHeight: "1.4",
           fontWeight: "500",
+          letterSpacing: "0.005em",
         },
+        // 12px floor — Hard Rule #16. Fixed (non-fluid) so the floor
+        // never drifts below readability on any viewport.
         ".text-style-caption": {
-          fontSize: "12px",
-          lineHeight: "16px",
+          fontSize: "0.75rem",
+          lineHeight: "1.4",
           fontWeight: "400",
+          letterSpacing: "0.005em",
         },
         ".text-style-overline": {
-          fontSize: "12px",
-          lineHeight: "16px",
+          fontSize: "0.75rem",
+          lineHeight: "1.4",
           fontWeight: "600",
-          letterSpacing: "0.06em",
+          letterSpacing: "0.08em",
           textTransform: "uppercase",
+        },
+        ".text-style-code": {
+          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
+          lineHeight: "1.5",
+          fontWeight: "500",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+        },
+        ".tnum": {
+          fontVariantNumeric: "tabular-nums",
         },
       });
     },

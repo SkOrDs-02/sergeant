@@ -310,7 +310,7 @@ CREATE TABLE sync_op_outbox (
   client_ts       TEXT NOT NULL,
   idempotency_key TEXT NOT NULL,
   status          TEXT NOT NULL DEFAULT 'pending'
-                  CHECK (status IN ('pending','rejected','dead_letter')),
+                  CHECK (status IN ('pending','rejected','dead_letter','quarantined')),
   reject_reason   TEXT,
   attempts        INTEGER NOT NULL DEFAULT 0,
   next_retry_at   TEXT,
@@ -322,7 +322,9 @@ CREATE TABLE sync_op_outbox (
 -- placeholder that cannot match any Better Auth opaque user id, so
 -- the drain helper's WHERE user_id = ? clause never resurfaces
 -- them to a live push-loop. Pending rows are dropped -- see the
--- migration docstring for the rationale.
+-- migration docstring for the rationale. Quarantined rows (added in
+-- migration 005) are preserved alongside rejected / dead_letter so
+-- SRE can still inspect them post-rebuild.
 INSERT INTO sync_op_outbox
   (user_id, table_name, op, row, client_ts, idempotency_key,
    status, reject_reason, attempts, next_retry_at, last_error,
@@ -331,7 +333,7 @@ SELECT '__legacy__', table_name, op, row, client_ts, idempotency_key,
        status, reject_reason, attempts, next_retry_at, last_error,
        created_at
   FROM sync_op_outbox_legacy
- WHERE status IN ('rejected', 'dead_letter');
+ WHERE status IN ('rejected', 'dead_letter', 'quarantined');
 
 DROP TABLE sync_op_outbox_legacy;
 
@@ -481,6 +483,78 @@ CREATE INDEX IF NOT EXISTS routine_completion_notes_user_active_idx_lite
  * (PR #042d-prep). `004_routine_full_state.sql` extends the routine
  * schema to full LS-state coverage (Stage 10 / PR #070r-schema).
  */
+/**
+ * T3 audit HIGH#3 migration: relax the `sync_op_outbox.status` CHECK
+ * constraint so a poisoned row (unparseable JSON in `row`, op outside
+ * the supported tuple, etc.) can be moved to a dedicated terminal
+ * status `'quarantined'` instead of head-of-line blocking the entire
+ * writer-runtime forever.
+ *
+ * Before: a `drainSyncOpOutbox` `.map(parseDrainedRow)` throw would
+ * abort the whole batch, the offending row would re-appear at the
+ * head of the next 30 s tick, and the queue would silently stall.
+ * After: the per-row catch in `drainSyncOpOutbox` marks the row
+ * `status='quarantined'` with a populated `reject_reason` (e.g.
+ * `'parse_failed:unexpected token'`), increments a Sentry breadcrumb,
+ * and the drain proceeds with the remaining rows.
+ *
+ * `'quarantined'` is intentionally a NEW terminal status, distinct
+ * from `'rejected'` (server-side LWW / FK reject) and `'dead_letter'`
+ * (push-loop give-up after exhausting retries). It carries forensic
+ * value for the dev-panel triage flow and never re-pushes — the
+ * writer-runtime filters by `status='pending'` and so excludes
+ * quarantined rows by construction.
+ *
+ * SQLite cannot relax a `CHECK` constraint in place, so we follow
+ * the same 12-step rebuild recipe as `002_sync_op_outbox_retry.sql`
+ * and `003_sync_op_outbox_increment_op.sql`. Indexes are recreated
+ * verbatim — the partial-pending filter (`WHERE status = 'pending'`)
+ * keeps its meaning since `'quarantined'` is just another non-pending
+ * status excluded by the predicate.
+ */
+const SYNC_OP_OUTBOX_QUARANTINE_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL
+                  CHECK (op IN ('insert','update','delete','increment')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter','quarantined')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO sync_op_outbox (
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+)
+SELECT
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+FROM sync_op_outbox_legacy;
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
   { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
@@ -490,7 +564,11 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   },
   { name: "004_routine_full_state.sql", sql: ROUTINE_004_FULL_STATE_SQL },
   {
-    name: "005_sync_op_outbox_user_id.sql",
+    name: "005_sync_op_outbox_quarantine.sql",
+    sql: SYNC_OP_OUTBOX_QUARANTINE_SQL,
+  },
+  {
+    name: "006_sync_op_outbox_user_id.sql",
     sql: SYNC_OP_OUTBOX_USER_ID_SQL,
   },
 ] as const;

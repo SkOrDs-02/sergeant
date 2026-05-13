@@ -17,7 +17,7 @@
  *   - Reverse coverage: every `sergeant-mode-*` directory is wired in
  *     `strategicModes.*`.
  *   - `auditTrigger` values match the `STRATEGIC_MODE_TRIGGERS` map in
- *     `tools/console/src/agents/strategic-modes.ts` (single source for the
+ *     `tools/openclaw/src/agents/strategic-modes.ts` (single source for the
  *     audit-log `openclaw_invocations.trigger` column).
  */
 

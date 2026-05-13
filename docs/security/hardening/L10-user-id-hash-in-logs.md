@@ -1,6 +1,6 @@
 # L10 — `recordSync*` logs raw `userId` instead of hash
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-05)
 
 | Field          | Value                                                                                                                                                                 |

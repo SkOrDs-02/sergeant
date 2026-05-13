@@ -1,6 +1,6 @@
 # @sergeant/mobile
 
-> **Last validated:** 2026-05-06 by @claude. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Mobile strategy:** Expo + RN продовжує розвиватись паралельно з Capacitor shell; обидва стеки активні — [ADR-0052](../../docs/adr/0052-mobile-strategy-capacitor-primary.md).
 
 Нативний клієнт Sergeant (iOS/Android) на Expo + React Native. Для web-апки

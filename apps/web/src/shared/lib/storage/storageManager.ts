@@ -15,6 +15,8 @@
  * remains in this file (PR #054 final, eslint allowlist = []).
  */
 
+// eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; consumed by storage/ for warn-level error reporting.
+import { logger } from "../log";
 import { webKVStore } from "./storage";
 import { safeJsonSet, safeSetItem } from "./storageQuota";
 
@@ -97,7 +99,7 @@ function runAll(): MigrationRunResult {
       result.ran.push(migration.id);
     } catch (e) {
       result.errors.push({ id: migration.id, error: e });
-      console.warn(`[storageManager] Migration "${migration.id}" failed:`, e);
+      logger.warn(`[storageManager] Migration "${migration.id}" failed:`, e);
     }
   }
 

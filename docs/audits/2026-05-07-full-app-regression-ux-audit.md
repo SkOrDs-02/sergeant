@@ -1,6 +1,6 @@
 # Sergeant — full regression + UX audit (2026-05-07/08)
 
-> **Last validated:** 2026-05-08 by Codex. **Next review:** 2026-08-06.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Audit-only прохід виконано проти `origin/main @ 316ef626` на гілці `codex/full-app-regression-ux-audit`. Початкова мета — не виправляти код, а відтворити поточний стан регресій, тестових воріт, PWA/UX coverage і скласти чергу наступних PR. Після окремої команди на implementation mode цей самий документ став живим журналом виконаних fix-pass змін.

@@ -167,7 +167,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.3. `/audit since=` + `--csv` export
 
-**Status:** **shipped** — Wave 1, [#1462](https://github.com/Skords-01/Sergeant/pull/1462) (ADR-0037 follow-up). `since=<dur>` (max 30d) і `csv` тепер в `tools/console/src/openclaw/handler.ts`; helpers в `duration.ts` + `audit-csv.ts`.
+**Status:** **shipped** — Wave 1, [#1462](https://github.com/Skords-01/Sergeant/pull/1462) (ADR-0037 follow-up). `since=<dur>` (max 30d) і `csv` тепер в `tools/openclaw/src/openclaw/handler.ts`; helpers в `duration.ts` + `audit-csv.ts`.
 **Pain закриває:** P6.
 **ADR-кандидат:** none (extension Phase 4.5 без новoï ADR).
 
@@ -183,8 +183,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Implementation:**
 
 - `apps/server/src/modules/openclaw/store.ts::listRecentWriteAudits` приймає optional `recordedAfter?: Date`.
-- `tools/console/src/openclaw/handler.ts::handleAuditCommand` парсить `since=24h` через `parseDuration()` helper.
-- CSV-rendering в `tools/console/src/openclaw/audit-csv.ts` (новий файл, ~30 рядків).
+- `tools/openclaw/src/openclaw/handler.ts::handleAuditCommand` парсить `since=24h` через `parseDuration()` helper.
+- CSV-rendering в `tools/openclaw/src/openclaw/audit-csv.ts` (новий файл, ~30 рядків).
 
 **Acceptance:**
 
@@ -219,7 +219,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Pain закриває:** P4.
 **ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../../adr/0041-openclaw-telegram-webhook.md) §5 (production rollout) + race-condition note.
 
-**Що зроблено:** feature-flag webhook-режим у `tools/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-openclaw-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>` (URL оновлена після rename `sergeant-hubchat` → `sergeant-openclaw` у PR-47). `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
+**Що зроблено:** feature-flag webhook-режим у `tools/openclaw`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-openclaw-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>` (URL оновлена після rename `sergeant-hubchat` → `sergeant-openclaw` у PR-47). `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
 
 **Чому:** callback-кнопки (Phase 4 approval, §3.2 ack-button) latency 1-3с. Webhook → <500ms. UX-помітно.
 
@@ -241,10 +241,10 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.5.1. W4.1 — bootstrap setWebhook poll-and-retry hardening
 
-**Status:** new (backlog, пост-W4 hardening на основі race-condition зі §3.5).
+**Status:** ✅ Done — [PR #2531](https://github.com/Skords-01/Sergeant/pull/2531) `49d5c846`.
 **Pain закриває:** P4 follow-up — щоб майбутні long-poll → webhook міграції інших ботів (або accidental re-activation long-poll) не вимагали ручного curl-у.
 
-**Що:** у `tools/console/src/openclaw/bootstrap.ts:registerOpenClawWebhook` після `bot.api.setWebhook(...)` зробити `getWebhookInfo`, перевіряти що повернений `url === expected`, при mismatch ще раз викликати `setWebhook` з backoff (max 3 спроби, 1s/2s/4s). Лог-повідомлення про recovery, щоб у Sentry було видно що race спрацював.
+**Що:** у `tools/openclaw/src/openclaw/bootstrap.ts:registerOpenClawWebhook` після `bot.api.setWebhook(...)` зробити `getWebhookInfo`, перевіряти що повернений `url === expected`, при mismatch ще раз викликати `setWebhook` з backoff (max 3 спроби, 1s/2s/4s). Лог-повідомлення про recovery, щоб у Sentry було видно що race спрацював.
 
 **Чому:** ADR-0041 §5 описує race ("getUpdates у старому контейнері перетирає webhook-state на Telegram-стороні"). Поточний код викликає `setWebhook` оптимістично і не перевіряє кінцевий стан → race потребує operator manual-fix. Поточний обхід — окремий `serviceInstanceRedeploy` після того, як впевнились що старий контейнер уже мертвий.
 
@@ -315,8 +315,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 | W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                                    | M      | 0039      | planned                                                                                                                                                                           |
 | W3    | (g) | B.1 (alert dedup / occurrence-counter)                                 | M      | —         | planned                                                                                                                                                                           |
 | W4    | (h) | §3.5 (webhook delivery)                                                | M      | 0041      | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514) (code) + Railway flip 2026-05-03 21:26 UTC. Index/whitelist [#1517](https://github.com/Skords-01/Sergeant/pull/1517). |
-| W4    | (j) | §3.5.1 (W4.1 bootstrap setWebhook poll-and-retry hardening)            | XS     | —         | planned (post-W4 hardening for race noted in ADR-0041 §5)                                                                                                                         |
-| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | planned                                                                                                                                                                           |
+| W4    | (j) | §3.5.1 (W4.1 bootstrap setWebhook poll-and-retry hardening)            | XS     | —         | ✅ [PR #2531](https://github.com/Skords-01/Sergeant/pull/2531)                                                                                                                    |
+| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | ✅ [PR #2534](https://github.com/Skords-01/Sergeant/pull/2534)                                                                                                                    |
 | Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     | backlog                                                                                                                                                                           |
 | Later | …   | B.2..B.8                                                               | varies | varies    | backlog                                                                                                                                                                           |
 | Later | …   | C.1, C.3, C.4                                                          | varies | 0042/0043 | backlog                                                                                                                                                                           |
@@ -324,7 +324,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 **Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0039, 0041).
 
-**Де-факто завершено (2026-05-03):** W1 (a)+(b) + W3 (e) + W4 (h) — 5 merged PR + 1 production env-flip всього.
+**Де-факто завершено (2026-05-13):** W1 (a)+(b) + W3 (e) + W4 (h)+(i)+(j) — 7 merged PR + 1 production env-flip всього.
 
 ---
 
@@ -348,6 +348,6 @@ CREATE INDEX idx_tg_alert_acks_unacked
 - [ADR-0037 — OpenClaw write-audit persistence](../../adr/0037-openclaw-write-audit-persistence.md)
 - [openclaw-roadmap.md — phase plan](./openclaw-roadmap.md)
 - [05-operations-and-automation.md §6.2](../business/05-operations-and-automation.md#62-телеграм-як-control-room) — Telegram як control-room
-- `tools/console/src/openclaw/handler.ts` — DM bot entry-point
+- `tools/openclaw/src/openclaw/handler.ts` — DM bot entry-point
 - `apps/server/src/modules/openclaw/store.ts` — write-audit persistence
 - `ops/n8n-workflows/` — 19 active workflows

@@ -9,7 +9,9 @@ name: Detox (Android)
 # because:
 #   - An AVD boot + `gradle assembleDebug` + `assembleAndroidTest` pipeline
 #     takes ≥10 min on `ubuntu-latest` with KVM enabled, so we only run
-#     it on `main` / mobile-scoped PRs.
+#     it on `main` / mobile-scoped PRs and once nightly to catch silent
+#     drift on dependencies that don't trigger a mobile-touching PR
+#     (Android SDK image refresh, AGP upgrade via Renovate, etc.).
 #   - A failing Detox run should not block an unrelated web-only PR.
 #
 # iOS CI is configured in the sibling `.github/workflows/detox-ios.yml` —
@@ -27,6 +29,7 @@ on:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "apps/mobile-shell/**"
       - "packages/finyk-domain/**"
       - "packages/routine-domain/**"
       - "packages/api-client/**"
@@ -36,12 +39,21 @@ on:
   pull_request:
     paths:
       - "apps/mobile/**"
+      - "apps/mobile-shell/**"
       - "packages/finyk-domain/**"
       - "packages/routine-domain/**"
       - "packages/api-client/**"
       - "packages/shared/**"
       - "pnpm-lock.yaml"
       - ".github/workflows/detox-android.yml"
+  # Nightly run catches drift on transitive deps that wouldn't fire a
+  # `paths`-scoped trigger — Android SDK image refresh, AGP upgrade via
+  # Renovate, react-native patch bumps, etc. 03:15 UTC ≈ 05:15 Kyiv
+  # — picked to land before the working day and after most US-evening
+  # commit traffic so a flaky AVD boot doesn't fight other jobs for the
+  # `ubuntu-latest` queue.
+  schedule:
+    - cron: "15 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -61,6 +73,11 @@ jobs:
     timeout-minutes: 75
     env:
       EXPO_PUBLIC_E2E: "1"
+      # Same mock-auth flags as detox-ios.yml so the "full" suites can
+      # run on Android once the emulator pipeline stabilises.
+      EXPO_PUBLIC_E2E_REAL_AUTH: "1"
+      EXPO_PUBLIC_E2E_USER_EMAIL: "e2e-detox@sergeant.test"
+      EXPO_PUBLIC_E2E_USER_PASSWORD: "detox-pass-2026"
       E2E_BUILD: "1"
       # Keep Gradle's daemon off so artefacts / memory don't leak
       # between the `assembleDebug` and `assembleAndroidTest` passes

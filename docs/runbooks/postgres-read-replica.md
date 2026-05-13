@@ -1,6 +1,6 @@
 # Postgres read replica — runbook (PR #047)
 
-> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-05.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Закриває Stage 6 PR #047 із [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md):

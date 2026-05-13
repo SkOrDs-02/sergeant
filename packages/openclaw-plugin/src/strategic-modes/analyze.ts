@@ -5,7 +5,7 @@
  * `/analyze` (or `/analyzed`, `/analyzes`, …) does NOT match — the
  * founder must supply an anomaly. The primer is byte-for-byte equal
  * to the legacy console primer at
- * `tools/console/src/agents/strategic-modes.ts` (the `analyze` arm
+ * `tools/openclaw/src/agents/strategic-modes.ts` (the `analyze` arm
  * of `STRATEGIC_MODE_PRIMERS`). A drift-gate test in
  * `index.test.ts` reconstructs the legacy literal and compares.
  */

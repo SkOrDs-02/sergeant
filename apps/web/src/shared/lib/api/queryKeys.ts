@@ -98,6 +98,25 @@ export const hubKeys = {
   preview: (module: ModuleAccent) => ["hub", "preview", module] as const,
 };
 
+// ─── Strategic mode (PR-34 — per-persona weekly goals) ────────────────────
+export const strategicKeys = {
+  all: ["strategic"] as const,
+  goalsForWeek: (weekStart: string) =>
+    ["strategic", "goals", "week", weekStart] as const,
+};
+
+// ─── Billing (Stripe checkout / subscription status) ──────────────────────
+//
+// Backed by `/api/billing/status` (`packages/api-client` → `billingApi.status`).
+// `usePlan` reads `billingKeys.status` and gates Pro-only UI; invalidation
+// is fanned out by `subscriptions.changed` realtime events (NOTIFY listener,
+// follow-up PR). For now invalidate manually after `createCheckout` returns
+// to `/pricing?checkout=success`.
+export const billingKeys = {
+  all: ["billing"] as const,
+  status: ["billing", "status"] as const,
+};
+
 // ─── Token hashing helper ─────────────────────────────────────────────────
 //
 // Не використовуємо криптографічну стійкість — потрібне лише стабільне,

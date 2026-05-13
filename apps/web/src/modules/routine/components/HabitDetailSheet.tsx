@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import {
@@ -281,25 +282,27 @@ export function HabitDetailSheet({
             Календар
           </SectionHeading>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <IconButton
+              size="xs"
+              variant="ghost"
               onClick={() => goCalMonth(-1)}
-              className="w-8 h-8 rounded-xl border border-line text-muted hover:text-text flex items-center justify-center text-sm"
+              className="rounded-xl border border-line text-sm! text-muted"
               aria-label="Попередній місяць"
             >
               ‹
-            </button>
+            </IconButton>
             <span className="text-xs font-semibold text-text min-w-28 text-center capitalize">
               {calMonthTitle}
             </span>
-            <button
-              type="button"
+            <IconButton
+              size="xs"
+              variant="ghost"
               onClick={() => goCalMonth(1)}
-              className="w-8 h-8 rounded-xl border border-line text-muted hover:text-text flex items-center justify-center text-sm"
+              className="rounded-xl border border-line text-sm! text-muted"
               aria-label="Наступний місяць"
             >
               ›
-            </button>
+            </IconButton>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-1">

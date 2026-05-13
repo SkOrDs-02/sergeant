@@ -17,6 +17,7 @@
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger } from "@shared/lib";
 
 import { readJSON, readRaw, removeItem } from "./finykStorage";
 import { applyFinykDualWriteOps } from "./dualWrite/adapter.js";
@@ -105,7 +106,7 @@ export async function importFinykResidualFromLs(
         clientTs: STALE_TIMESTAMP,
       });
     } catch (err) {
-      console.warn(
+      logger.warn(
         "[finyk.residualImport] apply failed; LS keys retained",
         err instanceof Error ? err.message : err,
       );

@@ -45,7 +45,11 @@ export const Bottom: Story = {
   args: {
     id: "story-bottom",
     placement: "bottom",
-    children: <Button size="sm" variant="secondary">Нова транзакція</Button>,
+    children: (
+      <Button size="sm" variant="secondary">
+        Нова транзакція
+      </Button>
+    ),
   },
 };
 
@@ -55,7 +59,11 @@ export const Top: Story = {
     placement: "top",
     title: "Глобальний пошук",
     description: "Натисни Cmd+K щоб шукати по всіх модулях.",
-    children: <Button size="sm" variant="ghost">🔍 Пошук</Button>,
+    children: (
+      <Button size="sm" variant="ghost">
+        🔍 Пошук
+      </Button>
+    ),
   },
 };
 
@@ -65,7 +73,11 @@ export const Right: Story = {
     placement: "right",
     title: "Налаштування",
     description: "Тут можна налаштувати профіль та сповіщення.",
-    children: <Button size="sm" variant="secondary" iconOnly>⚙️</Button>,
+    children: (
+      <Button size="sm" variant="secondary" iconOnly>
+        ⚙️
+      </Button>
+    ),
   },
 };
 
@@ -76,6 +88,10 @@ export const CustomAction: Story = {
     title: "Голосовий ввід",
     description: "Говори — ми запишемо витрату замість тебе.",
     actionText: "Спробувати",
-    children: <Button size="md" variant="finyk">🎙 Голос</Button>,
+    children: (
+      <Button size="md" variant="finyk">
+        🎙 Голос
+      </Button>
+    ),
   },
 };

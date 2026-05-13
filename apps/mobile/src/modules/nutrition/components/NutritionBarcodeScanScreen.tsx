@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { isApiError, type BarcodeProduct } from "@sergeant/api-client";
@@ -124,14 +124,39 @@ export function NutritionBarcodeScanScreen() {
   }
 
   if (!permission.granted) {
+    // `canAskAgain === false` means the OS will no longer surface the
+    // system permission dialog (iOS after first denial; Android after
+    // «Don't ask again»). Without a `Linking.openSettings()` affordance
+    // the user is stuck with a non-functional «Надати доступ» button
+    // that re-resolves to the same denied state. Switching the CTA to
+    // open Settings is the canonical recovery path documented by both
+    // Apple and Google.
+    const canPrompt = permission.canAskAgain !== false;
     return (
       <View className="flex-1 p-4 justify-center gap-4">
         <Text className="text-fg text-center">
           Щоб сканувати штрихкоди, потрібен доступ до камери.
         </Text>
-        <Button variant="nutrition" onPress={() => void requestPermission()}>
-          Надати доступ
-        </Button>
+        {!canPrompt && (
+          <Text className="text-fg-muted text-center">
+            Дозвіл було відхилено. Система більше не покаже діалог — відкрий
+            налаштування, щоб увімкнути камеру.
+          </Text>
+        )}
+        {canPrompt ? (
+          <Button variant="nutrition" onPress={() => void requestPermission()}>
+            Надати доступ
+          </Button>
+        ) : (
+          <Button
+            variant="nutrition"
+            onPress={() => {
+              void Linking.openSettings();
+            }}
+          >
+            Відкрити налаштування
+          </Button>
+        )}
         <Button variant="ghost" onPress={() => router.back()}>
           Назад
         </Button>

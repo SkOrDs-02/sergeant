@@ -19,6 +19,7 @@
  * second call.
  */
 
+import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 
@@ -66,7 +67,7 @@ export async function bootSqliteReadPath(
     booted = true;
     return true;
   } catch (err) {
-    console.warn(
+    logger.warn(
       "[routine.sqliteRead] boot failed, falling back to LS",
       err instanceof Error ? err.message : err,
     );

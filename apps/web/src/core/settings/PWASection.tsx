@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { logger } from "@shared/lib";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import {
@@ -19,12 +20,12 @@ export function PWASection() {
     setSwBusy(true);
     try {
       const res = await swClearCaches();
-      console.log("[sw] caches cleared", res);
+      logger.info("[sw] caches cleared", res);
       toast.success("Кеш PWA скинуто. Перезавантажуємо…", 4000);
       setTimeout(() => window.location.reload(), 300);
     } catch (err) {
       toast.error("Не вдалося скинути кеш PWA");
-      console.warn("[sw] clear caches failed", err);
+      logger.warn("[sw] clear caches failed", err);
     } finally {
       setSwBusy(false);
     }
@@ -48,11 +49,11 @@ export function PWASection() {
             try {
               await swSetDebug(true);
               const snap = await swGetDebugSnapshot();
-              console.log("[sw] snapshot", snap);
+              logger.info("[sw] snapshot", snap);
               toast.success("SW-діагностика виведена в консоль");
             } catch (err) {
               toast.error("Не вдалося отримати діагностику SW");
-              console.warn("[sw] debug failed", err);
+              logger.warn("[sw] debug failed", err);
             } finally {
               setSwBusy(false);
             }

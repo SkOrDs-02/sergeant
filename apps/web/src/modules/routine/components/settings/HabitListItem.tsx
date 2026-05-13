@@ -1,6 +1,7 @@
 import { memo, type DragEventHandler } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { IconButton } from "@shared/components/ui/IconButton";
 import { RECURRENCE_OPTIONS } from "../../lib/routineConstants";
 import type { Habit } from "../../lib/types";
 
@@ -73,22 +74,24 @@ export const HabitListItem = memo(function HabitListItem({
         </div>
         <div className="flex flex-wrap gap-1.5 justify-end shrink-0 max-w-[min(100%,12rem)] sm:max-w-none">
           <div className="flex gap-1">
-            <button
-              type="button"
-              className="min-w-[32px] min-h-[36px] rounded-xl border border-line text-xs text-muted hover:text-text"
+            <IconButton
+              size="sm"
+              variant="ghost"
+              className="rounded-xl border border-line text-xs! text-muted"
               onClick={onMoveUp}
               aria-label="Вгору в списку"
             >
               ↑
-            </button>
-            <button
-              type="button"
-              className="min-w-[32px] min-h-[36px] rounded-xl border border-line text-xs text-muted hover:text-text"
+            </IconButton>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              className="rounded-xl border border-line text-xs! text-muted"
               onClick={onMoveDown}
               aria-label="Вниз в списку"
             >
               ↓
-            </button>
+            </IconButton>
           </div>
           <Button
             type="button"

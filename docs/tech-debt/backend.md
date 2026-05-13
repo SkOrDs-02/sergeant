@@ -389,7 +389,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 - `apps/server/src/**/*.ts` — 100% TS. `.js` у `apps/server/` лишилися тільки як deploy/build-glue (`migrate.mjs`, `build.mjs`).
 - `apps/web/src/**/*.{ts,tsx}` — 100% TS. У production-source `.js`/`.jsx` — 0 (перевірено `find apps/web/src -type f \( -name "*.js" -o -name "*.jsx" \)`).
-- `tools/console/src/**/*.ts` — 100% TS.
+- `tools/openclaw/src/**/*.ts` — 100% TS.
 - `apps/mobile/src/**/*.{ts,tsx}` + `apps/mobile/app/**/*.tsx` — 100% TS (mobile також прогнано).
 - `apps/mobile-shell/**/*.ts` — 100% TS.
 - `packages/**/src/**` — 100% TS (включно з 4 domain-пакетами та `@sergeant/api-client`).
@@ -425,7 +425,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ## Operational visibility — Railway env-var changes
 
-> **Контекст.** Action item §A5 з [`docs/audits/2026-05-04-csp-disable-retrospective.md`](../audits/2026-05-04-csp-disable-retrospective.md) — закриття A5 показало, що PR 1.3 staging-gate ([#1697](https://github.com/Skords-01/Sergeant/pull/1697)) ловить deploy-config drift у репо (`vercel.json`, `fly.toml`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у Railway dashboard. Це окремий клас ризику; його повний fix — окрема ініціатива; поки тримаємо тут у backlog.
+> **Контекст.** Action item §A5 з [`docs/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md) — закриття A5 показало, що PR 1.3 staging-gate ([#1697](https://github.com/Skords-01/Sergeant/pull/1697)) ловить deploy-config drift у репо (`vercel.json`, `fly.toml`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у Railway dashboard. Це окремий клас ризику; його повний fix — окрема ініціатива; поки тримаємо тут у backlog.
 
 **Gap-у поточного tier-у Railway** (community/team), підтверджені під час A2-перевірки 2026-05-06:
 

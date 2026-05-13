@@ -189,22 +189,24 @@ export function HabitForm({
                 )}
               >
                 {EMOJI_SUGGESTIONS.map((e) => (
-                  <button
+                  <Button
                     key={e}
+                    iconOnly
+                    size="sm"
+                    variant="ghost"
                     type="button"
                     onClick={() => {
                       setHabitDraft((d) => ({ ...d, emoji: e }));
                       setShowEmojiPicker(false);
                     }}
                     className={cn(
-                      "w-9 h-9 rounded-xl text-lg",
-                      "hover:bg-panelHi transition-colors",
+                      "rounded-xl text-lg!",
                       habitDraft.emoji === e && "bg-panelHi ring-1 ring-line",
                     )}
                     aria-label={`Емодзі ${e}`}
                   >
                     <span aria-hidden>{e}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -266,7 +268,7 @@ export function HabitForm({
                 role="radio"
                 aria-checked={active}
                 className={cn(
-                  "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[32px]",
+                  "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
                   active ? C.chipOn : C.chipOff,
                 )}
                 onClick={() =>

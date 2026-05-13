@@ -1,6 +1,6 @@
 # M7 — Chat agent loop has no `MAX_TOOL_ITERATIONS` cap
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (2026-05-04)
 
 | Field          | Value                           |

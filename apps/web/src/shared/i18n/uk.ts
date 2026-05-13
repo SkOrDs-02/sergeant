@@ -351,7 +351,6 @@ export const messages = {
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",
-    weeklyGoal: "Ціль тижня",
   },
 
   nutrition: {
@@ -528,6 +527,30 @@ export const messages = {
     fatTooHigh: "Більше 250 г жиру — це дуже багато для типового раціону.",
     carbsTooHigh:
       "Більше 700 г вуглеводів — це дуже багато навіть для атлетів.",
+  },
+
+  // Public status page (`/status`, PR-41). Анонімна health-сторінка; копія
+  // має лишатись нейтральною (без module-accent persona-голосу), бо це
+  // public-trust surface.
+  publicStatus: {
+    pageTitle: "Sergeant — Status",
+    pollNote: "Поточний стан компонентів. Оновлюється автоматично кожні",
+    pollNoteSuffix: "с.",
+    loading: "Завантажуємо стан сервісу…",
+    overallOperational: "Усі сервіси працюють",
+    overallDegraded: "Часткова деградація",
+    overallDown: "Серйозна проблема",
+    pillOperational: "Працює",
+    pillDegraded: "Деградація",
+    pillDown: "Не працює",
+    timestampPrefix: "оновлено",
+    componentsLabel: "Компоненти",
+    lastIncidentNone: "Інцидентів за останні 7 днів не зафіксовано.",
+    lastIncidentPrefix: "Останній інцидент:",
+    errorTitle: "Не вдалося завантажити статус",
+    errorRetry: "Спробувати ще",
+    errorFallback: "Не вдалося завантажити статус сервісу.",
+    errorHttpPrefix: "Сервер відповів HTTP",
   },
 
   // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`

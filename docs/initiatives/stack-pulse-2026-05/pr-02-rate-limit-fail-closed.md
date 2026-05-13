@@ -1,6 +1,6 @@
 # PR-02: Rate-limit fail-closed на `/api/auth/*`
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Closed — merged [#1552](https://github.com/Skords-01/Sergeant/pull/1552)
 
 |              |                                                                                   |

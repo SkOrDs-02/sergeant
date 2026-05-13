@@ -1,6 +1,6 @@
 # Review Checklist
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Checklist для reviewer'ів і pre-merge self-review.

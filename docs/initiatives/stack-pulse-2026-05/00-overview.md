@@ -99,7 +99,7 @@ real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, акти
 | L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [PR-36](./pr-36-lazy-import-chunk-reload-guard.md)   | **Closed** — merged [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (commit `9bfa006d`)                                                                   |
 | L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [PR-37](./pr-37-postgres-image-sha-pin.md)           | **Closed** — merged [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (commit `348f5773`)                                                                   |
 | L11 | PWA precache — перевірити що всі assets 1st-party             | [PR-38](./pr-38-pwa-precache-first-party.md)         | **Closed** — merged [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (commit `e227f2b6`)                                                                   |
-| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 | [PR-39](./pr-39-tools-console-anthropic-sdk.md)      | **Partially closed** — merged [#2527](https://github.com/Skords-01/Sergeant/pull/2527) (pin `^0.95.2` + prompt caching opt-in; v1 GA чекаємо — ADR-0057)           |
+| L12 | `tools/openclaw` SDK Anthropic 0.36.3 outdated                | [PR-39](./pr-39-tools-console-anthropic-sdk.md)      | **Partially closed** — merged [#2527](https://github.com/Skords-01/Sergeant/pull/2527) (pin `^0.95.2` + prompt caching opt-in; v1 GA чекаємо — ADR-0057)           |
 
 ---
 
@@ -111,7 +111,7 @@ real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, акти
 | R2  | `ts-prune` + `knip`                                   | видалити `ts-prune`                             |
 | R3  | 3× Sentry SDK (node, react, react-native)             | unified release-name `sergeant@${COMMIT_SHA}`   |
 | R4  | API-version rewrite                                   | видалити (PR-08)                                |
-| R5  | `tools/console` + OpenClaw (обидва Telegram-bot-и)    | дочекатися ADR-0032 завершення                  |
+| R5  | `tools/openclaw` + OpenClaw (обидва Telegram-bot-и)   | дочекатися ADR-0032 завершення                  |
 | R6  | `pnpm.overrides` для давно-патчених CVE               | quarterly cleanup                               |
 | R7  | `SERVER_MODE=railway` / `replit` runtime-flag         | окремий entrypoint якщо Replit ≠ production     |
 | R8  | `@types/node@25` всюди + Node 20 runtime              | downgrade (PR-05)                               |
@@ -132,7 +132,7 @@ real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, акти
 | MS7  | Threat model document (STRIDE)           | Done — `docs/security/threat-model.md`            |
 | MS8  | Migration `down.sql` rollback drill у CI | applied → run down → re-run forward → diff schema |
 | MS9  | Cost monitoring dashboard                | Grafana `cost_per_user_per_module`                |
-| MS10 | Public status page                       | self-hosted instatus у `tools/console`            |
+| MS10 | Public status page                       | self-hosted instatus у `tools/openclaw`           |
 | MS11 | Privacy policy CI-check                  | annual review checklist в `.github/`              |
 | MS12 | Build provenance / SBOM                  | `cyclonedx-bom` step → release artifact           |
 

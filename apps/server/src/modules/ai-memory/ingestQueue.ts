@@ -226,6 +226,24 @@ export async function enqueueMemoryIngest(
     return;
   }
 
+  // Per-source kill-switch (PR-19). Поки що тільки `finyk` (Mono
+  // webhook) gate-нутий — інші source-и контролюються виключно
+  // master-flag-ом `AI_MEMORY_ENABLED`. Перевірка живе тут (а не у
+  // `webhook.ts`), щоб майбутні per-source flags для digest/chat
+  // додавались в одному місці, з тим самим metric shape
+  // (`mode="source_disabled"`).
+  if (payload.source === "finyk" && !env.MONO_AI_MEMORY_INGEST_ENABLED) {
+    aiMemoryIngestEnqueuedTotal.inc({
+      mode: "source_disabled",
+      source: sourceLabel,
+    });
+    logger.debug({
+      msg: "ai_memory_ingest_skipped_source_disabled",
+      source: sourceLabel,
+    });
+    return;
+  }
+
   const queue = getOrCreateMemoryIngestQueue();
 
   if (!queue) {

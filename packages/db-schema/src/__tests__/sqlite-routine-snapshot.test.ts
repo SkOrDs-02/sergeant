@@ -306,6 +306,7 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
       "pending",
       "rejected",
       "dead_letter",
+      "quarantined",
     ]);
   });
 });
@@ -525,8 +526,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration, then the HIGH-#2 user-id migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(5);
+  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration, then the poison-row quarantine migration, then the HIGH-#2 user-id migration", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(6);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -612,24 +613,45 @@ describe("sqlite/migrations exports", () => {
       /CREATE TABLE IF NOT EXISTS routine_completion_notes/,
     );
 
-    // HIGH-#2 of the T3 audit — sync_op_outbox.user_id NOT NULL +
-    // partial index on (user_id, next_retry_at, id). The migration
-    // also preserves terminal rows from the pre-005 shape under the
-    // synthetic `__legacy__` user_id placeholder so forensic value
-    // survives the rebuild without resurfacing across users.
+    // T3 audit HIGH#3 migration: poison-row quarantine. Pin the same
+    // three rebuild anchors as 002/003 plus the new CHECK literal
+    // that is the actual contract change.
     expect(ROUTINE_CLIENT_MIGRATIONS[4]!.name).toBe(
-      "005_sync_op_outbox_user_id.sql",
+      "005_sync_op_outbox_quarantine.sql",
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
       /ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy/,
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
-      /user_id\s+TEXT NOT NULL/,
+      /CHECK \(status IN \('pending','rejected','dead_letter','quarantined'\)\)/,
+    );
+    // The op CHECK must stay at the post-003 shape — adding the
+    // quarantined status does not re-tighten the op tuple.
+    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /CHECK \(op IN \('insert','update','delete','increment'\)\)/,
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /sync_op_outbox_pending_due_idx_lite/,
+    );
+
+    // HIGH-#2 of the T3 audit — sync_op_outbox.user_id NOT NULL +
+    // partial index on (user_id, next_retry_at, id). The migration
+    // also preserves terminal rows from the pre-006 shape under the
+    // synthetic `__legacy__` user_id placeholder so forensic value
+    // survives the rebuild without resurfacing across users.
+    expect(ROUTINE_CLIENT_MIGRATIONS[5]!.name).toBe(
+      "006_sync_op_outbox_user_id.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[5]!.sql).toMatch(
+      /ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[5]!.sql).toMatch(
+      /user_id\s+TEXT NOT NULL/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[5]!.sql).toMatch(
       /sync_op_outbox_user_pending_idx_lite/,
     );
-    expect(ROUTINE_CLIENT_MIGRATIONS[4]!.sql).toMatch(/'__legacy__'/);
+    expect(ROUTINE_CLIENT_MIGRATIONS[5]!.sql).toMatch(/'__legacy__'/);
   });
 
   it("uses the standard `__migrations` ledger table", () => {

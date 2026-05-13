@@ -4,6 +4,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import { generateInsights } from "../lib/insightsEngine";
+import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import {
   getFinykExcludedTxIdsFromStorage,
   getFinykTxSplitsFromStorage,
@@ -446,6 +447,16 @@ export function HubReports() {
           </button>
         </div>
       </div>
+
+      {/* AI-narrative «Звіт тижня» surfaced inside the Reports tab so
+          users who tap «Звіти» looking for the weekly report can find
+          the digest there (UX-feedback 2026-05-13). Only shown when
+          the period selector is on «Тиждень» — the `WeeklyDigestCard`
+          itself is week-shaped and exposes its own history nav, so it
+          stays meaningful when the user navigates between weeks via
+          the digest's internal selector. In «Місяць» view we don't
+          render it because there's no monthly digest yet. */}
+      {period === "week" && <WeeklyDigestCard />}
 
       <div className="grid grid-cols-1 gap-3">
         <StatCard

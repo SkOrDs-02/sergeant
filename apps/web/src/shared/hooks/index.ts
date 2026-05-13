@@ -12,7 +12,14 @@
 
 export { useActiveFizrukWorkout } from "./useActiveFizrukWorkout";
 
-export { useDarkMode } from "./useDarkMode";
+export {
+  useTheme,
+  THEME_CHOICES,
+  THEME_CHOICE_ICONS,
+  THEME_CHOICE_LABELS,
+  THEME_CHOICE_SHORT_LABELS,
+} from "./useTheme";
+export type { ThemeChoice, UseThemeReturn } from "./useTheme";
 
 export { useDebounce } from "./useDebounce";
 
@@ -70,9 +77,9 @@ export { useFocusTrap } from "./useFocusTrap";
 
 export { useCountUp, useFormattedCountUp } from "./useCountUp";
 
-export type { DarkModeSchedule, UseDarkModeReturn } from "./useDarkMode";
-
 export { useHaptic } from "./useHaptic";
 export type { UseHapticReturn } from "./useHaptic";
 
 export { useReducedMotion } from "./useReducedMotion";
+
+export { useShortcutGlyph } from "./useShortcutGlyph";

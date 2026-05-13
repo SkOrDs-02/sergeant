@@ -22,6 +22,8 @@ import type {
   MemorySource,
   VectorStore,
 } from "./types.js";
+import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
+import { isVoyageBudgetHardExceeded } from "./voyageBudget.js";
 
 /**
  * Параметри запису одного memory. Caller передає сирий `content`;
@@ -97,8 +99,46 @@ export function createAiMemoryService(
       }
       if (inputs.length === 0) return;
 
+      // Voyage hard daily budget pause-ingestion гейт. Якщо `VOYAGE_DAILY_BUDGET_USD_HARD`
+      // вже відстрелявся сьогодні — skip-аємо embed-call ще до `embedBatch()`,
+      // щоб не витрачати Voyage-квоту і не дублювати alert-и. Sentry-error
+      // уже відправлений у `voyageBudget.ts::maybeFireHardAlert`. На
+      // day-rollover flag скидається автоматично.
+      if (isVoyageBudgetHardExceeded()) {
+        logger.warn({
+          msg: "ai_memory_remember_skipped_hard_budget",
+          count: inputs.length,
+          sources: inputs.map((i) => i.source),
+        });
+        return;
+      }
+
       const texts = inputs.map((i) => i.content);
-      const embeddings = await deps.embeddings.embedBatch(texts);
+      let embeddings: Float32Array[];
+      try {
+        // PR-38 — background ingestion (digest / mono webhook / RAG-prep)
+        // позначаємо як non-critical, щоб overflow `VOYAGE_DAILY_BUDGET_USD_SOFT`
+        // skip-ав батч без BullMQ-retry-storm-у. `recall` лишається critical.
+        embeddings = await deps.embeddings.embedBatch(texts, {
+          criticality: "non-critical",
+        });
+      } catch (err) {
+        if (err instanceof VoyageSoftBudgetExceededError) {
+          // Idempotent Sentry warning уже відправлений у voyageBudget.ts.
+          // Тут логуємо skip-фактаж по sources — operator-у важливо
+          // знати, котрі ingestion-source-и нагрівали soft-cap.
+          logger.warn({
+            msg: "ai_memory_remember_skipped_soft_budget",
+            count: inputs.length,
+            sources: inputs.map((i) => i.source),
+            usage_usd: err.usage,
+            threshold_usd: err.threshold,
+            day_key: err.dayKey,
+          });
+          return;
+        }
+        throw err;
+      }
       if (embeddings.length !== inputs.length) {
         throw new Error(
           `Embedding provider returned ${embeddings.length} vectors for ${inputs.length} inputs`,

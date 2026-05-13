@@ -1,6 +1,6 @@
 # Mobile client — API contract
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Референс для Expo/React Native клієнта Sergeant. Сервер уже підготовлений
@@ -27,6 +27,7 @@
 | Scheme                             | Куди веде                                           |
 | ---------------------------------- | --------------------------------------------------- |
 | `sergeant://`                      | Головний хаб (equivalent to tab root)               |
+| `sergeant://hub-chat`              | AI-асистент чат (HubChat, modal route `/hub-chat`)  |
 | `sergeant://workout/{id}`          | Екран конкретного тренування (fizruk)               |
 | `sergeant://workout/new`           | Створення тренування                                |
 | `sergeant://food/log`              | Щоденник їжі (nutrition, поточний день)             |
@@ -40,9 +41,61 @@
 | `sergeant://settings`              | Налаштування (профіль, push, sync)                  |
 | `sergeant://auth/callback?token=…` | OAuth/password-reset callback (Better Auth Expo)    |
 
-Expo `scheme: "sergeant"` у `app.json`. Dev-клієнт додатково обробляє
+Expo `scheme: "sergeant"` у `app.config.ts`. Dev-клієнт додатково обробляє
 `exp://` (Expo Go) і `http://localhost:8081` (Metro web) — обидва вже
 в `trustedOrigins` сервера, щоб Better Auth не різав 403.
+
+### HTTPS Universal Links / Android App Links
+
+З Phase 7 ті самі deep-link-цілі досяжні через **HTTPS Universal
+Links** (iOS) і **verified App Links** (Android). Користувач тапає
+URL в Messages / Mail / SMS — і ОС відкриває RN-app прямо, без
+chooser-діалогу.
+
+| HTTPS URL                                                      | Канонічний `sergeant://` еквівалент                  |
+| -------------------------------------------------------------- | ---------------------------------------------------- |
+| `https://sergeant.vercel.app/`                                 | `sergeant://`                                        |
+| `https://sergeant.vercel.app/finyk`                            | `sergeant://finance` (web slug `finyk` → `finance`)  |
+| `https://sergeant.vercel.app/finyk/tx/{id}`                    | `sergeant://finance/tx/{id}`                         |
+| `https://sergeant.vercel.app/nutrition/recipe/{id}`            | `sergeant://food/recipe/{id}` (`nutrition` → `food`) |
+| `https://sergeant.vercel.app/fizruk/workout/{id}`              | `sergeant://workout/{id}` (`fizruk` prefix stripped) |
+| `https://sergeant.vercel.app/routine` / `…/routine/habit/{id}` | `sergeant://routine` / `…/habit/{id}`                |
+| `https://sergeant.vercel.app/settings`                         | `sergeant://settings`                                |
+| `https://sergeant.vercel.app/auth/callback?token=…`            | `sergeant://auth/callback?token=…`                   |
+
+Те саме працює на `https://sergeant.2dmanager.com.ua/…` — обидва hosts
+перераховані в єдиному allow-list-і `UNIVERSAL_LINK_HOSTS` (lock-step
+у п'ятьох файлах):
+
+- `apps/mobile/src/lib/deepLinks.ts` (runtime parser, exported)
+- `apps/mobile/app.config.ts` (`ios.associatedDomains` + Android
+  `intentFilters` з `autoVerify: true`)
+- `apps/mobile-shell/src/index.ts` (`DEEP_LINK_HTTPS_HOSTS` для
+  Capacitor shell)
+- `apps/web/public/.well-known/apple-app-site-association` (iOS AASA;
+  Apple читає його з кожного host-у з `applinks:…` entitlement)
+- `apps/web/public/.well-known/assetlinks.json` (Android Digital Asset
+  Links; Play Services звіряє SHA-256 fingerprint з production
+  signing key і вмикає `autoVerify`)
+
+Поточні **bundle ID-и** в AASA / assetlinks:
+
+- `com.sergeant.shell` — Capacitor WebView (`apps/mobile-shell`)
+- `com.sergeant.app` — Expo RN (`apps/mobile`)
+
+При публікації — `REPLACE_WITH_TEAM_ID` (iOS) і
+`REPLACE_WITH_SHA256_FROM_EAS_PRODUCTION_KEYSTORE` (Android) у
+`.well-known/` замінюються реальними значеннями на деплої. Зразок
+команди для отримання fingerprint-у release keystore та інші
+operational деталі — у [`docs/mobile/capacitor-deep-links.md`](./capacitor-deep-links.md).
+
+Безпекові гарантії парсера:
+
+- HTTPS host матч строгий (case-insensitive equality), без
+  suffix-wildcard — `sergeant.vercel.app.evil.com` ніколи не пройде.
+- `http://` (cleartext) і `userinfo@host` шаблони — завжди `null`.
+- HTTPS-парсинг повторно використовує `parseSergeantUrl()`, тому
+  логіка path/query/fragment + auth-callback однакова для обох форм.
 
 ## Push notifications
 

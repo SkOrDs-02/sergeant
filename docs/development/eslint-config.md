@@ -73,9 +73,8 @@ ESLint flat-config discovery walks up from the linted file to the closest
 - [ ] `pnpm lint` все ще зелений на all PR-target files.
 - [ ] CI час `pnpm lint` зменшено (target: <30s через Turbo parallelism).
 - [ ] Diff-test: для 7+ fixture-файлів pre-extraction vs post-extraction
-      `eslint --print-config` produce byte-identical output (див.
-      `scripts/eslint-print-config-diff.mjs` — phase 2 includes цей
-      гард).
+      `eslint --print-config` produce byte-identical output — phase 2
+      введе цей гард (планований script `scripts/eslint-print-config-diff` (`.mjs`)).
 
 ### Why phase 1 first
 
@@ -115,11 +114,9 @@ text-on-fill`, etc.) з посиланням на ADR/playbook де релева
 
 ## Pre-existing failures
 
-`@sergeant/web` має 1 pre-existing lint **error** на main (станом на
-2026-05-13): `sergeant-design/no-low-contrast-text-on-fill` у
-`apps/web/src/modules/fizruk/components/dashboard/WeeklyGoalCard.tsx`
-line 34 (`bg-fizruk` + `text-white`). Треба замінити на
-`bg-fizruk-strong`. Не fix-ив у PR-31 (out of scope), tracked окремо.
+Станом на 2026-05-13 (після dead-code purge): `@sergeant/web` лінт чистий. Попереднє pre-existing
+failure (`sergeant-design/no-low-contrast-text-on-fill` на видаленому зараз віджеті dashboard) вирішено
+при dead-code purge у PR ПО слідам [audit `2026-05-13-dead-code-hard-rules-roast.md`](../audits/2026-05-13-dead-code-hard-rules-roast.md).
 
 ## Refs
 

@@ -1,9 +1,22 @@
+import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   processStripeWebhook,
+  verifyStripeSignature,
   __setPostHogCaptureForTesting,
 } from "./stripe.js";
 import type { capturePostHogEvent } from "../../lib/posthogCapture.js";
+
+function signedHeader(
+  secret: string,
+  timestampSeconds: number,
+  payload: Buffer,
+): string {
+  const v1 = createHmac("sha256", secret)
+    .update(`${timestampSeconds}.${payload.toString("utf8")}`)
+    .digest("hex");
+  return `t=${timestampSeconds},v1=${v1}`;
+}
 
 function createClient(rowCount: number) {
   const query = vi.fn().mockResolvedValue({ rowCount, rows: [] });
@@ -172,7 +185,7 @@ describe("subscription_started PostHog capture (PR-09)", () => {
     );
   });
 
-  it("does NOT fire subscription_started on customer.subscription.updated", async () => {
+  it("fires subscription_renewed (NOT _started) on active customer.subscription.updated", async () => {
     const client = createClient(1);
     const pool = { connect: vi.fn().mockResolvedValue(client) };
     const capture: ReturnType<typeof vi.fn> = vi
@@ -192,13 +205,80 @@ describe("subscription_started PostHog capture (PR-09)", () => {
             id: "sub_test_1",
             status: "active",
             metadata: { user_id: "user_42", plan: "pro" },
+            items: {
+              data: [
+                {
+                  price: {
+                    unit_amount: 700,
+                    currency: "usd",
+                    recurring: { interval: "month" },
+                  },
+                },
+              ],
+            },
           },
         },
       },
       Buffer.from("{}"),
     );
 
-    expect(capture).not.toHaveBeenCalled();
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_renewed");
+    expect(callArg.properties["$revenue"]).toBe(7);
+  });
+
+  it("fires subscription_canceled with `reason` on customer.subscription.deleted (no $revenue)", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_sub_deleted_1",
+        type: "customer.subscription.deleted",
+        data: {
+          object: {
+            id: "sub_test_1",
+            status: "canceled",
+            metadata: { user_id: "user_42", plan: "pro" },
+            cancellation_details: { reason: "cancellation_requested" },
+            items: {
+              data: [
+                {
+                  price: {
+                    unit_amount: 700,
+                    currency: "usd",
+                    recurring: { interval: "month" },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_canceled");
+    expect(callArg.properties["reason"]).toBe("user");
+    // Cancellation events MUST NOT push $revenue — PostHog would otherwise
+    // double-count the original charge as fresh revenue on churn.
+    expect(callArg.properties["$revenue"]).toBeUndefined();
   });
 
   it("does NOT fire subscription_started on duplicate webhook (idempotent)", async () => {
@@ -268,5 +348,84 @@ describe("subscription_started PostHog capture (PR-09)", () => {
     expect(result).toEqual({ ok: true, duplicate: false });
     expect(client.query).toHaveBeenLastCalledWith("COMMIT");
     expect(capture).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("verifyStripeSignature (T2 audit hardening)", () => {
+  const SECRET = "whsec_test_1234567890abcdef";
+  const payload = Buffer.from(`{"id":"evt_1","type":"ping"}`);
+
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  });
+
+  afterEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  });
+
+  it("returns false when STRIPE_WEBHOOK_SECRET is unset (no accept-all in non-prod)", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns true for a freshly-signed payload when secret is set", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(true);
+  });
+
+  it("returns false for a payload signed 10 minutes ago (replay outside tolerance)", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600;
+    const header = signedHeader(SECRET, tenMinutesAgo, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns false for a future-dated signature outside tolerance", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const futureSec = Math.floor(Date.now() / 1000) + 600;
+    const header = signedHeader(SECRET, futureSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("accepts a borderline timestamp within tolerance (299s old)", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000) - 299;
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(true);
+  });
+
+  it("respects STRIPE_WEBHOOK_TOLERANCE_SECONDS override", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"] = "60";
+    const tooOldSec = Math.floor(Date.now() / 1000) - 120;
+    const header = signedHeader(SECRET, tooOldSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns false on a tampered payload even when timestamp is fresh", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    const tampered = Buffer.from(`{"id":"evt_1","type":"evil"}`);
+    expect(verifyStripeSignature(tampered, header)).toBe(false);
+  });
+
+  it("returns false when signature header is missing", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    expect(verifyStripeSignature(payload, undefined)).toBe(false);
+  });
+
+  it("returns false when timestamp is non-numeric", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const v1 = createHmac("sha256", SECRET)
+      .update(`abc.${payload.toString("utf8")}`)
+      .digest("hex");
+    const header = `t=abc,v1=${v1}`;
+    expect(verifyStripeSignature(payload, header)).toBe(false);
   });
 });

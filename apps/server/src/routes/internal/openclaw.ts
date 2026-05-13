@@ -1,9 +1,9 @@
 /**
  * `/api/internal/openclaw/*` — internal HTTP API для OpenClaw bot
- * (tools/console DM-handler).
+ * (tools/openclaw DM-handler).
  *
  * Архітектура (ADR-0031 §5):
- *   tools/console (DM bot)     ──HTTP──▶  apps/server /api/internal/openclaw/*
+ *   tools/openclaw (DM bot)     ──HTTP──▶  apps/server /api/internal/openclaw/*
  *                                          ├─ recall      (recall_memory)
  *                                          ├─ strategy    (read_strategy_docs)
  *                                          ├─ query       (query_app_db)
@@ -15,7 +15,7 @@
  *                                          ├─ invocations/open
  *                                          └─ invocations/finalize
  *
- * Чому tool execution тут, а не у `tools/console`:
+ * Чому tool execution тут, а не у `tools/openclaw`:
  *   - Single-process pgvector / Postgres connection pool.
  *   - Allowlist-enforcement в одному місці (compromised console process
  *     не може bypass-ити).
@@ -27,10 +27,12 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
+import { env } from "../../env.js";
 import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  buildAiCostSummary,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -44,6 +46,7 @@ import {
   recallCofounderMemory,
   recordDecision,
   OpenClawAllowlistError,
+  assertOpenClawRepoAllowed,
   OpenClawSchemaError,
   OpenClawNotFoundError,
   // ADR-0032: ops/marketing tools ported from Sergeant Console agents.
@@ -52,6 +55,11 @@ import {
   getServerStats,
   getPostHogStats,
   getGithubReleases,
+  // PR-26: morning briefing template assembly (no-LLM hardcoded sections).
+  assembleMorningBriefing,
+  // O3 (Phase 2.B): Friday weekly + monthly OKR rituals.
+  assembleWeeklyReview,
+  assembleMonthlyOkrReview,
   // ADR-0036 (Phase 4): write-tools — invoked only after console-side approval.
   commitToStrategyDoc,
   createGithubIssue,
@@ -81,6 +89,11 @@ import {
   seoGscQuery,
   seoPsiAudit,
   seoSerpLookup,
+  // PR /mute (Phase 5b): founder DM mute-state CRUD + guard.
+  setFounderMute,
+  clearFounderMute,
+  getFounderMute,
+  isFounderMuted,
   // PR-C1b: reminder store + FSM helpers.
   setReminder,
   listDueReminders,
@@ -218,6 +231,18 @@ const ListBody = z.object({
   limit: z.number().int().min(1).max(100).optional(),
 });
 
+// PR /mute (Phase 5b): founder DM "do not disturb" mute schemas.
+// `mutedUntil` приймається ISO 8601 (`2026-05-13T22:00:00Z`); null/omit
+// ≡ "/mute off". `reason` — необов'язковий free-text label.
+const MuteSetBody = z.object({
+  founderUserId: z.string().min(1),
+  mutedUntilIso: z.string().datetime({ offset: true }).nullable().optional(),
+  reason: z.string().min(1).max(200).nullable().optional(),
+});
+const MuteFounderBody = z.object({
+  founderUserId: z.string().min(1),
+});
+
 // ADR-0032: ports of Sergeant Console (ADR-0027) ops/marketing tool I/O
 // schemas. Validation is intentionally loose — the upstream APIs (Stripe,
 // Sentry, PostHog, GitHub) define richer responses than we need; we keep
@@ -242,6 +267,53 @@ const GithubReleasesBody = z.object({
 });
 
 const ServerStatsBody = z.object({}).strict();
+
+// PR-26: morning briefing payload — всі поля optional, бо консумер (cron
+// dispatcher / manual probe) може приймати дефолти.
+// O1 / Phase 2.A: додано `includeProposals` (default true) — вимикає
+// LLM-call для proposals-секції коли caller хоче чистий 5-секційний
+// briefing без витрат токенів (наприклад, retry після Anthropic outage).
+const MorningBriefingBody = z
+  .object({
+    windowDays: z.number().int().min(1).max(30).optional(),
+    githubRepo: z.string().min(3).max(140).optional(),
+    sentryLimit: z.number().int().min(1).max(20).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+    includeProposals: z.boolean().optional(),
+    /**
+     * PR /mute (Phase 5b): якщо передано, server додає `mute` блок у
+     * response (`{ muted, mutedUntilIso }`) — n8n WF-25 читає його і
+     * short-circuit-ує `sendMessage` коли `muted=true`. Briefing markdown
+     * рендериться завжди (cost-free аудит для post-mortem на `mute`-period).
+     */
+    founderUserId: z.string().min(1).max(128).optional(),
+  })
+  .strict();
+
+// O3 (Phase 2.B): Friday weekly review payload — всі поля optional.
+// Консумер — n8n WF-28 (`0 18 * * FRI` Europe/Kyiv) → DM founder.
+const WeeklyReviewBody = z
+  .object({
+    windowDays: z.number().int().min(1).max(30).optional(),
+    staleDays: z.number().int().min(1).max(60).optional(),
+    githubRepo: z.string().min(3).max(140).optional(),
+    sentryLimit: z.number().int().min(1).max(20).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+  })
+  .strict();
+
+// O3 (Phase 2.B): Monthly OKR review payload — всі поля optional.
+// Консумер — n8n WF-27 (`0 9 1 * *` Europe/Kyiv) → DM founder. Hardcoded
+// interim OKR-список — fallback (PR-34 strategic_goals DB-table merged,
+// follow-up може замінити константу на DB-query).
+const MonthlyOkrReviewBody = z
+  .object({
+    githubRepo: z.string().min(3).max(140).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+    staleDays: z.number().int().min(1).max(120).optional(),
+    sentryLevel: z.enum(["fatal", "error", "warning"]).optional(),
+  })
+  .strict();
 
 // ADR-0036 (Phase 4): write-tool body schemas. The console invokes these
 // endpoints ONLY after the founder explicitly approved the corresponding
@@ -656,7 +728,7 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/classify",
     asyncHandler(async (req, res) => {
-      const apiKey = process.env["ANTHROPIC_API_KEY"];
+      const apiKey = env.ANTHROPIC_API_KEY;
       if (!apiKey) {
         res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
         return;
@@ -694,6 +766,31 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.tzName,
       );
       res.json(result);
+    }),
+  );
+
+  // ---- ai-cost-summary (`/ai_cost` slash-command backend) ----
+  //
+  // Realtime AI-spend rollup for founder DM. Sources:
+  //   - Anthropic per-day/-week/-month — `ai_usage_daily` ledger
+  //     (PR-12 #2567) у Europe/Kyiv-добу.
+  //   - Voyage cumulative + top-3 endpoints — in-process Prom-counter
+  //     `ai_cost_estimate_usd_total` (since process restart).
+  //   - Budget envelopes — `ANTHROPIC_MONTHLY_BUDGET_USD` /
+  //     `VOYAGE_MONTHLY_BUDGET_USD` env-vars (PR-13 #2590).
+  // Body порожній — endpoint без аргументів, founder-bound по
+  // internal-API-bearer guard.
+  r.post(
+    "/api/internal/openclaw/ai-cost-summary",
+    asyncHandler(async (_req, res) => {
+      const summary = await buildAiCostSummary({
+        pool,
+        budget: {
+          anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
+          voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
+        },
+      });
+      res.json(summary);
     }),
   );
 
@@ -791,6 +888,103 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     }),
   );
 
+  // ---- morning briefing assembler (PR-26, no LLM) ----
+  //
+  // POST /api/internal/openclaw/briefing/morning → { markdown, data }.
+  // Caller-и:
+  //   - OpenClaw morning-cron (ops/openclaw/provision-cron.mjs) — замінює
+  //     placeholder-payload своїм запитом + пушить markdown у founder-DM.
+  //   - Manual probe з /digest day shortcut (future wiring).
+  // Жодних side-ефектів — endpoint лиш збирає + рендерить. Fail-soft на
+  // кожну джерельну функцію (див. builder.ts → mapXxx-секції).
+  r.post(
+    "/api/internal/openclaw/briefing/morning",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MorningBriefingBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleMorningBriefing>[0] = {};
+      if (parsed.data.windowDays !== undefined)
+        input.windowDays = parsed.data.windowDays;
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.sentryLimit !== undefined)
+        input.sentryLimit = parsed.data.sentryLimit;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      if (parsed.data.includeProposals !== undefined)
+        input.includeProposals = parsed.data.includeProposals;
+      const result = await assembleMorningBriefing(input);
+      // PR /mute (Phase 5b): augment response з mute-state коли caller
+      // передав founderUserId. n8n WF-25 cron консумер читає `mute.muted`
+      // і short-circuit-ує `sendMessage`. Briefing markdown усе одно
+      // зберігається (cost-free аудит).
+      if (parsed.data.founderUserId) {
+        const mute = await isFounderMuted(pool, {
+          founderUserId: parsed.data.founderUserId,
+        });
+        res.json({ ...result, mute });
+        return;
+      }
+      res.json(result);
+    }),
+  );
+
+  // ---- O3 (Phase 2.B): Friday weekly review ritual ----
+  //
+  // POST /api/internal/openclaw/ritual/weekly → { markdown, data }.
+  // Викликає n8n WF-26 (cron `0 18 * * FRI Europe/Kyiv`) — після
+  // отримання markdown WF постить його у founder-DM. Fail-soft: будь-яка
+  // джерельна subsystem (GitHub / Stripe / PostHog / Sentry / LLM) недо-
+  // ступна → секція з `notConfigured` або `note`, але endpoint все одно
+  // повертає 200 з частковими даними. LLM narrative — через `LLMProvider`
+  // абстракцію (PR-23) з StubProvider fallback (PR-25 паттерн).
+  r.post(
+    "/api/internal/openclaw/ritual/weekly",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WeeklyReviewBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleWeeklyReview>[0] = {};
+      if (parsed.data.windowDays !== undefined)
+        input.windowDays = parsed.data.windowDays;
+      if (parsed.data.staleDays !== undefined)
+        input.staleDays = parsed.data.staleDays;
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.sentryLimit !== undefined)
+        input.sentryLimit = parsed.data.sentryLimit;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      const result = await assembleWeeklyReview(input);
+      res.json(result);
+    }),
+  );
+
+  // ---- O3 (Phase 2.B): Monthly OKR review ritual ----
+  //
+  // POST /api/internal/openclaw/ritual/monthly → { markdown, data }.
+  // Викликає n8n WF-27 (cron `0 9 1 * *` Europe/Kyiv) — 1-го числа місяця
+  // о 09:00 Kyiv. OKR-список читається з `INTERIM_OKRS` (hardcoded, поки
+  // PR-34 strategic_goals DB-table не merged). Wins/risks збираються з
+  // GitHub + Sentry. Narrative — LLM з template fallback.
+  r.post(
+    "/api/internal/openclaw/ritual/monthly",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MonthlyOkrReviewBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleMonthlyOkrReview>[0] = {};
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      if (parsed.data.staleDays !== undefined)
+        input.staleDays = parsed.data.staleDays;
+      if (parsed.data.sentryLevel !== undefined)
+        input.sentryLevel = parsed.data.sentryLevel;
+      const result = await assembleMonthlyOkrReview(input);
+      res.json(result);
+    }),
+  );
+
   // ---- ADR-0036 (Phase 4): write-tools ----
   //
   // Side-effecting operations. Console approves with the founder via
@@ -806,6 +1000,12 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       const parsed = validateBody(CommitStrategyDocBody, req, res);
       if (!parsed.ok) return;
       try {
+        // T2 audit #3 — enforce the repo allowlist at the request
+        // boundary so an LLM-supplied `repo` is rejected with 400
+        // BEFORE we mint a GitHub App installation token. The same
+        // assert runs again inside `commitToStrategyDoc` as a defense
+        // in depth, so direct internal callers can't bypass it.
+        assertOpenClawRepoAllowed(parsed.data.repo);
         const result = await commitToStrategyDoc({
           path: parsed.data.path,
           content: parsed.data.content,
@@ -814,7 +1014,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         });
         res.json(result);
       } catch (err) {
-        if (err instanceof OpenClawWriteAllowlistError) {
+        if (
+          err instanceof OpenClawWriteAllowlistError ||
+          err instanceof OpenClawAllowlistError
+        ) {
           return asAllowlistFailure(res, err);
         }
         throw err;
@@ -828,13 +1031,22 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const parsed = validateBody(CreateGithubIssueBody, req, res);
       if (!parsed.ok) return;
-      const result = await createGithubIssue({
-        title: parsed.data.title,
-        body: parsed.data.body,
-        labels: parsed.data.labels,
-        repo: parsed.data.repo,
-      });
-      res.json(result);
+      try {
+        // T2 audit #3 — see write/strategy-doc for rationale.
+        assertOpenClawRepoAllowed(parsed.data.repo);
+        const result = await createGithubIssue({
+          title: parsed.data.title,
+          body: parsed.data.body,
+          labels: parsed.data.labels,
+          repo: parsed.data.repo,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof OpenClawAllowlistError) {
+          return asAllowlistFailure(res, err);
+        }
+        throw err;
+      }
     }),
   );
 
@@ -1060,6 +1272,76 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.limit ?? 50,
       );
       res.json({ invocations: result });
+    }),
+  );
+
+  // ─── PR /mute (Phase 5b): founder DM "do not disturb" ─────────────────
+  //
+  // Чотири endpoints: `set`, `clear`, `status`, `check`. Slash `/mute`
+  // (handler — `tools/openclaw/.../handler-info-commands.ts`) обертає
+  // duration → ISO timestamp → POST /mute/set; `/mute off` → /mute/clear;
+  // `/mute status` → /mute/status. `/mute/check` — read-only guard для
+  // outbound channels (alerts shipper, briefing endpoint, ranok-cron).
+  //
+  // Critical-override: цей endpoint НЕ перевіряє severity — повертає
+  // raw state. Caller (alerts shipper) сам приймає рішення про bypass
+  // на P0 alerts. Це дозволяє кожному channel-у мати свій override-
+  // criterion без перевантаженого guard-API.
+
+  // ---- mute/set ----
+  r.post(
+    "/api/internal/openclaw/mute/set",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteSetBody, req, res);
+      if (!parsed.ok) return;
+      const mutedUntil = parsed.data.mutedUntilIso
+        ? new Date(parsed.data.mutedUntilIso)
+        : null;
+      const state = await setFounderMute(pool, {
+        founderUserId: parsed.data.founderUserId,
+        mutedUntil,
+        reason: parsed.data.reason ?? null,
+      });
+      res.json(state);
+    }),
+  );
+
+  // ---- mute/clear ("/mute off") ----
+  r.post(
+    "/api/internal/openclaw/mute/clear",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteFounderBody, req, res);
+      if (!parsed.ok) return;
+      const state = await clearFounderMute(pool, {
+        founderUserId: parsed.data.founderUserId,
+      });
+      res.json(state);
+    }),
+  );
+
+  // ---- mute/status ("/mute status" reply payload) ----
+  r.post(
+    "/api/internal/openclaw/mute/status",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteFounderBody, req, res);
+      if (!parsed.ok) return;
+      const state = await getFounderMute(pool, {
+        founderUserId: parsed.data.founderUserId,
+      });
+      res.json({ state });
+    }),
+  );
+
+  // ---- mute/check (runtime guard for outbound channels) ----
+  r.post(
+    "/api/internal/openclaw/mute/check",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteFounderBody, req, res);
+      if (!parsed.ok) return;
+      const result = await isFounderMuted(pool, {
+        founderUserId: parsed.data.founderUserId,
+      });
+      res.json(result);
     }),
   );
 

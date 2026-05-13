@@ -1,6 +1,6 @@
 # ADR-0050: TypeScript major-version policy + `@types/node` pinning
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -14,7 +14,7 @@
 
 ## Context and Problem Statement
 
-Sergeant uses **TypeScript 6.x** at the root and in `apps/server`, `apps/web`, and `packages/*`, but **TypeScript 5.9.x** in `apps/mobile` (Expo SDK 52 constraint) and **TypeScript 5.7.x** in `tools/console`. Additionally, `@types/node` was at `^25.6.0` across all workspaces while the production runtime is **Node 20.20.2** (pinned via Volta). Node 25 types describe APIs that do not exist on the runtime: `node:sqlite`, `fs.glob`, `import.meta.dirname`, new stream overloads. These could silently compile but crash at runtime.
+Sergeant uses **TypeScript 6.x** at the root and in `apps/server`, `apps/web`, and `packages/*`, but **TypeScript 5.9.x** in `apps/mobile` (Expo SDK 52 constraint) and **TypeScript 5.7.x** in `tools/openclaw`. Additionally, `@types/node` was at `^25.6.0` across all workspaces while the production runtime is **Node 20.20.2** (pinned via Volta). Node 25 types describe APIs that do not exist on the runtime: `node:sqlite`, `fs.glob`, `import.meta.dirname`, new stream overloads. These could silently compile but crash at runtime.
 
 Stack-pulse finding C5 identified this as a Critical risk.
 
@@ -41,7 +41,7 @@ TypeScript 6.0 is a first major release. We accept it for the benefits:
 Known risk mitigations:
 
 - `apps/mobile` is pinned to TS 5.9 (Expo SDK hard constraint) — separate tsconfig, no shared compilation target.
-- `tools/console` will be bumped to TS 6.x in a follow-up PR once `@anthropic-ai/sdk` ships TS 6 compat types.
+- `tools/openclaw` will be bumped to TS 6.x in a follow-up PR once `@anthropic-ai/sdk` ships TS 6 compat types.
 - Any tooling (ESLint plugin, vitest) that is incompatible will get `resolutions`/`overrides` in the affected workspace until the ecosystem catches up.
 
 ### 3. Fallback plan to TS 5.9
@@ -61,4 +61,4 @@ If TS 6 causes unresolvable breakage in >3 packages simultaneously:
 
 - `pnpm typecheck` must pass with `@types/node@20` — any code using Node 22+ APIs that relied on the wrong types will now fail to compile (desired: surface the bug).
 - Renovate will not auto-bump `@types/node` past major 20 until the Volta `node` version in `package.json` is updated.
-- `tools/console` TypeScript version remains at 5.7 until a dedicated PR bumps it alongside an `@anthropic-ai/sdk` TS 6 compat update.
+- `tools/openclaw` TypeScript version remains at 5.7 until a dedicated PR bumps it alongside an `@anthropic-ai/sdk` TS 6 compat update.

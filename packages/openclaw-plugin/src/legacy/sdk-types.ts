@@ -99,10 +99,10 @@ export type HookName =
   | "tool_call_pre"
   | "tool_call_post"
   // Real openclaw 5.7 hook names (used when calling api.registerHook)
-  | "agent_turn_prepare"  // real name for agent_turn_start
-  | "agent_end"           // real name for agent_turn_end
-  | "before_tool_call"    // real name for tool_call_pre
-  | "after_tool_call"     // real name for tool_call_post
+  | "agent_turn_prepare" // real name for agent_turn_start
+  | "agent_end" // real name for agent_turn_end
+  | "before_tool_call" // real name for tool_call_pre
+  | "after_tool_call" // real name for tool_call_post
   | "llm_input"
   | "llm_output";
 
@@ -157,18 +157,19 @@ export interface ToolCallPostContext extends HookContextBase {
 }
 
 /** Discriminated context type by hook name. */
-export type HookContext<H extends HookName> =
-  H extends "agent_turn_start" | "agent_turn_prepare"
-    ? AgentTurnStartContext
-    : H extends "agent_turn_end" | "agent_end"
-      ? AgentTurnEndContext
-      : H extends "llm_input"
-        ? LlmInputContext
-        : H extends "tool_call_pre" | "before_tool_call"
-          ? ToolCallPreContext
-          : H extends "tool_call_post" | "after_tool_call"
-            ? ToolCallPostContext
-            : HookContextBase;
+export type HookContext<H extends HookName> = H extends
+  | "agent_turn_start"
+  | "agent_turn_prepare"
+  ? AgentTurnStartContext
+  : H extends "agent_turn_end" | "agent_end"
+    ? AgentTurnEndContext
+    : H extends "llm_input"
+      ? LlmInputContext
+      : H extends "tool_call_pre" | "before_tool_call"
+        ? ToolCallPreContext
+        : H extends "tool_call_post" | "after_tool_call"
+          ? ToolCallPostContext
+          : HookContextBase;
 
 /**
  * Hook handler return shape. Hooks can:
@@ -238,7 +239,10 @@ export interface RuntimeService {
 }
 
 export interface PluginApi {
-  registerTool: <TParams>(tool: ToolDefinition<TParams>, opts?: { optional?: boolean }) => void;
+  registerTool: <TParams>(
+    tool: ToolDefinition<TParams>,
+    opts?: { optional?: boolean },
+  ) => void;
   registerHook: <H extends HookName>(name: H, handler: HookHandler<H>) => void;
   // Real openclaw 5.7 injected API (api.logger / api.pluginConfig).
   // Not present in v5.6 stubs or test mocks that only supply services.*.

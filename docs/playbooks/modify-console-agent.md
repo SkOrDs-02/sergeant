@@ -1,13 +1,13 @@
 # Playbook: Зміна або додавання console-агента
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
-**Trigger:** "Додай нового агента в Telegram bot" / "Зміни system prompt ops/marketing агента" / "Додай tool для console agent" / будь-яка зміна в `tools/console/src/agents/`.
+**Trigger:** "Додай нового агента в Telegram bot" / "Зміни system prompt ops/marketing агента" / "Додай tool для console agent" / будь-яка зміна в `tools/openclaw/src/agents/`.
 
 ## Owner surface
 
-- Primary surface: `tools/console/src/agents`
+- Primary surface: `tools/openclaw/src/agents`
 - Governing skills: `sergeant-hubchat`, `sergeant-deploy-and-observability`
 
 ## Required context
@@ -45,7 +45,7 @@
 
 - [ ] `pnpm lint`
 - [ ] `pnpm typecheck`
-- [ ] `pnpm --filter @sergeant/console exec vitest run`
+- [ ] `pnpm --filter @sergeant/openclaw exec vitest run`
 - [ ] Роутер, help text і тести синхронізовані
 - [ ] Нові tools не роблять прихованих write-side effects
 

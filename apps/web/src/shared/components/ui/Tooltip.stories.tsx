@@ -3,21 +3,24 @@ import { Tooltip } from "./Tooltip";
 import { Button } from "./Button";
 
 /**
- * `Tooltip` — accessible alternative до native `title="..."` (який не
- * читається screen-reader-ами і не keyboard-доступний). Заточений під
- * sergeant primitives:
+ * `Tooltip` — accessible alternative to native `title="..."` (which is
+ * not announced by screen readers and not keyboard accessible). Tailored
+ * for Sergeant primitives:
  *
- * - `aria-describedby` авто-вішається на trigger, `role="tooltip"` —
- *   на floating panel.
- * - `openDelay` 150 ms (default) уникає flicker-у при русі по toolbar-у.
- * - `motion-safe:animate-fade-in` — респектує
+ * - `aria-describedby` is wired automatically on the trigger;
+ *   `role="tooltip"` lives on the floating panel.
+ * - `openDelay` 150 ms (default) avoids flicker when sweeping across
+ *   a toolbar.
+ * - `motion-safe:animate-fade-in` respects
  *   `prefers-reduced-motion: reduce`.
- * - Закривається на mouseleave / focusout / Escape.
+ * - Closes on mouseleave / focusout / Escape / outside-click.
+ * - Portaled to `document.body` so transformed ancestors don't clip
+ *   or re-anchor the panel.
  *
- * `children` — рівно ОДИН React-елемент. Trigger має forward-ити
+ * `children` — a single React element. The trigger must forward
  * `onMouseEnter` / `onMouseLeave` / `onFocus` / `onBlur` /
  * `aria-describedby`. Sergeant primitives (`Button`, `IconButton`,
- * `Badge`) роблять це з коробки.
+ * `Badge`) do this out of the box.
  */
 const meta: Meta<typeof Tooltip> = {
   title: "UI / Tooltip",
@@ -29,21 +32,27 @@ const meta: Meta<typeof Tooltip> = {
       control: "select",
       options: [
         "top",
-        "bottom",
-        "left",
+        "top-start",
+        "top-end",
         "right",
-        "top-center",
-        "bottom-center",
-        "left-center",
-        "right-center",
+        "right-start",
+        "right-end",
+        "bottom",
+        "bottom-start",
+        "bottom-end",
+        "left",
+        "left-start",
+        "left-end",
       ],
     },
+    size: { control: "inline-radio", options: ["sm", "md"] },
     openDelay: { control: { type: "number", min: 0, max: 1000, step: 50 } },
     disabled: { control: "boolean" },
   },
   args: {
     content: "Зберегти зміни (Ctrl+S)",
-    placement: "top-center",
+    placement: "top",
+    size: "sm",
     openDelay: 150,
     disabled: false,
   },
@@ -60,27 +69,59 @@ export const Default: Story = {
   ),
 };
 
-/** Чотири основні позиції — для візуального audit-у. */
+/** Four cardinal placements + start/end alignment options. */
 export const Placements: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 p-12">
-      <Tooltip content="Підказка зверху" placement="top">
-        <Button variant="secondary">Top</Button>
+    <div className="grid grid-cols-3 gap-12 p-12">
+      <Tooltip content="top-start" placement="top-start">
+        <Button variant="secondary">top-start</Button>
       </Tooltip>
-      <Tooltip content="Підказка справа" placement="right">
-        <Button variant="secondary">Right</Button>
+      <Tooltip content="top" placement="top">
+        <Button variant="secondary">top</Button>
       </Tooltip>
-      <Tooltip content="Підказка зліва" placement="left">
-        <Button variant="secondary">Left</Button>
+      <Tooltip content="top-end" placement="top-end">
+        <Button variant="secondary">top-end</Button>
       </Tooltip>
-      <Tooltip content="Підказка знизу" placement="bottom">
-        <Button variant="secondary">Bottom</Button>
+
+      <Tooltip content="left" placement="left">
+        <Button variant="secondary">left</Button>
+      </Tooltip>
+      <span />
+      <Tooltip content="right" placement="right">
+        <Button variant="secondary">right</Button>
+      </Tooltip>
+
+      <Tooltip content="bottom-start" placement="bottom-start">
+        <Button variant="secondary">bottom-start</Button>
+      </Tooltip>
+      <Tooltip content="bottom" placement="bottom">
+        <Button variant="secondary">bottom</Button>
+      </Tooltip>
+      <Tooltip content="bottom-end" placement="bottom-end">
+        <Button variant="secondary">bottom-end</Button>
       </Tooltip>
     </div>
   ),
 };
 
-/** `disabled=true` — рендерить trigger, але tooltip ніколи не з'являється. */
+/** `sm` vs `md` — `md` is for multi-line copy / wider tooltips. */
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex items-center gap-6">
+      <Tooltip content="Compact tooltip (default)" size="sm">
+        <Button variant="secondary">size=sm</Button>
+      </Tooltip>
+      <Tooltip
+        content="Більше повітря для довшого пояснення з кількома рядками."
+        size="md"
+      >
+        <Button variant="secondary">size=md</Button>
+      </Tooltip>
+    </div>
+  ),
+};
+
+/** `disabled=true` — renders the trigger but no tooltip ever appears. */
 export const Disabled: Story = {
   args: { disabled: true, content: "Цей tooltip не має з'являтись" },
   render: (args) => (
@@ -90,9 +131,10 @@ export const Disabled: Story = {
   ),
 };
 
-/** Довгий контент wrap-иться у max-w; не має ламати макет. */
+/** Long content wraps within `max-w`; it should not break the layout. */
 export const LongContent: Story = {
   args: {
+    size: "md",
     content:
       "Ця дія негайно синхронізує локальні зміни з сервером і чекає підтвердження від cloud-sync queue (типово < 200 мс на 4G).",
   },

@@ -26,11 +26,15 @@ export function perfEnd(
 ): number | undefined {
   if (!mark || !isPerfEnabled()) return;
   const dt = performance.now() - mark.t;
-  try {
-    // keep it compact; visible only when enabled via localStorage flag
-    console.debug(`[perf] ${mark.name}: ${dt.toFixed(1)}ms`, extra ?? "");
-  } catch {
-    /* ignore */
+  // DEV-only output; gated additionally by the `hub_perf=1` LS flag
+  // above so power-users opting into perf-tracing in development see
+  // structured timings while production stays silent.
+  if (import.meta.env?.DEV) {
+    try {
+      console.debug(`[perf] ${mark.name}: ${dt.toFixed(1)}ms`, extra ?? "");
+    } catch {
+      /* ignore */
+    }
   }
   return dt;
 }

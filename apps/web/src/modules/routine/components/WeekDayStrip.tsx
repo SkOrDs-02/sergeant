@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/ui/cn";
+import { IconButton } from "@shared/components/ui/IconButton";
 import {
   addDays,
   dateKeyFromDate,
@@ -31,14 +32,15 @@ export function WeekDayStrip({
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
-      <button
-        type="button"
-        className="focus-ring shrink-0 flex h-11 w-9 items-center justify-center rounded-xl border border-line bg-panel/90 text-lg text-muted transition-colors hover:bg-panelHi hover:text-text"
+      <IconButton
+        size="md"
+        variant="ghost"
+        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-lg! text-muted"
         onClick={() => onShiftWeek(-1)}
         aria-label="Попередній тиждень"
       >
         ‹
-      </button>
+      </IconButton>
       <div className="grid min-w-0 flex-1 grid-cols-7 gap-0.5 sm:gap-1">
         {keys.map((k, i) => {
           const isSel = k === selectedDay;
@@ -68,14 +70,15 @@ export function WeekDayStrip({
           );
         })}
       </div>
-      <button
-        type="button"
-        className="focus-ring shrink-0 flex h-11 w-9 items-center justify-center rounded-xl border border-line bg-panel/90 text-lg text-muted transition-colors hover:bg-panelHi hover:text-text"
+      <IconButton
+        size="md"
+        variant="ghost"
+        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-lg! text-muted"
         onClick={() => onShiftWeek(1)}
         aria-label="Наступний тиждень"
       >
         ›
-      </button>
+      </IconButton>
     </div>
   );
 }

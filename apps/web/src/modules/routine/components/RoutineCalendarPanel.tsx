@@ -407,8 +407,12 @@ export function RoutineCalendarPanel({
             description={
               <>
                 У цьому періоді подій немає. Перевір регулярність звичок або{" "}
+                {/* Inline link inside body text — WCAG 2.5.5 exception
+                    "inline links in flowing text". data-compact opts out of
+                    the global 44×44 floor so the text baseline stays aligned. */}
                 <button
                   type="button"
+                  data-compact
                   className={C.linkAccent}
                   onClick={() => setFizrukPlanDateKey(selectedDay)}
                 >
@@ -468,8 +472,9 @@ export function RoutineCalendarPanel({
                       <div className="flex items-start justify-between gap-3 sm:gap-2">
                         <div
                           className={cn(
-                            "min-w-0 flex-1",
-                            (e.habitId || e.fizruk) && "cursor-pointer",
+                            "min-w-0 flex-1 flex flex-col justify-center",
+                            (e.habitId || e.fizruk) &&
+                              "cursor-pointer min-h-[44px]",
                           )}
                           role={e.habitId || e.fizruk ? "button" : undefined}
                           tabIndex={e.habitId || e.fizruk ? 0 : undefined}
@@ -533,14 +538,15 @@ export function RoutineCalendarPanel({
                             </Button>
                           )}
                           {e.habitId && (
-                            <button
+                            <Button
+                              iconOnly
+                              size="md"
+                              variant="ghost"
                               type="button"
                               onClick={() => onToggleHabit(e.habitId!, e.date)}
                               className={cn(
-                                "w-10 h-10 rounded-xl border flex items-center justify-center text-base font-bold transition-colors",
-                                e.completed
-                                  ? C.done
-                                  : "border-line hover:bg-panelHi text-muted",
+                                "rounded-xl border text-base font-bold",
+                                e.completed ? C.done : "border-line text-muted",
                               )}
                               aria-label={
                                 e.completed ? "Скасувати виконання" : "Виконано"
@@ -548,7 +554,7 @@ export function RoutineCalendarPanel({
                               title={e.completed ? "Скасувати" : "Виконано"}
                             >
                               {e.completed ? "✓" : "○"}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>

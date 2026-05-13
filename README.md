@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last validated:** 2026-05-05 by @Skords-01 / Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -68,7 +68,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 | `apps/server`       | API server (backend)     | Express + PostgreSQL    | Railway                 |
 | `apps/mobile`       | Mobile app (native)      | Expo + React Native     | App Store / Google Play |
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
-| `tools/console`     | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
+| `tools/openclaw`    | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
 
 ### Packages (`packages/`)
 
@@ -116,7 +116,7 @@ Architecture overview lives in [docs/architecture/README.md](./docs/architecture
                     │
                     ▼
         ┌───────────────────────┐     ┌─────────────────┐
-        │   PostgreSQL          │     │  tools/console   │
+        │   PostgreSQL          │     │  tools/openclaw   │
         │ (Railway / Docker)    │     │  (Telegram bot)  │
         └───────────────────────┘     └─────────────────┘
 ```
@@ -219,10 +219,10 @@ pnpm --filter @sergeant/mobile start
 #### 6. (Optional) Telegram bot
 
 ```bash
-pnpm --filter @sergeant/console dev
+pnpm --filter @sergeant/openclaw dev
 ```
 
-Requires a Telegram Bot Token in `tools/console/.env`.
+Requires a Telegram Bot Token in `tools/openclaw/.env`.
 
 ## Core commands
 

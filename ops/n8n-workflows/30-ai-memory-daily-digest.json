@@ -49,18 +49,65 @@
     },
     {
       "parameters": {
+        "jsCode": "// ADR-0038, Wave 3 §3.2 — pre-Telegram step that builds a stable\n// `alertId` so n8n retries no-op via ON CONFLICT DO NOTHING server-side.\nconst item = $input.first()?.json ?? {};\nconst alertId = `${$workflow.id || 'wf30'}:${$execution.id || 'unknown'}:ai-memory-digest`;\nconst total24h = Number(item.total24h) || 0;\nconst activeUsers = Number(item.activeUsers24h) || 0;\nconst summary = total24h === 0\n  ? 'AI memory daily digest — no memories in last 24h.'\n  : `AI memory daily — ${total24h} memories from ${activeUsers} users in 24h.`;\nreturn [{\n  json: {\n    alertId,\n    summary,\n    text: item.text,\n    metadata: {\n      workflowId: $workflow.id || 'unknown',\n      executionId: $execution.id || 'unknown',\n      total24h,\n      activeUsers24h: activeUsers,\n      lifetimeTotal: Number(item.lifetimeTotal) || 0,\n      empty: total24h === 0,\n    },\n  },\n}];"
+      },
+      "id": "build-alert-payload-30",
+      "name": "Build alert payload (ai-memory-digest)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/internal/alerts/post",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alertId\": \"{{ $json.alertId }}\",\n  \"topic\": \"digest\",\n  \"severity\": \"P2\",\n  \"summary\": \"{{ $json.summary }}\",\n  \"metadata\": {{ JSON.stringify($json.metadata) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "post-alert-row-30",
+      "name": "POST /api/internal/alerts/post (ai-memory-digest)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "={{ $json.text }}",
         "additionalFields": {
           "parse_mode": "Markdown",
-          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_DIGEST }}"
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_DIGEST }}",
+          "reply_markup": "={\"inline_keyboard\":[[{\"text\":\"✅ Прочитав\",\"callback_data\":\"ack:r:{{ $('Build alert payload (ai-memory-digest)').item.json.alertId }}\"},{\"text\":\"🔄 Розбираю\",\"callback_data\":\"ack:i:{{ $('Build alert payload (ai-memory-digest)').item.json.alertId }}\"},{\"text\":\"🔕 Замутити 30хв\",\"callback_data\":\"ack:m:{{ $('Build alert payload (ai-memory-digest)').item.json.alertId }}\"}]]}"
         }
       },
       "id": "telegram-digest",
       "name": "Telegram → #digest",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [900, 300],
+      "position": [1340, 300],
       "credentials": {
         "telegramApi": {
           "id": "ggxeCc1ALZKLuMPV",
@@ -93,6 +140,28 @@
       ]
     },
     "Format AI memory digest": {
+      "main": [
+        [
+          {
+            "node": "Build alert payload (ai-memory-digest)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build alert payload (ai-memory-digest)": {
+      "main": [
+        [
+          {
+            "node": "POST /api/internal/alerts/post (ai-memory-digest)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /api/internal/alerts/post (ai-memory-digest)": {
       "main": [
         [
           {

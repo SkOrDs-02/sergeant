@@ -1,6 +1,6 @@
 # Sergeant — PR-план для тестів
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 >
 > Repo: `Skords-01/Sergeant`. Базується на [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md) (попередній аналіз).
@@ -22,7 +22,7 @@
 | PR-T09+ | Wave B+ (openclaw, nutrition tool tests)            | not started | — (deps: T08 ✓)                                                                   |
 | PR-T31  | `packages/insights` per-rule + barrel + smoke index | merged      | [#2013](https://github.com/Skords-01/Sergeant/pull/2013) — 2026-05-06             |
 | PR-T32  | `packages/nutrition-domain` pure helpers (partial)  | merged      | [#2019](https://github.com/Skords-01/Sergeant/pull/2019) — 2026-05-06             |
-| PR-T39  | `tools/console` bot e2e через `handleUpdate`        | merged      | [#2022](https://github.com/Skords-01/Sergeant/pull/2022) — 2026-05-06             |
+| PR-T39  | `tools/openclaw` bot e2e через `handleUpdate`       | merged      | [#2022](https://github.com/Skords-01/Sergeant/pull/2022) — 2026-05-06             |
 
 ## Як читати
 
@@ -394,11 +394,11 @@
 - **Size:** ~150 LoC.
 - **Deps:** —.
 
-### PR-T39 — `tools/console` end-to-end бот-сценарій
+### PR-T39 — `tools/openclaw` end-to-end бот-сценарій
 
-- **Status:** **merged** ([#2022](https://github.com/Skords-01/Sergeant/pull/2022), 2026-05-06) — `tools/console/src/__tests__/bot.e2e.test.ts` (340 LoC, 9 кейсів) feed-ить синтетичні Telegram update-и через `bot.handleUpdate(...)` без long-poll/мережі/`ANTHROPIC_API_KEY`. Покриває `/start`, `/help` (allow / deny), `message:text` dispatch (parseCommand → dispatchToAgent → typing chat-action → escaped MarkdownV2), `splitTelegramMessage` chunking >4096, rate-limit deny шлях, `Agent error` шлях. Винесено handler-логіку у `tools/console/src/bot.ts` (`attachConsoleHandlers`), `index.ts` -58 LoC. Грамі-API мокається через `bot.api.config.use(transformer)`.
+- **Status:** **merged** ([#2022](https://github.com/Skords-01/Sergeant/pull/2022), 2026-05-06) — `tools/openclaw/src/__tests__/bot.e2e.test.ts` (340 LoC, 9 кейсів) feed-ить синтетичні Telegram update-и через `bot.handleUpdate(...)` без long-poll/мережі/`ANTHROPIC_API_KEY`. Покриває `/start`, `/help` (allow / deny), `message:text` dispatch (parseCommand → dispatchToAgent → typing chat-action → escaped MarkdownV2), `splitTelegramMessage` chunking >4096, rate-limit deny шлях, `Agent error` шлях. Винесено handler-логіку у `tools/openclaw/src/bot.ts` (`attachConsoleHandlers`), `index.ts` -58 LoC. Грамі-API мокається через `bot.api.config.use(transformer)`.
 - **Branch:** `devin/{ts}-console-bot-e2e`
-- **Files:** `tools/console/src/__tests__/bot.e2e.test.ts`, `tools/console/src/bot.ts` (extract).
+- **Files:** `tools/openclaw/src/__tests__/bot.e2e.test.ts`, `tools/openclaw/src/bot.ts` (extract).
 - **Scope:** mock grammy update → assert reply text + side effects. Не блокує core продукт, дешевий PR.
 - **Size:** ~150 LoC (factual: 340 LoC test + 100 LoC `bot.ts` extract — більше, бо покрили security/rate-limit gates).
 - **Deps:** —.

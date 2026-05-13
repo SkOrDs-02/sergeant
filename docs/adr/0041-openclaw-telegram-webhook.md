@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [ADR-0031 — OpenClaw v0 Telegram co-founder](./0031-openclaw-v0-telegram-cofounder.md) — DM bot baseline.
-  - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md) — `tools/console` is OpenClaw's home process.
+  - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md) — `tools/openclaw` is OpenClaw's home process.
   - [ADR-0036 — OpenClaw write-tools with approval](./0036-openclaw-write-tools-with-approval.md) — inline-keyboard approval flow whose latency we're reducing.
   - [`docs/launch/tech/openclaw-roadmap.md` §3.5](../launch/tech/openclaw-roadmap.md) — pain "approval-кнопки 2-3 с".
   - [`docs/deploy/console.md`](../deploy/console.md) — Railway env vars + healthcheck.
@@ -15,11 +15,11 @@
 
 ## Context and Problem Statement
 
-`@OpenClaw_sergeant_bot` (host: `tools/console`, ADR-0031) delivers updates via grammy's long-poll loop (`bot.start()` → `getUpdates`). Every approve/reject button tap on a Phase-4 write-tool card (ADR-0036) waits for the next `getUpdates` cycle — measured 2–3 s p95 in production. The lag is end-user-visible: founder taps Approve, the spinner stays for ~2 s, then the bot edits the card. Because grammy uses long-poll-with-timeout (≤ 30 s) Telegram delivers the update in chunks; under load (or on a wake-from-idle Railway container) p99 can hit 5+ s.
+`@OpenClaw_sergeant_bot` (host: `tools/openclaw`, ADR-0031) delivers updates via grammy's long-poll loop (`bot.start()` → `getUpdates`). Every approve/reject button tap on a Phase-4 write-tool card (ADR-0036) waits for the next `getUpdates` cycle — measured 2–3 s p95 in production. The lag is end-user-visible: founder taps Approve, the spinner stays for ~2 s, then the bot edits the card. Because grammy uses long-poll-with-timeout (≤ 30 s) Telegram delivers the update in chunks; under load (or on a wake-from-idle Railway container) p99 can hit 5+ s.
 
 Adjacent pains:
 
-1. **Single-instance lock.** Telegram allows only one long-poll consumer per token. `tools/console` redeploys cause the new container's `getUpdates` to crash with `409 Conflict` until the previous slot expires (~30–60 s) — we already mitigated with `STARTUP_409_BASE_DELAY_MS` exponential backoff, but the architecture forbids horizontal scale-out (precondition for ADR-0042 multi-instance failover).
+1. **Single-instance lock.** Telegram allows only one long-poll consumer per token. `tools/openclaw` redeploys cause the new container's `getUpdates` to crash with `409 Conflict` until the previous slot expires (~30–60 s) — we already mitigated with `STARTUP_409_BASE_DELAY_MS` exponential backoff, but the architecture forbids horizontal scale-out (precondition for ADR-0042 multi-instance failover).
 2. **Idle wake cost.** Long-poll keeps a TCP connection open; on a quiet hour the same container could happily run on cheaper resources, but `getUpdates` traffic prevents Railway from autoscaling down to zero.
 3. **Approval-loop optimisation.** ADR-0036 pre-computes approval card text at agent-loop time; the bottleneck is now purely `Telegram → bot` round-trip, not local work. Webhook eliminates that bottleneck.
 
@@ -27,28 +27,28 @@ Telegram's webhook delivery pushes updates HTTP POST → bot in 50–250 ms. Com
 
 ## Considered Options
 
-1. **Webhook hosted in `tools/console` (this Node process).** Add a tiny `node:http` listener that delegates to grammy's `webhookCallback`.
-2. **Webhook hosted in `apps/server` (Express).** New route `POST /api/internal/openclaw/webhook/:secret`, then RPC into `tools/console` to dispatch updates to the in-process bot/`ApprovalStore`/`OpenClawSessionStore`.
+1. **Webhook hosted in `tools/openclaw` (this Node process).** Add a tiny `node:http` listener that delegates to grammy's `webhookCallback`.
+2. **Webhook hosted in `apps/server` (Express).** New route `POST /api/internal/openclaw/webhook/:secret`, then RPC into `tools/openclaw` to dispatch updates to the in-process bot/`ApprovalStore`/`OpenClawSessionStore`.
 3. **Telegram Bot API server (self-hosted) running side-by-side.** Run [tdlib's `telegram-bot-api`](https://github.com/tdlib/telegram-bot-api) on Railway, point bot at it for unlimited file size + lower latency.
 4. **Status quo (long-poll only).**
 
 ## Decision
 
-**Option 1.** Spin up a `node:http` listener inside `tools/console`, mounted on `OPENCLAW_WEBHOOK_PATH` (default `/webhook/openclaw`). Handler is grammy's built-in `webhookCallback(bot, "http", { secretToken })`. Feature-flag is the env-flag `OPENCLAW_USE_WEBHOOK` — default off so local `pnpm console:dev` stays on long-poll without any config gymnastics.
+**Option 1.** Spin up a `node:http` listener inside `tools/openclaw`, mounted on `OPENCLAW_WEBHOOK_PATH` (default `/webhook/openclaw`). Handler is grammy's built-in `webhookCallback(bot, "http", { secretToken })`. Feature-flag is the env-flag `OPENCLAW_USE_WEBHOOK` — default off so local `pnpm console:dev` stays on long-poll without any config gymnastics.
 
 ### 1. Modules
 
-- **`tools/console/src/openclaw/webhook.ts`** — `createOpenClawWebhookServer({ bot, path, secretToken, port })` returns `{ start, stop }`. Routes:
+- **`tools/openclaw/src/openclaw/webhook.ts`** — `createOpenClawWebhookServer({ bot, path, secretToken, port })` returns `{ start, stop }`. Routes:
   - `GET /healthz` → 200 ok (replaces Railway's old `pgrep`-based healthcheck).
   - `POST $path` → grammy `webhookCallback("http")`. grammy compares `X-Telegram-Bot-Api-Secret-Token` against `secretToken` and returns 401 on mismatch.
   - `else` → 404.
-- **`tools/console/src/openclaw/bootstrap.ts`** — pure helpers:
+- **`tools/openclaw/src/openclaw/bootstrap.ts`** — pure helpers:
   - `validateWebhookConfig({ url, secretToken })` — enforces https://, ≥ 32 chars, `[A-Za-z0-9_-]+` (Bot API spec). Fails fast with a helpful error before hitting Telegram.
   - `registerOpenClawWebhook(bot, config)` — `bot.api.setWebhook(url, { secret_token, drop_pending_updates: true, allowed_updates: ["message","callback_query"] })`. Idempotent server-side; we always call it on boot (cheaper than `getWebhookInfo` first).
   - `unregisterOpenClawWebhook(bot)` — `bot.api.deleteWebhook({ drop_pending_updates: false })`. Called on long-poll boot so a previous webhook deploy doesn't 409 the new `getUpdates`.
   - `shouldUseWebhook(value)` — fail-closed boolean: only `true | 1 | yes` (case-insensitive, trimmed) flips webhook on.
 
-### 2. Boot logic in `tools/console/src/index.ts`
+### 2. Boot logic in `tools/openclaw/src/index.ts`
 
 ```
 if (shouldUseWebhook(process.env.OPENCLAW_USE_WEBHOOK)) {
@@ -119,7 +119,7 @@ First activation hit a one-time race:
 
 ## Rationale
 
-**Option 1 vs Option 2 (host in `apps/server`).** OpenClaw's stateful bits (`ApprovalStore`, `OpenClawSessionStore`, `RateLimiter`, agent-loop budget) live in-process inside `tools/console`. Putting the webhook in `apps/server` would require either cross-service IPC (extra failure mode) or duplicating those structures (consistency hazard). Latency is also strictly better one-hop: Telegram → Railway edge → `tools/console`, no internal fan-out. We pay for it with one new HTTP listener inside the console process — small surface, no new deps (grammy + `node:http`).
+**Option 1 vs Option 2 (host in `apps/server`).** OpenClaw's stateful bits (`ApprovalStore`, `OpenClawSessionStore`, `RateLimiter`, agent-loop budget) live in-process inside `tools/openclaw`. Putting the webhook in `apps/server` would require either cross-service IPC (extra failure mode) or duplicating those structures (consistency hazard). Latency is also strictly better one-hop: Telegram → Railway edge → `tools/openclaw`, no internal fan-out. We pay for it with one new HTTP listener inside the console process — small surface, no new deps (grammy + `node:http`).
 
 **Option 1 vs Option 3 (self-hosted Bot API server).** Self-hosted Bot API server unlocks 2 GB file uploads and removes the 30 MB media limit — neither is an OpenClaw need today (we send <2 KB cards). Operationally it adds another always-on container plus its own Postgres. Premature.
 
@@ -142,19 +142,19 @@ First activation hit a one-time race:
 ### Neutral
 
 - Approval card UI, write-tool execution path, audit log, tone selector, persona system — untouched. This ADR is purely transport.
-- `@Sergeant_alert_bot` (`tools/console`-external; pushed-to via n8n) does not poll Telegram and is unaffected.
+- `@Sergeant_alert_bot` (`tools/openclaw`-external; pushed-to via n8n) does not poll Telegram and is unaffected.
 
 ## Compliance
 
-- Vitest suites in `tools/console/src/openclaw/webhook.test.ts` (HTTP server end-to-end: 401 on missing/wrong secret, 200 + dispatch on valid, `/healthz`, 404).
-- Vitest suites in `tools/console/src/openclaw/bootstrap.test.ts` (validation guards, `setWebhook` / `deleteWebhook` arguments, fail-closed flag parsing).
+- Vitest suites in `tools/openclaw/src/openclaw/webhook.test.ts` (HTTP server end-to-end: 401 on missing/wrong secret, 200 + dispatch on valid, `/healthz`, 404).
+- Vitest suites in `tools/openclaw/src/openclaw/bootstrap.test.ts` (validation guards, `setWebhook` / `deleteWebhook` arguments, fail-closed flag parsing).
 - `docs/deploy/console.md` lists all required env vars and the new `GET /healthz` Railway healthcheck.
 - governance-sync CI keeps this ADR linked from `docs/launch/tech/openclaw-roadmap.md` §3.5.
 
 ## Links
 
-- [`tools/console/src/openclaw/webhook.ts`](../../tools/console/src/openclaw/webhook.ts) — HTTP server.
-- [`tools/console/src/openclaw/bootstrap.ts`](../../tools/console/src/openclaw/bootstrap.ts) — set/delete webhook + flag parsing.
-- [`tools/console/src/index.ts`](../../tools/console/src/index.ts) — boot-time mode selection.
+- [`tools/openclaw/src/openclaw/webhook.ts`](../../tools/openclaw/src/openclaw/webhook.ts) — HTTP server.
+- [`tools/openclaw/src/openclaw/bootstrap.ts`](../../tools/openclaw/src/openclaw/bootstrap.ts) — set/delete webhook + flag parsing.
+- [`tools/openclaw/src/index.ts`](../../tools/openclaw/src/index.ts) — boot-time mode selection.
 - grammy [`webhookCallback("http")`](https://grammy.dev/guide/deployment-types#webhooks) docs — adapter for Node's native `http`.
 - Telegram Bot API [`setWebhook`](https://core.telegram.org/bots/api#setwebhook) — `secret_token`, `allowed_updates`, `drop_pending_updates`.

@@ -1,7 +1,7 @@
 # ADR-0017: Better Auth choice and session model
 
 - **Status:** accepted
-- **Date:** 2026-04-27
+- **Date:** 2026-04-27 (session TTL revised 2026-05-13 — PR-48 round 2)
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
@@ -29,7 +29,7 @@ Auth, custom JWT) відкинуті за cost / lock-in / complexity. Цей AD
 | Database               | Postgres (той самий `pool`, що і для domain-data)                       |
 | Strategy               | Email + password (`emailAndPassword: { enabled: true }`)                |
 | Min password length    | 10 chars (NIST SP 800-63B рекомендує мінімум 8)                         |
-| Session TTL            | 30 days (`expiresIn: 60*60*24*30`)                                      |
+| Session TTL            | 7 days (`expiresIn: 60*60*24*7`) — tightened 2026-05-13 від 30d         |
 | Session refresh        | 1 day rolling (`updateAge: 60*60*24`)                                   |
 | Cookie cache           | 5 minutes (`cookieCache.maxAge: 60*5`) — uses signed JWT cookie         |
 | Cross-site cookies     | `SameSite=None; Secure` коли base URL HTTPS (Vercel ↔ Railway)          |
@@ -114,7 +114,7 @@ TypeScript-native, Expo-friendly, Postgres self-hosted.
 
 ---
 
-## ADR-7.2 — Session model: 30-day stateful + 5-min cookie cache
+## ADR-7.2 — Session model: 7-day stateful + 5-min cookie cache
 
 ### Status
 
@@ -142,12 +142,12 @@ Session-storage trade-off:
 
 ### Decision
 
-**Hybrid: 30-day session row + 5-minute signed cookie cache:**
+**Hybrid: 7-day session row + 5-minute signed cookie cache:**
 
 ```ts
-// apps/server/src/auth.ts:99-106
+// apps/server/src/auth.ts
 session: {
-  expiresIn: 60 * 60 * 24 * 30,   // 30 days hard-expiry
+  expiresIn: 60 * 60 * 24 * 7,    // 7 days hard-expiry (tightened 2026-05-13)
   updateAge: 60 * 60 * 24,         // Rolling refresh after 1 day of activity
   cookieCache: {
     enabled: true,
@@ -156,12 +156,15 @@ session: {
 },
 ```
 
-`expiresIn` = 30 days. Стандарт для consumer SaaS (GitHub, Linear, Notion
-використовують 30-90 днів). Юзер не log-out-иться про побутових перервах
-(відкрив додаток, був занятий 3 тижні, повернувся — все працює).
+`expiresIn` = 7 days. До 2026-05-13 використовувалося 30 днів (consumer-SaaS
+норма як Notion / Linear). PR-48 round-2 audit
+([`docs/security/better-auth-audit-2026-05.md`](../security/better-auth-audit-2026-05.md))
+скоротив до 7 днів: Сergeant — daily-habit app, активний user (≥1 request/day)
+ніколи не бачить logout завдяки `updateAge=1d` rolling refresh, а stolen-cookie
+window скорочується 4× (30d → 7d). Неактивні cold sessions >7 днів змушені re-login.
 
 `updateAge` = 1 day rolling. Якщо юзер активний (хоч один request на день) —
-сесія продовжується ще на 30 днів. Запит знятий зі screen-time-у юзера через
+сесія продовжується ще на 7 днів. Запит знятий зі screen-time-у юзера через
 `req.user.id` look-up.
 
 `cookieCache.maxAge` = 5 хв. У межах 5-хв вікна `requireSession`
@@ -186,7 +189,7 @@ Trade-off `cookieCache`: revoke-затримка до 5 хв. Якщо юзер 
 
 - 95%+ requests pass через cookie-verify (sub-ms). DB-load на
   `session`-таблицю — мінімальний.
-- 30-day rolling — низький login-friction.
+- 7-day rolling — низький login-friction для daily-habit users.
 - Revoke working (з 5-хв latency, acceptable).
 
 **Негативні:**
@@ -373,8 +376,9 @@ accepted.
    ми тримаємо 10. Якщо побачимо credential-stuffing у Sentry — підіймемо
    до 12. Trade-off між UX і security.
 2. **Refresh-token rotation для mobile.** Сьогодні mobile bearer-token
-   живе 30 days. У Phase 2 додамо `refresh-token` plugin з 7-day refresh
-   - 24h access-token TTL.
+   живе 7 days (`session.expiresIn`). У Phase 2 додамо `refresh-token`
+   plugin з 7-day refresh + 24h access-token TTL, що дасть rotation
+   semantics на access-leve.
 3. **Session list UI.** Юзер бачить "ваші активні сесії: web (Chrome,
    Київ), iPhone, …" + revoke-кнопка. Better Auth API готовий
    (`auth.api.listSessions`); не побудовано UI. Phase 3.

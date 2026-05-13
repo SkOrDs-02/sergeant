@@ -147,7 +147,16 @@ export function CelebrationModal({
   // їжу), and the subtext promises the next step. Engineering-speed
   // bragging is intentionally absent — TTV stays in analytics
   // (see `celebration_shown` event payload above).
-  const { headline, subtext } = getFirstEntryCelebrationCopy(moduleId);
+  //
+  // 2026-05-13 — `nextStepTip` + `primaryCtaLabel` close two carryover
+  // items from the 2026-05-03 roast §2.9 (`docs/audits/archive/`):
+  // generic «Продовжуй додавати записи. Після кількох днів отримаєш
+  // інсайти…» tip (B-11) read as another TODO at the celebration
+  // moment, and generic «Продовжити» CTA (P2-15) did not promise the
+  // next action. Both are now module-specific. The CTA still closes
+  // the modal — the promise lives in the copy, not in routing.
+  const { headline, subtext, nextStepTip, primaryCtaLabel } =
+    getFirstEntryCelebrationCopy(moduleId);
 
   return (
     <div
@@ -236,21 +245,20 @@ export function CelebrationModal({
             <div className="w-6 h-6 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
               <Icon name="sparkles" size={12} className="text-brand-500" />
             </div>
-            <p className="text-xs text-muted leading-relaxed">
-              Продовжуй додавати записи. Після кількох днів отримаєш перші
-              інсайти та персональні поради.
-            </p>
+            <p className="text-xs text-muted leading-relaxed">{nextStepTip}</p>
           </div>
         </div>
 
-        {/* Dismiss button */}
+        {/* Dismiss button — promises the next action per module
+            (P2-15). Closing the modal still puts the user on the hub,
+            where the relevant CTA is the natural next step. */}
         <Button
           variant="primary"
           size="lg"
           onClick={handleClose}
           className="w-full mt-1"
         >
-          Продовжити
+          {primaryCtaLabel}
         </Button>
       </div>
     </div>

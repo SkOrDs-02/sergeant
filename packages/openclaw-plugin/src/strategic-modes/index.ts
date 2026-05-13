@@ -7,7 +7,7 @@
  * shipped `/plan`, PR-2 added `/analyze`, PR-4 adds `/okr` (the optional
  * docs-split PR-3 introduced no code change). Once all three modes
  * register, Stage 5b is complete and the legacy console primers in
- * `tools/console/src/agents/strategic-modes.ts` can be retired in
+ * `tools/openclaw/src/agents/strategic-modes.ts` can be retired in
  * Stage 7 alongside the drift-gate tests.
  */
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import * as Notifications from "expo-notifications";
 
 import { useApiClient, useUser } from "@sergeant/api-client/react";
 
@@ -90,6 +91,43 @@ export function PushRegistrar() {
 
     return () => {
       cancelled = true;
+    };
+  }, [api, userId]);
+
+  // Native push tokens rotate without warning — FCM rotates on app
+  // reinstall, data clear, or OEM-specific lifecycle events; Apple
+  // rotates the APNs device token on restore/reinstall. Without a
+  // listener, a rotated token is only re-registered after the next
+  // sign-out + sign-in cycle, leaving the server with a stale push
+  // target that silently fails to deliver. `addPushTokenListener`
+  // fires on every rotation; we re-run `registerPush` with `force:
+  // true` so the `already-synced` short-circuit doesn't suppress the
+  // re-registration (the cached AsyncStorage token will be stale).
+  useEffect(() => {
+    if (!userId) return;
+    const sub = Notifications.addPushTokenListener(() => {
+      void (async () => {
+        try {
+          const result = await registerPush(api, userId, { force: true });
+          if (result.status === "registered") {
+            console.info(
+              `[PushRegistrar] re-registered ${result.platform} push token after rotation`,
+            );
+          } else {
+            console.info(
+              `[PushRegistrar] post-rotation register skipped: ${result.reason}`,
+            );
+          }
+        } catch (error) {
+          console.warn(
+            "[PushRegistrar] failed to re-register push token after rotation",
+            error,
+          );
+        }
+      })();
+    });
+    return () => {
+      sub.remove();
     };
   }, [api, userId]);
 

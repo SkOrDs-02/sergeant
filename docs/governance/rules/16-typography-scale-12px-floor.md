@@ -2,8 +2,8 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-05-09 by @Skords-01
-> **Next review:** 2026-08-07
+> **Last validated:** 2026-05-13 by @Skords-01
+> **Next review:** 2026-08-11
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #16. Compact summary lives in [`AGENTS.md § Hard rules`](../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -20,7 +20,7 @@
 
 ## Why / What is enforced
 
-> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/2026-04-28-ux-ui-audit.md` § Typography utilities неконсистентні). Codifying the floor and the named-style contract closes the gap.
+> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/archive/2026-04-28-ux-ui-audit.md` § Typography utilities неконсистентні). Codifying the floor and the named-style contract closes the gap.
 
 **Use one of the semantic `.text-style-*` utilities whenever a slot has a documented role.** The utilities live in `packages/design-tokens/tailwind-preset.js → plugins.semanticTypography` and bundle font-size, line-height, weight, letter-spacing, and casing so layouts can't drift on any single axis (e.g. shipping the hero size with the wrong weight).
 
@@ -45,5 +45,5 @@ The `.text-style-overline` utility is the canonical way to render kickers; modul
 
 ## Related
 
-- **doc** — docs/audits/2026-04-28-ux-ui-audit.md
+- **doc** — docs/audits/archive/2026-04-28-ux-ui-audit.md
 - **agents** — #16

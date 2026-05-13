@@ -1,6 +1,6 @@
 # C1 — Monobank webhook secret leaks via URL path
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** In progress (Phase 1 — server-side defense-in-depth — landed 2026-05-04; Phase 2 — Monobank-side path→header rollout + secret rotation — pending coordination with Monobank API)
 
 | Field              | Value                                                                                                                                                                                                                                          |

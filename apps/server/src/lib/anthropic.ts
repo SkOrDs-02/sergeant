@@ -260,6 +260,12 @@ async function anthropicMessagesInner(
   model: string,
 ): Promise<[AnthropicMessagesResult, AiSpanResultMeta]> {
   const maxAttempts = 3;
+  // T2 audit finding #9 — jitterless `[0, 250, 750]` ms cascade ignored
+  // the upstream `retry-after` hint and stamped concurrent users at the
+  // same retry timestamp (thundering herd). Static fallbacks now carry
+  // ±25% jitter; the `retry-after` header (or Anthropic-specific
+  // `anthropic-ratelimit-*-reset`) is preferred when the previous
+  // response was a 429.
   const retryDelayMs = [0, 250, 750];
   const overallStart = process.hrtime.bigint();
 
@@ -278,8 +284,15 @@ async function anthropicMessagesInner(
     const t = setTimeout(() => controller.abort(), timeoutMs);
     const signal = composeSignal(controller, externalSignal);
     try {
-      if (retryDelayMs[attempt - 1]) {
-        await sleep(retryDelayMs[attempt - 1]!);
+      const baseDelay = retryDelayMs[attempt - 1] ?? 0;
+      if (baseDelay) {
+        await sleep(
+          computeRetryDelayMs({
+            baseMs: baseDelay,
+            timeoutMs,
+            previousResponse: lastResponse,
+          }),
+        );
       }
 
       const response = await fetch(ANTHROPIC_URL, {
@@ -471,6 +484,63 @@ function shouldRetryStatus(status: number): boolean {
     status === 503 ||
     status === 529
   );
+}
+
+/**
+ * T2 audit finding #9 — choose the actual sleep window before the next
+ * retry. Prefers the upstream `retry-after` header (or Anthropic-specific
+ * `anthropic-ratelimit-*-reset`) when the previous response was a 429,
+ * falls back to a jittered `baseMs`, and clamps to `timeoutMs` to keep
+ * retries inside the overall request budget. Exported for unit testing.
+ */
+export function computeRetryDelayMs(input: {
+  baseMs: number;
+  timeoutMs: number;
+  previousResponse: Response | null;
+}): number {
+  const { baseMs, timeoutMs, previousResponse } = input;
+  const max = Math.max(0, timeoutMs);
+  if (previousResponse && previousResponse.status === 429) {
+    const hinted = readUpstreamRetryAfterMs(previousResponse);
+    if (hinted !== null) return Math.min(hinted, max);
+  }
+  // ±25% jitter around `baseMs` to avoid thundering-herd retries from
+  // concurrent users that all hit 429 at the same instant.
+  const jitter = baseMs * 0.25 * (Math.random() * 2 - 1);
+  return Math.min(Math.max(0, Math.round(baseMs + jitter)), max);
+}
+
+function readUpstreamRetryAfterMs(response: Response): number | null {
+  const retryAfter = response.headers.get("retry-after");
+  if (retryAfter) {
+    const asInt = Number.parseInt(retryAfter, 10);
+    if (Number.isFinite(asInt) && asInt >= 0) return asInt * 1000;
+    const asDate = Date.parse(retryAfter);
+    if (Number.isFinite(asDate)) {
+      const delta = asDate - Date.now();
+      if (delta > 0) return delta;
+    }
+  }
+  // Anthropic also ships `anthropic-ratelimit-{tokens,requests}-reset` —
+  // RFC 3339 timestamps for when each bucket refills.
+  const candidates = [
+    "anthropic-ratelimit-tokens-reset",
+    "anthropic-ratelimit-requests-reset",
+    "anthropic-ratelimit-input-tokens-reset",
+    "anthropic-ratelimit-output-tokens-reset",
+  ];
+  let earliestMs: number | null = null;
+  for (const header of candidates) {
+    const value = response.headers.get(header);
+    if (!value) continue;
+    const at = Date.parse(value);
+    if (!Number.isFinite(at)) continue;
+    const delta = at - Date.now();
+    if (delta > 0 && (earliestMs === null || delta < earliestMs)) {
+      earliestMs = delta;
+    }
+  }
+  return earliestMs;
 }
 
 function isAbortError(e: unknown): boolean {

@@ -165,7 +165,7 @@ export function FizrukDayPlanSheet({
                         handleAssign(tpl.id);
                       }}
                       className={cn(
-                        "w-full text-left rounded-xl px-3 py-2.5 border transition-colors",
+                        "w-full text-left rounded-xl px-3 py-2.5 border transition-colors min-h-[44px]",
                         isActive
                           ? "border-sky-400/50 bg-sky-500/10"
                           : "border-line bg-panel/60 hover:bg-panelHi",

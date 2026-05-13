@@ -1,6 +1,6 @@
 # S3 — Reward у правильний момент · post-mortem (live)
 
-> **Last validated:** 2026-05-04 by @Skords-01 (S3.4 + S3.5 + S3.1 + S3.2 виконані).
+> **Last validated:** 2026-05-13 by @Skords-01 (S3.4 + S3.5 + S3.1 + S3.2 виконані).
 > **Status:** Active — спринт у роботі. Документ оновлюється після кожного S3.× merge-у.
 
 > Зворотний зв'язок до [`docs/launch/ftux-sprint-plan.md` §5](../ftux-sprint-plan.md#5-sprint-3--reward-у-правильний-момент--value-progress-2-тижні).
@@ -168,6 +168,6 @@ S3.5 — single-hero rule (одна module-aware surface за раз). S3.1 — 
 
 - Sprint plan: [`docs/launch/ftux-sprint-plan.md` §5](../ftux-sprint-plan.md#5-sprint-3--reward-у-правильний-момент--value-progress-2-тижні)
 - S1 post-mortem (для S3.4 cherry-pick context-у): [`s1-honest-valueprop.md`](./s1-honest-valueprop.md)
-- Audit джерело: [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../../audits/2026-05-03-ftux-onboarding-roast.md) (S3 рекомендації)
+- Audit джерело: [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../audits/archive/2026-05-03-ftux-onboarding-roast.md) (S3 рекомендації)
 - Funnel definitions: [`docs/launch/04-launch-readiness.md` §4.2](../../business/04-launch-readiness.md)
 - A/B test infra: `packages/shared/src/lib/abTest.ts` (`assignVariant`, `overrideVariant`, `resetAllAssignments`)

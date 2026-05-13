@@ -13,7 +13,7 @@ import { OfflineBanner } from "./OfflineBanner";
 import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import { shouldShowOnboarding } from "../onboarding/OnboardingWizard";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { WhatsNewModal, useWhatsNew } from "../whatsNew";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
@@ -24,8 +24,6 @@ export interface HubHomeViewProps {
   user: User | null;
   authLoading: boolean;
   onOpenAuth: () => void;
-  dark: boolean;
-  onToggleDark: () => void;
   canInstall: boolean;
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
@@ -49,8 +47,6 @@ export function HubHomeView(props: HubHomeViewProps) {
     user,
     authLoading,
     onOpenAuth,
-    dark,
-    onToggleDark,
     canInstall,
     onInstall,
     onDismissInstall,
@@ -99,8 +95,6 @@ export function HubHomeView(props: HubHomeViewProps) {
         user={user}
         authLoading={authLoading}
         onShowAuth={onOpenAuth}
-        dark={dark}
-        onToggleDark={onToggleDark}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
       />
 

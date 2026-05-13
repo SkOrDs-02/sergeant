@@ -2,6 +2,9 @@ import type { Request, Response } from "express";
 import client from "prom-client";
 import type { Pool } from "pg";
 
+import { env } from "../env/env.js";
+import { safeStringEqual } from "../http/safeCompare.js";
+
 /**
  * Prometheus-реєстр з default-метриками (event loop lag, RSS, heap, GC)
  * плюс HTTP-RED, Postgres-USE і domain-лічильники. Експортується через
@@ -564,6 +567,31 @@ export const syncOpLogApplyTotal = new client.Counter({
 });
 
 /**
+ * Counter for `sync_op_log` inserts where `origin_device_id` came in as
+ * NULL on the client side (i.e. the client did not forward
+ * `X-Origin-Device-Id`). The pull/SSE filter rejects every NULL-origin
+ * row when called with a NULL header (`NULL IS DISTINCT FROM NULL`
+ * evaluates to `FALSE` in PG), so a sustained non-zero rate here is a
+ * data-integrity regression: multi-device convergence is silently
+ * broken for the affected user(s).
+ *
+ * Labels:
+ *   - `module` is always `"v2"` for label-uniformity with the other
+ *     sync_* metrics — the dimension exists so a future op-log dialect
+ *     can be tagged without breaking dashboards.
+ *
+ * Alert: `rate(sync_op_log_null_origin_device_id_total[15m]) > 0` for
+ * 30m. Expected resting value post-fix: 0. Spikes during canary rollout
+ * are expected for clients that have not yet picked up the new bundle.
+ */
+export const syncOpLogNullOriginDeviceIdTotal = new client.Counter({
+  name: "sync_op_log_null_origin_device_id_total",
+  help: "Inserts into sync_op_log where origin_device_id arrived as NULL (client did not forward X-Origin-Device-Id). Sustained non-zero = multi-device convergence broken.",
+  labelNames: ["module"],
+  registers: [register],
+});
+
+/**
  * Pull-lag (queue-staleness) гістограма для v2 sync (PR #048, RED-stack
  * "Latency"). На кожному `GET /v2/sync/pull` із непорожньою відповіддю
  * спостерігаємо `now - server_ts(newest_op_returned)` — це проксі
@@ -645,6 +673,19 @@ export const aiRequestDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// PR-24: per-LLMProvider invocation counter. Окремо від `ai_requests_total`,
+// бо той вимагає `model`/`endpoint`/`outcome` labels від raw Anthropic-шляху,
+// а тут трекаємо саме provider-abstraction-шар: який provider пішов на call
+// і чи завершився ok. Endpoint-tag допомагає окремо рахувати classify-шлях
+// (PR-24) і weekly-digest (PR-25).
+// outcome=ok|error|missing_api_key|rate_limited|timeout
+export const llmProviderInvocationsTotal = new client.Counter({
+  name: "llm_provider_invocations_total",
+  help: "LLMProvider abstraction invocations by provider / endpoint / outcome",
+  labelNames: ["provider", "endpoint", "outcome"],
+  registers: [register],
+});
+
 // ───────────────────────── Frontend web-vitals ────────────────
 // LCP/INP/FCP/TTFB — таймінгові метрики в мілісекундах. Рейтинг обчислюється
 // клієнтом за порогами `web-vitals` package (Google Core Web Vitals):
@@ -719,21 +760,32 @@ export const appBuildInfo = new client.Gauge({
 
 appBuildInfo
   .labels({
-    version: process.env["npm_package_version"] || "unknown",
+    version: env.npm_package_version || "unknown",
     commit: (
-      process.env["RAILWAY_GIT_COMMIT_SHA"] ||
-      process.env["GIT_COMMIT"] ||
-      process.env["VERCEL_GIT_COMMIT_SHA"] ||
+      env.RAILWAY_GIT_COMMIT_SHA ||
+      env.GIT_COMMIT ||
+      env.VERCEL_GIT_COMMIT_SHA ||
       "unknown"
     ).slice(0, 12),
-    release:
-      process.env["SENTRY_RELEASE"] ||
-      process.env["RAILWAY_GIT_COMMIT_SHA"] ||
-      "unknown",
-    env: process.env["NODE_ENV"] || "development",
+    release: env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA || "unknown",
+    env: env.NODE_ENV || "development",
     node_version: process.version,
   })
   .set(1);
+
+// ───────────────────────── Log retention archive ───────────────
+// Лічильник рядків, оброблених background-архіватором `openclaw_invocations`
+// / `tg_alert_acks` / `n8n_webhook_events` (див.
+// `apps/server/src/modules/logRetention/archivePoller.ts`).
+// `outcome` — фінальний стан батча: `archived` (upload + DELETE OK),
+// `upload_failed` (GCS відмовив → DB rows збережені), `noop` (нічого
+// під TTL не потрапило).
+export const logArchiveRowsTotal = new client.Counter({
+  name: "openclaw_log_archive_rows_total",
+  help: "Rows processed by the log retention archiver, by table + outcome",
+  labelNames: ["table", "outcome"],
+  registers: [register],
+});
 
 // ───────────────────────── Mono webhook ───────────────────────
 export const monoWebhookReceivedTotal = new client.Counter({
@@ -748,6 +800,30 @@ export const monoWebhookDurationMs = new client.Histogram({
   help: "Monobank webhook handler duration in ms",
   labelNames: ["status"],
   buckets: [1, 5, 25, 50, 100, 250, 500, 1000],
+  registers: [register],
+});
+
+// ───────────────────────── n8n webhook-events replay (PR-29) ──
+// Instrument-имо replay-CLI / API щоб дашборд `n8n-webhook-events`
+// (PR-26-after) міг показати: which workflow-и replay-яться найчастіше,
+// яка success-rate per-workflow, p95 латентності self-served replay-у.
+// Cardinality bound: workflow_id ∈ REPLAYABLE_WORKFLOW_IDS (наразі 4),
+// outcome ∈ {ok, http_error, unknown_workflow, timeout, error} —
+// дешевий labels-set, безпечно крутити без top-K-обмеження.
+export const n8nWebhookReplayAttemptsTotal = new client.Counter({
+  name: "n8n_webhook_replay_attempts_total",
+  help: "n8n webhook event replay attempts by workflow and outcome",
+  labelNames: ["workflow_id", "outcome"], // ok|http_error|unknown_workflow|timeout|error
+  registers: [register],
+});
+
+export const n8nWebhookReplayDurationMs = new client.Histogram({
+  name: "n8n_webhook_replay_duration_ms",
+  help: "n8n webhook event replay per-attempt duration in ms",
+  labelNames: ["workflow_id", "outcome"],
+  // Replay HTTP-call timeout = 10s (DEFAULT_TIMEOUT_MS у replayWebhookEvent.ts).
+  // Buckets щільніше у нижчій частині, бо здорові replay-и зазвичай <500ms.
+  buckets: [25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
   registers: [register],
 });
 
@@ -928,7 +1004,13 @@ export const ftuxDripUnsubscribesTotal = new client.Counter({
 export const aiMemoryIngestEnqueuedTotal = new client.Counter({
   name: "ai_memory_ingest_enqueued_total",
   help: "AI memory ingest enqueue attempts by mode and source",
-  labelNames: ["mode", "source"], // mode: queued|fallback|enqueue_error|disabled
+  // mode: queued|fallback|enqueue_error|disabled|source_disabled
+  //   queued          — job pushed to BullMQ successfully
+  //   fallback        — Redis unavailable; in-process direct dispatch
+  //   enqueue_error   — Redis push failed (network / serialization / invalid source)
+  //   disabled        — master AI_MEMORY_ENABLED=false (kills all sources)
+  //   source_disabled — per-source flag off (e.g. MONO_AI_MEMORY_INGEST_ENABLED=false)
+  labelNames: ["mode", "source"],
   registers: [register],
 });
 
@@ -998,14 +1080,20 @@ export function startPoolSampler(
 
 /**
  * Express handler для `GET /metrics`. Якщо задано `METRICS_TOKEN` — вимагає
- * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен.
+ * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен
+ * (production хард-фейлить у `assertStartupEnv` — див. T2 audit #4).
+ *
+ * Токен-compare використовує `safeStringEqual` (поверх
+ * `crypto.timingSafeEqual`) замість наївного `!==`, щоб не лікати
+ * позицію першої розбіжності через CPU branch-timing — мережевий
+ * атакуючий міг би статистично відновити токен побайтово.
  */
 export function metricsHandler(req: Request, res: Response): void {
-  const expected = process.env["METRICS_TOKEN"];
+  const expected = env.METRICS_TOKEN;
   if (expected) {
     const auth = req.get("authorization") || "";
     const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (got !== expected) {
+    if (!safeStringEqual(got, expected)) {
       res.status(401).type("text/plain").send("unauthorized");
       return;
     }

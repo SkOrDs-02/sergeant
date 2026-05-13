@@ -1,6 +1,6 @@
 # PR-10: Better Auth security review + Safari/Webkit E2E
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Implemented (PR-48 / pr-plan-2026-05 §Security & supply chain row #48)
 
 |              |                                                               |

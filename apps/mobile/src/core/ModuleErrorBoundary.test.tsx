@@ -2,11 +2,21 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { Component } from "react";
 import { Text } from "react-native";
 
+import { captureError } from "@/lib/observability";
+
 import ModuleErrorBoundary from "./ModuleErrorBoundary";
+
+jest.mock("@/lib/observability", () => ({
+  __esModule: true,
+  captureError: jest.fn(),
+}));
+
+const captureErrorMock = captureError as jest.Mock;
 
 let consoleSpy: jest.SpyInstance;
 beforeEach(() => {
   consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  captureErrorMock.mockReset();
 });
 afterEach(() => {
   consoleSpy.mockRestore();
@@ -98,6 +108,53 @@ describe("ModuleErrorBoundary", () => {
     expect(queryByText("Щось пішло не так")).toBeNull();
     expect(getByText("module-recovered")).toBeTruthy();
     expect(parentOnError).not.toHaveBeenCalled();
+  });
+
+  it("forwards caught errors to observability with module context", () => {
+    render(
+      <ModuleErrorBoundary onBackToHub={() => {}} moduleName="Фінік">
+        <Thrower boom />
+      </ModuleErrorBoundary>,
+    );
+
+    expect(captureErrorMock).toHaveBeenCalledTimes(1);
+    const [forwardedError, context] = captureErrorMock.mock.calls[0];
+    expect(forwardedError).toBeInstanceOf(Error);
+    expect((forwardedError as Error).message).toBe("module-kaboom");
+    expect(context).toEqual({
+      moduleName: "Фінік",
+      source: "mobile.ModuleErrorBoundary",
+    });
+  });
+
+  it("forwards caught errors with moduleName=null when not provided", () => {
+    render(
+      <ModuleErrorBoundary onBackToHub={() => {}}>
+        <Thrower boom />
+      </ModuleErrorBoundary>,
+    );
+
+    expect(captureErrorMock).toHaveBeenCalledTimes(1);
+    const [, context] = captureErrorMock.mock.calls[0];
+    expect(context).toEqual({
+      moduleName: null,
+      source: "mobile.ModuleErrorBoundary",
+    });
+  });
+
+  it("does not break the host boundary when captureError throws", () => {
+    captureErrorMock.mockImplementationOnce(() => {
+      throw new Error("observability-blew-up");
+    });
+
+    const { getByText } = render(
+      <ModuleErrorBoundary onBackToHub={() => {}}>
+        <Thrower boom />
+      </ModuleErrorBoundary>,
+    );
+
+    // Boundary still rendered its fallback even though captureError threw.
+    expect(getByText("Щось пішло не так")).toBeTruthy();
   });
 
   it("'На головну' button calls onBackToHub", () => {

@@ -43,7 +43,7 @@
 /.agents/skills/           @Skords-01
 /.agents/skills-lock.json  @Skords-01
 
-/tools/console/src/agents/ @Skords-01
+/tools/openclaw/src/agents/ @Skords-01
 /ops/n8n-workflows/        @Skords-01
 
 # ── TypeScript config (no secondary — affects all apps) ──────────────────────

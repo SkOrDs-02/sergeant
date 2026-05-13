@@ -51,6 +51,13 @@ jobs:
     timeout-minutes: 60
     env:
       EXPO_PUBLIC_E2E: "1"
+      # Enables the mock-auth fetch interceptor so the new "full" suites
+      # (sign-in → module-action → sign-out) can exercise the real Better
+      # Auth client without a live backend. Smoke suites stay on the
+      # `EXPO_PUBLIC_E2E=1` auth-bypass — the two flags are compatible.
+      EXPO_PUBLIC_E2E_REAL_AUTH: "1"
+      EXPO_PUBLIC_E2E_USER_EMAIL: "e2e-detox@sergeant.test"
+      EXPO_PUBLIC_E2E_USER_PASSWORD: "detox-pass-2026"
       E2E_BUILD: "1"
       # `@sentry/react-native` injects a `sentry-cli` upload step into
       # xcodebuild that aborts with `An organization ID or slug is

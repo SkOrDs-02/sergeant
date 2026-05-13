@@ -1,6 +1,6 @@
 # H9 — `transcribe` accepts 10 MB raw audio with only count-based quota
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Closed (partial — per-user USD cap enforced inline; S3 pre-signed upload deferred)
 
 | Field          | Value                                                                |

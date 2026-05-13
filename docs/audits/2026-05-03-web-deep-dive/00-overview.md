@@ -1,6 +1,6 @@
 # Web deep-dive — Overview
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active (rounds 1–13 tracker; new follow-ups land as numbered round updates inline).
 >
 > **Update 2026-05-04 (round 4):** Tier 1 закрито у foundation-формі — items #8, #9. Roadmap-таблиця нижче помічена done з PR-лінками.
@@ -84,8 +84,8 @@
 > **Scope:** `apps/web` + `apps/server` + `packages/*` (mobile — лише дотичні точки).
 > **Related:**
 >
-> - `docs/audits/2026-04-28-sergeant-comprehensive-audit.md` — попередній комплексний аудит (Closed).
-> - `docs/audits/2026-04-28-ux-ui-audit.md`, `docs/audits/2026-04-28-ux-improvement-plan.md` — UX план.
+> - `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md` — попередній комплексний аудит (Closed).
+> - `docs/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/audits/2026-04-28-ux-improvement-plan.md` — UX план.
 > - `docs/tech-debt/frontend.md`, `docs/tech-debt/backend.md` — поточний tech-debt.
 
 Це **fresh second opinion**: автор свідомо читав код первинно, а не існуючі звіти, щоб бачити те, що могло «закам'яніти» в командному рутіні. Звірка з попередніми аудитами — у §11.
