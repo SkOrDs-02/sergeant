@@ -1,6 +1,6 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-12 10:30 UTC by Claude via sprint-sync. **Next review:** 2026-07-01.
+> **Last validated:** 2026-05-13 15:00 UTC by Devin (Sprint 5 close-out: O2/O5/T1/O8 закриті, Stage 6b + Phase 3 closed, WhatsApp descoped). **Next review:** 2026-07-01.
 > **Status:** Active — усі Wave-2/3 задачи верифіковані на предмет залежностей та PR-статусу
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
@@ -27,52 +27,54 @@
 
 Повний контекст і деталі реалізації — у [`2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md).
 
-**Останнє оновлення:** 2026-05-12 00:30 UTC — синхронізовано з main (commit d8d21aa).
+**Останнє оновлення:** 2026-05-13 15:00 UTC — синхронізовано з main після Sprint 5 close-out.
 
-| ID  | Задача                             | Деталь                                                        | Статус                           |
-| --- | ---------------------------------- | ------------------------------------------------------------- | -------------------------------- |
-| T1  | HubDashboard decomposition         | `HubDashboard.tsx` 743 LOC → ~100 LOC                         | ⏳ Очікує Sprint 6               |
-| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                          | ❌ Не почато (Sprint 7)          |
-| T3  | Великі файли (батч 3)              | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | ❌ Не почато (Sprint 7)          |
-| T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                             | ⏳ Очікує Sprint 8               |
-| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                          | ❌ Не почато (Sprint 8)          |
-| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                   | ⏳ Очікує Sprint 8               |
-| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)              | ⏳ Очікує 20-run CI verification |
+| ID  | Задача                             | Деталь                                                        | Статус                                                                                                                            |
+| --- | ---------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| T1  | HubDashboard decomposition         | `HubDashboard.tsx` 837 → 115 LOC                              | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5)                                           |
+| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                          | ❌ Не почато (Sprint 7)                                                                                                           |
+| T3  | Великі файли (батч 3)              | `Workouts.tsx` 744, `LogCard.tsx` 736, `NutritionApp.tsx` 728 | 🚧 NutritionApp decomp shipped ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67)); Workouts/LogCard — Sprint 7 |
+| T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                             | ⏳ Очікує Sprint 8                                                                                                                |
+| T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                          | ❌ Не почато (Sprint 8)                                                                                                           |
+| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                   | ⏳ Очікує Sprint 8                                                                                                                |
+| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)              | ⏳ Очікує 20-run CI verification                                                                                                  |
 
 ### 1.2. Продуктові задачі (відкриті)
 
 Повний контекст — у [`openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) та [`telegram-improvements-roadmap.md`](../launch/tech/telegram-improvements-roadmap.md).
 
-| ID  | Задача                                                        | Джерело                | Wave  | Effort | Статус                       |
-| --- | ------------------------------------------------------------- | ---------------------- | ----- | ------ | ---------------------------- |
-| O1  | Phase 2.A: Ранкова повістка 08:30 Kyiv                        | openclaw §Phase 2      | W2    | M      | ❌ Не почато (Sprint 5)      |
-| O2  | C.2: Sentry breadcrumbs у tool-calls                          | tg-improvements §4.3   | W2    | XS     | ❌ Не почато (Sprint 5)      |
-| O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | ⏳ Очікує Sprint 6           |
-| O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ⏳ Очікує Sprint 6           |
-| O5  | W3 PR-3: `/alerts pending` slash-команда                      | tg-improvements §3.2   | W3    | S      | ❌ Не почато (Sprint 5)      |
-| O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ⏳ Очікує Sprint 7           |
-| O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ⏳ Очікує Sprint 7           |
-| O8  | Phase 3: `/plan`, `/analyze`, `/okr`                          | openclaw §Phase 3      | Later | L      | ⏳ Очікує Sprint 8 (partial) |
-| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ⏳ В очікуванні (Sprint 6)   |
+| ID  | Задача                                                        | Джерело                | Wave  | Effort | Статус                                                                                                                                                                   |
+| --- | ------------------------------------------------------------- | ---------------------- | ----- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| O1  | Phase 2.A: Ранкова повістка 08:30 Kyiv                        | openclaw §Phase 2      | W2    | M      | 🚧 Partial — cron live (Stage 5d, [`b187bfaf`](https://github.com/Skords-01/Sergeant/commit/b187bfaf)); повний LLM-ritual з MRR/signups/PR-queue/proposal — не зашиплено |
+| O2  | C.2: Sentry breadcrumbs у tool-calls                          | tg-improvements §4.3   | W2    | XS     | ✅ Done ([PR #2504](https://github.com/Skords-01/Sergeant/pull/2504), `284cf7cd`, Sprint 5)                                                                              |
+| O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
+| O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
+| O5  | W3 PR-3: `/alerts pending` slash-команда                      | tg-improvements §3.2   | W3    | S      | ✅ Done ([PR #2507](https://github.com/Skords-01/Sergeant/pull/2507), `9ad0e272`, Sprint 5)                                                                              |
+| O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ⏳ Очікує Sprint 7                                                                                                                                                       |
+| O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ⏳ Очікує Sprint 7                                                                                                                                                       |
+| O8  | Phase 3: `/plan`, `/analyze`, `/okr`                          | openclaw §Phase 3      | Later | L      | ✅ Done за founder підтвердженням 2026-05-13 — Stage 5b PR-1..PR-4 + persona allowlist Stage 5a                                                                          |
+| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ⏳ В очікуванні (Sprint 6)                                                                                                                                               |
 
 ### 1.3. Вже зроблено (довідка)
 
-| Компонент                     | Що закрито                                                                   |
-| ----------------------------- | ---------------------------------------------------------------------------- |
-| TypeScript strict             | ✅ 13/13 пакетів = 100% (Спринти 1–3)                                        |
-| localStorage migration        | ✅ ~90% (ESLint `no-raw-local-storage: error`, allowlist ~10 файлів)         |
-| Sentry                        | ✅ web + mobile + server                                                     |
-| Prompt cache                  | ✅ `cache_control: ephemeral` у `chat.ts`                                    |
-| OpenTelemetry                 | ✅ distributed tracing у `apps/server/src/obs/`                              |
-| OpenClaw Phase 1+1.5+2.5+4    | ✅ shipped (ADR-0031/32/33/36/37)                                            |
-| Alert ACK-button foundation   | ✅ `tg_alert_acks` table + WF-04/103/104 (ADR-0038)                          |
-| `/audit since=` + CSV         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                  |
-| WF-15 Bad request fix         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                  |
-| Webhook delivery для OpenClaw | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514), live 2026-05-03 |
-| dev-stack top-15              | ✅ 15/15 закрито                                                             |
-| i18n Phase 1+2+3              | ✅ sync/zod migrated, `no-cyrillic-jsx-literal` ESLint rule (#1942)          |
-| CloudSync engine              | ✅ lifecycle, push loop, scheduler, DLQ (#1929–#1941)                        |
-| Agent OS hardening            | ✅ Initiative 0009 (#1949)                                                   |
+| Компонент                     | Що закрито                                                                                                                                                              |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript strict             | ✅ 13/13 пакетів = 100% (Спринти 1–3)                                                                                                                                   |
+| localStorage migration        | ✅ ~90% (ESLint `no-raw-local-storage: error`, allowlist ~10 файлів)                                                                                                    |
+| Sentry                        | ✅ web + mobile + server                                                                                                                                                |
+| Prompt cache                  | ✅ `cache_control: ephemeral` у `chat.ts`                                                                                                                               |
+| OpenTelemetry                 | ✅ distributed tracing у `apps/server/src/obs/`                                                                                                                         |
+| OpenClaw Phase 1+1.5+2.5+3+4  | ✅ shipped (Phase 3 closed 2026-05-13: `/plan` `/analyze` `/okr` вживі через Stage 5b PR-1..PR-4 + Stage 5a persona allowlist; ADR-0031/32/33/36/37)                    |
+| OpenClaw Gateway migration    | ✅ Stage 1–7 done (cutover 2026-05-12 22:30 UTC); Stage 6b closed 2026-05-13; legacy deletion 2026-06-09 (Locked #17). Правильний джерело: `openclaw-migration-plan.md` |
+| OpenClaw Sprint 5 close       | ✅ O2 + O5 + T1 shipped (PR #2504/#2507, commit `61e0093f`); WhatsApp descoped 2026-05-13 (PR #2521)                                                                    |
+| Alert ACK-button foundation   | ✅ `tg_alert_acks` table + WF-04/103/104 (ADR-0038)                                                                                                                     |
+| `/audit since=` + CSV         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                                                                                                             |
+| WF-15 Bad request fix         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                                                                                                             |
+| Webhook delivery для OpenClaw | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514), live 2026-05-03                                                                                            |
+| dev-stack top-15              | ✅ 15/15 закрито                                                                                                                                                        |
+| i18n Phase 1+2+3              | ✅ sync/zod migrated, `no-cyrillic-jsx-literal` ESLint rule (#1942)                                                                                                     |
+| CloudSync engine              | ✅ lifecycle, push loop, scheduler, DLQ (#1929–#1941)                                                                                                                   |
+| Agent OS hardening            | ✅ Initiative 0009 (#1949)                                                                                                                                              |
 
 ---
 
@@ -107,7 +109,9 @@
 
 ---
 
-#### O2: Sentry breadcrumbs у tool-calls `Tech` `XS`
+#### O2: Sentry breadcrumbs у tool-calls `Tech` `XS` — ✅ Done
+
+**Статус:** Shipped Sprint 5 — [PR #2504](https://github.com/Skords-01/Sergeant/pull/2504) `284cf7cd`.
 
 **Що:** після кожного tool-call у OpenClaw agent-loop — додавати Sentry breadcrumb з `tool_name`, `latency_ms`, `status`.
 
@@ -115,12 +119,14 @@
 
 **Acceptance:**
 
-- [ ] Sentry event для помилки у tool-call містить breadcrumb з `tool_name` tag
-- [ ] Немає performance overhead > 1ms на tool-call
+- [x] Sentry event для помилки у tool-call містить breadcrumb з `tool_name` tag
+- [x] Немає performance overhead > 1ms на tool-call
 
 ---
 
-#### O5: `/alerts pending` slash-команда `Продукт` `S`
+#### O5: `/alerts pending` slash-команда `Продукт` `S` — ✅ Done
+
+**Статус:** Shipped Sprint 5 — [PR #2507](https://github.com/Skords-01/Sergeant/pull/2507) `9ad0e272`.
 
 **Що:** нова slash-команда у `@OpenClaw_sergeant_bot` DM що показує unacked alerts з `tg_alert_acks`.
 
@@ -128,9 +134,9 @@
 
 **Acceptance:**
 
-- [ ] `/alerts pending` → список unacked P0/P1 alert-ів з часом з моменту публікації
-- [ ] Якщо немає unacked → "Всі алерти прочитані ✅"
-- [ ] Audit row у `openclaw_invocations` для кожного виклику
+- [x] `/alerts pending` → список unacked P0/P1 alert-ів з часом з моменту публікації
+- [x] Якщо немає unacked → "Всі алерти прочитані ✅"
+- [x] Audit row у `openclaw_invocations` для кожного виклику
 
 ---
 
@@ -336,7 +342,7 @@ describe("Capacitor Boundary Tests", () => {
 
 **Тема: Performance + Strategic mode**
 
-**Мета:** Bundle size і Core Web Vitals, backend cleanup, початок Phase 3 OpenClaw.
+**Мета:** Bundle size і Core Web Vitals, backend cleanup. (Phase 3 OpenClaw вже закрита у Sprint 5 через Stage 5b PR-1..PR-4 — більш не у scope Sprint 8.)
 
 ### Задачі
 
@@ -399,25 +405,11 @@ jobs:
 
 ---
 
-#### O8-start: Phase 3 `/plan` mode (початок) `Продукт` `L (partial)`
+#### O8-start: Phase 3 `/plan` mode — ✅ Done (descoped from Sprint 8)
 
-**Scope:** `tools/console/src/openclaw/handler.ts` + `apps/server/src/modules/openclaw/`
+**Статус:** Phase 3 (`/plan` `/analyze` `/okr`) закрита у Sprint 5 через Stage 5b PR-1..PR-4 + Stage 5a persona allowlist (founder підтвердив 2026-05-13). Strategic-modes вживі у Gateway-боті як `before_agent_start` primer-и (`PLAN_PRIMER`, `ANALYZE_PRIMER`, `OKR_PRIMER`); write-tool `commit_to_strategy_doc` вже зареєстрований (Stage 3b). Деталі — [`openclaw-migration-plan.md`](./openclaw-migration-plan.md) Stage 5a/5b/5c.
 
-**Що (Phase 3 перший crescent):**
-
-- `docs/strategy/` — нова директорія з YAML-frontmatter (`objective`, `kr[]`, `current_state`, `last_review_at`).
-- `/plan <topic>` — структурований 4-step session:
-  1. Goal — уточнення цілі
-  2. Context — підтягнути дані з tools + memory
-  3. Options — 2–3 варіанти з trade-offs
-  4. Decision → `record_decision` + suggest-PR до `docs/strategy/<slug>.md`
-
-**Acceptance:**
-
-- [ ] `/plan churn-reduction` → 4-step session → PR з `docs/strategy/churn-reduction.md`
-- [ ] ADR-0040 задрафтовано і approve-нуто перед реалізацією
-
-**Пов'язане:** [openclaw-roadmap §Phase 3](../launch/tech/openclaw-roadmap.md)
+**Backlog-deferred:** "Approve all" batch (A.3), diff-preview для `commit_to_strategy_doc` (A.4), DB-persistence pending approvals (T11) — окремі ініціативи.
 
 ---
 
@@ -425,20 +417,20 @@ jobs:
 
 ### OpenClaw / Telegram
 
-| ID   | Задача                                             | Effort | ADR  |
-| ---- | -------------------------------------------------- | ------ | ---- |
-| A.2  | Phase 3: `/analyze` + `/okr` modes                 | L      | 0040 |
-| A.3  | "Approve all" batch button для write-tools         | M      | —    |
-| A.4  | Diff-preview для `commit_to_strategy_doc`          | M      | —    |
-| A.5  | Voice notes input (Whisper transcription)          | M      | —    |
-| A.8  | `/forget {topic}` — memory-write з approval        | M      | —    |
-| A.10 | Edit message → re-run loop                         | S      | —    |
-| A.11 | Reply threading (`reply_to_message_id`)            | M      | —    |
-| A.12 | Nightly self-summary 02:00 Kyiv                    | S      | —    |
-| B.2  | `/silence WF-15 30m` topic command                 | M      | —    |
-| B.4  | Daily P0/P1/P2 pinned message у `⚙️ Контрол-план`  | M      | —    |
-| C.1  | Multi-instance failover / Postgres advisory leader | L      | 0042 |
-| C.3  | Bot token rotation policy                          | M      | 0043 |
+| ID      | Задача                                                                             | Effort | ADR  |
+| ------- | ---------------------------------------------------------------------------------- | ------ | ---- |
+| ~~A.2~~ | ~~Phase 3: `/analyze` + `/okr` modes~~ — ✅ done у Sprint 5 (Stage 5b PR-2 + PR-4) | ~~L~~  | 0040 |
+| A.3     | "Approve all" batch button для write-tools                                         | M      | —    |
+| A.4     | Diff-preview для `commit_to_strategy_doc`                                          | M      | —    |
+| A.5     | Voice notes input (Whisper transcription)                                          | M      | —    |
+| A.8     | `/forget {topic}` — memory-write з approval                                        | M      | —    |
+| A.10    | Edit message → re-run loop                                                         | S      | —    |
+| A.11    | Reply threading (`reply_to_message_id`)                                            | M      | —    |
+| A.12    | Nightly self-summary 02:00 Kyiv                                                    | S      | —    |
+| B.2     | `/silence WF-15 30m` topic command                                                 | M      | —    |
+| B.4     | Daily P0/P1/P2 pinned message у `⚙️ Контрол-план`                                  | M      | —    |
+| C.1     | Multi-instance failover / Postgres advisory leader                                 | L      | 0042 |
+| C.3     | Bot token rotation policy                                                          | M      | 0043 |
 
 ### Технічний борг
 
