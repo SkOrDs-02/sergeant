@@ -1,7 +1,7 @@
 # PR-34: `runDemoSeedFromUrl` / `runDemoCleanupOnce` on every load
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Closed (PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec))
 
 |                    |                                                                                |
 | ------------------ | ------------------------------------------------------------------------------ |
@@ -61,18 +61,21 @@ Send `seed_skipped` / `seed_ran` event у Sentry breadcrumb (low-frequency).
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/web/src/core/onboarding/index.ts` має `maybeRunOnboarding()` gate.
-- [ ] Lazy-import demo-seed helpers.
-- [ ] `apps/web/src/main.tsx` викликає тільки `maybeRunOnboarding()`.
-- [ ] Версіонований idempotence-key.
-- [ ] Boot-time benchmark: -15ms median на cold-load (Lighthouse або custom perf-mark).
-- [ ] Existing tests `apps/web/src/core/onboarding/__tests__/*.test.ts` pass.
+- [x] `apps/web/src/core/onboarding/index.ts` має `maybeRunOnboarding()` gate — ранній `return` на cold-load без `?demo` / `?welcome`.
+- [x] Lazy-import demo-seed helpers — `await import("./demoSeed.js")` тільки при наявності флагу; барел `apps/web/src/core/onboarding/demoSeed.ts` re-export `runDemoSeedFromUrl` / `runDemoCleanupOnce`.
+- [x] `apps/web/src/main.tsx` викликає тільки `maybeRunOnboarding()` — прямі eager-import-и demo helpers видалені.
+- [x] Версіоновані idempotence-key живуть у `seedDemoData.ts` / `cleanupDemoData.ts` (existing constants за v3/v1 schemes) — lazy-gate не міняє єволюцію ключів.
+- [x] Existing tests `apps/web/src/core/onboarding/__tests__/*.test.ts` pass + new `maybeRunOnboarding.test.ts` (4 кейси: no-flag no-op / `?demo=1` seed / `?demo=reset` cleanup / `?welcome=1` no-op).
+- [ ] Boot-time benchmark: -15ms median на cold-load — **deferred**: відсутній custom perf-mark suite у `apps/web`. Lazy-gate підтверджений поведінково (свіжі випадки без `?demo` не підвантажують `demoSeed.js`); Lighthouse benchmark прив'яжется пізніше до загальної бюджетної планки `apps/web` (Performance budgets у [AGENTS.md](../../../AGENTS.md#performance-budgets)).
 
 ## Тести
 
-- `__tests__/maybeRunOnboarding.test.ts` — no-flag → no-op.
-- `__tests__/maybeRunOnboarding.test.ts` — flag set → routes до correct helper.
-- Performance: PerformanceObserver-based assertion (если existing perf-mark suite).
+- `apps/web/src/core/onboarding/maybeRunOnboarding.test.ts` — 4 проходять у vitest:
+  - no-flag → жоден helper не викликаний;
+  - `?demo=1` → `runDemoSeedFromUrl` x1;
+  - `?demo=reset` → `runDemoCleanupOnce` x1;
+  - `?welcome=1` (без demo) → no-op (welcome-handler буде в follow-up-і).
+- Performance assertion (`PerformanceObserver`) — **deferred** разом з Lighthouse benchmark ⑖ DoD.
 
 ## Rollout
 
