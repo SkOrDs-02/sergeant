@@ -21,7 +21,10 @@
  *
  * @see docs/planning/storage-roadmap.md (Stage 5 mobile writer wiring)
  */
+import { resolveOriginDeviceId } from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+
+import { mobileKVStore } from "@/lib/storage";
 
 import {
   createSyncEngineWriterRuntime,
@@ -99,6 +102,14 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     netInfoModule.default,
   );
 
+  // Stable per-install device id — same reasoning as web (see
+  // `apps/web/src/core/syncEngine/singleton.ts`). Persisted in MMKV
+  // via the shared `mobileKVStore` adapter so it survives across
+  // launches and the encrypted-storage swap on bootstrap (the swap
+  // happens transparently behind the adapter; see
+  // `apps/mobile/src/lib/storage.ts`).
+  const originDeviceId = resolveOriginDeviceId({ store: mobileKVStore });
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: (drainOptions) => dbSchema.drainSyncOpOutbox(client, drainOptions),
@@ -126,5 +137,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       observability.captureError(error, context),
     intervalMs: 30_000,
     limit: 100,
+    originDeviceId,
   });
 }

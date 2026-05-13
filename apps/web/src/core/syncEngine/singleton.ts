@@ -1,4 +1,7 @@
+import { resolveOriginDeviceId } from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+
+import { webKVStore } from "@shared/lib/storage/storage";
 
 import { classifyOutboxBootOutcome } from "./outboxBoot";
 import {
@@ -173,6 +176,17 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     throw err;
   }
 
+  // Stable per-install device id. Without this, every push lands on
+  // the server with `origin_device_id = NULL`, and the pull/SSE filter
+  // `WHERE origin_device_id IS DISTINCT FROM $3` with $3=NULL drops
+  // every NULL-origin row (PG semantics: `NULL IS DISTINCT FROM NULL`
+  // is FALSE). The id is persisted under
+  // `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID` via `webKVStore` so it
+  // survives reloads, deploys, and the SQLite warm-cache hydration
+  // (pre-bootstrap reads fall through to `localStorage`).
+  const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
+  sentry.setSentryTag("sync.origin_device_id_present", "true");
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: (options) => dbSchema.drainSyncOpOutbox(client, options),
@@ -195,5 +209,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       sentry.captureException(error, { extra: context }),
     intervalMs: 30_000,
     limit: 100,
+    originDeviceId,
   });
 }

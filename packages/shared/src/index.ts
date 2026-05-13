@@ -10,6 +10,11 @@ export * from "./types";
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
 
+// Stable per-install origin-device-id resolver used by the web and
+// mobile sync-engine singletons to populate `X-Origin-Device-Id` on
+// every sync v2 push / pull / SSE stream request.
+export * from "./lib/originDeviceId";
+
 // Sensitive query-key policy for the React Query persisters
 // (web → IDB, mobile → MMKV). See PR #004 in
 // `docs/planning/storage-roadmap.md`.

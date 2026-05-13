@@ -564,6 +564,31 @@ export const syncOpLogApplyTotal = new client.Counter({
 });
 
 /**
+ * Counter for `sync_op_log` inserts where `origin_device_id` came in as
+ * NULL on the client side (i.e. the client did not forward
+ * `X-Origin-Device-Id`). The pull/SSE filter rejects every NULL-origin
+ * row when called with a NULL header (`NULL IS DISTINCT FROM NULL`
+ * evaluates to `FALSE` in PG), so a sustained non-zero rate here is a
+ * data-integrity regression: multi-device convergence is silently
+ * broken for the affected user(s).
+ *
+ * Labels:
+ *   - `module` is always `"v2"` for label-uniformity with the other
+ *     sync_* metrics — the dimension exists so a future op-log dialect
+ *     can be tagged without breaking dashboards.
+ *
+ * Alert: `rate(sync_op_log_null_origin_device_id_total[15m]) > 0` for
+ * 30m. Expected resting value post-fix: 0. Spikes during canary rollout
+ * are expected for clients that have not yet picked up the new bundle.
+ */
+export const syncOpLogNullOriginDeviceIdTotal = new client.Counter({
+  name: "sync_op_log_null_origin_device_id_total",
+  help: "Inserts into sync_op_log where origin_device_id arrived as NULL (client did not forward X-Origin-Device-Id). Sustained non-zero = multi-device convergence broken.",
+  labelNames: ["module"],
+  registers: [register],
+});
+
+/**
  * Pull-lag (queue-staleness) гістограма для v2 sync (PR #048, RED-stack
  * "Latency"). На кожному `GET /v2/sync/pull` із непорожньою відповіддю
  * спостерігаємо `now - server_ts(newest_op_returned)` — це проксі
