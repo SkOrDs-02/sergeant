@@ -254,6 +254,21 @@
       "requiredCredentials": [],
       "notes": "Telegram console webhook dispatcher. Receives approved/read-only agent commands from tools/openclaw and returns a task acceptance payload; keep inactive until N8N_AGENT_DISPATCHER_WEBHOOK_URL is configured for the console."
     },
+    "25-morning-briefing-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "dm",
+      "audienceTier": "P2",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "OPENCLAW_BOT_TOKEN",
+        "OPENCLAW_FOUNDER_TG_USER_ID"
+      ],
+      "requiredCredentials": [],
+      "notes": "Daily 07:00 Kyiv → POST /api/internal/openclaw/briefing/morning (PR-26 hardcoded-template; 5 sections: Stripe / PostHog / GitHub PR-queue / n8n workflows / Sentry) → POST /api/internal/webhook-events/record (PR-28 exec audit log) + DM founder via @OpenClaw_sergeant_bot raw HTTP. Activate after OPENCLAW_BOT_TOKEN + OPENCLAW_FOUNDER_TG_USER_ID set on n8n Railway. Briefing endpoint завжди 200 з graceful-degrade — секції з missing env-vars рендерять notConfigured-hint замість failing 5xx. LLM-summarization (PR-27 next-up у roadmap-у) поки НЕ підключений; cron шле raw template markdown."
+    },
     "30-ai-memory-daily-digest.json": {
       "owner": "ops",
       "status": "experimental",

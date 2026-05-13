@@ -110,11 +110,20 @@ curl -sS -X POST http://localhost:3000/api/internal/openclaw/briefing/morning \
 
 ## Cron wiring
 
-Зараз `morning-digest` CronJob (`ops/openclaw/provision-cron.mjs`) шле
-`/digest day` Layer 0-shortcut-у у `0 9 * * *` (09:00 UTC ≈ 11:00–12:00
-Kyiv depending on DST). Briefing template **поки не зашитий у cron** —
-це майбутній PR-27 (LLM-summarization + Telegram founder-DM ship).
-До того часу endpoint можна use manually для baseline-валидaції.
+PR-27 (`feat(ops): WF-25 morning-briefing cron`) додав n8n workflow
+[`ops/n8n-workflows/25-morning-briefing-cron.json`](../../ops/n8n-workflows/25-morning-briefing-cron.json),
+який дергає endpoint щоранку о 07:00 Kyiv і шле markdown founder-у
+через `@OpenClaw_sergeant_bot` raw HTTP. Audit-row у `n8n_webhook_events`
+зберігає кожен exec для replay/diagnostics (PR-28).
+
+Monitor / disable / env-vars matrix — у
+[`docs/observability/runbook.md` § WF-25 — Morning briefing cron](../observability/runbook.md#wf-25--morning-briefing-cron-0700-kyiv--founder-dm).
+
+Legacy `morning-digest` CronJob (`ops/openclaw/provision-cron.mjs` →
+`/digest day` Layer 0-shortcut, `0 9 * * *` UTC) досі активний у
+gateway-боті як fallback; PR-27 НЕ ламає його, але майбутній
+LLM-summarization-PR замінить raw template на Anthropic-proposal
+("сьогодні фокусуємо на X через Y") і той fallback зможемо вимкнути.
 
 ## Error-handling
 

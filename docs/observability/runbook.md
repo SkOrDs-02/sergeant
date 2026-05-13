@@ -559,3 +559,31 @@ A: Sentry web tracing і OTel server tracing — окремі трекери. Se
 
 **Q: Anthropic-spans порожні (немає tokens, prompt_cache_hit).**
 A: `aiSpan` отримує meta з `[result, meta]` tuple inner-функції. Якщо upstream API повернув error до того як `usage` був доступний — meta порожній. Перевірити `error.message` у span-status — там буде причина.
+
+## WF-25 — Morning briefing cron (07:00 Kyiv → founder DM)
+
+**Що це.** n8n cron-workflow [`25-morning-briefing-cron.json`](../../ops/n8n-workflows/25-morning-briefing-cron.json) щоранку о 07:00 Kyiv (`0 7 * * *`, `settings.timezone="Europe/Kyiv"`) дергає server endpoint [`POST /api/internal/openclaw/briefing/morning`](../runbooks/openclaw-morning-briefing.md) (PR-26), парсить `{markdown, data}`, паралельно запускає (а) запис у `n8n_webhook_events` через [`POST /api/internal/webhook-events/record`](../../apps/server/src/routes/internal/webhook-events.ts) і (b) DM founder-у через raw HTTP до `api.telegram.org/bot{OPENCLAW_BOT_TOKEN}/sendMessage`. LLM-summarization ще НЕ підключено — cron шле raw hardcoded-template markdown.
+
+**Як monitorити.**
+
+- **Healthy:** один Telegram DM від `@OpenClaw_sergeant_bot` щоранку ~07:00 Kyiv. Усі 5 секцій або `notConfigured: true` (env-var unset на API side) або з реальними даними.
+- **Stuck pending:** `SELECT COUNT(*) FROM n8n_webhook_events WHERE workflow_id='25-morning-briefing-cron' AND processed_at IS NULL AND error IS NULL AND received_at < NOW() - INTERVAL '15 minutes';` — `> 0` означає, що `recordWebhookEvent` помітив запис, але PR-29 retention/replay-CLI ще не відмітив його як processed. На сьогодні `processed_at` для cron-ів ніколи не set — це експлуатаційний baseline; alert тільки коли `error IS NOT NULL`.
+- **Telegram delivery fail:** перевір `error` рядок у `n8n_webhook_events`: якщо `OPENCLAW_BOT_TOKEN`/`OPENCLAW_FOUNDER_TG_USER_ID` не виставлені на n8n Railway → Telegram-нода поверне 401/400 (workflow продовжує завдяки `onError: continueRegularOutput`, але DM не дійшов). Аудит-row однакою INSERT-ний, видно у `SELECT * FROM n8n_webhook_events WHERE workflow_id='25-morning-briefing-cron' ORDER BY received_at DESC LIMIT 5;`.
+- **Heartbeat:** WF-99 `*/3h` heartbeat дасть знати, що n8n живий навіть якщо WF-25 silent. WF-98 error-handler ловить runtime errors WF-25 через `errorWorkflow=iC82EFJzqBny9kxI` і ескалит у `#meta`.
+
+**Як disable.**
+
+- **На день/тиждень:** у n8n UI (`Sergeant Ops n8n`) → відкрий workflow `25 — Morning Briefing Cron (07:00 Kyiv → founder DM)` → toggle `Active` → OFF. Git-version залишає `active: false` для всіх workflow-ів, тому це не perdana — наступний `n8n:import` не reactivate-нe її.
+- **Назавжди:** змінити `status` у `ops/n8n-workflows/manifest.json` з `"experimental"` на `"draft"` (або вилучити рядок) і видалити з `REPORTING-MATRIX.md`. У n8n UI workflow залишиться, але `pnpm n8n:export` напише `active: false` в git і `pnpm n8n:import` deactivate-нe.
+- **Hot-disable без UI:** на n8n Railway встанови `OPENCLAW_FOUNDER_TG_USER_ID=""` — endpoint-call і audit-INSERT все ще пройдуть, але raw Telegram HTTP-call отримає `Bad Request: chat not found` і повідомлення тихо не доставиться. Audit-row у `n8n_webhook_events` лишиться, тому ти бачиш intentional-disable у логах.
+
+**Env-vars на n8n Railway.**
+
+| Var                           | Призначення                                                          |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `PUBLIC_API_BASE_URL`         | Base URL до Sergeant API (`https://api.sergeant.app` / staging URL). |
+| `INTERNAL_API_KEY`            | Bearer для `/api/internal/*` routes. Mathing з server-side env.      |
+| `OPENCLAW_BOT_TOKEN`          | Token для `@OpenClaw_sergeant_bot` (cofounder bot, не alert bot).    |
+| `OPENCLAW_FOUNDER_TG_USER_ID` | Telegram user_id founder-а (private DM target).                      |
+
+API-side env-vars для briefing-секцій (Stripe / PostHog / GitHub / n8n / Sentry) — у [`docs/runbooks/openclaw-morning-briefing.md`](../runbooks/openclaw-morning-briefing.md). Якщо API-side env-var missing — briefing рендерить `notConfigured: true` hint у відповідній секції, cron виконується успішно.

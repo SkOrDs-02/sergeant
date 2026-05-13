@@ -1,6 +1,6 @@
 # n8n Reporting Matrix
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active. Live since 2026-05-02 — supergroup `Sergeant Ops` (chat
 > id `-1003924852082`) у Forum mode, 7 канонічних топіків створені, кожен
 > workflow JSON шле через `={{ $env.TELEGRAM_TOPIC_* }}` expression на
@@ -82,6 +82,7 @@ push-ноти (WF-07/09/10) **не йдуть в supergroup**, а летять �
 | **18**  | `18-nightly-security-audit.json`      | `#incidents` ⁽³⁾   | **P1** | Cron 04:00 UTC               | security | WF-98 → `#meta` + email                |
 | **19**  | `19-db-health-report.json`            | `#ops`             | **P1** | Cron Mon 07:00               | ops      | WF-98 → `#meta` (no email)             |
 | **20**  | `20-agent-dispatcher.json`            | `#engineering`     | **P1** | Console/OpenClaw webhook ⁽⁴⁾ | agents   | WF-98 → `#meta` (no email)             |
+| **25**  | `25-morning-briefing-cron.json`       | DM (founder) ⁽⁶⁾   | **P2** | Cron 07:00 Kyiv              | ops      | WF-98 → `#meta` (no email)             |
 | **30**  | `30-ai-memory-daily-digest.json`      | `#digest`          | **P2** | Cron 09:05 Kyiv              | ops      | WF-98 → `#meta` (no email)             |
 | **60**  | `60-growth-funnel-snapshot.json`      | `#growth`          | **P2** | Cron 02:30 Kyiv              | growth   | WF-98 → `#meta` (no email)             |
 | **63**  | `63-growth-acquisition-snapshot.json` | `#growth`          | **P2** | Cron 02:35 Kyiv              | growth   | WF-98 → `#meta` (no email)             |
