@@ -159,6 +159,24 @@ function main() {
     if (!VALID_RISK.has(entry.riskTier)) {
       fail(errors, `${file}: invalid manifest.riskTier "${entry.riskTier}"`);
     }
+    // PR-48 follow-up — manifest tracks outbound HMAC roll-out per
+    // workflow. Field is optional (omitted = unsigned, grace mode).
+    // When set, must be boolean. When true, the workflow must also list
+    // `WEBHOOK_HMAC_SECRET` in `requiredEnv` so ops know it needs to be
+    // wired before flipping the global `WEBHOOK_HMAC_REQUIRED=true`.
+    if (Object.prototype.hasOwnProperty.call(entry, "hmacSigned")) {
+      if (typeof entry.hmacSigned !== "boolean") {
+        fail(errors, `${file}: manifest.hmacSigned must be boolean`);
+      } else if (entry.hmacSigned === true) {
+        const declared = new Set(entry.requiredEnv ?? []);
+        if (!declared.has("WEBHOOK_HMAC_SECRET")) {
+          fail(
+            errors,
+            `${file}: hmacSigned=true but WEBHOOK_HMAC_SECRET missing from requiredEnv`,
+          );
+        }
+      }
+    }
     validateWorkflow(file, entry, errors);
   }
 
