@@ -1,5 +1,6 @@
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
 
@@ -53,14 +54,14 @@ export function HubChatPage() {
 
   return (
     <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter">
-      <Suspense fallback={<PageLoader />}>
+      <SuspenseWithMinDelay fallback={<PageLoader />}>
         <HubChat
           onClose={handleClose}
           initialMessage={initialMessage}
           autoSendInitial={autoSendInitial}
           onOpenCatalogue={handleOpenCatalogue}
         />
-      </Suspense>
+      </SuspenseWithMinDelay>
     </div>
   );
 }

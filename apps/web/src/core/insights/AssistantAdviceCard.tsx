@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { SkeletonText } from "@shared/components/ui/Skeleton";
 import {
   safeReadStringLS,
   safeWriteLS,
@@ -81,35 +82,54 @@ export function AssistantAdviceCard({
 
         {!collapsed && (
           <div className="px-4 pb-3.5 -mt-0.5">
-            {loading && !insight && (
-              <p
-                className="text-sm text-text/80 dark:text-text/90"
+            {loading && !insight ? (
+              // Skeleton stand-in matches three lines of body copy at
+              // the real text size — keeps the card height stable so
+              // the swap to real content does not nudge the dashboard
+              // grid below (CLS budget). Pulse here is the only
+              // AMBIENT animation on screen during initial load; the
+              // refresh-button spin is hidden until an insight is
+              // cached so we stay within Hard Rule #17 (≤1 AMBIENT).
+              <div
+                role="status"
                 aria-live="polite"
+                aria-label="Готую пораду асистента"
+                className="space-y-2 py-0.5"
               >
-                Готую пораду…
+                <span className="sr-only">Готую пораду…</span>
+                <SkeletonText className="h-3.5 w-full" />
+                <SkeletonText className="h-3.5 w-11/12" />
+                <SkeletonText className="h-3.5 w-4/5" />
+              </div>
+            ) : null}
+
+            {insight && (
+              <p
+                key={insight}
+                className="text-sm text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-200"
+              >
+                {insight}
               </p>
             )}
 
-            {insight && (
-              <p className="text-sm text-text leading-relaxed">{insight}</p>
+            {!(loading && !insight) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRefresh();
+                }}
+                disabled={loading}
+                aria-label="Оновити пораду"
+                className={cn(
+                  "mt-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
+                  loading &&
+                    "opacity-40 cursor-not-allowed motion-safe:animate-spin",
+                )}
+              >
+                <Icon name="refresh-cw" size={14} />
+              </button>
             )}
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRefresh();
-              }}
-              disabled={loading}
-              aria-label="Оновити пораду"
-              className={cn(
-                "mt-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
-                loading &&
-                  "opacity-40 cursor-not-allowed motion-safe:animate-spin",
-              )}
-            >
-              <Icon name="refresh-cw" size={14} />
-            </button>
           </div>
         )}
       </div>

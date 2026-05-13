@@ -1,9 +1,10 @@
-import { memo, Suspense, useCallback, type ReactNode } from "react";
+import { memo, useCallback, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
+import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { lazyImport } from "../lib/lazyImport";
@@ -225,9 +226,9 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-reports"
               className="pt-2"
             >
-              <Suspense fallback={<PageLoader />}>
+              <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubReports />
-              </Suspense>
+              </SuspenseWithMinDelay>
             </div>
           </ErrorBoundary>
         )}
@@ -240,9 +241,9 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-profile"
               className="pt-2"
             >
-              <Suspense fallback={<PageLoader />}>
+              <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <ProfilePage />
-              </Suspense>
+              </SuspenseWithMinDelay>
             </div>
           </ErrorBoundary>
         )}
@@ -254,9 +255,9 @@ export const HubMainContent = memo(function HubMainContent({
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
             >
-              <Suspense fallback={<PageLoader />}>
+              <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubSettingsPage user={user} />
-              </Suspense>
+              </SuspenseWithMinDelay>
             </div>
           </ErrorBoundary>
         )}
