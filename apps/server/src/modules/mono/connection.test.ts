@@ -21,6 +21,15 @@ vi.mock("../../obs/logger.js", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   },
+  // T2 audit #10 — `historyFetch.ts` (called via `setImmediate` from
+  // `connectHandler`) re-exports `redactKeyNames` / `redactPaths` for
+  // ESLint-time PII discipline; mocking the logger without these breaks
+  // module load with `No "redactKeyNames" export is defined`. Provide
+  // empty arrays — they're not exercised by the connect/disconnect/
+  // sync-state assertions, they only need to exist for the import to
+  // resolve.
+  redactKeyNames: [] as string[],
+  redactPaths: [] as string[],
 }));
 
 vi.mock("../../obs/metrics.js", () => ({

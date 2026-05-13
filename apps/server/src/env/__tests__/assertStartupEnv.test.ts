@@ -3,9 +3,20 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // Re-imports `env/env.ts` from scratch each test so the zod schema reads the
 // current `process.env` snapshot. Without this every test would see whatever
 // state the first import froze.
+//
+// T2 audit finding #11 — Hard Rule #20 (`assertStartupEnv`) inspects
+// `process.env.Git_PAT` / `process.env.OPENCLAW_GITHUB_PAT` directly to
+// catch leftover platform secrets that bypass Zod. Devin/CI runners
+// inherit `Git_PAT` from the parent shell, which leaked into the
+// "does NOT throw in production" baseline cases and flipped them to
+// failures non-deterministically by host env. We explicitly stub both
+// keys to empty BEFORE applying `envOverrides`, so the negative-path
+// cases (which set them non-empty themselves) still win.
 async function loadAssertStartupEnv(
   envOverrides: Record<string, string> = {},
 ): Promise<() => void> {
+  vi.stubEnv("Git_PAT", "");
+  vi.stubEnv("OPENCLAW_GITHUB_PAT", "");
   for (const [k, v] of Object.entries(envOverrides)) vi.stubEnv(k, v);
   vi.resetModules();
   const mod = await import("../env.js");
