@@ -175,6 +175,7 @@ export function DailyPlanGoalSelectors({
             "border-nutrition/50 text-nutrition-strong dark:text-nutrition",
             "hover:border-nutrition hover:bg-nutrition/10",
             "disabled:opacity-50 transition-colors",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
           {TDEE_COPY.triggerLabel}
@@ -203,6 +204,7 @@ export function DailyPlanGoalSelectors({
                     className={cn(
                       "w-full text-left px-3 py-2 border-b border-line last:border-0",
                       "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
                     )}
                   >
                     <div className="text-style-label">
@@ -241,6 +243,7 @@ export function DailyPlanGoalSelectors({
             "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
             "border-line/70 text-subtle hover:text-text hover:border-nutrition/50",
             "disabled:opacity-50 transition-colors",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
           {activePreset
@@ -268,6 +271,7 @@ export function DailyPlanGoalSelectors({
                 className={cn(
                   "w-full text-left px-3 py-2 border-b border-line",
                   "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
                   activePreset?.id === preset.id &&
                     "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
                 )}
@@ -297,6 +301,7 @@ export function DailyPlanGoalSelectors({
                 "w-full text-left px-3 py-2",
                 "hover:bg-panelHi disabled:opacity-50 transition-colors",
                 "text-muted hover:text-danger",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
               )}
             >
               <div className="text-style-label">Скинути вибір</div>
