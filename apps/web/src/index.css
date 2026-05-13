@@ -22,6 +22,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 @import "@fontsource-variable/dm-sans" layer(base);
 @import "./styles/animations.css" layer(base);
+@import "./styles/background.css" layer(base);
 @import "./styles/module-surfaces.css";
 @import "tailwindcss";
 @import "./styles/theme.css";
