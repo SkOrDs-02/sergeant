@@ -1,17 +1,22 @@
 /**
- * Pure metric math для RAG quality gate (PR-22, WF-30 Phase 2).
+ * Pure metric math для RAG quality gate (PR-22) + eval harness (PR-20).
  *
  * Контракт:
- *  - `recallAtK(retrieved, expected, k)` — повертає частку `expected`,
+ *  - `recallAtK(retrieved, expected, k)` — частка `expected`,
  *    що знайшлась серед топ-K `retrieved`. Domain ∈ [0, 1].
+ *  - `precisionAt1(retrieved, expected)` — 1 якщо `retrieved[0]` ∈
+ *    expected, інакше 0. Сигнал "найрелевантніший hit на позиції 1".
+ *  - `reciprocalRank(retrieved, expected)` — 1 / rank-of-first-hit
+ *    (rank 1-indexed); 0 якщо жоден `expected` не знайдений у
+ *    `retrieved`. PR-20 quality-of-ordering metric.
  *  - `aggregateRecall(perQueryRecall)` — mean / min / p50 / count.
- *    p50 — простий nearest-rank (не linear interpolation), бо для
- *    50-query golden-set точність interpolation-у не критична.
+ *  - `aggregateRecallSet(queries)` — paralel-aggregate recall@K + P@1 +
+ *    MRR в одному проходi для CLI summary.
  *  - `classifyRecall(mean, opts?)` — порівнює з `warnThreshold=0.5` і
- *    `killThreshold=0.4` (decision-point Day 60 з pr-plan-2026-05.md).
+ *    `killThreshold=0.4` (decision-point Day 60 pr-plan-2026-05.md).
  *
- * Цей модуль pure — без I/O, без env, без Voyage / pgvector. Тестується
- * швидко (recall.test.ts). Виклик з CLI: `scripts/eval-rag-recall.mjs`.
+ * Цей модуль pure — без I/O, env, Voyage / pgvector. Тестується швидко
+ * (recall.test.ts). Виклик з CLI: `scripts/eval-rag-recall.mjs`.
  */
 
 /**
@@ -42,6 +47,52 @@ export function recallAtK(
     if (topK.has(id)) hits += 1;
   }
   return hits / expectedSet.size;
+}
+
+/**
+ * Precision@1 — 1 якщо найвищий retrieved (топ-1) є у `expected`, інакше
+ * 0. Найжорсткіший recall-metric: чи найвищий-ranked-result релевантний?
+ *
+ * Edge cases:
+ *  - `expected.length === 0` → 1 (нема чого шукати, top-1 trivially OK).
+ *  - `retrieved.length === 0` → 0 (нема що оцінити).
+ */
+export function precisionAt1(
+  retrieved: readonly string[],
+  expected: readonly string[],
+): 0 | 1 {
+  if (expected.length === 0) return 1;
+  if (retrieved.length === 0) return 0;
+  const top = retrieved[0];
+  if (top === undefined) return 0;
+  return new Set(expected).has(top) ? 1 : 0;
+}
+
+/**
+ * Reciprocal rank — 1 / (rank of first expected hit), rank 1-indexed.
+ *  - Якщо `expected[0]` знайдений на позиції 1 у retrieved → RR = 1.0.
+ *  - На позиції 2 → RR = 0.5; на позиції 4 → RR = 0.25.
+ *  - Якщо жоден expected не знайдений → RR = 0.
+ *  - `expected.length === 0` → 1 (no-op, treat as perfect).
+ *
+ * MRR (Mean Reciprocal Rank) — `aggregateScalar` усіх per-query RR.
+ * Метрика чутлива до **порядку**, на відміну від recall@K, що дивиться
+ * лише на membership у top-K set.
+ */
+export function reciprocalRank(
+  retrieved: readonly string[],
+  expected: readonly string[],
+): number {
+  if (expected.length === 0) return 1;
+  if (retrieved.length === 0) return 0;
+  const expectedSet = new Set(expected);
+  for (let i = 0; i < retrieved.length; i++) {
+    const item = retrieved[i];
+    if (item !== undefined && expectedSet.has(item)) {
+      return 1 / (i + 1);
+    }
+  }
+  return 0;
 }
 
 export interface RecallAggregate {
@@ -89,6 +140,44 @@ export function aggregateRecall(
     mean: sum / perQueryRecall.length,
     min,
     p50: sorted[idx] ?? 0,
+  };
+}
+
+/**
+ * Per-query metrics — повна тройка для PR-20 eval reporting. CLI
+ * рахує це для кожної golden-query і aggregateляє у `MetricsBundle`.
+ */
+export interface PerQueryMetrics {
+  recall: number;
+  precisionAt1: 0 | 1;
+  reciprocalRank: number;
+}
+
+/**
+ * Bundle усіх трьох aggregate metrics. `recallAtK` (mean recall@K) —
+ * primary signal для quality gate; `precisionAt1` і `mrr` — secondary
+ * сигнали для root-cause investigation (recall високий, але P@1
+ * низький → ordering broken; MRR низький → relevant items занадто
+ * глибоко у списку).
+ */
+export interface MetricsBundle {
+  recallAtK: RecallAggregate;
+  precisionAt1: RecallAggregate;
+  /** Mean Reciprocal Rank — aggregate.mean з recipRanks-у. */
+  mrr: RecallAggregate;
+}
+
+/**
+ * Одночасний aggregate трьох метрик з масиву per-query measurements.
+ * Дзеркало JS-implementation у `scripts/eval-rag-recall.mjs`.
+ */
+export function aggregateMetrics(
+  perQuery: readonly PerQueryMetrics[],
+): MetricsBundle {
+  return {
+    recallAtK: aggregateRecall(perQuery.map((q) => q.recall)),
+    precisionAt1: aggregateRecall(perQuery.map((q) => q.precisionAt1)),
+    mrr: aggregateRecall(perQuery.map((q) => q.reciprocalRank)),
   };
 }
 

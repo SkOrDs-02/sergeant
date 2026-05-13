@@ -185,7 +185,7 @@ describe("subscription_started PostHog capture (PR-09)", () => {
     );
   });
 
-  it("does NOT fire subscription_started on customer.subscription.updated", async () => {
+  it("fires subscription_renewed (NOT _started) on active customer.subscription.updated", async () => {
     const client = createClient(1);
     const pool = { connect: vi.fn().mockResolvedValue(client) };
     const capture: ReturnType<typeof vi.fn> = vi
@@ -205,13 +205,80 @@ describe("subscription_started PostHog capture (PR-09)", () => {
             id: "sub_test_1",
             status: "active",
             metadata: { user_id: "user_42", plan: "pro" },
+            items: {
+              data: [
+                {
+                  price: {
+                    unit_amount: 700,
+                    currency: "usd",
+                    recurring: { interval: "month" },
+                  },
+                },
+              ],
+            },
           },
         },
       },
       Buffer.from("{}"),
     );
 
-    expect(capture).not.toHaveBeenCalled();
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_renewed");
+    expect(callArg.properties["$revenue"]).toBe(7);
+  });
+
+  it("fires subscription_canceled with `reason` on customer.subscription.deleted (no $revenue)", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_sub_deleted_1",
+        type: "customer.subscription.deleted",
+        data: {
+          object: {
+            id: "sub_test_1",
+            status: "canceled",
+            metadata: { user_id: "user_42", plan: "pro" },
+            cancellation_details: { reason: "cancellation_requested" },
+            items: {
+              data: [
+                {
+                  price: {
+                    unit_amount: 700,
+                    currency: "usd",
+                    recurring: { interval: "month" },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_canceled");
+    expect(callArg.properties["reason"]).toBe("user");
+    // Cancellation events MUST NOT push $revenue — PostHog would otherwise
+    // double-count the original charge as fresh revenue on churn.
+    expect(callArg.properties["$revenue"]).toBeUndefined();
   });
 
   it("does NOT fire subscription_started on duplicate webhook (idempotent)", async () => {

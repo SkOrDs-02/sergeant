@@ -16,6 +16,7 @@ import { createHealthRouter } from "./health.js";
 import { createMeRouter } from "./me.js";
 import { createNutritionRouter } from "./nutrition.js";
 import { createPushRouter } from "./push.js";
+import { createStatusRouter } from "./status.js";
 import { createSyncRouter } from "./sync.js";
 import { createTranscribeRouter } from "./transcribe.js";
 import { createWaitlistRouter } from "./waitlist.js";
@@ -37,6 +38,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   // they are never accidentally matched by a wildcard further down.
   app.use(createInternalRouter({ pool }));
   app.use(createHealthRouter({ pool }));
+  app.use(createStatusRouter({ pool }));
   app.use(createAuthRouter());
   app.use(createMeRouter());
   app.use(createBillingRouter({ pool }));

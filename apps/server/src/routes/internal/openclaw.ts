@@ -32,6 +32,7 @@ import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  buildAiCostSummary,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -249,12 +250,16 @@ const ServerStatsBody = z.object({}).strict();
 
 // PR-26: morning briefing payload — всі поля optional, бо консумер (cron
 // dispatcher / manual probe) може приймати дефолти.
+// O1 / Phase 2.A: додано `includeProposals` (default true) — вимикає
+// LLM-call для proposals-секції коли caller хоче чистий 5-секційний
+// briefing без витрат токенів (наприклад, retry після Anthropic outage).
 const MorningBriefingBody = z
   .object({
     windowDays: z.number().int().min(1).max(30).optional(),
     githubRepo: z.string().min(3).max(140).optional(),
     sentryLimit: z.number().int().min(1).max(20).optional(),
     prLimit: z.number().int().min(1).max(30).optional(),
+    includeProposals: z.boolean().optional(),
   })
   .strict();
 
@@ -712,6 +717,31 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     }),
   );
 
+  // ---- ai-cost-summary (`/ai_cost` slash-command backend) ----
+  //
+  // Realtime AI-spend rollup for founder DM. Sources:
+  //   - Anthropic per-day/-week/-month — `ai_usage_daily` ledger
+  //     (PR-12 #2567) у Europe/Kyiv-добу.
+  //   - Voyage cumulative + top-3 endpoints — in-process Prom-counter
+  //     `ai_cost_estimate_usd_total` (since process restart).
+  //   - Budget envelopes — `ANTHROPIC_MONTHLY_BUDGET_USD` /
+  //     `VOYAGE_MONTHLY_BUDGET_USD` env-vars (PR-13 #2590).
+  // Body порожній — endpoint без аргументів, founder-bound по
+  // internal-API-bearer guard.
+  r.post(
+    "/api/internal/openclaw/ai-cost-summary",
+    asyncHandler(async (_req, res) => {
+      const summary = await buildAiCostSummary({
+        pool,
+        budget: {
+          anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
+          voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
+        },
+      });
+      res.json(summary);
+    }),
+  );
+
   // ---- invocations: open ----
   r.post(
     "/api/internal/openclaw/invocations/open",
@@ -829,6 +859,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         input.sentryLimit = parsed.data.sentryLimit;
       if (parsed.data.prLimit !== undefined)
         input.prLimit = parsed.data.prLimit;
+      if (parsed.data.includeProposals !== undefined)
+        input.includeProposals = parsed.data.includeProposals;
       const result = await assembleMorningBriefing(input);
       res.json(result);
     }),

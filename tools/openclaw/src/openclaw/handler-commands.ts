@@ -31,6 +31,7 @@ import type { Context } from "grammy";
 import { isFounderAllowed, isPrivateChat } from "./security.js";
 import { registerInfoCommands } from "./handler-info-commands.js";
 import { registerAgentCommands } from "./handler-agent-commands.js";
+import { registerStrategyCommands } from "./handler-strategy-commands.js";
 import { registerCallbackHandlers } from "./handler-callbacks.js";
 import { registerEventHandlers } from "./handler-events.js";
 import type {
@@ -98,6 +99,7 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
 
   registerInfoCommands(context);
   registerAgentCommands(context);
+  registerStrategyCommands(context);
   registerCallbackHandlers(context);
   registerEventHandlers(context);
 }

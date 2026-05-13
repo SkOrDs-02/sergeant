@@ -13,6 +13,8 @@ import {
   isCommentLine,
   findDropLines,
   hasAllowDropEscapeHatch,
+  hasNoRollbackEscapeHatch,
+  isEmptyDownMigration,
   checkSequentialNumbers,
   findCrossBranchCollisions,
   filterNewMigrationFiles,
@@ -117,6 +119,72 @@ describe("hasAllowDropEscapeHatch", () => {
       hasAllowDropEscapeHatch("SELECT 'ALLOW_DROP: reason';"),
       false,
     );
+  });
+});
+
+// ── hasNoRollbackEscapeHatch ────────────────────────────────────────────────
+
+describe("hasNoRollbackEscapeHatch", () => {
+  it("returns true when NO_ROLLBACK comment with a reason is present", () => {
+    const content =
+      "-- NO_ROLLBACK: irreversible backfill of `users.created_at` (due: 2026-06-01)\n";
+    assert.equal(hasNoRollbackEscapeHatch(content), true);
+  });
+
+  it("returns false when there is no NO_ROLLBACK comment", () => {
+    assert.equal(hasNoRollbackEscapeHatch("DELETE FROM foo;"), false);
+    assert.equal(hasNoRollbackEscapeHatch(""), false);
+  });
+
+  it("returns false for NO_ROLLBACK without a reason after the colon", () => {
+    assert.equal(hasNoRollbackEscapeHatch("-- NO_ROLLBACK:\n"), false);
+    assert.equal(hasNoRollbackEscapeHatch("-- NO_ROLLBACK: \n"), false);
+  });
+
+  it("does not match NO_ROLLBACK inside a SQL string literal", () => {
+    assert.equal(
+      hasNoRollbackEscapeHatch("SELECT 'NO_ROLLBACK: not real';"),
+      false,
+    );
+  });
+});
+
+// ── isEmptyDownMigration ────────────────────────────────────────────────────
+
+describe("isEmptyDownMigration", () => {
+  it("returns true for the bare plop placeholder", () => {
+    const content =
+      "-- Down migration: 999_demo\n\n-- TODO: write your DOWN (rollback) migration here\n";
+    assert.equal(isEmptyDownMigration(content), true);
+  });
+
+  it("returns true for an entirely empty file", () => {
+    assert.equal(isEmptyDownMigration(""), true);
+    assert.equal(isEmptyDownMigration("\n\n  \n"), true);
+  });
+
+  it("returns true for a file with only SQL comments", () => {
+    const content = "-- nothing to roll back here\n-- this is fine\n";
+    assert.equal(isEmptyDownMigration(content), true);
+  });
+
+  it("returns false when at least one executable SQL statement is present", () => {
+    const placeholder = "-- TODO: write your DOWN (rollback) migration here\n";
+    assert.equal(
+      isEmptyDownMigration(`${placeholder}\nDROP TABLE foo;\n`),
+      false,
+    );
+    assert.equal(
+      isEmptyDownMigration("ALTER TABLE foo DROP COLUMN bar;"),
+      false,
+    );
+  });
+
+  it("treats the placeholder line as 'still empty' even mixed with comments", () => {
+    // Common pattern: contributor adds a comment but forgets the actual SQL.
+    const content =
+      "-- Down migration: 999_demo\n-- TODO: write your DOWN (rollback) migration here\n-- See up.sql\n";
+    assert.equal(isEmptyDownMigration(content), true);
   });
 });
 
@@ -256,6 +324,85 @@ describe("run() — integration", () => {
     const { ok } = run({
       migrationsDir: tmpDir,
       changedFiles: [join(tmpDir, "001_init.down.sql")],
+    });
+    assert.equal(ok, true);
+  });
+
+  it("fails when a new .down.sql still contains the plop placeholder", () => {
+    // The plop generator emits `-- TODO: write your DOWN …` and the
+    // contributor is expected to replace it with real rollback SQL.
+    // Leaving the placeholder in must trip the lint.
+    writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "001_init.down.sql"),
+      "-- Down migration: 001_init\n\n-- TODO: write your DOWN (rollback) migration here\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "001_init.down.sql")],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) => e.includes("rollback body is empty")),
+      `expected empty-rollback error, got: ${errors.join(" | ")}`,
+    );
+    assert.ok(
+      errors.some((e) => e.includes("NO_ROLLBACK")),
+      "error must mention the NO_ROLLBACK escape hatch",
+    );
+  });
+
+  it("fails when a new .down.sql is entirely empty", () => {
+    writeFileSync(join(tmpDir, "002_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(join(tmpDir, "002_init.down.sql"), "");
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_init.down.sql")],
+    });
+    assert.equal(ok, false);
+    assert.ok(errors.some((e) => e.includes("rollback body is empty")));
+  });
+
+  it("passes when an empty .down.sql carries a NO_ROLLBACK escape hatch", () => {
+    writeFileSync(join(tmpDir, "003_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "003_init.down.sql"),
+      "-- NO_ROLLBACK: legacy backfill cannot be undone (due: 2026-06-01)\n",
+    );
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "003_init.down.sql")],
+    });
+    assert.equal(ok, true, `unexpected failures: ${errors.join(" | ")}`);
+  });
+
+  it("passes when a new .down.sql has real rollback SQL", () => {
+    writeFileSync(join(tmpDir, "004_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(join(tmpDir, "004_init.down.sql"), "DROP TABLE foo;\n");
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "004_init.down.sql")],
+    });
+    assert.equal(ok, true, `unexpected failures: ${errors.join(" | ")}`);
+  });
+
+  it("does NOT flag a pre-existing empty .down.sql when only the up file changed", () => {
+    // The empty-down check only runs against `changedFiles`. Pre-existing
+    // empty `.down.sql` files in the tree must not block unrelated PRs;
+    // the lint is opt-in via the touched-file gate.
+    writeFileSync(join(tmpDir, "005_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "005_init.down.sql"),
+      "-- TODO: write your DOWN (rollback) migration here\n",
+    );
+
+    const { ok } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "005_init.sql")],
     });
     assert.equal(ok, true);
   });

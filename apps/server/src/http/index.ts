@@ -35,7 +35,12 @@ export {
   rateLimitExpress,
   rateLimitSubject,
 } from "./rateLimit.js";
-export { validateBody, validateQuery } from "./validate.js";
+export {
+  parseBody,
+  parseQuery,
+  validateBody,
+  validateQuery,
+} from "./validate.js";
 export { extractJsonFromText } from "./jsonSafe.js";
 export * as schemas from "./schemas.js";
 

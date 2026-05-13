@@ -1,30 +1,18 @@
 import { useCallback, useState } from "react";
-import {
-  ScrollRestoration,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
-import { ApiClientProvider } from "@sergeant/api-client/react";
-import { apiClient } from "@shared/api";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
-import { ToastProvider } from "@shared/hooks/useToast";
-import { ToastContainer } from "@shared/components/ui/Toast";
-import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
-import {
-  useKeyboardShortcutsModal,
-  ShortcutRegistryProvider,
-} from "@shared/components/ui/KeyboardShortcutsModal";
+import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
+import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 
-import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { useAuth } from "./auth/AuthContext";
 import { AppLock } from "./security/AppLock";
-import { AppLockProvider, useAppLockContext } from "./security/AppLockContext";
-import { setFlag } from "./lib/featureFlags";
+import { useAppLockContext } from "./security/AppLockContext";
+import { setFlag, useFlag } from "./lib/featureFlags";
+import { useDemoCommands } from "./app/useDemoCommands";
 import { ActiveModuleView } from "./app/ActiveModuleView";
-import { HashRedirect } from "./app/HashRedirect";
 import { HubHomeView } from "./app/HubHomeView";
+import { Providers } from "./app/Providers";
 import { RedirectTo } from "./app/RedirectTo";
-import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
 import { renderStandaloneRoute } from "./app/StandaloneRoutes";
 import { useAppEffects } from "./app/useAppEffects";
 import { useIosInstallBanner } from "./app/useIosInstallBanner";
@@ -36,63 +24,20 @@ import { useHubNavigation } from "./hooks/useHubNavigation";
 import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions } from "./hooks/usePwaActions";
 import { shouldShowOnboarding } from "./onboarding/onboardingGate";
-import { PageviewTracker } from "./observability/PageviewTracker";
 import { useNutritionDualWriteBoot } from "../modules/nutrition/hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "../modules/nutrition/hooks/useNutritionSqliteReadBoot";
 
 export default function App() {
+  // Provider tree (Shortcut → Toast → Announcer → ApiClient → Auth →
+  // AppLock) plus the router-effect bridges (deep link, hash-redirect,
+  // scroll-restoration, pageview) live in `./app/Providers`. The
+  // invariant — every leaf can call `useToast()` / `useAnnounce()` /
+  // `useAuth()` — is exercised by `App.test.tsx`. See the docstring
+  // there for the rationale (Web deep-dive 2026-05-03 §1.1).
   return (
-    <ShortcutRegistryProvider>
-      <ToastProvider>
-        <ToastContainer />
-        {/*
-        Screen reader announcer: mounts two `aria-live` regions
-        (polite + assertive) at the app root. Any descendant can call
-        `useAnnounce()` to surface dynamic state changes (toggles,
-        expand/collapse, training completion, etc.) to assistive
-        tech. Lives outside ApiClientProvider/AuthProvider so even
-        unauthenticated screens (sign-in, onboarding) can announce.
-      */}
-        {/* Capacitor deep-link bridge: монтуємо ВСЕРЕДИНІ роутера (App
-          рендериться під <BrowserRouter>), але поза AppInner, щоб
-          bridge переживав ранні return-и в AppInner (/sign-in,
-          /reset-password, /design тощо) — deep link може прилетіти у
-          будь-який із цих станів. */}
-        <ShellDeepLinkBridge />
-        {/* Legacy hash-URL compat shim (initiative 0006 §Phase 3):
-          rewrites root-level hash URLs (e.g. `/#fizruk/workouts` from a
-          legacy PWA install / share-card / push notification) to the
-          canonical `/<module>/<page>` path. Mounted alongside the
-          deep-link bridge so it survives the same set of unauthenticated
-          surfaces (`/sign-in`, `/welcome`, …) where a legacy URL could
-          land first. In-module hashes (`/fizruk#workouts`) are handled
-          by each module's own redirect-on-mount shim. */}
-        <HashRedirect />
-        {/* Scroll restoration (initiative 0006 §Phase 4): react-router
-          web behaviour. Restores `(x, y)` for POP-нав (back/forward) і
-          скролить у `(0, 0)` для PUSH/REPLACE. Покриває всі top-level
-          паттерни — Hub `/`, `/<module>/*`, `/sign-in`, `/welcome`,
-          `/reset-password`. NOOP за замовчанням: без аргументів просто
-          відновлює default-behaviour браузера, який react-router
-          вимикає для SPA-нав. */}
-        <ScrollRestoration />
-        {/* PostHog `$pageview` tracker: монтуємо тут (всередині
-          BrowserRouter, поза AuthProvider), щоб фіксувати pathname і
-          в unauthenticated-шляхах (`/sign-in`, `/welcome`,
-          `/reset-password`) — без цього onboarding / auth funnels
-          у PostHog були б сліпими перед login-ом. */}
-        <PageviewTracker />
-        <ScreenReaderAnnouncerProvider>
-          <ApiClientProvider client={apiClient}>
-            <AuthProvider>
-              <AppLockProvider>
-                <AppInnerWithLock />
-              </AppLockProvider>
-            </AuthProvider>
-          </ApiClientProvider>
-        </ScreenReaderAnnouncerProvider>
-      </ToastProvider>
-    </ShortcutRegistryProvider>
+    <Providers>
+      <AppInnerWithLock />
+    </Providers>
   );
 }
 
@@ -205,6 +150,14 @@ function AppInner() {
     onOpenSearch: openSearchFromShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
   });
+
+  // Track 5 — global ⌘K / Ctrl+K command palette. Gated by the
+  // `hub_command_palette` flag so we can ship the primitive without
+  // racing the existing Hub-search Cmd+K shortcut. When the flag flips
+  // on, the palette steals Cmd+K from `useHubKeyboardShortcuts`.
+  const paletteEnabled = useFlag("hub_command_palette");
+  useCommandPaletteHotkey(paletteEnabled);
+  useDemoCommands();
 
   // URL-addressable surfaces that live outside the hub composition
   // (sign-in, reset-password, /design, /pricing, /assistant, /chat,

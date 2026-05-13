@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { useShortcutGlyph } from "@shared/hooks";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
@@ -70,6 +71,7 @@ export function HubHeader({
   }, [user?.name]);
 
   const dateStr = useMemo(formatUkrainianDate, []);
+  const { modK } = useShortcutGlyph();
 
   return (
     <header
@@ -93,7 +95,7 @@ export function HubHeader({
 
         <div className="flex items-center gap-1 shrink-0">
           <Tooltip
-            content="Пошук по всіх модулях (⌘K)"
+            content={`Пошук по всіх модулях (${modK})`}
             placement="bottom-center"
           >
             <button

@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_KILL_THRESHOLD,
   DEFAULT_WARN_THRESHOLD,
+  aggregateMetrics,
   aggregateRecall,
   classifyRecall,
+  precisionAt1,
   recallAtK,
+  reciprocalRank,
   statusToExitCode,
 } from "./recall.js";
 
@@ -145,5 +148,90 @@ describe("statusToExitCode", () => {
     expect(statusToExitCode("pass")).toBe(0);
     expect(statusToExitCode("warn")).toBe(1);
     expect(statusToExitCode("kill")).toBe(2);
+  });
+});
+
+describe("precisionAt1", () => {
+  it("повертає 1 коли retrieved[0] у expected", () => {
+    expect(precisionAt1(["a", "b", "c"], ["a", "z"])).toBe(1);
+  });
+
+  it("повертає 0 коли retrieved[0] не у expected", () => {
+    expect(precisionAt1(["x", "a", "b"], ["a", "b"])).toBe(0);
+  });
+
+  it("повертає 1 при empty expected (trivially)", () => {
+    expect(precisionAt1(["a"], [])).toBe(1);
+  });
+
+  it("повертає 0 при empty retrieved", () => {
+    expect(precisionAt1([], ["a"])).toBe(0);
+  });
+
+  it("трактує expected як set (дублі не впливають)", () => {
+    expect(precisionAt1(["a"], ["a", "a", "a"])).toBe(1);
+  });
+});
+
+describe("reciprocalRank", () => {
+  it("RR = 1 коли expected на позиції 1", () => {
+    expect(reciprocalRank(["a", "x", "y"], ["a"])).toBe(1);
+  });
+
+  it("RR = 0.5 коли expected на позиції 2", () => {
+    expect(reciprocalRank(["x", "a", "y"], ["a"])).toBe(0.5);
+  });
+
+  it("RR = 0.25 коли expected на позиції 4", () => {
+    expect(reciprocalRank(["x", "y", "z", "a"], ["a"])).toBe(0.25);
+  });
+
+  it("повертає RR першого hit-у (не середнє)", () => {
+    // expected = [a, b]; a@pos 3, b@pos 2 → RR = 1/2.
+    expect(reciprocalRank(["x", "b", "a"], ["a", "b"])).toBe(0.5);
+  });
+
+  it("повертає 0 коли жоден expected не у retrieved", () => {
+    expect(reciprocalRank(["x", "y", "z"], ["a", "b"])).toBe(0);
+  });
+
+  it("повертає 1 при empty expected", () => {
+    expect(reciprocalRank(["a"], [])).toBe(1);
+  });
+
+  it("повертає 0 при empty retrieved", () => {
+    expect(reciprocalRank([], ["a"])).toBe(0);
+  });
+});
+
+describe("aggregateMetrics", () => {
+  it("empty input → нульовий bundle", () => {
+    const bundle = aggregateMetrics([]);
+    expect(bundle.recallAtK.count).toBe(0);
+    expect(bundle.precisionAt1.count).toBe(0);
+    expect(bundle.mrr.count).toBe(0);
+  });
+
+  it("aggregateляє все три метрики паралельно", () => {
+    const bundle = aggregateMetrics([
+      { recall: 1, precisionAt1: 1, reciprocalRank: 1 },
+      { recall: 0.5, precisionAt1: 0, reciprocalRank: 0.5 },
+      { recall: 0, precisionAt1: 0, reciprocalRank: 0 },
+    ]);
+    expect(bundle.recallAtK.mean).toBeCloseTo(0.5);
+    expect(bundle.precisionAt1.mean).toBeCloseTo(1 / 3);
+    expect(bundle.mrr.mean).toBeCloseTo(0.5);
+  });
+
+  it("P@1 mean — фактично fraction-hits@1", () => {
+    // 5 query, з яких 2 hit-нули на pos 1 → P@1 mean = 0.4.
+    const bundle = aggregateMetrics([
+      { recall: 1, precisionAt1: 1, reciprocalRank: 1 },
+      { recall: 1, precisionAt1: 1, reciprocalRank: 1 },
+      { recall: 0.5, precisionAt1: 0, reciprocalRank: 0.5 },
+      { recall: 0.5, precisionAt1: 0, reciprocalRank: 0.5 },
+      { recall: 0, precisionAt1: 0, reciprocalRank: 0 },
+    ]);
+    expect(bundle.precisionAt1.mean).toBeCloseTo(0.4);
   });
 });

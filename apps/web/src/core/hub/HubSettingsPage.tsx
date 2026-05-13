@@ -59,15 +59,63 @@ function groupForSection(sectionId: string | null) {
   );
 }
 
+/**
+ * Read the active inner-tab from `?group=…`. Returns the group id only if
+ * it matches a known `GROUPS[].id`; anything else (missing / malformed /
+ * unknown) returns `null` so the caller falls back to the default
+ * resolution chain (hash → "general"). Kept in module scope so the SSR
+ * guard and validation stay co-located with `GROUPS`.
+ */
+function readSettingsGroupParam(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = new URLSearchParams(window.location.search).get("group");
+    if (!raw) return null;
+    if (GROUPS.some((group) => group.id === raw)) return raw;
+  } catch {
+    /* SSR / non-browser */
+  }
+  return null;
+}
+
+/**
+ * Mirror the active inner-tab to `?group=…` via `history.replaceState` so
+ * a reload / share keeps the user on the same group. We strip the param
+ * for the default group (`general`) to keep the canonical URL clean for
+ * the common case. `replaceState` (not `pushState`) is intentional —
+ * clicking a tab strip shouldn't grow the browser history stack.
+ */
+function writeSettingsGroupParam(groupId: string) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (groupId === "general") {
+    url.searchParams.delete("group");
+  } else {
+    url.searchParams.set("group", groupId);
+  }
+  if (url.toString() !== window.location.href) {
+    window.history.replaceState(null, "", url.toString());
+  }
+}
+
 export interface HubSettingsPageProps {
   user: User | null;
 }
 
 export function HubSettingsPage({ user }: HubSettingsPageProps) {
-  const [tab, setTab] = useState<string>(() => {
+  // Resolution order on mount: explicit `?group=…` wins (shareable
+  // deep-links) → hash-section's parent group (existing legacy path
+  // from Bento `Налаштування` deep-links) → "general" default.
+  const [tab, setTabRaw] = useState<string>(() => {
+    const fromQuery = readSettingsGroupParam();
+    if (fromQuery) return fromQuery;
     const sectionId = readSettingsSectionHash();
     return groupForSection(sectionId)?.id ?? "general";
   });
+  const setTab = (next: string) => {
+    setTabRaw(next);
+    writeSettingsGroupParam(next);
+  };
   const [query, setQuery] = useState("");
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
   const [hashSectionId, setHashSectionId] = useState<string | null>(

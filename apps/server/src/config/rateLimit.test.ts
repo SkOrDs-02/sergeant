@@ -40,7 +40,9 @@ describe("RATE_LIMIT_POLICIES — registry invariants", () => {
 describe("getRateLimitPolicy", () => {
   it("повертає policy за валідним іменем", () => {
     const p = getRateLimitPolicy("api:auth:sensitive");
-    expect(p.limit).toBe(20);
+    // PR-48 round-2: default tightened 20/60s → 5/60s (OWASP ASVS V11.1.3),
+    // env-tunable через `AUTH_RATE_LIMIT_MAX` + `AUTH_RATE_LIMIT_WINDOW_SEC`.
+    expect(p.limit).toBe(5);
     expect(p.windowMs).toBe(60_000);
   });
 });
@@ -53,7 +55,7 @@ describe("policyOptions", () => {
 
   it("успадковує limit/windowMs/failMode з реєстру", () => {
     const opts = policyOptions("api:auth:sensitive");
-    expect(opts.limit).toBe(20);
+    expect(opts.limit).toBe(5);
     expect(opts.windowMs).toBe(60_000);
     expect(opts.failMode).toBe("closed");
   });
@@ -62,7 +64,7 @@ describe("policyOptions", () => {
     const opts = policyOptions("api:auth:sensitive", { failMode: "open" });
     expect(opts.failMode).toBe("open");
     // limit/windowMs мають лишитися від реєстру.
-    expect(opts.limit).toBe(20);
+    expect(opts.limit).toBe(5);
     expect(opts.windowMs).toBe(60_000);
   });
 

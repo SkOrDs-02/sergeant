@@ -29,17 +29,24 @@ import type {
   AlertsBriefingSection,
   MorningBriefingData,
   PrQueueBriefingSection,
+  ProposalsBriefingSection,
   SignupsBriefingSection,
   StripeBriefingSection,
   WorkflowsBriefingSection,
 } from "./types.js";
 
 /**
- * Головний entrypoint — `data` → markdown briefing.
+ * Головний entrypoint — `data` → markdown briefing. Якщо секція
+ * `proposals` присутня (O1 / Phase 2.A) — вона виводиться першою
+ * після заголовка, щоб founder бачив next-action-и відразу.
  */
 export function buildMorningBriefing(data: MorningBriefingData): string {
   const lines: string[] = [];
   lines.push(formatHeader(data));
+  if (data.proposals) {
+    lines.push("");
+    lines.push(...formatProposalsSection(data.proposals));
+  }
   lines.push("");
   lines.push(...formatStripeSection(data.stripe));
   lines.push("");
@@ -51,6 +58,31 @@ export function buildMorningBriefing(data: MorningBriefingData): string {
   lines.push("");
   lines.push(...formatAlertsSection(data.alerts));
   return lines.join("\n").trimEnd() + "\n";
+}
+
+function formatProposalsSection(s: ProposalsBriefingSection): string[] {
+  const lines: string[] = ["*🎯 Пропозиції на сьогодні*"];
+  if (s.notConfigured) {
+    lines.push(
+      "- _LLM-провайдер не сконфігурований (`ANTHROPIC_API_KEY` / `LLM_PROVIDER`); next-action-и пропущено._",
+    );
+    if (s.note) lines.push(`- ${s.note}`);
+    return lines;
+  }
+  const proposals = Array.isArray(s.proposals) ? s.proposals : [];
+  if (proposals.length === 0) {
+    lines.push(
+      "- _LLM не повернув жодної пропозиції; фокус — roadmap-задача дня._",
+    );
+    if (s.note) lines.push(`- ${s.note}`);
+    return lines;
+  }
+  proposals.forEach((proposal, idx) => {
+    lines.push(`${idx + 1}. ${proposal}`);
+  });
+  if (s.reasoning) lines.push(`- _${s.reasoning}_`);
+  if (s.note) lines.push(`- ${s.note}`);
+  return lines;
 }
 
 function formatHeader(data: MorningBriefingData): string {

@@ -328,6 +328,47 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 
 ---
 
+## 15a. Build/release identity (`app_build_info`)
+
+| Metric           | Type  | Labels                                                    | Emitter                                                                     |
+| ---------------- | ----- | --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `app_build_info` | Gauge | `version` · `commit` · `release` · `env` · `node_version` | [obs/metrics.ts](../../apps/server/src/obs/metrics.ts) `appBuildInfo` Gauge |
+
+Статичний gauge зі значенням `1`, який експортується одноразово під час
+завантаження процесу. Лейбли беруться з env-vars (із fallback `unknown`):
+
+- `version` — `npm_package_version` (npm/pnpm runtime env).
+- `commit` — `RAILWAY_GIT_COMMIT_SHA` → `GIT_COMMIT` → `VERCEL_GIT_COMMIT_SHA` (перші 12 символів).
+- `release` — `SENTRY_RELEASE` → `RAILWAY_GIT_COMMIT_SHA` (узгоджено з Sentry release).
+- `env` — `NODE_ENV` (`development` / `production`).
+- `node_version` — `process.version` (наприклад `v20.18.0`).
+
+**Призначення**: join-on-labels у Grafana, щоб ловити регресії на конкретному релізі/комміті без копіювання версії в кожну метрику.
+
+```promql
+# p99 latency для конкретного релізу
+histogram_quantile(0.99,
+  sum by (le, release) (
+    rate(http_request_duration_ms_bucket[5m])
+    * on() group_left(release) app_build_info
+  )
+)
+
+# Error-rate per release (порівняти "зелену" і "червону" версії)
+sum by (release) (
+  rate(http_requests_total{status_class=~"5xx"}[5m])
+  * on() group_left(release) app_build_info
+)
+
+# Перевірити, що на /metrics не зʼявилося кілька версій одночасно під час
+# rolling deploy (як правило має бути 1 серія, під час rollout-у 2)
+count(app_build_info) by (release)
+```
+
+**Кардинальність**: **1** серія на інстанс (per-process), значення фіксується на стартапі і не змінюється. При rolling deploy-і Prometheus побачить дві серії на час перетину версій — це нормально і не порушує cardinality budget.
+
+---
+
 ## 16. Cost monitoring (PR-33 · PR-38)
 
 | Metric                    | Type  | Labels              | Emitter                                                                             |

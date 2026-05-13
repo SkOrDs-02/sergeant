@@ -38,6 +38,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Card } from "@/components/ui/Card";
 
 import { RestTimerOverlay } from "../components/RestTimerOverlay";
+import { WorkoutTemplatesSheet } from "../components/templates/WorkoutTemplatesSheet";
 import {
   ActiveSetEditor,
   ExerciseCatalogSection,
@@ -49,11 +50,16 @@ import {
   useElapsedSeconds,
 } from "../hooks/useActiveFizrukWorkout";
 import { useCustomExercises } from "../hooks/useCustomExercises";
+import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import {
   useFizrukWorkouts,
   type FizrukWorkout,
   type FizrukWorkoutItem,
 } from "../hooks/useFizrukWorkouts";
+import {
+  useWorkoutTemplates,
+  type WorkoutTemplate,
+} from "../hooks/useWorkoutTemplates";
 
 type WorkoutsView = "home" | "catalog" | "journal";
 
@@ -74,6 +80,15 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
   const { workouts, createWorkout, endWorkout, addItem, updateItem } =
     useFizrukWorkouts();
   const { exercises: customExercises } = useCustomExercises();
+  const { exercises: catalogExercises, search: searchExercises } =
+    useExerciseCatalog();
+  const {
+    templates,
+    addTemplate,
+    updateTemplate,
+    removeTemplate,
+    markTemplateUsed,
+  } = useWorkoutTemplates();
 
   const {
     activeWorkoutId,
@@ -86,6 +101,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
 
   const [view, setView] = useState<WorkoutsView>("home");
   const [setEditor, setSetEditor] = useState<SetEditorState | null>(null);
+  const [templatesSheetOpen, setTemplatesSheetOpen] = useState(false);
 
   const catalog = useMemo<WorkoutExerciseCatalogEntry[]>(() => {
     const custom: WorkoutExerciseCatalogEntry[] = customExercises.map((ex) => ({
@@ -151,6 +167,37 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
       startRestTimer(sec);
     },
     [startRestTimer],
+  );
+
+  const handleApplyTemplate = useCallback(
+    (tpl: WorkoutTemplate) => {
+      const w = createWorkout();
+      for (const exId of tpl.exerciseIds) {
+        const ex = catalogExercises.find((e) => e.id === exId);
+        if (!ex?.id) continue;
+        const isCardio = ex.primaryGroup === "cardio";
+        addItem(w.id, {
+          exerciseId: ex.id,
+          nameUk: exerciseDisplayName(ex),
+          primaryGroup: ex.primaryGroup,
+          musclesPrimary: ex.muscles?.primary ?? [],
+          musclesSecondary: ex.muscles?.secondary ?? [],
+          type: isCardio ? "distance" : "strength",
+          sets: isCardio ? undefined : [],
+        });
+      }
+      if (tpl.id) markTemplateUsed(tpl.id);
+      setActiveWorkoutId(w.id);
+      hapticSuccess();
+      setView("home");
+    },
+    [
+      addItem,
+      catalogExercises,
+      createWorkout,
+      markTemplateUsed,
+      setActiveWorkoutId,
+    ],
   );
 
   const handlePickExercise = useCallback(
@@ -376,6 +423,39 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
                   </Card>
                 )}
               </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Шаблони тренувань"
+                onPress={() => {
+                  hapticTap();
+                  setTemplatesSheetOpen(true);
+                }}
+                testID={`${testID}-open-templates`}
+              >
+                {({ pressed }) => (
+                  <Card
+                    variant="default"
+                    radius="lg"
+                    padding="md"
+                    className={pressed ? "opacity-80" : ""}
+                  >
+                    <View className="flex-row items-center gap-3">
+                      <Text className="text-2xl">📋</Text>
+                      <View className="flex-1">
+                        <Text className="text-sm font-semibold text-fg">
+                          Шаблони
+                        </Text>
+                        <Text className="text-[11px] text-fg-muted mt-0.5">
+                          {templates.length > 0
+                            ? `${templates.length} ${templates.length === 1 ? "шаблон" : "шаблонів"} · запусти одним дотиком`
+                            : "Збережи послідовність вправ — запускай в один дотик"}
+                        </Text>
+                      </View>
+                      <Text className="text-fg-subtle text-lg">›</Text>
+                    </View>
+                  </Card>
+                )}
+              </Pressable>
             </View>
 
             <View className="gap-3" testID={`${testID}-recent`}>
@@ -445,6 +525,19 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
       {restTimer ? (
         <RestTimerOverlay restTimer={restTimer} onCancel={cancelRestTimer} />
       ) : null}
+
+      <WorkoutTemplatesSheet
+        open={templatesSheetOpen}
+        onClose={() => setTemplatesSheetOpen(false)}
+        templates={templates}
+        exercises={catalogExercises}
+        search={searchExercises}
+        addTemplate={addTemplate}
+        updateTemplate={updateTemplate}
+        removeTemplate={removeTemplate}
+        onStartTemplate={handleApplyTemplate}
+        testID={`${testID}-templates`}
+      />
 
       <ActiveSetEditor
         open={!!setEditor}

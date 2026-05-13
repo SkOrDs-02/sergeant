@@ -721,10 +721,10 @@ export default [
       "apps/mobile/src/modules/fizruk/hooks/useCustomExercises.ts",
       "apps/mobile/src/modules/fizruk/hooks/useRecovery.ts",
       "apps/mobile/src/modules/fizruk/pages/Exercise.tsx",
-      // Notifications API — Expo trigger union widened in SDK 52, mobile
-      // codebase hasn't caught up yet. Drop after `expo-notifications`
-      // type alignment.
-      "apps/mobile/src/modules/routine/hooks/useRoutineReminders.ts",
+      // Notifications API allowlist entry for `useRoutineReminders.ts`
+      // was dropped on 2026-05-13: M5 (mobile.md roadmap) is done and the
+      // hook now builds a typed `WeeklyTriggerInput` inline. Re-adding it
+      // would mask future regressions.
     ],
     rules: {
       "sergeant-design/no-strict-bypass": "error",

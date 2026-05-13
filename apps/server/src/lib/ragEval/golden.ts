@@ -1,11 +1,16 @@
 /**
- * Zod schema + loader для golden-set fixture (PR-22 RAG quality gate).
+ * Zod schema + loader для golden-set fixture (PR-20 eval harness + PR-22
+ * RAG quality gate).
  *
  * Файл fixture: `apps/server/src/__fixtures__/rag-eval/golden.json`.
  *
- * Зміст fixture-у — synthetic seed для PR-22 (PR-20 еval-harness ще
- * не зашиплений). PR-20 замінить fixture на reality-based golden-set,
- * зібраний з production sample-у; контракт (schema) залишиться той самий.
+ * PR-20 формалізує schema під PR-plan-2026-05 specs (field
+ * `expected_memory_ids`). У JSON IDs тримаються як стабільні refs
+ * формату `<source>:<sourceRef>` (а не raw `ai_memories.id`), бо
+ * `id` (BIGSERIAL) залежить від re-seeding-у БД, а `<source>:<sourceRef>`
+ * детермінований від домена. Реальний retrieval-pipeline (PR-20 live
+ * mode) маппіть `MemoryQueryResult.{source, sourceRef}` у цей же
+ * формат перед порівнянням з `expectedMemoryIds`.
  *
  * Caller-и:
  *   - `scripts/eval-rag-recall.mjs` (CLI).
@@ -28,10 +33,15 @@ export const GoldenQuerySchema = z.object({
   /** Natural-language query. */
   query: z.string().min(1),
   /**
-   * Очікувані source-ref IDs у топ-K retrieval. Формат: `<source>:<ref>`.
-   * Для recall@K — порядок не важливий, важливе перетин з retrieved.
+   * Очікувані memory IDs у топ-K retrieval. Формат:
+   * `<source>:<sourceRef>` (стабільне посилання на `ai_memories` row;
+   * див. moduledoc). Порядок не важливий — recall@K і P@1 розглядають
+   * членство; MRR — позицію першого hit-у у `retrieved`.
+   *
+   * Snake_case у JSON узгоджений з PR-plan-2026-05.md § PR-20 spec.
    */
-  expected: z.array(z.string().min(1)).min(1),
+
+  expected_memory_ids: z.array(z.string().min(1)).min(1),
 });
 
 export const GoldenSetSchema = z.object({

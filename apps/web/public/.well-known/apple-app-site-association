@@ -2,11 +2,14 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["REPLACE_WITH_TEAM_ID.com.sergeant.shell"],
+        "appIDs": [
+          "REPLACE_WITH_TEAM_ID.com.sergeant.shell",
+          "REPLACE_WITH_TEAM_ID.com.sergeant.app"
+        ],
         "components": [
           {
             "/": "/*",
-            "comment": "Усі HTTPS-шляхи на цьому host-і відкриваються в Sergeant Shell як Universal Links."
+            "comment": "Усі HTTPS-шляхи на цьому host-і відкриваються в Sergeant (Capacitor shell або Expo RN — Apple розв'язує колізію за entitlement-ом, що збігся з встановленим app-ом)."
           }
         ]
       }

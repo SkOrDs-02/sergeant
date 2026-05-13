@@ -31,11 +31,15 @@ import { z } from "zod";
 import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
+import { Sentry } from "../../sentry.js";
 import {
   createTelegramApiClient,
   DEFAULT_DEDUP_WINDOW_MS,
   listPendingAlerts,
   markAlertEscalated,
+  markAlertRepeated,
+  markAlertSentryWarned,
+  markAlertSnoozed,
   postOrEditDedupedAlert,
   recordAlertAck,
   recordAlertPost,
@@ -87,6 +91,9 @@ const PendingBody = z
       .max(60 * 24)
       .optional(),
     notYetEscalated: z.boolean().optional(),
+    notYetRepeated: z.boolean().optional(),
+    notYetSentryWarned: z.boolean().optional(),
+    notSnoozed: z.boolean().optional(),
     limit: z.number().int().min(1).max(100).optional(),
   })
   .strict();
@@ -94,6 +101,39 @@ const PendingBody = z
 const EscalateBody = z
   .object({
     alertId: z.string().min(1).max(256),
+  })
+  .strict();
+
+// Sprint 6 / Tier 2: repeat-ping body. Caller (WF-105) just passes alertId;
+// server marks `repeated_at` and returns ok. The actual re-broadcast to the
+// topic is owned by n8n — server stays out of the Telegram send path here
+// (separation pattern, same as `/alerts/escalate`).
+const RepeatBody = z
+  .object({
+    alertId: z.string().min(1).max(256),
+  })
+  .strict();
+
+// Sprint 6 / Tier 3: sentry-warn body. Caller (WF-106) just passes alertId;
+// server captures the Sentry warning event AND marks `sentry_warned_at`.
+// Splitting means the n8n side does not need a Sentry SDK.
+const SentryWarnBody = z
+  .object({
+    alertId: z.string().min(1).max(256),
+  })
+  .strict();
+
+// Sprint 6 / snooze: operator pressed «🕐 1h» / «🕓 4h» on a T2 repeat-
+// message. WF-104 callback router POSTs here. `durationMinutes` is the
+// canonical wire type; map `"1h" → 60` / `"4h" → 240` on the n8n side.
+const SnoozeBody = z
+  .object({
+    alertId: z.string().min(1).max(256),
+    durationMinutes: z
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 60),
   })
   .strict();
 
@@ -278,7 +318,7 @@ export function createAlertsInternalRouter({
     }),
   );
 
-  // ---- escalate ----
+  // ---- escalate (T1 — WF-103 DM founder) ----
   r.post(
     "/api/internal/alerts/escalate",
     asyncHandler(async (req, res) => {
@@ -292,6 +332,93 @@ export function createAlertsInternalRouter({
       res.json({
         ok: true,
         alreadyEscalated: result.alreadyEscalated,
+      });
+    }),
+  );
+
+  // ---- repeat (T2 — WF-105 repeat-ping cron, 60min) ----
+  r.post(
+    "/api/internal/alerts/repeat",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(RepeatBody, req, res);
+      if (!parsed.ok) return;
+      const result = await markAlertRepeated(pool, parsed.data.alertId);
+      if (result.notFound) {
+        res.status(404).json({ error: "alert_not_found" });
+        return;
+      }
+      res.json({
+        ok: true,
+        alreadyRepeated: result.alreadyRepeated,
+      });
+    }),
+  );
+
+  // ---- sentry-warn (T3 — WF-106 sentry-warn cron, 120min) ----
+  r.post(
+    "/api/internal/alerts/sentry-warn",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SentryWarnBody, req, res);
+      if (!parsed.ok) return;
+      const result = await markAlertSentryWarned(pool, parsed.data.alertId);
+      if (result.notFound) {
+        res.status(404).json({ error: "alert_not_found" });
+        return;
+      }
+      // Idempotency — if cron retries within the same tick, do not re-fire
+      // the Sentry event. Cron-side `notYetSentryWarned=true` filter should
+      // prevent this, but defence-in-depth: row was already stamped on a
+      // prior successful response.
+      if (!result.alreadySentryWarned) {
+        try {
+          Sentry.captureMessage(
+            `unacked-alert-escalation: ${parsed.data.alertId}`,
+            {
+              level: "warning",
+              tags: {
+                kind: "unacked-alert-escalation",
+                alertId: parsed.data.alertId,
+              },
+            },
+          );
+        } catch (err) {
+          // Capture failure must NOT block the DB transition — the row is
+          // already stamped, so the cron will not retry. Log so opsfolk
+          // can spot Sentry-side outages.
+          logger.warn({
+            msg: "alert_sentry_warn_capture_failed",
+            alertId: parsed.data.alertId,
+            err: (err as Error)?.message,
+          });
+        }
+      }
+      res.json({
+        ok: true,
+        alreadySentryWarned: result.alreadySentryWarned,
+      });
+    }),
+  );
+
+  // ---- snooze (T2 inline-keyboard «🕐 1h» / «🕓 4h») ----
+  r.post(
+    "/api/internal/alerts/snooze",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SnoozeBody, req, res);
+      if (!parsed.ok) return;
+      const snoozedUntilAt = new Date(
+        Date.now() + parsed.data.durationMinutes * 60_000,
+      );
+      const result = await markAlertSnoozed(pool, {
+        alertId: parsed.data.alertId,
+        snoozedUntilAt,
+      });
+      if (result.notFound) {
+        res.status(404).json({ error: "alert_not_found" });
+        return;
+      }
+      res.json({
+        ok: true,
+        snoozedUntilAt: result.snoozedUntilAt,
       });
     }),
   );

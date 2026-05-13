@@ -438,9 +438,13 @@ export function useHubDashboardState(props: {
 
   const [digestExpanded, setDigestExpanded] = useState(false);
   const digestFresh = hasLiveWeeklyDigest();
-  const now = new Date();
-  const isMondayOrTuesday = now.getDay() === 1 || now.getDay() === 2;
-  const showDigestFooter = digestFresh || isMondayOrTuesday;
+  // UX-feedback 2026-05-13: користувачі питали «куди зник звіт тижня»
+  // у середу/четвер коли digest не свіжий. Раніше футер показувався
+  // тільки Пн/Вт або при свіжому digest (PR 553d1940). Тепер футер
+  // завжди є — `WeeklyDigestCard` сам рендерить empty / generate-CTA
+  // стани, тому навіть у юзера без даних завжди є очевидний вхід
+  // у звіт. На сам digest-індикатор `fresh` досі впливає `digestFresh`.
+  const showDigestFooter = true;
 
   const primaryModule = activeModules[0] as
     | "finyk"

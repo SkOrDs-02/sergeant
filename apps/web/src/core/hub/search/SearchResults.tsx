@@ -3,6 +3,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { hapticTap } from "@shared/lib/adapters/haptic";
+import { useShortcutGlyph } from "@shared/hooks";
 import { SearchResultItem } from "./SearchResultItem";
 import type { Hit } from "./searchTypes";
 
@@ -45,6 +46,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
     },
     ref,
   ) {
+    const { modK } = useShortcutGlyph();
     const localRef = useRef<HTMLDivElement | null>(null);
     // Forward the parent ref while keeping our own for the scroll effect.
     const setRef = (node: HTMLDivElement | null) => {
@@ -139,12 +141,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Глобальний пошук"
-            description={
-              typeof navigator !== "undefined" &&
-              /Mac|iPhone|iPad/.test(navigator.platform)
-                ? "Транзакції, тренування, звички, їжа — все в одному місці. ⌘K, щоб відкрити звідусіль."
-                : "Транзакції, тренування, звички, їжа — все в одному місці. Ctrl+K, щоб відкрити звідусіль."
-            }
+            description={`Транзакції, тренування, звички, їжа — все в одному місці. ${modK}, щоб відкрити звідусіль.`}
           />
         )}
 

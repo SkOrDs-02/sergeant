@@ -185,3 +185,44 @@ describe("L7: /healthz JSON body excludes build identifiers", () => {
     expect([200, 503]).toContain(res.status);
   });
 });
+
+describe("L7: /api/status (PR-41) inherits the info-leak invariants", () => {
+  it("does not surface commit / sha / version / build keys at any depth", async () => {
+    const app = createApp();
+    const res = await request(app).get("/api/status");
+    // `/api/status` always returns 200 (decoupled from component
+    // health — see `apps/server/src/http/status.ts` header). Only the
+    // body shape matters for the audit.
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    const seen = new Set<string>();
+    collectKeysDeep(res.body, seen);
+    for (const k of FORBIDDEN_KEYS) {
+      expect(
+        seen.has(k),
+        `unexpected build-identifying key '${k}' in /api/status body`,
+      ).toBe(false);
+    }
+  });
+
+  it("preserves the documented top-level shape for the public status page", async () => {
+    const app = createApp();
+    const res = await request(app).get("/api/status");
+    expect(res.body).toMatchObject({
+      status: expect.stringMatching(/^(operational|degraded|down)$/),
+      timestamp: expect.any(String),
+      components: expect.any(Array),
+    });
+    // Top-level keys frozen — extending the contract (e.g. adding a
+    // `notice` banner field) must land on the L7 audit thread first.
+    expect(Object.keys(res.body).sort()).toEqual(
+      ["components", "lastIncident", "status", "timestamp"].sort(),
+    );
+  });
+
+  it("remains reachable without a session", async () => {
+    const app = createApp();
+    const res = await request(app).get("/api/status");
+    expect(res.status).toBe(200);
+  });
+});

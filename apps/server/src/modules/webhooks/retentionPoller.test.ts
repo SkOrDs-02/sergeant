@@ -3,7 +3,7 @@
  *
  * Тестуємо лише поведінку polling-логіки (start/stop/idempotency/disabled-states)
  * через mocked `pg.Pool`. Реальний DELETE-кореляція проти `received_at` живе
- * в integration-тесті `migrations/__tests__/060-n8n-webhook-events.test.ts`.
+ * в integration-тесті `migrations/__tests__/061-n8n-webhook-events.test.ts`.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";

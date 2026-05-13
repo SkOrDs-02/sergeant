@@ -38,7 +38,19 @@ ALTER TABLE transactions DROP COLUMN amount;
 
 Never drop a column in the same release as the code that stops writing to it — Railway pre-deploy migrates before the new app starts, so the old version (briefly serving traffic) will crash.
 
-A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollbacks. Production never runs `down.sql`.
+A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollbacks. Production never runs `down.sql`, but the file is still required: it documents how to revert the schema during incident recovery or local development.
+
+### Empty `.down.sql` is a lint error
+
+`pnpm lint:migrations` rejects any **new or modified** `.down.sql` file whose body is empty — only blank lines, single-line `--` comments, or the plop-generated `-- TODO: write your DOWN (rollback) migration here` placeholder count as "empty". Pre-existing empty rollbacks in the tree are not retroactively flagged; the gate only fires on files the PR touches.
+
+If rollback is genuinely impossible (irreversible data backfill, `DROP TABLE` of an obsolete schema, etc.) add one escape-hatch comment with the same shape as `ALLOW_DROP:`:
+
+```sql
+-- NO_ROLLBACK: <reason> (due: YYYY-MM-DD)
+```
+
+A reason after the colon is mandatory — the linter rejects bare `-- NO_ROLLBACK:` lines.
 
 ## Related
 

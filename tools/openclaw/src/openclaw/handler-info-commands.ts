@@ -11,6 +11,11 @@
  */
 
 import { InputFile } from "grammy";
+import { Sentry } from "../obs/sentry.js";
+import {
+  formatAiCostMarkdown,
+  type AiCostSummaryResponse,
+} from "./aiCostFormat.js";
 import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
 import { parseDuration } from "./duration.js";
 import { parseFounderTgUserId } from "./security.js";
@@ -19,6 +24,8 @@ import {
   parseAlertsCommand,
   type PendingAlertItem,
 } from "./alerts-format.js";
+import { executeRitualCommand } from "./ritual-runner.js";
+import { executeOpenclawStatusCommand } from "./status-runner.js";
 import type { HandlerContext } from "./handler-context.js";
 import {
   HELP_TEXT,
@@ -78,6 +85,34 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     await c.reply(
       `Сьогодні: $${spentUsd.toFixed(4)} / $${budgetUsd.toFixed(2)} (залишок $${remainingUsd.toFixed(4)}).`,
     );
+  });
+
+  // `/ai_cost` — realtime AI-spend rollup for founder DM.
+  // Backend: `/api/internal/openclaw/ai-cost-summary` (PR-26 continuation
+  // of PR-12 #2567 + PR-13 #2590). Body не передаємо — endpoint
+  // ferments out-of-the-box з env-конфігу та DB.
+  //
+  // Telegram allows `^[a-z0-9_]{1,32}$` only — `/ai-cost` (з дефісом)
+  // мовчки відкидається на стороні Telegram, тому реальна команда —
+  // `/ai_cost` (з underscore).
+  bot.command("ai_cost", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    const r = await postJson<AiCostSummaryResponse>(
+      `${serverUrl}/api/internal/openclaw/ai-cost-summary`,
+      internalApiKey,
+      {},
+    );
+    if (!r.ok || !r.data) {
+      await c.reply(`Не зміг прочитати ai-cost (HTTP ${r.status}).`);
+      return;
+    }
+    await c.reply(formatAiCostMarkdown(r.data), {
+      parse_mode: "HTML",
+      // Markdown lines довгі — `disable_web_page_preview` зайвий, але
+      // ховаємо link-preview якщо EOM-projection прокинеться у вигляді
+      // числа з http-схожою маскою (паранойя).
+      link_preview_options: { is_disabled: true },
+    });
   });
 
   bot.command("decisions", async (c) => {
@@ -366,5 +401,177 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     }
 
     await c.reply(reply);
+  });
+
+  // O5 / WF-25 (PR-26 #2613 + PR-27 #2659 + O1 #2689): manual-trigger
+  // ranok / weekly / monthly ritual-у. Defaults to morning, mirroring
+  // 07:00 Kyiv cron. Useful for testing-у і ad-hoc після-launch invocations.
+  //
+  // Implementation: всі fetch+audit гілки живуть у pure `executeRitualCommand`
+  // (ritual-runner.ts) щоб handler лишався thin shim над grammy.
+  bot.command("ritual", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (c.match ?? "").toString();
+    const founderTgUserId =
+      parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
+      c.from?.id ??
+      0;
+
+    const result = await executeRitualCommand({
+      rawArgument: argument,
+      founderUserId,
+      founderTgUserId,
+      ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+      fetcher: {
+        async postMorningBriefing() {
+          const r = await postJson<{ markdown?: unknown; data?: unknown }>(
+            `${serverUrl}/api/internal/openclaw/briefing/morning`,
+            internalApiKey,
+            {},
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async openInvocation(input) {
+          const r = await postJson<OpenInvocationResponse>(
+            `${serverUrl}/api/internal/openclaw/invocations/open`,
+            internalApiKey,
+            input,
+          );
+          return {
+            ok: r.ok,
+            status: r.status,
+            invocationId: r.data?.invocationId ?? null,
+          };
+        },
+        async finalizeInvocation(input) {
+          const r = await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status };
+        },
+      },
+      addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+    });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
+  });
+
+  // PR-/openclaw-status: debug/health snapshot для founder DM.
+  //
+  // Implementation: всі 4 fetch-and-merge гілки + audit life-cycle
+  // живуть у pure `executeOpenclawStatusCommand` (status-runner.ts), щоб
+  // handler лишався thin shim над grammy. Compact Markdown payload
+  // (≤30 рядків) у founder DM — для smoke-test після redeploy і ad-hoc
+  // діагностики.
+  bot.command("openclaw", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (c.match ?? "").toString();
+    const founderTgUserId =
+      parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
+      c.from?.id ??
+      0;
+
+    const result = await executeOpenclawStatusCommand({
+      rawArgument: argument,
+      founderUserId,
+      founderTgUserId,
+      ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+      fetcher: {
+        async listInvocations() {
+          const r = await postJson<{
+            invocations: Array<{
+              id: number;
+              invoked_at: string;
+              trigger: string;
+              user_message: string;
+              status: string;
+              cost_usd: number;
+              duration_ms: number;
+              iterations: number;
+              tone_mode: string | null;
+            }>;
+          }>(
+            `${serverUrl}/api/internal/openclaw/invocations/list`,
+            internalApiKey,
+            { founderUserId, limit: 10 },
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async listN8nWorkflows() {
+          const r = await postJson<{
+            workflows: Array<{
+              id: string;
+              name: string;
+              active: boolean;
+              tier: string;
+              category: string | null;
+              updatedAt: string | null;
+            }>;
+            notConfigured?: boolean;
+          }>(`${serverUrl}/api/internal/openclaw/n8n/list`, internalApiKey, {});
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async getBudget() {
+          const r = await postJson<BudgetResponse>(
+            `${serverUrl}/api/internal/openclaw/budget`,
+            internalApiKey,
+            { founderUserId },
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async getSentryIssues() {
+          const r = await postJson<{
+            notConfigured?: boolean;
+            issues?: Array<{
+              title: string;
+              level: string;
+              count: string;
+              permalink: string;
+            }>;
+            note?: string;
+          }>(
+            `${serverUrl}/api/internal/openclaw/metrics/sentry`,
+            internalApiKey,
+            { level: "error", limit: 5 },
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async openInvocation(input) {
+          const r = await postJson<OpenInvocationResponse>(
+            `${serverUrl}/api/internal/openclaw/invocations/open`,
+            internalApiKey,
+            input,
+          );
+          return {
+            ok: r.ok,
+            status: r.status,
+            invocationId: r.data?.invocationId ?? null,
+          };
+        },
+        async finalizeInvocation(input) {
+          const r = await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status };
+        },
+      },
+      addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+    });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
   });
 }
