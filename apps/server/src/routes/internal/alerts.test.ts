@@ -21,6 +21,8 @@ const {
   getAlertHistoryStatsMock,
   postOrEditDedupedAlertMock,
   sentryCaptureMessageMock,
+  sentryAddBreadcrumbMock,
+  isFounderMutedMock,
 } = vi.hoisted(() => ({
   recordAlertPostMock: vi.fn(),
   recordAlertAckMock: vi.fn(),
@@ -32,6 +34,12 @@ const {
   getAlertHistoryStatsMock: vi.fn(),
   postOrEditDedupedAlertMock: vi.fn(),
   sentryCaptureMessageMock: vi.fn(),
+  sentryAddBreadcrumbMock: vi.fn(),
+  isFounderMutedMock: vi.fn().mockResolvedValue({
+    muted: false,
+    mutedUntilIso: null,
+    reason: null,
+  }),
 }));
 
 vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
@@ -54,8 +62,18 @@ vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
 vi.mock("../../sentry.js", () => ({
   Sentry: {
     captureMessage: sentryCaptureMessageMock,
+    addBreadcrumb: sentryAddBreadcrumbMock,
   },
 }));
+
+vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../modules/openclaw/index.js")>();
+  return {
+    ...actual,
+    isFounderMuted: isFounderMutedMock,
+  };
+});
 
 async function makeApp(options?: {
   telegramClient?: import("../../modules/alerts/index.js").TelegramApiClient;
@@ -713,5 +731,91 @@ describe("/api/internal/alerts/send", () => {
       windowMs: 500, // < 60_000 мінімум
     });
     expect(res.status).toBe(400);
+  });
+
+  // PR /mute (Phase 5b) — mute-gate integration.
+
+  it("skips non-P0 alerts when founder is muted and emits breadcrumb", async () => {
+    isFounderMutedMock.mockResolvedValueOnce({
+      muted: true,
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+      reason: "sleep",
+    });
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "wf-15:42",
+      topic: "incidents",
+      severity: "P1",
+      chatId: -1001,
+      text: "⚠️ boom",
+      founderUserId: "user-1",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      action: "skipped_muted",
+      alertId: "wf-15:42",
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+    });
+    expect(postOrEditDedupedAlertMock).not.toHaveBeenCalled();
+    expect(sentryAddBreadcrumbMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "openclaw.mute",
+        message: "openclaw-muted-skip",
+      }),
+    );
+  });
+
+  it("P0 alerts bypass mute and emit override-critical breadcrumb", async () => {
+    isFounderMutedMock.mockResolvedValueOnce({
+      muted: true,
+      mutedUntilIso: "2026-05-14T06:00:00.000Z",
+      reason: "sleep",
+    });
+    postOrEditDedupedAlertMock.mockResolvedValueOnce({
+      action: "sent",
+      alertId: "wf-15:critical",
+      messageId: 42,
+      occurrenceCount: 1,
+      alreadyPosted: false,
+    });
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "wf-15:critical",
+      topic: "incidents",
+      severity: "P0",
+      chatId: -1001,
+      text: "🚨 DB down",
+      founderUserId: "user-1",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.action).toBe("sent");
+    expect(postOrEditDedupedAlertMock).toHaveBeenCalledTimes(1);
+    expect(sentryAddBreadcrumbMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "openclaw.mute",
+        message: "openclaw-muted-override-critical",
+      }),
+    );
+  });
+
+  it("does not call isFounderMuted when founderUserId is omitted (topic-channel callers)", async () => {
+    postOrEditDedupedAlertMock.mockResolvedValueOnce({
+      action: "sent",
+      alertId: "wf-15:topic",
+      messageId: 7,
+      occurrenceCount: 1,
+      alreadyPosted: false,
+    });
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "wf-15:topic",
+      topic: "ops",
+      severity: "P2",
+      chatId: -1002,
+      text: "ops chatter",
+    });
+    expect(res.status).toBe(200);
+    expect(isFounderMutedMock).not.toHaveBeenCalled();
+    expect(postOrEditDedupedAlertMock).toHaveBeenCalledTimes(1);
   });
 });

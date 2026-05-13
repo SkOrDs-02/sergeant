@@ -112,6 +112,10 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
     command: "openclaw",
     description: "Debug snapshot: persona / WF / invocations / budget",
   },
+  {
+    command: "mute",
+    description: "Pause bot pings (30m/1h/4h/8h/until-morning, off, status)",
+  },
   { command: "reset", description: "Start a new cofounder session" },
 ];
 
