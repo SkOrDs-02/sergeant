@@ -35,6 +35,7 @@ import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { captureError } from "@/lib/observability";
 import { colors } from "@/theme";
 
 interface ModuleErrorBoundaryProps {
@@ -229,14 +230,20 @@ export default class ModuleErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error) {
-    // TODO(phase-10): forward via `@sentry/react-native` once mobile
-    // observability is wired up.
     try {
       console.error("[ModuleErrorBoundary] caught error", error, {
         moduleName: this.props.moduleName,
       });
     } catch {
       /* noop */
+    }
+    try {
+      captureError(error, {
+        moduleName: this.props.moduleName ?? null,
+        source: "mobile.ModuleErrorBoundary",
+      });
+    } catch {
+      /* observability must never break the host boundary */
     }
   }
 
