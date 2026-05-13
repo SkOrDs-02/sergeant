@@ -19,6 +19,7 @@ import { registerOpenClawBotCommands } from "./openclaw/commands.js";
 import { createOpenClawWebhookServer } from "./openclaw/webhook.js";
 import { startBotWithConflictRetry } from "./startup-conflict-retry.js";
 import { registerProcessLifecycle, type BotLike } from "./bot-lifecycle.js";
+import { runWithCrashBackoff } from "./crash-backoff.js";
 
 const DEFAULT_OPENCLAW_MAX_ITERATIONS = 8;
 const DEFAULT_OPENCLAW_WEBHOOK_PATH = "/webhook/openclaw";
@@ -88,8 +89,11 @@ async function main() {
     });
 
     console.log("Sergeant Console starting…");
-    consolePromise = startBotWithConflictRetry(bot, "console");
     lifecycleBots.push({ label: "console", bot });
+    consolePromise = runWithCrashBackoff(
+      () => startBotWithConflictRetry(bot, "console"),
+      { label: "console" },
+    ).then(() => undefined);
   }
 
   // OpenClaw — DM-only co-founder bot (ADR-0031). Fail-closed якщо env-и не
@@ -188,24 +192,22 @@ async function main() {
     } else {
       console.log("OpenClaw starting in long-poll mode…");
       lifecycleBots.push({ label: "openclaw", bot: openclawBot });
-      openclawPromise = (async () => {
-        // If a previous deploy enabled webhook mode, Telegram still has
-        // the webhook registered and `getUpdates` will fail with 409.
-        // Detach defensively before starting the long-poll loop.
-        try {
-          await openclawBot.init();
-          await unregisterOpenClawWebhook(openclawBot);
-        } catch (err) {
-          console.warn(
-            "[openclaw] deleteWebhook on long-poll boot failed (non-fatal):",
-            err,
-          );
-        }
-        // Same registry-push as the webhook branch — runs once on boot
-        // before `bot.start()` enters its blocking long-poll loop.
-        await registerOpenClawBotCommands(openclawBot);
-        await startBotWithConflictRetry(openclawBot, "openclaw");
-      })();
+      openclawPromise = runWithCrashBackoff(
+        async () => {
+          try {
+            await openclawBot.init();
+            await unregisterOpenClawWebhook(openclawBot);
+          } catch (err) {
+            console.warn(
+              "[openclaw] deleteWebhook on long-poll boot failed (non-fatal):",
+              err,
+            );
+          }
+          await registerOpenClawBotCommands(openclawBot);
+          await startBotWithConflictRetry(openclawBot, "openclaw");
+        },
+        { label: "openclaw" },
+      ).then(() => undefined);
     }
   }
 
