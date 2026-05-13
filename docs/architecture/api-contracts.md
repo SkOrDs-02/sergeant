@@ -64,10 +64,60 @@ OpenAPI sync (`pnpm api:check-openapi`) — обовʼязковий, дешев
 
 ### CI workflow
 
-- **Файл:** `.github/workflows/pact-contract-test.yml`.
-- **Job 1 (`consumer`):** запускає consumer-suite, аплоадить `pacts/` як artifact `pacts` (retention 14d, `if-no-files-found: error`).
-- **Job 2 (`provider`):** `needs: consumer`, downloads `pacts` artifact у ту саму локацію, запускає provider-suite.
-- Обидва job-и також покриті `pnpm check` у `ci.yml` — окремий workflow існує, щоб (а) pact JSON був видимим артефактом на кожен PR, (б) червоний контракт-чек був помітний без grep по `pnpm test`-логах.
+Обидва suite-и вже покриті `pnpm check` у [`ci.yml`](../../.github/workflows/ci.yml). Окремий dedicated workflow (`.github/workflows/pact-contract-test.yml`) — TODO у follow-up PR від користувача з `workflow`-scope (OAuth App, яким devin push-ає, не має workflow scope і remote rejects YAML-файл у `.github/workflows/`).
+
+Готовий шаблон, який треба коммітнути окремо:
+
+```yaml
+# .github/workflows/pact-contract-test.yml
+name: Pact contract tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: pact-contract-test-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  consumer:
+    name: Consumer contract tests (packages/api-client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @sergeant/api-client test -- --run src/__tests__/contracts/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pacts
+          path: packages/api-client/pacts/
+          retention-days: 14
+          if-no-files-found: error
+  provider:
+    name: Provider contract replay (apps/server)
+    needs: consumer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pacts
+          path: packages/api-client/pacts/
+      - run: pnpm --filter @sergeant/server test -- --run src/__tests__/contracts/provider.test.ts
+```
+
+Цінність окремого workflow поверх `pnpm check`: (а) pact JSON як видимий artifact на кожен PR (download у GH UI), (б) червоний контракт-чек помітний без grep по `pnpm test`-логах, (в) artifact можна push-ити у Pact Broker downstream без повторного запуску consumer suite.
 
 ## ➕ Як додати новий endpoint у contract pipeline
 
