@@ -26,11 +26,16 @@ async function loadAssertStartupEnv(
 const PROD_BASELINE = {
   // Minimum env that lets `assertStartupEnv()` proceed past the unrelated
   // production checks (DATABASE_URL, BETTER_AUTH_TOKEN_ENC_KEY,
-  // NUTRITION_BACKUP_KEY_SECRET) before reaching the AI_QUOTA_DISABLED gate.
+  // NUTRITION_BACKUP_KEY_SECRET, METRICS_TOKEN) before reaching the
+  // AI_QUOTA_DISABLED gate.
   NODE_ENV: "production",
   DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
   BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
   NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+  // T2 audit #4 — METRICS_TOKEN is required in production. Tests that
+  // exercise the negative path for this gate live in a dedicated
+  // `describe` block below and DELETE this key from the baseline.
+  METRICS_TOKEN: "c".repeat(64),
 };
 
 describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
@@ -223,6 +228,45 @@ describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", (
     const assertStartupEnv = await loadAssertStartupEnv({
       NODE_ENV: "development",
       STRIPE_SECRET_KEY: "sk_test_xxx",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // Strip METRICS_TOKEN from the prod baseline so we can exercise the
+  // negative path. The legacy PATs are also cleared because the same
+  // PROD_BASELINE inherits the Git_PAT gate.
+  const METRICS_BASELINE = {
+    NODE_ENV: "production" as const,
+    DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
+    NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when METRICS_TOKEN is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(METRICS_BASELINE);
+    expect(() => assertStartupEnv()).toThrow(/METRICS_TOKEN/);
+  });
+
+  it("does NOT throw in production when METRICS_TOKEN is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...METRICS_BASELINE,
+      METRICS_TOKEN: "c".repeat(64),
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when METRICS_TOKEN is missing (legacy warning-only path)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
     });
     expect(() => assertStartupEnv()).not.toThrow();
   });

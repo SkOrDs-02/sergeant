@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import client from "prom-client";
 import type { Pool } from "pg";
+import { safeStringEqual } from "../http/safeCompare.js";
 
 /**
  * Prometheus-реєстр з default-метриками (event loop lag, RSS, heap, GC)
@@ -1042,14 +1043,20 @@ export function startPoolSampler(
 
 /**
  * Express handler для `GET /metrics`. Якщо задано `METRICS_TOKEN` — вимагає
- * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен.
+ * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен
+ * (production хард-фейлить у `assertStartupEnv` — див. T2 audit #4).
+ *
+ * Токен-compare використовує `safeStringEqual` (поверх
+ * `crypto.timingSafeEqual`) замість наївного `!==`, щоб не лікати
+ * позицію першої розбіжності через CPU branch-timing — мережевий
+ * атакуючий міг би статистично відновити токен побайтово.
  */
 export function metricsHandler(req: Request, res: Response): void {
   const expected = process.env["METRICS_TOKEN"];
   if (expected) {
     const auth = req.get("authorization") || "";
     const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (got !== expected) {
+    if (!safeStringEqual(got, expected)) {
       res.status(401).type("text/plain").send("unauthorized");
       return;
     }

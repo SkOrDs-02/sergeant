@@ -904,7 +904,20 @@ export function assertStartupEnv(): void {
     );
   }
 
+  // T2 audit finding #4 — `/metrics` exposure. Without `METRICS_TOKEN`
+  // the endpoint is publicly reachable AND the `@opentelemetry/exporter-
+  // prometheus` stack has a HIGH-severity advisory ("process crash via
+  // malformed HTTP") — an unauthenticated attacker can therefore both
+  // scrape the full Prometheus registry (route latencies, queue depth,
+  // circuit-breaker state, AI cost histograms) and remotely crash the
+  // Node process. Hard-fail at boot in production so the misconfig
+  // surfaces immediately instead of silently shipping with the legacy
+  // warning. Dev/staging still accept the missing token (warning only).
   if (isProduction && !env.METRICS_TOKEN) {
+    throw new Error(
+      "METRICS_TOKEN is required in production. Without it `GET /metrics` is publicly reachable, leaking route latency, AI cost, and circuit-breaker telemetry — and the OTel Prometheus exporter has a HIGH-severity crash advisory exploitable from the same surface. Generate one with `openssl rand -hex 32` and set it on the deployment.",
+    );
+  } else if (!env.METRICS_TOKEN) {
     warnings.push(
       "METRICS_TOKEN is not set — /metrics endpoint is unprotected.",
     );
