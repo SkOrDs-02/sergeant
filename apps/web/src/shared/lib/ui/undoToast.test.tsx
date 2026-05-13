@@ -17,6 +17,8 @@ function makeToast(): ToastApi & {
     info: vi.fn(() => 1),
     warning: vi.fn(() => 1),
     dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
   };
   return Object.assign(api, { _captured: captured });
 }

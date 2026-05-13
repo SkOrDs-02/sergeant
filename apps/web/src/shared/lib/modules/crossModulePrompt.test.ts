@@ -35,6 +35,8 @@ function makeToast(): MockToast {
     info: vi.fn(() => 3),
     warning: vi.fn(() => 4),
     dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
   };
   Object.defineProperty(api, "_action", {
     get: () => ref.current,

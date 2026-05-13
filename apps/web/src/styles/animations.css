@@ -520,6 +520,33 @@
   animation: toast-exit 0.2s ease-in forwards;
 }
 
+/*
+ * Linear countdown bar for toasts that carry a recoverable action (the
+ * undo-pattern). The `animation-duration` is supplied inline by
+ * `<ToastRow>` so a single keyframe set works for any toast lifetime
+ * (3.5 s for regular auto-dismiss, 5 s for undo). We scale on the X-axis
+ * only, with `transform-origin: left`, so the bar shrinks toward the
+ * trailing edge — matching the cognitive "time draining" affordance.
+ *
+ * CSS-driven instead of JS-RAF: animation-play-state lets us pause on
+ * hover/focus/touch-drag without touching the main thread (Rule #17 —
+ * RESPONSE tier; one-shot, linear easing for accurate time mapping).
+ */
+@keyframes toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.animate-toast-countdown {
+  animation: toast-countdown linear forwards;
+  transform-origin: left center;
+  will-change: transform;
+}
+
 /* ── Streak milestone celebration ────────────────────────────────────── */
 
 @keyframes streak-milestone-burst {
