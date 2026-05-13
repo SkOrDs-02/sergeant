@@ -1,6 +1,6 @@
 # UX-аудит 2025 — PWA Sergeant
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2027-05-13.
 > **Status:** Archived
 
 > **Архівний документ.** Це історичний UX-чек-ліст 2025 року, перенесений у

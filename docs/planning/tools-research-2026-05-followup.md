@@ -1,6 +1,6 @@
 # Tools research 2026-05 — follow-up: що з відкладеного дійсно гірше / краще
 
-> **Last validated:** 2026-05-09 by @Skords-01 / Devin. **Next review:** 2026-08-07.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Контекст:** [`tools-research-2026-05.md`](./tools-research-2026-05.md) (далі — TR-26-05) — основний research-довідник станом на 2026-05-05.

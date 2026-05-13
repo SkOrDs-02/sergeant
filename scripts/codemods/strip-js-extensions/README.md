@@ -1,6 +1,6 @@
 # Codemod — strip `.js` / `.jsx` from first-party imports
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Completed & archived (one-time codemod; do not run again outside investigation)
 
 ## What it did

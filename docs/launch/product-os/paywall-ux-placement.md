@@ -1,7 +1,7 @@
 # Paywall UX placement — sketch + decision doc
 
-> **Last validated:** 2026-05-06 by @Skords-01.
-> **Next review:** 2026-06-06 (post-PR-20 implementation review).
+> **Last validated:** 2026-05-13 by @Skords-01.
+> **Next review:** 2026-08-11 (post-PR-20 implementation review).
 > **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 > **Owner:** @Skords-01 + Devin (sketch session 2026-05-06).
 

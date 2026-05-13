@@ -1,6 +1,6 @@
 # Логування (Pino JSON + ALS + Sentry / Loki)
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Цей документ описує **як** і **чому** бекенд Sergeant логує саме так, як

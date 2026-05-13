@@ -97,6 +97,10 @@ function RootShell() {
           options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />
         <Stack.Screen
+          name="hub-chat"
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
           name="hub-search"
           options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />

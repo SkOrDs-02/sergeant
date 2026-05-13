@@ -1,6 +1,6 @@
 # PR-20: `patches/` debt без README
 
-> **Last validated:** 2026-05-09 by Devin. **Next review:** 2026-08-07.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Closed — `patches/README.md` schema + `scripts/check-patches-doc.mjs` + `pnpm lint:patches` CI gate landed in [#2193](https://github.com/Skords-01/Sergeant/pull/2193) (`fix(docs): restore patches/README Status badge + prettier --write 33 stale docs`). All 4 DoD items shipped: README table з 1 row на `@expo__cli@0.22.28.patch`, `scripts/check-patches-doc.mjs` (10 KB), 6-fixture node:test у `scripts/__tests__/check-patches-doc.test.mjs`, та `lint:patches` step у `.github/workflows/ci.yml` (line 130) — закриває M4 у `00-overview.md`.
 
 |                    |                                                                |

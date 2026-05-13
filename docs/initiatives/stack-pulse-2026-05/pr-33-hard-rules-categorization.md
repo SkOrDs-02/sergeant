@@ -1,6 +1,6 @@
 # PR-33: 21 hard rules — categorize
 
-> **Last validated:** 2026-05-10 by Devin. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.
 
 |                    |                                                                                       |

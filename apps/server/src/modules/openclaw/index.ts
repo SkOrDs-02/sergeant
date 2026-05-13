@@ -266,3 +266,12 @@ export type {
   ListDueOptions,
   ListFounderRemindersOptions,
 } from "./reminders.js";
+
+// PR /mute (Phase 5b): founder DM "do not disturb" mute-state.
+export {
+  setFounderMute,
+  clearFounderMute,
+  getFounderMute,
+  isFounderMuted,
+} from "./mute-state.js";
+export type { MuteState, MuteCheckResult } from "./mute-state.js";

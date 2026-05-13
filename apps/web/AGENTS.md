@@ -48,7 +48,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 ## Lighthouse CI (perf-budget gate)
 
-T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг. Workflow `.github/workflows/lighthouse-ci.yml` — **planned** (T5 still open у тех-боргу). Локальний прогон сьогодні: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
+T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
 
 **Routes audited (3 runs each, median):** `/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition`. `/` is the Hub root — there is no separate `/hub` path (see [`apps/web/src/core/app/router.tsx`](./src/core/app/router.tsx)).
 
@@ -86,6 +86,27 @@ pnpm --filter @sergeant/web lighthouse       # boots vite preview + runs LHCI
 ```
 
 Reports drop у `apps/web/.lighthouseci/` (gitignored).
+
+## E2E smoke (Playwright)
+
+Critical-flow E2E lane runs per-PR via `.github/workflows/ci.yml` job `critical-flow` (line ~503): `playwright test -c playwright.smoke.config.ts --grep @critical`. Boot sequence — `docker compose up -d postgres` → `pnpm db:migrate:dev` → `@sergeant/server dev` (:3000) → `@sergeant/web build` → `vite preview` (:4173). Driver: `apps/web/tests/smoke/start-smoke-webserver.mjs`. Tests under `apps/web/tests/smoke/`.
+
+```bash
+pnpm --filter @sergeant/web e2e                  # → playwright --grep @critical
+pnpm --filter @sergeant/web e2e:auth             # → playwright --grep @auth (login lane)
+pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
+  test -c playwright.smoke.config.ts             # (needs Postgres + server already running
+  tests/smoke/onboarding-happy-path.spec.ts      #  — easiest: `pnpm dev:server &` then this)
+```
+
+**Як додати новий critical-flow тест:**
+
+1. Файл у `apps/web/tests/smoke/<name>.spec.ts`. Імпортуй `{ test, expect }` з `@playwright/test`. Title має починатися з `@critical` (e.g. `test("@critical onboarding: …", …)`); це регекс-фільтр для `--grep @critical`.
+2. Reuse smoke-stack — НЕ запускай свій web-server. `playwright.smoke.config.ts` піднімає stack для всіх тестів у `tests/smoke/`; `start-smoke-webserver.mjs` орхестрова сервер у foreground-режимі.
+3. Не sub-автентифікуй юзера через `fetch("/api/auth/sign-up")` у тесті — реальний sign-up через UI ловить regression-и у `RegisterForm` + `AuthContext`. Якщо потрібен seeded стан — використовуй `page.addInitScript` для `localStorage` (як у `onboarding-happy-path.spec.ts` для `sergeant.whatsNew.lastSeenId.v1`).
+4. Analytics-події читай з `window.__hubAnalytics` ring-buffer (`apps/web/src/core/observability/analytics.ts`) — PostHog network transport gated на `VITE_POSTHOG_KEY` (unset у smoke), buffer — deterministic.
+5. Trace / screenshot on failure уже сконфігуровано (`trace: "retain-on-failure"`, `screenshot: "only-on-failure"`). HTML report публікується як artifact `playwright-critical-flow-report` (14d retention).
+6. **Smoke-environment gotcha:** `vite preview` НЕ emit-ить COOP/COEP response-headers, тому `SharedArrayBuffer` недоступний → `sqlite-wasm` падає на memory-only VFS. Bottom-line assertion-и навколо SQLite-backed state (`hub_onboarding_done_v1`, тощо) можуть гонитися з warm-cache write-cycle-ом. Pragmatic — використовуй analytics ring-buffer як deterministic signal-of-truth; UI-level DOM assertions, що залежать від SQLite-backed gate, документуй inline (див. § 4a у `onboarding-happy-path.spec.ts`).
 
 ## Deeper docs
 

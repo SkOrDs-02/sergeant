@@ -182,6 +182,7 @@ export const HELP_TEXT = [
   "/ai_cost — AI-spend rollup: today/week/month + budget + top endpoints",
   "/perf — server perf snapshot: HTTP/AI latency, DB pool, AI memory queue, top errors",
   "/openclaw [status|help] — debug snapshot: persona / WF / invocations / budget / Sentry",
+  "/mute [30m|1h|4h|8h|until-morning|status|off|help] — pause bot pings (P0 alerts override)",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",

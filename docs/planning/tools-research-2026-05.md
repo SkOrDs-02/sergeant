@@ -1,6 +1,6 @@
 # Sergeant — готові рішення, ліби та тулзи
 
-> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Дослідження GitHub + мережі. Фокус: що реально додасть цінності Sergeant на поточному стеку, а не вже є в [`dev-stack-roadmap.md`](./dev-stack-roadmap.md).

@@ -1,6 +1,6 @@
 # Sergeant - Детальний План Реалізації Покращень
 
-> **Last validated:** 2026-05-05 by Devin AI. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13 by Devin AI. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Update 2026-05-05 (full refresh):** Документ оновлено за актуальним станом кодової бази.

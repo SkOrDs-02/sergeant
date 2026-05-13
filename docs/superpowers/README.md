@@ -1,6 +1,6 @@
 # Superpowers
 
-> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 «Superpowers» — high-leverage, single-page guides для cross-cutting capabilities, які зачіпають кілька шарів коду одночасно (sync engine, i18n, RAG memory тощо). Кожен файл під `plans/` — це actionable implementation plan, який агент може взяти і виконати task-by-task; статуси й прогрес трекаються в самому плані.

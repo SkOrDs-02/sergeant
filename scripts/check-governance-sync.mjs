@@ -315,6 +315,13 @@ function checkDanglingRefs() {
     // truth for shipped work; concrete refs are part of the roadmap surface.
     if (relPath.startsWith("docs/audits/") && relPath.endsWith("-pr-plan.md"))
       return true;
+    // `docs/audits/<date>-<slug>-roast.md` are themed audit reports that
+    // identify gaps and recommend remediations. Refs include target file
+    // layouts the audit recommends creating (e.g. new ESLint rule paths,
+    // new test files, refactor targets) — these become real once follow-up
+    // PRs land. Treat as planned, same shape as `*-pr-plan.md`.
+    if (relPath.startsWith("docs/audits/") && relPath.endsWith("-roast.md"))
+      return true;
     return false;
   }
 

@@ -1,6 +1,6 @@
 # 06. Архітектура монетизації (технічний скелетон v2)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Pre-MVP draft. Розширення [01 — Монетизація і ціноутворення](./01-monetization-and-pricing.md) в бік реальної імплементації: розбивка на PR-и, ADR-рішення, risk register, rollout-plan.

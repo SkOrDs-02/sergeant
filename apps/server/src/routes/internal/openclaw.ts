@@ -90,6 +90,11 @@ import {
   seoGscQuery,
   seoPsiAudit,
   seoSerpLookup,
+  // PR /mute (Phase 5b): founder DM mute-state CRUD + guard.
+  setFounderMute,
+  clearFounderMute,
+  getFounderMute,
+  isFounderMuted,
   // PR-C1b: reminder store + FSM helpers.
   setReminder,
   listDueReminders,
@@ -227,6 +232,18 @@ const ListBody = z.object({
   limit: z.number().int().min(1).max(100).optional(),
 });
 
+// PR /mute (Phase 5b): founder DM "do not disturb" mute schemas.
+// `mutedUntil` приймається ISO 8601 (`2026-05-13T22:00:00Z`); null/omit
+// ≡ "/mute off". `reason` — необов'язковий free-text label.
+const MuteSetBody = z.object({
+  founderUserId: z.string().min(1),
+  mutedUntilIso: z.string().datetime({ offset: true }).nullable().optional(),
+  reason: z.string().min(1).max(200).nullable().optional(),
+});
+const MuteFounderBody = z.object({
+  founderUserId: z.string().min(1),
+});
+
 // ADR-0032: ports of Sergeant Console (ADR-0027) ops/marketing tool I/O
 // schemas. Validation is intentionally loose — the upstream APIs (Stripe,
 // Sentry, PostHog, GitHub) define richer responses than we need; we keep
@@ -264,6 +281,13 @@ const MorningBriefingBody = z
     sentryLimit: z.number().int().min(1).max(20).optional(),
     prLimit: z.number().int().min(1).max(30).optional(),
     includeProposals: z.boolean().optional(),
+    /**
+     * PR /mute (Phase 5b): якщо передано, server додає `mute` блок у
+     * response (`{ muted, mutedUntilIso }`) — n8n WF-25 читає його і
+     * short-circuit-ує `sendMessage` коли `muted=true`. Briefing markdown
+     * рендериться завжди (cost-free аудит для post-mortem на `mute`-period).
+     */
+    founderUserId: z.string().min(1).max(128).optional(),
   })
   .strict();
 
@@ -920,6 +944,17 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       if (parsed.data.includeProposals !== undefined)
         input.includeProposals = parsed.data.includeProposals;
       const result = await assembleMorningBriefing(input);
+      // PR /mute (Phase 5b): augment response з mute-state коли caller
+      // передав founderUserId. n8n WF-25 cron консумер читає `mute.muted`
+      // і short-circuit-ує `sendMessage`. Briefing markdown усе одно
+      // зберігається (cost-free аудит).
+      if (parsed.data.founderUserId) {
+        const mute = await isFounderMuted(pool, {
+          founderUserId: parsed.data.founderUserId,
+        });
+        res.json({ ...result, mute });
+        return;
+      }
       res.json(result);
     }),
   );
@@ -1267,6 +1302,76 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         parsed.data.limit ?? 50,
       );
       res.json({ invocations: result });
+    }),
+  );
+
+  // ─── PR /mute (Phase 5b): founder DM "do not disturb" ─────────────────
+  //
+  // Чотири endpoints: `set`, `clear`, `status`, `check`. Slash `/mute`
+  // (handler — `tools/openclaw/.../handler-info-commands.ts`) обертає
+  // duration → ISO timestamp → POST /mute/set; `/mute off` → /mute/clear;
+  // `/mute status` → /mute/status. `/mute/check` — read-only guard для
+  // outbound channels (alerts shipper, briefing endpoint, ranok-cron).
+  //
+  // Critical-override: цей endpoint НЕ перевіряє severity — повертає
+  // raw state. Caller (alerts shipper) сам приймає рішення про bypass
+  // на P0 alerts. Це дозволяє кожному channel-у мати свій override-
+  // criterion без перевантаженого guard-API.
+
+  // ---- mute/set ----
+  r.post(
+    "/api/internal/openclaw/mute/set",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteSetBody, req, res);
+      if (!parsed.ok) return;
+      const mutedUntil = parsed.data.mutedUntilIso
+        ? new Date(parsed.data.mutedUntilIso)
+        : null;
+      const state = await setFounderMute(pool, {
+        founderUserId: parsed.data.founderUserId,
+        mutedUntil,
+        reason: parsed.data.reason ?? null,
+      });
+      res.json(state);
+    }),
+  );
+
+  // ---- mute/clear ("/mute off") ----
+  r.post(
+    "/api/internal/openclaw/mute/clear",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteFounderBody, req, res);
+      if (!parsed.ok) return;
+      const state = await clearFounderMute(pool, {
+        founderUserId: parsed.data.founderUserId,
+      });
+      res.json(state);
+    }),
+  );
+
+  // ---- mute/status ("/mute status" reply payload) ----
+  r.post(
+    "/api/internal/openclaw/mute/status",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteFounderBody, req, res);
+      if (!parsed.ok) return;
+      const state = await getFounderMute(pool, {
+        founderUserId: parsed.data.founderUserId,
+      });
+      res.json({ state });
+    }),
+  );
+
+  // ---- mute/check (runtime guard for outbound channels) ----
+  r.post(
+    "/api/internal/openclaw/mute/check",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteFounderBody, req, res);
+      if (!parsed.ok) return;
+      const result = await isFounderMuted(pool, {
+        founderUserId: parsed.data.founderUserId,
+      });
+      res.json(result);
     }),
   );
 

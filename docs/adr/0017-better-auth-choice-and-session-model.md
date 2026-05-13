@@ -1,7 +1,7 @@
 # ADR-0017: Better Auth choice and session model
 
-- **Status:** accepted (session TTL revised 2026-05-13 — PR-48 round 2)
-- **Date:** 2026-04-27
+- **Status:** accepted
+- **Date:** 2026-04-27 (session TTL revised 2026-05-13 — PR-48 round 2)
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**

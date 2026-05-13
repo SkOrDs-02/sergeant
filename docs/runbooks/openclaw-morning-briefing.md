@@ -284,3 +284,70 @@ Sentry breadcrumb-и під category `openclaw.status` (events:
    та Prometheus `llm_calls_total{result="error"}` для того ж endpoint-у.
    При продовженій Anthropic incident-і вимкни LLM-секцію через
    `LLM_PROVIDER=stub` у Railway.
+
+## Mute (do-not-disturb) — `/mute`
+
+Slash-команда для founder DM (PR /mute, Phase 5b). Призупиняє всі
+вихідні bot pings (ranok briefing, alerts, /ritual digests) на N часу
+без env-var змін. Single-row-per-founder state у
+`openclaw_mute_state(founder_user_id PK, muted_until, set_at, reason)`
+(migration `066_openclaw_mute_state.sql`).
+
+### Subcommands
+
+- `/mute 30m` / `1h` / `4h` / `8h` — relative duration від `NOW()`.
+- `/mute until-morning` — 08:00 наступного дня Europe/Kyiv (якщо
+  поточний Kyiv-час < 08:00 → 08:00 сьогодні; «спить до ранку»).
+- `/mute status` — show remaining time + Kyiv expiry HH:mm + reason
+  (read-only).
+- `/mute off` — manual resume (clear mute row).
+- `/mute help` (та `/mute` без аргументів) — довідка.
+
+### Critical-alert override
+
+Severity-`P0` alerts **НЕ silenced**. Gate-логіка в
+`apps/server/src/routes/internal/alerts.ts` (`POST /alerts/send`):
+
+1. Caller передає optional `founderUserId` (DM founder shipper).
+2. Endpoint викликає `isFounderMuted(pool, {founderUserId})` перед
+   `postOrEditDedupedAlert`.
+3. Якщо `muted=true` + `severity="P0"` → proceed, Sentry breadcrumb
+   `[openclaw-muted-override-critical]` (category `openclaw.mute`,
+   level `warning`).
+4. Якщо `muted=true` + non-P0 → respond `{action:"skipped_muted"}`,
+   Sentry breadcrumb `[openclaw-muted-skip]` (level `info`).
+5. `founderUserId` omitted → topic-channel shipper, skip mute-check
+   (audit логує `alerts_send_skipped_muted` тільки коли DM-path).
+
+### Briefing endpoint augmentation
+
+`POST /api/internal/openclaw/briefing/morning` приймає optional
+`founderUserId` і додає `mute: {muted, mutedUntilIso, reason}` поле
+у response. WF-25 cron (PR-27 #2659) короткосхемує
+`sendMessage(founder-DM)` коли `mute.muted=true`; markdown briefing
+все одно генерується (cost-free аудит).
+
+### Internal endpoints (для console + майбутніх інтеграцій)
+
+- `POST /api/internal/openclaw/mute/set` — `{founderUserId, mutedUntilIso, reason?}`
+- `POST /api/internal/openclaw/mute/clear` — `{founderUserId}`
+- `POST /api/internal/openclaw/mute/status` — `{founderUserId}` → `{state}`
+- `POST /api/internal/openclaw/mute/check` — `{founderUserId}` → `{muted, mutedUntilIso, reason}`
+
+### Forced unmute (incident-fast-path)
+
+Якщо `/mute off` не реагує (bot down / TG outage), скинь row напряму:
+
+```sql
+DELETE FROM openclaw_mute_state WHERE founder_user_id = '<better-auth-id>';
+```
+
+Effect: наступний alert (будь-якої severity) — НЕ silenced.
+
+### Telemetry & escalation
+
+Sentry breadcrumbs під category `openclaw.mute`: `mute.help`,
+`mute.unknown_subcommand`, `mute.{30m|1h|4h|8h|until-morning|status|off}.{start|success|endpoint_failed}`,
+`openclaw-muted-skip`, `openclaw-muted-override-critical`. Якщо
+founder скаржиться, що пропустив P0 alert — grep Sentry за
+`openclaw-muted-skip` з `severity` ≠ `P0` у `data`-полях.

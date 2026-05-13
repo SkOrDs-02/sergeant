@@ -1,6 +1,6 @@
 # Flow — Sign-in cookie flow (Better Auth)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Cookie-based session login через Better Auth. Email + password (magic-link / OAuth — варіації цього самого flow).

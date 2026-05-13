@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Disaster recovery defines how Sergeant recovers from catastrophic runtime or data loss events. This document keeps the expectations lightweight but explicit for a Founder+1 operating model.

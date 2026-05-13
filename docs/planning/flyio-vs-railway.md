@@ -1,6 +1,6 @@
 # Fly.io vs Railway — ціни та складність міграції
 
-> **Last validated:** 2026-05-03. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-13. **Next review:** 2026-08-11.
 > **Status:** Аналіз, не потребує дій зараз.
 > **Owner:** @Skords-01
 

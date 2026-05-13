@@ -1,6 +1,6 @@
 # Sprint 2 — Session, surface and quota hardening
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active (H3, H5, H6, H7, H8, H9, M1, M3 closed 2026-05-04 — `exp://` gate + email-verification + Vercel SSOT + per-route CORP override + transcribe USD cap + session revoke-on-password-change + UA/IP fingerprint shipped alongside Sprint 1 H2 closure; H6 closed partial — Mono connect gated, sign-in gate behind ops flip; H9 closed partial — per-user USD cap enforced inline, S3 pre-signed upload deferred).
 
 Sprint 2 closes the **High-severity backlog** that Sprint 1 left open and removes

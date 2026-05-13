@@ -1,6 +1,6 @@
 # Playbook: Порт web-екрану в mobile
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 **Trigger:** "Перенести екран з `apps/web` у `apps/mobile`" / чергова фаза RN migration / mobile-фіча повинна повторити існуючий web capability без дублювання domain-логіки.

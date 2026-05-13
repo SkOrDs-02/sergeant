@@ -7,10 +7,10 @@
 //
 // Status: Active (Track 5 seed). Last validated: 2026-05-13 by @Skords-01 / Devin.
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/hooks/useToast";
-import { useDarkMode } from "@shared/hooks/useDarkMode";
+import { useTheme } from "@shared/hooks/useTheme";
 import {
   useRegisterCommand,
   type PaletteCommand,
@@ -19,7 +19,17 @@ import {
 export function useDemoCommands(): void {
   const navigate = useNavigate();
   const toast = useToast();
-  const { dark, toggle: toggleDark } = useDarkMode();
+  // `useDarkMode` was retired in PR #2660 in favour of the 4-mode
+  // `useTheme` (`light` / `dark` / `system` / `hc`). The Command
+  // Palette's binary toggle keeps its old UX semantics by flipping
+  // between explicit `light` and `dark` (`system` and `hc` are
+  // surfaced via the dedicated `<ThemeSwitcher />` in HubHeader).
+  const { isDark, setChoice } = useTheme();
+  const dark = isDark;
+  const toggleDark = useCallback(
+    () => setChoice(isDark ? "light" : "dark"),
+    [isDark, setChoice],
+  );
 
   const commands = useMemo<PaletteCommand[]>(
     () => [
