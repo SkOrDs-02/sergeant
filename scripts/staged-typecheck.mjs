@@ -78,6 +78,23 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   "packages/openclaw-plugin/tsconfig.json": ["src/types/openclaw-ambient.d.ts"],
 };
 
+/**
+ * Per-project file-path prefixes (relative to the tsconfig directory) whose
+ * staged files should be skipped because the surrounding `tsconfig.json`
+ * explicitly excludes that subtree. `tsc-files` rewrites the tsconfig with
+ * `include: []` + the staged files in `files`, which bypasses the project's
+ * `exclude` list — so without this skip the staged typecheck force-loads code
+ * that the canonical `pnpm typecheck` correctly leaves out of scope.
+ *
+ * Currently used by `packages/openclaw-plugin`, whose `src/legacy/**` subtree
+ * is intentionally excluded (it uses ESM `./foo.js` import specifiers against
+ * `.ts` sources via the legacy NodeNext convention and would otherwise fail
+ * `tsc-files --noEmit` with TS2307 for every relative import).
+ */
+const SKIP_PREFIXES_BY_TSCONFIG = {
+  "packages/openclaw-plugin/tsconfig.json": ["src/legacy/"],
+};
+
 function main() {
   const staged = process.argv
     .slice(2)
@@ -91,14 +108,30 @@ function main() {
   /** Map<tsconfigPath, absFile[]> */
   const groups = new Map();
   const orphans = [];
+  const skipped = [];
   for (const f of staged) {
     const tsconfig = findTsconfig(f);
     if (!tsconfig) {
       orphans.push(f);
       continue;
     }
+    const tsconfigKey = relative(REPO_ROOT, tsconfig).replaceAll("\\", "/");
+    const skipPrefixes = SKIP_PREFIXES_BY_TSCONFIG[tsconfigKey] ?? [];
+    if (skipPrefixes.length) {
+      const relFile = relative(dirname(tsconfig), f).replaceAll("\\", "/");
+      if (skipPrefixes.some((p) => relFile.startsWith(p))) {
+        skipped.push({ file: f, tsconfigKey, relFile });
+        continue;
+      }
+    }
     if (!groups.has(tsconfig)) groups.set(tsconfig, []);
     groups.get(tsconfig).push(f);
+  }
+
+  for (const { tsconfigKey, relFile } of skipped) {
+    console.log(
+      `[staged-typecheck] skipping ${relFile} (excluded by ${tsconfigKey})`,
+    );
   }
 
   for (const f of orphans) {

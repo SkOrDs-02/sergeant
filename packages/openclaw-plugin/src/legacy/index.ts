@@ -108,17 +108,12 @@ export function createOpenClawPlugin(
   const log: RuntimeService["log"] =
     api.services?.runtime?.log ??
     ((level, msg, fields?) => {
-      const fn =
-        api.logger?.[level as keyof NonNullable<PluginApi["logger"]>];
+      const fn = api.logger?.[level as keyof NonNullable<PluginApi["logger"]>];
       if (typeof fn === "function") fn(msg, fields ?? undefined);
       else
         (
           console[
-            level === "error"
-              ? "error"
-              : level === "warn"
-                ? "warn"
-                : "debug"
+            level === "error" ? "error" : level === "warn" ? "warn" : "debug"
           ] as (...args: unknown[]) => void
         )(`[sergeant] ${msg}`, fields ?? "");
     });
@@ -325,41 +320,81 @@ export function createOpenClawPlugin(
   });
   api.registerTool(writeParts.tool);
   if (writeParts.toolCallPreHook) {
-    safeRegisterHook("before_tool_call", writeParts.toolCallPreHook, "create-github-issue-pre");
+    safeRegisterHook(
+      "before_tool_call",
+      writeParts.toolCallPreHook,
+      "create-github-issue-pre",
+    );
   }
-  safeRegisterHook("after_tool_call", writeParts.toolCallPostHook, "create-github-issue-post");
+  safeRegisterHook(
+    "after_tool_call",
+    writeParts.toolCallPostHook,
+    "create-github-issue-post",
+  );
 
   // commit_to_strategy_doc (PR-D)
   const strategyDocParts = createCommitToStrategyDocTool(writeOpts);
   api.registerTool(strategyDocParts.tool);
   if (strategyDocParts.toolCallPreHook) {
-    safeRegisterHook("before_tool_call", strategyDocParts.toolCallPreHook, "commit-strategy-doc-pre");
+    safeRegisterHook(
+      "before_tool_call",
+      strategyDocParts.toolCallPreHook,
+      "commit-strategy-doc-pre",
+    );
   }
-  safeRegisterHook("after_tool_call", strategyDocParts.toolCallPostHook, "commit-strategy-doc-post");
+  safeRegisterHook(
+    "after_tool_call",
+    strategyDocParts.toolCallPostHook,
+    "commit-strategy-doc-post",
+  );
 
   // post_to_topic (PR-D)
   const postToTopicParts = createPostToTopicTool(writeOpts);
   api.registerTool(postToTopicParts.tool);
   if (postToTopicParts.toolCallPreHook) {
-    safeRegisterHook("before_tool_call", postToTopicParts.toolCallPreHook, "post-to-topic-pre");
+    safeRegisterHook(
+      "before_tool_call",
+      postToTopicParts.toolCallPreHook,
+      "post-to-topic-pre",
+    );
   }
-  safeRegisterHook("after_tool_call", postToTopicParts.toolCallPostHook, "post-to-topic-post");
+  safeRegisterHook(
+    "after_tool_call",
+    postToTopicParts.toolCallPostHook,
+    "post-to-topic-post",
+  );
 
   // pause_workflow (PR-D)
   const pauseWorkflowParts = createPauseWorkflowTool(writeOpts);
   api.registerTool(pauseWorkflowParts.tool);
   if (pauseWorkflowParts.toolCallPreHook) {
-    safeRegisterHook("before_tool_call", pauseWorkflowParts.toolCallPreHook, "pause-workflow-pre");
+    safeRegisterHook(
+      "before_tool_call",
+      pauseWorkflowParts.toolCallPreHook,
+      "pause-workflow-pre",
+    );
   }
-  safeRegisterHook("after_tool_call", pauseWorkflowParts.toolCallPostHook, "pause-workflow-post");
+  safeRegisterHook(
+    "after_tool_call",
+    pauseWorkflowParts.toolCallPostHook,
+    "pause-workflow-post",
+  );
 
   // mute_alert (PR-D)
   const muteAlertParts = createMuteAlertTool(writeOpts);
   api.registerTool(muteAlertParts.tool);
   if (muteAlertParts.toolCallPreHook) {
-    safeRegisterHook("before_tool_call", muteAlertParts.toolCallPreHook, "mute-alert-pre");
+    safeRegisterHook(
+      "before_tool_call",
+      muteAlertParts.toolCallPreHook,
+      "mute-alert-pre",
+    );
   }
-  safeRegisterHook("after_tool_call", muteAlertParts.toolCallPostHook, "mute-alert-post");
+  safeRegisterHook(
+    "after_tool_call",
+    muteAlertParts.toolCallPostHook,
+    "mute-alert-post",
+  );
 
   // ─── n8n Tier C audit gate (PR-D Phase 4) ────────────────────────────
   safeRegisterHook(
