@@ -63,7 +63,7 @@ import {
   uncaughtExceptionsTotal,
   unhandledRejectionsTotal,
 } from "./obs/metrics.js";
-import { applyInfraMonthlyCosts } from "./obs/cost.js";
+import { applyInfraMonthlyCosts, applyVoyageDailyBudget } from "./obs/cost.js";
 import { Sentry } from "./sentry.js";
 
 const app = createApp({
@@ -77,6 +77,11 @@ startPoolSampler(pool);
 // Gauge `infra_monthly_cost_usd`. Idempotent; запускається до listen()
 // щоб /metrics експозовував cost-серії з самого старту.
 applyInfraMonthlyCosts();
+// PR-38 (48-plan) — soft daily-burn threshold для Voyage embeddings.
+// Gauge `voyage_daily_budget_usd` зчитується Prometheus-rule-ом
+// `voyage-cost.yml` (warn @ 80%, page @ 100%). No-op коли env
+// `VOYAGE_DAILY_BUDGET_USD` ≤ 0.
+applyVoyageDailyBudget();
 connectRedis();
 
 // Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.

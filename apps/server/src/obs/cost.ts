@@ -17,7 +17,7 @@
 
 import { env } from "../env.js";
 import { logger } from "./logger.js";
-import { infraMonthlyCostUsd } from "./metrics.js";
+import { infraMonthlyCostUsd, voyageDailyBudgetUsd } from "./metrics.js";
 
 /**
  * Один запис у конфігу: provider + plan label + USD-cost з env.
@@ -116,6 +116,35 @@ export function applyInfraMonthlyCosts(): void {
       count: reported.length,
       total_usd: reported.reduce((acc, r) => acc + r.usdMonth, 0),
       providers: reported.map((r) => r.provider),
+    });
+  }
+}
+
+/**
+ * PR-38 (48-plan) — soft daily-burn threshold for Voyage embeddings.
+ *
+ * Виставляє `voyage_daily_budget_usd` gauge зі значенням
+ * `VOYAGE_DAILY_BUDGET_USD`. Default `0` (unset) → gauge не публікується,
+ * Prometheus rule `voyage-cost.yml` має guard `voyage_daily_budget_usd > 0`
+ * → alert не fire-иться. Idempotent — `gauge.set` перезаписує те саме
+ * label-set-зеро (gauge без лейблів).
+ *
+ * Викликається після `applyInfraMonthlyCosts()` у `apps/server/src/index.ts`.
+ */
+export function applyVoyageDailyBudget(): void {
+  const usdDay = env.VOYAGE_DAILY_BUDGET_USD;
+  if (!Number.isFinite(usdDay) || usdDay <= 0) return;
+  try {
+    voyageDailyBudgetUsd.set(usdDay);
+    logger.info({
+      msg: "voyage_daily_budget_applied",
+      usd_day: usdDay,
+    });
+  } catch (err) {
+    logger.warn({
+      msg: "voyage_daily_budget_set_failed",
+      usd_day: usdDay,
+      error: err instanceof Error ? err.message : String(err),
     });
   }
 }

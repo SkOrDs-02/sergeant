@@ -13,9 +13,8 @@
       rgb(243 244 246) 100%
     );
 
-    /* SVG-encoded dot grid pattern (tonal, subtle).
-       Base64 because url(#id) → url(%23id) breaks lightningcss minifier. */
-    --bg-dots: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImRvdHMiIHg9IjAiIHk9IjAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMS41IiBmaWxsPSJyZ2JhKDAsMCwwLDAuMDMpIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IndoaXRlIi8+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSJ1cmwoI2RvdHMpIi8+PC9zdmc+");
+    /* SVG-encoded dot grid pattern (tonal, subtle) */
+    --bg-dots: url('data:image/svg+xml,<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse"><circle cx="40" cy="40" r="1.5" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="80" height="80" fill="white"/><rect width="80" height="80" fill="url(%23dots)"/></svg>');
   }
 
   .dark {
@@ -27,9 +26,8 @@
       rgb(31 28 26) 100%
     );
 
-    /* Dark theme dot pattern (even more subtle on dark bg).
-       Base64 — same lightningcss workaround as light variant. */
-    --bg-dots: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImRvdHMiIHg9IjAiIHk9IjAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDIpIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9InJnYigyMyAyMCAxOCkiLz48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9InVybCgjZG90cykiLz48L3N2Zz4=");
+    /* Dark theme dot pattern (even more subtle on dark bg) */
+    --bg-dots: url('data:image/svg+xml,<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse"><circle cx="40" cy="40" r="1.5" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="80" height="80" fill="rgb(23 20 18)"/><rect width="80" height="80" fill="url(%23dots)"/></svg>');
   }
 
   /* Module shell background: gradient + dots pattern */

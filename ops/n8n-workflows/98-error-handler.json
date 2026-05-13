@@ -12,7 +12,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO n8n_failure_events\n  (workflow_id, workflow_name, execution_id, last_node, error_message, raw)\nVALUES (\n  '{{ $json.workflow.id || \"\" }}',\n  '{{ $json.workflow.name || \"unknown\" }}',\n  '{{ $json.execution.id || \"\" }}',\n  '{{ $json.execution.lastNodeExecuted || \"\" }}',\n  '{{ ($json.error.message || \"unknown error\").replace(/'/g, \"''\") }}',\n  '{{ JSON.stringify($json).replace(/'/g, \"''\") }}'::jsonb\n);",
+        "query": "INSERT INTO n8n_failure_events\n  (workflow_id, workflow_name, execution_id, last_node, error_message, raw)\nVALUES (\n  '{{ $json.workflow.id || \"\" }}',\n  '{{ $json.workflow.name || \"unknown\" }}',\n  '{{ $json.execution.id || \"\" }}',\n  '{{ $json.execution.lastNodeExecuted || \"\" }}',\n  '{{ ($json.error.message || \"unknown error\").replace(/'/g, \"''\") }}',\n  '{{ JSON.stringify($json).replace(/'/g, \"''\") }}'::jsonb\n)\nRETURNING id, error_signature;",
         "options": {}
       },
       "id": "insert-dead-letter",
@@ -30,6 +30,54 @@
     },
     {
       "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) AS prior_alerts\nFROM n8n_failure_events\nWHERE workflow_id = '{{ $('Error Trigger').first().json.workflow.id || \"\" }}'\n  AND error_signature = '{{ $json.error_signature }}'\n  AND created_at > NOW() - INTERVAL '30 minutes'\n  AND id <> {{ $json.id }};",
+        "options": {}
+      },
+      "id": "check-cooldown",
+      "name": "Check 30-min cooldown",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [620, 300],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "prior-alerts-zero",
+              "leftValue": "={{ Number($json.prior_alerts ?? 0) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-cooldown-elapsed",
+      "name": "IF cooldown elapsed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [820, 300]
+    },
+    {
+      "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=🚨 *n8n workflow failed*\n\nWorkflow: `{{ $('Error Trigger').first().json.workflow.name || 'unknown' }}`\nExecution: `{{ $('Error Trigger').first().json.execution.id || 'unknown' }}`\nNode: `{{ $('Error Trigger').first().json.execution.lastNodeExecuted || 'unknown' }}`\nError: {{ $('Error Trigger').first().json.execution.error.message || 'unknown error' }}",
         "additionalFields": {
@@ -41,13 +89,22 @@
       "name": "Telegram failure alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [660, 300],
+      "position": [1040, 220],
       "credentials": {
         "telegramApi": {
           "id": "ggxeCc1ALZKLuMPV",
           "name": "Telegram (Sergeant_alert_bot)"
         }
       }
+    },
+    {
+      "parameters": {},
+      "id": "noop-suppressed",
+      "name": "Suppressed (within cooldown)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1040, 400],
+      "notes": "Alert suppressed: identical (workflow_id, error_signature) was already alerted in the last 30 min. Event is logged in n8n_failure_events but does not page Telegram."
     }
   ],
   "connections": {
@@ -66,7 +123,36 @@
       "main": [
         [
           {
+            "node": "Check 30-min cooldown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check 30-min cooldown": {
+      "main": [
+        [
+          {
+            "node": "IF cooldown elapsed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF cooldown elapsed": {
+      "main": [
+        [
+          {
             "node": "Telegram failure alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Suppressed (within cooldown)",
             "type": "main",
             "index": 0
           }

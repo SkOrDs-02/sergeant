@@ -26,6 +26,7 @@ const ENV_VARS = [
   "ANTHROPIC_PLAN",
   "VOYAGE_MONTHLY_BUDGET_USD",
   "VOYAGE_PLAN",
+  "VOYAGE_DAILY_BUDGET_USD",
 ] as const;
 
 const savedEnv: Record<string, string | undefined> = {};
@@ -167,5 +168,65 @@ describe("buildInfraCostConfig() — PR-33", () => {
       "anthropic",
       "voyage",
     ]);
+  });
+});
+
+describe("applyVoyageDailyBudget() — PR-38", () => {
+  it("пушить env-driven daily-budget USD у `voyage_daily_budget_usd` gauge", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD"] = "1.5";
+
+    const { applyVoyageDailyBudget } = await import("./cost.js");
+    const { register } = await import("./metrics.js");
+    applyVoyageDailyBudget();
+
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE voyage_daily_budget_usd gauge");
+    expect(text).toMatch(/voyage_daily_budget_usd 1\.5/);
+  });
+
+  it("коли env unset/0 — gauge лишається на default `0` (alert-expr guard `> 0` коректно блокує)", async () => {
+    // Unlabeled gauge — prom-client ВЖЕ публікує серію зі значенням 0
+    // за замовчанням, тому в /metrics завжди буде `voyage_daily_budget_usd 0`
+    // якщо env не сконфігуровано. Перевіряємо саме цей invariant:
+    // alert rule `voyage-cost.yml` guard-иться через `> 0` → 0 не fire-ить.
+    const { applyVoyageDailyBudget } = await import("./cost.js");
+    const { register } = await import("./metrics.js");
+    applyVoyageDailyBudget();
+
+    const text = await register.metrics();
+    expect(text).toMatch(/^voyage_daily_budget_usd 0$/m);
+  });
+
+  it("коли env <= 0 (negative) — early-return; gauge не змінюється з default `0`", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD"] = "-5";
+    const { applyVoyageDailyBudget } = await import("./cost.js");
+    const { register } = await import("./metrics.js");
+    applyVoyageDailyBudget();
+    const text = await register.metrics();
+    // Гарантія: не пушимо negative-значення (gauge.set би прийняв -5).
+    expect(text).toMatch(/^voyage_daily_budget_usd 0$/m);
+    expect(text).not.toMatch(/voyage_daily_budget_usd -/);
+  });
+
+  it("idempotent: повторні виклики не дублюють серію", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD"] = "2";
+    const { applyVoyageDailyBudget } = await import("./cost.js");
+    const { register } = await import("./metrics.js");
+    applyVoyageDailyBudget();
+    applyVoyageDailyBudget();
+    applyVoyageDailyBudget();
+    const text = await register.metrics();
+    const matches = text.match(/^voyage_daily_budget_usd \d/gm) ?? [];
+    expect(matches.length).toBe(1);
+    expect(text).toMatch(/voyage_daily_budget_usd 2/);
+  });
+
+  it("приймає float-значення (10.75 USD/day)", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD"] = "10.75";
+    const { applyVoyageDailyBudget } = await import("./cost.js");
+    const { register } = await import("./metrics.js");
+    applyVoyageDailyBudget();
+    const text = await register.metrics();
+    expect(text).toMatch(/voyage_daily_budget_usd 10\.75/);
   });
 });
