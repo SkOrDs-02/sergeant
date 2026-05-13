@@ -96,7 +96,7 @@ export function WeeklyGoalCard({
               </svg>
             </span>
             <span className="text-style-label text-text">
-              {messages.fizruk.weeklyGoal}
+              {messages.fizruk.dashboard.weeklyGoalTitle}
             </span>
           </div>
           <span className={`text-xs font-semibold ${tone}`}>

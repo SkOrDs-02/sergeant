@@ -7,6 +7,7 @@
 
 import { useMemo } from "react";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import type { DashboardWorkoutInput } from "@sergeant/fizruk-domain/domain";
 
 interface WeeklyVolumeChartProps {
@@ -51,7 +52,8 @@ export function WeeklyVolumeChart({
       const endedDate = new Date(ms);
       // check same week
       const wStart = mondayOfWeek(endedDate);
-      if (localYmd(wStart.getTime()) !== localYmd(weekStart.getTime())) continue;
+      if (localYmd(wStart.getTime()) !== localYmd(weekStart.getTime()))
+        continue;
       const idx = mondayIndex(endedDate);
       arr[idx] = (arr[idx] || 0) + 1;
     }
@@ -97,7 +99,9 @@ export function WeeklyVolumeChart({
                 <rect x="2" y="13" width="4" height="8" rx="1" />
               </svg>
             </span>
-            <span className="text-style-label text-text">Активність тижня</span>
+            <span className="text-style-label text-text">
+              {messages.fizruk.dashboard.weeklyVolumeTitle}
+            </span>
           </div>
           <span className="text-xs text-muted">
             {totalThisWeek > 0 ? `${totalThisWeek} трен.` : "Поки порожньо"}
@@ -141,7 +145,11 @@ export function WeeklyVolumeChart({
                 <span
                   className={[
                     "text-2xs",
-                    isToday ? "text-fizruk font-semibold" : isFuture ? "text-muted/50" : "text-subtle",
+                    isToday
+                      ? "text-fizruk font-semibold"
+                      : isFuture
+                        ? "text-muted/50"
+                        : "text-subtle",
                   ].join(" ")}
                 >
                   {DAY_LABELS[i]}
