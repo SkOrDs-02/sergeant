@@ -150,7 +150,7 @@ migration), поза скоупом цієї прожарки.
 
 ## P2 (DX, тести, документація)
 
-### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ✅ Закрито в follow-up PR
+### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ✅ Closed in #2752
 
 - **Files:**
   - [`apps/server/src/env/env.ts:470-515`](../../apps/server/src/env/env.ts#L470) — додано `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`, `PUSH_INTERNAL_ALLOWED_IPS` (зод-валідовані; VAPID-поля вже були).
