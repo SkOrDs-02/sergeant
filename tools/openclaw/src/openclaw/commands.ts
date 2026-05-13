@@ -108,6 +108,10 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
     command: "ai_cost",
     description: "AI spend rollup: today/week/month + budget + top endpoints",
   },
+  {
+    command: "openclaw",
+    description: "Debug snapshot: persona / WF / invocations / budget",
+  },
   { command: "reset", description: "Start a new cofounder session" },
 ];
 

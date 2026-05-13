@@ -1,13 +1,22 @@
+import { useState } from "react";
 import {
   FormField,
   Icon,
   Input,
   Select,
+  Slider,
+  Switch,
   Textarea,
 } from "@shared/components/ui";
 import { Sec, Group } from "../_shared";
 
 export function FormsSection() {
+  const [singleValue, setSingleValue] = useState(40);
+  const [rangeValue, setRangeValue] = useState<readonly [number, number]>([
+    20, 80,
+  ]);
+  const [pushOn, setPushOn] = useState(true);
+  const [emailOn, setEmailOn] = useState(false);
   return (
     <Sec id="forms" title="Форми">
       <Group label="Input — варіанти та розміри">
@@ -85,6 +94,100 @@ export function FormsSection() {
           >
             <Input placeholder="Текст" />
           </FormField>
+        </div>
+      </Group>
+
+      <Group label="Switch — розміри">
+        <div className="flex flex-col gap-4 max-w-sm">
+          <Switch
+            size="sm"
+            checked={pushOn}
+            onChange={setPushOn}
+            label="Push (sm)"
+            description="Компактний рядок у налаштуваннях"
+          />
+          <Switch
+            size="md"
+            checked={emailOn}
+            onChange={setEmailOn}
+            label="Email-дайджест (md)"
+            description="Стандартний розмір для форм"
+          />
+        </div>
+      </Group>
+
+      <Group label="Switch — стани">
+        <div className="flex flex-col gap-3 max-w-sm">
+          <Switch defaultChecked label="Uncontrolled (defaultChecked)" />
+          <Switch
+            checked={false}
+            onChange={() => {}}
+            disabled
+            label="Disabled off"
+          />
+          <Switch
+            checked={true}
+            onChange={() => {}}
+            disabled
+            label="Disabled on"
+          />
+          <Switch
+            defaultChecked={false}
+            error
+            label="З помилкою"
+            description="Це поле обов'язкове"
+          />
+        </div>
+      </Group>
+
+      <Group label="Slider — single + ticks">
+        <div className="space-y-5 max-w-sm">
+          <Slider
+            aria-label="Гучність (sm)"
+            size="sm"
+            value={singleValue}
+            onChange={setSingleValue}
+            ticks={[0, 25, 50, 75, 100]}
+            showTooltip
+            formatValue={(n) => `${n}%`}
+          />
+          <Slider
+            aria-label="Гучність (md)"
+            value={singleValue}
+            onChange={setSingleValue}
+            ticks={[0, 25, 50, 75, 100]}
+            showTooltip
+            formatValue={(n) => `${n}%`}
+          />
+        </div>
+      </Group>
+
+      <Group label="Slider — range">
+        <div className="space-y-5 max-w-sm">
+          <Slider
+            range
+            aria-label="Діапазон цін"
+            min={0}
+            max={100}
+            value={rangeValue}
+            onChange={setRangeValue}
+            showTooltip
+            formatValue={(n) => `${n} ₴`}
+          />
+          <p className="text-xs text-muted tabular-nums">
+            {rangeValue[0]} – {rangeValue[1]} ₴
+          </p>
+        </div>
+      </Group>
+
+      <Group label="Slider — disabled">
+        <div className="max-w-sm">
+          <Slider
+            aria-label="Disabled slider"
+            value={30}
+            onChange={() => {}}
+            disabled
+          />
         </div>
       </Group>
     </Sec>

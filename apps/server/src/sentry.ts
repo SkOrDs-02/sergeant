@@ -33,6 +33,12 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
   // Order is intentional: longest path first so /api/auth/sign-up does not
   // accidentally fall through to /api/health (longest-prefix-first).
   {
+    match: "/api/internal/openclaw/write/",
+    rate: 1.0,
+    reason:
+      "OpenClaw write-tool mutations (ADR-0036 §3) — every founder-approved side-effect captured for audit reconstruction. Low-volume, high blast radius.",
+  },
+  {
     match: "/api/account/recovery",
     rate: 1.0,
     reason: "Security-critical, low volume — capture every trace.",
@@ -53,6 +59,12 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
     reason: "Expensive AI route; half-trace keeps perf signal without 1× cost.",
   },
   {
+    match: "/api/v2/sync/",
+    rate: 0.01,
+    reason:
+      "v2 op-log sync — push/pull/stream fire every ~10s per active client (Initiative 0003 Phase 5 / ADR-0047). 1% is enough for latency trend without quota burn.",
+  },
+  {
     match: "/api/sync/poll",
     rate: 0.01,
     reason: "Chatty heartbeat poll — 1% is enough for trend.",
@@ -65,16 +77,55 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
 ] as const;
 
 /**
- * Default fallback rate when no rule matches. Derived from
- * `SENTRY_TRACES_SAMPLE_RATE` env-var (deploy-time override) but capped
- * at 5% by the plan to leave headroom for high-value routes.
+ * Preset profiles for the *fallback* sample rate (the rate used when no rule
+ * matches). Per-route rules above stay fixed across profiles — they encode
+ * security/observability policy, not quota budget, and bumping `/api/auth/`
+ * down to 0.1 would defeat the point of the table.
+ *
+ * Profile selection:
+ *   - `minimal` (0.01): incident-mitigation — only critical routes traced.
+ *   - `prod` (0.05): default deploy baseline.
+ *   - `aggressive` (0.2): canary / pre-release deploys — trade quota for
+ *     visibility while we shake out a new release.
+ *
+ * Explicit `SENTRY_TRACES_SAMPLE_RATE` always wins (deploy-time override).
+ */
+export const SENTRY_SAMPLE_PROFILES = {
+  minimal: 0.01,
+  prod: 0.05,
+  aggressive: 0.2,
+} as const;
+
+export type SentrySampleProfile = keyof typeof SENTRY_SAMPLE_PROFILES;
+
+export function resolveSampleProfile(
+  raw: string | undefined,
+): SentrySampleProfile {
+  if (raw === "minimal" || raw === "aggressive" || raw === "prod") return raw;
+  return "prod";
+}
+
+/**
+ * Default fallback rate when no rule matches. Resolution order:
+ *
+ *   1. `SENTRY_TRACES_SAMPLE_RATE` — explicit numeric override (deploy-time
+ *      kill-switch). Honoured even when a profile is set so on-call can
+ *      drop traces during a quota emergency without redeploying.
+ *   2. `SENTRY_SAMPLE_PROFILE` — one of `minimal` / `prod` / `aggressive`,
+ *      resolved via `SENTRY_SAMPLE_PROFILES`.
+ *   3. Default — `0.05` (matches the historical `prod` baseline).
  *
  * Exported so tests can pin a deterministic baseline.
  */
 export function defaultSampleRate(
   env: NodeJS.ProcessEnv = process.env,
 ): number {
-  return parseRate(env["SENTRY_TRACES_SAMPLE_RATE"], 0.05);
+  const explicit = env["SENTRY_TRACES_SAMPLE_RATE"];
+  if (explicit != null && explicit !== "") {
+    return parseRate(explicit, 0.05);
+  }
+  const profile = resolveSampleProfile(env["SENTRY_SAMPLE_PROFILE"]);
+  return SENTRY_SAMPLE_PROFILES[profile];
 }
 
 /**

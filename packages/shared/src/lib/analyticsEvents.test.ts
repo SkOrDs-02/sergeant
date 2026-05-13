@@ -54,6 +54,27 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.WAITLIST_SUBMITTED).toBe("waitlist_submitted");
   });
 
+  it("exposes the Revenue / Activation / Landing groups (initiative 0010 Phases 4–6) verbatim", () => {
+    // Paywall + checkout funnel — referenced by `PaywallModal`,
+    // `PricingPage` and the Stripe webhook handler.
+    expect(ANALYTICS_EVENTS.PAYWALL_VIEWED).toBe("paywall_viewed");
+    expect(ANALYTICS_EVENTS.CHECKOUT_OPENED).toBe("checkout_opened");
+
+    // Activation v2 (initiative 0010 Phase 5).
+    expect(ANALYTICS_EVENTS.ACTIVATION_V2_HIT).toBe("activation_v2_hit");
+
+    // Landing surfaces (initiative 0010 Phase 6.1).
+    expect(ANALYTICS_EVENTS.LANDING_VIEWED).toBe("landing_viewed");
+    expect(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED).toBe(
+      "landing_email_captured",
+    );
+
+    // Auth multi-provider (initiative 0010 Phase 4.3).
+    expect(ANALYTICS_EVENTS.SIGNUP_PROVIDER_SELECTED).toBe(
+      "signup_provider_selected",
+    );
+  });
+
   it("exposes the UX-roast 2026-Q2 event groups verbatim", () => {
     // App Lock — PR-0 / PR-1a / PR-1b
     expect(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED).toBe(

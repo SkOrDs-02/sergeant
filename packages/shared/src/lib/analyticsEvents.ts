@@ -215,6 +215,49 @@ export const ANALYTICS_EVENTS = Object.freeze({
   CHECKOUT_OPENED: "checkout_opened",
   WAITLIST_SUBMITTED: "waitlist_submitted",
 
+  // Activation v2 — Mono-wedge funnel (initiative 0010 Phase 5).
+  // Pure-function evaluator lives in `packages/insights/src/activation.ts`
+  // (`evaluateActivationV2`); this constant is the canonical PostHog event
+  // fired exactly once per account when the predicate flips to `true`. The
+  // capture is idempotent through a localStorage flag (`sergeant.activation_v2_fired`).
+  // Payload contract:
+  //
+  //   ACTIVATION_V2_HIT  { time_to_activate_hours: number,
+  //                        mono_connected: true,
+  //                        transactions_categorized: number,
+  //                        budgets_set: number,
+  //                        variant?: "goal_first" | "vibe_picks" }
+  //
+  // `variant` is populated when the A/B test (`onboarding_v2` feature flag)
+  // is active; absent on production rollout once a winner is picked.
+  ACTIVATION_V2_HIT: "activation_v2_hit",
+
+  // Landing page (initiative 0010 Phase 6.1). Fired from `/` + `/pricing`
+  // public surfaces. Payload contracts:
+  //
+  //   LANDING_VIEWED          { path: "/" | "/pricing", referrer?: string,
+  //                             locale: "uk" | "en" }
+  //   LANDING_EMAIL_CAPTURED  { source: "hero" | "footer" | "sticky",
+  //                             locale: "uk" | "en" }
+  //
+  // `locale` is the served locale at capture time — used to split funnel
+  // metrics between UA-organic and EN-paid acquisition tracks.
+  LANDING_VIEWED: "landing_viewed",
+  LANDING_EMAIL_CAPTURED: "landing_email_captured",
+
+  // Auth multi-provider (initiative 0010 Phase 4.3). Better Auth wires
+  // Apple + Google + Email/password fallback; these events split the
+  // signup funnel by provider so PostHog can compare drop-off rates
+  // before the sign-up screen lands a session.
+  //
+  //   SIGNUP_PROVIDER_SELECTED  { provider: "apple" | "google" | "email",
+  //                               surface: "sign_in" | "sign_up" }
+  //
+  // `SIGNUP_COMPLETED` (above) is fired once Better Auth confirms the
+  // session; the pair `_SELECTED → _COMPLETED` powers the per-provider
+  // funnel chart.
+  SIGNUP_PROVIDER_SELECTED: "signup_provider_selected",
+
   // UX-roast 2026-Q2 — App Lock (PR-1a PIN, PR-1b biometric).
   //
   // Payload contracts:

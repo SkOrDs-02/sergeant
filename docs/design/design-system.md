@@ -719,6 +719,119 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 Канонічний індикатор завантаження (4 розміри). Використовується всередині
 `Button loading`, інлайн-фетчі, skeleton overlay.
 
+### Switch
+
+Token-styled iOS-style pill-тогл. `<button role="switch">` з повним
+WAI-ARIA-контрактом: `aria-checked` відбиває стан, `aria-labelledby` /
+`aria-describedby` відсилають на видиму мітку та опис,
+`focus-visible:ring-2 ring-brand-500/45` (Hard Rule #14).
+
+- **Sizes**: `sm` 36×20 · `md` 44×26 (дефолт — мінімум-touch-target).
+- **States**: `disabled`, `error` (додає `aria-invalid` + danger ring).
+- **Controlled**: `checked` + `onChange`. **Uncontrolled**: `defaultChecked`.
+- **Keyboard**: Space / Enter (native button), додатково ArrowLeft / ArrowRight
+  за патерном WAI-ARIA Switch.
+- **A11y**: зміна стану викликає `hapticTap()` + screen-reader announce
+  `{label} увімкнено / вимкнено` (override через `announceText`).
+
+```tsx
+<Switch
+  size="md"
+  checked={pushOn}
+  onChange={setPushOn}
+  label="Push-сповіщення"
+  description="Надсилати нагадування про звички"
+/>
+```
+
+### Slider
+
+Token-styled слайдер з власними тумбами `role="slider"`. Підтримує
+single-значення та range (дві тумби), тіки, валю-tooltip при drag/focus,
+вертикальну орієнтацію (опційно).
+
+- **Sizes**: `sm` (трек 4 px) · `md` (6 px).
+- **Orientation**: `horizontal` (дефолт) / `vertical` (знизу вгору).
+- **Keyboard** (кожна тумба):
+  - `→` / `↑` — +1 step, `←` / `↓` — −1 step
+  - `Shift` + арров — ×10 step
+  - `PageUp` / `PageDown` — ±10 % діапазону
+  - `Home` / `End` — min / max
+- **Range**: дві тумби; значення не можуть перехрещуватися (вбудований
+  clamp).
+- **Drag**: pointer capture на track — працює з мишею/тачем/stylus.
+- **A11y**: `aria-valuemin/max/now`, `aria-valuetext`, `aria-orientation`,
+  звуження range через динамічний `aria-valuemax`/`aria-valuemin` на
+  сусідній тумбі.
+
+```tsx
+<Slider
+  aria-label="Гучність"
+  value={volume}
+  onChange={setVolume}
+  ticks={[0, 25, 50, 75, 100]}
+  showTooltip
+  formatValue={(n) => `${n}%`}
+/>
+```
+
+### ProgressBar
+
+Лінійний індикатор прогресу. Determinate та indeterminate. Цвітові
+філли — `*-strong` компаньйони (Hard Rule #9) для білого внутрішнього
+тексту.
+
+- **Sizes**: `xs` 2 px · `sm` 6 px · `md` 8 px · `lg` 12 px (h-1/1.5/2/3).
+- **Variants**: `brand` / `success` / `warning` / `danger`.
+- **Indeterminate**: обмежений бар летає треком (1.4 s loop). Під
+  `prefers-reduced-motion: reduce` фол-бек на повноширокий
+  `pulse-soft` (WCAG 2.3.3).
+- **A11y**: `role="progressbar"` + `aria-valuenow/max/min`, `aria-busy`
+  коли indeterminate. Опційний inner-label (`labelPlacement="inside"`) або
+  outside.
+
+```tsx
+<ProgressBar value={65} size="lg" variant="success" label="65%" />
+<ProgressBar indeterminate aria-label="Синхронізація" />
+```
+
+### ProgressCircle
+
+Радіальний індикатор з тими ж статус-варіантами. Determinate —
+stroke-dasharray; indeterminate — чверть-дуга, яка обертається.
+
+- **Sizes**: `xs` 28 / `sm` 44 / `md` 64 / `lg` 96 px.
+- **Variants**: `brand` / `success` / `warning` / `danger` — stroke з
+  `text-{c}-strong` (AA на кремі).
+- Під reduced-motion — обертання вимикається, натомість `pulse-soft`.
+- `ProgressCircle` — коли потрібно progress-примітив без module-tint.
+  Для KPI-тайлів (`finyk` / `fizruk` / `routine` / `nutrition` акценти) —
+  продовжуй використовувати `ProgressRing`.
+
+### Skeleton
+
+Плейсхолдери завантаження. Стандартна анімація — `motion-safe:animate-pulse`;
+режим `shimmer` — token-driven `motion-safe:animate-shimmer`. Під
+`prefers-reduced-motion: reduce` обидва режими колапсяться до
+статичного muted-блоку.
+
+- **Variants** (`variant` props або окремі компоненти):
+  - `rect` (дефолт) — гнучкий блок; розмір через `className`.
+  - `text` (`<SkeletonText lines={N} />`) — багаторядковий текст з
+    детерміновано варіативними ширинами (останній рядок коротший).
+  - `avatar` (`<SkeletonAvatar />`) — круг.
+  - `card` (`<SkeletonCardBlock />`) — повна картка з avatar +
+    назва/субтитр + три рядки тексту.
+- **Shape-aware variants** (`SkeletonTransactionRow`, `SkeletonHabitRow`,
+  `SkeletonWorkoutSet`, `SkeletonMealCard`) — для відповідних модулів;
+  див. «Скелети» в § Мотион.
+
+```tsx
+<SkeletonText lines={4} shimmer />
+<SkeletonAvatar className="w-12 h-12" />
+<SkeletonCardBlock />
+```
+
 ---
 
 ## 6. Focus, disabled, loading — єдиний контракт
