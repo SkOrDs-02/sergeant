@@ -977,7 +977,7 @@ export interface GetServerStatsOutput {
  *     touching tool code.
  */
 export async function getServerStats(): Promise<GetServerStatsOutput> {
-  const port = process.env["PORT"] ?? "3000";
+  const port = String(env.PORT);
   const baseUrl =
     process.env["SERVER_INTERNAL_URL"] ?? `http://localhost:${port}`;
   const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/healthz`, {
