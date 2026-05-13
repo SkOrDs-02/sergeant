@@ -437,19 +437,22 @@ describe("/api/internal/openclaw/snapshot/refresh", () => {
 // повертає classification JSON. 503 коли ANTHROPIC_API_KEY відсутній;
 // 502 коли Haiku фейлить — щоб plugin escalates до Layer 2 fail-closed.
 describe("/api/internal/openclaw/classify", () => {
-  const originalKey = process.env["ANTHROPIC_API_KEY"];
-
+  // T2 audit follow-up — these tests previously mutated
+  // `process.env.ANTHROPIC_API_KEY` directly, but the route reads the
+  // parsed `env.ANTHROPIC_API_KEY` (captured at first env-module load),
+  // so the assignment never reached the handler in vitest workers
+  // where env.js had already been cached by an earlier suite. Switch
+  // to `vi.stubEnv` + `vi.resetModules()` so each test gets a fresh
+  // env snapshot before `makeApp()` dynamic-imports the router.
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env["ANTHROPIC_API_KEY"] = "test-key";
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    vi.resetModules();
   });
 
   afterEach(() => {
-    if (originalKey === undefined) {
-      delete process.env["ANTHROPIC_API_KEY"];
-    } else {
-      process.env["ANTHROPIC_API_KEY"] = originalKey;
-    }
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   it("returns classification JSON for a routine_metrics question", async () => {
@@ -500,7 +503,8 @@ describe("/api/internal/openclaw/classify", () => {
   });
 
   it("returns 503 when ANTHROPIC_API_KEY is not configured", async () => {
-    delete process.env["ANTHROPIC_API_KEY"];
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    vi.resetModules();
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/openclaw/classify")
