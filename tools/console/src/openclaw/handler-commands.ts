@@ -50,9 +50,12 @@ import {
   COMMAND_PROMPTS,
   DISPATCHER_COMMANDS,
   HELP_TEXT,
+  PERSONA_CALLBACK_PREFIX,
   PERSONA_COMMANDS,
   PERSONA_LABEL,
   WRITE_TOOL_LABEL,
+  buildHelpKeyboard,
+  buildPersonaQuickRow,
   parseApprovalCallback,
   postJson,
   type BudgetResponse,
@@ -149,12 +152,18 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
 
   bot.command("start", async (ctx) => {
     if (!isAllowedDmContext(ctx)) return; // silent ignore у non-DM
-    await ctx.reply(HELP_TEXT, { parse_mode: "HTML" });
+    await ctx.reply(HELP_TEXT, {
+      parse_mode: "HTML",
+      reply_markup: buildPersonaQuickRow(),
+    });
   });
 
   bot.command("help", async (ctx) => {
     if (!isAllowedDmContext(ctx)) return;
-    await ctx.reply(HELP_TEXT, { parse_mode: "HTML" });
+    await ctx.reply(HELP_TEXT, {
+      parse_mode: "HTML",
+      reply_markup: buildHelpKeyboard(),
+    });
   });
 
   bot.command("reset", async (ctx) => {
@@ -787,6 +796,35 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
   // "expired" answer-callback rather than executing.
   bot.on("callback_query:data", async (ctx) => {
     const data = ctx.callbackQuery.data;
+
+    // O7: persona quick-row + help keyboard callbacks
+    if (data.startsWith(PERSONA_CALLBACK_PREFIX)) {
+      if (!isAllowedDmContext(ctx)) {
+        await ctx.answerCallbackQuery({
+          text: "Access denied.",
+          show_alert: true,
+        });
+        return;
+      }
+      const persona = data.slice(PERSONA_CALLBACK_PREFIX.length);
+      await ctx.answerCallbackQuery();
+      await ctx.reply(`/${persona}`);
+      return;
+    }
+    if (data.startsWith("oc:cmd:")) {
+      if (!isAllowedDmContext(ctx)) {
+        await ctx.answerCallbackQuery({
+          text: "Access denied.",
+          show_alert: true,
+        });
+        return;
+      }
+      const cmd = data.slice("oc:cmd:".length);
+      await ctx.answerCallbackQuery();
+      await ctx.reply(`/${cmd}`);
+      return;
+    }
+
     const parsed = parseApprovalCallback(data);
     if (!parsed) {
       // Not ours — answer empty so the spinner stops, but otherwise

@@ -11,6 +11,7 @@
  */
 
 import type Anthropic from "@anthropic-ai/sdk";
+import { InlineKeyboard } from "grammy";
 import type { Bot } from "grammy";
 import type { OpenClawPersona } from "../agents/personas.js";
 import type { ApprovalRecord, WriteToolName } from "./approval-store.js";
@@ -270,6 +271,47 @@ export function summariseWriteInput(record: ApprovalRecord): string {
       return `issue=${issue}${until}`;
     }
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Inline keyboards — O7: /help discovery + persona quick-row
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Persona quick-row for /start (boot) message: one button per specialist
+ * persona. Tapping a button sends the command as a new message via
+ * `switch_inline_current_chat` — but for DM bots the simplest approach
+ * is to rely on Telegram's deep-link trick: the button text IS the
+ * slash-command, so the founder taps it and knows to type it. We use
+ * `callback_data` with an `oc:persona:` prefix instead so we can handle
+ * the tap without requiring the user to type.
+ */
+export const PERSONA_CALLBACK_PREFIX = "oc:persona:";
+
+export function buildPersonaQuickRow(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🔧 /ops", `${PERSONA_CALLBACK_PREFIX}ops`)
+    .text("📈 /growth", `${PERSONA_CALLBACK_PREFIX}growth`)
+    .text("⚙️ /eng", `${PERSONA_CALLBACK_PREFIX}eng`)
+    .text("💰 /finance", `${PERSONA_CALLBACK_PREFIX}finance`);
+}
+
+/**
+ * Full help inline keyboard — two rows:
+ * Row 1: persona commands
+ * Row 2: common operational commands
+ */
+export function buildHelpKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🔧 /ops", `${PERSONA_CALLBACK_PREFIX}ops`)
+    .text("📈 /growth", `${PERSONA_CALLBACK_PREFIX}growth`)
+    .text("⚙️ /eng", `${PERSONA_CALLBACK_PREFIX}eng`)
+    .text("💰 /finance", `${PERSONA_CALLBACK_PREFIX}finance`)
+    .row()
+    .text("🤝 /cofounder", `${PERSONA_CALLBACK_PREFIX}cofounder`)
+    .text("🏛 /council", "oc:cmd:council")
+    .text("📊 /metrics", "oc:cmd:metrics")
+    .text("📋 /digest", "oc:cmd:digest");
 }
 
 // ─────────────────────────────────────────────────────────────────────────
