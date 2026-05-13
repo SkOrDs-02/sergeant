@@ -9,6 +9,7 @@ import {
   DESIGN_PATH,
   KNOWN_PATHS,
   PRICING_PATH,
+  STATUS_PATH,
   PROFILE_PATH,
   RESET_PASSWORD_PATH,
   SIGN_IN_PATH,
@@ -42,6 +43,10 @@ const AssistantCataloguePage = lazyImport(
   "AssistantCataloguePage",
 );
 const PricingPage = lazyImport(() => import("../PricingPage"), "PricingPage");
+const StatusPage = lazyImport(
+  () => import("../status/StatusPage"),
+  "StatusPage",
+);
 const HubChatPage = lazyImport(
   () => import("../hub/HubChatPage"),
   "HubChatPage",
@@ -144,6 +149,21 @@ export function renderStandaloneRoute(args: StandaloneRouteArgs): ReactNode {
       <Suspense fallback={<PageLoader />}>
         <div className="page-enter">
           <PricingPage />
+        </div>
+      </Suspense>
+    );
+  }
+
+  // `/status` — public health page (PR-41). Anonymous: fetches
+  // `/api/status` and renders per-component status badges. Founder-
+  // Pulse + public-trust surface; must remain reachable without a
+  // session so external monitors (and worried users) can sanity-check
+  // the service.
+  if (pathname === STATUS_PATH) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <StatusPage />
         </div>
       </Suspense>
     );
