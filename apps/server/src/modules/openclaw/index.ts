@@ -149,6 +149,22 @@ export type {
   SeoSerpResult,
 } from "./seo-tools.js";
 
+// PR-26: morning briefing template + orchestrator (no LLM).
+export {
+  buildMorningBriefing,
+  assembleMorningBriefing,
+} from "./briefing/index.js";
+export type {
+  AlertsBriefingSection,
+  AssembleMorningBriefingInput,
+  MorningBriefingData,
+  MorningBriefingResponse,
+  PrQueueBriefingSection,
+  SignupsBriefingSection,
+  StripeBriefingSection,
+  WorkflowsBriefingSection,
+} from "./briefing/index.js";
+
 // PR-C1b: reminder store + state transitions.
 export {
   setReminder,

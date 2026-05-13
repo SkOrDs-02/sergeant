@@ -449,8 +449,8 @@ export interface ReadWorkflowLogsOutput {
 export async function readWorkflowLogs(
   input: ReadWorkflowLogsInput,
 ): Promise<ReadWorkflowLogsOutput> {
-  const baseUrl = process.env["N8N_API_URL"];
-  const apiKey = process.env["N8N_API_KEY"];
+  const baseUrl = env.N8N_API_URL;
+  const apiKey = env.N8N_API_KEY;
   if (!baseUrl || !apiKey) {
     logger.warn({
       msg: "openclaw_read_workflow_logs_not_configured",

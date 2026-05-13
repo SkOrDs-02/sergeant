@@ -27,6 +27,7 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
+import { env } from "../../env.js";
 import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
@@ -52,6 +53,8 @@ import {
   getServerStats,
   getPostHogStats,
   getGithubReleases,
+  // PR-26: morning briefing template assembly (no-LLM hardcoded sections).
+  assembleMorningBriefing,
   // ADR-0036 (Phase 4): write-tools — invoked only after console-side approval.
   commitToStrategyDoc,
   createGithubIssue,
@@ -242,6 +245,17 @@ const GithubReleasesBody = z.object({
 });
 
 const ServerStatsBody = z.object({}).strict();
+
+// PR-26: morning briefing payload — всі поля optional, бо консумер (cron
+// dispatcher / manual probe) може приймати дефолти.
+const MorningBriefingBody = z
+  .object({
+    windowDays: z.number().int().min(1).max(30).optional(),
+    githubRepo: z.string().min(3).max(140).optional(),
+    sentryLimit: z.number().int().min(1).max(20).optional(),
+    prLimit: z.number().int().min(1).max(30).optional(),
+  })
+  .strict();
 
 // ADR-0036 (Phase 4): write-tool body schemas. The console invokes these
 // endpoints ONLY after the founder explicitly approved the corresponding
@@ -656,7 +670,7 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/classify",
     asyncHandler(async (req, res) => {
-      const apiKey = process.env["ANTHROPIC_API_KEY"];
+      const apiKey = env.ANTHROPIC_API_KEY;
       if (!apiKey) {
         res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
         return;
@@ -787,6 +801,34 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         limit: parsed.data.limit,
         repo: parsed.data.repo,
       });
+      res.json(result);
+    }),
+  );
+
+  // ---- morning briefing assembler (PR-26, no LLM) ----
+  //
+  // POST /api/internal/openclaw/briefing/morning → { markdown, data }.
+  // Caller-и:
+  //   - OpenClaw morning-cron (ops/openclaw/provision-cron.mjs) — замінює
+  //     placeholder-payload своїм запитом + пушить markdown у founder-DM.
+  //   - Manual probe з /digest day shortcut (future wiring).
+  // Жодних side-ефектів — endpoint лиш збирає + рендерить. Fail-soft на
+  // кожну джерельну функцію (див. builder.ts → mapXxx-секції).
+  r.post(
+    "/api/internal/openclaw/briefing/morning",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MorningBriefingBody, req, res);
+      if (!parsed.ok) return;
+      const input: Parameters<typeof assembleMorningBriefing>[0] = {};
+      if (parsed.data.windowDays !== undefined)
+        input.windowDays = parsed.data.windowDays;
+      if (parsed.data.githubRepo !== undefined)
+        input.githubRepo = parsed.data.githubRepo;
+      if (parsed.data.sentryLimit !== undefined)
+        input.sentryLimit = parsed.data.sentryLimit;
+      if (parsed.data.prLimit !== undefined)
+        input.prLimit = parsed.data.prLimit;
+      const result = await assembleMorningBriefing(input);
       res.json(result);
     }),
   );
