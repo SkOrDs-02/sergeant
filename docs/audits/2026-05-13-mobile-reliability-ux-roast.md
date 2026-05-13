@@ -76,7 +76,7 @@
 - **Симптом:** Реєстр LOC у `mobile.md` спирався на 2026-05-12 PowerShell-recount, який пропустив ці два файли. Поточний `wc -l` показує 4 файли над межею, не 2.
 - **Дія:** Change у `mobile.md` (зроблено). Decomposition самих файлів — окремі PR (P2):
   - `dualWrite/diff.ts` → split per-shape diff-utilities (`workoutsDiff`, `dailyLogDiff`, `templatesDiff`, …) як module-folder, mirror `dualWrite/adapter.ts` operation-family прийнятий patten.
-  - `routine/pages/Calendar.tsx` → винести `DayCell`, `WeekHeader`, completion-aggregator hook у `pages/Calendar/` folder. Не блокер.
+  - `routine/pages/Calendar.tsx` → винести `DayCell`, `WeekHeader`, completion-aggregator hook у `pages/Calendar/` folder. Не блокер. **✅ Closed in #1922** — `Calendar.tsx` розкладено у `pages/Calendar/` folder (13 sub-files): `index.tsx` (183 LOC), `DayCell.tsx`, `WeekHeader.tsx`, `MonthGridView.tsx`, `MonthHeader.tsx`, `TimeModeSegmented.tsx`, `StatsPill.tsx`, `EventRow.tsx`, `GroupedEventList.tsx`, `useCalendarAggregates.ts` (completion-aggregator hook), `formatters.ts`, `constants.ts`, `types.ts`. Жоден файл не перевищує 200 LOC, page остаточно під лімітом 600 (Hard Rule #18).
 
 ### P2.3 — Domain-shape alignment fizruk × 4 + finyk × 2 (M3 + M4)
 
@@ -118,6 +118,7 @@
 - ✅ **P1.3** Refresh `docs/tech-debt/mobile.md` — Last validated 2026-05-13, LOC recount (2 → 4 files >600), TODO/FIXME shrink (5 → 2 живих, 1 closed), Capacitor coverage цифра (5 → 8), ModuleErrorBoundary inline-нотатка.
 - 📝 **P2.1** Dead-code `modules/shared/ModuleErrorBoundary.tsx` — track only (видалення потребує крос-grep перевірки на dynamic imports, окремий mini-PR).
 - 📝 **P2.2 / P2.3 / P2.4 / P2.5** — track only (>10 файлів змін → окремі follow-up PR).
+- ✅ **P2.2b** Follow-up shipped in #1922 — `apps/mobile/src/modules/routine/pages/Calendar.tsx` (628 LOC) decomposed into a 13-file `pages/Calendar/` folder; `index.tsx` is 183 LOC. Adds 2 new unit-test files (`formatters.test.ts`, `useCalendarAggregates.test.ts`); existing `Calendar.test.tsx` was moved inside the folder and remains green.
 
 ## Outstanding (відкрите після цього PR)
 
@@ -129,7 +130,7 @@
 | M9    | TS 6 bump mobile+console | Чекає Expo SDK 53 (blocked, not actionable)                                               | TBD     | M-L      |
 | P2.1  | Dead-code cleanup        | Remove `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` after dynamic-import grep | TBD     | XS       |
 | P2.2a | fizruk dualWrite         | Decompose `dualWrite/diff.ts` 633 LOC за per-shape diff-helpers                           | TBD     | M (3-4h) |
-| P2.2b | routine/Calendar.tsx     | Винести `DayCell`/`WeekHeader`/completion-aggregator у `pages/Calendar/`                  | TBD     | M (3-4h) |
+| P2.2b | routine/Calendar.tsx     | ✅ Closed in #1922 — `Calendar.tsx` → `pages/Calendar/` folder (13 sub-files)             | @Devin  | M (3-4h) |
 | P2.2c | fizruk PlanCalendar.tsx  | Декомпозиція 661 LOC (наростилося +45)                                                    | TBD     | M        |
 | P2.2d | fizruk adapter.ts        | Декомпозиція 804 LOC (наростилося +67)                                                    | TBD     | M-L      |
 | P2.4  | Detox e2e CI             | Зачепити `hub-ux-smoke.e2e.ts` у CI matrix (iOS sim runner)                               | ops     | M-L      |
