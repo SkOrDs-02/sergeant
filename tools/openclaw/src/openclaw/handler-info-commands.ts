@@ -16,6 +16,7 @@ import {
   formatAiCostMarkdown,
   type AiCostSummaryResponse,
 } from "./aiCostFormat.js";
+import { parseAiCostArgument } from "./aiCostParse.js";
 import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
 import { parseDuration } from "./duration.js";
 import { parseFounderTgUserId } from "./security.js";
@@ -90,20 +91,36 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     );
   });
 
-  // `/ai_cost` — realtime AI-spend rollup for founder DM.
+  // `/ai_cost [<days>]` — realtime AI-spend rollup for founder DM.
   // Backend: `/api/internal/openclaw/ai-cost-summary` (PR-26 continuation
-  // of PR-12 #2567 + PR-13 #2590). Body не передаємо — endpoint
-  // ferments out-of-the-box з env-конфігу та DB.
+  // of PR-12 #2567 + PR-13 #2590).
+  //
+  // Аргумент `<days>` — опційний 1..30 (default — без trend-блоку).
+  // При наявності — backend додає `trend` з Anthropic per-day series і
+  // sparkline. Voyage у trend-і відсутній (ledger не пишеться у
+  // ai_usage_daily; відповідь пояснює це кавеатом).
   //
   // Telegram allows `^[a-z0-9_]{1,32}$` only — `/ai-cost` (з дефісом)
   // мовчки відкидається на стороні Telegram, тому реальна команда —
   // `/ai_cost` (з underscore).
   bot.command("ai_cost", async (c) => {
     if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+    const argument = (c.match ?? "").toString();
+    const parsed = parseAiCostArgument(argument);
+    if (!parsed.ok) {
+      await c.reply(parsed.error);
+      return;
+    }
+    const body: { trendDays?: number } = {};
+    if (parsed.trendDays !== undefined) body.trendDays = parsed.trendDays;
     const r = await postJson<AiCostSummaryResponse>(
       `${serverUrl}/api/internal/openclaw/ai-cost-summary`,
       internalApiKey,
-      {},
+      body,
     );
     if (!r.ok || !r.data) {
       await c.reply(`Не зміг прочитати ai-cost (HTTP ${r.status}).`);

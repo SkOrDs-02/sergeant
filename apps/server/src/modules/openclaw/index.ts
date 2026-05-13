@@ -24,18 +24,23 @@ export { checkDailyBudget, estimateClaudeSonnetCostUsd } from "./budget.js";
 export {
   buildAiCostSummary,
   fetchAnthropicCostsForRange,
+  fetchAnthropicDailyTrend,
   fetchTopEndpointsFromProm,
   fetchVoyageCumulativeFromProm,
   kyivDayKey,
+  kyivDayMinus,
   kyivWeekStart,
   kyivMonthStart,
   kyivMonthEnd,
   kyivDaysInMonth,
+  MAX_TREND_DAYS,
 } from "./aiCostSummary.js";
 export type {
   AiCostSummary,
+  AnthropicTrendBlock,
   BudgetSnapshot,
   BuildAiCostSummaryInput,
+  DailyCostPoint,
   EndpointCostRow,
   ModelCostBreakdown,
   PeriodCostSummary,

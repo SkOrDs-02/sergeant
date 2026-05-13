@@ -43,6 +43,7 @@ import {
 } from "../../modules/ai-memory/forget.js";
 import {
   buildAiCostSummary,
+  MAX_TREND_DAYS,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -211,6 +212,16 @@ const ForgetCancelBody = z
 const StrategyBody = z.object({
   path: z.string().min(1).max(500),
 });
+
+// `/ai_cost <days>` — optional trend-window. Порожнє body беремо як
+// legacy `/ai_cost` (без trend); `trendDays: 1..30` — включає
+// Anthropic per-day series. Object loose-mode — forward-compat для
+// майбутніх параметрів (e.g. provider filter).
+const AiCostSummaryBody = z
+  .object({
+    trendDays: z.number().int().min(1).max(MAX_TREND_DAYS).optional(),
+  })
+  .strict();
 
 const QueryBody = z.object({
   sql: z.string().min(1).max(8000),
@@ -956,17 +967,24 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   //     `ai_cost_estimate_usd_total` (since process restart).
   //   - Budget envelopes — `ANTHROPIC_MONTHLY_BUDGET_USD` /
   //     `VOYAGE_MONTHLY_BUDGET_USD` env-vars (PR-13 #2590).
-  // Body порожній — endpoint без аргументів, founder-bound по
-  // internal-API-bearer guard.
+  //
+  // Body: optional `{ trendDays?: 1..30 }` — включає per-day Anthropic
+  // trend-block (для `/ai_cost <N>` UI). Без trendDays — legacy shape
+  // (today/week/month).
   r.post(
     "/api/internal/openclaw/ai-cost-summary",
-    asyncHandler(async (_req, res) => {
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(AiCostSummaryBody, req, res);
+      if (!parsed.ok) return;
       const summary = await buildAiCostSummary({
         pool,
         budget: {
           anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
           voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
         },
+        ...(parsed.data.trendDays !== undefined
+          ? { trendDays: parsed.data.trendDays }
+          : {}),
       });
       res.json(summary);
     }),
