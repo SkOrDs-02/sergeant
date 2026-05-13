@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { renderStandaloneRoute } from "./StandaloneRoutes";
+import {
+  STANDALONE_ROUTE_PATHS,
+  renderStandaloneRoute,
+} from "./StandaloneRoutes";
+import { KNOWN_PATHS } from "./appPaths";
 import type { useAuth } from "../auth/AuthContext";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
@@ -60,5 +64,40 @@ describe("renderStandaloneRoute()", () => {
     // `isPathBasedModulePath()`.
     expect(callRoute("/finykfoo")).not.toBeNull();
     expect(callRoute("/nutritionish")).not.toBeNull();
+  });
+});
+
+describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive §1.2)", () => {
+  // The registry in `StandaloneRoutes.tsx` is the source of truth for
+  // which paths render a standalone surface. `KNOWN_PATHS` in
+  // `appPaths.ts` is the allowlist used by the 404 guard. These two
+  // sets MUST agree (minus the Hub root `/`, which intentionally falls
+  // through to the Hub home shell) — otherwise either:
+  //   (a) a path is in `KNOWN_PATHS` but no route renders it → silent
+  //       fall-through to the Hub shell for a URL that should have a
+  //       dedicated surface, OR
+  //   (b) a route exists for a path that isn't in `KNOWN_PATHS` → the
+  //       404 guard short-circuits it before the route runs.
+  // Both are real regressions seen during the 0006-routing migration;
+  // this test guards against them at CI time instead of relying on
+  // review discipline. See `docs/audits/2026-05-13-web-architecture-state-roast.md`.
+
+  it("every standalone-route path is also in KNOWN_PATHS", () => {
+    for (const path of STANDALONE_ROUTE_PATHS) {
+      expect(
+        KNOWN_PATHS.has(path),
+        `Standalone route owns "${path}" but KNOWN_PATHS does not — add it to appPaths.ts so the 404 guard doesn't short-circuit it.`,
+      ).toBe(true);
+    }
+  });
+
+  it("every KNOWN_PATHS entry (except the Hub root) is owned by a standalone route", () => {
+    for (const path of KNOWN_PATHS) {
+      if (path === "/") continue; // Hub root — falls through to HubHomeView.
+      expect(
+        STANDALONE_ROUTE_PATHS.has(path),
+        `KNOWN_PATHS contains "${path}" but no entry in STANDALONE_ROUTES renders it — add a route in StandaloneRoutes.tsx or remove the path from KNOWN_PATHS.`,
+      ).toBe(true);
+    }
   });
 });
