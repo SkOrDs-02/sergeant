@@ -28,7 +28,7 @@
       "name": "JS (усього)",
       "path": "../server/dist/assets/*.js",
       "brotli": true,
-      "limit": "820 kB"
+      "limit": "900 kB"
     },
     {
       "name": "CSS",

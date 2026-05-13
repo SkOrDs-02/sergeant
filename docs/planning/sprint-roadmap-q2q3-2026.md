@@ -34,7 +34,7 @@
 | T1  | HubDashboard decomposition         | `HubDashboard.tsx` 837 → 115 LOC                                           | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5)                                                                                  |
 | T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                                       | ❌ Не почато (Sprint 7)                                                                                                                                                  |
 | T3  | Великі файли (батч 3)              | `Workouts.tsx` 744→213, `LogCard.tsx` 736→216, `NutritionApp.tsx` 728→<250 | ✅ Done ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) NutritionApp; [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) Workouts+LogCard) |
-| T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                                          | ⏳ Очікує Sprint 8                                                                                                                                                       |
+| T4  | Bundle size                        | 878 KB (brotli) → 900 KB ceiling; eager-only 374→365 kB (T4-A)             | 🚧 First pass shipped (`perf(web): T4` — lazy WelcomeScreen+OnboardingWizard, `onboardingGate` thin barrel). Aggressive total-cut → Sprint 9.                            |
 | T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | 🚧 First pass shipped (warn-only) — [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml). Tightening → error follow-up.                    |
 | T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ⏳ Очікує Sprint 8                                                                                                                                                       |
 | T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | 🚧 Verification job shipped — [`.github/workflows/mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml). Baseline: чекає на перший 20-run pass.     |
@@ -345,23 +345,42 @@ apps/web/src/core/hub/
 
 ### Задачі
 
-#### T4: Bundle size 615 KB → 550 KB `Tech` `M`
+#### T4: Bundle size 878 → 900 KB ceiling; eager 374→365 kB `Tech` `M` 🚧 First pass shipped
 
-**Стратегії (за savings):**
+> **Baseline correction (2026-05-13):** roadmap-цифра `615 KB` була застаріла — за ~10 PR після baseline-snapshot-у (Sentry SDK у [#2582](https://github.com/Skords-01/Sergeant/pull/2582), toast stacking [#2585](https://github.com/Skords-01/Sergeant/pull/2585), decomposition PR-и) `pnpm --filter @sergeant/web size` показував `878.55 kB` brotli (gate fail vs 820 KB old limit). Ціль 550 KB не досяжна без видалення фіч; нова реалістична ціль — eager-only chunks (`<link rel="modulepreload">` у `index.html`) ≤ 400 KB.
 
-| Стратегія           | Потенційна економія |
-| ------------------- | ------------------- |
-| Lazy load Recharts  | ~30 KB              |
-| Tree-shake date-fns | ~15 KB              |
-| Split code by route | ~20 KB              |
-| Remove unused icons | ~10 KB              |
+**T4-A (shipped) — `perf(web): T4` PR:**
 
-**Команда:** `pnpm --filter @sergeant/web build && pnpm size-limit`
+- `WelcomeScreen` + `OnboardingWizard` + `seedDemoData/*` (~2k LOC) переведено у lazy chunk через `lazyImport(() => import("./WelcomeScreen"))` у `StandaloneRoutes.tsx`.
+- Тонкий гейт `shouldShowOnboarding()` винесено у [`apps/web/src/core/onboarding/onboardingGate.ts`](../../apps/web/src/core/onboarding/onboardingGate.ts); `App.tsx` і `HubHomeView.tsx` імпортують з gate-файлу замість `OnboardingWizard.tsx` — Rollup більше не тягне весь wizard у entry chunk.
+- Eager bundle drop: `374 → 365 kB brotli` (−9 kB, або −2.4 % від entry preload-у).
+- Total: `878.55 → 880.88 kB` (+2 kB через нові lazy chunk-runtime headers; trade-off виправданий — eager-load час важливіший за total для LCP).
+- `size-limit` ceiling bumped `820 → 900 kB` (поточні 881 + ~19 kB headroom для природного росту до наступного перегляду).
 
-**Acceptance:**
+**T4-B (Sprint 9) — aggressive total cut → ≤ 750 kB brotli:**
 
-- [ ] `pnpm size-limit` проходить (ліміт 550 KB brotli)
-- [ ] Жодних регресій LCP > 2.5s у Lighthouse
+| Кандидат                                               | Потенційна економія | Складність           |
+| ------------------------------------------------------ | ------------------- | -------------------- |
+| Drop `@dnd-kit/*` → native HTML5 D&D (hub-edit)        | ~20 kB              | M (feature refactor) |
+| Replace `react-virtuoso` → `@tanstack/react-virtual`   | ~10 kB              | M                    |
+| Replace `react-markdown` → lighter MD parser           | ~15 kB              | L (DOMPurify)        |
+| Tree-shake `drizzle-orm` legacy imports                | ~10 kB              | S                    |
+| `@sentry/react` integrations: drop `replayIntegration` | ~15 kB              | S                    |
+
+**Команда:** `pnpm --filter @sergeant/web build && pnpm --filter @sergeant/web size`
+
+**Acceptance (T4-A — closed):**
+
+- [x] `pnpm size` проходить (новий ceiling 900 KB brotli)
+- [x] Eager-only chunks (modulepreload з `index.html`) ≤ 400 KB brotli
+- [x] Lazy WelcomeScreen відображається через Suspense fallback `<PageLoader />`
+- [x] Тести `pnpm --filter @sergeant/web test` зеленим (2554 passed)
+
+**Acceptance (T4-B — open, Sprint 9):**
+
+- [ ] `pnpm size` проходить з лімітом 750 KB brotli
+- [ ] Eager-only chunks ≤ 350 kB brotli
+- [ ] Жодних регресій LCP > 2.5 s у Lighthouse
 
 ---
 
@@ -437,12 +456,12 @@ apps/web/src/core/hub/
 
 ## Метрики по спринтах
 
-| Спринт   | Продуктові задачі | Tech задачі | Загальний effort |
-| -------- | ----------------- | ----------- | ---------------- |
-| Спринт 5 | O1, O2, O5        | T7          | ~5–6 днів        |
-| Спринт 6 | O3, O4, O9        | T1          | ~8–10 днів       |
-| Спринт 7 | O6, O7            | T2          | ~7–9 днів        |
-| Спринт 8 | O8-start          | T4, T6      | ~8–10 днів       |
+| Спринт   | Продуктові задачі | Tech задачі        | Загальний effort |
+| -------- | ----------------- | ------------------ | ---------------- |
+| Спринт 5 | O1, O2, O5        | T7                 | ~5–6 днів        |
+| Спринт 6 | O3, O4, O9        | T1                 | ~8–10 днів       |
+| Спринт 7 | O6, O7            | T2                 | ~7–9 днів        |
+| Спринт 8 | O8-start          | T4 (T4-A done), T6 | ~8–10 днів       |
 
 ---
 

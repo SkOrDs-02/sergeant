@@ -35,7 +35,7 @@ import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
 import { useHubNavigation } from "./hooks/useHubNavigation";
 import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions } from "./hooks/usePwaActions";
-import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
+import { shouldShowOnboarding } from "./onboarding/onboardingGate";
 import { PageviewTracker } from "./observability/PageviewTracker";
 import { useNutritionDualWriteBoot } from "../modules/nutrition/hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "../modules/nutrition/hooks/useNutritionSqliteReadBoot";

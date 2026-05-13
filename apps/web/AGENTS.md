@@ -40,6 +40,12 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
 
+**Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard` + `seedDemoData/*`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
+
+**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це ~365 kB. Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
+
+**Якщо потрібно підняти ліміт:** у тому ж PR, що додає dep / feature; explicit обґрунтування у PR-description. Bypass: label `audit-exception` (як для всіх optional CI checks).
+
 ## Lighthouse CI (perf-budget gate)
 
 T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг. Workflow: [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).

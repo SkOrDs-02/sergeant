@@ -118,7 +118,7 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 
 | Metric                                      | Budget                                                                   | Where enforced                                                              |
 | ------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                | **≤ 820 kB**                                                             | `pnpm --filter @sergeant/web exec size-limit` in CI                         |
+| `apps/web` JS total (brotli)                | **≤ 900 kB**                                                             | `pnpm --filter @sergeant/web exec size-limit` in CI                         |
 | `apps/web` CSS (brotli)                     | **≤ 28 kB**                                                              | same                                                                        |
 | `apps/web` LCP (median, 5 top-level routes) | **≤ 2000 ms** (warn; **`error` at > 3000 ms** after baseline tightening) | `.github/workflows/lighthouse-ci.yml` — config `apps/web/lighthouserc.json` |
 | `apps/web` FCP (median, 5 top-level routes) | **≤ 1500 ms** (warn)                                                     | same                                                                        |

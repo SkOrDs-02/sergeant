@@ -1,9 +1,8 @@
 import { Suspense, type ReactNode } from "react";
 import { lazyImport } from "../lib/lazyImport";
-import { shouldShowOnboarding } from "../onboarding/OnboardingWizard";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
-import { WelcomeScreen } from "./WelcomeScreen";
 import {
   ASSISTANT_PATH,
   CHAT_PATH,
@@ -20,6 +19,15 @@ import type { useAuth } from "../auth/AuthContext";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
+// Welcome / Onboarding chunk: lazy-loaded so the ~2k LOC onboarding flow
+// (`WelcomeScreen` + `OnboardingWizard` + per-module `seedDemoData/*`) stays
+// out of the eager app shell. Returning users bypass it entirely; first-time
+// users redirect to `/welcome` via `shouldShowOnboarding()` and pay the
+// one-time fetch cost on the splash screen.
+const WelcomeScreen = lazyImport(
+  () => import("./WelcomeScreen"),
+  "WelcomeScreen",
+);
 const AuthPage = lazyImport(() => import("../auth/AuthPage"), "AuthPage");
 const ResetPasswordPage = lazyImport(
   () => import("../auth/ResetPasswordPage"),
@@ -166,7 +174,11 @@ export function renderStandaloneRoute(args: StandaloneRouteArgs): ReactNode {
     if (!shouldShowOnboarding()) {
       return <RedirectTo to="/" />;
     }
-    return <WelcomeScreen onDone={onLeaveWelcome} onOpenAuth={onOpenAuth} />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <WelcomeScreen onDone={onLeaveWelcome} onOpenAuth={onOpenAuth} />
+      </Suspense>
+    );
   }
 
   // Unknown paths get a 404 instead of silently showing the dashboard.
