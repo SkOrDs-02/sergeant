@@ -15,6 +15,7 @@ import { apiClient } from "@/api/apiClient";
 import { ErrorBoundary as RootErrorBoundary } from "@/core/ErrorBoundary";
 import { SegmentErrorBoundary } from "@/core/SegmentErrorBoundary";
 import { SyncStatusOverlay } from "@/core/SyncStatusOverlay";
+import { useBackToExit } from "@/core/useBackToExit";
 import { bootSyncEngineWriter } from "@/core/syncEngine/singleton";
 import { ColorSchemeBridge } from "@/core/theme/ColorSchemeBridge";
 import { AnalyticsIdentityBridge } from "@/features/analytics/AnalyticsIdentityBridge";
@@ -57,6 +58,11 @@ SplashScreen.preventAutoHideAsync().catch(() => {
  */
 function RootShell() {
   useDeepLinks();
+  // Android hardware-back parity with the Capacitor shell
+  // (`apps/mobile-shell/src/index.ts:435`): first tap at the root
+  // surfaces a localised toast; the second tap inside
+  // `BACK_TO_EXIT_WINDOW_MS` exits. No-op on iOS / web.
+  useBackToExit();
 
   return (
     <View style={{ flex: 1 }}>
