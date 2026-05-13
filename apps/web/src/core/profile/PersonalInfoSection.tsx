@@ -4,6 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
+import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { cn } from "@shared/lib/ui/cn";
 import {
   changeEmail,
@@ -47,7 +48,9 @@ export function PersonalInfoSection({
     try {
       const res = await updateUser({ name: trimmed });
       if (res.error) {
-        toast.error(res.error.message ?? "Не вдалося оновити ім'я");
+        toast.error(
+          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
+        );
         return;
       }
       toast.success("Ім'я оновлено");
@@ -69,7 +72,9 @@ export function PersonalInfoSection({
       const dataUrl = await compressAvatar(file);
       const res = await updateUser({ image: dataUrl });
       if (res.error) {
-        toast.error(res.error.message ?? "Не вдалося оновити аватар");
+        toast.error(
+          mapApiErrorToUserCopy(res.error, "Не вдалося оновити аватар"),
+        );
         return;
       }
       toast.success("Аватар оновлено");
@@ -91,7 +96,9 @@ export function PersonalInfoSection({
     try {
       const res = await updateUser({ image: null });
       if (res.error) {
-        toast.error(res.error.message ?? "Не вдалося видалити аватар");
+        toast.error(
+          mapApiErrorToUserCopy(res.error, "Не вдалося видалити аватар"),
+        );
         return;
       }
       toast.success("Аватар видалено");
@@ -110,7 +117,10 @@ export function PersonalInfoSection({
       const res = await sendVerificationEmail({ email: user.email });
       if (res.error) {
         toast.error(
-          res.error.message ?? "Не вдалося надіслати лист підтвердження",
+          mapApiErrorToUserCopy(
+            res.error,
+            "Не вдалося надіслати лист підтвердження",
+          ),
         );
         return;
       }
@@ -129,7 +139,9 @@ export function PersonalInfoSection({
     try {
       const res = await changeEmail({ newEmail: trimmed });
       if (res.error) {
-        toast.error(res.error.message ?? "Не вдалося змінити email");
+        toast.error(
+          mapApiErrorToUserCopy(res.error, "Не вдалося змінити email"),
+        );
         return;
       }
       toast.success("Лист підтвердження нового email надіслано");
