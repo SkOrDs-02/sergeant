@@ -128,6 +128,9 @@ importers:
       '@sergeant/fizruk-domain':
         specifier: workspace:*
         version: link:../../packages/fizruk-domain
+      '@sergeant/insights':
+        specifier: workspace:*
+        version: link:../../packages/insights
       '@sergeant/nutrition-domain':
         specifier: workspace:*
         version: link:../../packages/nutrition-domain

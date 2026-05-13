@@ -32,6 +32,7 @@
     "@sergeant/design-tokens": "workspace:*",
     "@sergeant/finyk-domain": "workspace:*",
     "@sergeant/fizruk-domain": "workspace:*",
+    "@sergeant/insights": "workspace:*",
     "@sergeant/nutrition-domain": "workspace:*",
     "@sergeant/routine-domain": "workspace:*",
     "@sergeant/shared": "workspace:*",
