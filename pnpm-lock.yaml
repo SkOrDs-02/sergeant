@@ -333,6 +333,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^7.0.6
         version: 7.0.6(@capacitor/core@7.6.2)
+      '@sergeant/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       '@capacitor/cli':
         specifier: ^7.6.2

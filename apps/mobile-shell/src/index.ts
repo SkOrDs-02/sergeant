@@ -25,6 +25,7 @@ import { App, type URLOpenListenerEvent } from "@capacitor/app";
 import { Keyboard, KeyboardResize } from "@capacitor/keyboard";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
+import { createDeepLinkChannel, type DeepLinkChannel } from "@sergeant/shared";
 
 /** Колір status bar-а у light-темі — збігається з `--c-bg` (#fdf9f3). */
 const STATUS_BAR_COLOR_LIGHT = "#fdf9f3";
@@ -198,13 +199,36 @@ type DeepLinkBridgeWindow = Window & {
 };
 
 /**
- * Диспатчер deep-link шляху у web-сторону. Порядок preference:
+ * Lazy-created BroadcastChannel sender (PR-29 у
+ * `docs/initiatives/stack-pulse-2026-05/`). Канонічний шлях dispatch-у
+ * у веб; ініціалізується при першому `dispatchDeepLink`-у, щоб не платити
+ * за `new BroadcastChannel(...)` у звичайному boot-апі без deep links.
+ *
+ * Null-channel (`isOpen === false`) автоматично повертається з
+ * `createDeepLinkChannel()`, якщо WebView не має BroadcastChannel API
+ * (iOS <15.4, дуже старі Android System WebView). У такому разі shell
+ * mовчки fallback-ається на window-global / queue нижче.
+ */
+let deepLinkChannel: DeepLinkChannel | null = null;
+function getDeepLinkChannel(): DeepLinkChannel {
+  if (deepLinkChannel === null) {
+    deepLinkChannel = createDeepLinkChannel();
+  }
+  return deepLinkChannel;
+}
+
+/**
+ * Диспатчер deep-link шляху у web-сторону. Порядок:
  *   1. `options.navigate(path)` — явно переданий callback (тестова ін'єкція
- *      або legacy-caller, що сам тримає навігаційний хук).
- *   2. `window.__sergeantShellNavigate(path)` — bridge, який виставляє
- *      React-layout після маунту роутера.
- *   3. Буферизація у `window.__sergeantShellDeepLinkQueue`, якщо bridge ще
- *      не встановлений (cold-start) — веб drain-ить чергу при install-і.
+ *      або legacy-caller, що сам тримає навігаційний хук). Якщо переданий —
+ *      ТІЛЬКИ він використовується; BroadcastChannel і window-global шляхи
+ *      пропускаються, щоб тести не отримували дубль-події.
+ *   2. **Паралельно**: BroadcastChannel + (window-global або pre-mount
+ *      queue). Web-bridge (`ShellDeepLinkBridge.tsx`) має coalescing-вікно
+ *      по `(path, timestamp)`, тому одна і та сама deep-link подія,
+ *      доставлена обома шляхами, призводить рівно до одного `navigate()`.
+ *      Подвійний dispatch свідомий — async-deploy-сценарій (нова shell
+ *      проти старого web або навпаки) ловиться на будь-якій із двох сторін.
  *
  * Помилки виклику navigate не шкодять shell — залоговане попередження, але
  * подія все одно проковтнута (не падає з listener-у `appUrlOpen`).
@@ -219,6 +243,17 @@ function dispatchDeepLink(path: string, options: InitNativeShellOptions): void {
     return;
   }
 
+  // Canonical PR-29 path — BroadcastChannel. No-op у legacy WebView без
+  // BroadcastChannel-у (`getDeepLinkChannel()` повертає null-channel).
+  const channel = getDeepLinkChannel();
+  if (channel.isOpen) {
+    channel.post({ url: path, source: "shell" });
+  }
+
+  // Legacy/backward-compat path — window.__sergeantShellNavigate. Залишається
+  // 3 місяці після PR-29 ship-у (PR-2 у stack-pulse-2026-05 dropає його
+  // після iOS / Android Vault adoption). Працює як fallback для змішаного
+  // async-deploy-у і повністю обходить старі WebView без BroadcastChannel-у.
   if (typeof window === "undefined") return;
   const w = window as DeepLinkBridgeWindow;
 

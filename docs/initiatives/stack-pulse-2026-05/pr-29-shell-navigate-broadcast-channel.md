@@ -1,7 +1,7 @@
 # PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` лишається як backward-compat alias до PR-2 у serpni 2026)
 
 |                    |                                                                                                       |
 | ------------------ | ----------------------------------------------------------------------------------------------------- |
@@ -88,12 +88,12 @@ function dispatchDeepLink(url: string) {
 
 ## Acceptance criteria (DoD)
 
-- [ ] `packages/shared/src/shell/deepLinkChannel.ts` — channel name + message type.
-- [ ] `apps/web/src/core/app/ShellDeepLinkBridge.tsx` — BroadcastChannel listener.
-- [ ] `apps/mobile-shell/src/index.ts` — BroadcastChannel sender; window-global shim з `console.warn`.
-- [ ] Mobile-shell + web версії synced: `expected_protocol_version` shipped разом.
-- [ ] `apps/mobile-shell/src/__tests__/deepLinkBridge.test.ts` covers BroadcastChannel.
-- [ ] `apps/web/src/test/integration/shell-deeplink.test.ts` (new) — E2E через jsdom + BroadcastChannel polyfill.
+- [x] `packages/shared/src/shell/deepLinkChannel.ts` — channel name + message type + factory з null-channel fallback для старих WebView без `BroadcastChannel`.
+- [x] `apps/web/src/core/app/ShellDeepLinkBridge.tsx` — BroadcastChannel listener; window-global handler лишається як backward-compat alias.
+- [x] `apps/mobile-shell/src/index.ts` — BroadcastChannel sender (паралельно з window-global / queue, щоб одна подія працювала у будь-якому напрямку async-deploy-у).
+- [x] Mobile-shell + web версії synced: `DEEP_LINK_PROTOCOL_VERSION = 1` exported з shared; receiver ігнорує повідомлення з невідомою версією.
+- [x] `apps/mobile-shell/src/__tests__/deepLinkBridge.test.ts` covers BroadcastChannel (3 нові test-и: publish, options.navigate short-circuit, fallback при відсутності BC).
+- [x] `apps/web/src/test/integration/shell-deeplink.test.tsx` (new) — E2E через jsdom + native BroadcastChannel (vitest 3+).
 
 ## Тести
 
