@@ -339,3 +339,105 @@ describe("httpClient — AbortSignal", () => {
     vi.useRealTimers();
   });
 });
+
+describe("httpClient — boundary behavior", () => {
+  it("503 Retry-After HTTP-date прокидається як retryAfterMs", async () => {
+    const now = Date.parse("2026-05-13T00:00:00.000Z");
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    mockFetchOnce(
+      new Response(JSON.stringify({ error: "maintenance" }), {
+        status: 503,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": new Date(now + 125_000).toUTCString(),
+        },
+      }),
+    );
+
+    const err = await http.get("/api/x").catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(503);
+    expect((err as ApiError).retryAfterMs).toBe(125_000);
+  });
+
+  it("offline network-помилка має user-facing offline message та isOffline=true", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    mockFetchOnce(new TypeError("fetch failed"));
+
+    const err = await http.get("/api/x").catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).kind).toBe("network");
+    expect((err as ApiError).message).toBe(
+      "Немає підключення до інтернету. Спробуй пізніше.",
+    );
+    expect((err as ApiError).isOffline).toBe(true);
+  });
+
+  it("401 не ретраїться автоматично, але наступний запит бере оновлений token", async () => {
+    const getToken = vi
+      .fn<() => string>()
+      .mockReturnValueOnce("expired")
+      .mockReturnValueOnce("fresh");
+    const client = createHttpClient({ getToken });
+    const fn = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ error: "unauthorized" }, { status: 401 }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    globalThis.fetch = fn as unknown as typeof fetch;
+
+    const err = await client.get("/api/me").catch((e: unknown) => e);
+    const second = await client.get<{ ok: true }>("/api/me");
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(401);
+    expect((err as ApiError).isAuth).toBe(true);
+    expect(second).toEqual({ ok: true });
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(
+      ((fn.mock.calls[0]?.[1] as RequestInit).headers as Headers).get(
+        "Authorization",
+      ),
+    ).toBe("Bearer expired");
+    expect(
+      ((fn.mock.calls[1]?.[1] as RequestInit).headers as Headers).get(
+        "Authorization",
+      ),
+    ).toBe("Bearer fresh");
+  });
+
+  it("timeoutMs скасовує fetch через AbortSignal і чистить таймер після raw response", async () => {
+    vi.useFakeTimers();
+    const clearSpy = vi.spyOn(globalThis, "clearTimeout");
+    const client = createHttpClient({
+      fetchImpl: vi.fn(
+        async (_url: string | URL | Request, init?: RequestInit) => {
+          expect(init?.signal).toBeInstanceOf(AbortSignal);
+          expect(init?.signal?.aborted).toBe(false);
+          return jsonResponse({ ok: true });
+        },
+      ) as unknown as typeof fetch,
+    });
+
+    await expect(
+      client.raw("/api/stream", { timeoutMs: 1_000 }),
+    ).resolves.toBeInstanceOf(Response);
+
+    expect(clearSpy).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("5xx без Retry-After залишається HTTP-помилкою без client-side backoff", async () => {
+    mockFetchOnce(jsonResponse({ error: "boom" }, { status: 502 }));
+
+    const err = await http.get("/api/x").catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).kind).toBe("http");
+    expect((err as ApiError).status).toBe(502);
+    expect((err as ApiError).retryAfterMs).toBeUndefined();
+  });
+});
