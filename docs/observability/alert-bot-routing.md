@@ -110,13 +110,15 @@ n8n workflow runs
         ▼
 POST /api/internal/alerts/post   ──►  INSERT INTO tg_alert_acks
    (idempotent, ON CONFLICT)            (acked_at = NULL,
-        │                                escalated_at = NULL)
+        │                                escalated_at, repeated_at,
+        │                                sentry_warned_at, snoozed_until_at
+        │                                = NULL)
         ▼
 Telegram message with inline_keyboard
         │
-        │ (operator clicks one of 3 buttons)
+        │ (operator clicks one of 3 ack buttons)
         ▼
-WF-104 callback router
+WF-104 callback router (ack-branch)
         │
         ▼
 POST /api/internal/alerts/ack    ──►  UPDATE tg_alert_acks SET
@@ -125,21 +127,82 @@ POST /api/internal/alerts/ack    ──►  UPDATE tg_alert_acks SET
         ▼
 WF-104 editMessageText (drop buttons, add ack footer)
 
-[parallel, every 5 minutes]
-WF-103 alert-escalation cron
+──── Sprint 6 escalation tiers ────
+
+[T1, every 5 min] WF-103 alert-escalation cron
         │
         ▼
 POST /api/internal/alerts/pending
-   (olderThanMinutes=15,
-    notYetEscalated=true)        ──►  UPDATE escalated_at,
-        │                              DM founder via OpenClaw_sergeant_bot
+   (olderThanMinutes=15, notYetEscalated=true)
+        │
         ▼
-POST /api/internal/alerts/escalate
+POST /api/internal/alerts/escalate     ──►  UPDATE escalated_at = NOW(),
+                                            DM founder via OpenClaw_sergeant_bot
+
+[T2, every 15 min] WF-105 alert-repeat-ping cron
+        │
+        ▼
+POST /api/internal/alerts/pending
+   (olderThanMinutes=60, notYetRepeated=true, notSnoozed=true)
+        │
+        ▼
+POST /api/internal/alerts/repeat       ──►  UPDATE repeated_at = NOW()
+        │
+        ▼
+Telegram sendMessage у original topic з prefix "⚠ REPEAT (Nхв)"
+   + inline_keyboard: ✅ Прочитав | 🕐 Snooze 1h | 🕓 Snooze 4h
+        │
+        │ (operator може клікнути snooze)
+        ▼
+WF-104 callback router (snooze-branch, callback_data="snooze:<1h|4h>:<alertId>")
+        │
+        ▼
+POST /api/internal/alerts/snooze       ──►  UPDATE snoozed_until_at = NOW() + Nmin
+                                            (latest-write-wins; не one-shot)
+        │
+        ▼
+WF-104 editMessageText (drop snooze keyboard, add "Snoozed until HH:MM" footer)
+
+[T3, every 15 min] WF-106 alert-sentry-warn cron
+        │
+        ▼
+POST /api/internal/alerts/pending
+   (olderThanMinutes=120, notYetSentryWarned=true, notSnoozed=true)
+        │
+        ▼
+POST /api/internal/alerts/sentry-warn  ──►  UPDATE sentry_warned_at = NOW(),
+                                            Sentry.captureMessage(
+                                              "unacked-alert-escalation: <id>",
+                                              level="warning",
+                                              tags.kind="unacked-alert-escalation"
+                                            )
 ```
 
-The same flow powers the `/alerts pending` slash-command (O5 / PR #2507),
-which calls `POST /api/internal/alerts/pending` and renders the open
-ack-rows in the founder DM.
+Idempotency invariant: T1/T2/T3 mark-функції використовують
+`UPDATE … SET <col> = NOW() WHERE alert_id=$1 AND <col> IS NULL` — гарантує
+що cron retry (n8n queue replay, network flake) не призведе до double-DM /
+double-repeat / double-Sentry-event.
+
+The same `/alerts/pending` endpoint powers the `/alerts pending` slash-command
+(O5 / PR #2507), which calls без filter prefs і renders усі open ack-rows у
+founder DM.
+
+## T2 repeat-ping inline keyboard
+
+Кнопки T2 message (WF-105) — три callback-action-buttons:
+
+| Label          | `callback_data`       | Server endpoint                    | Effect                                  |
+| -------------- | --------------------- | ---------------------------------- | --------------------------------------- |
+| `✅ Прочитав`  | `ack:r:<alertId>`     | `POST /api/internal/alerts/ack`    | `ack_at = NOW()`, `ack_action = "read"` |
+| `🕐 Snooze 1h` | `snooze:1h:<alertId>` | `POST /api/internal/alerts/snooze` | `snoozed_until_at = NOW() + 60 min`     |
+| `🕓 Snooze 4h` | `snooze:4h:<alertId>` | `POST /api/internal/alerts/snooze` | `snoozed_until_at = NOW() + 240 min`    |
+
+Snooze is **latest-write-wins** — другий клік (1h після 4h, чи навпаки)
+перезапише `snoozed_until_at`. T1 НЕ фільтрується по snooze (T1 вже пройшов
+до того як юзер бачить T2-keyboard); T2/T3 фільтруються
+`(snoozed_until_at IS NULL OR snoozed_until_at < NOW())`. Detailed
+escalation/disable runbook — у
+[`docs/observability/runbook.md`](runbook.md) § "Alert-bot escalation ladder".
 
 ## Adding a new broadcast workflow
 

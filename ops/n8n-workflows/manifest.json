@@ -411,7 +411,31 @@
         "SERGEANT_ALERT_BOT_TOKEN"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Telegram trigger (callback_query) → parse `ack:<r|i|m>:<alertId>` → POST /api/internal/alerts/ack → editMessageText (drop buttons + ack footer) → answerCallbackQuery. ADR-0038 §3.2. SERGEANT_ALERT_BOT_TOKEN is the raw bot token used for editMessageText / answerCallbackQuery (the n8n Telegram node doesn't expose those operations cleanly). Activating this is what makes alert ack-buttons clickable end-to-end — keep inactive until WF-04 has been observed posting rows + at least one round-trip test in staging."
+      "notes": "Telegram trigger (callback_query) → parse `ack:<r|i|m>:<alertId>` OR `snooze:<1h|4h>:<alertId>` → POST /api/internal/alerts/ack (ack-branch) or /alerts/snooze (snooze-branch) → editMessageText (drop buttons + footer) → answerCallbackQuery. ADR-0038 §3.2 + Sprint 6 escalation tiers (WF-105 T2 keyboard includes snooze 1h/4h). SERGEANT_ALERT_BOT_TOKEN is the raw bot token used for editMessageText / answerCallbackQuery."
+    },
+    "105-alert-repeat-ping-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P1",
+      "telegramTopic": "incidents",
+      "audienceTier": "P1",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "SERGEANT_ALERT_BOT_TOKEN"
+      ],
+      "requiredCredentials": [],
+      "notes": "Tier 2 escalation cron — */15 min → POST /api/internal/alerts/pending (olderThanMinutes=60, notYetRepeated=true, notSnoozed=true) → for each: POST /alerts/repeat (marks repeated_at) → re-broadcast у the alert's original chat/thread із prefix `⚠ REPEAT (Nхв без ack)` + inline keyboard (✅ Прочитав / 🕐 Snooze 1h / 🕓 Snooze 4h). Migration 063 додає `repeated_at`/`snoozed_until_at` колонки. Activate after WF-103/WF-104 проходять smoke у staging."
+    },
+    "106-alert-sentry-warn-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P1",
+      "telegramTopic": "—",
+      "audienceTier": "P1",
+      "requiredEnv": ["PUBLIC_API_BASE_URL", "INTERNAL_API_KEY"],
+      "requiredCredentials": [],
+      "notes": "Tier 3 escalation cron — */15 min → POST /api/internal/alerts/pending (olderThanMinutes=120, notYetSentryWarned=true, notSnoozed=true) → for each: POST /alerts/sentry-warn (server-side `Sentry.captureMessage(level=warning, tags.kind=unacked-alert-escalation)` + marks `sentry_warned_at`). No Telegram side-effect — Sentry dashboard + email is the off-channel signal when founder is offline. Migration 063 додає `sentry_warned_at` колонку."
     }
   }
 }

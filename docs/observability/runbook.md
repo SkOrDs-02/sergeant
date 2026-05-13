@@ -626,3 +626,41 @@ A: `aiSpan` отримує meta з `[result, meta]` tuple inner-функції. 
 | `OPENCLAW_FOUNDER_TG_USER_ID` | Telegram user_id founder-а (private DM target).                      |
 
 API-side env-vars для briefing-секцій (Stripe / PostHog / GitHub / n8n / Sentry) — у [`docs/runbooks/openclaw-morning-briefing.md`](../runbooks/openclaw-morning-briefing.md). Якщо API-side env-var missing — briefing рендерить `notConfigured: true` hint у відповідній секції, cron виконується успішно.
+
+## Alert-bot escalation ladder (T1 → T2 → T3)
+
+**Що це.** Trois-tier ladder для unACKed alerts на `tg_alert_acks`, кожен рівень — окремий n8n cron + idempotency-stamp у DB. ADR-0038 §3.2 ladder, перші колонки — `escalated_at` (T1, PR-O9), решта — `repeated_at` / `sentry_warned_at` / `snoozed_until_at` (Sprint 6 alert-escalation; migration `063_tg_alert_acks_escalation_tiers.sql`).
+
+| Tier   | Trigger                                                                                           | Action                                                                                                                                                                                                         | Marker column      | n8n workflow                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
+| **T1** | `posted_at < NOW() - 15 min` AND `ack_at IS NULL` AND `escalated_at IS NULL`                      | DM founder via `@OpenClaw_sergeant_bot` (raw HTTP)                                                                                                                                                             | `escalated_at`     | [`103-alert-escalation-cron.json`](../../ops/n8n-workflows/103-alert-escalation-cron.json) (`*/5 min`)    |
+| **T2** | `posted_at < NOW() - 60 min` AND `ack_at IS NULL` AND `repeated_at IS NULL` AND not-snoozed       | Re-post original alert у same topic з prefix `⚠ REPEAT (Nхв без ack)` + inline keyboard (✅ Прочитав / 🕐 Snooze 1h / 🕓 Snooze 4h)                                                                            | `repeated_at`      | [`105-alert-repeat-ping-cron.json`](../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (`*/15 min`) |
+| **T3** | `posted_at < NOW() - 120 min` AND `ack_at IS NULL` AND `sentry_warned_at IS NULL` AND not-snoozed | Server-side `Sentry.captureMessage("unacked-alert-escalation:<id>", level=warning, tags.kind=unacked-alert-escalation)` — Sentry dashboard + email є off-channel fallback коли founder offline / Telegram down | `sentry_warned_at` | [`106-alert-sentry-warn-cron.json`](../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (`*/15 min`) |
+
+**Snooze (operator-driven cancel).** Кнопка `🕐 Snooze 1h` / `🕓 Snooze 4h` у T2 keyboard викликає `POST /api/internal/alerts/snooze` → `snoozed_until_at = NOW() + N min`. Latest-write-wins (натискання іншої кнопки просто overwrite). WF-105 і WF-106 фільтрують `snoozed_until_at IS NULL OR snoozed_until_at < NOW()` — тимчасово пригнічує обидва (T1 НЕ фільтрується по snooze, бо T1 вже пройшов до того як юзер бачить T2-keyboard). Manual `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '12 hours' WHERE alert_id = '<id>'` — emergency operator tool.
+
+**Idempotency invariant.** Усі три mark-функції (`markAlertEscalated`, `markAlertRepeated`, `markAlertSentryWarned`) використовують патерн `UPDATE … SET <col> = NOW() WHERE alert_id = $1 AND <col> IS NULL` + `RETURNING id` → `rowCount=1` означає "перша cron-ітерація для цього alert"; cron може safely retry без double-fire. Partial indexes `tg_alert_acks_repeat_due_idx` / `tg_alert_acks_sentry_due_idx` `WHERE ack_at IS NULL AND <col> IS NULL` забезпечують швидкий cron-query.
+
+**Як monitorити.**
+
+- **Healthy:** `SELECT severity, COUNT(*) FROM tg_alert_acks WHERE ack_at IS NULL AND posted_at > NOW() - INTERVAL '4 hours' GROUP BY 1` — більшість unACKed має `escalated_at IS NOT NULL` (T1 спрацював), деякі мають `repeated_at IS NOT NULL` (60min пройшло), `sentry_warned_at` — рідко (120min — це аномалія).
+- **T2 backlog:** `SELECT alert_id, posted_at, repeated_at FROM tg_alert_acks WHERE ack_at IS NULL AND posted_at < NOW() - INTERVAL '60 minutes' AND repeated_at IS NULL ORDER BY posted_at LIMIT 20` — рядки тут довше ~20хв = WF-105 cron не біжить (n8n Railway down або workflow inactive).
+- **T3 fire-rate:** Sentry → filter `tags.kind=unacked-alert-escalation` — < 1 event/day = healthy. > 5/day = founder offline весь день АБО Telegram-bot broken (T1 DMs не доставлено).
+
+**Як disable / зменшити noise.**
+
+- **Snooze "all noisy ones" одним SQL:** `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '8 hours' WHERE ack_at IS NULL AND posted_at > NOW() - INTERVAL '24 hours'`. T1 вже зробив DM-и, T2/T3 заглухнуть на 8h.
+- **Disable T2 (repeat-ping):** n8n UI → `105 — Alert Repeat Ping Cron` → toggle Active → OFF. T1 (DM) і T3 (Sentry) продовжать працювати.
+- **Disable T3 (Sentry-warn):** n8n UI → `106 — Alert Sentry Warn Cron` → Active → OFF. T1 + T2 продовжать працювати. АБО на n8n Railway встанови `PUBLIC_API_BASE_URL=""` → cron виконається але HTTP-нода зафейлиться (errorWorkflow ловить).
+- **Hot-mute one workflow з n8n side:** `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '24 hours' WHERE alert_id LIKE 'wf-15:%' AND ack_at IS NULL` — заглушити всі ноізнуті unACKed від WF-15 на 24h.
+- **Reduce Sentry noise:** на Sentry side → `Settings → Inbound Filters` додати rule "ignore events з tag `kind=unacked-alert-escalation` де `level=warning`" якщо T3 спам надто гучний (НЕ рекомендовано — це повний-stop off-channel-fallback).
+
+**Env-vars на n8n Railway** (доповнення до `OPENCLAW_*` з WF-103):
+
+| Var                        | Workflow      | Призначення                                                                        |
+| -------------------------- | ------------- | ---------------------------------------------------------------------------------- |
+| `SERGEANT_ALERT_BOT_TOKEN` | WF-104/WF-105 | Raw token `@Sergeant_alert_bot` для `editMessageText` + repeat-ping `sendMessage`. |
+| `PUBLIC_API_BASE_URL`      | WF-105/WF-106 | `POST /api/internal/alerts/repeat` + `/alerts/sentry-warn`.                        |
+| `INTERNAL_API_KEY`         | WF-105/WF-106 | Bearer для `/api/internal/*`.                                                      |
+
+API-side: Sentry capture для T3 — той самий `Sentry` SDK що server-side `apps/server/src/sentry.ts`. SENTRY_DSN мусить бути виставлений (інакше capture тихо noop-ує). Якщо `SENTRY_DSN` empty → T3 marker `sentry_warned_at` все одно stamped (idempotency-paper-trail зберігається), але off-channel-signal не доставиться.
