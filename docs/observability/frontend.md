@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -171,7 +171,7 @@ Typo не компілюється.
 
 Lazy dynamic `import("posthog-js")` — SDK (~50 KB gzip) не потрапляє у
 головний бандл, підтягується з `requestIdleCallback` паралельно з Sentry
-(`main.jsx:initPostHog`). Без `VITE_POSTHOG_KEY` — повний no-op: `trackEvent`
+(`main.tsx:initPostHog`). Без `VITE_POSTHOG_KEY` — повний no-op: `trackEvent`
 продовжує логуватися тільки у `hub_analytics_log_v1`.
 
 Init-конфіг (`posthog.init`):

@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Node 20 + Express + PostgreSQL 16 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
+Node 20 + Express + PostgreSQL 16 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
 
 ## Quick commands
 
@@ -39,7 +39,7 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 
 ## Health & deploy
 
-`/health` p95 < 100 ms (informal SLO). Pre-deploy: `pnpm db:migrate` (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s.
+`/health` p95 < 100 ms (informal SLO). Pre-deploy: `pnpm db:migrate` (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
 
 ## Deeper docs
 

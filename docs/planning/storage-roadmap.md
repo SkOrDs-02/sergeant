@@ -27,7 +27,7 @@
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
 > Vercel (web), Railway (Postgres+API), Expo SDK 52 + RN 0.76.9 (mobile),
-> Capacitor (mobile-shell WebView), pnpm 9.15 + Turbo, Vite 6.4, Better Auth,
+> Capacitor (mobile-shell WebView), pnpm 9.15 + Turbo, Vite 8, Better Auth,
 > TanStack Query 5.99.
 
 ---

@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -35,7 +35,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 ## Repo overview
 
 - **pnpm 9** + **Turborepo** monorepo, **Node 20**, **TypeScript 6**.
-- 5 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/console`) + 11 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
+- 5 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/console`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
 - Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 - Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/architecture/repo-map.md`](./docs/architecture/repo-map.md).
 
@@ -118,8 +118,8 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 
 | Metric                                | Budget       | Where enforced                                      |
 | ------------------------------------- | ------------ | --------------------------------------------------- |
-| `apps/web` JS total (brotli)          | **≤ 615 kB** | `pnpm --filter @sergeant/web exec size-limit` in CI |
-| `apps/web` CSS (brotli)               | **≤ 22 kB**  | same                                                |
+| `apps/web` JS total (brotli)          | **≤ 820 kB** | `pnpm --filter @sergeant/web exec size-limit` in CI |
+| `apps/web` CSS (brotli)               | **≤ 28 kB**  | same                                                |
 | Backend `/health` p95                 | < 100 ms     | (informal; track in Railway logs)                   |
 | Anthropic `/api/chat` p95 first token | < 1.5 s      | (informal; will move to PostHog/Sentry once wired)  |
 

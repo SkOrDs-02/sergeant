@@ -198,7 +198,7 @@ pnpm --filter @sergeant/web build:analyze
 # Відкрити apps/server/dist/bundle-report.html у браузері.
 ```
 
-Бюджети (brotli): JS ≤ 615 kB, CSS ≤ 18 kB (~+10% від baseline 2026-04-25).
+Бюджети (brotli): JS ≤ 820 kB, CSS ≤ 28 kB.
 Якщо CI падає — або зменшіть бандл, або обґрунтовано підніміть ліміт у
 `apps/web/package.json`.
 

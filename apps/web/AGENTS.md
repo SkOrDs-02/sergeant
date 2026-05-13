@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-React 18 + Vite 6 + Tailwind 3 + TanStack React Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: Vercel preview per PR + production on merge to `main`. Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
+React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: Vercel preview per PR + production on merge to `main`. Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
 
 ## Quick commands
 

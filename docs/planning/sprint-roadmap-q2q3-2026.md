@@ -103,7 +103,7 @@
 - [ ] Failover — якщо ritual не вдався → пост у `⚙️ Контрол-план` через alert-bot
 - [ ] LLM cost ~$0.10 на ritual (в межах `OPENCLAW_DAILY_USD_BUDGET=$5`)
 
-**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), ADR-0039-openclaw-proactive-cron-rituals (draft, не комічений)
+**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), [ADR-0033](../adr/0033-openclaw-multi-personas-and-council.md) + [ADR-0055](../adr/0055-openclaw-external-gateway.md)
 
 ---
 

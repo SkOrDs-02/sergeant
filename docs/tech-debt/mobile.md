@@ -16,7 +16,7 @@
 > (Capacitor wrapper навколо `apps/web`).
 
 > Scope: **`apps/mobile/`** (Expo 52, React Native 0.76, NativeWind, MMKV, Jest 29)
-> та **`apps/mobile-shell/`** (Capacitor 6 wrapper + Vitest unit tests).
+> та **`apps/mobile-shell/`** (Capacitor 7 wrapper + Vitest unit tests).
 >
 > Методологія: пофайловий аудит код-маркерів (`as unknown as`, `: any`,
 > `@ts-ignore`, `localStorage.*`), great-LOC big-files cutoff (>600 LOC),
@@ -274,7 +274,7 @@ hook-тестів з `useEffect` cleanup, не сигнал flaky.
 
 ## Capacitor (`apps/mobile-shell`) — coverage
 
-`apps/mobile-shell/` — Capacitor 6 wrapper навколо `apps/web` (build glue,
+`apps/mobile-shell/` — Capacitor 7 wrapper навколо `apps/web` (build glue,
 не app-код). Тести (Vitest):
 
 - `src/__tests__/deepLinkBridge.test.ts`

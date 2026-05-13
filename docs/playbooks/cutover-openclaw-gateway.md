@@ -1,6 +1,6 @@
 # Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7)
 
-> **Last validated:** 2026-05-12 by @Skords-01. **Next review:** 2026-08-10.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 **Trigger:** Stage 6b parallel-run завершений, founder підтвердив паритет Gateway з grammy-ботом. Готовність до перемикання production-трафіку з `@OpenClaw_sergeant_bot` (grammy) на `@kOPENCLAW_GATEWAY_BOT` (OpenClaw Gateway).
@@ -314,7 +314,7 @@ pnpm check   # format:check + lint + typecheck + test + build
 pnpm --filter @sergeant/openclaw-plugin test   # має проходити без legacy/
 
 # 4. Bundle size
-pnpm --filter @sergeant/web exec size-limit    # ≤ 615 kB JS brotli
+pnpm --filter @sergeant/web exec size-limit    # ≤ 820 kB JS brotli
 
 # 5. Knip — жодних dangling imports
 pnpm dead-code:files
@@ -344,5 +344,5 @@ pnpm dead-code:files
 - [ADR-0055](../adr/0055-openclaw-external-gateway.md) — Phase 0 infra + cutover architecture
 - [`openclaw-migration-plan.md`](../planning/openclaw-migration-plan.md) — повний Stage tracker
 - [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md) — ротація GitHub App credentials
-- [`cleanup-dead-code.md`](./cleanup-dead-code.md) — загальний процес видалення мертвого коду
-- [`release-web-and-api.md`](./release-web-and-api.md) — процес деплою основного сервісу Sergeant
+- [`cleanup-dead-code.md`](./cleanup-dead-code.md) — generic dead-code removal process
+- [`release-web-and-api.md`](./release-web-and-api.md) — deploy process for Sergeant main service

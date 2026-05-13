@@ -6,8 +6,8 @@
 
 | Шар     | Технологія                                                 |
 | ------- | ---------------------------------------------------------- |
-| Збірка  | Vite 6, `@vitejs/plugin-react`                             |
-| UI      | React 18, Tailwind CSS 3, `@sergeant/design-tokens` preset |
+| Збірка  | Vite 8, `@vitejs/plugin-react`                             |
+| UI      | React 18, Tailwind CSS 4, `@sergeant/design-tokens` preset |
 | Роутинг | react-router-dom v7                                        |
 | Дані    | TanStack React Query, `@sergeant/api-client`               |
 | Auth    | Better Auth (клієнт + cookie-сесії)                        |
@@ -22,7 +22,7 @@ src/
 ├── modules/        # finyk/ fizruk/ routine/ nutrition/ — pages/components/hooks/lib
 ├── shared/         # UI-кіт, спільні хуки, утиліти (cn, date, storage, queryKeys)
 ├── sw.ts           # Service Worker (офлайн-кеш, Web Push)
-└── main.jsx        # Точка входу
+└── main.tsx        # Точка входу
 middleware.ts       # Vercel Edge Middleware: проксіює /api/* на Railway
 ```
 

@@ -45,7 +45,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 ## Tech Stack
 
 - **Language:** TypeScript 6
-- **Frontend (web):** React 18, Vite, Tailwind CSS, React Query (TanStack Query)
+- **Frontend (web):** React 18, Vite, Tailwind CSS, TanStack Query
 - **Mobile:** Expo 52, React Native 0.76, NativeWind
 - **Mobile shell:** Capacitor (web wrapper for native distribution)
 - **Backend:** Express.js, PostgreSQL 16, Better Auth (authentication)
@@ -85,7 +85,8 @@ Packages are shared code reused across apps. Instead of copy-pasting between web
 | `@sergeant/fizruk-domain`       | Fitness domain logic (calories, load calculations)           |
 | `@sergeant/nutrition-domain`    | Nutrition domain logic                                       |
 | `@sergeant/routine-domain`      | Habits domain logic                                          |
-| `@sergeant/db-schema`           | Database schema                                              |
+| `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                |
+| `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin                          |
 | `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                    |
 
 Architecture overview lives in [docs/architecture/README.md](./docs/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).

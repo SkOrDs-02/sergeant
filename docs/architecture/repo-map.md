@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last validated:** 2026-05-10 by @Skords-01. **Next review:** 2026-08-08.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Deep tech-stack inventory for Sergeant. Compact summary lives in [`AGENTS.md § Repo overview`](../../AGENTS.md#repo-overview); this file holds the full per-app + per-package matrix that AGENTS.md used to inline before initiative 0009 PR 3.2. Cross-reference with [`service-catalog.md`](./service-catalog.md) for runtime targets / healthchecks and with [`platforms.md`](./platforms.md) for the web ↔ mobile feature-parity view.
@@ -15,13 +15,13 @@
 
 ## Apps (`apps/`)
 
-| App                 | Stack                                                                                                   | Purpose                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `apps/web`          | Vite + React 18 + TanStack Query + Tailwind CSS 4 + design-tokens preset + Vitest/MSW/RTL + Playwright  | Single-page web app (PWA target). Bundle budget enforced via `size-limit` (≤ 615 kB JS / ≤ 22 kB CSS). |
-| `apps/server`       | Express + PostgreSQL (`pg`) + Better Auth + Anthropic SDK + Voyage SDK + pino + Vitest + Testcontainers | REST API + chat orchestrator + Mono webhook ingestion. Dockerfile: `Dockerfile.api` → Railway.         |
-| `apps/mobile`       | Expo 52 + React Native 0.76 + NativeWind + MMKV + Jest                                                  | iOS/Android app via Expo Router. Local-first storage in MMKV.                                          |
-| `apps/mobile-shell` | Capacitor wrapper                                                                                       | Native shell that re-uses the `apps/web` build artifacts; no app code lives here, only build glue.     |
-| `tools/console`     | grammy + Anthropic SDK + Vitest                                                                         | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.    |
+| App                 | Stack                                                                                                            | Purpose                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `apps/web`          | Vite 8 + React 18 + TanStack Query + Tailwind CSS 4 + design-tokens preset + Vitest/MSW/RTL + Playwright         | Single-page web app (PWA target). Bundle budget enforced via `size-limit` (≤ 820 kB JS / ≤ 28 kB CSS). |
+| `apps/server`       | Express + PostgreSQL (`pg`) + Better Auth + Anthropic fetch client + Voyage fetch client + Vitest/Testcontainers | REST API + chat orchestrator + Mono webhook ingestion. Dockerfile: `Dockerfile.api` → Railway.         |
+| `apps/mobile`       | Expo 52 + React Native 0.76 + NativeWind + MMKV + Jest                                                           | iOS/Android app via Expo Router. Local-first storage in MMKV.                                          |
+| `apps/mobile-shell` | Capacitor 7 wrapper                                                                                              | Native shell that re-uses the `apps/web` build artifacts; no app code lives here, only build glue.     |
+| `tools/console`     | grammy + Anthropic SDK + Vitest                                                                                  | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.    |
 
 ## Packages (`packages/`)
 
@@ -38,6 +38,7 @@
 | `@sergeant/fizruk-domain`       | Fizruk module domain logic (workouts, sets, biometrics).                                                                   |
 | `@sergeant/nutrition-domain`    | Nutrition module domain logic (meals, OFF lookups, kcal math).                                                             |
 | `@sergeant/routine-domain`      | Routine module domain logic (habits, streaks, calendar).                                                                   |
+| `@sergeant/openclaw-plugin`     | OpenClaw Gateway plugin that registers Sergeant tools/hooks and proxies to `apps/server /api/internal/openclaw/*`.         |
 
 ## Ops & tooling (`ops/`, `tools/`, `scripts/`)
 
