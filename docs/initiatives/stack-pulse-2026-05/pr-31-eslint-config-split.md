@@ -1,7 +1,7 @@
 # PR-31: ESLint config 1073 рядки → split per-app
 
-> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
-> **Status:** Planned
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** Phase 1 shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). Phase 2 deferred: per-surface extracts (apps/web, apps/server, apps/mobile, apps/mobile-shell, tools/console, packages/\*\*) tracked separately — потребує diff-test scaffolding (`scripts/eslint-print-config-diff.mjs`) перед extraction.
 
 |                    |                                                             |
 | ------------------ | ----------------------------------------------------------- |

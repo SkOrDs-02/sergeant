@@ -1,14 +1,15 @@
+// PR-31 phase 1 — the shared baseline (ignores + js/ts/react/jsx-a11y
+// recommended + global `**/*` plugin/settings/rules block + TS-only
+// unused-vars block) was lifted into `./eslint.baseline.js` so per-app
+// configs (phase 2) can re-import it without duplicating ~180 lines.
+// See `docs/development/eslint-config.md` for the split rationale and
+// phase-2 roadmap. The remaining surface-specific blocks below stay
+// in this root file until each surface gets its own `eslint.config.js`.
 import { readFileSync } from "node:fs";
-import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
-import importPlugin from "eslint-plugin-import";
-import jsxA11y from "eslint-plugin-jsx-a11y";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
 import security from "eslint-plugin-security";
-import tseslint from "typescript-eslint";
-import sergeantDesign from "./packages/eslint-plugin-sergeant-design/index.js";
+import { baseline } from "./eslint.baseline.js";
 
 // i18n burndown gate (item #18 Phase 3) — list of files exempt from
 // `sergeant-design/no-cyrillic-jsx-literal`. Each entry is a project-
@@ -25,188 +26,14 @@ const i18nAllowlist = JSON.parse(
   ),
 );
 
-const tsRecommendedScoped = tseslint.configs.recommended.map((cfg) => ({
-  ...cfg,
-  files: ["**/*.{ts,tsx}"],
-}));
-
 export default [
-  {
-    ignores: [
-      "dist/**",
-      "**/dist/**",
-      "dist-server/**",
-      "**/dist-server/**",
-      "**/node_modules/**",
-      "node_modules/**",
-      ".agents/**",
-      "artifacts/**",
-      "mcps/**",
-      "playwright-report/**",
-      "**/playwright-report/**",
-      "test-results/**",
-      "**/test-results/**",
-      ".turbo/**",
-      "**/.turbo/**",
-      "storybook-static/**",
-      "**/storybook-static/**",
-    ],
-  },
-  js.configs.recommended,
-  ...tsRecommendedScoped,
-  react.configs.flat.recommended,
-  react.configs.flat["jsx-runtime"],
-  jsxA11y.flatConfigs.recommended,
-  {
-    files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
-    languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
-    },
-    settings: {
-      react: { version: "detect" },
-      // TypeScript-aware resolver lets `import/extensions` see through
-      // multi-dot filenames (`hubReports.aggregation.ts`,
-      // `hubPrefs.schema.ts`, `webpushSend.webpush.ts`) and through
-      // path aliases (`@shared/*` → `./src/shared/*`) so the rule
-      // checks the resolved file's real extension instead of the
-      // text-suffix after the last dot.
-      "import/resolver": {
-        typescript: {
-          alwaysTryTypes: true,
-          project: [
-            "apps/web/tsconfig.json",
-            "tools/console/tsconfig.json",
-            "apps/mobile/tsconfig.json",
-            "apps/mobile-shell/tsconfig.json",
-          ],
-        },
-        node: true,
-      },
-    },
-    plugins: {
-      "react-hooks": reactHooks,
-      "sergeant-design": sergeantDesign,
-      import: importPlugin,
-    },
-    rules: {
-      ...reactHooks.configs.recommended.rules,
-      // `eslint-plugin-react-hooks` v7 promoted a batch of new rules
-      // (`set-state-in-effect`, `preserve-manual-memoization`,
-      // `static-components`, `use-memo`, `immutability`, `purity`,
-      // `refs-during-render`) to "error" in its `recommended` config
-      // (see #1572 dev-deps bump). The pre-v7 codebase has dozens of
-      // legacy `setState`-inside-effect, manual-memo, and ref-read
-      // patterns that pre-date the rules — they're queued for a
-      // dedicated cleanup initiative (see roadmap). Until that
-      // cleanup lands, disable the rules so:
-      //   1. lint-staged on touched files doesn't fail with errors
-      //      authored by other contributors before the rule existed,
-      //   2. `pnpm lint` keeps a clean signal for genuine regressions.
-      // Promote back to "error" after the cleanup PR has migrated the
-      // last call-site (mirrors the WCAG-`-strong` policy below).
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/preserve-manual-memoization": "off",
-      "react-hooks/purity": "off",
-      "react-hooks/refs": "off",
-      "react-hooks/immutability": "off",
-      "react-hooks/static-components": "off",
-      "react-hooks/use-memo": "off",
-      // Design-system guardrail — the canonical eyebrow label must go
-      // through <SectionHeading> (or <Label>) so tone/size changes stay
-      // in one place. Add the file-scoped override below for the DS
-      // primitives themselves.
-      "sergeant-design/no-eyebrow-drift": "error",
-      // Typography guardrail — user-facing strings must use the single
-      // ellipsis glyph `…` (U+2026), not three ASCII dots `...`. The
-      // typographic glyph kerns correctly and is what Web Interface
-      // Guidelines recommend for truncation cues. Auto-fixable.
-      "sergeant-design/no-ellipsis-dots": "error",
-      // AI code-marker syntax guardrail — catches malformed AI markers
-      // like `AI-NOTES`, `AINOTE`, `AI_NOTE`, or missing colons. Set to
-      // "warn" initially so it doesn't block CI; promote to "error" once
-      // the codebase is clean.
-      "sergeant-design/ai-marker-syntax": "warn",
-      // Tailwind opacity guardrail — `<color>/<N>` only renders when N
-      // is in `theme.opacity`. Sergeant's preset registers 0/5/8/10/…/100
-      // (see `packages/design-tokens/tailwind-preset.js`); any other
-      // step (e.g. `/7`, `/12`, `/18`) is silently dropped and the
-      // surrounding `dark:` / `hover:` override falls through to the
-      // light-mode background — this is what bug #814 was.
-      "sergeant-design/valid-tailwind-opacity": "error",
-      // Design-system token guardrail — arbitrary hex in className
-      // (`bg-[#10b981]`, `text-[#fff]/50`) bypasses the token layer:
-      // dark-mode adaptation, WCAG-AA `-strong` promotion and future
-      // palette migration all stop working for those literals. Every
-      // color must come from the preset (`bg-surface`, `text-muted`,
-      // `bg-finyk-surface`, `text-brand-strong`, `bg-success-soft`, …)
-      // — if a genuinely new shade is needed, add it to
-      // `packages/design-tokens/tailwind-preset.js` first.
-      "sergeant-design/no-hex-in-classname": "error",
-      // Module-accent containment — inside `apps/<app>/src/modules/<X>/`
-      // subtrees only `<X>`'s accent utilities may appear. A fizruk
-      // component rendering a coral `ring-routine` reads to the user
-      // as "Рутина" — it's a design bug, not stylistic preference.
-      // Cross-module shells (`core/`, `shared/`, `stories/`) remain
-      // free to reference all four module accents.
-      "sergeant-design/no-foreign-module-accent": "error",
-      // WCAG-AA `-strong` tier guardrail — every saturated brand `bg-*`
-      // utility paired with `text-white` regresses to ~2.4–2.8 : 1
-      // contrast (the bug class fixed in PRs #854 / #855). The fix is
-      // `bg-{family}-strong text-white`. See docs/design/brandbook.md →
-      // "WCAG-AA `-strong` Tier" for the full mapping. Promoted from
-      // "warn" to "error" once the cleanup PR migrated the last 28
-      // call-sites — the codebase is now clean against this rule, and
-      // any new violation must be intentional.
-      "sergeant-design/no-low-contrast-text-on-fill": "error",
-      // `sergeant-design/no-raw-dark-palette` is intentionally NOT
-      // registered in this top-level rule block — the rule depends on
-      // the `--c-{family}-soft*` / `--c-{family}-strong*` CSS variable
-      // theme system that lives in `apps/web/src/index.css`. NativeWind
-      // (`apps/mobile`) does not consume those CSS variables, and the
-      // server / scripts have no Tailwind classNames. The rule is
-      // registered scoped to `apps/web/**/*.{ts,tsx}` further down so
-      // it only fires where the semantic-token replacement actually
-      // resolves to the intended colour.
-      "no-empty": ["error", { allowEmptyCatch: true }],
-      "no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-      ],
-      "react/prop-types": "off",
-      // Prevent reintroduction of the legacy `forest` palette retired when
-      // Sergeant migrated to the Emerald/Teal/Coral/Lime palette. The old
-      // `accent-*` tonal palette was also retired, but `accent` has since
-      // been re-introduced as a semantic alias for the brand accent colour
-      // (see tailwind.config.js colors.accent → rgb(var(--c-accent))). The
-      // rule therefore forbids `*-forest*` and `*-accent-<number>` (tonal
-      // variants) but allows the new semantic `*-accent` / `*-accent/<N>`.
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector:
-            "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
-          message:
-            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
-        },
-        {
-          selector:
-            "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
-          message:
-            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
-        },
-      ],
-    },
-  },
-  {
-    files: ["**/*.{ts,tsx}"],
-    rules: {
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-      ],
-    },
-  },
+  ...baseline,
+  // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
+  // global block + TS-only `no-unused-vars`). The deleted block here
+  // looked like the next ~150 lines that started with:
+  //   { files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"], languageOptions: { globals: { …browser, …node } }, ... }
+  // and the follow-up `{ files: ["**/*.{ts,tsx}"], rules: { "no-unused-vars": "off", "@typescript-eslint/no-unused-vars": [...] } }`.
+  // Both are spread via `...baseline` above.
   // Dark-mode anti-pattern guardrail — fires on a className that
   // pairs a raw-palette light utility (`bg-amber-50`, `text-coral-100`,
   // `border-teal-200/50`, …) with a `dark:` raw-palette override
