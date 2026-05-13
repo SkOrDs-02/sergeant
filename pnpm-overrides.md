@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last validated:** 2026-05-11 by @claude. **Next review:** 2026-08-09.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -105,3 +105,34 @@ by ADR-0050.
 на Node 22 LTS.
 
 **Last reviewed:** 2026-05-11
+
+---
+
+## `esbuild@<0.25.0` → `>=0.25.0`
+
+**Why:** GHSA-67mh-4wv8-2f99 — `esbuild <=0.24.2` dev-server CSRF: будь-який сайт міг
+надсилати запити до локального esbuild dev-server і читати відповідь. У нашому tree
+вразливий `esbuild@0.18.20` потрапляв транзитивно через `@esbuild-kit/core-utils@3.3.2`
+(deprecated package, тягнеться через `tsx`/`@esbuild-kit/esm-loader`). Selector form
+бампає лише вразливу sub-range (`<0.25.0`), не чіпаючи direct dev dep на
+`esbuild@^0.28.0` в `apps/server` та інші модерні версії в tree.
+
+**Drop when:** `@esbuild-kit/core-utils` або відповідні залежники оновлять transitive pin
+на `esbuild >=0.25.0`, або `tsx` мігрує з deprecated `@esbuild-kit/*` на власний loader.
+
+**Last reviewed:** 2026-05-13
+
+---
+
+## `ajv@>=7.0.0-alpha.0 <8.18.0` → `>=8.18.0`
+
+**Why:** GHSA-9wv6-86v2-598j — `ajv` `>=7.0.0-alpha.0, <8.18.0` має ReDoS у обробці
+`$data` references. У нашому tree вразливий `ajv@8.11.0` потрапляв через
+`expo-dev-launcher@5.0.35` (apps/mobile). Selector form бампає лише sub-range з v7/v8
+до 8.18+, не торкаючись `ajv@6.15.0` (необхідний для ESLint 9 / `@eslint/eslintrc`),
+оскільки ajv 6 і 8 — несумісні API (constructor signature, schema validation).
+
+**Drop when:** `expo-dev-launcher` або відповідні залежники оновлять transitive pin на
+`ajv >=8.18.0`, або ajv 6.x вийде з tree (потребує заміни ESLint).
+
+**Last reviewed:** 2026-05-13
