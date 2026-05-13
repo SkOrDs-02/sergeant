@@ -1,98 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
-import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
-import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadStringLS } from "@shared/lib/storage/storage";
-import {
-  DASHBOARD_DENSITY_EVENT,
-  DEFAULT_DASHBOARD_DENSITY,
-  STORAGE_KEYS,
-  countRealEntries,
-  getActiveModules,
-  getActiveNudge,
-  getHideInactiveModules,
-  getOnboardingGoals,
-  getVibePicks,
-  hasSeenCrossModulePreview,
-  isActiveModule,
-  normalizeDashboardDensity,
-  recordLastActiveDate,
-  setHideInactiveModules,
-  shouldShowReengagement,
-  type DashboardDensity,
-  type DashboardModuleId,
-  type User,
-} from "@sergeant/shared";
-import {
-  openHubModule,
-  openHubModuleWithAction,
-} from "@shared/lib/modules/hubNav";
-import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
-import { TodayFocusCard, useDashboardFocus } from "../insights/TodayFocusCard";
-import { HubInsightsPanel } from "./HubInsightsPanel";
-import {
-  WeeklyDigestCard,
-  hasLiveWeeklyDigest,
-} from "../insights/WeeklyDigestCard";
-import { useCoachInsight } from "../insights/useCoachInsight";
-import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
-import { SoftAuthPromptCard } from "../onboarding/SoftAuthPromptCard";
-import { DemoModeBanner } from "../onboarding/DemoModeBanner";
-import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
-import {
-  detectFirstRealEntry,
-  getFirstRealEntryModule,
-} from "../onboarding/firstRealEntry";
-import { CrossModulePreview } from "./CrossModulePreview";
-import { getSessionDays, recordSessionDay } from "../onboarding/vibePicks";
-import { useOnboardingState } from "../onboarding/useOnboardingState";
-import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
-import { CelebrationModal } from "../onboarding/CelebrationModal";
-import { DailyNudge } from "../onboarding/DailyNudge";
-import { ReEngagementCard } from "../onboarding/ReEngagementCard";
-import { ModuleChecklist } from "../onboarding/ModuleChecklist";
-import { OnboardingProgress } from "../onboarding/OnboardingProgress";
-import { ValueProgressBar, hasAnyValueBar } from "./ValueProgressBar";
-import { webKVStore } from "@shared/lib/storage/storage";
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
-import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+/**
+ * Hub Dashboard — thin container (T1 decomposition, Sprint 6).
+ *
+ * Composes: HubHeroBlock, HubModulesGrid, HubInsightsBlock.
+ * All state lives in `useHubDashboardState`.
+ */
+
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
-import {
-  loadDashboardOrder,
-  localStorageStore,
-  saveDashboardOrder,
-} from "./dashboard/dashboardStore";
-import { type ModuleId } from "./dashboard/moduleConfigs";
-import { SortableCard } from "./dashboard/BentoCard";
-import {
-  applyAdaptiveLift,
-  pickAdaptiveLift,
-  pickStrongestSeverity,
-} from "./dashboard/adaptiveSort";
-import { useHubPref } from "../settings/hubPrefs";
-import {
-  MotivationalFooter,
-  StaggerChild,
-  StreakIndicator,
-  WeeklyDigestFooter,
-} from "./dashboard/dashboardCards";
-import { useMondayAutoDigest } from "./dashboard/useMondayAutoDigest";
+import { DemoModeBanner } from "../onboarding/DemoModeBanner";
+import { CelebrationModal } from "../onboarding/CelebrationModal";
+import { MotivationalFooter, StaggerChild } from "./dashboard/dashboardCards";
+import { HubHeroBlock } from "./HubHeroBlock";
+import { HubModulesGrid } from "./HubModulesGrid";
+import { HubInsightsBlock } from "./HubInsightsBlock";
+import { useHubDashboardState } from "./useHubDashboardState";
+import { DENSITY_OUTER_SPACE, type HubDashboardProps } from "./hub.types";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 export {
@@ -101,736 +22,93 @@ export {
   resetDashboardOrder,
 } from "./dashboard/dashboardStore";
 
-/**
- * Tailwind class lookup for dashboard density. Static literals (not template
- * strings) so the JIT picks them up at build time.
- *
- * Spacing comes from `DASHBOARD_DENSITY_SPACING` in `@sergeant/shared`; the
- * values are mirrored here (compact: 2/3, comfortable: 3/4, spacious: 4/5)
- * because Tailwind cannot consume runtime numbers — only literal class names.
- */
-const DENSITY_OUTER_SPACE: Record<DashboardDensity, string> = {
-  compact: "space-y-3",
-  comfortable: "space-y-4",
-  spacious: "space-y-5",
-};
-const DENSITY_BENTO_GAP: Record<DashboardDensity, string> = {
-  compact: "gap-2",
-  comfortable: "gap-3",
-  spacious: "gap-4",
-};
-
-/**
- * Reactive read of the user's dashboard-density preference.
- *
- * Same-window `localStorage` writes do NOT fire `storage`, so the picker in
- * Settings → Дашборд dispatches a `DASHBOARD_DENSITY_EVENT` we listen to
- * here. Cross-tab writes are still handled via the standard `storage` event.
- */
-function useDashboardDensity(): DashboardDensity {
-  const [density, setDensity] = useState<DashboardDensity>(() => {
-    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
-    return raw === null
-      ? DEFAULT_DASHBOARD_DENSITY
-      : normalizeDashboardDensity(raw);
-  });
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent<unknown>).detail;
-      setDensity(normalizeDashboardDensity(detail));
-    };
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.DASHBOARD_DENSITY) {
-        setDensity(normalizeDashboardDensity(e.newValue));
-      }
-    };
-    window.addEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-  return density;
-}
-
-// UX-feedback 2026-05-08: inline FTUX hint shown directly above the
-// modules grid. Replaces the previous top-of-screen toast which read
-// «Перемикай модулі зверху — це один хаб» — that toast appeared in
-// the top-right corner with no anchor, so users (especially on the
-// Settings tab where the modules grid is invisible) had no idea what
-// "вгорі" was supposed to refer to. Inline placement next to the
-// real bento grid removes the ambiguity entirely.
-const FTUX_MODULES_HINT_KEY = "sergeant.hub.ftuxModulesHint.dismissed.v1";
-
-function FtuxModulesHint() {
-  const [dismissed, setDismissed] = useLocalStorageState<boolean>(
-    FTUX_MODULES_HINT_KEY,
-    false,
-    { validate: (v): v is boolean => typeof v === "boolean" },
-  );
-  if (dismissed) return null;
-  return (
-    <div
-      role="note"
-      className={cn(
-        "flex items-start gap-2 rounded-2xl border border-line bg-panel/70 px-3 py-2",
-        "text-2xs leading-snug text-muted",
-      )}
-    >
-      <Icon
-        name="info"
-        size={14}
-        strokeWidth={2}
-        aria-hidden
-        className="mt-0.5 shrink-0 text-brand-strong"
-      />
-      <p className="flex-1 min-w-0">
-        Тут усі твої розділи поруч — обери будь-який, щоб почати.
-      </p>
-      <button
-        type="button"
-        onClick={() => setDismissed(true)}
-        aria-label="Сховати підказку"
-        className={cn(
-          "shrink-0 -mr-1 -mt-0.5 w-6 h-6 inline-flex items-center justify-center rounded-md",
-          "text-muted hover:text-text hover:bg-panelHi transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-        )}
-      >
-        <Icon name="close" size={14} strokeWidth={2} aria-hidden />
-      </button>
-    </div>
-  );
-}
-
-// Ukrainian 1 / 2-4 / 5+ plural. Inline because this file is the only
-// current consumer; `AssistantCataloguePage` has its own copy with a
-// slightly different (tuple-based) signature. Kept intentionally small;
-// if a third call-site appears, promote to `@shared/lib/pluralize`.
-function pluralize(n: number, one: string, few: string, many: string): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
-  return many;
-}
-
-interface HubDashboardProps {
-  onOpenModule: (module: string) => void;
-  user: User | null;
-  onShowAuth: () => void;
-}
-
 export function HubDashboard({
   onOpenModule,
   user,
   onShowAuth,
 }: HubDashboardProps) {
-  const [order, setOrder] = useState(loadDashboardOrder);
-  const density = useDashboardDensity();
-  useMondayAutoDigest();
+  const s = useHubDashboardState({ onOpenModule, user, onShowAuth });
 
-  const hasRealEntry = detectFirstRealEntry();
-  const celebration = useFirstEntryCelebration(hasRealEntry);
-  const [sessionDays, setSessionDays] = useState(-1);
-  // `recordSessionDay()` has a side effect (writes today into the
-  // session-day ledger) — must run in effect, not render. The `-1`
-  // sentinel keeps FTUX gates closed during the first render so we
-  // don't flash post-FTUX surfaces before the value resolves.
-  useEffect(() => {
-    setSessionDays(recordSessionDay() || getSessionDays());
-  }, []);
-  const entryCount = useMemo(() => countRealEntries(localStorageStore), []);
-
-  const [reengagement, setReengagement] = useState(() =>
-    shouldShowReengagement(localStorageStore),
-  );
-  useEffect(() => {
-    recordLastActiveDate(localStorageStore);
-  }, []);
-
-  // Single source of truth for the FTUX hero slot (PR-12). Wraps the
-  // pure `resolveOnboardingHero` resolver from `@sergeant/shared` and
-  // owns the `firstActionVisible` / `softAuthDismissed` storage flags
-  // that used to be inline `useState`s here. Behavioural contract is
-  // identical to the previous `if/else` ladder; the gain is that the
-  // single-hero invariant lives in one tested place and mobile can
-  // share the resolver in PR-21 (FTUX parity sweep).
-  //
-  // The `useDashboardFocus()` hook is invoked further below — we
-  // re-call it inline to read `focus !== null` for the resolver and
-  // then destructure once more after the hook so we keep variable
-  // names stable. Both calls share the same memoised state because
-  // `useLocalStorageState` is keyed by the dismissed-map storage key
-  // (`hub_recs_dismissed_v1`).
-  const focusProbe = useDashboardFocus();
-  const onboardingState = useOnboardingState({
-    user,
-    hasRealEntry,
-    sessionDays,
-    todayFocusAvailable: focusProbe.focus !== null,
-    reengagementEligible: reengagement.show,
-    onShowAuth,
-  });
-
-  // Cross-module preview (S6.4) — one-shot post-first-entry promo.
-  // Snapshotted at mount: source module is taken from `getFirstRealEntryModule`
-  // so the copy stays paired with the *triggering* surface even if a later
-  // entry flips the scan-order winner.
-  const [crossModulePreviewSource, setCrossModulePreviewSource] =
-    useState<DashboardModuleId | null>(() => {
-      if (!hasRealEntry) return null;
-      if (hasSeenCrossModulePreview(localStorageStore)) return null;
-      return getFirstRealEntryModule();
-    });
-  const dismissCrossModulePreview = useCallback(
-    () => setCrossModulePreviewSource(null),
-    [],
-  );
-
-  const [nudgeDismissed, setNudgeDismissed] = useState(false);
-  const activeNudge = useMemo(() => {
-    if (nudgeDismissed || sessionDays < 2) return null;
-    return getActiveNudge(localStorageStore, sessionDays, {
-      picks: getVibePicks(localStorageStore),
-    });
-  }, [sessionDays, nudgeDismissed]);
-
-  // Active vs. inactive modules — driven by the user's onboarding
-  // "vibe picks". Inactive modules render greyed-out (or hidden when
-  // the user has flipped the `hideInactive` toggle below).
-  const activeModules = useMemo(() => getActiveModules(localStorageStore), []);
-  const [hideInactive, setHideInactive] = useState(() =>
-    getHideInactiveModules(localStorageStore),
-  );
-  const toggleHideInactive = useCallback(() => {
-    setHideInactive((prev) => {
-      const next = !prev;
-      setHideInactiveModules(localStorageStore, next);
-      return next;
-    });
-  }, []);
-  const hasInactive = useMemo(
-    () => order.some((id) => !isActiveModule(activeModules, id)),
-    [order, activeModules],
-  );
-  // Bento "edit mode" — toggled by the explicit "Налаштувати" button next
-  // to the Modules heading. Drives the wiggle animation, the visible drag
-  // handle on each card, and gates dnd-kit listeners to the handle so the
-  // card body can keep navigating to the module on tap.
-  const [editMode, setEditMode] = useState(false);
-  const toggleEditMode = useCallback(() => setEditMode((p) => !p), []);
-  const visibleOrder = useMemo(
-    () =>
-      hideInactive
-        ? order.filter((id) => isActiveModule(activeModules, id))
-        : order,
-    [order, activeModules, hideInactive],
-  );
-
-  const { focus, rest, dismiss } = focusProbe;
-
-  // Insights з deep-link (`actionHash`) повинні відкрити модуль рівно
-  // на потрібній вкладці/елементі — не на дефолтному Огляді. Якщо
-  // hash немає, лишаємо стару поведінку (просто перейти на модуль).
-  const openInsightTarget = useCallback(
-    (module: string, hash?: string) => {
-      if (hash) {
-        openHubModule(module as Parameters<typeof openHubModule>[0], hash);
-        return;
-      }
-      onOpenModule(module);
-    },
-    [onOpenModule],
-  );
-
-  const {
-    insight: coachInsightText,
-    loading: coachLoading,
-    error: coachError,
-    refresh: coachRefresh,
-  } = useCoachInsight();
-
-  const modulesWithSignal = useMemo(() => {
-    const all = focus ? [focus, ...rest] : rest;
-    const set = new Set<string>();
-    for (const r of all) {
-      if (r.module && r.module !== "hub") set.add(r.module);
-    }
-    return set;
-  }, [focus, rest]);
-
-  // Adaptive bento — soft re-ordering of the 2x2 grid based on context
-  // (active rec signals × time of day). Off in editMode and when the
-  // user has flipped the `adaptiveBento` pref off (default ON).
-  const [adaptivePref] = useHubPref<boolean>("adaptiveBento", true);
-
-  const severityByModule = useMemo(() => {
-    const all = focus ? [focus, ...rest] : rest;
-    const map: Partial<Record<ModuleId, "danger" | "warning" | undefined>> = {};
-    for (const r of all) {
-      if (!r.module || r.module === "hub") continue;
-      const id = r.module as ModuleId;
-      const sev =
-        r.severity === "danger" || r.severity === "warning"
-          ? r.severity
-          : undefined;
-      map[id] = pickStrongestSeverity([map[id], sev]);
-    }
-    return map;
-  }, [focus, rest]);
-
-  // Re-evaluate every minute so time-of-day windows (breakfast / lunch /
-  // evening close-out) flip on the right side of their boundaries without
-  // a manual reload.
-  const [adaptiveNow, setAdaptiveNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setAdaptiveNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const activeSet = useMemo(
-    () => new Set<string>(activeModules),
-    [activeModules],
-  );
-
-  const adaptive = useMemo(() => {
-    if (!adaptivePref || editMode) {
-      return {
-        liftedId: null as ModuleId | null,
-        reason: null as string | null,
-      };
-    }
-    const result = pickAdaptiveLift({
-      order: visibleOrder as ModuleId[],
-      modulesWithSignal,
-      severityByModule,
-      activeModules: activeSet,
-      now: adaptiveNow,
-    });
-    return { liftedId: result.liftedId, reason: result.reason };
-  }, [
-    adaptivePref,
-    editMode,
-    visibleOrder,
-    modulesWithSignal,
-    severityByModule,
-    activeSet,
-    adaptiveNow,
-  ]);
-
-  const displayOrder = useMemo(
-    () => applyAdaptiveLift(visibleOrder as ModuleId[], adaptive.liftedId),
-    [visibleOrder, adaptive.liftedId],
-  );
-
-  // PR-12 (UX-roast 2026-Q2 / A9): KeyboardSensor + arrow-key coordinates
-  // make the dashboard reorder usable without a pointing device. Pickup
-  // / drop announcements (`announce()` нижче) озвучують поточну позицію
-  // плитки скрін-рідеру замість мовчазного DOM-shuffle.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-  const { announce } = useAnnounce();
-
-  const quickAddByModule = useMemo(() => {
-    const map: Record<string, { label: string; run: () => void } | undefined> =
-      {};
-    const activeSet = new Set<string>(activeModules);
-    for (const id of modulesWithSignal) {
-      // Suppress quick-add for inactive modules — the BentoCard
-      // already hides the affordance, but skipping here keeps the
-      // registry tidy and avoids accidental wiring downstream.
-      if (!activeSet.has(id)) continue;
-      const quick = getModulePrimaryAction(id);
-      if (!quick) continue;
-      map[id] = {
-        label: quick.label,
-        run: () =>
-          openHubModuleWithAction(
-            id as Parameters<typeof openHubModuleWithAction>[0],
-            quick.action,
-          ),
-      };
-    }
-    return map;
-  }, [modulesWithSignal, activeModules]);
-
-  const handleDragStart = useCallback(
-    (event: { active: { id: string | number } }) => {
-      const activeId = String(event.active.id) as ModuleId;
-      const label = DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
-      announce(
-        `Підняли ${label}. Стрілками обери позицію, Enter — зафіксувати.`,
-      );
-    },
-    [announce],
-  );
-
-  const handleDragEnd = useCallback(
-    (event: {
-      active: { id: string | number };
-      over: { id: string | number } | null;
-    }) => {
-      const { active, over } = event;
-      if (!active) return;
-      const activeId = String(active.id) as ModuleId;
-      const label = DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
-      if (over && active.id !== over.id) {
-        const overId = String(over.id) as ModuleId;
-        const oldIndex = order.indexOf(activeId);
-        const newIndex = order.indexOf(overId);
-        const next = arrayMove(order, oldIndex, newIndex);
-        setOrder(next);
-        saveDashboardOrder(next);
-        announce(
-          `${label} пересунуто на позицію ${newIndex + 1} з ${next.length}.`,
-        );
-      } else {
-        announce(`${label} залишилось на тому ж місці.`);
-      }
-    },
-    [announce, order],
-  );
-
-  const [digestExpanded, setDigestExpanded] = useState(false);
-  const digestFresh = hasLiveWeeklyDigest();
-  const now = new Date();
-  const isMondayOrTuesday = now.getDay() === 1 || now.getDay() === 2;
-  const showDigestFooter = digestFresh || isMondayOrTuesday;
-
-  // Show checklist for first active module — strict single-hero rule:
-  // pre-FTUX (no real entry) FirstActionHeroCard / TodayFocusCard alone
-  // is the hero; ModuleChecklist would split attention into two
-  // module-specific next-steps surfaces. Post-FTUX, within the first
-  // 7 session-days, the checklist is the **post-celebration** guide
-  // toward second / third entry, while FirstActionHeroCard is gone.
-  // After 7 days the user is past activation; the checklist gracefully
-  // disappears so the dashboard does not carry a perpetual onboarding
-  // chrome above the bento grid.
-  const primaryModule = activeModules[0] as
-    | "finyk"
-    | "fizruk"
-    | "routine"
-    | "nutrition"
-    | undefined;
-  const showChecklist =
-    primaryModule &&
-    hasRealEntry &&
-    !onboardingState.showFirstAction &&
-    sessionDays <= 7;
-
-  // ONE-HERO RULE — the resolver in `useOnboardingState` already
-  // narrowed the candidates to a single winner. We just dispatch on
-  // its `show*` flags and let the resolver carry the priority logic.
-  let hero: React.ReactNode;
-  if (onboardingState.showFirstAction) {
-    hero = (
-      <FirstActionHeroCard onDismiss={onboardingState.dismissFirstAction} />
-    );
-  } else if (onboardingState.showSoftAuth) {
-    hero = (
-      <SoftAuthPromptCard
-        onOpenAuth={onShowAuth}
-        onDismiss={onboardingState.dismissSoftAuth}
-        entryCount={entryCount}
-        sessionDays={sessionDays}
-      />
-    );
-  } else {
-    hero = (
-      <TodayFocusCard
-        focus={focus}
-        onAction={onOpenModule}
-        onDismiss={dismiss}
-      />
-    );
-  }
-
-  // ONE-HERO + ONE-SECONDARY RULE:
-  // • Returning user (2+ days inactive — see REENGAGEMENT_INACTIVE_DAYS in
-  //   `nudges.ts`) → ReEngagementCard acts as the hero, suppressing the
-  //   regular TodayFocus / FirstAction / SoftAuth candidates so we never
-  //   stack two "primary" cards.
-  // • DailyNudge is the optional secondary nudge; it already hides when
-  //   re-engagement is showing (see below), and now supports a 7-day
-  //   snooze via `snoozeNudge()` on top of permanent dismiss.
-  const reengagementIsHero = reengagement.show;
-
-  // Insights block defaults to collapsed for the first week so new users
-  // are not greeted by a wall of empty advice / analytics panels. After
-  // 7+ session days the section opens by default; per-user toggles still
-  // win because `CollapsibleSection` persists state via `storageKey`.
-  const insightsDefaultOpen = sessionDays >= 7;
-
-  // STAGGER GROUPS — three fixed delays (0 / 30ms / 60ms) instead of
-  // a per-element ramp. The hub composes ~8 cards once all FTUX gates
-  // open; staggering each one individually produced a long staircase
-  // of fades on slower devices and shifted whenever a section toggled.
-  // Stable group indices keep the reveal under ~100ms (Hard Rule #17:
-  // stagger ≤ 30ms between children, total delay cap ≤ 150ms) so the
-  // hub feels snappy even when all three groups land in one frame.
   return (
-    <div className={DENSITY_OUTER_SPACE[density]}>
-      {/* S4.1 demo banner — only renders when localStorage holds a
-          seeded demo payload (`hub_demo_seeded_social_v1`). Sits above
-          the hero block so the «Це приклад» framing precedes any of
-          the metric cards below. */}
+    <div className={DENSITY_OUTER_SPACE[s.density]}>
       <DemoModeBanner />
-      {/* GROUP 0 — Hero block (re-engagement OR streak + hero + checklist) */}
+
+      {/* GROUP 0 — Hero block */}
       <StaggerChild index={0}>
-        <div className="space-y-4">
-          {reengagementIsHero ? (
-            <ReEngagementCard
-              daysInactive={reengagement.daysInactive}
-              onContinue={() =>
-                setReengagement({ show: false, daysInactive: 0 })
-              }
-              onDismiss={() =>
-                setReengagement({ show: false, daysInactive: 0 })
-              }
-            />
-          ) : (
-            <>
-              {/* Single-hero rule: streak chip is suppressed while a
-               * dedicated hero (FirstAction / SoftAuth) is taking over
-               * the top of the dashboard. Two competing eyebrows above
-               * the hero card produced the «card avalanche» the IA pass
-               * is fixing — streak still re-appears once the hero falls
-               * back to TodayFocus or the default state. */}
-              {!onboardingState.showFirstAction &&
-                !onboardingState.showSoftAuth && <StreakIndicator />}
-              {hero}
-              {showChecklist && primaryModule && (
-                <ModuleChecklist
-                  moduleId={primaryModule}
-                  onAction={(action) => {
-                    openHubModuleWithAction(
-                      primaryModule as Parameters<
-                        typeof openHubModuleWithAction
-                      >[0],
-                      action as Parameters<typeof openHubModuleWithAction>[1],
-                    );
-                  }}
-                />
-              )}
-              {/* Activation progress — visible only before the first real
-               * entry. Once the user crosses the FTUX gate the bar would
-               * read 100% indefinitely, so we drop it instead of pinning
-               * a perpetual «4/4 модулів» chrome above the bento grid.
-               *
-               * Value-promise bars (S3.3a) replace the generic «N/4 модулів»
-               * counter when the user has set at least one onboarding goal
-               * for an active module — they read back the budget / habit /
-               * weekly target the user just spelled out. Goals payload is
-               * read once per render; it is stable for the FTUX session
-               * (wizard.finish() persists it before unmounting). */}
-              {!hasRealEntry &&
-                (hasAnyValueBar({
-                  activeModules,
-                  goals: getOnboardingGoals(webKVStore),
-                }) ? (
-                  <ValueProgressBar
-                    activeModules={activeModules}
-                    goals={getOnboardingGoals(webKVStore)}
-                  />
-                ) : (
-                  <OnboardingProgress activeModules={activeModules} />
-                ))}
-              {hasRealEntry && crossModulePreviewSource && (
-                <CrossModulePreview
-                  sourceModule={crossModulePreviewSource}
-                  onClose={dismissCrossModulePreview}
-                />
-              )}
-            </>
-          )}
-        </div>
+        <HubHeroBlock
+          onOpenModule={onOpenModule}
+          onShowAuth={onShowAuth}
+          user={user}
+          hasRealEntry={s.hasRealEntry}
+          sessionDays={s.sessionDays}
+          entryCount={s.entryCount}
+          onboardingState={s.onboardingState}
+          reengagement={s.reengagement}
+          dismissReengagement={s.dismissReengagement}
+          crossModulePreviewSource={s.crossModulePreviewSource}
+          dismissCrossModulePreview={s.dismissCrossModulePreview}
+          focus={s.focus}
+          dismiss={s.dismiss}
+          primaryModule={s.primaryModule}
+          showChecklist={s.showChecklist}
+          activeModules={s.activeModules}
+          goals={s.goals}
+          hasValueBar={s.hasValueBar}
+        />
       </StaggerChild>
 
-      {/* GROUP 1 — Module bento grid.
-       * Hoisted above the FTUX-gated Hints/Analytics block so the
-       * primary navigation surface is reachable above-the-fold on
-       * smaller viewports — secondary, data-dependent insights load
-       * underneath rather than burying the modules grid. */}
+      {/* GROUP 1 — Module bento grid */}
       <StaggerChild index={1}>
-        <section className="space-y-2">
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <SectionHeading as="h2" size="xs" className="px-0!">
-              Модулі
-            </SectionHeading>
-            {/* Edit affordance — icon-only when idle so it stops competing
-             * with the H2 «Moduli» for the user's eye. Switches to a clear
-             * «Gotovo» pill while edit mode is active so the exit path stays
-             * obvious. */}
-            <button
-              type="button"
-              onClick={toggleEditMode}
-              aria-pressed={editMode}
-              aria-label={
-                editMode
-                  ? "Завершити налаштування порядку модулів"
-                  : "Налаштувати порядок модулів"
-              }
-              title={editMode ? "Готово" : "Налаштувати"}
-              className={cn(
-                "inline-flex items-center justify-center gap-1.5 text-2xs font-medium rounded-xl transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                editMode
-                  ? "bg-primary text-bg px-2.5 py-1"
-                  : "text-muted hover:text-text hover:bg-panelHi w-7 h-7",
-              )}
-            >
-              <Icon
-                name={editMode ? "check" : "grip-vertical"}
-                size="xs"
-                strokeWidth={2}
-                aria-hidden
-              />
-              {editMode ? <span>Готово</span> : null}
-            </button>
-          </div>
-
-          {/* UX-feedback 2026-05-08: previously the «один хаб» hint was a
-           * top-of-screen toast («Перемикай модулі зверху — це один хаб»),
-           * but on FTUX there's nothing at the top to "switch" — the toast
-           * pointed at modules the user couldn't see yet. Inline hint
-           * lives directly above the modules grid where the user can
-           * actually see what the message refers to. Dismissable; only
-           * appears pre-first-real-entry. */}
-          {!hasRealEntry && <FtuxModulesHint />}
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={displayOrder}
-              strategy={rectSortingStrategy}
-            >
-              <div
-                className={cn(
-                  "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-                  DENSITY_BENTO_GAP[density],
-                )}
-              >
-                {displayOrder.map((id) => (
-                  <SortableCard
-                    key={id}
-                    id={id as ModuleId}
-                    onOpenModule={onOpenModule}
-                    quickAdd={quickAddByModule[id] || null}
-                    inactive={!isActiveModule(activeModules, id)}
-                    editMode={editMode}
-                    adaptiveReason={
-                      id === adaptive.liftedId ? adaptive.reason : null
-                    }
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-
-          {hasInactive && (
-            <button
-              type="button"
-              onClick={toggleHideInactive}
-              className="mx-auto mt-2 block text-2xs text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-            >
-              {hideInactive
-                ? "Показати неактивні модулі"
-                : "Приховати неактивні модулі"}
-            </button>
-          )}
-        </section>
+        <HubModulesGrid
+          density={s.density}
+          hasRealEntry={s.hasRealEntry}
+          editMode={s.editMode}
+          toggleEditMode={s.toggleEditMode}
+          displayOrder={s.displayOrder}
+          sensors={s.sensors}
+          handleDragStart={s.handleDragStart}
+          handleDragEnd={s.handleDragEnd}
+          onOpenModule={onOpenModule}
+          quickAddByModule={s.quickAddByModule}
+          activeModules={s.activeModules}
+          adaptive={s.adaptive}
+          hasInactive={s.hasInactive}
+          hideInactive={s.hideInactive}
+          toggleHideInactive={s.toggleHideInactive}
+        />
       </StaggerChild>
 
-      {/* GROUP 2 — «Інсайти» (FTUX-gated): merged Підказки + Аналітика.
-       *
-       * Previously these rendered as TWO separate `CollapsibleSection`s
-       * stacked vertically (each with its own pill chrome, icon, and
-       * subtitle), so the user paid an extra collapsed-card tax for
-       * essentially the same kind of content — «AI dragging insights
-       * out of recent activity». Merging them under one outer
-       * «Інсайти» wrapper keeps both subsections discoverable while
-       * cutting the heading count in half (per UX audit «Dashboard
-       * card avalanche»).
-       *
-       * До першого реального запису весь блок прихований — всі data-driven
-       * всередині (AssistantAdvice / HubInsightsPanel / WeeklyDigest)
-       * все одно порожні без історії. */}
-      {hasRealEntry && (
+      {/* GROUP 2 — Insights (post-first-entry) */}
+      {s.hasRealEntry && (
         <StaggerChild index={2}>
-          <CollapsibleSection
-            storageKey="sergeant:hub.insights.open"
-            defaultOpen={insightsDefaultOpen}
-            title="Інсайти"
-            collapsedIcon="sparkles"
-            collapsedSubtitle={
-              coachLoading
-                ? "Готую AI-пораду…"
-                : coachError
-                  ? "Не вдалось отримати AI-пораду"
-                  : rest.length > 0
-                    ? `AI-порада · ${rest.length} ${pluralize(rest.length, "інсайт", "інсайти", "інсайтів")}${
-                        digestFresh ? " · свіжий дайджест" : ""
-                      }`
-                    : digestFresh
-                      ? "AI-порада + свіжий дайджест"
-                      : activeNudge && !reengagement.show
-                        ? "AI-порада + нагадування"
-                        : "AI-порада на день"
-            }
-          >
-            <AssistantAdviceCard
-              insight={coachInsightText}
-              loading={coachLoading}
-              error={coachError}
-              onRefresh={coachRefresh}
-            />
-            {activeNudge && !reengagement.show && (
-              <DailyNudge
-                nudge={activeNudge}
-                sessionDays={sessionDays}
-                onDismiss={() => setNudgeDismissed(true)}
-              />
-            )}
-            <HubInsightsPanel
-              items={rest}
-              onOpenModule={openInsightTarget}
-              onDismiss={dismiss}
-            />
-            {digestExpanded ? (
-              <WeeklyDigestCard onCollapse={() => setDigestExpanded(false)} />
-            ) : showDigestFooter ? (
-              <WeeklyDigestFooter
-                fresh={digestFresh}
-                onExpand={() => setDigestExpanded(true)}
-              />
-            ) : null}
-          </CollapsibleSection>
+          <HubInsightsBlock
+            insightsDefaultOpen={s.insightsDefaultOpen}
+            coachLoading={s.coachLoading}
+            coachError={s.coachError}
+            coachInsightText={s.coachInsightText}
+            coachRefresh={s.coachRefresh}
+            rest={s.rest}
+            digestFresh={s.digestFresh}
+            activeNudge={s.activeNudge}
+            reengagementShow={s.reengagement.show}
+            sessionDays={s.sessionDays}
+            dismissNudge={s.dismissNudge}
+            openInsightTarget={s.openInsightTarget}
+            dismiss={s.dismiss}
+            digestExpanded={s.digestExpanded}
+            setDigestExpanded={s.setDigestExpanded}
+            showDigestFooter={s.showDigestFooter}
+          />
         </StaggerChild>
       )}
 
-      {/* Motivational footer */}
       <MotivationalFooter />
 
-      {/* First entry celebration modal */}
       <CelebrationModal
-        open={celebration.open}
-        onClose={celebration.close}
-        ttvMs={celebration.ttvMs}
-        moduleId={celebration.moduleId}
+        open={s.celebration.open}
+        onClose={s.celebration.close}
+        ttvMs={s.celebration.ttvMs}
+        moduleId={s.celebration.moduleId}
       />
     </div>
   );
