@@ -35,6 +35,12 @@ describe("ANALYTICS_EVENTS registry", () => {
 
     expect(ANALYTICS_EVENTS.SIGNUP_COMPLETED).toBe("signup_completed");
 
+    // PR-07 — `onboarding_completed` is the once-per-account funnel
+    // milestone in WF-60 (`signup_completed → onboarding_completed →
+    // first_action_completed`). Renaming the string breaks dashboards
+    // that rely on it; this assertion makes a silent rename impossible.
+    expect(ANALYTICS_EVENTS.ONBOARDING_COMPLETED).toBe("onboarding_completed");
+
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_STARTED).toBe("subscription_started");
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED).toBe(
       "subscription_canceled",

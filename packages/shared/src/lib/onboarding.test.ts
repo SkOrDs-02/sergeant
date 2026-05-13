@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DASHBOARD_MODULE_IDS } from "./dashboard";
 import { createMemoryKVStore } from "../test-utils";
 import {
+  ONBOARDING_COMPLETED_FIRED_KEY,
   ONBOARDING_DONE_KEY,
   ONBOARDING_EXISTING_DATA_SOURCES,
   ONBOARDING_MODULE_DESCRIPTIONS,
@@ -12,9 +13,12 @@ import {
   ONBOARDING_VIBE_ICONS,
   ONBOARDING_VIBE_TEASERS,
   buildFinalPicks,
+  clearOnboardingCompletedFired,
   clearOnboardingDone,
   hasExistingData,
+  isOnboardingCompletedFired,
   isOnboardingDone,
+  markOnboardingCompletedFired,
   markOnboardingDone,
   shouldShowOnboarding,
 } from "./onboarding";
@@ -45,6 +49,47 @@ describe("onboarding — done flag", () => {
     expect(store.getString(ONBOARDING_DONE_KEY)).toBe("1");
     clearOnboardingDone(store);
     expect(isOnboardingDone(store)).toBe(false);
+  });
+});
+
+describe("onboarding — onboarding_completed fired flag (PR-07)", () => {
+  it("uses the canonical hub_*_v1 storage key", () => {
+    // Pin the on-disk name so a rename surfaces at PR-time: the
+    // WF-60 funnel + any other dashboard consuming the event lean on
+    // the assumption that the idempotency flag is stable.
+    expect(ONBOARDING_COMPLETED_FIRED_KEY).toBe("hub_onboarding_completed_v1");
+  });
+
+  it("is false on a fresh store", () => {
+    const store = createMemoryKVStore();
+    expect(isOnboardingCompletedFired(store)).toBe(false);
+  });
+
+  it("round-trips through mark / clear", () => {
+    const store = createMemoryKVStore();
+    markOnboardingCompletedFired(store);
+    expect(isOnboardingCompletedFired(store)).toBe(true);
+    expect(store.getString(ONBOARDING_COMPLETED_FIRED_KEY)).toBe("1");
+    clearOnboardingCompletedFired(store);
+    expect(isOnboardingCompletedFired(store)).toBe(false);
+  });
+
+  it("is independent of the onboarding done flag — marking one does not flip the other", () => {
+    // The two flags answer different questions:
+    //   `ONBOARDING_DONE_KEY`           — should the splash render again?
+    //   `ONBOARDING_COMPLETED_FIRED_KEY`— has the PostHog event fired?
+    // `shouldShowOnboarding` eagerly flips the done flag when it
+    // detects pre-existing data, which must NOT trick the event-fired
+    // guard into suppressing a future legitimate fire.
+    const store = createMemoryKVStore();
+    markOnboardingDone(store);
+    expect(isOnboardingDone(store)).toBe(true);
+    expect(isOnboardingCompletedFired(store)).toBe(false);
+
+    clearOnboardingDone(store);
+    markOnboardingCompletedFired(store);
+    expect(isOnboardingDone(store)).toBe(false);
+    expect(isOnboardingCompletedFired(store)).toBe(true);
   });
 });
 

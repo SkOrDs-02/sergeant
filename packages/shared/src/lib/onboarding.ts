@@ -54,6 +54,30 @@ export const ONBOARDING_MODULE_DESCRIPTIONS: Record<DashboardModuleId, string> =
 export const ONBOARDING_DONE_KEY = "hub_onboarding_done_v1";
 
 /**
+ * PR-07 — idempotency flag for the `onboarding_completed` PostHog event.
+ *
+ * Sibling of `ONBOARDING_DONE_KEY`: that one gates whether the splash
+ * renders again (and is also flipped eagerly by `shouldShowOnboarding`
+ * when pre-existing data is detected). The event-fired flag is set
+ * **only** when the wizard's last step actually completed and the
+ * analytics event was dispatched — so existing accounts that bypass
+ * the splash never inflate the WF-60 growth funnel.
+ *
+ * Once set, `OnboardingWizard.finish()` short-circuits the
+ * `trackEvent(ONBOARDING_COMPLETED, …)` call on subsequent invocations
+ * (programmatic re-call, double-tap on the CTA, etc.). The other
+ * funnel events (`ONBOARDING_VIBE_PICKED`, `ONBOARDING_STEP_COMPLETED`)
+ * stay outside this guard because they describe the picks payload of
+ * the current submission, not the once-per-account "graduated from
+ * the splash" milestone.
+ *
+ * Mirrors the per-module storage pattern from PR-08
+ * (`hub_first_action_completed_v1:<module>`) — same `hub_*_v1` prefix
+ * so the FTUX KV namespace stays predictable.
+ */
+export const ONBOARDING_COMPLETED_FIRED_KEY = "hub_onboarding_completed_v1";
+
+/**
  * Domain-blob storage keys scanned by {@link hasExistingData} to
  * detect a user who already has data on this device (sync-restored,
  * pre-migration, or cross-session). Keys intentionally mirror the
@@ -176,6 +200,39 @@ export function clearOnboardingDone(store: KVStore): void {
 /** Raw read of the "done" flag, without the `hasExistingData` side-effect. */
 export function isOnboardingDone(store: KVStore): boolean {
   return store.getString(ONBOARDING_DONE_KEY) === "1";
+}
+
+/**
+ * PR-07 — record that `onboarding_completed` has already fired for
+ * this account on this device, so repeat calls to
+ * `OnboardingWizard.finish()` never re-emit the event.
+ *
+ * Idempotent at the storage layer (repeated calls just rewrite the
+ * same `"1"`), but callers should still gate on
+ * {@link isOnboardingCompletedFired} first so the analytics dispatch
+ * only happens once.
+ */
+export function markOnboardingCompletedFired(store: KVStore): void {
+  store.setString(ONBOARDING_COMPLETED_FIRED_KEY, "1");
+}
+
+/**
+ * Inverse of {@link markOnboardingCompletedFired} — exposed for tests
+ * and the Settings → «Restart onboarding» flow so resetting the
+ * onboarding state also clears the event-fired guard. Mirrors the
+ * shape of `clearOnboardingDone`.
+ */
+export function clearOnboardingCompletedFired(store: KVStore): void {
+  store.remove(ONBOARDING_COMPLETED_FIRED_KEY);
+}
+
+/**
+ * `true` when `onboarding_completed` has already fired for this
+ * account on this device. Used by `OnboardingWizard.finish()` to
+ * short-circuit the analytics dispatch on subsequent invocations.
+ */
+export function isOnboardingCompletedFired(store: KVStore): boolean {
+  return store.getString(ONBOARDING_COMPLETED_FIRED_KEY) === "1";
 }
 
 /**

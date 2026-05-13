@@ -6,7 +6,10 @@
  * funnel flags so the welcome flow + first-action guidance can re-run.
  */
 import { type KVStore } from "../storage/kv";
-import { clearOnboardingDone } from "./onboarding";
+import {
+  clearOnboardingCompletedFired,
+  clearOnboardingDone,
+} from "./onboarding";
 import { ONBOARDING_GOALS_KEY } from "./onboardingGoals";
 import {
   FIRST_ACTION_PENDING_KEY,
@@ -21,6 +24,7 @@ import { resetAllChecklists } from "./moduleChecklist";
 
 export function resetOnboardingState(store: KVStore): void {
   clearOnboardingDone(store);
+  clearOnboardingCompletedFired(store);
   store.remove(VIBE_PICKS_KEY);
   store.remove(ONBOARDING_GOALS_KEY);
   store.remove(FIRST_ACTION_PENDING_KEY);

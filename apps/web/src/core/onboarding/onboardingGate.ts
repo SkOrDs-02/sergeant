@@ -11,7 +11,9 @@
 import {
   buildFinalPicks as sharedBuildFinalPicks,
   hasExistingData as sharedHasExistingData,
+  isOnboardingCompletedFired as sharedIsOnboardingCompletedFired,
   isOnboardingDone as sharedIsOnboardingDone,
+  markOnboardingCompletedFired as sharedMarkOnboardingCompletedFired,
   markOnboardingDone as sharedMarkOnboardingDone,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "@sergeant/shared";
@@ -36,6 +38,20 @@ export function isOnboardingDone(): boolean {
 
 export function hasExistingData(): boolean {
   return sharedHasExistingData(webKVStore);
+}
+
+/**
+ * PR-07 — record that the `onboarding_completed` PostHog event has
+ * already fired for this account on this device. See the JSDoc on
+ * `ONBOARDING_COMPLETED_FIRED_KEY` in `@sergeant/shared/lib/onboarding`
+ * for the rationale.
+ */
+export function markOnboardingCompletedFired(): void {
+  sharedMarkOnboardingCompletedFired(webKVStore);
+}
+
+export function isOnboardingCompletedFired(): boolean {
+  return sharedIsOnboardingCompletedFired(webKVStore);
 }
 
 export { sharedBuildFinalPicks as buildFinalPicks };

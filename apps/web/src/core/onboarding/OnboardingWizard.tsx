@@ -18,6 +18,8 @@ import {
   saveVibePicks,
 } from "./vibePicks";
 import {
+  isOnboardingCompletedFired,
+  markOnboardingCompletedFired,
   markOnboardingDone,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "./onboardingGate";
@@ -550,10 +552,22 @@ export function OnboardingWizard({
         Date.now() - (startedAtRef.current ?? Date.now()),
       ),
     });
-    trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
-      intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
-      picksCount: chosen.length,
-    });
+    // PR-07 — `onboarding_completed` is the once-per-account funnel
+    // milestone (WF-60: `signup_completed → onboarding_completed →
+    // first_action_completed`). Repeat invocations of `finish()`
+    // (programmatic re-call, double-tap on the CTA while the modal
+    // is still mounted) must not re-emit the event, otherwise the
+    // PostHog funnel reads an inflated activation count for the same
+    // user. The `vibe_picked` / `step_completed` events above stay
+    // per-submission — they describe the picks payload of the
+    // current attempt, not the activation milestone.
+    if (!isOnboardingCompletedFired()) {
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+        intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
+        picksCount: chosen.length,
+      });
+      markOnboardingCompletedFired();
+    }
 
     markFirstActionStartedAt();
     markFirstActionPending();
