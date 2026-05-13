@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import client from "prom-client";
 import type { Pool } from "pg";
+
+import { env } from "../env/env.js";
 import { safeStringEqual } from "../http/safeCompare.js";
 
 /**
@@ -758,18 +760,15 @@ export const appBuildInfo = new client.Gauge({
 
 appBuildInfo
   .labels({
-    version: process.env["npm_package_version"] || "unknown",
+    version: env.npm_package_version || "unknown",
     commit: (
-      process.env["RAILWAY_GIT_COMMIT_SHA"] ||
-      process.env["GIT_COMMIT"] ||
-      process.env["VERCEL_GIT_COMMIT_SHA"] ||
+      env.RAILWAY_GIT_COMMIT_SHA ||
+      env.GIT_COMMIT ||
+      env.VERCEL_GIT_COMMIT_SHA ||
       "unknown"
     ).slice(0, 12),
-    release:
-      process.env["SENTRY_RELEASE"] ||
-      process.env["RAILWAY_GIT_COMMIT_SHA"] ||
-      "unknown",
-    env: process.env["NODE_ENV"] || "development",
+    release: env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA || "unknown",
+    env: env.NODE_ENV || "development",
     node_version: process.version,
   })
   .set(1);
@@ -1052,7 +1051,7 @@ export function startPoolSampler(
  * атакуючий міг би статистично відновити токен побайтово.
  */
 export function metricsHandler(req: Request, res: Response): void {
-  const expected = process.env["METRICS_TOKEN"];
+  const expected = env.METRICS_TOKEN;
   if (expected) {
     const auth = req.get("authorization") || "";
     const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
