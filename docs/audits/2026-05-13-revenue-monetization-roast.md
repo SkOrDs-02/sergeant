@@ -51,7 +51,7 @@
 | P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
 | P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)** |
 | P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding   |
-| P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | Outstanding   |
+| P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | **Done (PR)** |
 | P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | **Done (PR)** |
 
 ## P2 — Nice-to-have (post-launch polish)
@@ -165,3 +165,12 @@
 - `usePlan()` (Hard Rule #2 ✓ через `billingKeys.status`) → бейдж Free/Pro, дата trial-end (`status === "trialing"` + `currentPeriodEnd`), warning для `canceled` / `past_due` / `inactive-canceled`.
 - CTA: «Перейти на Pro» (`/pricing?source=settings`) для Free; «Керувати підпискою» (`window.location.assign("/api/billing/portal")`) для Pro. Server-side endpoint — окремий outstanding item (**P0-6**); UI шле браузер на канонічний URL уже зараз, щоб не плодити dead-code wrapper у `billingApi` (api-client `openCustomerPortal` — Phase 3.3 ініціативи 0010).
 - i18n: новий файл додано до `apps/web/eslint.i18n-allowlist.json` (consistent з рештою `apps/web/src/core/settings/*Section.tsx`).
+
+## Фолов-ап (окремий PR — P1-8)
+
+### P1-8 · PricingPage: handle `?checkout=success` return URL ✅ Closed in this PR
+
+- **Файл:** `apps/web/src/core/PricingPage.tsx` — новий `useEffect` читає `useSearchParams()`, реагує на `?checkout=success` і `?checkout=cancelled`, чистить параметр через `setSearchParams({}, { replace: true })` (idempotency при reload).
+- На success: `queryClient.invalidateQueries({ queryKey: billingKeys.status })` (Hard Rule #2 — RQ keys лише через фабрики) + success-toast «Підписку активовано — ласкаво просимо в Pro!» із action `Перейти у налаштування` → `navigate("/settings")`. ref-guard захищає від StrictMode double-invoke.
+- На cancelled: нейтральний info-toast «Оплату скасовано. Підписка не оформлена.» без invalidate (підписка не створена).
+- **Тест:** `apps/web/src/core/PricingPage.test.tsx` — додано `describe("checkout return URL (P1-8)")` з 3 тестами (success branch з invalidate-спаям, cancelled branch, no-param baseline).

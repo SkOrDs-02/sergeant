@@ -8,6 +8,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { billingKeys } from "@shared/lib/api/queryKeys";
 
 const {
   submitMock,
@@ -66,12 +68,21 @@ vi.mock("./observability/analytics", async () => {
 import { PricingPage } from "./PricingPage";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 
-function renderPricing(initialUrl = "/pricing") {
-  return render(
-    <MemoryRouter initialEntries={[initialUrl]}>
-      <PricingPage />
-    </MemoryRouter>,
+function makeClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+}
+
+function renderPricing(initialUrl = "/pricing", queryClient = makeClient()) {
+  const view = render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialUrl]}>
+        <PricingPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+  return { ...view, queryClient };
 }
 
 describe("PricingPage (ADR-0051 2-tier pricing)", () => {
@@ -184,5 +195,79 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
       /Оплата тимчасово недоступна/i,
     );
     expect(document.getElementById("waitlist-anchor")).not.toBeNull();
+  });
+
+  // P1-8 (audit `2026-05-13-revenue-monetization-roast.md`): Stripe Checkout
+  // повертає юзера на `/pricing?checkout=success|cancelled`. На success ми
+  // інвалідовуємо `billingKeys.status` (щоб `usePlan` перевірив новий plan
+  // без очікування на webhook) + success-toast із "Перейти у налаштування" action.
+  // На cancelled виводимо нейтральний info-toast (без invalidate — підписка
+  // не створена). У обох випадках чистимо `?checkout=...` з URL.
+  describe("checkout return URL (P1-8)", () => {
+    it("on ?checkout=success: invalidates billingKeys.status and shows success toast with settings action", async () => {
+      const client = makeClient();
+      const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+      renderPricing("/pricing?checkout=success", client);
+
+      await waitFor(() => {
+        expect(toastSuccessMock).toHaveBeenCalledTimes(1);
+      });
+
+      const [msg, duration, action] = toastSuccessMock.mock.calls[0]!;
+      expect(String(msg)).toMatch(/Підписку активовано/i);
+      expect(duration).toBeUndefined();
+      expect(action).toEqual(
+        expect.objectContaining({
+          label: "Перейти у налаштування",
+          onClick: expect.any(Function),
+        }),
+      );
+
+      // billingKeys.status інвалідується щонайменше раз із правильною
+      // фабричною композицією (Hard Rule #2 — RQ keys лише через фабрики).
+      const billingInvalidations = invalidateSpy.mock.calls.filter((call) => {
+        const arg = call[0] as { queryKey?: unknown } | undefined;
+        return (
+          Array.isArray(arg?.queryKey) &&
+          (arg.queryKey as ReadonlyArray<unknown>).join("|") ===
+            billingKeys.status.join("|")
+        );
+      });
+      expect(billingInvalidations.length).toBeGreaterThanOrEqual(1);
+
+      expect(toastInfoMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it("on ?checkout=cancelled: shows neutral info toast and does NOT invalidate billing status", async () => {
+      const client = makeClient();
+      const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+      renderPricing("/pricing?checkout=cancelled", client);
+
+      await waitFor(() => {
+        expect(toastInfoMock).toHaveBeenCalledTimes(1);
+      });
+      expect(String(toastInfoMock.mock.calls[0]![0])).toMatch(
+        /Оплату скасовано/i,
+      );
+
+      const billingInvalidations = invalidateSpy.mock.calls.filter((call) => {
+        const arg = call[0] as { queryKey?: unknown } | undefined;
+        return (
+          Array.isArray(arg?.queryKey) &&
+          (arg.queryKey as ReadonlyArray<unknown>).join("|") ===
+            billingKeys.status.join("|")
+        );
+      });
+      expect(billingInvalidations).toHaveLength(0);
+
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    });
+
+    it("does NOT fire toast on plain /pricing (no checkout param)", () => {
+      renderPricing("/pricing");
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastInfoMock).not.toHaveBeenCalled();
+    });
   });
 });

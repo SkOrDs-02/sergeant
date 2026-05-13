@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
+import { billingKeys } from "@shared/lib/api/queryKeys";
+import { useToast } from "@shared/hooks/useToast";
 import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { WaitlistForm } from "./pricing/WaitlistForm";
@@ -51,6 +54,10 @@ const TIERS: ReadonlyArray<Tier> = [
 
 export function PricingPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const checkoutReturnHandledRef = useRef(false);
   const [checkoutPlan, setCheckoutPlan] = useState<Tier["id"] | null>(null);
   const [checkoutResult, setCheckoutResult] =
     useState<BillingCheckoutResponse | null>(null);
@@ -63,6 +70,33 @@ export function PricingPage() {
     const source = params.get("source") ?? "direct";
     trackEvent(ANALYTICS_EVENTS.PRICING_VIEWED, { source });
   }, []);
+
+  // Stripe Checkout повертає юзера на `/pricing?checkout=success` (success_url)
+  // або `/pricing?checkout=cancelled` (cancel_url). `success` означає, що
+  // webhook міг ще не долетіти / `billingApi.status` у кеші лишається stale →
+  // інвалідовуємо `billingKeys.status` (Hard Rule #2), щоб `usePlan` пере-fetch-нувся
+  // і paywall пропустив користувача. Toast із action веде в Settings, де живе
+  // керування підпискою. URL чистимо через `setSearchParams({}, { replace: true })`
+  // — щоб при reload / share-і URL знову не тригерив toast. ref-guard
+  // захищає від StrictMode double-invoke в dev.
+  useEffect(() => {
+    if (checkoutReturnHandledRef.current) return;
+    const checkout = searchParams.get("checkout");
+    if (checkout !== "success" && checkout !== "cancelled") return;
+    checkoutReturnHandledRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("checkout");
+    setSearchParams(next, { replace: true });
+    if (checkout === "success") {
+      void queryClient.invalidateQueries({ queryKey: billingKeys.status });
+      toast.success("Підписку активовано — ласкаво просимо в Pro!", undefined, {
+        label: "Перейти у налаштування",
+        onClick: () => navigate("/settings"),
+      });
+      return;
+    }
+    toast.info("Оплату скасовано. Підписка не оформлена.");
+  }, [searchParams, setSearchParams, queryClient, toast, navigate]);
 
   async function handleTierCta(tierId: Tier["id"]): Promise<void> {
     trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
