@@ -1,35 +1,34 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-03 by @Skords-01 (Phase 5c: `allowJs` flipped to `false` у `packages/config/tsconfig.base.json` + explicit на всіх 4 апах + 8 пакетах — стрікт-coverage `allowJs` колонка тепер `—` для всіх 13 пакетів; PR [#1454](https://github.com/Skords-01/Sergeant/pull/1454)). Phase 5 (commit `a7a31703`) + Phase 5b (PR [#1448](https://github.com/Skords-01/Sergeant/pull/1448)) + Phase 5a finyk-pages `: any` cleanup (PR [#1452](https://github.com/Skords-01/Sergeant/pull/1452)) уже за плечима. `pnpm strict:coverage` = 13/13 пакетів = 100%. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-13 by @Skords-01 (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures). **Next review:** 2026-08-11.
 > **Status:** Active
 
-Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
+Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
 
-> **Оновлено 2026-05-04.** Sync з реальним станом коду після кількох wave-ів decomposition:
-> Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **15 файлів**
-> (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`/`useDarkMode`/`useActiveFizrukWorkout`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **12 файлів >600 LOC** (раніше 22; lookup-таблиця нижче синхронізована з `wc -l` 2026-05-04 — узгоджено з заголовком §4 + Initiative 0001 carry-over списком на 12 файлів);
-> декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
-> `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
-> `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`),
-> `shared/components/ui/VoiceMicButton.tsx` (852 → 256 LOC, винесено
-> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`),
-> `core/lib/chatActions/finykActions.ts` (758 → 96 LOC, винесено 7 модулів
-> у `finykActions/` — search/transactions/debts/budgets/assets/monobank/report),
-> `core/lib/chatActions/crossActions.ts` (788 → 78 LOC, винесено
-> `crossActions/{helpers,briefingHandlers,goalAndUtility,financeAnalytics,noteHandlers,memoryHandlers,exportHandler,compareWeeksHandler}.ts`),
-> `modules/fizruk/pages/Body.tsx` (774 → 414 LOC, винесено
-> `Body/{storage,trendUtils,ScoreButton,CollapsibleTrendCard,JournalEntryCard,JournalSection}`),
-> `core/onboarding/seedDemoData.ts` (897 → 131 LOC, винесено
-> `seedDemoData/{keys,utils,seedFinyk,seedFizruk,seedRoutine,seedNutrition,seedHubQuickStats}.ts`).
-> Розділ 9 (`any` типи) — попередня таблиця з 10 файлів **повністю закрита**
-> (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452)
-> зачистила 8 sub-page-ів `transactions/` + `budgets/`; fizruk-decomposition
-> leftovers нормалізовано через локальні interface-и). Залишилось **1**
-> production-файл як trackable follow-up (`modules/finyk/hooks/usePrivatbank.ts` —
-> зовнішній PrivatBank API без зафіксованої схеми) + **3** свідомо
-> залишених `Record<string, any>` патерни з in-line обґрунтуваннями
-> (legacy localStorage shape-и + `ComponentType<any>` для `lazyImport`).
+> **Оновлено 2026-05-13.** Sync з реальним станом коду після Stage 7 / 9 storage-roadmap-у та подальших decomposition-ів:
+> Розділ 2 (localStorage burndown) — production-allowlist у `eslint.config.js` **обнулено**
+> (PR #054 final, 2026-05-06). `webKVStore` фізично переключено на SQLite-backed
+> `kv_store(key TEXT PK, value JSON)` через PR #063 (web swap із LS dual-write canary)
+> → PR #064 (drop LS mirror, SQLite-only) → PR #065 (mobile `mobileKVStore` mirror).
+> Двоступенева драбина у `apps/web/src/shared/lib/storage/storage.ts:resolveStore()`:
+> SQLite warm-cache (bootstrap-resolved) → `localStorage`-fallback (pre-bootstrap / SSR /
+> private mode). Out-of-scope follow-up з §2 закритий.
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **6 файлів >600 LOC** (раніше 14 на 2026-05-04;
+> lookup-таблиця нижче синхронізована з `wc -l` 2026-05-13). Додатково декомпозовано (після 2026-05-04):
+> `RoutineApp.tsx`, `Progress.tsx` (fizruk), `useStorage.ts` (finyk), `HubDashboard.tsx` (676 → 115 LOC,
+> stale entry в `max-lines` allowlist прибрано у цьому PR),
+> `chatActions/types.ts`, `fizrukActions.ts`, `AssetsTable.tsx`, `Workouts.tsx` (fizruk),
+> `DailyPlanCard.tsx`, `Icon.tsx`, `NutritionApp.tsx`, `sw.ts`, `Exercise.tsx`, `LogCard.tsx`.
+> Нові leakers (раніше у doc не трекалися, тепер додані до таблиці §4):
+> `core/auth/AuthPage.tsx` (694), `core/onboarding/OnboardingWizard.tsx` (691),
+> `modules/fizruk/lib/dualWrite/adapter.ts` (641). Початково запланований carry-over
+> з Initiative 0001 — лише `FinykApp.tsx` і `RoutineCalendarPanel.tsx` досі активні.
+> Розділ 9 (`any` типи) — таблиця з 10 файлів **повністю закрита**
+> (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452) + закриття
+> `useAnalytics.ts` / `usePrivatbank.ts` через PR #1475). `grep ': any\b|<any>'` на
+> `apps/web/src/modules/{finyk,fizruk}` — 0 матчів. Залишається тільки **3** свідомо
+> залишених `Record<string, …>` патерни з in-line обґрунтуваннями
+> (`parseFizrukWorkouts.ts`, `searchCache.ts`, `lazyImport.ts ComponentType<any>`).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
 > правило `error` тепер працює без винятків на `apps/server/src/**` + `apps/web/src/**`.
 
@@ -127,12 +126,30 @@ PR #053a видалив `apps/web/src/core/cloudSync/enqueue` no-op shim
   storage manager-міграції, які мають перезапускатись на write
   failure.
 
-**Out-of-scope follow-up.** Фізичний свап `webKVStore` з
-`window.localStorage` на SQLite-backed `kv_store(key TEXT PK, value JSON)`
-лишається окремою ініціативою (warm-cache strategy через async
-SQLite init + кругова залежність kvvfs ↔ localStorage на старих
-Safari). Done criteria PR #054 final цього не вимагає — eslint-боундарі
-вже unified, споживачі не побачать різниці.
+**Closed (2026-05-07, PR-и #063 / #064 / #065).** Фізичний свап `webKVStore` з
+`window.localStorage` на SQLite-backed `kv_store(key TEXT PK, value JSON)` —
+виконано трьома хвилями:
+
+- **PR #063 (web swap із dual-write canary).** `webKVStore` фасад тепер делегує
+  через `apps/web/src/shared/lib/storage/storage.ts:resolveStore()` — двоступенева
+  драбина: (1) SQLite warm-cache (`getActiveSqliteKvStore()` після
+  `bootstrapKvStore()` із PR #062) → reads з in-memory `Map<string, string>`
+  popul-нутою на boot, writes — fire-and-forget `INSERT … ON CONFLICT(key) DO
+UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-store")`.
+  (2) `localStorage`-fallback — pre-bootstrap, на bootstrap failure, у SSR / private
+  mode / very old iOS WebView. (3) In-memory fallback — SSR + private mode без
+  DOM `Storage`. PR #063 запустив 4-тижневий dual-write canary (writes у LS
+  паралельно для rollback safety).
+- **PR #064 (drop LS mirror, SQLite-only).** Stage 9 storage-roadmap-у —
+  прибрано dual-write mirror, тепер SQLite — primary store, LS — лише fallback
+  rung. Stage 7 → 9 closure.
+- **PR #065 (mobile mirror).** `apps/mobile/src/lib/storage.ts:mobileKVStore`
+  переключено на той самий SQLite-backed `kv_store` (через op-sqlite RN bridge
+  замість sqlite-wasm). MMKV-fallback для legacy reads збережено на період
+  міграційного покриття.
+
+Це закриває §2 повністю: eslint-боундарі unified, споживачі бачать ту саму
+`KVStore`-сигнатуру, а бекенд — durable SQLite з cross-tab fanout.
 
 </details>
 
@@ -167,7 +184,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 12 файлів (тільки `apps/web/src`) — **Initiative 0001 closed; carry-over → successor**
+### 4. Великі файли (>600 рядків) — 6 файлів (тільки `apps/web/src`) — **Initiative 0001 closed; majority of carry-over decomposed**
 
 > **Status (2026-05-04):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
 > закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
@@ -177,13 +194,18 @@ Codemod ідемпотентний: повторний запуск дасть `
 [error, 600]` для `apps/web/src/**/*.{ts,tsx}` залишається активним —
 > будь-який новий файл `apps/web/src/**` ≥ 600 LOC далі падає на `pnpm lint`.
 >
-> Carry-over (12 файлів у allowlist) переходять у successor initiative:
-> 3 з оригінального Top-7 (`FinykApp.tsx`, `Workouts.tsx`, `LogCard.tsx`),
-> які навмисно відкладено через ризик регресії, плюс 9 файлів, що
-> «дрейфом» додалися в allowlist під час Sprint 1 (`NutritionApp.tsx`,
-> `hubChatContext.ts`, `Cards.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`,
-> `Exercise.tsx`, `Progress.tsx`, `AssetsTable.tsx`,
-> `RoutineCalendarPanel.tsx`). Деталі та обґрунтування — в Outcome секції
+> Carry-over status (2026-05-13). З 12 файлів, які Initiative 0001 переніс у
+> successor, **9 вже декомпозовано** після 2026-05-04: `Workouts.tsx`,
+> `LogCard.tsx`, `NutritionApp.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`,
+> `Exercise.tsx`, `Progress.tsx`, `AssetsTable.tsx`, плюс decomposition
+> `HubDashboard.tsx` (676 → 115 LOC). `hubChatContext.ts` (681) досі активне —
+> лишається єдиним легітимним entry в `max-lines` allowlist після очистки
+> stale `HubDashboard.tsx` entry. Активних carry-over залишилось **2**:
+> `FinykApp.tsx` (640 LOC) і `RoutineCalendarPanel.tsx` (602 LOC). Плюс
+> **3 нових leakers**, які з'явились після audit-у 0001:
+> `AuthPage.tsx`, `OnboardingWizard.tsx`, `dualWrite/adapter.ts` — поки що
+> під `skipBlankLines + skipComments` max-lines lint не падає (LOC > 600 raw,
+> але <600 не-blank/не-comment), моніторити окремо. Деталі — в Outcome секції
 > [`_0001-module-decomposition.md`](../initiatives/archive/_0001-module-decomposition.md).
 >
 > Свіжість таблиці нижче — на 2026-05-04; перерахунок виконується вручну
@@ -293,22 +315,14 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
 > (mobile tracker — `docs/tech-debt/mobile.md`).
 
-| Рядків | Файл                                                  |
-| ------ | ----------------------------------------------------- |
-| 732    | `modules/routine/RoutineApp.tsx`                      |
-| 697    | `modules/fizruk/pages/Progress.tsx`                   |
-| 685    | `modules/finyk/hooks/useStorage.ts`                   |
-| 679    | `core/lib/hubChatContext.ts`                          |
-| 676    | `core/hub/HubDashboard.tsx`                           |
-| 672    | `core/lib/chatActions/types.ts`                       |
-| 668    | `core/lib/chatActions/fizrukActions.ts`               |
-| 667    | `modules/finyk/pages/AssetsTable.tsx`                 |
-| 666    | `modules/fizruk/pages/Workouts.tsx`                   |
-| 663    | `modules/nutrition/components/DailyPlanCard.tsx`      |
-| 660    | `shared/components/ui/Icon.tsx`                       |
-| 651    | `modules/nutrition/NutritionApp.tsx`                  |
-| 612    | `sw.ts`                                               |
-| 602    | `modules/routine/components/RoutineCalendarPanel.tsx` |
+| Рядків | Файл                                                  | Категорія                       |
+| ------ | ----------------------------------------------------- | ------------------------------- |
+| 694    | `core/auth/AuthPage.tsx`                              | Новий leaker (не в Init. 0001)  |
+| 691    | `core/onboarding/OnboardingWizard.tsx`                | Новий leaker (не в Init. 0001)  |
+| 681    | `core/lib/hubChatContext.ts`                          | `max-lines` allowlist           |
+| 641    | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001)  |
+| 640    | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over (активне) |
+| 602    | `modules/routine/components/RoutineCalendarPanel.tsx` | Init. 0001 carry-over (активне) |
 
 **Імпакт:** повільніший code review, важче тестувати окремі частини, можливі
 circular deps.
@@ -334,13 +348,13 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 
 ---
 
-### 6. Тестове покриття — 174 test файлів на 649 source
+### 6. Тестове покриття — 243 test файлів на 790 source
 
-~27% файлів мають тести (re-audit 2026-05-03 → інкремент). Критичні модулі без тестів / з тонким покриттям
+~31% файлів мають тести (re-audit 2026-05-13). Критичні модулі без тестів / з тонким покриттям
 (актуально):
 
-- `HubReports.tsx` (638 рядків, складна агрегація)
-- `TodayFocusCard.tsx` (recommendation engine інтеграція)
+- `HubReports.tsx` (592 рядків, складна агрегація) — досі без тестів
+- ~~`TodayFocusCard.tsx` (recommendation engine інтеграція)~~ — `TodayFocusCard.test.tsx` додано
 - ~~`ProfilePage.tsx` (1060 рядків)~~ — декомпозовано на `core/profile/` (max 383 LOC)
 
 **Зроблено 2026-04-28:** додано focused coverage для `HubDashboard.tsx`
@@ -363,21 +377,25 @@ quick actions, callback routing, weekly digest footer).
 
 ## 🟢 Nice-to-have
 
-### 7. `console.*` у production коді — 35 рядків (re-audit 2026-05-02)
+### 7. `console.*` у production коді — 59 викликів у 38 файлах (re-audit 2026-05-13)
 
-**Re-audit 2026-05-02.** Попередня версія цього розділу декларувала «9
-рядків» і покривала лише `console.log` / `console.debug`. Реальний
-скан `apps/web/src/**` (без тестів і `__tests__/`) дає **35 викликів**
-у 21 production-файлі. Збільшення — наслідок:
+**Re-audit 2026-05-13.** Скан `apps/web/src/**` (без тестів і `__tests__/`)
+дає **59 викликів у 38 production-файлах**. Зростання з 35 (2026-05-02) →
+59 — наслідок PR-ів #062 / #063 / #064 (SQLite kv-store bootstrap + cloud-sync
+residual-import path) та нового `chunkReload.ts`/`ShellDeepLinkBridge.tsx`
+logger-у:
 
-- розширення скоупу до `console.warn` / `console.error` / `console.info`
-  (best-effort failure logging);
-- декомпозиції `core/settings/GeneralSection.tsx` → `core/settings/PWASection.tsx`
-  (4 виклики замість 2);
-- нових debug-toggle / fallback-warn у `core/db/sqlite.ts` (4),
-  `shared/hooks/usePushNotifications.ts` (4), `core/cloudSync/engine/{initialSync,push}.ts` (3),
-  `modules/routine/lib/dualWrite/{adapter,index}.ts` (2),
-  `modules/nutrition/hooks/useNutritionLog.ts` (2).
+- **SQLite kv-store boot** — `core/db/kvStoreBoot.ts` (2), `core/db/sqlite.ts` (4),
+  `shared/lib/storage/typedStore.ts` (2), `shared/lib/storage/storageManager.ts` (1),
+  `shared/lib/storage/createModuleStorage.ts` (1).
+- **Residual-import (cloud-sync legacy LS pull)** —
+  `modules/{finyk,fizruk,routine,nutrition}/lib/residualImport.ts` + `sqliteReadBoot.ts`.
+- **Chunk-reload UX** — `core/lib/chunkReload.ts` (3 — best-effort Sentry warn
+  на dynamic-import failure / refresh-budget).
+- **DualWrite (fizruk + routine adapters)** — `modules/fizruk/lib/dualWrite/{adapter,index}.ts`
+  - `modules/routine/lib/dualWrite/{adapter,index}.ts`.
+- **Push / monobank webhook** — `shared/hooks/usePushNotifications.ts` (4),
+  `modules/finyk/hooks/useMonobankWebhook.ts` (2).
 
 | Категорія                        | Файли                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | К-сть |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
@@ -395,10 +413,10 @@ debug-logger/warn-патерни — окремий PR (Phase 6 candidate).
 
 ---
 
-### 8. `eslint-disable no-eyebrow-drift` — 26 рядків у `apps/web/src` + 10 у `apps/mobile/src`
+### 8. `eslint-disable no-eyebrow-drift` — 25 рядків у `apps/web/src` + 10 у `apps/mobile/src`
 
-Custom DS-rule пригнічується 26 разів у `apps/web/src` і 10 разів у `apps/mobile/src`
-(2026-05-03 re-audit). Усі з обґрунтуваннями в коментарях (кастомні hero kickers,
+Custom DS-rule пригнічується 25 разів у `apps/web/src` і 10 разів у `apps/mobile/src`
+(2026-05-13 re-audit). Усі з обґрунтуваннями в коментарях (кастомні hero kickers,
 calendar headers, pill-overlay typography, marketing eyebrow).
 
 **Зроблено [PR #1414](https://github.com/Skords-01/Sergeant/pull/1414):** розширено
@@ -436,11 +454,11 @@ patterns нижче приховували signal від real production drift).
 
 **By-design loose `Record<string, any>` (3 файли, з in-line обґрунтуваннями):**
 
-| Файл                                  | Pattern                          | Обґрунтування                                                                                                                                                                                                    |
-| ------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shared/lib/parseFizrukWorkouts.ts:8` | `Record<string, any>[]`          | Парсер для обох legacy-форматів (`[{...}]` і `{ workouts: [...] }`) із fizruk localStorage. Свідомо loose, бо персистовані payload-и старіші за поточну shape; type-guard у consumer-і.                          |
-| `core/hub/search/searchCache.ts:54`   | `type LooseRecord = Record<…,…>` | Той самий fizruk-shape для `searchCache` — спільний alias для `parseFizrukWorkouts` / `parseFizrukCustomExercises`, які бачать у HubSearch на гарячому шляху.                                                    |
-| `core/lib/lazyImport.ts:39`           | `ComponentType<any>`             | Свідомий вибір над `unknown` — пояснено у коментарі (lines 33–37): callers мають точну сигнатуру через `(typeof import(...)).Foo`, тут `any` потрібен щоби вирівняти всі `lazy(() => …)`-callsites під один тип. |
+| Файл                                     | Pattern                          | Обґрунтування                                                                                                                                                                                                    |
+| ---------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/lib/ui/parseFizrukWorkouts.ts:8` | `Record<string, any>[]`          | Парсер для обох legacy-форматів (`[{...}]` і `{ workouts: [...] }`) із fizruk localStorage. Свідомо loose, бо персистовані payload-и старіші за поточну shape; type-guard у consumer-і.                          |
+| `core/hub/search/searchCache.ts:54`      | `type LooseRecord = Record<…,…>` | Той самий fizruk-shape для `searchCache` — спільний alias для `parseFizrukWorkouts` / `parseFizrukCustomExercises`, які бачать у HubSearch на гарячому шляху.                                                    |
+| `core/lib/lazyImport.ts:39`              | `ComponentType<any>`             | Свідомий вибір над `unknown` — пояснено у коментарі (lines 33–37): callers мають точну сигнатуру через `(typeof import(...)).Foo`, тут `any` потрібен щоби вирівняти всі `lazy(() => …)`-callsites під один тип. |
 
 **Fix recipe для нових випадків:** замінити `: any` на explicit union, на
 тип з `@sergeant/finyk-domain/domain/types` (`Transaction`, `TxSplitsMap`,
