@@ -1,6 +1,7 @@
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -59,8 +60,10 @@ export function WorkoutFinishSheets({
         className="pointer-events-auto max-w-4xl mx-auto fizruk-sheet"
       >
         {finishFlash.step === "wellbeing" && (
-          <div
-            className="rounded-2xl border border-line bg-panel p-4 shadow-float space-y-4 max-h-[min(70vh,520px)] overflow-y-auto"
+          <Card
+            prominence="elevated"
+            radius="lg"
+            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="fizruk-wellbeing-title"
@@ -174,7 +177,7 @@ export function WorkoutFinishSheets({
                 Зберегти
               </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {finishFlash.step === "summary" && finishFlash.collapsed && (
