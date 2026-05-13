@@ -241,7 +241,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.5.1. W4.1 — bootstrap setWebhook poll-and-retry hardening
 
-**Status:** new (backlog, пост-W4 hardening на основі race-condition зі §3.5).
+**Status:** ✅ Done — [PR #2531](https://github.com/Skords-01/Sergeant/pull/2531) `49d5c846`.
 **Pain закриває:** P4 follow-up — щоб майбутні long-poll → webhook міграції інших ботів (або accidental re-activation long-poll) не вимагали ручного curl-у.
 
 **Що:** у `tools/console/src/openclaw/bootstrap.ts:registerOpenClawWebhook` після `bot.api.setWebhook(...)` зробити `getWebhookInfo`, перевіряти що повернений `url === expected`, при mismatch ще раз викликати `setWebhook` з backoff (max 3 спроби, 1s/2s/4s). Лог-повідомлення про recovery, щоб у Sentry було видно що race спрацював.
@@ -315,8 +315,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 | W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                                    | M      | 0039      | planned                                                                                                                                                                           |
 | W3    | (g) | B.1 (alert dedup / occurrence-counter)                                 | M      | —         | planned                                                                                                                                                                           |
 | W4    | (h) | §3.5 (webhook delivery)                                                | M      | 0041      | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514) (code) + Railway flip 2026-05-03 21:26 UTC. Index/whitelist [#1517](https://github.com/Skords-01/Sergeant/pull/1517). |
-| W4    | (j) | §3.5.1 (W4.1 bootstrap setWebhook poll-and-retry hardening)            | XS     | —         | planned (post-W4 hardening for race noted in ADR-0041 §5)                                                                                                                         |
-| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | planned                                                                                                                                                                           |
+| W4    | (j) | §3.5.1 (W4.1 bootstrap setWebhook poll-and-retry hardening)            | XS     | —         | ✅ [PR #2531](https://github.com/Skords-01/Sergeant/pull/2531)                                                                                                                    |
+| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | ✅ [PR #2534](https://github.com/Skords-01/Sergeant/pull/2534)                                                                                                                    |
 | Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     | backlog                                                                                                                                                                           |
 | Later | …   | B.2..B.8                                                               | varies | varies    | backlog                                                                                                                                                                           |
 | Later | …   | C.1, C.3, C.4                                                          | varies | 0042/0043 | backlog                                                                                                                                                                           |
@@ -324,7 +324,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 **Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0039, 0041).
 
-**Де-факто завершено (2026-05-03):** W1 (a)+(b) + W3 (e) + W4 (h) — 5 merged PR + 1 production env-flip всього.
+**Де-факто завершено (2026-05-13):** W1 (a)+(b) + W3 (e) + W4 (h)+(i)+(j) — 7 merged PR + 1 production env-flip всього.
 
 ---
 

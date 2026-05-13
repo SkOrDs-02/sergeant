@@ -1,6 +1,6 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-13 19:30 UTC by Devin (T3 batch 3 close-out: Workouts/LogCard decomp shipped in PR #2530). **Next review:** 2026-07-01.
+> **Last validated:** 2026-05-13 19:30 UTC by Devin (T2/T3/T6/T10/O6/O7 закриті). **Next review:** 2026-07-01.
 > **Status:** Active — усі Wave-2/3 задачи верифіковані на предмет залежностей та PR-статусу
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
@@ -27,7 +27,7 @@
 
 Повний контекст і деталі реалізації — у [`2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md).
 
-**Останнє оновлення:** 2026-05-13 19:30 UTC — T3 батч 3 закрито (PR #2530).
+**Останнє оновлення:** 2026-05-13 19:30 UTC — синхронізовано з main після T2/T3/T6/T10/O6/O7 close-out.
 
 | ID  | Задача                             | Деталь                                                                     | Статус                                                                                                                                                                   |
 | --- | ---------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -50,31 +50,37 @@
 | O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
 | O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
 | O5  | W3 PR-3: `/alerts pending` slash-команда                      | tg-improvements §3.2   | W3    | S      | ✅ Done ([PR #2507](https://github.com/Skords-01/Sergeant/pull/2507), `9ad0e272`, Sprint 5)                                                                              |
-| O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ⏳ Очікує Sprint 7                                                                                                                                                       |
-| O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ⏳ Очікує Sprint 7                                                                                                                                                       |
+| O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ✅ Done ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531), `49d5c846`)                                                                                        |
+| O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ✅ Done ([PR #2534](https://github.com/Skords-01/Sergeant/pull/2534), `6ee444d3`)                                                                                        |
 | O8  | Phase 3: `/plan`, `/analyze`, `/okr`                          | openclaw §Phase 3      | Later | L      | ✅ Done за founder підтвердженням 2026-05-13 — Stage 5b PR-1..PR-4 + persona allowlist Stage 5a                                                                          |
 | O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ⏳ В очікуванні (Sprint 6)                                                                                                                                               |
 
 ### 1.3. Вже зроблено (довідка)
 
-| Компонент                     | Що закрито                                                                                                                                                              |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TypeScript strict             | ✅ 13/13 пакетів = 100% (Спринти 1–3)                                                                                                                                   |
-| localStorage migration        | ✅ ~90% (ESLint `no-raw-local-storage: error`, allowlist ~10 файлів)                                                                                                    |
-| Sentry                        | ✅ web + mobile + server                                                                                                                                                |
-| Prompt cache                  | ✅ `cache_control: ephemeral` у `chat.ts`                                                                                                                               |
-| OpenTelemetry                 | ✅ distributed tracing у `apps/server/src/obs/`                                                                                                                         |
-| OpenClaw Phase 1+1.5+2.5+3+4  | ✅ shipped (Phase 3 closed 2026-05-13: `/plan` `/analyze` `/okr` вживі через Stage 5b PR-1..PR-4 + Stage 5a persona allowlist; ADR-0031/32/33/36/37)                    |
-| OpenClaw Gateway migration    | ✅ Stage 1–7 done (cutover 2026-05-12 22:30 UTC); Stage 6b closed 2026-05-13; legacy deletion 2026-06-09 (Locked #17). Правильний джерело: `openclaw-migration-plan.md` |
-| OpenClaw Sprint 5 close       | ✅ O2 + O5 + T1 shipped (PR #2504/#2507, commit `61e0093f`); WhatsApp descoped 2026-05-13 (PR #2521)                                                                    |
-| Alert ACK-button foundation   | ✅ `tg_alert_acks` table + WF-04/103/104 (ADR-0038)                                                                                                                     |
-| `/audit since=` + CSV         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                                                                                                             |
-| WF-15 Bad request fix         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                                                                                                             |
-| Webhook delivery для OpenClaw | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514), live 2026-05-03                                                                                            |
-| dev-stack top-15              | ✅ 15/15 закрито                                                                                                                                                        |
-| i18n Phase 1+2+3              | ✅ sync/zod migrated, `no-cyrillic-jsx-literal` ESLint rule (#1942)                                                                                                     |
-| CloudSync engine              | ✅ lifecycle, push loop, scheduler, DLQ (#1929–#1941)                                                                                                                   |
-| Agent OS hardening            | ✅ Initiative 0009 (#1949)                                                                                                                                              |
+| Компонент                      | Що закрито                                                                                                                                                              |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript strict              | ✅ 13/13 пакетів = 100% (Спринти 1–3)                                                                                                                                   |
+| localStorage migration         | ✅ ~90% (ESLint `no-raw-local-storage: error`, allowlist ~10 файлів)                                                                                                    |
+| Sentry                         | ✅ web + mobile + server                                                                                                                                                |
+| Prompt cache                   | ✅ `cache_control: ephemeral` у `chat.ts`                                                                                                                               |
+| OpenTelemetry                  | ✅ distributed tracing у `apps/server/src/obs/`                                                                                                                         |
+| OpenClaw Phase 1+1.5+2.5+3+4   | ✅ shipped (Phase 3 closed 2026-05-13: `/plan` `/analyze` `/okr` вживі через Stage 5b PR-1..PR-4 + Stage 5a persona allowlist; ADR-0031/32/33/36/37)                    |
+| OpenClaw Gateway migration     | ✅ Stage 1–7 done (cutover 2026-05-12 22:30 UTC); Stage 6b closed 2026-05-13; legacy deletion 2026-06-09 (Locked #17). Правильний джерело: `openclaw-migration-plan.md` |
+| OpenClaw Sprint 5 close        | ✅ O2 + O5 + T1 shipped (PR #2504/#2507, commit `61e0093f`); WhatsApp descoped 2026-05-13 (PR #2521)                                                                    |
+| Alert ACK-button foundation    | ✅ `tg_alert_acks` table + WF-04/103/104 (ADR-0038)                                                                                                                     |
+| `/audit since=` + CSV          | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                                                                                                             |
+| WF-15 Bad request fix          | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                                                                                                             |
+| Webhook delivery для OpenClaw  | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514), live 2026-05-03                                                                                            |
+| dev-stack top-15               | ✅ 15/15 закрито                                                                                                                                                        |
+| i18n Phase 1+2+3               | ✅ sync/zod migrated, `no-cyrillic-jsx-literal` ESLint rule (#1942)                                                                                                     |
+| CloudSync engine               | ✅ lifecycle, push loop, scheduler, DLQ (#1929–#1941)                                                                                                                   |
+| Agent OS hardening             | ✅ Initiative 0009 (#1949)                                                                                                                                              |
+| T2 Capacitor boundary tests    | ✅ 23 тестів у `apps/mobile-shell` ([PR #2538](https://github.com/Skords-01/Sergeant/pull/2538))                                                                        |
+| T3 Великі файли — батч 3       | ✅ Workouts 744→213, LogCard 736→216 ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)); NutritionApp раніше                                                 |
+| T6 Backend dedup prompt        | ✅ `prompt-builders.ts` + PANTRY_PRESETS, 0 інлайн-дублікатів ([PR #2542](https://github.com/Skords-01/Sergeant/pull/2542))                                             |
+| T10 Overview.tsx decomposition | ✅ 509→139 LOC via `useOverviewData` hook ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547))                                                                 |
+| O6 Webhook retry hardening     | ✅ Sentry breadcrumb on W4.1 race recovery ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531))                                                                |
+| O7 `/help` + persona quick-row | ✅ InlineKeyboard discovery + `/start` persona row ([PR #2534](https://github.com/Skords-01/Sergeant/pull/2534))                                                        |
 
 ---
 
@@ -257,7 +263,9 @@ apps/web/src/core/hub/
 
 ### Задачі
 
-#### O6: bootstrap setWebhook poll-and-retry hardening `Tech` `XS`
+#### O6: bootstrap setWebhook poll-and-retry hardening `Tech` `XS` — ✅ Done
+
+**Статус:** Shipped — [PR #2531](https://github.com/Skords-01/Sergeant/pull/2531) `49d5c846`.
 
 **Scope:** `tools/console/src/openclaw/bootstrap.ts::registerOpenClawWebhook`
 
@@ -265,15 +273,17 @@ apps/web/src/core/hub/
 
 **Acceptance:**
 
-- [ ] Unit test: mismatch on first attempt → recovery on second
-- [ ] Sentry breadcrumb `[openclaw] webhook recovered after race` при retry-успіху
+- [x] Unit test: mismatch on first attempt → recovery on second
+- [x] Sentry breadcrumb `[openclaw] webhook recovered after race` при retry-успіху
 - [ ] Smoke: long-poll → webhook → long-poll → webhook redeploy без ручного curl-у
 
 **Пов'язане:** [ADR-0041 §5](../adr/0041-openclaw-telegram-webhook.md), [tg-improvements §3.5.1](../launch/tech/telegram-improvements-roadmap.md)
 
 ---
 
-#### O7: `/help` discovery + persona quick-row `Продукт` `S`
+#### O7: `/help` discovery + persona quick-row `Продукт` `S` — ✅ Done
+
+**Статус:** Shipped — [PR #2534](https://github.com/Skords-01/Sergeant/pull/2534) `6ee444d3`.
 
 **Scope:** `tools/console/src/openclaw/handler.ts`
 
@@ -284,51 +294,36 @@ apps/web/src/core/hub/
 
 **Acceptance:**
 
-- [ ] `/help` → повний список команд (`/ops`, `/growth`, `/eng`, `/finance`, `/cofounder`, `/council`, `/status`, `/metrics`, `/digest`, `/logs`, `/review`, `/audit`, `/alerts`, `/help`)
-- [ ] Persona quick-row видно у ранковому повідомленні
+- [x] `/help` → повний список команд (`/ops`, `/growth`, `/eng`, `/finance`, `/cofounder`, `/council`, `/status`, `/metrics`, `/digest`, `/logs`, `/review`, `/audit`, `/alerts`, `/help`)
+- [x] Persona quick-row видно у ранковому повідомленні
 
 ---
 
-#### T2: Capacitor boundary tests `Tech` `M`
+#### T2: Capacitor boundary tests `Tech` `M` — ✅ Done
 
-**Scope:** `apps/mobile-shell/tests/boundary.test.ts` (новий файл)
+**Статус:** Shipped — [PR #2538](https://github.com/Skords-01/Sergeant/pull/2538) `c57fad3d`.
 
-**Що:**
+**Scope:** `apps/mobile-shell/src/__tests__/boundary.test.ts` (новий файл, 350 LOC, 23 тести)
 
-```typescript
-describe("Capacitor Boundary Tests", () => {
-  describe("Web Compatibility", () => {
-    it("web bundle loads without errors");
-    it("no unsupported APIs are called");
-    it("service worker registration works");
-  });
-  describe("Native Bridge", () => {
-    it("Filesystem plugin accessible");
-    it("Storage plugin accessible");
-    it("Network plugin accessible");
-  });
-  describe("Deep Links", () => {
-    it("handles sergeant:// scheme");
-    it("handles universal links");
-  });
-});
-```
+**Що:** Web Compatibility (exports, platform detection, no unsupported API leaks), Native Bridge (StatusBar, SplashScreen, Keyboard, App, Preferences, SecureStorage, BarcodeScanner, PushNotifications), Deep Links (custom scheme + universal HTTPS links parsing, XSS sanitization).
 
 **Acceptance:**
 
-- [ ] 10+ boundary tests, CI зелений
-- [ ] `pnpm --filter @sergeant/mobile-shell test` проходить
+- [x] 10+ boundary tests, CI зелений (23 тести)
+- [x] `pnpm --filter @sergeant/mobile-shell test` проходить
 
 ---
 
-#### T3: Великі файли — батч 3 `Tech` `M` ✅ Done
+#### T3: Великі файли — батч 3 `Tech` `M` — ✅ Done
+
+**Статус:** NutritionApp — [`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67); Workouts/LogCard — [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) `2a3d740b`.
 
 **Файли:**
-| Файл | LOC було | LOC зараз | Ціль | Закрито |
-|------|----------|-----------|------|---------|
-| `modules/nutrition/NutritionApp.tsx` | 728 | < 250 | < 250 | [`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) |
-| `modules/fizruk/pages/Workouts.tsx` | 744 | 213 | < 250 | [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) |
-| `modules/nutrition/components/LogCard.tsx` | 736 | 216 | < 250 | [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) |
+| Файл | LOC (було) | LOC (зараз) | Ціль |
+|------|-----------|-----------|------|
+| `modules/fizruk/pages/Workouts.tsx` | 744 | 213 | < 250 |
+| `modules/fizruk/components/LogCard.tsx` | 736 | 216 | < 250 |
+| `modules/nutrition/NutritionApp.tsx` | 728 | — | < 250 |
 
 **Acceptance:**
 
@@ -383,16 +378,18 @@ describe("Capacitor Boundary Tests", () => {
 
 ---
 
-#### T6: Backend dedup `pantry → prompt-builders.ts` `Tech` `S`
+#### T6: Backend dedup `pantry → prompt-builders.ts` `Tech` `S` — ✅ Done
+
+**Статус:** Shipped — [PR #2542](https://github.com/Skords-01/Sergeant/pull/2542) `73edb9cf`.
 
 **Scope:** `apps/server/src/`
 
-**Що:** верифікувати і довершити consolidation `pantry → lib/prompt-builders.ts`. FNV-1a hashing — перевірити `lib/backupKey.ts` на повноту.
+**Що:** `lib/prompt-builders.ts` з `PANTRY_PRESETS` (dayPlan, recipes, weekPlan, shoppingList) + `pantryPromptSection()`. 4 nutrition-модулі мігровані на presets.
 
 **Acceptance:**
 
-- [ ] 0 дублікатів шаблону `pantry → prompt` у `apps/server/src/`
-- [ ] `pnpm --filter @sergeant/server typecheck` без нових помилок
+- [x] 0 дублікатів шаблону `pantry → prompt` у `apps/server/src/`
+- [x] `pnpm --filter @sergeant/server typecheck` без нових помилок
 
 ---
 
@@ -425,12 +422,12 @@ describe("Capacitor Boundary Tests", () => {
 
 ### Технічний борг
 
-| ID  | Задача                                                    | Effort |
-| --- | --------------------------------------------------------- | ------ |
-| T8  | i18n Phase 4+ (після Phase 1-3 shipped)                   | L      |
-| T9  | localStorage allowlist → 0 (cloudSync internals review)   | S      |
-| T10 | `Overview.tsx` (494 LOC → < 250)                          | M      |
-| T11 | DB-persistence pending approvals (Phase 5 multi-operator) | L      |
+| ID      | Задача                                                                                                   | Effort |
+| ------- | -------------------------------------------------------------------------------------------------------- | ------ |
+| T8      | i18n Phase 4+ (після Phase 1-3 shipped)                                                                  | L      |
+| T9      | localStorage allowlist → 0 (cloudSync internals review)                                                  | S      |
+| ~~T10~~ | ~~`Overview.tsx` (494→139 LOC)~~ — ✅ Done ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547)) | ~~M~~  |
+| T11     | DB-persistence pending approvals (Phase 5 multi-operator)                                                | L      |
 
 ---
 
@@ -445,4 +442,4 @@ describe("Capacitor Boundary Tests", () => {
 
 ---
 
-**Документ оновлено 2026-05-11. Активний спринт — Спринт 5. Наступний review — 2026-07-01.**
+**Документ оновлено 2026-05-13. Активний спринт — Спринт 5. Наступний review — 2026-07-01.**
