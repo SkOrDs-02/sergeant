@@ -76,3 +76,5 @@ export { useHaptic } from "./useHaptic";
 export type { UseHapticReturn } from "./useHaptic";
 
 export { useReducedMotion } from "./useReducedMotion";
+
+export { useShortcutGlyph } from "./useShortcutGlyph";
