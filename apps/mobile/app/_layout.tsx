@@ -104,11 +104,15 @@ export default function RootLayout() {
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
+    // Sentry init only — it never touches MMKV. PostHog is delayed
+    // until `bootstrapEncryptedStorage` resolves below (see the next
+    // effect) so `loadOrCreateAnonId` reads / writes its persisted
+    // `distinct_id` through the encrypted MMKV instance rather than
+    // the legacy plaintext one. Initialising PostHog here would race
+    // the encryption swap — and because `initPostHog()` is idempotent
+    // (first call wins), the first write would land on plaintext and
+    // subsequent calls become no-ops.
     initObservability();
-    // Boot PostHog after Sentry — fire-and-forget. Без
-    // `EXPO_PUBLIC_POSTHOG_KEY` це повний no-op (жодного fetch),
-    // тож локальний dev і CI без секрету не платять нічого.
-    void initPostHog();
   }, []);
 
   useEffect(() => {
