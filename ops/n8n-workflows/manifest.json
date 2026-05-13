@@ -126,13 +126,18 @@
       "riskTier": "P2",
       "telegramTopic": "digest",
       "audienceTier": "P2",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_DIGEST"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_DIGEST",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)",
         "Anthropic (x-api-key)"
       ],
-      "notes": "Weekly AI digest; token usage must be monitored before production activation."
+      "notes": "Weekly AI digest; token usage must be monitored before production activation. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=digest, P2) + renders 3-button ack-keyboard."
     },
     "09-habit-streak-alert.json": {
       "owner": "product",
@@ -176,7 +181,7 @@
         "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules."
+      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row with dynamic topic (success→ops/P2, failure→incidents/P1) + renders 3-button ack-keyboard."
     },
     "16-posthog-daily-metrics.json": {
       "owner": "growth",
@@ -189,10 +194,12 @@
         "POSTHOG_API_KEY",
         "POSTHOG_HOST",
         "TELEGRAM_ALERT_CHAT_ID",
-        "TELEGRAM_TOPIC_GROWTH"
+        "TELEGRAM_TOPIC_GROWTH",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily 09:00 Kyiv → PostHog HogQL (count pageviews + uniq distinct_id) for yesterday → Telegram #growth. POSTHOG_HOST defaults to https://eu.i.posthog.com when unset; POSTHOG_API_KEY must be a Personal API key (phx_…) with project read access. Activated by PR-11 (`docs/planning/pr-plan-2026-05.md`); env vars must be set on n8n Railway (Settings → Environment Variables) before flipping the workflow active in the n8n UI. If env is missing the workflow still sends a graceful Telegram alert pointing at the missing config instead of crashing."
+      "notes": "Daily 09:00 Kyiv → PostHog HogQL (count pageviews + uniq distinct_id) for yesterday → Telegram #growth. POSTHOG_HOST defaults to https://eu.i.posthog.com when unset; POSTHOG_API_KEY must be a Personal API key (phx_…) with project read access. Activated by PR-11 (`docs/planning/pr-plan-2026-05.md`); env vars must be set on n8n Railway (Settings → Environment Variables) before flipping the workflow active in the n8n UI. If env is missing the workflow still sends a graceful Telegram alert pointing at the missing config instead of crashing. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=growth, P2) + renders 3-button ack-keyboard."
     },
     "17-github-pr-stale-alert.json": {
       "owner": "devex",
@@ -275,12 +282,17 @@
       "riskTier": "P2",
       "telegramTopic": "digest",
       "audienceTier": "P2",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_DIGEST"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_DIGEST",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "Daily 09:05 Kyiv → SELECT з ai_memories (rolling 24h totals + per-source breakdown + lifetime) → Telegram #digest. Aggregated only, без user_id у тексті. Voyage cost — rough estimate з total chars (chars/4 tokens × $0.02 / 1M). Активуй у self-hosted n8n після того як ingestion-flag-и (наприклад MONO_AI_MEMORY_INGEST_ENABLED) вмикнуть і таблиця почне наповнюватись."
+      "notes": "Daily 09:05 Kyiv → SELECT з ai_memories (rolling 24h totals + per-source breakdown + lifetime) → Telegram #digest. Aggregated only, без user_id у тексті. Voyage cost — rough estimate з total chars (chars/4 tokens × $0.02 / 1M). Активуй у self-hosted n8n після того як ingestion-flag-и (наприклад MONO_AI_MEMORY_INGEST_ENABLED) вмикнуть і таблиця почне наповнюватись. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=digest, P2) + renders 3-button ack-keyboard."
     },
     "60-growth-funnel-snapshot.json": {
       "owner": "growth",
@@ -298,7 +310,7 @@
         "TELEGRAM_TOPIC_GROWTH"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily 02:30 Kyiv → PostHog HogQL count distinct users per funnel step (visit/signup/onboard/first_action/paid) for yesterday → POST /api/internal/growth/funnel (mig 019, growth_funnel_daily) → Telegram summary. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/funnel uses onError=continueRegularOutput so a Telegram alert is always sent. Required PostHog events: $pageview, signup_completed, onboarding_completed, first_action_completed, subscription_started — until instrumented, non-visit steps will read 0."
+      "notes": "Daily 02:30 Kyiv → PostHog HogQL count distinct users per funnel step (visit/signup/onboard/first_action/paid) for yesterday → POST /api/internal/growth/funnel (mig 019, growth_funnel_daily) → Telegram summary. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/funnel uses onError=continueRegularOutput so a Telegram alert is always sent. Required PostHog events: $pageview, signup_completed, onboarding_completed, first_action_completed, subscription_started — until instrumented, non-visit steps will read 0. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=growth, P2) + renders 3-button ack-keyboard."
     },
     "63-growth-acquisition-snapshot.json": {
       "owner": "growth",
@@ -316,7 +328,7 @@
         "TELEGRAM_TOPIC_GROWTH"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily 02:35 Kyiv → PostHog HogQL count signups by ($utm_source, $utm_medium, $utm_campaign) for yesterday → POST /api/internal/growth/acquisition (mig 019, growth_acquisition_daily) → Telegram top-5 channels. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/acquisition uses onError=continueRegularOutput so a Telegram alert is always sent. spendCents/cacCents stay 0/null until ad-platform integration is wired (Google Ads, Meta, etc.)."
+      "notes": "Daily 02:35 Kyiv → PostHog HogQL count signups by ($utm_source, $utm_medium, $utm_campaign) for yesterday → POST /api/internal/growth/acquisition (mig 019, growth_acquisition_daily) → Telegram top-5 channels. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/acquisition uses onError=continueRegularOutput so a Telegram alert is always sent. spendCents/cacCents stay 0/null until ad-platform integration is wired (Google Ads, Meta, etc.). Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=growth, P2) + renders 3-button ack-keyboard."
     },
     "98-error-handler.json": {
       "owner": "ops",
@@ -327,14 +339,16 @@
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "OPS_ALERT_EMAIL",
-        "TELEGRAM_TOPIC_META"
+        "TELEGRAM_TOPIC_META",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
-      "notes": "Global n8n error workflow. Configure as the Error Workflow in n8n settings."
+      "notes": "Global n8n error workflow. Configure as the Error Workflow in n8n settings. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row keyed on (failed_workflow_id, error_signature) so the 30-min SQL cooldown maps 1:1 to one ack-row per failure class (topic=meta, P0) + renders 3-button ack-keyboard. WF-98 has no errorWorkflow of its own — the chained POST /alerts/post cannot loop back."
     },
     "99-heartbeat.json": {
       "owner": "ops",
@@ -345,13 +359,15 @@
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "OPS_ALERT_EMAIL",
-        "TELEGRAM_TOPIC_META"
+        "TELEGRAM_TOPIC_META",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": [
         "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
-      "notes": "n8n liveness heartbeat (every 3 hours) with email fallback."
+      "notes": "n8n liveness heartbeat (every 3 hours) with email fallback. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=meta, P3) per heartbeat tick so /alerts pending and WF-103 see a uniform paper-trail across all 17 wired workflows; Telegram message keeps disable_notification=true and inline-keyboard is informational (operator can dismiss via ✅ Прочитав)."
     },
     "103-alert-escalation-cron.json": {
       "owner": "ops",
