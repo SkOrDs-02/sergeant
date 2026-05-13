@@ -94,6 +94,16 @@ export interface ListGoalsForWeekInput {
   persona?: StrategicGoalPersona;
   founderUserId?: string;
   weekStart: Date | string;
+  /** Опційний status-фільтр. `undefined` = no filter (all statuses). */
+  status?: StrategicGoalStatus;
+}
+
+export interface ListGoalsInput {
+  founderUserId?: string;
+  persona?: StrategicGoalPersona;
+  status?: StrategicGoalStatus;
+  /** Cap on rows returned. Defaults to 50; helper enforces hard cap of 200. */
+  limit?: number;
 }
 
 /**
@@ -266,43 +276,19 @@ export async function listGoalsForWeek(
     if (input.persona !== undefined) assertValidPersona(input.persona);
     const weekStart = toKyivDateString(input.weekStart);
 
-    // 4 fixed-SQL варіанти (per filter-combo) щоб уникнути
+    if (input.status !== undefined) assertValidStatus(input.status);
+
+    // 8 fixed-SQL варіантів (per filter-combo) щоб уникнути
     // dynamic-WHERE template-literal lint warning. Усі identifier
     // fragments — hard-coded; вся variable data — через $-placeholders.
-    let result: { rows: StrategicGoalRow[] };
-    if (input.persona !== undefined && input.founderUserId !== undefined) {
-      result = await pool.query<StrategicGoalRow>(
-        `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
-           FROM strategic_goals
-          WHERE week_start = $1 AND persona = $2 AND founder_user_id = $3
-          ORDER BY persona ASC, created_at ASC`,
-        [weekStart, input.persona, input.founderUserId],
-      );
-    } else if (input.persona !== undefined) {
-      result = await pool.query<StrategicGoalRow>(
-        `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
-           FROM strategic_goals
-          WHERE week_start = $1 AND persona = $2
-          ORDER BY persona ASC, created_at ASC`,
-        [weekStart, input.persona],
-      );
-    } else if (input.founderUserId !== undefined) {
-      result = await pool.query<StrategicGoalRow>(
-        `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
-           FROM strategic_goals
-          WHERE week_start = $1 AND founder_user_id = $2
-          ORDER BY persona ASC, created_at ASC`,
-        [weekStart, input.founderUserId],
-      );
-    } else {
-      result = await pool.query<StrategicGoalRow>(
-        `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
-           FROM strategic_goals
-          WHERE week_start = $1
-          ORDER BY persona ASC, created_at ASC`,
-        [weekStart],
-      );
-    }
+    const result = await runListForWeekQuery(pool, {
+      weekStart,
+      ...(input.persona !== undefined ? { persona: input.persona } : {}),
+      ...(input.founderUserId !== undefined
+        ? { founderUserId: input.founderUserId }
+        : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+    });
     return result.rows.map(rowToGoal);
   } catch (err) {
     logger.error({
@@ -314,6 +300,115 @@ export async function listGoalsForWeek(
       err: err instanceof Error ? err.message : String(err),
     });
     return [];
+  }
+}
+
+/**
+ * SELECT-ить goal за ID. Для UI-feedback-у в `/strategy`-handler-і та
+ * pre-flight check-ів carry/done/abandon (бо endpoint поверне null без
+ * контексту через короткий копі-paste fail-open shape).
+ *
+ * Fail-open: на DB-помилку або no-rows повертає `null`.
+ */
+export async function getGoalById(
+  pool: Pool,
+  id: number,
+): Promise<StrategicGoal | null> {
+  try {
+    const result = await pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE id = $1`,
+      [id],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return rowToGoal(row);
+  } catch (err) {
+    logger.error({
+      msg: "strategic_goals_get_by_id_failed",
+      id,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/**
+ * Читає goals з опційними фільтрами без жорсткої прив`язки до конкретного
+ * `week_start`. Використовується `/strategy list`-командою, яка показує всі active
+ * або всі achieved goals founder-а незалежно від тижня.
+ *
+ * `ORDER BY week_start DESC, persona ASC, created_at ASC` — найсвіжіші тижні
+ * першими. Hard cap `limit` 200 рядків (дефолт 50) щоб UI-payload не розрістався.
+ *
+ * Fail-open: на DB-помилку повертає `[]`.
+ */
+export async function listGoals(
+  pool: Pool,
+  input: ListGoalsInput = {},
+): Promise<StrategicGoal[]> {
+  try {
+    if (input.persona !== undefined) assertValidPersona(input.persona);
+    if (input.status !== undefined) assertValidStatus(input.status);
+    const limit = Math.min(200, Math.max(1, input.limit ?? 50));
+
+    const result = await runListQuery(pool, {
+      ...(input.founderUserId !== undefined
+        ? { founderUserId: input.founderUserId }
+        : {}),
+      ...(input.persona !== undefined ? { persona: input.persona } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+      limit,
+    });
+    return result.rows.map(rowToGoal);
+  } catch (err) {
+    logger.error({
+      msg: "strategic_goals_list_failed",
+      ...(input.persona !== undefined ? { persona: input.persona } : {}),
+      ...(input.founderUserId !== undefined
+        ? { founderUserId: input.founderUserId }
+        : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return [];
+  }
+}
+
+/**
+ * Atomic UPDATE: переносить goal на наступний тиждень (`week_start + 7d`)
+ * і виставляє `status='carried_over'`. Реалізовано як `/strategy carry <id>`.
+ *
+ * Чому single UPDATE, а не INSERT-нового-рядка: зберігаємо ID-посилання
+ * для вже формованих audit / message-history-референсів; founder має
+ * один персистентний ID для трекінгу. `updated_at` бамп-иться trigger-ом.
+ *
+ * Fail-open: на DB-помилку або no-rows повертає `null`.
+ */
+export async function carryGoalToNextWeek(
+  pool: Pool,
+  id: number,
+): Promise<StrategicGoal | null> {
+  try {
+    const result = await pool.query<StrategicGoalRow>(
+      `UPDATE strategic_goals
+          SET week_start = week_start + INTERVAL '7 days',
+              status = 'carried_over'
+        WHERE id = $1
+        RETURNING id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at`,
+      [id],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return rowToGoal(row);
+  } catch (err) {
+    logger.error({
+      msg: "strategic_goals_carry_failed",
+      id,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return null;
   }
 }
 
@@ -365,4 +460,198 @@ export async function createGoalsBatch(
     if (created !== null) out.push(created);
   }
   return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Internal: fixed-SQL helpers for list-queries
+//
+// pg-template-literal lint rule (`no-restricted-syntax` —
+// `pool.query(\`…${…}…\`)`) забороняє динамічну побудову SQL-string-у.
+// Замість того, щоб збирати WHERE через `[...].join(" AND ")`,
+// маємо 2^N fixed-string branch-ів (N = number of optional filters).
+// Усі identifier-fragments — hard-coded; variable data — лише через
+// $-placeholders.
+// ─────────────────────────────────────────────────────────────────────
+
+interface RunListForWeekInput {
+  weekStart: string;
+  persona?: StrategicGoalPersona;
+  founderUserId?: string;
+  status?: StrategicGoalStatus;
+}
+
+async function runListForWeekQuery(
+  pool: Pool,
+  input: RunListForWeekInput,
+): Promise<{ rows: StrategicGoalRow[] }> {
+  const { weekStart, persona, founderUserId, status } = input;
+  if (
+    persona !== undefined &&
+    founderUserId !== undefined &&
+    status !== undefined
+  ) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND persona = $2 AND founder_user_id = $3 AND status = $4
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, persona, founderUserId, status],
+    );
+  }
+  if (persona !== undefined && founderUserId !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND persona = $2 AND founder_user_id = $3
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, persona, founderUserId],
+    );
+  }
+  if (persona !== undefined && status !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND persona = $2 AND status = $3
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, persona, status],
+    );
+  }
+  if (founderUserId !== undefined && status !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND founder_user_id = $2 AND status = $3
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, founderUserId, status],
+    );
+  }
+  if (persona !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND persona = $2
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, persona],
+    );
+  }
+  if (founderUserId !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND founder_user_id = $2
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, founderUserId],
+    );
+  }
+  if (status !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE week_start = $1 AND status = $2
+        ORDER BY persona ASC, created_at ASC`,
+      [weekStart, status],
+    );
+  }
+  return pool.query<StrategicGoalRow>(
+    `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+       FROM strategic_goals
+      WHERE week_start = $1
+      ORDER BY persona ASC, created_at ASC`,
+    [weekStart],
+  );
+}
+
+interface RunListInput {
+  founderUserId?: string;
+  persona?: StrategicGoalPersona;
+  status?: StrategicGoalStatus;
+  limit: number;
+}
+
+async function runListQuery(
+  pool: Pool,
+  input: RunListInput,
+): Promise<{ rows: StrategicGoalRow[] }> {
+  const { founderUserId, persona, status, limit } = input;
+  if (
+    founderUserId !== undefined &&
+    persona !== undefined &&
+    status !== undefined
+  ) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE founder_user_id = $1 AND persona = $2 AND status = $3
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $4`,
+      [founderUserId, persona, status, limit],
+    );
+  }
+  if (founderUserId !== undefined && persona !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE founder_user_id = $1 AND persona = $2
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $3`,
+      [founderUserId, persona, limit],
+    );
+  }
+  if (founderUserId !== undefined && status !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE founder_user_id = $1 AND status = $2
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $3`,
+      [founderUserId, status, limit],
+    );
+  }
+  if (persona !== undefined && status !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE persona = $1 AND status = $2
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $3`,
+      [persona, status, limit],
+    );
+  }
+  if (founderUserId !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE founder_user_id = $1
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $2`,
+      [founderUserId, limit],
+    );
+  }
+  if (persona !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE persona = $1
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $2`,
+      [persona, limit],
+    );
+  }
+  if (status !== undefined) {
+    return pool.query<StrategicGoalRow>(
+      `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+         FROM strategic_goals
+        WHERE status = $1
+        ORDER BY week_start DESC, persona ASC, created_at ASC
+        LIMIT $2`,
+      [status, limit],
+    );
+  }
+  return pool.query<StrategicGoalRow>(
+    `SELECT id, persona, founder_user_id, week_start, goal_text, status, created_at, updated_at
+       FROM strategic_goals
+      ORDER BY week_start DESC, persona ASC, created_at ASC
+      LIMIT $1`,
+    [limit],
+  );
 }
