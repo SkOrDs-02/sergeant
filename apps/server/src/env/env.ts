@@ -342,6 +342,16 @@ const envSchema = z.object({
   // ── AI (Anthropic) ─────────────────────────────────────────────────
   /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */
   ANTHROPIC_API_KEY: stringWithDefault(""),
+  /**
+   * PR-23 — pluggable LLM provider. `anthropic` (default) використовує
+   * `AnthropicProvider`; `stub` повертає hardcoded JSON для read-only
+   * OpenClaw paths-у / e2e-тестів / Anthropic-incident-recovery; `openrouter`
+   * зарезервовано під майбутню імплементацію (поки що деградує у stub).
+   * Wire-up call-sites — окремі PR-24/25.
+   */
+  LLM_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    .default("anthropic"),
   /** AI request timeout (мс). */
   AI_TIMEOUT_MS: intFromEnv(180_000),
   /** Max AI retries on transient errors. */
