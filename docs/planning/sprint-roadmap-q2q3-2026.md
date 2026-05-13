@@ -37,7 +37,7 @@
 | T4  | Bundle size                        | 615 KB (brotli) → 550 KB (brotli)                                          | ⏳ Очікує Sprint 8                                                                                                                                                       |
 | T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | 🚧 First pass shipped (warn-only) — [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml). Tightening → error follow-up.                    |
 | T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ⏳ Очікує Sprint 8                                                                                                                                                       |
-| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | ⏳ Очікує 20-run CI verification                                                                                                                                         |
+| T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | 🚧 Verification job shipped — [`.github/workflows/mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml). Baseline: чекає на перший 20-run pass.     |
 
 ### 1.2. Продуктові задачі (відкриті)
 
@@ -154,11 +154,15 @@
 
 - `apps/mobile/src/core/dashboard/WeeklyDigestFooter.test.tsx`
 - `apps/mobile/src/core/settings/HubSettingsPage.test.tsx`
+- `.github/workflows/mobile-flaky-verify.yml` ← 20-run verification job (workflow_dispatch + weekly cron)
+- `docs/tech-debt/mobile.md § Tests — coverage & flakiness` ← T7 baseline tracker
+- `apps/mobile/AGENTS.md § Surface-specific gotchas` ← flaky-mitigation pattern reference
 
 **Acceptance:**
 
-- [ ] CI mobile job — 100% pass rate за останні 20 run-ів
-- [ ] Якщо flaky — застосувати pattern з `OnboardingWizard` fix (commit `53853e00`)
+- [x] Verification CI job shipped ([`mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml))
+- [ ] 20/20 pass rate за останні 20 run-ів (запустити вручну через Actions → Run workflow)
+- [ ] Якщо flaky — застосувати pattern з `OnboardingWizard` fix (commit [`53853e00`](https://github.com/Skords-01/Sergeant/commit/53853e00)) + лог fail-rate (X/20) у `docs/tech-debt/mobile.md`
 
 ---
 
