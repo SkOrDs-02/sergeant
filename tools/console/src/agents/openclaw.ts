@@ -323,7 +323,7 @@ export const openClawTools: Tool[] = [
   {
     name: "read_telegram_topic_history",
     description:
-      "Read recent messages from a Sergeant Ops supergroup forum topic. Backed by the `tg_topic_archive` table (migration 047), populated by alert posts (n8n) and `post_to_topic` write-tool calls. Manual sends from other accounts are NOT captured.",
+      "Read recent messages from a Sergeant Ops supergroup forum topic. Returns `{topic, topicId, origin, messages:[{id, from, text, date, replyToMessageId, source}], note?, error?}`. Primary source: `tg_topic_archive` (migration 047), populated by alert posts (n8n) and `post_to_topic` write-tool calls. Optionally merges live `getUpdates` payloads when the bot runs in webhook mode (PR-35 / Pain P8). Forbidden / rate-limit failures surface as a structured `error` object, never as a 5xx.",
     input_schema: {
       type: "object",
       properties: {
@@ -338,7 +338,8 @@ export const openClawTools: Tool[] = [
         },
         limit: {
           type: "number",
-          description: "Max messages (default 20, max 100).",
+          description:
+            "Max messages (1..100). Default is the server-side TELEGRAM_TOPIC_HISTORY_LIMIT env var (fallback 100).",
         },
       },
       required: ["topic"],
