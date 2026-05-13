@@ -68,8 +68,14 @@ jobs:
       # project). When absent the workflow gracefully falls back to a
       # migration-only verify (schema integrity without production data).
       - name: Install Railway CLI
+        # NOTE: install.sh has `#!/usr/bin/env bash` shebang and uses bash parameter
+        # substitution (e.g. `${value//pat/repl}` at line 141), so piping it to `sh`
+        # (dash on Ubuntu runners) aborts with `sh: 141: Bad substitution` and the
+        # whole step exits 2. Pipe to `bash` explicitly.
         run: |
-          curl -fsSL https://raw.githubusercontent.com/railwayapp/cli/master/install.sh | sh
+          curl -fsSL https://raw.githubusercontent.com/railwayapp/cli/master/install.sh | bash
+          export PATH="$HOME/.railway/bin:$PATH"
+          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
           railway --version
 
       - name: Pull latest Railway dump
