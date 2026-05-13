@@ -32,10 +32,14 @@ import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
+  createTelegramApiClient,
+  DEFAULT_DEDUP_WINDOW_MS,
   listPendingAlerts,
   markAlertEscalated,
+  postOrEditDedupedAlert,
   recordAlertAck,
   recordAlertPost,
+  type TelegramApiClient,
 } from "../../modules/alerts/index.js";
 import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 
@@ -93,11 +97,52 @@ const EscalateBody = z
   })
   .strict();
 
+// O4 / B.1 — deduped-shipper endpoint. n8n WF callers переходять зі своїх
+// "самостійних sendMessage" на цей endpoint — server сам сенд-ить в Telegram
+// або робить editMessageText, залежно від dedup-матчу в 10-min вікні.
+const SendBody = z
+  .object({
+    alertId: z.string().min(1).max(256),
+    topic: z.string().min(1).max(64),
+    severity: z.enum(SEVERITY_VALUES),
+    summary: z.string().max(4000).optional().nullable(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+    /**
+     * Stable hash for grouping (e.g. "wf-15:railway-deploy-failed:api").
+     * NULL/missing → no dedup, behaves like старий sendMessage.
+     */
+    dedupSignature: z.string().min(1).max(256).optional().nullable(),
+    chatId: z.union([z.number().int(), z.string().min(1).max(64)]),
+    messageThreadId: z.number().int().optional(),
+    text: z.string().min(1).max(4096),
+    disableNotification: z.boolean().optional(),
+    /** Override window. Необов'язково — default 600_000 ms (10 хв). */
+    windowMs: z
+      .number()
+      .int()
+      .min(60_000)
+      .max(24 * 60 * 60_000)
+      .optional(),
+  })
+  .strict();
+
 // ─────────────────────────────────────────────────────────────────────────
 // Router factory
 // ─────────────────────────────────────────────────────────────────────────
 
-export function createAlertsInternalRouter({ pool }: { pool: Pool }): Router {
+export interface CreateAlertsInternalRouterOptions {
+  pool: Pool;
+  /**
+   * Injectable Telegram client. Default — fetch-based client за
+   * `SERGEANT_ALERT_BOT_TOKEN`. Tests передають мок.
+   */
+  telegramClient?: TelegramApiClient | undefined;
+}
+
+export function createAlertsInternalRouter({
+  pool,
+  telegramClient,
+}: CreateAlertsInternalRouterOptions): Router {
   const r = Router();
 
   // ---- post ----
@@ -178,6 +223,61 @@ export function createAlertsInternalRouter({ pool }: { pool: Pool }): Router {
     }),
   );
 
+  // ---- send (O4 / B.1 deduped shipper) ----
+  r.post(
+    "/api/internal/alerts/send",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SendBody, req, res);
+      if (!parsed.ok) return;
+
+      const client = telegramClient ?? defaultAlertBotTelegramClient();
+      if (!client) {
+        res.status(503).json({
+          ok: false,
+          error: "telegram_not_configured",
+          note: "SERGEANT_ALERT_BOT_TOKEN env не виставлений.",
+        });
+        return;
+      }
+
+      const result = await postOrEditDedupedAlert(pool, client, {
+        alertId: parsed.data.alertId,
+        topic: parsed.data.topic,
+        severity: parsed.data.severity,
+        summary: parsed.data.summary ?? null,
+        metadata: parsed.data.metadata,
+        dedupSignature: parsed.data.dedupSignature ?? null,
+        chatId: parsed.data.chatId,
+        messageThreadId: parsed.data.messageThreadId,
+        text: parsed.data.text,
+        disableNotification: parsed.data.disableNotification,
+        windowMs: parsed.data.windowMs ?? DEFAULT_DEDUP_WINDOW_MS,
+      });
+
+      // Дзеркаляться в archive тільки при першому відправленні (аналог логіки
+      // в `/alerts/post`). `edited`/`sent_after_edit_failure`/етц. — вже
+      // відомі алерти, archive-рядок вже є.
+      if (
+        result.action === "sent" &&
+        !result.alreadyPosted &&
+        parsed.data.summary
+      ) {
+        await recordTopicMessage(pool, {
+          topic: parsed.data.topic,
+          text: parsed.data.summary,
+          source: "alert",
+          dedupeKey: parsed.data.alertId,
+          metadata: {
+            severity: parsed.data.severity,
+            ...(parsed.data.metadata ?? {}),
+          },
+        });
+      }
+
+      res.status(result.action === "error" ? 502 : 200).json(result);
+    }),
+  );
+
   // ---- escalate ----
   r.post(
     "/api/internal/alerts/escalate",
@@ -207,4 +307,16 @@ export function createAlertsInternalRouter({ pool }: { pool: Pool }): Router {
   });
 
   return r;
+}
+
+/**
+ * Lazy-construct the default fetch-based Telegram client for the alert
+ * bot. Returns null when the env var is missing — the route surfaces a
+ * 503 in that case. We construct lazily так that boot не падає коли
+ * сервер deploy-ється у середовище без alert-бота (місцевий dev).
+ */
+function defaultAlertBotTelegramClient(): TelegramApiClient | null {
+  const token = process.env["SERGEANT_ALERT_BOT_TOKEN"];
+  if (!token) return null;
+  return createTelegramApiClient(token);
 }

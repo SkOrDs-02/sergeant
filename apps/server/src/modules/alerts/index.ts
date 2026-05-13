@@ -9,6 +9,9 @@ export {
   recordAlertAck,
   markAlertEscalated,
   listPendingAlerts,
+  findRecentDedupMatch,
+  incrementOccurrence,
+  recordTelegramMessage,
 } from "./store.js";
 export type {
   RecordAlertPostInput,
@@ -17,4 +20,22 @@ export type {
   RecordAlertAckResult,
   MarkAlertEscalatedResult,
   ListPendingAlertsFilters,
+  FindRecentDedupMatchInput,
+  IncrementOccurrenceResult,
+  RecordTelegramMessageInput,
 } from "./store.js";
+export {
+  postOrEditDedupedAlert,
+  formatOccurrenceCounterText,
+  createTelegramApiClient,
+  DEFAULT_DEDUP_WINDOW_MS,
+} from "./telegramShipper.js";
+export type {
+  PostOrEditDedupedAlertInput,
+  PostOrEditDedupedAlertResult,
+  TelegramApiClient,
+  TelegramSendMessageInput,
+  TelegramSendMessageOutput,
+  TelegramEditMessageInput,
+  TelegramEditMessageOutput,
+} from "./telegramShipper.js";

@@ -15,11 +15,13 @@ const {
   recordAlertAckMock,
   markAlertEscalatedMock,
   listPendingAlertsMock,
+  postOrEditDedupedAlertMock,
 } = vi.hoisted(() => ({
   recordAlertPostMock: vi.fn(),
   recordAlertAckMock: vi.fn(),
   markAlertEscalatedMock: vi.fn(),
   listPendingAlertsMock: vi.fn(),
+  postOrEditDedupedAlertMock: vi.fn(),
 }));
 
 vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
@@ -31,10 +33,13 @@ vi.mock("../../modules/alerts/index.js", async (importOriginal) => {
     recordAlertAck: recordAlertAckMock,
     markAlertEscalated: markAlertEscalatedMock,
     listPendingAlerts: listPendingAlertsMock,
+    postOrEditDedupedAlert: postOrEditDedupedAlertMock,
   };
 });
 
-async function makeApp() {
+async function makeApp(options?: {
+  telegramClient?: import("../../modules/alerts/index.js").TelegramApiClient;
+}) {
   const { createAlertsInternalRouter } = await import("./alerts.js");
   const app = express();
   app.use(express.json());
@@ -44,9 +49,19 @@ async function makeApp() {
   app.use(
     createAlertsInternalRouter({
       pool: { query: vi.fn().mockResolvedValue({ rows: [] }) } as never,
+      ...(options?.telegramClient !== undefined && {
+        telegramClient: options.telegramClient,
+      }),
     }),
   );
   return app;
+}
+
+function noopTelegramClient(): import("../../modules/alerts/index.js").TelegramApiClient {
+  return {
+    sendMessage: vi.fn().mockResolvedValue({ ok: true, messageId: 1 }),
+    editMessageText: vi.fn().mockResolvedValue({ ok: true }),
+  } as unknown as import("../../modules/alerts/index.js").TelegramApiClient;
 }
 
 describe("/api/internal/alerts/post", () => {
@@ -266,5 +281,118 @@ describe("/api/internal/alerts/escalate", () => {
       .post("/api/internal/alerts/escalate")
       .send({ alertId: "ghost" });
     expect(res.status).toBe(404);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// /api/internal/alerts/send (O4 / B.1 deduped shipper)
+// ──────────────────────────────────────────────────────────────────────
+
+describe("/api/internal/alerts/send", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("503 when SERGEANT_ALERT_BOT_TOKEN не виставлений і клієнт не переданий", async () => {
+    const prev = process.env["SERGEANT_ALERT_BOT_TOKEN"];
+    delete process.env["SERGEANT_ALERT_BOT_TOKEN"];
+    try {
+      const app = await makeApp();
+      const res = await request(app).post("/api/internal/alerts/send").send({
+        alertId: "wf-15:42",
+        topic: "incidents",
+        severity: "P1",
+        text: "⚠️ boom",
+        chatId: -1001,
+      });
+      expect(res.status).toBe(503);
+      expect(res.body.error).toBe("telegram_not_configured");
+    } finally {
+      if (prev !== undefined) {
+        process.env["SERGEANT_ALERT_BOT_TOKEN"] = prev;
+      }
+    }
+  });
+
+  it("forwards parameters to postOrEditDedupedAlert and returns result", async () => {
+    postOrEditDedupedAlertMock.mockResolvedValueOnce({
+      action: "sent",
+      alertId: "wf-15:42",
+      messageId: 99,
+      occurrenceCount: 1,
+      alreadyPosted: false,
+    });
+
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "wf-15:42",
+      topic: "incidents",
+      severity: "P1",
+      dedupSignature: "wf-15:boom",
+      chatId: -1001,
+      messageThreadId: 3,
+      text: "⚠️ boom",
+      summary: "WF-15 boom",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      action: "sent",
+      alertId: "wf-15:42",
+      messageId: 99,
+      occurrenceCount: 1,
+      alreadyPosted: false,
+    });
+
+    const call = postOrEditDedupedAlertMock.mock.calls[0]!;
+    const input = call[2] as Record<string, unknown>;
+    expect(input).toMatchObject({
+      alertId: "wf-15:42",
+      topic: "incidents",
+      severity: "P1",
+      dedupSignature: "wf-15:boom",
+      chatId: -1001,
+      messageThreadId: 3,
+      text: "⚠️ boom",
+      windowMs: 600_000,
+    });
+  });
+
+  it("returns 502 on action=error", async () => {
+    postOrEditDedupedAlertMock.mockResolvedValueOnce({
+      action: "error",
+      reason: "Bad Gateway",
+    });
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "wf-15:42",
+      topic: "incidents",
+      severity: "P1",
+      chatId: -1001,
+      text: "⚠️ boom",
+    });
+    expect(res.status).toBe(502);
+    expect(res.body.reason).toBe("Bad Gateway");
+  });
+
+  it("rejects missing required fields via Zod (.strict)", async () => {
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "wf-15:42",
+      // missing topic, severity, text, chatId
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("clamps windowMs to safe range", async () => {
+    const app = await makeApp({ telegramClient: noopTelegramClient() });
+    const res = await request(app).post("/api/internal/alerts/send").send({
+      alertId: "x",
+      topic: "incidents",
+      severity: "P1",
+      chatId: -1,
+      text: "x",
+      windowMs: 500, // < 60_000 мінімум
+    });
+    expect(res.status).toBe(400);
   });
 });

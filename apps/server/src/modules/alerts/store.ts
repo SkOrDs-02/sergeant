@@ -251,7 +251,9 @@ export async function listPendingAlerts(
   const result = await pool.query(
     `SELECT id, posted_at, alert_id, topic, severity, summary,
             ack_at, ack_by_tg_user_id, ack_action,
-            escalated_at, metadata
+            escalated_at, metadata,
+            dedup_signature, occurrence_count, last_occurrence_at,
+            telegram_chat_id, telegram_message_id
        FROM tg_alert_acks
       WHERE ${conditions.join(" AND ")}
       ORDER BY posted_at DESC
@@ -259,23 +261,176 @@ export async function listPendingAlerts(
     params,
   );
 
-  return result.rows.map((r) => ({
-    id: Number(r.id),
+  return result.rows.map(mapRowToRecord);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// findRecentDedupMatch / incrementOccurrence / recordTelegramMessage
+// (O4 / B.1 — sprint-roadmap §1.2, telegram-improvements-roadmap §4.2)
+// ──────────────────────────────────────────────────────────────────────
+
+export interface FindRecentDedupMatchInput {
+  topic: string;
+  dedupSignature: string;
+  /** Lookback window in milliseconds (10 хв = 600_000 default). */
+  windowMs: number;
+}
+
+/**
+ * Returns the most recent `tg_alert_acks` row matching `(topic,
+ * dedup_signature)` that fired within the last `windowMs`, or `null`.
+ *
+ * “Fresh” визначається як `last_occurrence_at >= NOW() - windowMs`. Беремо
+ * `last_occurrence_at`, а не `posted_at`, бо вікно має sliding-поведінку:
+ * кожний occurrence подовжує життя групи. Якщо 10 хв без нового дубля —
+ * наступний alert піде окремим рядком.
+ *
+ * NULL-якщо матч не знайдено — калер повинен викликати `recordAlertPost`
+ * як для нової групи.
+ */
+export async function findRecentDedupMatch(
+  pool: Pool,
+  input: FindRecentDedupMatchInput,
+): Promise<TgAlertAckRecord | null> {
+  const result = await pool.query(
+    `SELECT id, posted_at, alert_id, topic, severity, summary,
+            ack_at, ack_by_tg_user_id, ack_action,
+            escalated_at, metadata,
+            dedup_signature, occurrence_count, last_occurrence_at,
+            telegram_chat_id, telegram_message_id
+       FROM tg_alert_acks
+      WHERE topic = $1
+        AND dedup_signature = $2
+        AND last_occurrence_at IS NOT NULL
+        AND last_occurrence_at >= NOW() - make_interval(secs => $3::double precision)
+      ORDER BY last_occurrence_at DESC
+      LIMIT 1`,
+    [input.topic, input.dedupSignature, input.windowMs / 1000],
+  );
+  if (!result.rowCount || !result.rows[0]) return null;
+  return mapRowToRecord(result.rows[0]);
+}
+
+export interface IncrementOccurrenceResult {
+  /** Новий occurrence_count після інкременту. */
+  occurrenceCount: number;
+  /** Новий `last_occurrence_at` (ISO-8601). */
+  lastOccurrenceAt: string;
+}
+
+/**
+ * Атомарно інкрементує `occurrence_count` і виставляє `last_occurrence_at
+ * = NOW()` для рядка з даним id. Повертає новий лічильник + час, щоб
+ * caller міг скласти новий message-text для editMessageText.
+ *
+ * Race-safe навіть під concurrent calls для одного id: SQL UPDATE з
+ * `occurrence_count = occurrence_count + 1` атомарний на row-level lock
+ * (без потреби у SELECT … FOR UPDATE).
+ *
+ * Якщо рядок не знайдено (race з видаленням, тощо) — повертає NaN-
+ * лічильник + порожній рядок як guard-value, caller має fallback на
+ * full sendMessage.
+ */
+export async function incrementOccurrence(
+  pool: Pool,
+  id: number,
+): Promise<IncrementOccurrenceResult> {
+  const result = await pool.query<{
+    occurrence_count: number;
+    last_occurrence_at: Date | string;
+  }>(
+    `UPDATE tg_alert_acks
+        SET occurrence_count = occurrence_count + 1,
+            last_occurrence_at = NOW()
+      WHERE id = $1
+      RETURNING occurrence_count, last_occurrence_at`,
+    [id],
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return { occurrenceCount: Number.NaN, lastOccurrenceAt: "" };
+  }
+  return {
+    occurrenceCount: Number(row.occurrence_count),
+    lastOccurrenceAt:
+      row.last_occurrence_at instanceof Date
+        ? row.last_occurrence_at.toISOString()
+        : String(row.last_occurrence_at),
+  };
+}
+
+export interface RecordTelegramMessageInput {
+  alertId: string;
+  telegramChatId: number;
+  telegramMessageId: number;
+}
+
+/**
+ * Записує `(chat_id, message_id)` відправленого в Telegram повідомлення в row
+ * `tg_alert_acks` за `alert_id`. Також виставляє `last_occurrence_at = NOW()`
+ * якщо воно ще не виставлене — це відбьє слайдинг-вікно від першого сенд-у.
+ *
+ * Ідемпотентно: записуємо тільки якщо `telegram_message_id IS NULL` —
+ * якщо n8n ретрайить send-ї і записує двічі, перший message_id перемагає
+ * (editMessageText потім буде для першого, а друге повідомлення вже stale).
+ */
+export async function recordTelegramMessage(
+  pool: Pool,
+  input: RecordTelegramMessageInput,
+): Promise<{ ok: boolean }> {
+  const result = await pool.query<{ id: string }>(
+    `UPDATE tg_alert_acks
+        SET telegram_chat_id = $2,
+            telegram_message_id = $3,
+            last_occurrence_at = COALESCE(last_occurrence_at, NOW())
+      WHERE alert_id = $1
+        AND telegram_message_id IS NULL
+      RETURNING id`,
+    [input.alertId, input.telegramChatId, input.telegramMessageId],
+  );
+  return { ok: Boolean(result.rowCount && result.rows[0]) };
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// row → record mapping helper (shared by listPendingAlerts +
+// findRecentDedupMatch)
+// ──────────────────────────────────────────────────────────────────────
+
+function mapRowToRecord(r: Record<string, unknown>): TgAlertAckRecord {
+  return {
+    id: Number(r["id"]),
     posted_at:
-      r.posted_at instanceof Date ? r.posted_at.toISOString() : r.posted_at,
-    alert_id: String(r.alert_id),
-    topic: String(r.topic),
-    severity: r.severity as TgAlertSeverity,
-    summary: r.summary,
+      r["posted_at"] instanceof Date
+        ? r["posted_at"].toISOString()
+        : String(r["posted_at"]),
+    alert_id: String(r["alert_id"]),
+    topic: String(r["topic"]),
+    severity: r["severity"] as TgAlertSeverity,
+    summary: (r["summary"] as string | null) ?? null,
     ack_at:
-      r.ack_at instanceof Date ? r.ack_at.toISOString() : (r.ack_at ?? null),
+      r["ack_at"] instanceof Date
+        ? r["ack_at"].toISOString()
+        : ((r["ack_at"] as string | null) ?? null),
     ack_by_tg_user_id:
-      r.ack_by_tg_user_id == null ? null : Number(r.ack_by_tg_user_id),
-    ack_action: r.ack_action as TgAlertAckAction | null,
+      r["ack_by_tg_user_id"] == null ? null : Number(r["ack_by_tg_user_id"]),
+    ack_action: r["ack_action"] as TgAlertAckAction | null,
     escalated_at:
-      r.escalated_at instanceof Date
-        ? r.escalated_at.toISOString()
-        : (r.escalated_at ?? null),
-    metadata: r.metadata ?? {},
-  }));
+      r["escalated_at"] instanceof Date
+        ? r["escalated_at"].toISOString()
+        : ((r["escalated_at"] as string | null) ?? null),
+    metadata: (r["metadata"] as Record<string, unknown> | null) ?? {},
+    dedup_signature: (r["dedup_signature"] as string | null) ?? null,
+    occurrence_count:
+      r["occurrence_count"] == null ? 1 : Number(r["occurrence_count"]),
+    last_occurrence_at:
+      r["last_occurrence_at"] instanceof Date
+        ? r["last_occurrence_at"].toISOString()
+        : ((r["last_occurrence_at"] as string | null) ?? null),
+    telegram_chat_id:
+      r["telegram_chat_id"] == null ? null : Number(r["telegram_chat_id"]),
+    telegram_message_id:
+      r["telegram_message_id"] == null
+        ? null
+        : Number(r["telegram_message_id"]),
+  };
 }

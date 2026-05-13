@@ -7,10 +7,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 
 import {
+  findRecentDedupMatch,
+  incrementOccurrence,
   listPendingAlerts,
   markAlertEscalated,
   recordAlertAck,
   recordAlertPost,
+  recordTelegramMessage,
 } from "./store.js";
 
 interface MockPool {
@@ -228,6 +231,158 @@ describe("listPendingAlerts", () => {
       ack_action: null,
       escalated_at: null,
       metadata: { exec: 1 },
+      // O4 / B.1 dedup fields default to null/1 when the DB row was
+      // inserted without a `dedup_signature` (legacy path).
+      dedup_signature: null,
+      occurrence_count: 1,
+      last_occurrence_at: null,
+      telegram_chat_id: null,
+      telegram_message_id: null,
     });
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// O4 / B.1 — alert dedup / occurrence-counter
+// ──────────────────────────────────────────────────────────────────────
+
+describe("findRecentDedupMatch", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("returns null when no row matches in the window", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    const result = await findRecentDedupMatch(pool as unknown as Pool, {
+      topic: "incidents",
+      dedupSignature: "wf-15:railway-deploy-failed",
+      windowMs: 600_000,
+    });
+    expect(result).toBeNull();
+  });
+
+  it("binds windowMs as seconds (double precision) for make_interval", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    await findRecentDedupMatch(pool as unknown as Pool, {
+      topic: "incidents",
+      dedupSignature: "sig-a",
+      windowMs: 600_000,
+    });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("make_interval(secs => $3::double precision)");
+    expect(sql).toContain("last_occurrence_at IS NOT NULL");
+    expect(sql).toContain("ORDER BY last_occurrence_at DESC");
+    expect(params).toEqual(["incidents", "sig-a", 600]);
+  });
+
+  it("returns mapped record with dedup fields when match found", async () => {
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          id: "77",
+          posted_at: new Date("2026-05-13T10:00:00Z"),
+          alert_id: "wf-15:exec-1",
+          topic: "incidents",
+          severity: "P1",
+          summary: "boom",
+          ack_at: null,
+          ack_by_tg_user_id: null,
+          ack_action: null,
+          escalated_at: null,
+          metadata: {},
+          dedup_signature: "wf-15:boom",
+          occurrence_count: 3,
+          last_occurrence_at: new Date("2026-05-13T10:08:00Z"),
+          telegram_chat_id: "-1001234567890",
+          telegram_message_id: "99",
+        },
+      ],
+    });
+    const result = await findRecentDedupMatch(pool as unknown as Pool, {
+      topic: "incidents",
+      dedupSignature: "wf-15:boom",
+      windowMs: 600_000,
+    });
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe(77);
+    expect(result!.occurrence_count).toBe(3);
+    expect(result!.dedup_signature).toBe("wf-15:boom");
+    // BIGINT coercion to number per server-api SKILL hard rule.
+    expect(result!.telegram_chat_id).toBe(-1001234567890);
+    expect(result!.telegram_message_id).toBe(99);
+    expect(result!.last_occurrence_at).toBe("2026-05-13T10:08:00.000Z");
+  });
+});
+
+describe("incrementOccurrence", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("atomically increments occurrence_count and bumps last_occurrence_at", async () => {
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          occurrence_count: 5,
+          last_occurrence_at: new Date("2026-05-13T10:09:00Z"),
+        },
+      ],
+    });
+    const result = await incrementOccurrence(pool as unknown as Pool, 42);
+    expect(result).toEqual({
+      occurrenceCount: 5,
+      lastOccurrenceAt: "2026-05-13T10:09:00.000Z",
+    });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("occurrence_count = occurrence_count + 1");
+    expect(sql).toContain("last_occurrence_at = NOW()");
+    expect(sql).toContain("WHERE id = $1");
+    expect(params).toEqual([42]);
+  });
+
+  it("returns NaN guard-value when row not found (race scenario)", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    const result = await incrementOccurrence(pool as unknown as Pool, 999);
+    expect(Number.isNaN(result.occurrenceCount)).toBe(true);
+    expect(result.lastOccurrenceAt).toBe("");
+  });
+});
+
+describe("recordTelegramMessage", () => {
+  let pool: MockPool;
+  beforeEach(() => {
+    pool = makePool();
+  });
+
+  it("sets telegram_chat_id + telegram_message_id and ok=true on success", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: "42" }] });
+    const result = await recordTelegramMessage(pool as unknown as Pool, {
+      alertId: "wf-15:1",
+      telegramChatId: -1001234567890,
+      telegramMessageId: 99,
+    });
+    expect(result).toEqual({ ok: true });
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("telegram_chat_id = $2");
+    expect(sql).toContain("telegram_message_id = $3");
+    expect(sql).toContain(
+      "last_occurrence_at = COALESCE(last_occurrence_at, NOW())",
+    );
+    expect(sql).toContain("telegram_message_id IS NULL");
+    expect(params).toEqual(["wf-15:1", -1001234567890, 99]);
+  });
+
+  it("returns ok=false when row already had message_id (n8n retry race)", async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    const result = await recordTelegramMessage(pool as unknown as Pool, {
+      alertId: "wf-15:1",
+      telegramChatId: -1,
+      telegramMessageId: 1,
+    });
+    expect(result).toEqual({ ok: false });
   });
 });

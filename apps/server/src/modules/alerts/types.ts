@@ -39,4 +39,14 @@ export interface TgAlertAckRecord {
   ack_action: TgAlertAckAction | null;
   escalated_at: string | null;
   metadata: Record<string, unknown>;
+  /**
+   * O4 / B.1 dedup columns (migration 060). NULL → legacy alert posted
+   * without a dedup_signature. `occurrence_count` defaults to 1 (not
+   * NULL) — the row itself is one occurrence.
+   */
+  dedup_signature: string | null;
+  occurrence_count: number;
+  last_occurrence_at: string | null;
+  telegram_chat_id: number | null;
+  telegram_message_id: number | null;
 }
