@@ -366,11 +366,11 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../apps/web/middlew
 - `VITE_POSTHOG_KEY=phc_…` — Project API Key з PostHog. Public — можна тримати у клієнтському бандлі. Без ключа PostHog SDK не підтягується, трекінг залишається тільки у локальному ring-buffer (`hub_analytics_log_v1`).
 - `VITE_POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, GDPR-friendly). Для US-регіону: `https://us.i.posthog.com`.
 
-### Server-side (GDPR cleanup)
+### Server-side (GDPR cleanup + n8n WF-16/60/63)
 
-[ADR-0016 §6.3](../adr/0016-user-deletion-and-pii-handling.md).
+[ADR-0016 §6.3](../adr/0016-user-deletion-and-pii-handling.md). Цей же триплет змінних читають n8n PostHog-workflow-и (`ops/n8n-workflows/16-posthog-daily-metrics.json`, `60-growth-funnel-snapshot.json`, `63-growth-acquisition-snapshot.json`) — вони мають бути виставлені на n8n Railway (Settings → Environment Variables), а не лише на API-service.
 
-- `POSTHOG_API_KEY=phx_…` — Personal API key із project-scope доступом до `persons` (write). Використовується в `deletePostHogPerson(userId)` із cleanup-черги при hard-delete акаунта. Без ключа cleanup-job скіпає PostHog (outcome=skipped) — рекомендовано виставити у production.
+- `POSTHOG_API_KEY=phx_…` — Personal API key із project-scope доступом (scopes: `project:read`, `query:read` для n8n HogQL, `persons:write` для GDPR cleanup). Використовується в `deletePostHogPerson(userId)` із cleanup-черги при hard-delete акаунта та у WF-16 HogQL daily query. Без ключа cleanup-job + n8n повертають `outcome: "skipped"` / graceful Telegram alert — рекомендовано виставити у production.
 - `POSTHOG_PROJECT_ID=12345` — числовий ID проєкту (Settings → Project → ID).
 - `POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, парний до `VITE_POSTHOG_HOST`).
 
