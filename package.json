@@ -58,6 +58,7 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @sergeant/server db:migrate",
     "dev:db": "pnpm db:up && pnpm db:migrate",
+    "replay:webhook": "node scripts/replay-webhook.mjs",
     "licenses:gen": "node scripts/generate-licenses.mjs",
     "licenses:check": "node scripts/generate-licenses.mjs check",
     "strict:coverage": "node scripts/strict-coverage.mjs",

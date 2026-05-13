@@ -251,3 +251,25 @@ export {
   ScreenReaderAnnouncerProvider,
   useAnnounce,
 } from "./ScreenReaderAnnouncer";
+
+export { DropdownMenu } from "./DropdownMenu";
+export type {
+  DropdownMenuEntry,
+  DropdownMenuHandle,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPlacement,
+  DropdownMenuProps,
+  DropdownMenuSeparator,
+  DropdownMenuSubmenuEntry,
+} from "./DropdownMenu";
+
+export {
+  CommandPalette,
+  CommandPaletteProvider,
+  useCommandPalette,
+  useCommandPaletteControls,
+  useCommandPaletteHotkey,
+  useRegisterCommand,
+} from "./CommandPalette";
+export type { PaletteCommand } from "./CommandPalette";

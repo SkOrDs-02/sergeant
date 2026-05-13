@@ -757,6 +757,16 @@ const envSchema = z.object({
   N8N_API_URL: stringWithDefault(""),
   /** n8n personal API key sent as `X-N8N-API-KEY` header. */
   N8N_API_KEY: stringWithDefault(""),
+  /**
+   * Base URL n8n-інстансу для webhook-replay-у (PR-29). Replay-CLI /
+   * admin-API формує `${N8N_WEBHOOK_BASE_URL}/webhook/{path}` коли
+   * re-POST-ить збережений payload з `n8n_webhook_events`. Окрема env
+   * від `N8N_API_URL` бо n8n cloud-tier-и часом виставляють webhook-и
+   * на окремому домені (`webhook-{tenant}.n8n.cloud` vs
+   * `api-{tenant}.n8n.cloud`). Empty → replay-API повертає 503
+   * `not_configured`. Trailing-slash optional (helper-strip-ить).
+   */
+  N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
   // ── PR-C1b — SEO env-stubs (graceful fallback) ─────────────────────
   /** Google PageSpeed Insights API key. Empty → seo_psi_audit повертає `not_configured`. */
@@ -973,6 +983,36 @@ export function assertStartupEnv(): void {
     warnings.push(
       "METRICS_TOKEN is not set — /metrics endpoint is unprotected.",
     );
+  }
+
+  // T2 audit finding #6 — `BETTER_AUTH_URL` / `PUBLIC_API_BASE_URL`
+  // scheme is never validated as HTTPS in production. Better Auth only
+  // sets the `Secure` cookie flag + `SameSite=None` when the base URL
+  // `startsWith('https://')`, so a misconfigured deploy
+  // (`http://api.example.com`, a copy-paste from staging, a local
+  // tunnel URL) silently drops the Secure flag and ships session cookies
+  // over plaintext HTTP — exposing them to passive sniffers on the
+  // path and breaking the cross-site-cookie contract. Hard-fail at boot
+  // so the misconfig surfaces immediately. Localhost stays exempt
+  // (the schema accepts http://localhost for dev parity).
+  if (isProduction) {
+    const insecureUrls: string[] = [];
+    if (env.BETTER_AUTH_URL && !env.BETTER_AUTH_URL.startsWith("https://")) {
+      insecureUrls.push(`BETTER_AUTH_URL=${env.BETTER_AUTH_URL}`);
+    }
+    if (
+      env.PUBLIC_API_BASE_URL &&
+      !env.PUBLIC_API_BASE_URL.startsWith("https://")
+    ) {
+      insecureUrls.push(`PUBLIC_API_BASE_URL=${env.PUBLIC_API_BASE_URL}`);
+    }
+    if (insecureUrls.length > 0) {
+      throw new Error(
+        `Production deploys must use HTTPS for public URLs. Insecure values detected: ${insecureUrls.join(
+          ", ",
+        )}. Better Auth requires \`https://\` to set Secure / SameSite=None on session cookies; an HTTP base URL silently ships cookies plaintext.`,
+      );
+    }
   }
 
   if (isProduction && !env.NUTRITION_BACKUP_KEY_SECRET) {

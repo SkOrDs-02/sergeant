@@ -26,6 +26,7 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
+import { env } from "../../env.js";
 import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
@@ -34,6 +35,14 @@ import {
   PayloadTooLargeError,
   recordWebhookEvent,
 } from "../../modules/webhooks/recordWebhookEvent.js";
+import {
+  listReplayableEvents,
+  replayWebhookEvent,
+  REPLAYABLE_WORKFLOW_IDS,
+  ReplayHttpError,
+  UnknownWorkflowError,
+  type ReplayableEvent,
+} from "../../modules/webhooks/replayWebhookEvent.js";
 
 const RecordBody = z
   .object({
@@ -48,6 +57,25 @@ const RecordBody = z
         z.union([z.string(), z.array(z.string()), z.undefined()]),
       )
       .optional(),
+  })
+  .strict();
+
+/**
+ * PR-29 — schema для `POST /api/internal/webhook-events/replay`.
+ *
+ * - `eventIds` точкове — за списком ID-ями (mutually exclusive з `since`,
+ *   але формально не вимагаємо: коли обидва — `eventIds` precedence).
+ * - `since` — ISO datetime; події `received_at >= since`.
+ * - Default — events за останні 24h по workflow-id-у.
+ * - `dryRun` default `true` (safety-first); CLI має явно передати `false`.
+ */
+const ReplayBody = z
+  .object({
+    workflowId: z.string().min(1).max(128),
+    eventIds: z.array(z.number().int().positive()).optional(),
+    since: z.string().datetime().optional(),
+    limit: z.number().int().positive().max(1000).optional(),
+    dryRun: z.boolean().optional().default(true),
   })
   .strict();
 
@@ -94,6 +122,146 @@ export function createWebhookEventsInternalRouter({
         }
         throw err;
       }
+    }),
+  );
+
+  r.post(
+    "/api/internal/webhook-events/replay",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ReplayBody, req, res);
+      if (!parsed.ok) return;
+
+      const { workflowId, eventIds, since, limit, dryRun } = parsed.data;
+
+      // Fail-fast якщо n8n webhook host не сконфігуровано — execute-режим
+      // не зможе зробити жодного запиту. Dry-run все одно дозволяємо
+      // (operator може запланувати replay перед налаштуванням host-а).
+      if (!dryRun && !env.N8N_WEBHOOK_BASE_URL) {
+        res.status(503).json({
+          error: "not_configured",
+          message:
+            "N8N_WEBHOOK_BASE_URL не виставлений; execute-replay недоступний. Передайте dryRun=true для перегляду кандидатів.",
+        });
+        return;
+      }
+
+      let candidates: ReplayableEvent[];
+      try {
+        candidates = await listReplayableEvents(pool, {
+          workflowId,
+          ...(eventIds && eventIds.length > 0 ? { eventIds } : {}),
+          ...(since ? { since: new Date(since) } : {}),
+          ...(limit !== undefined ? { limit } : {}),
+        });
+      } catch (err) {
+        if (err instanceof UnknownWorkflowError) {
+          res.status(400).json({
+            error: err.code,
+            message: err.message,
+            allowedWorkflowIds: REPLAYABLE_WORKFLOW_IDS,
+          });
+          return;
+        }
+        throw err;
+      }
+
+      const plan = candidates.map((c) => ({
+        id: c.id,
+        workflowId: c.workflowId,
+        source: c.source,
+        receivedAt: c.receivedAt.toISOString(),
+        processedAt: c.processedAt ? c.processedAt.toISOString() : null,
+        replayCount: c.replayCount,
+        lastReplayedAt: c.lastReplayedAt
+          ? c.lastReplayedAt.toISOString()
+          : null,
+      }));
+
+      if (dryRun) {
+        res.json({
+          ok: true,
+          dryRun: true,
+          workflowId,
+          count: plan.length,
+          events: plan,
+        });
+        return;
+      }
+
+      // Execute-режим — fail-soft per-event.
+      type ReplayOutcome =
+        | { id: number; ok: true; status: number; replayCount: number }
+        | { id: number; ok: false; code: string; message: string };
+
+      const outcomes: ReplayOutcome[] = [];
+      let successes = 0;
+      for (const event of candidates) {
+        try {
+          const out = await replayWebhookEvent(pool, {
+            event,
+            n8nWebhookBaseUrl: env.N8N_WEBHOOK_BASE_URL,
+          });
+          outcomes.push({
+            id: out.id,
+            ok: true,
+            status: out.status,
+            replayCount: out.replayCount,
+          });
+          successes += 1;
+        } catch (err) {
+          if (err instanceof ReplayHttpError) {
+            outcomes.push({
+              id: event.id,
+              ok: false,
+              code: err.code,
+              message: `HTTP ${err.status}: ${err.body.slice(0, 200)}`,
+            });
+            continue;
+          }
+          if (err instanceof UnknownWorkflowError) {
+            outcomes.push({
+              id: event.id,
+              ok: false,
+              code: err.code,
+              message: err.message,
+            });
+            continue;
+          }
+          // Mережеві / DOMException AbortError / unexpected — fail-soft
+          // на event-рівні, інші event-и продовжують.
+          const message = err instanceof Error ? err.message : String(err);
+          logger.warn({
+            msg: "webhook_events_replay_event_failed",
+            eventId: event.id,
+            workflowId,
+            err: message,
+          });
+          outcomes.push({
+            id: event.id,
+            ok: false,
+            code: "REPLAY_FAILED",
+            message,
+          });
+        }
+      }
+
+      logger.info({
+        msg: "webhook_events_replay_completed",
+        workflowId,
+        total: candidates.length,
+        successes,
+        failures: candidates.length - successes,
+      });
+
+      res.json({
+        ok: true,
+        dryRun: false,
+        workflowId,
+        total: candidates.length,
+        successes,
+        failures: candidates.length - successes,
+        outcomes,
+      });
     }),
   );
 

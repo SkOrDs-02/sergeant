@@ -15,13 +15,24 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Scope of v1 (PR-42):** 3 of 5 consumer interactions are
-// fully-verified via supertest replay (me / mono accounts / push
-// register-ios). The 2 AI-flow endpoints (`/api/v1/chat`,
-// `/api/v1/nutrition/analyze-photo`) are covered by the consumer pact
-// but skipped on the provider side here because their handler chains
-// require Anthropic + AI-quota stubs that are already covered by
-// dedicated tests in `apps/server/src/modules/chat/*.test.ts` and
+// **Coverage:** the pact file has 10 consumer interactions (5 from
+// PR-42, 5 added by the persona-extend PR). Of those, 8 are
+// fully-verified here via supertest replay against `createApp()`:
+//
+//   - GET  /api/v1/me                       (hub persona)
+//   - GET  /api/v1/mono/accounts             (finyk persona, bigint coercion)
+//   - GET  /api/v1/mono/sync-state           (finyk persona, NEW)
+//   - GET  /api/v1/mono/transactions         (finyk persona, bigint coercion, NEW)
+//   - GET  /api/v1/coach/memory              (hub persona, NEW)
+//   - GET  /api/v1/barcode                   (nutrition persona, NEW)
+//   - POST /api/v1/push/register             (fizruk persona, ios sibling)
+//   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed, NEW)
+//
+// The remaining 2 (`/api/v1/chat`, `/api/v1/nutrition/analyze-photo`)
+// are covered by the consumer pact but skipped on the provider side
+// here because their handler chains require streaming or vision
+// Anthropic stubs that are already covered by dedicated tests in
+// `apps/server/src/modules/chat/*.test.ts` and
 // `apps/server/src/modules/nutrition/*.test.ts`. See
 // `docs/architecture/api-contracts.md § Extending coverage`.
 
@@ -34,6 +45,13 @@ import request from "supertest";
 // ── Mocks (must be hoisted ABOVE `import { createApp }`) ─────────────────────
 
 const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
+  // Some handlers (`/api/mono/sync-state`, anything gated by the
+  // Anthropic stack) read env vars at MODULE-LOAD time, not per-request.
+  // Set them here so the imports below see a consistent configuration.
+  process.env["MONO_WEBHOOK_ENABLED"] = "true";
+  process.env["ANTHROPIC_API_KEY"] = "sk-pact-replay";
+  process.env["AI_QUOTA_DISABLED"] = "true";
+
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
   const mockPool = {
     query: queryMock,
@@ -75,7 +93,23 @@ vi.mock("./../../http/rateLimit.js", async () => {
   };
 });
 
+// Anthropic handle for the day-plan replay. Reuses the shared mock
+// harness (`apps/server/src/test/__mocks__/anthropic.ts`) — same shape
+// every other handler test uses — so the day-plan handler's call to
+// `anthropicMessages` returns the exact JSON the pact expects without
+// ever touching api.anthropic.com.
+vi.mock("./../../lib/anthropic.js", async () =>
+  (
+    await import("./../../test/__mocks__/anthropic.js")
+  ).createAnthropicMockHandle(),
+);
+
 import { createApp } from "./../../app.js";
+import { anthropicMessages as _anthropicMessages } from "./../../lib/anthropic.js";
+import { anthropicResponses } from "./../../test/__mocks__/anthropic.js";
+import type { Mock } from "vitest";
+
+const anthropicMessages = _anthropicMessages as unknown as Mock;
 
 // ── Pact file loading ────────────────────────────────────────────────────────
 
@@ -138,6 +172,12 @@ function findInteraction(
 
 // ── Test env / mock reset ────────────────────────────────────────────────────
 
+// `ENV_KEYS` here are the per-test env vars (VAPID is module-load-once but
+// safe to reset between tests; everything else cleared too). The
+// MONO_WEBHOOK_ENABLED / ANTHROPIC_API_KEY / AI_QUOTA_DISABLED trio is
+// pinned at module-load by `vi.hoisted` above — those persist for the
+// whole file so the `env` singleton + the requireAnthropicKey/Quota
+// middlewares see them unconditionally.
 const ENV_KEYS = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_EMAIL"];
 const savedEnv: Record<string, string | undefined> = {};
 for (const k of ENV_KEYS) savedEnv[k] = process.env[k];
@@ -147,6 +187,7 @@ beforeEach(() => {
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue(null);
+  anthropicMessages.mockReset();
   for (const k of ENV_KEYS) delete process.env[k];
 });
 
@@ -162,16 +203,23 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 5 expected consumer interactions", () => {
+  it("pact file has 10 expected consumer interactions", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(5);
+    expect(pact.interactions).toHaveLength(10);
     const expectedRoutes = new Set([
+      // PR-42 baseline (5)
       "GET /api/v1/me",
       "GET /api/v1/mono/accounts",
       "POST /api/v1/push/register",
       "POST /api/v1/nutrition/analyze-photo",
       "POST /api/v1/chat",
+      // persona-extend (5)
+      "GET /api/v1/mono/sync-state",
+      "GET /api/v1/mono/transactions",
+      "GET /api/v1/coach/memory",
+      "GET /api/v1/barcode",
+      "POST /api/v1/nutrition/day-plan",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -305,6 +353,319 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     expect(res.body.ok).toBe(true);
   });
 
+  // ── GET /api/v1/mono/sync-state ────────────────────────────────────────────
+  //
+  // Handler runs **two** sequential SQL reads against `pool.query`:
+  //   1) SELECT status, webhook_registered_at, last_event_at, last_backfill_at FROM mono_connection
+  //   2) SELECT COUNT(*)::text AS count FROM mono_account
+  //
+  // We canned-respond in order so the handler assembles the exact wire
+  // shape the consumer pact declared. Gated behind `MONO_WEBHOOK_ENABLED`
+  // (pinned via `vi.hoisted` at the top of this file).
+  it("GET /api/v1/mono/sync-state replays against the real handler (finyk persona)", async () => {
+    const interaction = findInteraction(pact, "GET", "/api/v1/mono/sync-state");
+    const expected = interaction.response.body as {
+      status: string;
+      webhookActive: boolean;
+      lastEventAt: string | null;
+      lastBackfillAt: string | null;
+      accountsCount: number;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    queryMock
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            status: expected.status,
+            // webhookActive=true iff status='active' AND webhook_registered_at != null.
+            webhook_registered_at: expected.webhookActive
+              ? new Date("2026-05-10T00:00:00.000Z")
+              : null,
+            last_event_at: expected.lastEventAt,
+            last_backfill_at: expected.lastBackfillAt,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ count: String(expected.accountsCount) }],
+      });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+  });
+
+  // ── GET /api/v1/mono/transactions ──────────────────────────────────────────
+  //
+  // Single SELECT against `mono_transaction`. We feed the handler stringified
+  // bigint columns (just like `pg` itself does in production) so the
+  // `normalizeMonoTransaction` coercion + Zod parse are actually exercised
+  // — Hard Rule #1 sibling-test for the transactions path.
+  it("GET /api/v1/mono/transactions replays against the real handler (finyk persona)", async () => {
+    const interaction = findInteraction(
+      pact,
+      "GET",
+      "/api/v1/mono/transactions",
+    );
+    interface PactTx {
+      userId: string;
+      monoAccountId: string;
+      monoTxId: string;
+      time: string;
+      amount: number;
+      operationAmount: number;
+      currencyCode: number;
+      mcc: number | null;
+      originalMcc: number | null;
+      hold: boolean | null;
+      description: string | null;
+      comment: string | null;
+      cashbackAmount: number | null;
+      commissionRate: number | null;
+      balance: number | null;
+      receiptId: string | null;
+      invoiceId: string | null;
+      counterEdrpou: string | null;
+      counterIban: string | null;
+      counterName: string | null;
+      categorySlug: string | null;
+      categoryOverridden: boolean;
+      source: string;
+      receivedAt: string;
+    }
+    const expected = interaction.response.body as {
+      data: PactTx[];
+      nextCursor: string | null;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: expected.data[0]!.userId });
+
+    // The handler asks for `LIMIT $N` with `limit + 1` (cursor-pagination
+    // peek). When we return `expected.data.length` rows (== limit), the
+    // handler decides `hasMore=false` and the nextCursor is `null`. Our
+    // pact says nextCursor="tx-pact-0002" (the second row's id), which
+    // means hasMore=TRUE; so we must return one extra peek row that the
+    // handler will trim off before serialising. Build that here.
+    const peekRow = {
+      ...expected.data[expected.data.length - 1]!,
+      monoTxId: expected.data[expected.data.length - 1]!.monoTxId + "-peek",
+    };
+    const sqlRows = [...expected.data, peekRow].map((tx) => ({
+      userId: tx.userId,
+      monoAccountId: tx.monoAccountId,
+      monoTxId: tx.monoTxId,
+      time: tx.time,
+      // `pg` returns bigint columns as **strings**. Force-string the
+      // bigint-typed fields so the normaliser's `toNumberOrNull` is
+      // actually exercised (otherwise the test "passes" by accident on
+      // typeof number).
+      amount: String(tx.amount),
+      operationAmount: String(tx.operationAmount),
+      currencyCode: tx.currencyCode,
+      mcc: tx.mcc,
+      originalMcc: tx.originalMcc,
+      hold: tx.hold,
+      description: tx.description,
+      comment: tx.comment,
+      cashbackAmount:
+        tx.cashbackAmount == null ? null : String(tx.cashbackAmount),
+      commissionRate:
+        tx.commissionRate == null ? null : String(tx.commissionRate),
+      balance: tx.balance == null ? null : String(tx.balance),
+      receiptId: tx.receiptId,
+      invoiceId: tx.invoiceId,
+      counterEdrpou: tx.counterEdrpou,
+      counterIban: tx.counterIban,
+      counterName: tx.counterName,
+      categorySlug: tx.categorySlug,
+      categoryOverridden: tx.categoryOverridden,
+      source: tx.source,
+      receivedAt: tx.receivedAt,
+    }));
+    queryMock.mockResolvedValueOnce({ rows: sqlRows });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .query({ from: "2026-05-01", to: "2026-05-13", limit: "2" })
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    // Coercion didn't fall through to "stringified number".
+    expect(typeof res.body.data[0].amount).toBe("number");
+    expect(typeof res.body.data[0].balance).toBe("number");
+  });
+
+  // ── GET /api/v1/coach/memory ───────────────────────────────────────────────
+  //
+  // Single SELECT against `coach_memory WHERE user_id=$1`. Returns either
+  // `{ok:true, memory:null}` (no row) or `{ok:true, memory:<jsonb>}`. The
+  // contract locks the second variant so the weeklyDigests envelope is
+  // pinned for the hub-side `useCoachInsight` consumer.
+  it("GET /api/v1/coach/memory replays against the real handler (hub persona)", async () => {
+    const interaction = findInteraction(pact, "GET", "/api/v1/coach/memory");
+    const expected = interaction.response.body as {
+      ok: boolean;
+      memory: unknown;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    queryMock.mockResolvedValueOnce({
+      rows: [{ data: expected.memory }],
+    });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+  });
+
+  // ── GET /api/v1/barcode ────────────────────────────────────────────────────
+  //
+  // Open Food Facts / USDA / UPCitemdb-backed handler. We don't want to
+  // hit upstream during contract replay, so we stub `globalThis.fetch`
+  // to return a canned OFF response. The handler's OFF branch fires
+  // first; on success the cascade short-circuits and the OFF product is
+  // returned, matching the pact's success envelope.
+  it("GET /api/v1/barcode replays against the real handler (nutrition persona)", async () => {
+    const interaction = findInteraction(pact, "GET", "/api/v1/barcode");
+    const expected = interaction.response.body as {
+      product: {
+        name: string;
+        brand: string | null;
+        kcal_100g: number | null;
+        protein_100g: number | null;
+        fat_100g: number | null;
+        carbs_100g: number | null;
+        servingSize: string | null;
+        servingGrams: number | null;
+        source: "off" | "usda" | "upcitemdb";
+        partial?: boolean;
+      };
+    };
+
+    // OFF JSON envelope. `status:1` + a `product` whose `nutriments` and
+    // `serving_*` fields normalise into the pact's expected product.
+    // `normalizeOFFBarcode` prefers `product_name_uk` over `product_name`
+    // — we use the UK name field to match production behaviour.
+    const offResponse = {
+      status: 1,
+      product: {
+        product_name_uk: expected.product.name,
+        product_name: expected.product.name,
+        brands: expected.product.brand,
+        nutriments: {
+          "energy-kcal_100g": expected.product.kcal_100g,
+          proteins_100g: expected.product.protein_100g,
+          fat_100g: expected.product.fat_100g,
+          carbohydrates_100g: expected.product.carbs_100g,
+        },
+        serving_size: expected.product.servingSize,
+        serving_quantity: expected.product.servingGrams,
+      },
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(offResponse), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    try {
+      const app = createApp();
+      const res = await request(app)
+        .get(interaction.request.path)
+        .query({ barcode: "4820010840443" })
+        .set("Authorization", "Bearer pact-replay");
+
+      expect(res.status).toBe(interaction.response.status);
+      expect(res.body).toEqual(expected);
+      expect(res.body.product.source).toBe("off");
+      // Sanity: the OFF upstream was hit exactly once (USDA/UPCitemdb
+      // would be additional fetch calls — they must not be reached).
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  // ── POST /api/v1/nutrition/day-plan (Anthropic-stubbed) ────────────────────
+  //
+  // Anthropic-gated. We stub `anthropicMessages` (via the shared mock
+  // harness) to return the canned plan JSON the consumer pact recorded.
+  // The pact's `rawText: null` enforces that the handler's "JSON parse
+  // succeeded" branch fires (otherwise rawText would be the raw model
+  // output). `AI_QUOTA_DISABLED=true` + `ANTHROPIC_API_KEY=…` are
+  // pinned at module load via `vi.hoisted`.
+  it("POST /api/v1/nutrition/day-plan replays against the real handler with Anthropic stub (nutrition persona)", async () => {
+    const interaction = findInteraction(
+      pact,
+      "POST",
+      "/api/v1/nutrition/day-plan",
+    );
+    const expected = interaction.response.body as {
+      plan: {
+        meals: Array<{
+          type: string;
+          label: string;
+          name: string;
+          description: string;
+          ingredients: string[];
+          kcal: number | null;
+          protein_g: number | null;
+          fat_g: number | null;
+          carbs_g: number | null;
+        }>;
+        totalKcal: number | null;
+        totalProtein_g: number | null;
+        totalFat_g: number | null;
+        totalCarbs_g: number | null;
+        note: string;
+      };
+      rawText: string | null;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    // The pact envelope is `{ plan, rawText: null }`. The day-plan
+    // handler builds that envelope from the normalised plan + the raw
+    // model output — for rawText to be `null` the model JSON must
+    // already match the plan shape so `extractJsonFromText` succeeds.
+    // We hand the mock exactly that JSON.
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(JSON.stringify(expected.plan)),
+    );
+
+    const app = createApp();
+    const res = await request(app)
+      .post(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        targets: { kcal: 2000, protein_g: 120, fat_g: 70, carbs_g: 220 },
+        pantry: [
+          { name: "milk", qty: 1, unit: "L" },
+          { name: "oats", qty: 500, unit: "g" },
+          { name: "eggs", qty: 6, unit: "pcs" },
+        ],
+        locale: "uk-UA",
+      });
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    // Sanity: the Anthropic stub was actually called (no real upstream).
+    expect(anthropicMessages).toHaveBeenCalledTimes(1);
+  });
+
   // ── AI-flow endpoints — explicit gap markers ───────────────────────────────
   //
   // The remaining two interactions in the pact (chat, nutrition
@@ -319,9 +680,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   // extend coverage. See `docs/architecture/api-contracts.md
   // § Extending coverage`.
   it.todo(
-    "POST /api/v1/chat — replay against real chat handler (requires Anthropic stub)",
+    "POST /api/v1/chat — replay against real chat handler (requires streaming Anthropic stub)",
   );
   it.todo(
-    "POST /api/v1/nutrition/analyze-photo — replay against real handler (requires Anthropic + AI-quota stub)",
+    "POST /api/v1/nutrition/analyze-photo — replay against real handler (requires vision Anthropic stub)",
   );
 });

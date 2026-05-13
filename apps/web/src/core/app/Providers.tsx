@@ -6,6 +6,10 @@ import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { ShortcutRegistryProvider } from "@shared/components/ui/KeyboardShortcutsModal";
+import {
+  CommandPalette,
+  CommandPaletteProvider,
+} from "@shared/components/ui/CommandPalette";
 
 import { AuthProvider } from "../auth/AuthContext";
 import { AppLockProvider } from "../security/AppLockContext";
@@ -58,7 +62,16 @@ export function Providers({ children }: { children: ReactNode }) {
         <ScreenReaderAnnouncerProvider>
           <ApiClientProvider client={apiClient}>
             <AuthProvider>
-              <AppLockProvider>{children}</AppLockProvider>
+              <AppLockProvider>
+                <CommandPaletteProvider>
+                  {/* Track 5 — global ⌘K palette. The portal-mounted UI
+                      lives next to the provider so any module that calls
+                      `useRegisterCommand` can also see the rendered
+                      surface without an additional mount point. */}
+                  <CommandPalette />
+                  {children}
+                </CommandPaletteProvider>
+              </AppLockProvider>
             </AuthProvider>
           </ApiClientProvider>
         </ScreenReaderAnnouncerProvider>

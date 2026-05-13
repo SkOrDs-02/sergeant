@@ -30,7 +30,10 @@ import { z } from "zod";
 import { asyncHandler } from "../../http/index.js";
 import { validateBody } from "../../http/validate.js";
 import {
+  carryGoalToNextWeek,
   createGoal,
+  getGoalById,
+  listGoals,
   listGoalsForWeek,
   STRATEGIC_GOAL_PERSONAS,
   STRATEGIC_GOAL_STATUSES,
@@ -69,6 +72,16 @@ const ListGoalsBody = z
     weekStart: WeekStartSchema,
     persona: PersonaSchema.optional(),
     founderUserId: FounderUserIdSchema.optional(),
+    status: StatusSchema.optional(),
+  })
+  .strict();
+
+const ListBody = z
+  .object({
+    founderUserId: FounderUserIdSchema.optional(),
+    persona: PersonaSchema.optional(),
+    status: StatusSchema.optional(),
+    limit: z.number().int().positive().max(200).optional(),
   })
   .strict();
 
@@ -76,6 +89,12 @@ const UpdateStatusBody = z
   .object({
     id: z.number().int().positive(),
     status: StatusSchema,
+  })
+  .strict();
+
+const CarryGoalBody = z
+  .object({
+    id: z.number().int().positive(),
   })
   .strict();
 
@@ -147,8 +166,59 @@ export function createStrategicInternalRouter({
         ...(parsed.data.founderUserId !== undefined
           ? { founderUserId: parsed.data.founderUserId }
           : {}),
+        ...(parsed.data.status !== undefined
+          ? { status: parsed.data.status }
+          : {}),
       });
       res.json({ ok: true, goals });
+    }),
+  );
+
+  /**
+   * `/strategy list` Telegram-команда — листить goals founder-а через всі
+   * тижні з опційним status- / persona-фільтром. Окремий route від
+   * `/goals/list`, бо там обов'язковий `weekStart`. Hard-cap 200 рядків.
+   */
+  r.post(
+    "/api/internal/strategic/list",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ListBody, req, res);
+      if (!parsed.ok) return;
+      const goals = await listGoals(pool, {
+        ...(parsed.data.founderUserId !== undefined
+          ? { founderUserId: parsed.data.founderUserId }
+          : {}),
+        ...(parsed.data.persona !== undefined
+          ? { persona: parsed.data.persona }
+          : {}),
+        ...(parsed.data.status !== undefined
+          ? { status: parsed.data.status }
+          : {}),
+        ...(parsed.data.limit !== undefined
+          ? { limit: parsed.data.limit }
+          : {}),
+      });
+      res.json({ ok: true, goals });
+    }),
+  );
+
+  /**
+   * `GET /api/internal/strategic/goals/:id` — single-goal lookup для
+   * `/strategy`-команди (UI feedback з persona + поточним status-ом).
+   * Fail-open: `{ ok: false, error: 'not_found' }` (status 200) якщо
+   * goal не існує — Telegram-handler рендерить err-меседж.
+   */
+  r.post(
+    "/api/internal/strategic/goal",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(CarryGoalBody, req, res);
+      if (!parsed.ok) return;
+      const goal = await getGoalById(pool, parsed.data.id);
+      if (goal === null) {
+        res.status(200).json({ ok: false, error: "not_found" });
+        return;
+      }
+      res.json({ ok: true, goal });
     }),
   );
 
@@ -167,6 +237,26 @@ export function createStrategicInternalRouter({
         return;
       }
       res.json({ ok: true, goal: updated });
+    }),
+  );
+
+  /**
+   * `/strategy carry <id>` — atomic UPDATE: `week_start += 7d, status =
+   * 'carried_over'`. Зберігає persistent ID-посилання для уже-існуючих
+   * audit / history-рефернсів (на відміну від INSERT-нового-рядка).
+   * Fail-open: `null` → `{ ok: false }`.
+   */
+  r.post(
+    "/api/internal/strategic/goals/carry",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(CarryGoalBody, req, res);
+      if (!parsed.ok) return;
+      const carried = await carryGoalToNextWeek(pool, parsed.data.id);
+      if (carried === null) {
+        res.status(200).json({ ok: false, error: "carry_failed" });
+        return;
+      }
+      res.json({ ok: true, goal: carried });
     }),
   );
 

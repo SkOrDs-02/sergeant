@@ -1339,7 +1339,146 @@ const swipe = useSwipeNavigation({
 
 ---
 
-## 17. Що далі
+## 18. DropdownMenu та Command Palette (2026-05, Track 5)
+
+Дві keyboard-first примітиви, які витягують продукт зі стану «це просто
+вебсайт». DropdownMenu — для контекстних дій на конкретному елементі;
+Command Palette — глобальний ⌘K / Ctrl+K surface для cross-cutting
+команд (навігація, налаштування, темa, AI).
+
+### 18.1 DropdownMenu
+
+```tsx
+import { DropdownMenu, Icon, Button } from "@shared/components/ui";
+import type { DropdownMenuEntry } from "@shared/components/ui";
+
+const items: DropdownMenuEntry[] = [
+  { type: "label", label: "Профіль" },
+  {
+    type: "item",
+    id: "edit",
+    label: "Редагувати",
+    icon: <Icon name="edit" />,
+    shortcut: "⌘ E",
+  },
+  {
+    type: "item",
+    id: "share",
+    label: "Поділитись",
+    description: "Згенерувати посилання",
+  },
+  { type: "separator" },
+  {
+    type: "submenu",
+    id: "more",
+    label: "Більше",
+    items: [
+      { type: "item", id: "archive", label: "Архівувати" },
+      { type: "item", id: "delete", label: "Видалити", destructive: true },
+    ],
+  },
+];
+
+<DropdownMenu
+  ariaLabel="Дії з елементом"
+  items={items}
+  trigger={
+    <Button variant="secondary">
+      Меню <Icon name="chevron-down" />
+    </Button>
+  }
+/>;
+```
+
+**Entry types:** `item` · `submenu` · `separator` · `label`.
+
+**Клавіатурна навігація:**
+
+| Клавіша                 | Дія                                                 |
+| ----------------------- | --------------------------------------------------- |
+| `ArrowDown` / `ArrowUp` | Перейти на наступний / попередній item (wrap).      |
+| `Home` / `End`          | Перший / останній focusable item.                   |
+| `Enter` / `Space`       | Активувати item або відкрити підменю.               |
+| `ArrowRight`            | Відкрити підменю (на submenu-row).                  |
+| `ArrowLeft`             | Закрити підменю.                                    |
+| `Escape`                | Закрити меню, фокус повертається на trigger.        |
+| `Tab`                   | Закрити меню, природна tab-навігація продовжується. |
+| `a…z` / `0…9`           | Type-ahead (буфер очищується через 500 мс).         |
+
+**ARIA:** `aria-haspopup="menu"` + `aria-expanded` на trigger;
+`role="menu"` на панелі; `role="menuitem"` + `aria-disabled` на рядках;
+підменю — `aria-haspopup="menu"` + `aria-expanded`.
+
+**Стилі:** виключно semantic tokens (`bg-panel`, `border-line`,
+`text-text`, `text-danger`, `bg-panelHi` для фокусу).
+`focus-visible:ring-brand-500/45` — клавіатурне кільце; pointer-hover
+ділить ту саму `bg-panelHi`-підсвітку.
+
+### 18.2 CommandPalette
+
+```tsx
+// 1. У app shell — раз:
+import {
+  CommandPalette,
+  CommandPaletteProvider,
+  useCommandPaletteHotkey,
+} from "@shared/components/ui";
+
+<CommandPaletteProvider>
+  <CommandPalette />
+  <RestOfApp />
+</CommandPaletteProvider>;
+
+// 2. В будь-якому компоненті — реєструємо команди:
+useRegisterCommand("hub.nav", [
+  {
+    id: "hub.go-home",
+    title: "Перейти на головну",
+    group: "Навігація",
+    icon: <Icon name="home" />,
+    keywords: ["hub", "home", "головна"],
+    run: () => navigate("/"),
+  },
+]);
+```
+
+⌘K / Ctrl+K привʼязується через `useCommandPaletteHotkey(enabled)` — у
+Sergeant це гейтнуте feature-flag-ом `hub_command_palette`, тож існуючий
+Hub-search ⌘K не зламається до моменту увімкнення.
+
+**Клавіатура у відкритій палітрі:** `ArrowUp/Down` — навігація по
+плоскому списку (через групи), `Home/End` — перший / останній,
+`Enter` — виконати, `Escape` — закрити.
+
+**ARIA:** `role="dialog"` + `aria-modal` + `aria-labelledby`;
+`role="listbox"` для результатів, `role="option"` + `aria-selected` для
+рядків. `aria-activedescendant` оновлюється на input разом з
+`activeIndex` — screen reader озвучує активну команду, поки фокус
+лишається в інпуті.
+
+**Recent commands:** зберігаються у `localStorage` (до 6 останніх ID)
+через `createTypedStore` з версією і zod-схемою — впишеться в існуючий
+storage-allowlist.
+
+**Стилі:** `bg-panel`, `border-line`, `shadow-float`, `bg-black/50` для
+backdrop. Фокусне кільце — `focus-visible:ring-brand-500/45` з
+`ring-offset-panel` (узгоджено з `Button`).
+
+### 18.3 Анатомія підказок
+
+Shortcut-hint і footer hint-и використовують `<kbd>` з токенами:
+`bg-surface-muted border border-line text-muted text-2xs font-mono`.
+Це уніфікує вигляд cmd-keys на overlays, modals, palette і inline-help.
+
+### 18.4 Status
+
+`DropdownMenu`, `CommandPalette` — Active (Track 5). Demo команди в
+`useDemoCommands` — Scaffolded: реальні handlers приходять follow-up
+PR-ами per-модуль. `console.log` + toast «WIP» — навмисна заглушка.
+
+---
+
+## 19. Що далі
 
 - Догнати всі модулі (ФІНІК / ФІЗРУК / Рутина / Харчування) під єдині
   примітиви — окремими PR'ами, по модулю.

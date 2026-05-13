@@ -2,6 +2,8 @@
 
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
+>
+> **v2 (persona-extend) coverage:** 10 consumer interactions → 8 provider replays + 2 `it.todo` markers. Diff from PR-42 v1: +5 endpoints (`mono/sync-state`, `mono/transactions`, `coach/memory`, `barcode`, `nutrition/day-plan`).
 
 Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @sergeant/server`. Доповнює, а не замінює, **type-level** sync через Hard Rule #3 ([`03-api-contract-server-client-test.md`](../governance/rules/03-api-contract-server-client-test.md)) + `pnpm api:check-openapi` / `pnpm api:check-openapi-types`.
 
@@ -134,17 +136,26 @@ jobs:
 4. **Запусти locally:** `pnpm --filter @sergeant/server test -- src/__tests__/contracts/provider.test.ts`.
 5. **Pre-PR:** `pnpm check` (включно з `format:check`, `lint`, `typecheck`, `test`, `build`).
 
-## 🚧 Coverage map (v1, PR-42)
+## 🚧 Coverage map (v2 — persona-extend)
 
-| Persona / endpoint                       | Consumer pact | Provider replay | Notes                                                              |
-| ---------------------------------------- | :-----------: | :-------------: | ------------------------------------------------------------------ |
-| `GET /api/v1/me` (hub / shell)           |       ✓       |        ✓        | Better Auth mock only.                                             |
-| `GET /api/v1/mono/accounts` (finyk)      |       ✓       |        ✓        | + pool mock з bigint-string-coercion exercise (Hard Rule #1).      |
-| `POST /api/v1/push/register` (fizruk)    |       ✓       |      ✓ ⁽¹⁾      | Provider verifies ios sibling-shape; web-shape потребує VAPID env. |
-| `POST /api/v1/nutrition/analyze-photo`   |       ✓       |     ⊘ todo      | Anthropic + AI-quota stubs — extend coverage окремою PR.           |
-| `POST /api/v1/chat` (hub, non-streaming) |       ✓       |     ⊘ todo      | Anthropic + AI-quota stubs — extend coverage окремою PR.           |
+| Persona / endpoint                                | Consumer pact | Provider replay | Notes                                                                                                           |
+| ------------------------------------------------- | :-----------: | :-------------: | --------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me` (hub / shell)                    |       ✓       |        ✓        | Better Auth mock only.                                                                                          |
+| `GET /api/v1/mono/accounts` (finyk)               |       ✓       |        ✓        | + pool mock з bigint-string-coercion exercise (Hard Rule #1).                                                   |
+| `GET /api/v1/mono/sync-state` (finyk) ⁽²⁾         |       ✓       |        ✓        | Two-query handler (`mono_connection` + `mono_account` count); gated by `MONO_WEBHOOK_ENABLED`.                  |
+| `GET /api/v1/mono/transactions` (finyk) ⁽²⁾       |       ✓       |        ✓        | + pool mock fed **string** bigints so `normalizeMonoTransaction` coercion is actually executed (Hard Rule #1).  |
+| `GET /api/v1/coach/memory` (hub) ⁽²⁾              |       ✓       |        ✓        | Locks the `{ ok, memory: <jsonb> }` envelope; memory blob interior is intentionally open.                       |
+| `GET /api/v1/barcode` (nutrition) ⁽²⁾             |       ✓       |        ✓        | Provider stubs `globalThis.fetch` to return a canned OFF JSON envelope; no real upstream hit.                   |
+| `POST /api/v1/push/register` (fizruk)             |       ✓       |      ✓ ⁽¹⁾      | Provider verifies ios sibling-shape; web-shape потребує VAPID env.                                              |
+| `POST /api/v1/nutrition/day-plan` (nutrition) ⁽²⁾ |       ✓       |      ✓ ⁽³⁾      | Anthropic-gated; `requireAnthropicKey` + `requireAiQuota` satisfied via `vi.hoisted` env + shared mock harness. |
+| `POST /api/v1/nutrition/analyze-photo`            |       ✓       |     ⊘ todo      | Vision Anthropic stub — extend coverage окремою PR.                                                             |
+| `POST /api/v1/chat` (hub, non-streaming)          |       ✓       |     ⊘ todo      | Streaming Anthropic stub — extend coverage окремою PR.                                                          |
 
 ⁽¹⁾ Provider replays `{platform: "ios"}` (same `{ ok, platform }` envelope). Це гарантує, що `PushRegisterResponseSchema` consumer-shape валідний для всіх трьох платформ; web-branch покритий module-load env у `apps/server/src/routes/pushTest.test.ts`.
+
+⁽²⁾ Added in the persona-extend PR (poverh PR-42). 5 new endpoints обрано за критерієм «real use в `apps/web/`» + cross-surface critical (`monoWebhookApi` + `nutritionApi` + `coachApi` — топ-3 за кількістю RQ-hooks). Routes як `fizruk/workouts/today` або `openclaw/health` не існують як public REST (`fizruk` — local-first CRDT-sync; `openclaw` — бот, який не консумить `@sergeant/api-client`).
+
+⁽³⁾ Anthropic-gated: provider-replay ніяк не торкається `api.anthropic.com`. Паттерн — `vi.mock("./../../lib/anthropic.js", () => createAnthropicMockHandle())` + `anthropicMessages.mockResolvedValueOnce(anthropicResponses.text(...))` зі спільного harness-у у `apps/server/src/test/__mocks__/anthropic.ts`. `ANTHROPIC_API_KEY` і `AI_QUOTA_DISABLED=true` піняться через `vi.hoisted` перед імпортом `createApp` — так `requireAnthropicKey` + `requireAiQuota` middleware-и пропускають запит до реального handler-а.
 
 ### `openclaw` — навмисно не покритий
 
@@ -160,9 +171,13 @@ OpenClaw — це Telegram-бот, який є **отримувачем webhook-
 
 Не редагуй pact JSON руками — він **виключно** регенерується consumer-тестами.
 
-## 🔮 Майбутні розширення (out of scope для PR-42)
+## 🔮 Майбутні розширення (поверх v2 persona-extend)
 
-1. **Anthropic + AI-quota stubs** для `chat` + `nutrition/analyze-photo` provider-replay (зняти `it.todo` маркери).
-2. **Pact matchers** (`like()`, `term()`) для полів, де ми навмисно хочемо схему, а не значення (наприклад, `requestId` ULID-strings).
-3. **Pact Broker** інтеграція — якщо буде потрібен contract-version-matrix на CI (web vs mobile vs openclaw consumers різних версій).
-4. **Streaming SSE контракт** для `/api/v1/chat` — Pact JSON не виражає SSE-фрейми; альтернатива — окремий `chat-stream.contract.test.ts` із власним адаптером.
+1. **Streaming Anthropic stub** для `POST /api/v1/chat` provider-replay (зняти `it.todo`). v2 уже довів — `nutrition/day-plan` ганяє Anthropic-stub без проблем; chat треба окремо через streaming-shape.
+2. **Vision Anthropic stub** для `POST /api/v1/nutrition/analyze-photo` provider-replay (зняти `it.todo`).
+3. **Pact matchers** (`like()`, `term()`) для полів, де ми навмисно хочемо схему, а не значення (наприклад, `requestId` ULID-strings, `nextCursor` опаковий рядок).
+4. **Pact Broker** інтеграція — якщо буде потрібен contract-version-matrix на CI (web vs mobile vs openclaw consumers різних версій).
+5. **Streaming SSE контракт** для `/api/v1/chat` — Pact JSON не виражає SSE-фрейми; альтернатива — окремий `chat-stream.contract.test.ts` із власним адаптером.
+6. **Fizruk + openclaw покриття** — обидві персони навмисно не покриті v2:
+   - **fizruk** — local-first CRDT sync через `/api/v2/sync/*`; sync-payload бінарний (Yjs), не JSON, тому Pact без custom encoder-а не підходить. Альтернатива — окремий contract test за байт-вовнішньою фіксурою.
+   - **openclaw** — Telegram-бот, що консумить власний internal-API (`/api/internal/openclaw/*`) через Bearer-ключ, а не через `@sergeant/api-client`. Якщо потрібна contract-валідація — це окрема (consumer=`sergeant-openclaw-bot`, provider=`sergeant-server-internal`) pact-пара, що жила б у `tools/console/src/__tests__/contracts/`.

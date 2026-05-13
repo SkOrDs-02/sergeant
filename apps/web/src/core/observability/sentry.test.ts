@@ -102,6 +102,27 @@ describe("initSentry", () => {
     // rate і ігнорує sampler.
     expect(cfg.tracesSampleRate).toBeUndefined();
   });
+
+  it("реєструє beforeSend, який рекурсивно скрабить PII (audit 2026-05-13)", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+    const cfg = sentryInit.mock.calls[0]?.[0];
+    expect(typeof cfg.beforeSend).toBe("function");
+
+    // Прикручений хук має повертати event і одночасно почистити чутливі поля.
+    const event = {
+      request: {
+        cookies: { sid: "y" },
+        headers: { Authorization: "Bearer xxx" } as Record<string, unknown>,
+      },
+      extra: { token: "leaked" } as Record<string, unknown>,
+    };
+    const out = cfg.beforeSend(event, {});
+    expect(out).toBe(event);
+    expect("cookies" in event.request).toBe(false);
+    expect(event.request.headers["Authorization"]).toBe("[redacted]");
+    expect(event.extra["token"]).toBe("[redacted]");
+  });
 });
 
 describe("setSentryTag", () => {
@@ -142,6 +163,103 @@ describe("setSentryTag", () => {
     expect(() =>
       sentry.setSentryTag("outbox.boot.outcome", "fresh"),
     ).not.toThrow();
+  });
+});
+
+describe("applyWebBeforeSend (PII scrub)", () => {
+  it("drops request.cookies and request.data wholesale", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      request: {
+        cookies: { sid: "yyy" },
+        data: { password: "p1", email: "e@x.com" },
+        url: "https://app.sergeant.app/api/me",
+      },
+    };
+    applyWebBeforeSend(event);
+    expect("cookies" in event.request).toBe(false);
+    expect("data" in event.request).toBe(false);
+    expect(event.request.url).toBe("https://app.sergeant.app/api/me");
+  });
+
+  it("recursively scrubs request.headers (Authorization, Cookie, X-CSRF-Token)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      request: {
+        headers: {
+          Authorization: "Bearer xxx",
+          Cookie: "auth=yyy",
+          "X-CSRF-Token": "csrf-zzz",
+          "Content-Type": "application/json",
+        } as Record<string, unknown>,
+      },
+    };
+    applyWebBeforeSend(event);
+    expect(event.request.headers["Authorization"]).toBe("[redacted]");
+    expect(event.request.headers["Cookie"]).toBe("[redacted]");
+    expect(event.request.headers["X-CSRF-Token"]).toBe("[redacted]");
+    expect(event.request.headers["Content-Type"]).toBe("application/json");
+  });
+
+  it("recursively scrubs event.extra / event.contexts (deep nesting)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const payload: Record<string, unknown> = {
+      email: "leak@example.com",
+      deep: { token: "leaked", keep: "ok" } as Record<string, unknown>,
+    };
+    const secrets: Record<string, unknown> = {
+      connectionString: "postgres://…",
+    };
+    const event = {
+      extra: { payload },
+      contexts: {
+        runtime: { name: "browser" },
+        secrets,
+      },
+    };
+    applyWebBeforeSend(event);
+    expect(payload["email"]).toBe("[redacted]");
+    const deep = payload["deep"] as Record<string, unknown>;
+    expect(deep["token"]).toBe("[redacted]");
+    expect(deep["keep"]).toBe("ok");
+    expect(secrets["connectionString"]).toBe("[redacted]");
+  });
+
+  it("scrubs breadcrumbs[].data (xhr / fetch auto-capture)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const data: Record<string, unknown> = {
+      url: "/api/me",
+      request_body: { password: "p" } as Record<string, unknown>,
+      headers: { Authorization: "Bearer xxx" } as Record<string, unknown>,
+    };
+    const event = {
+      breadcrumbs: [{ category: "xhr", data }],
+    };
+    applyWebBeforeSend(event);
+    const rb = data["request_body"] as Record<string, unknown>;
+    expect(rb["password"]).toBe("[redacted]");
+    const headers = data["headers"] as Record<string, unknown>;
+    expect(headers["Authorization"]).toBe("[redacted]");
+  });
+
+  it("normalises event.user to { id } only (strips email/phone)", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      user: {
+        id: "user-abc",
+        email: "leak@example.com",
+        phone: "+380",
+        username: "leak",
+      },
+    };
+    applyWebBeforeSend(event);
+    expect(event.user).toEqual({ id: "user-abc" });
+  });
+
+  it("survives events without request/extra/contexts/breadcrumbs/user", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {} as Record<string, never>;
+    expect(() => applyWebBeforeSend(event)).not.toThrow();
   });
 });
 
