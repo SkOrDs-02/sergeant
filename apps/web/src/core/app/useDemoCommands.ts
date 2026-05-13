@@ -7,10 +7,10 @@
 //
 // Status: Active (Track 5 seed). Last validated: 2026-05-13 by @Skords-01 / Devin.
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/hooks/useToast";
-import { useDarkMode } from "@shared/hooks/useDarkMode";
+import { useTheme } from "@shared/hooks/useTheme";
 import {
   useRegisterCommand,
   type PaletteCommand,
@@ -19,7 +19,11 @@ import {
 export function useDemoCommands(): void {
   const navigate = useNavigate();
   const toast = useToast();
-  const { dark, toggle: toggleDark } = useDarkMode();
+  const { isDark, setChoice: setThemeChoice } = useTheme();
+  const toggleDark = useCallback(
+    () => setThemeChoice(isDark ? "light" : "dark"),
+    [isDark, setThemeChoice],
+  );
 
   const commands = useMemo<PaletteCommand[]>(
     () => [
@@ -49,7 +53,7 @@ export function useDemoCommands(): void {
       },
       {
         id: "settings.toggle-dark",
-        title: dark ? "Світла тема" : "Темна тема",
+        title: isDark ? "Світла тема" : "Темна тема",
         description: "Перемкнути візуальну схему інтерфейсу",
         group: "Налаштування",
         shortcut: "⇧ T",
@@ -83,7 +87,7 @@ export function useDemoCommands(): void {
         },
       },
     ],
-    [dark, navigate, toast, toggleDark],
+    [isDark, navigate, toast, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);
