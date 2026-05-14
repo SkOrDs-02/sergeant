@@ -461,8 +461,17 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 
 ## Відкриті питання
 
-Сиріт і несумісних label-set-ів **не знайдено**. Всі 36 метрик інкрементуються щонайменше в одному emitter.
+Сиріт і несумісних label-set-ів **не знайдено**. Всі 36 метрик інкрементуються щонайменше в одному emitter. Канонічний backlog — [`docs/planning/pr-plan-backend-perf-2026-05.md`](../planning/pr-plan-backend-perf-2026-05.md); тут — лише точки болю/розвитку observability-каталогу, які треба пам'ятати при дашборд-ревʼю.
 
+### Нещодавно закрито
+
+- **Per-model token + cost attribution для Anthropic / Voyage** — закрите [PR-04 з backend-perf плану](../planning/pr-plan-backend-perf-2026-05.md). До цього PromQL-приклади в [§6](#6-ai-anthropic--voyage) показували лише per-release split через `app_build_info` без single-model breakdown-у; тепер є concrete deep-dive (`model="claude-sonnet-4-5"`, `model="voyage-3.5-lite"`) + повний перелік типових значень `model`-лейблу для обох провайдерів із посиланнями на canonical emitter-и + drift-detector для нових Voyage-моделей без cost-counter серії.
+- **Backend `/health` p95 SLO formalization** — закрите [PR-06 з backend-perf плану](../planning/pr-plan-backend-perf-2026-05.md). Informal AGENTS.md performance budget ("Backend `/health` p95 < 100 ms") тепер має recording-rule `sli:health_p95_ms:rate5m`, alert `BackendHealthP95High` (`severity=ticket`, `for: 5m`) і повноцінну SLO-секцію у [`SLO.md § 2a`](./SLO.md#2a-health-endpoint-p95-slo-p95--100-ms) + runbook-anchor у [`runbook.md`](./runbook.md#backendhealthp95high). Раніше pure-AGENTS.md target не мав emitter-trace.
+
+### Потенційні покращення (не баги)
+
+1. `mono_webhook_duration_ms` записується на `ok` і `error` ([webhook.ts:173](../../apps/server/src/modules/mono/webhook.ts#L173), [:185](../../apps/server/src/modules/mono/webhook.ts#L185)), але **не** на ранніх exit-ах `invalid_secret`/`bad_payload` ([webhook.ts:63](../../apps/server/src/modules/mono/webhook.ts#L63), [:102](../../apps/server/src/modules/mono/webhook.ts#L102)). Свідомий вибір (щоб не зашумити histogram cheap-paths-ами без бізнес-сенсу), але для повноти cardinality-діагностики можна додати окрему `mono_webhook_short_circuit_total{reason="invalid_secret"|"bad_payload"}` counter — без histogram-ового витрат.
+2. **`/health/*` nested + short-alias probes** (`/health/liveness`, `/health/readiness`, `/health/startup`, `/livez`, `/readyz`, `/startupz`, `/healthz`) накриті лише loose-1s SLO §2 у `SLO.md`. Якщо хоч одна probe-семантика виявиться окремо вартою власного бюджета (типу: `readiness` p95 < 250 ms бо ходить по worker fleet) — додати окремі recording-rules за патерном з PR-06.
 Незатреканих observability-питань у цьому довіднику немає. Поточний follow-up
 винесений у план, щоб footer не ставав backlog-дублікатом:
 
