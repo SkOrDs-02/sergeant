@@ -11,6 +11,7 @@
 //
 // Usage:
 //   node scripts/docs/generate-freshness-dashboard.mjs
+//   node scripts/docs/generate-freshness-dashboard.mjs --check
 //   OUTPUT=./dist/freshness-dashboard.html node scripts/docs/generate-freshness-dashboard.mjs
 //
 // Exits 0 regardless of overdue counts (dashboard is a report, not a gate).
@@ -31,7 +32,10 @@ import { loadConfig } from "./freshness-config.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const DEFAULT_OUTPUT = resolve(REPO_ROOT, "dist/freshness-dashboard.html");
+const DEFAULT_OUTPUT = resolve(
+  REPO_ROOT,
+  "docs/governance/freshness-dashboard.html",
+);
 
 const YELLOW_THRESHOLD_DAYS = 30;
 
@@ -148,7 +152,7 @@ export function renderHtml(entries, { today = todayISO() } = {}) {
   <td class="status">${escapeHtml(statusLabel)}</td>
   <td>${escapeHtml(e.lastValidated || "—")}</td>
   <td>${escapeHtml(e.nextReview || "—")}</td>
-  <td class="num">${e.daysUntilOverdue == null ? "—" : e.daysUntilOverdue}</td>
+  <td class="num days">${e.daysUntilOverdue == null ? "—" : e.daysUntilOverdue}</td>
   <td>${escapeHtml(e.owner || "—")}</td>
   <td class="num">${e.cadence}</td>
 </tr>`;
@@ -214,13 +218,69 @@ ${rows}
 `;
 }
 
+export function normaliseForCompare(html) {
+  return html
+    .replace(/<!doctype html>/i, "<!DOCTYPE html>")
+    .replace(/<meta charset="utf-8"\s*\/?>/g, '<meta charset="utf-8">')
+    .replace(/<style>[\s\S]*?<\/style>/g, "<style>STYLE</style>")
+    .replace(
+      /Sergeant — Docs Freshness Dashboard \(\d{4}-\d{2}-\d{2}\)/g,
+      "Sergeant — Docs Freshness Dashboard (DATE)",
+    )
+    .replace(
+      /Generated <strong>\d{4}-\d{2}-\d{2}<\/strong>/g,
+      "Generated <strong>DATE</strong>",
+    )
+    .replace(/Fresh: \d+/g, "Fresh: N")
+    .replace(/Due soon \(≤30d\): \d+/g, "Due soon (≤30d): N")
+    .replace(/Overdue: \d+/g, "Overdue: N")
+    .replace(/No header: \d+/g, "No header: N")
+    .replace(/Missing: \d+/g, "Missing: N")
+    .replace(/<tr class="(?:fresh|due-soon|overdue)">/g, '<tr class="dated">')
+    .replace(
+      /<td class="status">(?:Fresh|Due soon|Overdue) \(-?\d+d\)<\/td>/g,
+      '<td class="status">DATED</td>',
+    )
+    .replace(
+      /<td class="num days">-?\d+<\/td>/g,
+      '<td class="num days">DAYS</td>',
+    )
+    .replace(/\s+/g, " ")
+    .replace(/>\s+/g, ">")
+    .replace(/\s+</g, "<")
+    .replace(/<([^>]+?)\s+>/g, "<$1>")
+    .trim();
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 function main() {
+  const checkMode = process.argv.includes("--check");
   const outPath = process.env.OUTPUT || DEFAULT_OUTPUT;
   const { tracked } = loadConfig({ rootDir: REPO_ROOT });
   const entries = gatherEntries(tracked);
   const html = renderHtml(entries);
+
+  if (checkMode) {
+    if (!existsSync(outPath)) {
+      console.error(
+        `❌ ${relative(REPO_ROOT, outPath)} does not exist. Run: pnpm docs:freshness-dashboard`,
+      );
+      process.exit(1);
+    }
+    const existing = readFileSync(outPath, "utf8");
+    if (normaliseForCompare(existing) !== normaliseForCompare(html)) {
+      console.error(
+        `❌ ${relative(REPO_ROOT, outPath)} is out of date. Run: pnpm docs:freshness-dashboard`,
+      );
+      process.exit(1);
+    }
+    console.log(
+      `✅ ${relative(REPO_ROOT, outPath)} is up to date (${entries.length} docs tracked).`,
+    );
+    return;
+  }
+
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, html);
   const rel = relative(REPO_ROOT, outPath);
