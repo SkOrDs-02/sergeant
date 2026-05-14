@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SRI fixture — happy path</title>
+    <!-- Inline script — SRI not applicable -->
+    <script>
+      window.__bootedAt = Date.now();
+    </script>
+    <!-- Local module — SRI not required ('self' via CSP) -->
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Cross-origin CDN — has SRI + crossorigin (happy path) -->
+    <script
+      src="https://cdn.example.com/widget.js"
+      integrity="sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
