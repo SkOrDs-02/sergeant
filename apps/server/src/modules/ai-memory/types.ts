@@ -28,6 +28,13 @@ export const ALLOWED_MEMORY_SOURCES = [
   "journal",
   "digest",
   "cofounder",
+  // Migration 068 — PostHog → AI memory sync (PR-24). Behavioral product
+  // events (`onboarding_completed`, `first_action_completed`,
+  // `subscription_started`, `activation_v2_hit`) дзеркаляться як
+  // structured text-rows. Strict-isolation: `recall_memory` openclaw tool
+  // лишається на `sources=['cofounder']`; combined recall — через
+  // `POST /api/ai-memory/recall` з явним `sources=['cofounder','product']`.
+  "product",
 ] as const;
 
 export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];

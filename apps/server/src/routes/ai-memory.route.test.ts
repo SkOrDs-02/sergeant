@@ -455,3 +455,113 @@ describe("POST /api/ai-memory/recall — provider failure", () => {
     expect(res.body).toMatchObject({ code: "RECALL_FAILED" });
   });
 });
+
+// ─── PR-24: POST /api/ai-memory/event-sync ────────────────────────────
+
+describe("POST /api/ai-memory/event-sync — auth guard", () => {
+  it("→ 401 без сесії", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/ai-memory/event-sync")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ eventName: "onboarding_completed", payload: {} });
+    expect(res.status).toBe(401);
+    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/ai-memory/event-sync — schema validation", () => {
+  beforeEach(() => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+  });
+
+  it("→ 400 коли eventName відсутній", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/ai-memory/event-sync")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ payload: {} });
+    expect(res.status).toBe(400);
+    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
+  });
+
+  it("→ 400 коли payload — масив (не obj)", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/ai-memory/event-sync")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ eventName: "onboarding_completed", payload: ["evil"] });
+    expect(res.status).toBe(400);
+  });
+
+  it("→ 200 + ok:false для подій поза allowlist (без 4xx)", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/ai-memory/event-sync")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ eventName: "expense_added", payload: { amount_kop: 100 } });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ ok: false, reason: "event_not_synced" });
+    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/ai-memory/event-sync — happy path", () => {
+  beforeEach(() => {
+    getSessionUserMock.mockResolvedValue({ id: "user_42" });
+  });
+
+  it("→ 202 + enqueueMemoryIngest викликаний з source='product'", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/ai-memory/event-sync")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        eventName: "onboarding_completed",
+        payload: { intent: "vibe_picked", picksCount: 2 },
+      });
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({ ok: true, enqueued: true });
+    expect(res.body.sourceRef).toMatch(
+      /^onboarding_completed:user_42:\d{4}-\d{2}-\d{2}$/,
+    );
+    expect(enqueueMemoryIngestMock).toHaveBeenCalledTimes(1);
+    const arg = enqueueMemoryIngestMock.mock.calls[0]?.[0] as {
+      userId: string;
+      source: string;
+      content: string;
+      metadata: Record<string, unknown>;
+    };
+    expect(arg.userId).toBe("user_42");
+    expect(arg.source).toBe("product");
+    expect(arg.content).toContain("completed onboarding");
+    expect(arg.metadata).toMatchObject({
+      event: "onboarding_completed",
+      intent: "vibe_picked",
+    });
+  });
+
+  it("витирає PII перед enqueue (email/password)", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/ai-memory/event-sync")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        eventName: "signup_completed",
+        payload: {
+          method: "email",
+          email: "leaked@example.com",
+          password: "hunter2",
+        },
+      });
+    expect(res.status).toBe(202);
+    const arg = enqueueMemoryIngestMock.mock.calls[0]?.[0] as {
+      content: string;
+      metadata: Record<string, unknown>;
+    };
+    expect(arg.content).not.toContain("leaked@example.com");
+    expect(arg.content).not.toContain("hunter2");
+    expect(arg.metadata).not.toHaveProperty("email");
+    expect(arg.metadata).not.toHaveProperty("password");
+  });
+});
