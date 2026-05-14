@@ -1,12 +1,6 @@
 /**
- * @scaffolded
- * @owner @Skords-01
- * @addedIn 1d443ac1 (feat(web): add UI/UX improvements and new components)
- * @nextStep Wire into module empty-states (Finyk transactions, Fizruk workouts,
- *           Routine habits, Nutrition diary). See docs/design/empty-states.md.
- *
- * Scaffolded but not yet imported by any consumer. Do NOT delete as part of
- * dead-code cleanup — see Hard Rule #15 in AGENTS.md.
+ * Last validated: 2026-05-14
+ * Status: Active
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";

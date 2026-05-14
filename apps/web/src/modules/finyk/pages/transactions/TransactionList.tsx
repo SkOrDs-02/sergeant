@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState, type ReactNode } from "react";
 import { GroupedVirtuoso } from "react-virtuoso";
 import { TxListItem } from "../../components/TxListItem";
@@ -170,7 +174,7 @@ export function TransactionList({
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
-          icon={<FinykEmptyIllustration size={80} />}
+          illustration={<FinykEmptyIllustration size={80} />}
           title="Немає транзакцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           module="finyk"
