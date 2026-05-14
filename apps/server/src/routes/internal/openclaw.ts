@@ -43,6 +43,7 @@ import {
 } from "../../modules/ai-memory/forget.js";
 import {
   buildAiCostSummary,
+  MAX_TREND_DAYS,
   checkDailyBudget,
   finalizeInvocation,
   listRecentDecisions,
@@ -104,6 +105,8 @@ import {
   clearFounderMute,
   getFounderMute,
   isFounderMuted,
+  // PR /whois (debug): /openclaw whois aggregator.
+  lookupWhois,
   // PR-C1b: reminder store + FSM helpers.
   setReminder,
   listDueReminders,
@@ -113,6 +116,7 @@ import {
   listFounderReminders,
   ReminderValidationError,
 } from "../../modules/openclaw/index.js";
+import { createTelegramBotClient } from "../../modules/telegram/index.js";
 import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 import type {
   OpenClawStatus,
@@ -212,6 +216,16 @@ const StrategyBody = z.object({
   path: z.string().min(1).max(500),
 });
 
+// `/ai_cost <days>` — optional trend-window. Порожнє body беремо як
+// legacy `/ai_cost` (без trend); `trendDays: 1..30` — включає
+// Anthropic per-day series. Object loose-mode — forward-compat для
+// майбутніх параметрів (e.g. provider filter).
+const AiCostSummaryBody = z
+  .object({
+    trendDays: z.number().int().min(1).max(MAX_TREND_DAYS).optional(),
+  })
+  .strict();
+
 const QueryBody = z.object({
   sql: z.string().min(1).max(8000),
   params: z.array(z.unknown()).optional(),
@@ -303,6 +317,30 @@ const MuteSetBody = z.object({
 const MuteFounderBody = z.object({
   founderUserId: z.string().min(1),
 });
+
+// PR /whois (debug): `/openclaw whois <tg_user_id|@username>` body.
+// Хоч один з `tgUserId` / `username` має бути присутній — Zod refine
+// гарантує це на boundary, щоб не пускати у `lookupWhois` пустий
+// lookup. `founderTgUserId` обов'язковий для `isFounder` check-у
+// (caller дістає з env).
+const WhoisLookupBody = z
+  .object({
+    founderUserId: z.string().min(1).max(128),
+    founderTgUserId: z.number().int().min(1),
+    tgUserId: z.number().int().min(1).optional(),
+    username: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^@?[A-Za-z0-9_]{3,64}$/)
+      .optional(),
+    windowDays: z.number().int().min(1).max(30).optional(),
+    topToolsLimit: z.number().int().min(1).max(20).optional(),
+  })
+  .strict()
+  .refine((d) => d.tgUserId !== undefined || d.username !== undefined, {
+    message: "tgUserId or username is required",
+  });
 
 // ADR-0032: ports of Sergeant Console (ADR-0027) ops/marketing tool I/O
 // schemas. Validation is intentionally loose — the upstream APIs (Stripe,
@@ -956,17 +994,24 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   //     `ai_cost_estimate_usd_total` (since process restart).
   //   - Budget envelopes — `ANTHROPIC_MONTHLY_BUDGET_USD` /
   //     `VOYAGE_MONTHLY_BUDGET_USD` env-vars (PR-13 #2590).
-  // Body порожній — endpoint без аргументів, founder-bound по
-  // internal-API-bearer guard.
+  //
+  // Body: optional `{ trendDays?: 1..30 }` — включає per-day Anthropic
+  // trend-block (для `/ai_cost <N>` UI). Без trendDays — legacy shape
+  // (today/week/month).
   r.post(
     "/api/internal/openclaw/ai-cost-summary",
-    asyncHandler(async (_req, res) => {
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(AiCostSummaryBody, req, res);
+      if (!parsed.ok) return;
       const summary = await buildAiCostSummary({
         pool,
         budget: {
           anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
           voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
         },
+        ...(parsed.data.trendDays !== undefined
+          ? { trendDays: parsed.data.trendDays }
+          : {}),
       });
       res.json(summary);
     }),
@@ -1518,6 +1563,42 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       if (!parsed.ok) return;
       const result = await isFounderMuted(pool, {
         founderUserId: parsed.data.founderUserId,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- whois ("/openclaw whois <tg_id|@username>" payload) ----
+  //
+  // Read-only aggregator. Telegram resolution через
+  // `SERGEANT_ALERT_BOT_TOKEN` (той самий бот, що read-telegram-topic
+  // -history-у). Якщо токен пустий — `telegramClient: null`, resolution
+  // skip-ується (consumer бачить `telegramError.code = "api_error"`
+  // тільки коли є client + getChat fail). Cache layer навмисно
+  // відсутній — invocations rollup має бути fresh для debug-у.
+  r.post(
+    "/api/internal/openclaw/whois",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WhoisLookupBody, req, res);
+      if (!parsed.ok) return;
+      const token = env.SERGEANT_ALERT_BOT_TOKEN;
+      const telegramClient = token ? createTelegramBotClient({ token }) : null;
+      const result = await lookupWhois(pool, {
+        founderUserId: parsed.data.founderUserId,
+        founderTgUserId: parsed.data.founderTgUserId,
+        ...(parsed.data.tgUserId !== undefined
+          ? { tgUserId: parsed.data.tgUserId }
+          : {}),
+        ...(parsed.data.username !== undefined
+          ? { username: parsed.data.username }
+          : {}),
+        ...(parsed.data.windowDays !== undefined
+          ? { windowDays: parsed.data.windowDays }
+          : {}),
+        ...(parsed.data.topToolsLimit !== undefined
+          ? { topToolsLimit: parsed.data.topToolsLimit }
+          : {}),
+        telegramClient,
       });
       res.json(result);
     }),

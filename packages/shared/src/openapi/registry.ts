@@ -221,6 +221,11 @@ const BillingStatusResponse = schemas.BillingStatusResponseSchema.meta({
   description:
     "Поточний subscription state користувача, серіалізований з billing_subscriptions.",
 });
+const BillingPortalResponse = schemas.BillingPortalResponseSchema.meta({
+  id: "BillingPortalResponse",
+  description:
+    "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal.",
+});
 const TranscribeQuery = schemas.TranscribeQuerySchema.meta({
   id: "TranscribeQuery",
   description:
@@ -302,6 +307,7 @@ export const namedSchemas = {
   BillingCheckoutRequest,
   BillingCheckoutResponse,
   BillingStatusResponse,
+  BillingPortalResponse,
   TranscribeQuery,
   TranscribeResponse,
   WebVitalsPayload,

@@ -44,7 +44,7 @@ Worker idempotency: BullMQ jobId = `${userId}:${source}:${sourceRef}`. На по
 
 ### Dead-letter queue
 
-Permanent-fail jobs пишуться у [`ai_memory_ingest_failed`](../../apps/server/src/migrations/066_ai_memory_ingest_failed.sql) (migration 066) у двох випадках:
+Permanent-fail jobs пишуться у [`ai_memory_ingest_failed`](../../apps/server/src/migrations/068_ai_memory_ingest_failed.sql) (migration 068) у двох випадках:
 
 1. **Non-retryable error** — `processMemoryIngestJob` ловить, log + `recordIngestDlq()`.
 2. **Retries-exhausted** — BullMQ emit-ить `failed`-event після `attemptsMade >= AI_MEMORY_INGEST_ATTEMPTS`; worker.on("failed") handler пише у DLQ.

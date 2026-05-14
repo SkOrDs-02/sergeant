@@ -180,15 +180,18 @@ env reads through env.ts`).
 - **Why виносимо:** мінорна документаційна правка, можна закрити одним
   commit-ом будь-якій сесії.
 
-### P2-5. `pool.end()` failure handling під час shutdown ⚠️ Open
+### P2-5. `pool.end()` failure handling під час shutdown ✅ Closed in this PR
 
-- **File:** [`apps/server/src/index.ts:323-331`](../../apps/server/src/index.ts#L323)
-- **Why open:** `try { await pool.end() } catch { /* log */ }` —
-  swallows errors, але якщо pg-pool корумпований (active txn у одному
-  з worker-ів), `pool.end()` зависає до hard-timeout-у (5s) → клієнти
-  отримують ECONNRESET замість graceful 503. Запропонована fix-а: AbortController
-  з `SHUTDOWN_GRACE_MS / 2` для pool drain. Не критично, бо hard-timer
-  все одно ловить.
+- **File:** [`apps/server/src/index.ts`](../../apps/server/src/index.ts)
+- **Дія:** `await pool.end()` тепер обгорнутий у новий helper
+  [`apps/server/src/lib/poolShutdown.ts`](../../apps/server/src/lib/poolShutdown.ts)
+  з `AbortController` і timeout `SHUTDOWN_GRACE_MS / 2`. При abort —
+  `logger.warn({ msg: "pg_pool_end_timeout", timeoutMs, abortedAfterMs })`,
+  shutdown продовжує `disconnectRedis` → `Sentry.flush`; `hardTimer` у
+  `shutdown()` залишається last-resort safety net. Тести: happy-path,
+  hanging `pool.end()` (verifies total shutdown stays ≤ `SHUTDOWN_GRACE_MS`),
+  rejection (helper never throws), already-aborted external signal —
+  у [`apps/server/src/lib/poolShutdown.test.ts`](../../apps/server/src/lib/poolShutdown.test.ts).
 
 ### P2-6. Health-endpoint p95 не алертимо в Grafana ⚠️ Open
 
@@ -231,7 +234,6 @@ env reads through env.ts`).
 - **P2** `obs/tracing.ts` env-injection refactor — обговорюємо, чи лишити DI-pattern.
 - **P2** SQLite `sync_op_outbox` no-such-table fix — Stage 8/9 (інша ініціатива).
 - **P2** Documentation gap у `metrics.md` §6 (AI-token join-pattern) — окремий cosmetic PR.
-- **P2** Shutdown: `pool.end()` AbortController — нерефлексія, hard-timer ловить.
 - **P2** Health p95 Alertmanager rule — observability-PR.
 - **P2** Sentry sampling для `/api/internal/*` — потрібен власний моніторинг.
 

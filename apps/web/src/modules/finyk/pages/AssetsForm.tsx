@@ -60,25 +60,36 @@ export function SubscriptionForm({
           className="flex-1"
           size="sm"
           onClick={() => {
-            if (newSub.name && newSub.billingDay) {
-              setSubscriptions((ss) => [
-                ...ss,
-                {
-                  ...newSub,
-                  id: Date.now().toString(),
-                  billingDay: Number(newSub.billingDay) || 0,
-                } as Subscription,
-              ]);
-              notifyFinykRoutineCalendarSync();
-              setNewSub({
-                name: "",
-                emoji: "\u{1F4F1}",
-                keyword: "",
-                billingDay: "",
-                currency: "UAH",
-              });
-              setShowSubForm(false);
+            if (!newSub.name || !newSub.billingDay) return;
+            // The day-of-month <input type="number"> exposes min/max only as
+            // browser hints — keyboard/paste/programmatic entry bypasses them.
+            // Clamp to the calendar range so we never persist 0/99/NaN and
+            // render nonsense like "Через 18 днів · 0-го".
+            const parsedDay = Math.trunc(Number(newSub.billingDay));
+            if (
+              !Number.isFinite(parsedDay) ||
+              parsedDay < 1 ||
+              parsedDay > 31
+            ) {
+              return;
             }
+            setSubscriptions((ss) => [
+              ...ss,
+              {
+                ...newSub,
+                id: Date.now().toString(),
+                billingDay: parsedDay,
+              } as Subscription,
+            ]);
+            notifyFinykRoutineCalendarSync();
+            setNewSub({
+              name: "",
+              emoji: "\u{1F4F1}",
+              keyword: "",
+              billingDay: "",
+              currency: "UAH",
+            });
+            setShowSubForm(false);
           }}
         >
           Додати

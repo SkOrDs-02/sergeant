@@ -24,18 +24,23 @@ export { checkDailyBudget, estimateClaudeSonnetCostUsd } from "./budget.js";
 export {
   buildAiCostSummary,
   fetchAnthropicCostsForRange,
+  fetchAnthropicDailyTrend,
   fetchTopEndpointsFromProm,
   fetchVoyageCumulativeFromProm,
   kyivDayKey,
+  kyivDayMinus,
   kyivWeekStart,
   kyivMonthStart,
   kyivMonthEnd,
   kyivDaysInMonth,
+  MAX_TREND_DAYS,
 } from "./aiCostSummary.js";
 export type {
   AiCostSummary,
+  AnthropicTrendBlock,
   BudgetSnapshot,
   BuildAiCostSummaryInput,
+  DailyCostPoint,
   EndpointCostRow,
   ModelCostBreakdown,
   PeriodCostSummary,
@@ -253,3 +258,12 @@ export {
   isFounderMuted,
 } from "./mute-state.js";
 export type { MuteState, MuteCheckResult } from "./mute-state.js";
+
+// PR /whois (debug): /openclaw whois <user_id|@username> aggregator.
+export { lookupWhois } from "./whois.js";
+export type {
+  WhoisResult,
+  WhoisInput,
+  WhoisTelegramError,
+  ToolUsageRow,
+} from "./whois.js";
