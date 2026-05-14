@@ -156,6 +156,18 @@ jobs:
           restore-keys: |
             ios-pods-
 
+      - name: Audit iOS App Transport Security (L12)
+        # Same guard as `mobile-shell-ios.yml`. Runs once `cap add ios` /
+        # `cap sync ios` has scaffolded the Info.plist and BEFORE either
+        # the signed `xcodebuild archive` or the unsigned-fallback build
+        # consumes it. Fails the release if
+        # `NSAppTransportSecurity.NSAllowsArbitraryLoads` (or any of the
+        # related per-surface flags) is `true` — silently bypassing the
+        # `cleartext: false` guarantee in
+        # `apps/mobile-shell/capacitor.config.ts`. See
+        # `docs/security/hardening/L12-ios-app-transport-security.md`.
+        run: node apps/mobile-shell/scripts/check-info-plist.mjs
+
       # ─────────────────────────── Unsigned fallback ──────────────────────
       - name: Build App for iOS Simulator (unsigned fallback)
         if: steps.secrets.outputs.configured != 'true'
