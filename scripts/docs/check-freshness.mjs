@@ -25,6 +25,8 @@
 //   DRY_RUN=1 node scripts/docs/check-freshness.mjs        # print what would happen
 //   node scripts/docs/check-freshness.mjs --check-coverage # CI gate: every
 //     non-excluded `.md` must have a header (exits 1 on gaps)
+//   node scripts/docs/check-freshness.mjs --check-cadence  # CI gate: tracked
+//     docs must not be past their effective Next review date
 //
 // Environment:
 //   GITHUB_TOKEN          — required (unless DRY_RUN / --check-coverage)
@@ -340,11 +342,79 @@ export function runCoverage({ rootDir = REPO_ROOT } = {}) {
   return gaps;
 }
 
+export function evaluateFreshnessCadence({ tracked, readFile, today }) {
+  const failures = [];
+  for (const entry of tracked) {
+    const content = readFile(entry.path);
+    if (content == null) continue;
+
+    const header = parseHeader(content);
+    if (!header.lastValidated) continue;
+
+    const nextReview = effectiveNextReview(header, entry.cadenceDays);
+    if (!nextReview) {
+      failures.push({
+        path: entry.path,
+        status: "no-next-review",
+      });
+      continue;
+    }
+
+    if (isOverdue(nextReview, today)) {
+      failures.push({
+        path: entry.path,
+        status: "overdue",
+        lastValidated: header.lastValidated,
+        nextReview,
+        daysOverdue: daysBetween(nextReview, today),
+      });
+    }
+  }
+  return failures;
+}
+
+/**
+ * `--check-cadence` mode: exit non-zero if any tracked doc is past its
+ * effective review date. This is the CI version of the issue-opening nightly:
+ * no network, no labels, just a deterministic freshness drift gate.
+ */
+export function runCadenceCheck({
+  rootDir = REPO_ROOT,
+  today = todayISO(),
+} = {}) {
+  const { tracked } = loadConfig({ rootDir });
+  const readFile = (path) => {
+    const full = resolve(rootDir, path);
+    return existsSync(full) ? readFileSync(full, "utf8") : null;
+  };
+  return evaluateFreshnessCadence({ tracked, readFile, today });
+}
+
 // Run when executed directly
 const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 if (isMain) {
+  if (process.argv.includes("--check-cadence")) {
+    const failures = runCadenceCheck();
+    if (failures.length > 0) {
+      console.error(
+        `\n[FAIL] ${failures.length} tracked doc(s) past their freshness cadence:`,
+      );
+      for (const failure of failures) {
+        if (failure.status === "overdue") {
+          console.error(
+            `  - ${failure.path}: next review was ${failure.nextReview} (${failure.daysOverdue}d overdue)`,
+          );
+        } else {
+          console.error(`  - ${failure.path}: ${failure.status}`);
+        }
+      }
+      process.exit(1);
+    }
+    console.log("All tracked docs are within freshness cadence.");
+    process.exit(0);
+  }
   if (process.argv.includes("--check-coverage")) {
     const gaps = runCoverage();
     if (gaps.length > 0) {

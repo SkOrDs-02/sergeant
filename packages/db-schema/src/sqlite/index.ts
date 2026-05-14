@@ -61,6 +61,7 @@ export {
   type RepairOutboxResult,
   type RepairPartialOutboxMigrationOptions,
 } from "./syncOpOutboxRepair.js";
+export { purgeSyncOpOutboxForUser } from "./syncOpOutboxPurge.js";
 export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,

@@ -1,12 +1,11 @@
 # Sergeant — Комплексний Генеральний Аудит
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
 > **Status:** Closed (historical record — outstanding items відстежуються у [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md))
 
-> **Дата аудиту:** 2026-04-28
+> **Initial audit date:** 2026-04-28 (історичний аудит; поточна ревалідація живе у `Last validated` / `Next review`).
 > **Аудитор:** v0 AI Assistant
 > **Скоуп:** Повний репозиторій `Skords-01/Sergeant`
-> **Наступна ревалідація:** 2026-07-28
 > **План реалізації:** [2026-04-28-implementation-roadmap.md](./2026-04-28-implementation-roadmap.md)
 
 ---
