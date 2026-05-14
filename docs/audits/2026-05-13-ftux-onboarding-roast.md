@@ -133,7 +133,7 @@ events працюють, dashboards задокументовані, retention-co
 - **Дія (PR-21):** wave 4 mobile FTUX parity sweep, dependent на
   PR-09 + PR-11 + PR-15.
 
-### P1-3. OnboardingWizard a11y regression від PR #2599 (decompose) — ✅ Закрито у цьому PR
+### P1-3. OnboardingWizard a11y regression від PR #2599 (decompose) — ✅ Закрито в #2781
 
 - **Файли:** [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx), [`apps/web/src/core/onboarding/useOnboardingWizardState.ts`](../../apps/web/src/core/onboarding/useOnboardingWizardState.ts), [`apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx).
 - **Проблема:** decomposition (PR #2599, "691 → <600 LOC under max-lines budget") відкотив три UX-гарантії, що покривались `OnboardingWizard.ux.test.tsx`:
@@ -195,7 +195,7 @@ events працюють, dashboards задокументовані, retention-co
 
 Закрито follow-up PR-ами цього циклу:
 
-- ✅ **P1-3** — OnboardingWizard a11y regression від PR #2599. WCAG 2.4.3 splash-heading auto-focus, Escape→`onSecondaryAction` soft-pause wiring і double-submit guard (`submittingRef`) усі відновлені; `it.skip` маркери у `OnboardingWizard.ux.test.tsx` зняті (7/7 tests), додано Escape soft-pause + tour_replay coverage.
+- ✅ **P1-3** ([#2781](https://github.com/Skords-01/Sergeant/pull/2781)) — OnboardingWizard a11y regression від PR #2599. WCAG 2.4.3 splash-heading auto-focus, Escape→`onSecondaryAction` soft-pause wiring і double-submit guard (`submittingRef`) усі відновлені; `it.skip` маркери у `OnboardingWizard.ux.test.tsx` зняті (7/7 tests), додано Escape soft-pause + tour_replay coverage.
 
 Status bump у master tracker:
 
