@@ -36,9 +36,14 @@
   `onFlushError` сам із try/catch — observer-throw swallowed.
   `dispose()` — idempotent, removes every listener with same handler
   reference. 30 нових тестів (8 груп) у `syncV2.flushOnReconnect.test.ts`,
-  187/187 api-client suite зелена. Без callsite-ів у production-коді —
-  wiring у `apps/web` `<App>` boot path + `apps/mobile` shim teardown
-  лишається follow-up wiring PR-ом.
+  187/187 api-client suite зелена. На момент landing-у PR #1938 —
+  без callsite-ів у production. Wiring shipped у follow-up commit-ах:
+  web — `142a03a3 feat(web): wire sync engine writer runtime`
+  (`apps/web/src/core/syncEngine/syncEngineWriter.ts:127`, через
+  `deps.createReconnect ?? createSyncEngineFlushOnReconnect` у
+  `ensureReconnect`); mobile — `f5e89d8e feat(mobile): wire sync v2
+  writer-runtime into mobile boot pipeline`
+  (`apps/mobile/src/core/syncEngine/syncEngineWriter.ts:139`).
 
 - **`recoverDeadLetter` helper у `@sergeant/db-schema`
   ([#1935](https://github.com/Skords-01/Sergeant/pull/1935), Stage 5
