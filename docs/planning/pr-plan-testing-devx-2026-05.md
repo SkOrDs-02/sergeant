@@ -70,6 +70,7 @@
 
 ### QW-1 · `pnpm dedupe:check` script alias
 
+- **Status:** ✅ Виконано 2026-05-14 у [#2830](https://github.com/Skords-01/Sergeant/pull/2830) (devin/1778777613-qw1-dedupe-check-alias).
 - **P:** P2 · **Size:** XS · **Owner:** `@Skords-01`
 - **Файли:** `package.json` (одна нова scripts-entry).
 - **Scope:** додати script alias `"dedupe:check": "pnpm dedupe --check"` у root `package.json`. **Не вмикає** CI gate — це робить T-2 (D-2). Просто дає контрибуторам коротку команду до того, як D-2 приземлиться.
@@ -78,6 +79,7 @@
 
 ### QW-2 · `CONTRIBUTING.md` — додати посилання на новий plan + sergeant-start-here
 
+- **Status:** ✅ Виконано 2026-05-14 у [#2832](https://github.com/Skords-01/Sergeant/pull/2832) (devin/1778777772-qw2-contributing-testing-devx-link).
 - **P:** P2 · **Size:** XS · **Owner:** `@Skords-01`
 - **Файли:** `CONTRIBUTING.md` (1–2 рядки в розділ «Verification за типом зміни» → нова bullet «testing/devx changes»).
 - **Scope:** додати рядок «Для testing/devx surface — звіряйся з `docs/planning/pr-plan-testing-devx-2026-05.md` і починай із `.agents/skills/sergeant-start-here/SKILL.md`» (точний link-path формується відносно `CONTRIBUTING.md` як `./docs/planning/pr-plan-testing-devx-2026-05.md`).
@@ -86,6 +88,7 @@
 
 ### QW-3 · `docs/testing/README.md` cross-ref на цей план
 
+- **Status:** ✅ Виконано 2026-05-14 у [#2833](https://github.com/Skords-01/Sergeant/pull/2833) (devin/1778778027-qw3-testing-readme-crossref).
 - **P:** P2 · **Size:** XS · **Owner:** `@Skords-01`
 - **Файли:** `docs/testing/README.md` (нова bullet у секції «Cross-links»).
 - **Scope:** додати посилання на `docs/planning/pr-plan-testing-devx-2026-05.md` після згадки про initiative 0009. Заодно — оновити `Last validated` header (через `scripts/docs/bump-last-validated.mjs` під час pre-commit).
