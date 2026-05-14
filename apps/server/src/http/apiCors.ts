@@ -33,7 +33,12 @@ const ALLOW_HEADERS =
 // `Retry-After` — Monobank-proxy повертає його на 429, щоб клієнт (Monobank
 // pagination loop, `api-client/endpoints/mono.ts`) міг зробити targeted
 // backoff. Без Expose-Headers JS у cross-origin fetch не бачить заголовка.
-const EXPOSE_HEADERS = "Retry-After";
+//
+// `X-Server-Build-Id` — PR-21 (stack-pulse 2026-05) додає його як
+// hard-floor проти stale-SW-deploy-drift. Vercel-hosted bundle і
+// Capacitor WebView читають хедер на Railway-served responses, тож
+// без Expose-Headers force-update fallback мертвий.
+const EXPOSE_HEADERS = "Retry-After, X-Server-Build-Id";
 
 export function apiCorsMiddleware(): RequestHandler {
   return (req, res, next) => {

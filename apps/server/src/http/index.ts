@@ -9,6 +9,10 @@ export { requestLogMiddleware } from "./requestLog.js";
 export { withRequestContext } from "../obs/requestContext.js";
 
 export { buildApiCspDirectives, apiHelmetMiddleware } from "./security.js";
+export {
+  resolveServerBuildId,
+  serverBuildIdMiddleware,
+} from "./buildIdHeader.js";
 
 export {
   authSensitiveRateLimit,

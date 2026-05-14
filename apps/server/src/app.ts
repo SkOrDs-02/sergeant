@@ -18,6 +18,7 @@ import {
   requestLogMiddleware,
   requestTimeout,
   requireCsrfHeader,
+  serverBuildIdMiddleware,
   traceMiddleware,
   withRequestContext,
 } from "./http/index.js";
@@ -126,6 +127,14 @@ export function createApp({
   // роутери) мусять бачити вже канонізований `req.url`.
   app.use(apiVersionRewrite);
   app.use(apiHelmetMiddleware({ servesFrontend }));
+  // PR-21 (stack-pulse 2026-05): every response carries
+  // `X-Server-Build-Id`, so the web SW can detect a deploy drift
+  // (`client_build_id !== server_build_id`) and force-prompt-update
+  // even without an active prompt-mode toast. Mounted after CORS
+  // helmet but before route handlers so /api and SPA responses share
+  // it; CORS Expose-Headers (`apps/server/src/http/apiCors.ts`) makes
+  // it visible to cross-origin JS on Vercel.
+  app.use(serverBuildIdMiddleware());
 
   // Body-size policy: declarative table в `http/bodySizePolicy.ts` — єдине
   // джерело правди про per-route ліміти. ESLint-rule
