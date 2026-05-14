@@ -111,7 +111,7 @@
 - Inline payload contracts з типами + зв'язки з ініціативою 0010.
 - **Тест:** `packages/shared/src/lib/analyticsEvents.test.ts` (lines 57–76 added) — stability guard on canonical names.
 
-### P0-7 · Stripe price_id env-config + validation ✅ Closed in #<PR-number>
+### P0-7 · Stripe price_id env-config + validation ✅ Closed in #2793
 
 - **Файли:** `apps/server/src/env/env.ts` (нова Stripe-секція + assertStartupEnv branch), `apps/server/src/modules/billing/stripe.ts` (`getStripeSecretKey` / `getPriceId` мігровано з `process.env` на zod-валідований `env`).
 - **`.env.example`:** додані placeholder-и для `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID_PRO_MONTHLY` / `STRIPE_PRICE_ID_PLUS_MONTHLY` / `STRIPE_WEBHOOK_TOLERANCE_SECONDS` з UA-коментарями.
