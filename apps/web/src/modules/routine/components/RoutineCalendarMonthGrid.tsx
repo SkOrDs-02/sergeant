@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -157,7 +161,7 @@ export function RoutineCalendarMonthGrid({
             variant="ghost"
             size="sm"
             onClick={() => onPlanFizruk(selectedDay)}
-            className="text-style-caption mt-2 w-full rounded-xl border border-sky-400/30 bg-sky-500/5 hover:bg-sky-500/10 px-3! text-info-strong dark:text-info text-center"
+            className="text-style-caption mt-2 w-full rounded-xl border border-info/30 bg-info/5 hover:bg-info/10 px-3! text-info-strong dark:text-info text-center"
           >
             Планувати тренування
           </Button>
@@ -194,18 +198,13 @@ export function RoutineCalendarMonthGrid({
                   className={cn(
                     "flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60",
                     e.completed && "opacity-70",
-                    e.fizruk &&
-                      "cursor-pointer hover:bg-sky-500/5 min-h-[44px]",
+                    e.fizruk && "cursor-pointer hover:bg-info/5 min-h-[44px]",
                   )}
                 >
                   <span
                     className={cn(
                       "w-1.5 h-1.5 rounded-full shrink-0",
-                      e.fizruk
-                        ? "bg-sky-500"
-                        : e.finykSub
-                          ? "bg-emerald-500"
-                          : C.dot,
+                      e.fizruk ? "bg-info" : e.finykSub ? "bg-success" : C.dot,
                     )}
                   />
                   <span className="text-style-label flex-1 min-w-0 text-text truncate">

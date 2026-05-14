@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import {
   useCallback,
   useEffect,
@@ -316,7 +320,7 @@ export function RoutineCalendarPanel({
             className={cn(
               "text-style-caption px-2.5 py-1.5 rounded-full border",
               tagFilter === "__fizruk"
-                ? "border-sky-400/50 bg-sky-500/10 text-text"
+                ? "border-info/50 bg-info/10 text-text"
                 : C.chipOff,
             )}
           >
@@ -333,7 +337,7 @@ export function RoutineCalendarPanel({
             className={cn(
               "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[200px] truncate",
               tagFilter === "__finyk_sub"
-                ? "border-emerald-500/40 bg-emerald-500/10 text-text"
+                ? "border-success/40 bg-success/10 text-text"
                 : C.chipOff,
             )}
           >
@@ -468,9 +472,9 @@ export function RoutineCalendarPanel({
                       className={cn(
                         "overflow-hidden rounded-2xl border border-line bg-panel pl-4 pr-4 py-3 shadow-card flex flex-col gap-2 border-l-4",
                         e.fizruk
-                          ? "border-l-sky-500"
+                          ? "border-l-info"
                           : e.finykSub
-                            ? "border-l-emerald-500"
+                            ? "border-l-success"
                             : e.habitId
                               ? C.habitRowAccent
                               : "border-l-transparent",
@@ -525,7 +529,7 @@ export function RoutineCalendarPanel({
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="h-9! px-3! text-xs! bg-sky-500/5"
+                              className="h-9! px-3! text-xs! bg-info/5"
                               type="button"
                               onClick={() => setFizrukPlanDateKey(e.date)}
                             >
@@ -536,7 +540,7 @@ export function RoutineCalendarPanel({
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="h-9! px-3! text-xs! bg-emerald-500/5"
+                              className="h-9! px-3! text-xs! bg-success/5"
                               type="button"
                               onClick={() =>
                                 onOpenModule("finyk", { hash: "assets" })

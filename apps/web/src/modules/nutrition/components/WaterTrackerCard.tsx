@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useWaterTracker } from "../hooks/useWaterTracker";
@@ -114,7 +118,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           <div
             className={cn(
               "h-full rounded-full transition-[width,background-color] duration-500",
-              done ? "bg-success" : "bg-sky-500",
+              done ? "bg-success" : "bg-info",
             )}
             style={{ width: `${pct}%` }}
           />

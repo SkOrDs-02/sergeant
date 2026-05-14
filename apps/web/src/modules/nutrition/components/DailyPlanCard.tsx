@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -128,19 +132,19 @@ export function DailyPlanCard({
                   key: "dailyTargetProtein_g",
                   label: "Білки",
                   unit: "г",
-                  color: "text-blue-400",
+                  color: "text-info",
                 },
                 {
                   key: "dailyTargetFat_g",
                   label: "Жири",
                   unit: "г",
-                  color: "text-yellow-400",
+                  color: "text-warning",
                 },
                 {
                   key: "dailyTargetCarbs_g",
                   label: "Вуглеводи",
                   unit: "г",
-                  color: "text-green-400",
+                  color: "text-success",
                 },
               ] as const
             ).map(({ key, label, unit, color }) => (

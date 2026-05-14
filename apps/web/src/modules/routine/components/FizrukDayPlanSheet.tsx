@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -119,12 +123,12 @@ export function FizrukDayPlanSheet({
                         key={ex.id}
                         className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-info shrink-0" />
                         <span className="text-sm text-text truncate">
                           {ex?.name?.uk || ex?.name?.en || ex.id}
                         </span>
                         {ex?.primaryGroup && (
-                          <span className="text-2xs text-subtle shrink-0 ml-auto">
+                          <span className="text-style-caption text-subtle shrink-0 ml-auto">
                             {ex.primaryGroupUk || ex.primaryGroup}
                           </span>
                         )}
@@ -167,7 +171,7 @@ export function FizrukDayPlanSheet({
                       className={cn(
                         "w-full text-left rounded-xl px-3 py-2.5 border transition-colors min-h-[44px]",
                         isActive
-                          ? "border-sky-400/50 bg-sky-500/10"
+                          ? "border-info/50 bg-info/10"
                           : "border-line bg-panel/60 hover:bg-panelHi",
                       )}
                     >
