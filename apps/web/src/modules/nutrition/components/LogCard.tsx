@@ -1,7 +1,12 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { NutritionEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { estimateLogBytes, toLocalISODate } from "../lib/nutritionStorage";
 import {
   addDaysISODate,
@@ -148,22 +153,8 @@ export function LogCard({
         {meals.length === 0 ? (
           <EmptyState
             compact
-            icon={
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3 3h18v4H3zM5 7v14h14V7" />
-                <path d="M9 11h6M9 15h6" />
-              </svg>
-            }
+            illustration={<NutritionEmptyIllustration size={64} />}
+            module="nutrition"
             title="Поки немає записів"
             description="Додайте перший прийом їжі, щоб почати вести журнал."
           />

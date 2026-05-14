@@ -18,6 +18,7 @@ import { WhatsNewModal, useWhatsNew } from "../whatsNew";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 import { messages } from "@shared/i18n/uk";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 
 export interface HubHomeViewProps {
   ui: HubUIState;
@@ -92,6 +93,7 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubHeader
         onOpenSearch={() => ui.setSearchOpen(true)}
+        onOpenPrivacy={() => openHubSettingsSection("privacy")}
         user={user}
         authLoading={authLoading}
         onShowAuth={onOpenAuth}
