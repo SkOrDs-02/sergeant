@@ -1,6 +1,7 @@
 # ADR-0010: Mobile dual-track — Capacitor shell + Expo native
 
 - **Status:** accepted
+- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Lifecycle:** dual-track with locked sunset (shell deprecation T₀ 2026-09-01 → T₂ 2027-02-28; RN-only after T₀ — див. § Sunset schedule)
 - **Date:** 2026-04-27
 - **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md)

@@ -1,6 +1,7 @@
 # ADR-0026: n8n — джерело істини для воркфлоу
 
 - **Статус:** accepted
+- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Дата:** 2026-04-27
 - **Рецензенти:** @Skords-01
 - **Замінює:** —
