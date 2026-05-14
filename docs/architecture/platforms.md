@@ -1,6 +1,6 @@
 # 🎯 Статус трьох поверхонь — Web / RN mobile / Capacitor shell
 
-> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
+> **Last validated:** 2026-05-14 by @claude. **Next review:** 2026-08-12.
 > **Status:** Active.  
 > **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
 > **Initiative:** [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md).
@@ -46,7 +46,7 @@
 | **Харчування** — barcode scan     | ✅               | ✅              | ✅                 | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode`                                                                                                                                                                                  |
 | **Харчування** — pantry           | ✅               | ✅              | ✅                 | RN: `useNutritionPantries` + `pages/Pantry` готові                                                                                                                                                                                                      |
 | **Харчування** — shopping list    | ✅               | ✅              | ✅                 | RN: ручний список + AI-генерація з рецептів через `apiClient.nutrition.shoppingList`; weekplan-джерело — TODO                                                                                                                                           |
-| **Харчування** — day plan         | ✅               | ✅              | 🟡                 | RN: `DailyPlanCard` портовано (Phase 7), вбудовано в dashboard tab                                                                                                                                                                                                |
+| **Харчування** — day plan         | ✅               | ✅              | 🟡                 | RN: `DailyPlanCard` портовано (Phase 7), вбудовано в dashboard tab                                                                                                                                                                                      |
 | **Харчування** — recipes (AI)\*\* | ✅               | ✅              | 🟥                 | RN: `recipe/[id].tsx` — заглушка, Phase 7                                                                                                                                                                                                               |
 | **Харчування** — photo-AI\*\*     | ✅               | ✅              | 🟥                 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`)                                                                                                                                                                                                |
 | **Detox / e2e on CI**             | n/a              | n/a             | ✅                 | `detox-ios.yml` — smoke + full sign-in→module→sign-out (×4 модуля), `detox-android.yml` — smoke-build; full під mock-auth flag                                                                                                                          |

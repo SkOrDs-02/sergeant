@@ -163,7 +163,7 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 **File:** `apps/web/src/core/hub/HubChatHistoryDrawer.tsx`
 **Lines:** L142–L182
 
-**Description.** The session row is a `<div role="button" tabIndex={0} onClick={…}>` and *contains* a real `<button>` for the delete affordance. Nesting an interactive element inside another interactive element violates HTML semantics (`<button>` cannot be a descendant of `[role="button"]` for the same reason it cannot live inside an `<a>` / `<button>`). Screen readers read both as activatable; keyboard focus order becomes ambiguous (Tab → row → delete button → row → …).
+**Description.** The session row is a `<div role="button" tabIndex={0} onClick={…}>` and _contains_ a real `<button>` for the delete affordance. Nesting an interactive element inside another interactive element violates HTML semantics (`<button>` cannot be a descendant of `[role="button"]` for the same reason it cannot live inside an `<a>` / `<button>`). Screen readers read both as activatable; keyboard focus order becomes ambiguous (Tab → row → delete button → row → …).
 
 **Why it matters.** Users with assistive tech can accidentally delete the wrong chat when keyboard-focusing the row and pressing Enter (the outer handler fires `onSelect`, but on click bubbling the inner delete still ran `e.stopPropagation()` — the inverse path is fragile). Also fails axe-core `nested-interactive` rule.
 
@@ -205,7 +205,7 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 **File:** `apps/web/src/core/hub/chat/HubChatBody.tsx`
 **Lines:** L44–L47
 
-**Description.** The effect snaps `chatRef.current.scrollTop = chatRef.current.scrollHeight` whenever `messages` *or* `loading` changes. There is no "user has scrolled away from the bottom" guard. If the user scrolls up to re-read an earlier answer and a streamed delta arrives (`useChatSend` calls `setMessages` on every SSE chunk), the view is yanked back to the bottom mid-read.
+**Description.** The effect snaps `chatRef.current.scrollTop = chatRef.current.scrollHeight` whenever `messages` _or_ `loading` changes. There is no "user has scrolled away from the bottom" guard. If the user scrolls up to re-read an earlier answer and a streamed delta arrives (`useChatSend` calls `setMessages` on every SSE chunk), the view is yanked back to the bottom mid-read.
 
 **Why it matters.** Standard chat-UI failure mode; it interferes with reviewing long assistant answers, which directly undermines the "Усі бесіди" history feature shipped in the same scope.
 
@@ -236,10 +236,10 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 **Description.** On every debounced flush the hook re-derives the title only when:
 
 ```ts
-target.title.startsWith("Бесіда ") || target.title === "Нова бесіда"
+target.title.startsWith("Бесіда ") || target.title === "Нова бесіда";
 ```
 
-`"Бесіда "` is also a perfectly valid prefix a user might type when manually renaming a chat ("Бесіда з тренером", "Бесіда про відрядження", …). If session-rename ships later (or already exists via an external code path), any rename starting with "Бесіда " will be silently overwritten by the next debounce flush, because the heuristic conflates "auto-generated fallback" with "starts with the Ukrainian word for *conversation*".
+`"Бесіда "` is also a perfectly valid prefix a user might type when manually renaming a chat ("Бесіда з тренером", "Бесіда про відрядження", …). If session-rename ships later (or already exists via an external code path), any rename starting with "Бесіда " will be silently overwritten by the next debounce flush, because the heuristic conflates "auto-generated fallback" with "starts with the Ukrainian word for _conversation_".
 
 **Why it matters.** Loss of user-edited metadata; very hard to debug because the corruption only triggers on the next message after the rename.
 
@@ -255,7 +255,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 
 **Description.** The reader appends to `buf` on every chunk and only splits on `\n`. There is no upper bound on `buf` length and no upper bound on `acc` (the streamed assistant text in `useChatSend.ts:349–L356`). A misbehaving server or a runaway model can stream a multi-megabyte chunk; in the meantime each delta triggers `setMessages((m) => m.map(...))` which rerenders the entire chat list and the markdown parser in `AssistantMessageBody`.
 
-**Why it matters.** Memory pressure on low-end mobile + frame drops every keystroke-equivalent on the AI side. The 90-second timeout in `useChatSend` (L227–L231) bounds *time* but not *bytes*.
+**Why it matters.** Memory pressure on low-end mobile + frame drops every keystroke-equivalent on the AI side. The 90-second timeout in `useChatSend` (L227–L231) bounds _time_ but not _bytes_.
 
 **Recommendation.** Add a `MAX_STREAM_BYTES` (e.g. 256 KB total, 8 KB per chunk) and abort the controller / reject the promise once exceeded. Surface a friendly "Відповідь занадто довга" message.
 
@@ -267,7 +267,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 **File:** `apps/web/src/core/hub/search/searchSources.ts`
 **Lines:** scoring loop around L260–L300 with `searchCache.ts` memoization
 
-**Description.** The debounced effect in `useSearchEngine` (L86–L98) wraps `setResults` in `startTransition`, which is good. However the actual `performSearch(query)` call runs eagerly on the main thread inside the timer; `searchSources` walks `finyk_tx_cache` (potentially several MB on heavy users) every time. The `parseCache` in `searchCache.ts` caches *parsed* arrays but not *scored* results — a long query still re-scores the whole transaction set on each keystroke.
+**Description.** The debounced effect in `useSearchEngine` (L86–L98) wraps `setResults` in `startTransition`, which is good. However the actual `performSearch(query)` call runs eagerly on the main thread inside the timer; `searchSources` walks `finyk_tx_cache` (potentially several MB on heavy users) every time. The `parseCache` in `searchCache.ts` caches _parsed_ arrays but not _scored_ results — a long query still re-scores the whole transaction set on each keystroke.
 
 **Why it matters.** Users on a 1-year-old Android device report visible typing lag in the palette; the bottleneck is not React but the scoring pass. The fix is mechanical (LRU on `query → ScoredHits[]` keyed by `(query, parserSnapshotId)`).
 
@@ -281,7 +281,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 **File:** `apps/web/src/core/hub/chat/useChatSend.ts`
 **Lines:** L462–L469
 
-**Description.** The effect runs when `initialMessage` or `autoSendInitial` change and calls `sendRef.current?.(...)` (which closes over `setMessages`) or `setInput(initialMessage)`. The dep array omits `setInput`. React-hooks rules tolerate this when setters are stable, but the same effect will *re-fire* on every URL `?q=` change — including back-button navigations or external linking — auto-sending a new message *every time* the user lands on `/chat?q=X` again. Combined with F4, the surface widens.
+**Description.** The effect runs when `initialMessage` or `autoSendInitial` change and calls `sendRef.current?.(...)` (which closes over `setMessages`) or `setInput(initialMessage)`. The dep array omits `setInput`. React-hooks rules tolerate this when setters are stable, but the same effect will _re-fire_ on every URL `?q=` change — including back-button navigations or external linking — auto-sending a new message _every time_ the user lands on `/chat?q=X` again. Combined with F4, the surface widens.
 
 **Why it matters.** Double-send / silent-resend is hard to detect post-hoc because both fires append to the same session.
 
@@ -309,7 +309,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 **File:** `apps/web/src/core/hub/chat/HubChatBody.tsx`
 **Lines:** L51–L57
 
-**Description.** The scrollable container is annotated `aria-live="polite" aria-relevant="additions"`. During SSE streaming the assistant message updates *in-place* via `setMessages(... .map ...)`. `aria-relevant="additions"` will mostly ignore in-place text mutations (the message node already existed), but every new user / assistant turn — and every loading-flip toggling the cancel pill — re-announces the whole subtree. There is also no `aria-busy="true"` while `loading`.
+**Description.** The scrollable container is annotated `aria-live="polite" aria-relevant="additions"`. During SSE streaming the assistant message updates _in-place_ via `setMessages(... .map ...)`. `aria-relevant="additions"` will mostly ignore in-place text mutations (the message node already existed), but every new user / assistant turn — and every loading-flip toggling the cancel pill — re-announces the whole subtree. There is also no `aria-busy="true"` while `loading`.
 
 **Why it matters.** Screen-reader users hear duplicated content (typing indicator label + assistant placeholder + final text) per turn; combined with the auto-TTS in F5 this becomes unusable in busy environments.
 
@@ -340,7 +340,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 
 **Why it matters.** Not an XSS (the parser's allowlist holds), but it is a phishing surface: an attacker who can write any localStorage key (other module storing user-controlled strings) can inject visually fake "AI suggestions" inside the rail.
 
-**Recommendation.** When rendering *user-sourced* text (search snippets, recent queries, localStorage-cached titles), call a `renderAsPlainText(s)` path that escapes markdown tokens; reserve the markdown parser for *assistant-sourced* text only. Document the boundary in `AssistantMessageBody` JSDoc.
+**Recommendation.** When rendering _user-sourced_ text (search snippets, recent queries, localStorage-cached titles), call a `renderAsPlainText(s)` path that escapes markdown tokens; reserve the markdown parser for _assistant-sourced_ text only. Document the boundary in `AssistantMessageBody` JSDoc.
 
 ---
 
@@ -390,7 +390,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 
 **Why it matters.** Keyboard users lose their place; this is the exact "focus theft" anti-pattern axe-core flags.
 
-**Recommendation.** Focus the answer container only when the rail mounted *and* the relatedTarget is still inside the rail (or skip the imperative focus and let CSS `:focus-within` handle visual highlight).
+**Recommendation.** Focus the answer container only when the rail mounted _and_ the relatedTarget is still inside the rail (or skip the imperative focus and let CSS `:focus-within` handle visual highlight).
 
 ---
 
@@ -400,7 +400,7 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 **File:** `apps/web/src/core/hub/chat/HubChatBody.tsx` → `TypingIndicator` (`apps/web/src/core/hub/components/ChatMessage.tsx`)
 **Lines:** rendering at L62–L77 (the wrapper) — the actual animation lives downstream in `TypingIndicator`
 
-**Description.** Hard Rule #17 (animation budget — 3 tiers) + `prefers-reduced-motion` mandates that non-essential motion is suppressed for users who opt out. `HubChatBody` chains a `TypingIndicator` without a `motion-safe:` gate on the wrapper, and the dots animation in `TypingIndicator` is not gated either (verified by sibling code; this is a *handoff* finding to `ChatMessage.tsx`). The drawer next door uses `motion-safe:animate-fade-in` correctly (L83, L90).
+**Description.** Hard Rule #17 (animation budget — 3 tiers) + `prefers-reduced-motion` mandates that non-essential motion is suppressed for users who opt out. `HubChatBody` chains a `TypingIndicator` without a `motion-safe:` gate on the wrapper, and the dots animation in `TypingIndicator` is not gated either (verified by sibling code; this is a _handoff_ finding to `ChatMessage.tsx`). The drawer next door uses `motion-safe:animate-fade-in` correctly (L83, L90).
 
 **Why it matters.** Vestibular-sensitive users see the three-dot animation indefinitely while a slow stream completes; combined with the auto-scroll in F12, the experience is dizzying.
 
@@ -425,7 +425,7 @@ if (remaining.length > 0) {
 
 The `length > 0` guard does justify the `!`, but the `!` non-null bang is the kind of assertion the rule was created to discourage — it's brittle because a future refactor that splits the guard from the index access will silently pass strict-mode without re-validating.
 
-**Why it matters.** Low-severity TS-hygiene nit; flagged because the strict-mode rule is explicitly an *active initiative* (see `19-strict-mode-flag-canonical.md`) and the codebase is converging on guard-then-destructure instead of `!`.
+**Why it matters.** Low-severity TS-hygiene nit; flagged because the strict-mode rule is explicitly an _active initiative_ (see `19-strict-mode-flag-canonical.md`) and the codebase is converging on guard-then-destructure instead of `!`.
 
 **Recommendation.** Replace with a `const [head, ...rest] = remaining; if (head) { ... }` pattern, or use `remaining.at(0)` with explicit `if`.
 
@@ -446,30 +446,30 @@ The `length > 0` guard does justify the `!`, but the `!` non-null bang is the ki
 
 Legend: number = findings touching that perspective; `X` = audited / no finding; `—` = not applicable.
 
-| Page                             | sec | a11y | perf | ux | bug | rule | ts | tw | i18n | test | ai | lifecycle |
-| -------------------------------- | --- | ---- | ---- | -- | --- | ---- | -- | -- | ---- | ---- | -- | --------- |
-| `HubChat.tsx`                    |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `HubChatPage.tsx`                |  1  |  X   |  X   | 1  |  1  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `HubChatHistoryDrawer.tsx`       |  X  |  2   |  X   | X  |  1  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `chat/HubChatBody.tsx`           |  X  |  2   |  X   | 1  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `chat/HubChatComposer.tsx`       |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `chat/HubChatHeader.tsx`         |  X  |  1   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `chat/ChatEmpty.tsx`             |  X  |  X   |  X   | X  |  1  |  X   | X  | X  |  X   |  X   | X  |    1      |
-| `chat/useChatSend.ts`            |  2  |  X   |  X   | X  |  1  |  X   | X  | —  |  X   |  1   | X  |    1      |
-| `chat/useChatSessions.ts`        |  X  |  X   |  X   | X  |  1  |  X   | 1  | —  |  X   |  1   | X  |    1      |
-| `hubChatSessions.ts`             |  X  |  X   |  X   | X  |  1  |  X   | X  | —  |  X   |  1   | X  |    1      |
-| `search/HubSearch.tsx`           |  X  |  1   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `search/useSearchEngine.ts`      |  X  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  1   | X  |    1      |
-| `search/useInlineAiRail.ts`      |  X  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  1   | X  |    1      |
-| `search/InlineAiRail.tsx`        |  1  |  X   |  X   | 1  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `search/SearchInput.tsx`         |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `search/SearchResults.tsx`       |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `search/SearchResultItem.tsx`    |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    1      |
-| `search/searchSources.ts`        |  X  |  X   |  1   | X  |  1  |  X   | X  | —  |  X   |  1   | X  |    1      |
-| `search/searchTypes.ts`          |  X  |  X   |  X   | X  |  1  |  X   | X  | —  |  X   |  1   | X  |    1      |
-| `search/searchActions.ts`        |  X  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  X   | X  |    1      |
-| `search/searchSettings.ts`       |  X  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  X   | X  |    1      |
-| `search/searchCache.ts`          |  X  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  X   | X  |    1      |
-| `hubSearchEngine.ts`             |  X  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  X   | X  |    1      |
-| `HubBackupPanel.tsx`             |  1  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    1      |
-| `hubBackup.ts`                   |  1  |  X   |  X   | X  |  X  |  X   | X  | —  |  X   |  1   | X  |    1      |
+| Page                          | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
+| ----------------------------- | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
+| `HubChat.tsx`                 | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `HubChatPage.tsx`             | 1   | X    | X    | 1   | 1   | X    | X   | X   | X    | 1    | X   | 1         |
+| `HubChatHistoryDrawer.tsx`    | X   | 2    | X    | X   | 1   | X    | X   | X   | X    | 1    | X   | 1         |
+| `chat/HubChatBody.tsx`        | X   | 2    | X    | 1   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `chat/HubChatComposer.tsx`    | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `chat/HubChatHeader.tsx`      | X   | 1    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `chat/ChatEmpty.tsx`          | X   | X    | X    | X   | 1   | X    | X   | X   | X    | X    | X   | 1         |
+| `chat/useChatSend.ts`         | 2   | X    | X    | X   | 1   | X    | X   | —   | X    | 1    | X   | 1         |
+| `chat/useChatSessions.ts`     | X   | X    | X    | X   | 1   | X    | 1   | —   | X    | 1    | X   | 1         |
+| `hubChatSessions.ts`          | X   | X    | X    | X   | 1   | X    | X   | —   | X    | 1    | X   | 1         |
+| `search/HubSearch.tsx`        | X   | 1    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `search/useSearchEngine.ts`   | X   | X    | X    | X   | X   | X    | X   | —   | X    | 1    | X   | 1         |
+| `search/useInlineAiRail.ts`   | X   | X    | X    | X   | X   | X    | X   | —   | X    | 1    | X   | 1         |
+| `search/InlineAiRail.tsx`     | 1   | X    | X    | 1   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `search/SearchInput.tsx`      | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `search/SearchResults.tsx`    | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `search/SearchResultItem.tsx` | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
+| `search/searchSources.ts`     | X   | X    | 1    | X   | 1   | X    | X   | —   | X    | 1    | X   | 1         |
+| `search/searchTypes.ts`       | X   | X    | X    | X   | 1   | X    | X   | —   | X    | 1    | X   | 1         |
+| `search/searchActions.ts`     | X   | X    | X    | X   | X   | X    | X   | —   | X    | X    | X   | 1         |
+| `search/searchSettings.ts`    | X   | X    | X    | X   | X   | X    | X   | —   | X    | X    | X   | 1         |
+| `search/searchCache.ts`       | X   | X    | X    | X   | X   | X    | X   | —   | X    | X    | X   | 1         |
+| `hubSearchEngine.ts`          | X   | X    | X    | X   | X   | X    | X   | —   | X    | X    | X   | 1         |
+| `HubBackupPanel.tsx`          | 1   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | 1         |
+| `hubBackup.ts`                | 1   | X    | X    | X   | X   | X    | X   | —   | X    | 1    | X   | 1         |
