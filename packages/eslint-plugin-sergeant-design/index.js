@@ -1505,6 +1505,21 @@ const noHexInClassname = {
 
 const MODULE_ACCENTS = ["finyk", "fizruk", "routine", "nutrition"];
 
+// Chart-series tokens are first-class: they map to module-strong shades
+// via the design-tokens preset. Components that build charts MUST use
+// `bg-chart-{module}` instead of raw `bg-sky-500` etc.
+const ALLOWED_CHART_TOKENS = new Set([
+  "bg-chart-finyk",
+  "bg-chart-fizruk",
+  "bg-chart-routine",
+  "bg-chart-nutrition",
+]);
+
+// Raw Tailwind palette utilities banned in chart-context files (Hub*.tsx).
+// Use the semantic `bg-chart-{module}` tokens instead.
+const BANNED_CHART_RAW =
+  /\b((?:[\w-]+:)*)bg-(sky|orange|emerald|lime|cyan|amber|rose|violet)-(400|500|600)\b/g;
+
 const FOREIGN_MODULE_ACCENT_MESSAGE =
   "`{{match}}` is a `{{foreign}}` accent inside a `{{home}}` module — modules must only use their own accent. Use `{{home}}` equivalents or move this to a cross-module surface (`core/**`, `shared/**`).";
 
@@ -1575,20 +1590,43 @@ const noForeignModuleAccent = {
       (context.filename != null ? context.filename : context.getFilename()) ||
       "";
     const home = homeModuleFromFilename(filename);
-    if (!home) return {};
+    // Hub*.tsx files are chart-context: ban raw palette, require chart-series tokens.
+    const isHubChartFile =
+      /\/core\/hub\/Hub[^/]*\.tsx?$/.test(filename) ||
+      /\/core\/hub\/Hub[^/]*\.tsx?$/.test(filename.replace(/\\/g, "/"));
+    if (!home && !isHubChartFile) return {};
     // Cross-module accent rule doesn't apply to the module-accent system
     // itself (the map literals that declare every accent) or to module-
     // scoped tests (they naturally reference all four for coverage).
     if (/\.(test|spec)\.[jt]sx?$/.test(filename)) return {};
 
-    function report(node, value) {
-      const hits = findForeignModuleAccents(value, home);
-      for (const hit of hits) {
+    function reportBannedChartRaw(node, value) {
+      if (typeof value !== "string") return;
+      BANNED_CHART_RAW.lastIndex = 0;
+      let m;
+      while ((m = BANNED_CHART_RAW.exec(value)) !== null) {
+        const full = m[0].trim();
+        if (ALLOWED_CHART_TOKENS.has(full)) continue;
         context.report({
           node,
-          messageId: "foreign",
-          data: { match: hit.match, foreign: hit.foreign, home },
+          message: `\`${full}\` is a raw Tailwind palette utility in a chart context — use \`bg-chart-{module}\` tokens instead (e.g. \`bg-chart-fizruk\`). See docs/design/brandbook.md § «Chart series».`,
         });
+      }
+    }
+
+    function report(node, value) {
+      if (home) {
+        const hits = findForeignModuleAccents(value, home);
+        for (const hit of hits) {
+          context.report({
+            node,
+            messageId: "foreign",
+            data: { match: hit.match, foreign: hit.foreign, home },
+          });
+        }
+      }
+      if (isHubChartFile) {
+        reportBannedChartRaw(node, value);
       }
     }
     return {
