@@ -86,6 +86,8 @@ pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 Далі додатково за surface:
 
 - `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](./docs/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
+- `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`. Migration-only PR теж тригерить Detox через `apps/server/src/migrations/**` — schema-change майже завжди передує перейменуванню serializer-а.
 - `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR торкає `apps/server/src/routes/**` або `apps/server/src/migrations/**`, Detox iOS + Android jobs запускаються автоматично (stack-pulse PR-18 / M2: response-shape change без зміни `apps/mobile/**` ламала mobile у prod). Якщо тести впадуть, перегенеруй `packages/api-client/**` типи у тому самому PR.
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
