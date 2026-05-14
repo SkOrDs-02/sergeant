@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import createBodyHighlighter from "body-highlighter";
 import { cn } from "@shared/lib/ui/cn";
@@ -84,8 +88,11 @@ export function BodyAtlas({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
+            type="button"
+            aria-pressed={view === "anterior"}
             className={cn(
-              "text-xs px-3 py-2 rounded-full border transition-colors",
+              "text-xs px-3 min-h-[44px] rounded-full border transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50",
               view === "anterior"
                 ? "bg-text text-bg border-text"
                 : "border-line text-subtle hover:text-text",
@@ -95,8 +102,11 @@ export function BodyAtlas({
             Спереду
           </button>
           <button
+            type="button"
+            aria-pressed={view === "posterior"}
             className={cn(
-              "text-xs px-3 py-2 rounded-full border transition-colors",
+              "text-xs px-3 min-h-[44px] rounded-full border transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50",
               view === "posterior"
                 ? "bg-text text-bg border-text"
                 : "border-line text-subtle hover:text-text",
