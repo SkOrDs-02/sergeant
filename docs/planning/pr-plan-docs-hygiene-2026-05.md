@@ -54,6 +54,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-01 — Archive 3-date canonicalization + remaining stale-link sweep ✦ Stale-link / drift
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (archive audit dates canonicalized; legacy next-review row removed).
 - **Group:** 1) stale-link / drift cleanup.
 - **Trigger:** P1-2 у roast — `docs/audits/archive/2026-04-28-ux-ui-audit.md` тримає 3 окремі дати (`Last validated`, `Initial audit date`, in-content `Дата аудиту` / `Дата оновлення`). Аналогічний дрейф можливий у решті 18 archive-файлів — потрібен єдиний прохід.
 - **Action:** канонікалізувати на 1 freshness-marker (`Last validated:`) + 1 нерухомий `Initial audit date:` (якщо потрібен історичний context). In-content «Дата ...» рядки помічаються `<!-- frozen-original: 2026-04-28 -->` і виключаються з `bump-last-validated.mjs`.
@@ -166,6 +167,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-07 — Playbook-language → 3-way sync gate (file ↔ INDEX ↔ catalog) ✦ Governance sync
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs:check-playbook-3way-sync`, CI step, unit tests, catalog inventory).
 - **Group:** 3) governance sync gates.
 - **Trigger:** `lint:playbook-language` + `docs:check-playbook-index` + `docs:check-playbook-schema` працюють незалежно. Якщо новий playbook доданий до `docs/playbooks/`, але не до `playbook-catalog.md` (canonical routing table), скрипти його не ловлять як drift до перших manual checks.
 - **Action:** розширити `scripts/check-playbook-language.mjs` (або новий `scripts/check-playbook-3way-sync.mjs`):
@@ -183,6 +185,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-08 — Freshness-cadence drift detector (governance docs cadence) ✦ Governance sync
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs:check-freshness-cadence`, CI step, unit tests, `pnpm lint` wiring).
 - **Group:** 3) governance sync gates.
 - **Trigger:** Cadence governance-доків (90-day review per `policy-review.md`) дрейфує без CI-сигналу. Сьогодні `docs:check-freshness-coverage` лише перевіряє наявність маркера; `check-tech-debt-freshness.mjs` обмежений `docs/tech-debt/{frontend,backend,mobile}.md` (закрито в roast P0-4). Аналогічного guard-а для `docs/governance/*.md` нема — приклад: `pnpm-overrides-policy.md` і `doc-freshness.md` тримали `Last validated: 2026-05-11`, поки решта вже на `2026-05-13` (закрито через QW-3/QW-4 quick-win).
 - **Action:** додати у `scripts/docs/check-freshness.mjs --check-coverage` (або новий `--check-cadence` режим) — для кожного `.md` під `docs/governance/`, `docs/agents/`, `docs/playbooks/README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README.md`: fail якщо `Last validated:` старіший за `Next review:` мінус 7 днів grace (тобто overdue review).
