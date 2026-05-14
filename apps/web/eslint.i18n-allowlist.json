@@ -22,6 +22,7 @@
   "apps/web/src/core/DesignShowcase/sections/Typography.tsx",
   "apps/web/src/core/ErrorBoundary.tsx",
   "apps/web/src/core/NotFoundPage.tsx",
+  "apps/web/src/core/LandingPage.tsx",
   "apps/web/src/core/PricingPage.tsx",
   "apps/web/src/core/app/HubHeader.tsx",
   "apps/web/src/core/app/HubMainContent.tsx",
