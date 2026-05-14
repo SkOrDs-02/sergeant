@@ -1147,4 +1147,233 @@ export const WebVitalsPayloadSchema = z.object({
 });
 export type WebVitalsPayload = z.infer<typeof WebVitalsPayloadSchema>;
 
+// ────────────────────── /api/auth/get-session ──────────────────────
+/**
+ * Wire shape of Better Auth's `GET /api/auth/get-session`. Mounted by
+ * `apps/server/src/routes/auth.ts` via `toNodeHandler(auth)`; the upstream
+ * type lives at `node_modules/@better-auth/core/dist/db/schema/session.d.mts`
+ * (`sessionSchema`) but is private to better-auth — we mirror only the fields
+ * the Sergeant clients actually depend on plus the small set required to
+ * keep `H3 — session fingerprint drift detection`
+ * (`apps/server/src/auth/sessionFingerprint.ts`) honest.
+ *
+ * The endpoint returns `null` (no active session) or a `{ user, session }`
+ * envelope. JSON serialisation flattens Better Auth's internal `Date` fields
+ * into ISO-8601 strings — we lock that here so any future schema change
+ * (e.g. moving `expiresAt` to a numeric epoch) fails the contract test
+ * before it hits the web/mobile clients.
+ *
+ * Closes audit `docs/audits/2026-05-13-security-observability-roast.md` § S7
+ * (carry-over from `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §7.4).
+ */
+export const AuthSessionUserSchema = z.object({
+  id: z.string().min(1),
+  email: z.string().email().nullable(),
+  name: z.string().nullable(),
+  image: z.string().nullable(),
+  emailVerified: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type AuthSessionUser = z.infer<typeof AuthSessionUserSchema>;
+
+/**
+ * Mirror of Better Auth's `sessionSchema`. `ipAddress` is *truncated to /24
+ * IPv4 prefix or /48 IPv6 prefix* by the `session.create.before` hook in
+ * `apps/server/src/auth.ts` (Hardening H3) — the wire format still carries a
+ * `string | null`, so the schema keeps the same shape and the fixture pins
+ * the truncated representation.
+ *
+ * `token` is the rotating opaque cookie/bearer token; never logged, never
+ * surfaced to the UI, but present in the wire response — leaving it
+ * un-validated would let a regression that drops it slip past contract CI.
+ */
+export const AuthSessionSessionSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  token: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  ipAddress: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+});
+export type AuthSessionSession = z.infer<typeof AuthSessionSessionSchema>;
+
+/** Active envelope returned by `/api/auth/get-session` when authenticated. */
+export const AuthSessionActiveSchema = z.object({
+  user: AuthSessionUserSchema,
+  session: AuthSessionSessionSchema,
+});
+export type AuthSessionActive = z.infer<typeof AuthSessionActiveSchema>;
+
+/**
+ * Better Auth's `/api/auth/get-session` emits `null` when there's no active
+ * session (HTTP 200 with body `null`). Modelling both arms in one schema
+ * means the api-client / consumer test can `safeParse()` the body without
+ * branching on status code.
+ */
+export const AuthSessionResponseSchema = z.union([
+  z.null(),
+  AuthSessionActiveSchema,
+]);
+export type AuthSessionResponse = z.infer<typeof AuthSessionResponseSchema>;
+
+// ────────────────────── /api/csp-report (request body) ──────────────────────
+/**
+ * Wire shape of `POST /api/csp-report` request bodies.
+ *
+ * Browsers POST in two formats — see the producer module documentation at
+ * `apps/server/src/modules/observability/csp-report.ts` for the full
+ * rationale. Both wire formats are loosely typed by spec (every field is
+ * effectively optional and `unknown`-shaped) so the schema only locks the
+ * envelope — the inner `body` is `z.record()` to mirror the producer's
+ * actual permissiveness. A *stricter* inner schema would reject legitimate
+ * browser variants (Firefox, older Safari, Chromium reports-API drafts)
+ * that all need to keep working through this sink.
+ *
+ * Audit reference: `docs/security/hardening/C2-frontend-csp.md`.
+ */
+export const CspViolationDetailsSchema = z.record(z.string(), z.unknown());
+export type CspViolationDetails = z.infer<typeof CspViolationDetailsSchema>;
+
+/**
+ * Legacy `application/csp-report` envelope (Firefox + Chromium pre-Reporting-API).
+ */
+export const CspReportLegacyEnvelopeSchema = z
+  .object({
+    "csp-report": CspViolationDetailsSchema,
+  })
+  .strict();
+export type CspReportLegacyEnvelope = z.infer<
+  typeof CspReportLegacyEnvelopeSchema
+>;
+
+/**
+ * Modern Reporting-API entry inside an `application/reports+json` array.
+ * `type` is `"csp-violation"` per the W3C Reporting spec; we also accept
+ * the older `"csp"` value some Chromium builds emitted during the draft.
+ */
+export const CspReportingApiEntrySchema = z.object({
+  type: z.string(),
+  body: CspViolationDetailsSchema.optional(),
+  url: z.string().optional(),
+  age: z.number().optional(),
+  user_agent: z.string().optional(),
+});
+export type CspReportingApiEntry = z.infer<typeof CspReportingApiEntrySchema>;
+
+/** Modern Reporting-API top-level payload. */
+export const CspReportingApiArraySchema = z
+  .array(CspReportingApiEntrySchema)
+  .min(1);
+export type CspReportingApiArray = z.infer<typeof CspReportingApiArraySchema>;
+
+/**
+ * Union of every wire shape the handler accepts. The "bare" arm is the
+ * Safari quirk where the browser drops the `csp-report` envelope and posts
+ * the violation fields at the top level (`{"violated-directive": "..."}`
+ * with no outer key). The handler treats it as a violation iff one of the
+ * directive keys is present.
+ */
+export const CspReportBareSchema = CspViolationDetailsSchema.refine(
+  (body) =>
+    "violated-directive" in body ||
+    "violatedDirective" in body ||
+    "effective-directive" in body ||
+    "effectiveDirective" in body,
+  { message: "bare CSP report must carry a directive field" },
+);
+export type CspReportBare = z.infer<typeof CspReportBareSchema>;
+
+export const CspReportBodySchema = z.union([
+  CspReportLegacyEnvelopeSchema,
+  CspReportingApiArraySchema,
+  CspReportBareSchema,
+]);
+export type CspReportBody = z.infer<typeof CspReportBodySchema>;
+
+// ────────────────────── /api/account/recovery (planned) ──────────────────────
+/**
+ * Wire shapes for the planned `POST /api/account/recovery` /
+ * `POST /api/account/recovery/confirm` security-critical endpoints. The
+ * routes are referenced in the Sentry sampling table
+ * (`apps/server/src/sentry.ts` line 42, `100%` trace rate) and the
+ * fail-closed rate-limit policy (`docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md`)
+ * but have **no handler yet** — locking the contract here means the
+ * eventual implementation can be reviewed against an already-agreed shape
+ * instead of bike-shed-debated mid-PR.
+ *
+ * Hard rule applied: response shape **MUST NOT** distinguish "email is
+ * registered" from "email is not registered" via status code or body
+ * differences — the response is identical in both cases (HTTP 202 +
+ * `{ ok: true }`) to prevent account-enumeration. See
+ * `docs/audits/2026-05-13-security-observability-roast.md` § S7 for the
+ * carry-over rationale and `OWASP ASVS v4.0 § 2.2.1` for the enumeration
+ * threat model.
+ */
+export const AccountRecoveryInitiateRequestSchema = z
+  .object({
+    email: z.string().email().max(254),
+  })
+  .strict();
+export type AccountRecoveryInitiateRequest = z.infer<
+  typeof AccountRecoveryInitiateRequestSchema
+>;
+
+/**
+ * Identical for both registered + unregistered emails (anti-enumeration).
+ * `ok: true` is the only guaranteed field — the route is async / queue-based.
+ */
+export const AccountRecoveryInitiateResponseSchema = z
+  .object({
+    ok: z.literal(true),
+  })
+  .strict();
+export type AccountRecoveryInitiateResponse = z.infer<
+  typeof AccountRecoveryInitiateResponseSchema
+>;
+
+/**
+ * Confirm step — caller submits the opaque single-use token from the
+ * recovery email plus the new password. Schema validates the same minimum
+ * password strength rule as Better Auth's `password.min` config in
+ * `apps/server/src/auth.ts`; if Better Auth ever raises the floor, this
+ * schema must move in lockstep (Hard Rule #3).
+ */
+export const AccountRecoveryConfirmRequestSchema = z
+  .object({
+    token: z.string().min(16).max(512),
+    newPassword: z.string().min(8).max(128),
+  })
+  .strict();
+export type AccountRecoveryConfirmRequest = z.infer<
+  typeof AccountRecoveryConfirmRequestSchema
+>;
+
+/**
+ * Success: `{ ok: true }`. The route deliberately omits the rotated session
+ * to force the client through a fresh `/api/auth/sign-in` — preventing
+ * token-replay from re-authenticating an attacker mid-flow.
+ */
+export const AccountRecoveryConfirmResponseSchema = z
+  .object({
+    ok: z.literal(true),
+  })
+  .strict();
+export type AccountRecoveryConfirmResponse = z.infer<
+  typeof AccountRecoveryConfirmResponseSchema
+>;
+
+/**
+ * Error envelope — kept generic-shaped because the route must NOT reveal
+ * whether the token was wrong, expired, or already-used (uniform 400
+ * response defeats token-existence probing).
+ */
+export const AccountRecoveryErrorSchema = z
+  .object({
+    error: z.string().min(1).max(200),
+  })
+  .strict();
+export type AccountRecoveryError = z.infer<typeof AccountRecoveryErrorSchema>;
+
 export { z };

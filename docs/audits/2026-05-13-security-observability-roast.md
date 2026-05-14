@@ -89,10 +89,15 @@
 - **Why:** OWASP 2023 рекомендує 600_000+ для SHA-256-PBKDF2 на mobile. Без ramp-up — 4-значний PIN bruteforce за хвилини на десктопі, якщо атакувальник має IDB dump.
 - **Add:** snapshot-тест у `apps/web/src/core/security/lockStorage.test.ts`, що валідує `iterations === 600_000`.
 
-### S7 — Contract test expansion (audit §7.4 carry-over)
+### S7 (closed у цьому PR) — Contract test expansion (audit §7.4 carry-over)
 
-- **Add:** `apps/server/src/routes/auth.contract.test.ts`, `apps/server/src/routes/csp-report.contract.test.ts`, `apps/server/src/routes/account-recovery.contract.test.ts`. Fixture-pattern уже існує у `packages/shared/src/contract-fixtures/me/`.
-- **Why:** Зараз тільки `/api/me` має contract-тест. Security-critical endpoint-и (auth, csp-report, account-recovery) — без shape-валідації між web client та server response.
+- **Before:** `apps/server/src/routes/me.contract.test.ts` був єдиним producer-side contract-тестом у репо; для security-critical endpoint-ів (auth, csp-report, account-recovery) wire-shape між web client і server response не валідувалась і drift міг проходити тихо.
+- **After:** Додано шість contract-файлів навколо канонічних fixture-ів у `packages/shared/src/contract-fixtures/{auth,cspReport,accountRecovery}.ts`:
+  - producer-side: `apps/server/src/routes/auth.contract.test.ts`, `apps/server/src/routes/csp-report.contract.test.ts`, `apps/server/src/routes/account-recovery.contract.test.ts`;
+  - consumer-side: `apps/web/src/test/contract/{auth,csp-report,account-recovery}.contract.test.ts`;
+  - схеми — у `packages/shared/src/schemas/api.ts` (`AuthSessionResponseSchema`, `CspReportBodySchema`, `AccountRecovery*Schema`).
+- **Why:** Hard Rule #3 — server response shape ↔ `api-client` types ↔ test тепер задокументований триплет для трьох security-critical поверхонь. Anti-account-enumeration інваріант (`OWASP ASVS § 2.2.1`) закодований у самому fixture-set-і для account-recovery (рівно один `accepted` response для registered + unregistered emails).
+- **Action:** ✅ landed у цьому PR. Account-recovery handler-а ще не існує (Sentry sampling pin у `apps/server/src/sentry.ts:42`); коли роут зʼявиться, producer-test переключиться зі schema-only на supertest round-trip одним diff-ом.
 
 ### S8 — Web-vitals + analytics PII guard
 
