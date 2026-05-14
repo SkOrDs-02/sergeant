@@ -16,8 +16,9 @@
  * та сама ідея warm-start, лише сторадж відрізняється:
  *   - mobile використовує MMKV (sync API, in-process, без serialization
  *     overhead);
- *   - web — IndexedDB через `idb-keyval` (async, але >5 MB ліміт
- *     localStorage, доступний з Service Worker / WebView Capacitor).
+ *   - web — IndexedDB через спільний `sergeantDb` connection (async,
+ *     але >5 MB ліміт localStorage, доступний з Service Worker /
+ *     WebView Capacitor).
  *
  * IndexedDB обрано над localStorage саме через ліміт: персистований
  * кеш з 4-х модулів (Finyk + Fizruk + Routine + Nutrition) при
