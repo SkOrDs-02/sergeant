@@ -104,6 +104,12 @@ export const ROUTES = [
   },
   {
     role: "new-agent",
+    reason: "docs freshness dashboard",
+    entrypoints: ["AGENTS.md", "docs/README.md", "docs/governance/README.md"],
+    target: "docs/governance/freshness-dashboard.html",
+  },
+  {
+    role: "new-agent",
     reason: "feature-delivery skill",
     entrypoints: ["docs/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-feature-delivery/SKILL.md",

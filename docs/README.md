@@ -11,6 +11,7 @@ Main documentation index for Sergeant.
 - Contributor manual: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - Repo contract and hard rules: [AGENTS.md](../AGENTS.md)
 - **Відкрита робота — єдиний дашборд:** [open-work.md](./open-work.md) — автозведення активних документів з усіх tracker-ів; відповідь на "що зараз НЕ доробленого?"
+- **Свіжість документації:** [governance/freshness-dashboard.html](./governance/freshness-dashboard.html) — автозведення `Last validated` / `Next review` по відстежуваних документах.
 - Agent skills catalog: [agents/agent-skills-catalog.md](./agents/agent-skills-catalog.md)
 - Playbook catalog: [playbooks/playbook-catalog.md](./playbooks/playbook-catalog.md)
 - Service catalog: [architecture/service-catalog.md](./architecture/service-catalog.md)

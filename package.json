@@ -89,6 +89,7 @@
     "hard-rules:check": "node scripts/docs/generate-hard-rules-matrix.mjs --check",
     "hard-rules:list": "node scripts/docs/generate-hard-rules-matrix.mjs --list",
     "docs:freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs",
+    "docs:check-freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs --check",
     "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
