@@ -74,10 +74,68 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Selection color with brand accent */
+  /* ═══════════════════════════════════════════════════════════════════════
+     SELECTION — global `::selection` wash, backed by the semantic
+     `--c-selection-bg` / `--c-selection-fg` tokens. Both rules
+     (`::selection` for WebKit/Blink/standard, `::-moz-selection` for
+     Firefox compat) share the same colour pair so a copy-paste from
+     either engine renders identically.
+     ═══════════════════════════════════════════════════════════════════════ */
   ::selection {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: inherit;
+    background-color: rgb(var(--c-selection-bg));
+    color: rgb(var(--c-selection-fg));
+  }
+  ::-moz-selection {
+    background-color: rgb(var(--c-selection-bg));
+    color: rgb(var(--c-selection-fg));
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SCROLLBAR — polished, semantic, theme-aware. WebKit/Blink uses the
+     `::-webkit-scrollbar*` pseudo-elements; Firefox uses the
+     `scrollbar-color` + `scrollbar-width` properties. Both branches
+     reference the same `--c-scrollbar-*` tokens so the look stays
+     identical across engines and adapts automatically between light
+     and dark mode.
+
+     The thumb is 10 px wide (a touch chubbier than the default ~6 px) so
+     it's an easy target on touchpads without dominating dense lists.
+     The track is transparent on the outer edge so it doesn't carve a
+     line through the page background, while the thumb sits on a warm-
+     neutral fill with a hover step that telegraphs the affordance.
+
+     The `.scrollbar-hide` utility (see utilities.css `no-scrollbar`) and
+     the `.swipeable` mobile snap-strip in `mobile.css` opt out where the
+     scrollbar would clutter horizontal carousels.
+     ═══════════════════════════════════════════════════════════════════════ */
+  *,
+  *::before,
+  *::after {
+    scrollbar-color: rgb(var(--c-scrollbar-thumb))
+      rgb(var(--c-scrollbar-track) / 0);
+    scrollbar-width: thin;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: rgb(var(--c-scrollbar-track) / 0);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--c-scrollbar-thumb));
+    border-radius: 9999px;
+    /* 2px border inset gives the thumb a "floating capsule" feel without
+       requiring a wider rail. */
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background-color: rgb(var(--c-scrollbar-thumb-hover));
+  }
+  ::-webkit-scrollbar-corner {
+    background-color: transparent;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════

@@ -96,7 +96,7 @@ export function WelcomeOneScreen({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-sm"
+          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
         >
           {copy.title}
         </h2>
@@ -176,7 +176,7 @@ export function WelcomeOneScreen({
             "h-11 min-h-[44px] rounded-2xl border border-brand-500/35 bg-brand-500/5",
             "text-style-label text-brand-strong dark:text-brand",
             "hover:bg-brand-500/10 hover:border-brand-500/55 transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
           <Icon name="sparkles" size={16} strokeWidth={2} aria-hidden />
@@ -188,7 +188,7 @@ export function WelcomeOneScreen({
         type="button"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
-        className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded inline-flex items-center justify-center gap-1.5"
+        className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded inline-flex items-center justify-center gap-1.5"
       >
         <Icon
           name={expanded ? "chevron-up" : "chevron-down"}

@@ -35,6 +35,22 @@
     --c-danger-soft: 254 226 226;
     --c-info-soft: 224 242 254;
 
+    /* Semantic A11y / states tokens — mirror apps/web/src/styles/theme.css.
+       NativeWind reads these RGB triplets at compile time; opacity
+       modifiers (`ring-focus/45`) work the same way as on web. */
+    --c-ring: 16 185 129;
+    --c-ring-strong: 4 120 87;
+    --c-ring-offset: 255 255 255;
+    --c-selection-bg: 167 243 208;
+    --c-selection-fg: 6 78 59;
+    --c-caret: 16 185 129;
+    --c-scrollbar-track: 250 247 241;
+    --c-scrollbar-thumb: 221 211 197;
+    --c-scrollbar-thumb-hover: 180 174 169;
+    --c-divider-weak: 245 238 228;
+    --c-divider: 235 228 218;
+    --c-divider-strong: 221 211 197;
+
     /* Celebration / gamification tokens */
     --c-celebration: 251 191 36; /* amber-400 */
     --c-streak-glow: 249 112 102; /* coral-500 */
@@ -62,6 +78,20 @@
     --c-warning-soft: 146 64 14;
     --c-danger-soft: 153 27 27;
     --c-info-soft: 7 89 133;
+
+    /* Dark-theme A11y / states overrides — mirror apps/web/src/styles/theme.css. */
+    --c-ring: 52 211 153;
+    --c-ring-strong: 110 231 183;
+    --c-ring-offset: 32 28 25;
+    --c-selection-bg: 4 120 87;
+    --c-selection-fg: 209 250 229;
+    --c-caret: 52 211 153;
+    --c-scrollbar-track: 32 28 25;
+    --c-scrollbar-thumb: 82 74 65;
+    --c-scrollbar-thumb-hover: 135 128 121;
+    --c-divider-weak: 60 53 47;
+    --c-divider: 82 74 65;
+    --c-divider-strong: 112 102 90;
 
     /* ───────────────────────────────────────────────────────────────────
        MODULE DARK SURFACES & BORDERS — mirrors apps/web/src/index.css

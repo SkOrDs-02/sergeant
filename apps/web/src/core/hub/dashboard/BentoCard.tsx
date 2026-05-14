@@ -120,7 +120,7 @@ export const BentoCard = memo(function BentoCard({
           "p-3.5 pointer-coarse:p-4",
           "min-h-[120px] pointer-coarse:min-h-[132px]",
           "shadow-card transition-interactive text-left",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-2",
           // Hover effect for desktop - lift and glow
           "pointer-fine:hover:shadow-float pointer-fine:hover:-translate-y-0.5",
           "pointer-fine:hover:border-brand-200/50 dark:pointer-fine:hover:border-line/80",
@@ -280,7 +280,7 @@ export const BentoCard = memo(function BentoCard({
             "rounded-xl flex items-center justify-center",
             "text-text bg-panel/80 hover:bg-primary hover:text-bg",
             "transition-colors active:scale-95",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-1",
           )}
         >
           <Icon name="plus" size="sm" strokeWidth={2.5} />
@@ -303,7 +303,7 @@ export const BentoCard = memo(function BentoCard({
             "rounded-xl flex items-center justify-center",
             "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
             "transition-colors cursor-grab active:cursor-grabbing touch-none",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-1",
           )}
         >
           <Icon name="grip-vertical" size="sm" strokeWidth={2} />

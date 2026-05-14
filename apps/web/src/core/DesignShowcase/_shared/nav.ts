@@ -24,6 +24,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
   { id: "overlays", label: "Overlays", maturity: "stable" },
   { id: "theming", label: "Theming", maturity: "beta" },
   { id: "a11y", label: "A11y", maturity: "stable" },
+  { id: "a11y-states", label: "A11y / States", maturity: "beta" },
   { id: "accents", label: "Module Accents", maturity: "stable" },
   { id: "menus", label: "Menus", maturity: "stable" },
   { id: "primitives", label: "Tooltip & Popover", maturity: "stable" },

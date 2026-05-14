@@ -77,7 +77,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleRetry}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50"
               aria-label={messages.actions.tryAgain}
             >
               {messages.sync.retryCta}
@@ -85,7 +85,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleBack}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
             >
               {messages.errors.generic.backToModulePicker}
             </button>

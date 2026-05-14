@@ -115,7 +115,7 @@ function SubCardComponent({
               aria-pressed={form.emoji === e}
               className={cn(
                 "text-xl w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 form.emoji === e
                   ? "bg-finyk-soft ring-1 ring-finyk-ring/50"
                   : "hover:bg-panelHi",

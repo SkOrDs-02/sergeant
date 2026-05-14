@@ -15,7 +15,7 @@ import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
  *
  * Token-styled iOS-style pill toggle. Two sizes (`sm` 36×20 / `md`
  * 44×26) with token colours, label + description slots, disabled and
- * error states, and the same `focus-visible:ring-2 ring-brand-500/45`
+ * error states, and the same `focus-visible:ring-2 ring-focus/45`
  * contract shared with `Button` / `Input` (Hard Rule #14).
  *
  * The interactive element is a real `<input type="checkbox"
@@ -141,7 +141,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
 
   const ringColor = error
     ? "peer-focus-visible:ring-danger/45"
-    : "peer-focus-visible:ring-brand-500/45";
+    : "peer-focus-visible:ring-focus/45";
 
   return (
     <span

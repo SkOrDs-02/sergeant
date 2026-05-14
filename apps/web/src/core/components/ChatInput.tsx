@@ -88,7 +88,7 @@ export function ChatInput({
         <button
           type="button"
           onClick={onHelp}
-          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           aria-label="Показати список команд"
         >
           <svg
@@ -132,7 +132,7 @@ export function ChatInput({
             stopSpeaking();
             setSpeaking(false);
           }}
-          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           title="Зупинити озвучення"
           aria-label="Зупинити озвучення"
         >
@@ -153,7 +153,7 @@ export function ChatInput({
           type="button"
           onClick={toggleMic}
           className={cn(
-            "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
             listening
               ? "bg-danger-strong text-white border-danger-strong motion-safe:animate-pulse"
               : "bg-panel border-line text-muted hover:text-text hover:border-muted",
@@ -184,7 +184,7 @@ export function ChatInput({
         type="button"
         onClick={onSend}
         disabled={loading || !input.trim() || !online}
-        className="w-11 h-11 rounded-full bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+        className="w-11 h-11 rounded-full bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         aria-label={online ? "Надіслати" : "Надсилання недоступне офлайн"}
         title={online ? "Надіслати" : "Немає інтернету — асистент офлайн"}
       >

@@ -86,7 +86,7 @@ function HubBottomNavTab({
         "relative flex-1 flex flex-col items-center justify-center gap-1",
         "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95 pointer-coarse:active:bg-panelHi/50",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         active ? "text-text" : "text-muted hover:text-text/70",
         hiddenSlot && "invisible pointer-events-none",
         className,

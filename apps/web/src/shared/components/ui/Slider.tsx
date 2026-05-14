@@ -348,7 +348,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
           style={positionStyle}
           className={cn(
             "absolute rounded-full bg-panel border-2 border-brand-strong shadow-card",
-            "outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+            "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             "touch-none",
             thumbSize[size],
             disabled && "cursor-not-allowed opacity-60",

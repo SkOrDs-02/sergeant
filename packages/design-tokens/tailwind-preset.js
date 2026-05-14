@@ -75,6 +75,51 @@ const preset = {
         accent: "rgb(var(--c-accent) / <alpha-value>)",
         ring: "rgb(var(--c-accent) / <alpha-value>)",
 
+        // ─── Semantic A11y / states tokens ────────────────────────────────
+        // Decoupled from the raw `brand-*` / `line` palettes so primitives
+        // never spell out a colour family for a keyboard-focus ring,
+        // `::selection` wash, caret, scrollbar, or divider. Backed by CSS
+        // variables in `apps/web/src/styles/theme.css` (light + dark) and
+        // mirrored in `apps/mobile/global.css`. WCAG 2.4.11 / 1.4.11 —
+        // the ring tokens are tuned to ≥3:1 against the neighbour surface
+        // in both themes (light: emerald-500 on cream; dark: emerald-400
+        // on warm-charcoal panel).
+        //
+        // Canonical focus pattern (Hard Rule #14 — `focus-visible:`, not
+        // `focus:`):
+        //   focus-visible:ring-2 ring-focus/45 ring-offset-2 ring-offset-bg
+        //
+        // Use `ring-focus-strong` (no /alpha) for high-contrast focus on
+        // busy surfaces (e.g. hero cards) where the soft ring would be
+        // lost in the gradient.
+        focus: "rgb(var(--c-ring) / <alpha-value>)",
+        "focus-strong": "rgb(var(--c-ring-strong) / <alpha-value>)",
+        "focus-offset": "rgb(var(--c-ring-offset) / <alpha-value>)",
+        // Selection — paired with the `::selection` rule in
+        // `apps/web/src/styles/base.css`. `bg-selection` / `text-selection`
+        // are exposed for one-off custom selection states (e.g. mock
+        // selection in a tutorial / overlay).
+        selection: "rgb(var(--c-selection-bg) / <alpha-value>)",
+        "selection-fg": "rgb(var(--c-selection-fg) / <alpha-value>)",
+        // Caret — apply via `caret-brand` on inputs / textareas.
+        caret: "rgb(var(--c-caret) / <alpha-value>)",
+        // Divider trio — `divider` is the default split between rows;
+        // `-weak` is a feather hairline inside a single-surface group;
+        // `-strong` is the prominent split between major sections.
+        // Prefer over generic `border-line` / `border-border` when the
+        // intent is "separator", not "outline".
+        divider: "rgb(var(--c-divider) / <alpha-value>)",
+        "divider-weak": "rgb(var(--c-divider-weak) / <alpha-value>)",
+        "divider-strong": "rgb(var(--c-divider-strong) / <alpha-value>)",
+        // Scrollbar thumb/track tokens — usually applied by the global
+        // `::-webkit-scrollbar` rule in `apps/web/src/styles/base.css`,
+        // but exposed here for custom scroll regions that need a tinted
+        // thumb (e.g. a sidebar over a coloured surface).
+        "scrollbar-thumb": "rgb(var(--c-scrollbar-thumb) / <alpha-value>)",
+        "scrollbar-thumb-hover":
+          "rgb(var(--c-scrollbar-thumb-hover) / <alpha-value>)",
+        "scrollbar-track": "rgb(var(--c-scrollbar-track) / <alpha-value>)",
+
         // Ambient module accent — picks up the current module's brand
         // color from `--module-accent-rgb` published by
         // `ModuleAccentProvider` / `ModuleShell`. Inside a module, use

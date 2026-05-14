@@ -54,7 +54,7 @@ export function PasswordVisibilityToggle({
       onClick={onToggle}
       aria-label={visible ? "Сховати пароль" : "Показати пароль"}
       aria-pressed={visible}
-      className="absolute inset-y-0 right-1 inline-flex items-center justify-center p-3 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-xl"
+      className="absolute inset-y-0 right-1 inline-flex items-center justify-center p-3 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl"
     >
       <Icon name={visible ? "eye-off" : "eye"} size="lg" />
     </button>

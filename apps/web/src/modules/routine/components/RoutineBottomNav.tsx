@@ -92,7 +92,7 @@ export function RoutineBottomNav({
             "shadow-float border-4 border-bg",
             "flex items-center justify-center",
             "transition-transform duration-150 active:scale-95 hover:scale-[1.04]",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           ].join(" ")}
         >
           <svg

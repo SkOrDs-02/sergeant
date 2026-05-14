@@ -206,7 +206,7 @@ export function TodayFocusCard({
             "absolute top-2.5 right-2.5",
             "w-7 h-7 flex items-center justify-center rounded-xl",
             "text-muted hover:text-text hover:bg-black/5 dark:hover:bg-white/10",
-            "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+            "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
           )}
         >
           <Icon name="close" size={14} strokeWidth={2.5} />

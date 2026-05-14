@@ -254,7 +254,7 @@ export function PermissionsPrompt({
       <button
         type="button"
         onClick={handleContinue}
-        className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
+        className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded"
       >
         Пропустити
       </button>
