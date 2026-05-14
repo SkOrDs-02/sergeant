@@ -196,6 +196,11 @@ describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", (
   // PROD_BASELINE only stubs the keys it sets — Devin/CI shells may export
   // `Git_PAT` / `OPENCLAW_GITHUB_PAT`, which would trigger Hard Rule #20 and
   // make these tests non-hermetic. Stub them to empty explicitly.
+  //
+  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md) — once
+  // `STRIPE_SECRET_KEY` is in the baseline, `STRIPE_PRICE_ID_PRO_MONTHLY`
+  // also becomes required. These two cases stub it to a valid value so
+  // the cross-cutting webhook-secret tests below stay focused.
   const STRIPE_BASELINE = {
     ...PROD_BASELINE,
     OPENCLAW_GITHUB_PAT: "",
@@ -206,6 +211,7 @@ describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", (
     const assertStartupEnv = await loadAssertStartupEnv({
       ...STRIPE_BASELINE,
       STRIPE_SECRET_KEY: "sk_live_xxx",
+      STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
     });
     expect(() => assertStartupEnv()).toThrow(/STRIPE_WEBHOOK_SECRET/);
   });
@@ -215,6 +221,7 @@ describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", (
       ...STRIPE_BASELINE,
       STRIPE_SECRET_KEY: "sk_live_xxx",
       STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+      STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
     });
     expect(() => assertStartupEnv()).not.toThrow();
   });
@@ -225,6 +232,77 @@ describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", (
   });
 
   it("does NOT throw in NODE_ENV=development when STRIPE_SECRET_KEY is set without webhook secret", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      STRIPE_SECRET_KEY: "sk_test_xxx",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — STRIPE_PRICE_ID_PRO_MONTHLY (P0-7)", () => {
+  // Stripe price IDs sit on the same lifecycle as `STRIPE_WEBHOOK_SECRET`:
+  // optional when billing is not wired, mandatory at boot in production
+  // once `STRIPE_SECRET_KEY` is set. Until P0-7 these were read straight
+  // from `process.env` inside `getPriceId`, so a missing or malformed
+  // ID surfaced only when a user clicked Upgrade and the route returned
+  // a generic 503. The Zod schema now enforces `price_*` on parse, and
+  // this block locks in:
+  //   1. Malformed values fail at module load (zod refine).
+  //   2. Missing values fail at `assertStartupEnv` in prod-with-billing.
+  //   3. Dev / preview deploys (NODE_ENV != production) stay tolerant.
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  const PRICE_BASELINE = {
+    ...PROD_BASELINE,
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+    STRIPE_SECRET_KEY: "sk_live_xxx",
+    STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+  };
+
+  it("throws in production when STRIPE_SECRET_KEY is set but STRIPE_PRICE_ID_PRO_MONTHLY is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(PRICE_BASELINE);
+    expect(() => assertStartupEnv()).toThrow(/STRIPE_PRICE_ID_PRO_MONTHLY/);
+  });
+
+  it("throws on module import when STRIPE_PRICE_ID_PRO_MONTHLY is malformed (not price_*)", async () => {
+    // Zod refines on `.regex(/^price_…/)` at module-load time, so the
+    // bad value never even reaches `assertStartupEnv` — `loadAssertStartupEnv`
+    // (which does the dynamic import) is what fails.
+    await expect(
+      loadAssertStartupEnv({
+        ...PRICE_BASELINE,
+        STRIPE_PRICE_ID_PRO_MONTHLY: "prod_not_a_price_id",
+      }),
+    ).rejects.toThrow(/STRIPE_PRICE_ID_PRO_MONTHLY/);
+  });
+
+  it("throws on module import when STRIPE_PRICE_ID_PLUS_MONTHLY is malformed", async () => {
+    await expect(
+      loadAssertStartupEnv({
+        ...PRICE_BASELINE,
+        STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
+        STRIPE_PRICE_ID_PLUS_MONTHLY: "free",
+      }),
+    ).rejects.toThrow(/STRIPE_PRICE_ID_PLUS_MONTHLY/);
+  });
+
+  it("does NOT throw in production when STRIPE_PRICE_ID_PRO_MONTHLY is a valid price_* value", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PRICE_BASELINE,
+      STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when STRIPE_PRICE_ID_PRO_MONTHLY is missing", async () => {
+    // Local dev / preview deploys (sk_test_*) still boot without a
+    // price ID — the runtime `getPriceId` call inside checkout
+    // surfaces the 503 path through normal e2e instead.
     const assertStartupEnv = await loadAssertStartupEnv({
       NODE_ENV: "development",
       STRIPE_SECRET_KEY: "sk_test_xxx",

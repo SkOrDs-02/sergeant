@@ -1,6 +1,6 @@
 # pnpm Overrides Policy
 
-> **Last validated:** 2026-05-11 by @claude. **Next review:** 2026-08-09.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
 > **Status:** Active
 
 ## Мета
