@@ -2,7 +2,12 @@ import { describe, it, expect } from "vitest";
 import pino from "pino";
 import { hashUserId, isUserIdHash } from "../lib/userIdHash.js";
 import { als } from "./requestContext.js";
-import { redactKeyNames, redactPaths, serializeError } from "./logger.js";
+import {
+  redactKeyNames,
+  redactKeysRecursively,
+  redactPaths,
+  serializeError,
+} from "./logger.js";
 
 function makeTestLogger(): {
   logger: pino.Logger;
@@ -18,6 +23,14 @@ function makeTestLogger(): {
     {
       level: "info",
       redact: { paths: redactPaths, censor: "[redacted]" },
+      formatters: {
+        // Дзеркально до production-конфігу (див. `pinoOptions.formatters.log` у
+        // `logger.ts`) — рекурсивний редактор працює перед path-redact-ом, тож
+        // тести перевіряють саме ту поведінку, яка летить у Railway/Loki.
+        log(obj) {
+          return redactKeysRecursively(obj) as Record<string, unknown>;
+        },
+      },
     },
     stream,
   );
@@ -40,6 +53,20 @@ describe("logger", () => {
       expect(redactPaths).toContain("signature");
       expect(redactPaths).toContain("connectionString");
       expect(redactPaths).toContain("dsn");
+    });
+
+    // S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
+    // статичні `*.password`, `*.*.password`, `*.email`, `req.body.email`
+    // patterns повинні бути видалені — якщо вони повертаються, хтось
+    // відкотив рекурсивний редактор і лишився лише крихкий patch-варіант
+    // — redactPaths повинен бути вужчим, а рекурсія — авторитетною.
+    it("НЕ містить wildcard-depth patterns (S4 — рекурсивний walker вже покриває)", () => {
+      expect(redactPaths).not.toContain("*.password");
+      expect(redactPaths).not.toContain("*.*.password");
+      expect(redactPaths).not.toContain("*.email");
+      expect(redactPaths).not.toContain("*.*.email");
+      expect(redactPaths).not.toContain("req.body.email");
+      expect(redactPaths).not.toContain("res.body.email");
     });
 
     it("redact працює з pino — маскує секретні поля у root", () => {
@@ -409,6 +436,128 @@ describe("logger", () => {
           expect(safe).toBeDefined();
         }
       });
+    });
+  });
+
+  // S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
+  // рекурсивний редактор покриває довільну глибину лог-обʼєкта.
+  // Cтатичні `*.password`, `*.*.password` patterns покривали тільки 1–2 рівні;
+  // axios `err.config.data` без проблем виносив password на 3+ рівнях.
+  describe("S4 — recursive redactor (deep nesting)", () => {
+    it("маскує password на 3 рівні вглиб (substring 'x' відсутній у stringify-output)", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({ a: { b: { c: { password: "x" } } } });
+
+      expect(chunks).toHaveLength(1);
+      const raw = chunks[0]!;
+      // Acceptance criteria із audit S4: substring `'x'` НЕ повинен бути у виводі.
+      // Це сильніше за перевірку явного поля, бо ловить випадок, коли
+      // password випадково увійшов на інший ключ (наприклад, у вигляді
+      // stringified-JSON під `err.message`-рядком).
+      expect(raw).not.toContain('"x"');
+      const parsed = JSON.parse(raw) as {
+        a: { b: { c: Record<string, unknown> } };
+      };
+      expect(parsed.a.b.c["password"]).toBe("[redacted]");
+    });
+
+    it("маскує вкладений PII (email на 4 рівні) і не зачіпає нейтральні поля", () => {
+      const { logger, chunks } = makeTestLogger();
+      const original = {
+        result: {
+          payload: {
+            data: {
+              user: {
+                email: "hidden@example.com",
+                publicId: "u-123",
+              },
+            },
+          },
+        },
+      };
+      logger.info(original);
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("hidden@example.com");
+      const parsed = JSON.parse(raw) as {
+        result: {
+          payload: {
+            data: { user: { email: unknown; publicId: unknown } };
+          };
+        };
+      };
+      expect(parsed.result.payload.data.user.email).toBe("[redacted]");
+      expect(parsed.result.payload.data.user.publicId).toBe("u-123");
+      // Non-mutating: caller обʼєкт НЕ мутується.
+      expect(original.result.payload.data.user.email).toBe(
+        "hidden@example.com",
+      );
+    });
+
+    it("маскує sensitive-ключі в масивах на будь-якій глибині", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        users: [
+          { id: "u-1", token: "jwt-leak-A" },
+          {
+            id: "u-2",
+            session: { token: "jwt-leak-B", expiresAt: "2026-01-01" },
+          },
+        ],
+      });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("jwt-leak-A");
+      expect(raw).not.toContain("jwt-leak-B");
+      const parsed = JSON.parse(raw) as {
+        users: Array<{
+          id: string;
+          token?: unknown;
+          session?: { token?: unknown; expiresAt?: unknown };
+        }>;
+      };
+      expect(parsed.users[0]!.token).toBe("[redacted]");
+      expect(parsed.users[0]!.id).toBe("u-1");
+      expect(parsed.users[1]!.session!.token).toBe("[redacted]");
+      expect(parsed.users[1]!.session!.expiresAt).toBe("2026-01-01");
+    });
+
+    it("case-insensitive матч — 'Password' / 'AUTHORIZATION' теж маскуються", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        deeply: {
+          nested: { ctx: { Password: "caseA", AUTHORIZATION: "Bearer xx" } },
+        },
+      });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("caseA");
+      expect(raw).not.toContain("Bearer xx");
+    });
+
+    it("обʼєкт-значення sensitive-ключа мапиться у `null` (не лишає структуру)", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        ctx: { token: { algo: "HS256", value: "opaque-leak" } },
+      });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("opaque-leak");
+      expect(raw).not.toContain("HS256");
+      const parsed = JSON.parse(raw) as {
+        ctx: { token: unknown };
+      };
+      expect(parsed.ctx.token).toBeNull();
+    });
+
+    it("cycle-safe — self-referencing object не зациклює walker", () => {
+      // Прямий unit-тест рекурсивної функції — pino-stream робить власну
+      // цикл-детекцію через safe-stable-stringify, тож тут викликаємо
+      // walker безпосередньо на само-посилальній структурі.
+      const cyclic: Record<string, unknown> = { token: "leak" };
+      cyclic["self"] = cyclic;
+      const result = redactKeysRecursively(cyclic) as Record<string, unknown>;
+      expect(result["token"]).toBe("[redacted]");
     });
   });
 
