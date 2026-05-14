@@ -147,7 +147,7 @@ useEffect(() => {
 }, []);
 ```
 
-Three issues stacked: (1) bare `catch {}` silently swallows quota / private-mode errors with no telemetry; (2) `react-hooks/exhaustive-deps` is disabled with an English comment in an internal Ukrainian-language codebase (Hard Rule #15 spirit); (3) `setView` is treated as stable, but that's a `useState` setter that React does in fact keep stable — the disable is correct, but the *reason* the comment claims it is wrong (setters are stable because `useState` says so, not because of "identity stability").
+Three issues stacked: (1) bare `catch {}` silently swallows quota / private-mode errors with no telemetry; (2) `react-hooks/exhaustive-deps` is disabled with an English comment in an internal Ukrainian-language codebase (Hard Rule #15 spirit); (3) `setView` is treated as stable, but that's a `useState` setter that React does in fact keep stable — the disable is correct, but the _reason_ the comment claims it is wrong (setters are stable because `useState` says so, not because of "identity stability").
 
 **Why it matters.**
 Bare `catch {}` blocks make storage-quota regressions invisible (the broader storage roadmap explicitly built `safeReadLS` / `safeWriteLS` to surface them via `dispatchEvent`). Disabling lint without a load-bearing reason invites the next mount-only effect to be copy-pasted with truly missing deps.
@@ -311,7 +311,9 @@ Use a Kyiv-locked formatter:
 ```ts
 const fmt = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Kyiv",
-  year: "numeric", month: "2-digit", day: "2-digit",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
 });
 export function todayLocalDateString() {
   return fmt.format(new Date()); // "YYYY-MM-DD" by virtue of en-CA
@@ -711,12 +713,12 @@ For perspectives where no findings were raised, this column records that the che
 
 X = audited, no findings. Number = count of findings. — = not applicable.
 
-| Page              | sec | a11y | perf | ux | bug | rule | ts | tw | i18n | test | ai | lifecycle |
-| ----------------- | --- | ---- | ---- | -- | --- | ---- | -- | -- | ---- | ---- | -- | --------- |
-| Dashboard.tsx     |  X  |  3   |  1   | X  |  1  |  3   | 1  | 1  |  X   |  1   | 1  |    1      |
-| Atlas.tsx         |  X  |  2   |  1   | X  |  X  |  2   | X  | 1  |  X   |  1   | 1  |    1      |
-| Workouts.tsx (+h/t) | X | 4   |  X   | 2  |  3  |  4   | 1  | X  |  X   |  1   | 1  |    1      |
-| Exercise.tsx      |  X  |  1   |  1   | 1  |  2  |  3   | 1  | 2  |  X   |  1   | 1  |    1      |
+| Page                | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
+| ------------------- | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
+| Dashboard.tsx       | X   | 3    | 1    | X   | 1   | 3    | 1   | 1   | X    | 1    | 1   | 1         |
+| Atlas.tsx           | X   | 2    | 1    | X   | X   | 2    | X   | 1   | X    | 1    | 1   | 1         |
+| Workouts.tsx (+h/t) | X   | 4    | X    | 2   | 3   | 4    | 1   | X   | X    | 1    | 1   | 1         |
+| Exercise.tsx        | X   | 1    | 1    | 1   | 2   | 3    | 1   | 2   | X    | 1    | 1   | 1         |
 
 ## Summary of recommendations
 

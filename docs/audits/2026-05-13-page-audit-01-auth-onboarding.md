@@ -19,13 +19,13 @@
 
 ## Summary
 
-| Severity | Count |
-| -------- | ----- |
-| Critical | 0     |
-| High     | 6     |
-| Medium   | 14    |
-| Low      | 5     |
-| **Total**| **25**|
+| Severity  | Count  |
+| --------- | ------ |
+| Critical  | 0      |
+| High      | 6      |
+| Medium    | 14     |
+| Low       | 5      |
+| **Total** | **25** |
 
 Three themes dominate the scope:
 
@@ -93,10 +93,10 @@ Wire `AuthPage.tsx` to import the existing scaffolded siblings (`LoginForm`, `Re
 - `apps/web/src/core/auth/authSchemas.ts`
 - `apps/web/src/core/auth/authFormPrimitives.tsx`
 
-**Lines:** Each file's `@scaffolded` JSDoc header (L1–L11); `AuthPage.tsx:130` (`function LoginForm(...)`), `:260` (`function RegisterForm(...)`), `:532` / `:538` (call sites of the *inline* copies).
+**Lines:** Each file's `@scaffolded` JSDoc header (L1–L11); `AuthPage.tsx:130` (`function LoginForm(...)`), `:260` (`function RegisterForm(...)`), `:532` / `:538` (call sites of the _inline_ copies).
 
 **Description.**
-`grep -rn 'LoginForm\|RegisterForm\|...'` for non-test importers returns only `AuthPage.tsx` itself — and AuthPage references its own *inline* `function LoginForm` / `function RegisterForm` declared at L130 / L260, not the scaffolded sibling exports. The siblings exist with `@scaffolded` markers and even have their own `.test.tsx` files (e.g. `LoginForm.test.tsx` would be testing a dead file). `useForgotPassword.ts:3–11` acknowledges this in its JSDoc:
+`grep -rn 'LoginForm\|RegisterForm\|...'` for non-test importers returns only `AuthPage.tsx` itself — and AuthPage references its own _inline_ `function LoginForm` / `function RegisterForm` declared at L130 / L260, not the scaffolded sibling exports. The siblings exist with `@scaffolded` markers and even have their own `.test.tsx` files (e.g. `LoginForm.test.tsx` would be testing a dead file). `useForgotPassword.ts:3–11` acknowledges this in its JSDoc:
 
 > `@scaffolded — extracted from AuthPage.tsx by [a53e10b0]… [PR #2586] re-inlined AuthPage UX (autocomplete, password toggle, errors) and reverted the decomposition — AuthPage.tsx is now 693 LOC again. These helpers stay as the canonical re-decomposition target.`
 
@@ -317,7 +317,7 @@ Same as F10. Standardize secondary "Later" / "Пізніше" CTAs across `SoftA
 </button>
 ```
 
-`py-1` = 4 px each side + `text-xs` ~16 px = ~24–26 px hit-area. The banner is the *only* place where a user can dismiss this first-run hint inside a module — making it small is a soft trap.
+`py-1` = 4 px each side + `text-xs` ~16 px = ~24–26 px hit-area. The banner is the _only_ place where a user can dismiss this first-run hint inside a module — making it small is a soft trap.
 
 **Recommendation.**
 Promote to `<Button variant="secondary" size="sm">{ctaLabel}</Button>` so the 44 px floor and design-system focus styling come for free. Module-accent containment (Rule #12) still holds because `v.cta` only sets text/border colours within the module subtree.
@@ -335,32 +335,31 @@ Promote to `<Button variant="secondary" size="sm">{ctaLabel}</Button>` so the 44
 ```tsx
 <p className="text-xs text-muted leading-relaxed max-w-xs">
   Тебе не було {daysInactive}{" "}
-  {daysInactive === 1 ? "день" : daysInactive < 5 ? "дні" : "днів"}.
-  …
+  {daysInactive === 1 ? "день" : daysInactive < 5 ? "дні" : "днів"}. …
 </p>
 ```
 
 Ukrainian pluralization has a special "few" form for `n mod 10 ∈ {2,3,4}` **except when `n mod 100 ∈ {11..14}`**. The naive ladder produces:
 
-| `daysInactive` | Current output | Correct |
-| -------------- | -------------- | ------- |
-| 1              | 1 день         | 1 день  |
-| 2              | 2 дні          | 2 дні   |
-| 5              | 5 днів         | 5 днів  |
-| **11**         | **11 днів**    | 11 днів |
+| `daysInactive` | Current output                                                                | Correct |
+| -------------- | ----------------------------------------------------------------------------- | ------- |
+| 1              | 1 день                                                                        | 1 день  |
+| 2              | 2 дні                                                                         | 2 дні   |
+| 5              | 5 днів                                                                        | 5 днів  |
+| **11**         | **11 днів**                                                                   | 11 днів |
 | **12**         | **12 днів** (current returns "12 днів" — checked: `12 < 5` is false → "днів") | 12 днів |
 
 Actually re-evaluating: `daysInactive === 1 ? "день" : daysInactive < 5 ? "дні" : "днів"` returns:
 
-| `daysInactive` | Current | Correct |
-| -------------- | ------- | ------- |
-| 1              | день    | день    |
-| 2              | дні     | дні     |
-| 4              | дні     | дні     |
-| 5–14           | днів    | днів    |
-| **21**         | **днів**| **день**|
-| **22**         | **днів**| **дні** |
-| **31**         | **днів**| **день**|
+| `daysInactive` | Current  | Correct  |
+| -------------- | -------- | -------- |
+| 1              | день     | день     |
+| 2              | дні      | дні      |
+| 4              | дні      | дні      |
+| 5–14           | днів     | днів     |
+| **21**         | **днів** | **день** |
+| **22**         | **днів** | **дні**  |
+| **31**         | **днів** | **день** |
 
 So the bug is at multiples-of-10-plus-1 / -2/3/4 (21 days, 22 days, 31 days, 32 days, …). The card is unlikely to show >30 days inactive, but the i18n contract still says "use the project plural helper".
 
@@ -429,7 +428,7 @@ The contract documented next to the storage allowlist (`pnpm lint:localstorage-a
 
 - Future schema bumps (e.g. `v1` → `v2`) in any module must remember to also bump this file, or presets silently write into a stale shape.
 - Cross-device sync via SQLite op-log v2 (referenced in `cleanupDemoData.ts:37–39`) might or might not pick up the preset entry depending on which path is the source of truth for that particular boot.
-- Debounced API exists for a reason (rapid writes coalesce); bypassing it on FTUX means a double-tap on the same tile *can* create two entries.
+- Debounced API exists for a reason (rapid writes coalesce); bypassing it on FTUX means a double-tap on the same tile _can_ create two entries.
 
 **Recommendation.**
 Either:
@@ -479,7 +478,7 @@ useEffect(() => {
 10 s auto-dismiss. If the user is reading the copy (multi-line headline + subtitle + tip + primary CTA per the JSDoc at L150–L154) and reaches for the CTA at 9.5 s, the close fires while their finger is mid-tap — the modal disappears and the tap lands on whatever's under the backdrop. Combined with F5 (global Enter/Space handler), the user can also accidentally double-fire.
 
 **Why it matters.**
-This is the FTUX 30-second-promise payoff moment per the file JSDoc — the *one* time the app says "you did it!". Cutting it short on slow readers (or screen-reader users) undermines the very moment it celebrates.
+This is the FTUX 30-second-promise payoff moment per the file JSDoc — the _one_ time the app says "you did it!". Cutting it short on slow readers (or screen-reader users) undermines the very moment it celebrates.
 
 **Recommendation.**
 Either (a) bump to 15 s and add a "Pause on focus / hover" rule (`useEffect` returns early if `document.activeElement` is inside the modal), or (b) drop the auto-dismiss and trust the user to dismiss explicitly (the primary CTA does that already).
@@ -497,13 +496,13 @@ Per-field errors use `text-danger` (correct, registered token). Surface-level al
 
 ```tsx
 // L114 — "Link expired" alert → invisible bg+border
-className="text-sm text-text bg-error/10 border border-error/30 …"
+className = "text-sm text-text bg-error/10 border border-error/30 …";
 
 // L158 — per-field "password too short" → correct
-className="text-xs text-danger"
+className = "text-xs text-danger";
 
 // L201 — server error after submit → invisible bg+text+border
-className="text-xs text-error bg-error/10 border border-error/20 …"
+className = "text-xs text-error bg-error/10 border border-error/20 …";
 ```
 
 **Why it matters.**
@@ -517,7 +516,7 @@ Same as F1 — globally rename `error` → `danger` / `danger-soft`. Add a regre
 ### F20 — Test coverage targets dead `LoginForm.tsx` / `RegisterForm.tsx` [severity: medium] [perspective: test]
 
 **Page:** AuthPage
-**File:** `apps/web/src/core/auth/LoginForm.tsx` + sibling `*.test.tsx` (if present), and the *inline* `LoginForm` / `RegisterForm` in `AuthPage.tsx`
+**File:** `apps/web/src/core/auth/LoginForm.tsx` + sibling `*.test.tsx` (if present), and the _inline_ `LoginForm` / `RegisterForm` in `AuthPage.tsx`
 **Lines:** `AuthPage.tsx:130–253` (live `LoginForm`), `:260–453` (live `RegisterForm`); `LoginForm.tsx` (dead).
 
 **Description.**
@@ -641,45 +640,45 @@ Either (a) keep the `autoFocus` and add a hidden `aria-live="polite"` heading an
 
 Legend: `X` = audited, no findings. Number = count of findings landed on this page from that perspective. `—` = perspective not applicable to this page surface.
 
-| Page                       | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
-| -------------------------- | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
-| **AuthPage**               | X   | X    | X    | 1   | 1   | 2    | X   | 1   | X    | 1    | 1   | 1         |
-| **AuthContext**            | X   | —    | X    | X   | X   | X    | 1   | —   | X    | X    | 1   | 1         |
-| **authClient**             | X   | —    | X    | —   | X   | X    | 1   | —   | —    | —    | 1   | 1         |
-| **authSchemas**            | X   | —    | —    | —   | —   | 1    | X   | —   | —    | —    | X   | 1         |
-| **authFormPrimitives**     | X   | X    | —    | X   | X   | 1    | X   | 1   | —    | —    | X   | 1         |
-| **LoginForm (scaffolded)** | X   | X    | —    | X   | 1   | 1    | X   | 1   | —    | 1    | X   | 1         |
-| **RegisterForm (scaffolded)** | X | X   | —    | X   | X   | 1    | X   | 1   | —    | 1    | X   | 1         |
-| **GoogleSignInButton**     | X   | X    | X    | X   | X   | 1    | X   | X   | X    | —    | X   | 1         |
-| **ForgotPasswordPanel**    | X   | X    | —    | X   | X   | 1    | X   | 1   | X    | —    | X   | 1         |
-| **useForgotPassword**      | X   | —    | X    | 1   | X   | 1    | X   | —   | —    | —    | X   | 1         |
-| **ResetPasswordPage**      | X   | 1    | X    | X   | X   | X    | X   | 1   | X    | X    | X   | 1         |
-| **OnboardingWizard**       | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
-| **WelcomeOneScreen**       | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
-| **useOnboardingWizardState** | — | —    | X    | X   | X   | X    | X   | —   | —    | X    | 1   | 1         |
-| **ModuleRow**              | —   | X    | X    | X   | X   | X    | X   | X   | X    | —    | X   | 1         |
-| **ModuleChecklist**        | —   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
-| **PresetSheet**            | —   | X    | X    | X   | X   | X    | X   | X   | X    | —    | X   | 1         |
-| **FirstActionSheet**       | —   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
-| **DemoModeBanner**         | —   | 2    | —    | X   | X   | X    | —   | X   | X    | X    | X   | 1         |
-| **DailyNudge**             | —   | 2    | —    | X   | X   | X    | —   | X   | X    | X    | X   | 1         |
-| **ReEngagementCard**       | —   | 1    | —    | X   | 1   | X    | —   | X   | 1    | X    | X   | 1         |
-| **CelebrationModal**       | —   | 1    | X    | 1   | 1   | X    | —   | X   | X    | —    | X   | 1         |
-| **SoftAuthPromptCard**     | —   | 1    | —    | X   | X   | X    | —   | X   | X    | —    | X   | 1         |
-| **FirstRunHintBanner**     | —   | 1    | —    | X   | X   | X    | —   | X   | X    | —    | X   | 1         |
-| **PermissionsPrompt**      | X   | X    | X    | X   | X   | 1    | X   | X   | X    | —    | X   | 1         |
-| **useOnboardingState**     | —   | —    | X    | —   | X   | X    | X   | —   | —    | X    | X   | 1         |
-| **onboardingGate**         | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
-| **useFirstEntryCelebration** | — | —    | X    | X   | X   | X    | X   | —   | —    | —    | X   | 1         |
-| **useModuleFirstRun**      | —   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
-| **firstRealEntry**         | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
-| **picksStorage**           | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
-| **vibePicks**              | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
-| **presetApply**            | —   | —    | X    | X   | X   | 1    | X   | —   | —    | —    | 1   | 1         |
-| **presetPrefill**          | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
-| **seedDemoData**           | —   | —    | X    | X   | X   | 1    | X   | —   | —    | X    | X   | 1         |
-| **cleanupDemoData**        | —   | —    | X    | X   | X   | X    | X   | —   | —    | —    | 1   | 1         |
-| **demoSeed**               | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| Page                          | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
+| ----------------------------- | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
+| **AuthPage**                  | X   | X    | X    | 1   | 1   | 2    | X   | 1   | X    | 1    | 1   | 1         |
+| **AuthContext**               | X   | —    | X    | X   | X   | X    | 1   | —   | X    | X    | 1   | 1         |
+| **authClient**                | X   | —    | X    | —   | X   | X    | 1   | —   | —    | —    | 1   | 1         |
+| **authSchemas**               | X   | —    | —    | —   | —   | 1    | X   | —   | —    | —    | X   | 1         |
+| **authFormPrimitives**        | X   | X    | —    | X   | X   | 1    | X   | 1   | —    | —    | X   | 1         |
+| **LoginForm (scaffolded)**    | X   | X    | —    | X   | 1   | 1    | X   | 1   | —    | 1    | X   | 1         |
+| **RegisterForm (scaffolded)** | X   | X    | —    | X   | X   | 1    | X   | 1   | —    | 1    | X   | 1         |
+| **GoogleSignInButton**        | X   | X    | X    | X   | X   | 1    | X   | X   | X    | —    | X   | 1         |
+| **ForgotPasswordPanel**       | X   | X    | —    | X   | X   | 1    | X   | 1   | X    | —    | X   | 1         |
+| **useForgotPassword**         | X   | —    | X    | 1   | X   | 1    | X   | —   | —    | —    | X   | 1         |
+| **ResetPasswordPage**         | X   | 1    | X    | X   | X   | X    | X   | 1   | X    | X    | X   | 1         |
+| **OnboardingWizard**          | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
+| **WelcomeOneScreen**          | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
+| **useOnboardingWizardState**  | —   | —    | X    | X   | X   | X    | X   | —   | —    | X    | 1   | 1         |
+| **ModuleRow**                 | —   | X    | X    | X   | X   | X    | X   | X   | X    | —    | X   | 1         |
+| **ModuleChecklist**           | —   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
+| **PresetSheet**               | —   | X    | X    | X   | X   | X    | X   | X   | X    | —    | X   | 1         |
+| **FirstActionSheet**          | —   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
+| **DemoModeBanner**            | —   | 2    | —    | X   | X   | X    | —   | X   | X    | X    | X   | 1         |
+| **DailyNudge**                | —   | 2    | —    | X   | X   | X    | —   | X   | X    | X    | X   | 1         |
+| **ReEngagementCard**          | —   | 1    | —    | X   | 1   | X    | —   | X   | 1    | X    | X   | 1         |
+| **CelebrationModal**          | —   | 1    | X    | 1   | 1   | X    | —   | X   | X    | —    | X   | 1         |
+| **SoftAuthPromptCard**        | —   | 1    | —    | X   | X   | X    | —   | X   | X    | —    | X   | 1         |
+| **FirstRunHintBanner**        | —   | 1    | —    | X   | X   | X    | —   | X   | X    | —    | X   | 1         |
+| **PermissionsPrompt**         | X   | X    | X    | X   | X   | 1    | X   | X   | X    | —    | X   | 1         |
+| **useOnboardingState**        | —   | —    | X    | —   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| **onboardingGate**            | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| **useFirstEntryCelebration**  | —   | —    | X    | X   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| **useModuleFirstRun**         | —   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| **firstRealEntry**            | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| **picksStorage**              | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| **vibePicks**                 | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| **presetApply**               | —   | —    | X    | X   | X   | 1    | X   | —   | —    | —    | 1   | 1         |
+| **presetPrefill**             | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
+| **seedDemoData**              | —   | —    | X    | X   | X   | 1    | X   | —   | —    | X    | X   | 1         |
+| **cleanupDemoData**           | —   | —    | X    | X   | X   | X    | X   | —   | —    | —    | 1   | 1         |
+| **demoSeed**                  | —   | —    | X    | —   | X   | X    | X   | —   | —    | —    | X   | 1         |
 
 Notes on the matrix:
 

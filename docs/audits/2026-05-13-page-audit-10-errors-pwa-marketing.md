@@ -5,6 +5,7 @@
 > **Auditor:** child Devin session (parent: https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40)
 > **Scope slug:** `10-errors-pwa-marketing`
 > **Pages in scope:**
+>
 > - `apps/web/src/core/NotFoundPage.tsx` (re-export shim)
 > - `apps/web/src/core/errors/NotFoundPage.tsx`
 > - `apps/web/src/core/errors/OfflinePage.tsx`
@@ -70,12 +71,13 @@ setCatchHandler(async ({ event, request }) => {
 **Lines:** `cache.ts` L50–L73, `cachePolicy.ts` L30–L59, `sw.ts` L66–L77 (`activate` only deletes stale versions of the cache, not per-user entries)
 
 **Description.**
-`shouldUseRuntimeCache()` allows every non-volatile `GET /api/*` (excluding `/api/auth/*`) to enter a `NetworkFirst` runtime cache named `api-cache-v…`. The cache key is the URL only — there is no user-id partitioning. On a shared device (phone passed to a family member, a public PWA install), the next signed-in user's first SW-served navigation returns the *previous* user's `/api/billing/status`, `/api/finyk/transactions`, `/api/profile`, etc. There is no logout hook that flushes the runtime cache. `clearAppCaches()` exists in `cache.ts:L105` but is not invoked from the auth-logout pipeline (`grep -r clearAppCaches apps/web/src/core/auth/` returns no matches).
+`shouldUseRuntimeCache()` allows every non-volatile `GET /api/*` (excluding `/api/auth/*`) to enter a `NetworkFirst` runtime cache named `api-cache-v…`. The cache key is the URL only — there is no user-id partitioning. On a shared device (phone passed to a family member, a public PWA install), the next signed-in user's first SW-served navigation returns the _previous_ user's `/api/billing/status`, `/api/finyk/transactions`, `/api/profile`, etc. There is no logout hook that flushes the runtime cache. `clearAppCaches()` exists in `cache.ts:L105` but is not invoked from the auth-logout pipeline (`grep -r clearAppCaches apps/web/src/core/auth/` returns no matches).
 
 **Why it matters.**
 This is a confidentiality breach for any multi-tenant device usage. Finik transactions, nutrition diaries, and AI-chat history of one user can be served to another. Even on a single-user device, a "sign out → sign in as different account" flow leaks cross-account data until the cache TTL expires or a hard refresh. WCAG/GDPR-wise this is a P0.
 
 **Recommendation.**
+
 1. Hook `clearAppCaches()` into the logout flow (auth provider's `signOut()` post-completion).
 2. Add a `plugins: [{ cacheKeyWillBeUsed: ({ request }) => withUserScope(request) }]` to the runtime `/api/*` cache route, where `withUserScope` appends the Better Auth user id from a SW-readable channel (e.g., `clients.matchAll()` + `postMessage` handshake on session change).
 3. Add a regression test that signs in as user A, signs out, signs in as B, and asserts no A-scoped responses are served.
@@ -125,13 +127,16 @@ Add a unit test against the integration config in `sentry.test.ts`.
 After `billingApi.createCheckout({ plan })` resolves, the code calls `window.location.assign(checkout.url)` directly. `checkout.url` is a server-returned string with no client-side validation that it points to `*.stripe.com` (or the configured Stripe Checkout domain). If the backend is compromised, a misconfigured environment, or a contract drift returns a non-Stripe URL, the user is redirected to an arbitrary origin in the middle of a checkout intent (when they are most primed to enter card data).
 
 **Why it matters.**
-Open-redirect at a high-trust moment of the funnel = textbook phishing primitive. Even if Stripe-only is the *intent*, defense-in-depth means the client should refuse to navigate to anything outside an allow-listed set.
+Open-redirect at a high-trust moment of the funnel = textbook phishing primitive. Even if Stripe-only is the _intent_, defense-in-depth means the client should refuse to navigate to anything outside an allow-listed set.
 
 **Recommendation.**
 Validate the host before navigating:
 
 ```ts
-const ALLOWED_CHECKOUT_HOSTS = new Set(["checkout.stripe.com", "billing.stripe.com"]);
+const ALLOWED_CHECKOUT_HOSTS = new Set([
+  "checkout.stripe.com",
+  "billing.stripe.com",
+]);
 try {
   const parsed = new URL(checkout.url);
   if (!ALLOWED_CHECKOUT_HOSTS.has(parsed.host)) {
@@ -153,7 +158,7 @@ try {
 **Lines:** L77–L98 (`ErrorFallback` component)
 
 **Description.**
-The top-level `ErrorBoundary` fallback renders `<pre>{error?.message}</pre>` directly. Runtime errors from React render-loops, TanStack Query mutations, and any chained `Error.cause` can leak internal paths, stack frames (when env-vars surface them), DB column names, and API endpoint URLs. The styled wrapper makes this *look* like an intentional disclosure, normalizing it.
+The top-level `ErrorBoundary` fallback renders `<pre>{error?.message}</pre>` directly. Runtime errors from React render-loops, TanStack Query mutations, and any chained `Error.cause` can leak internal paths, stack frames (when env-vars surface them), DB column names, and API endpoint URLs. The styled wrapper makes this _look_ like an intentional disclosure, normalizing it.
 
 **Why it matters.**
 Rule #21 (redaction) applies to user-facing error surfaces too, not just Pino logs. Information disclosure on a global error boundary is a low-effort recon vector for any adversary triggering edge-cases.
@@ -186,6 +191,7 @@ Or, if dev-mode visibility is desired, gate behind `import.meta.env.DEV`.
 
 **Description.**
 `const backend = process.env.BACKEND_URL` is concatenated into `new URL(\`${backend}${url.pathname}${url.search}\`)` with zero validation that:
+
 1. The scheme is `https://` (a misconfigured env-var like `http://…` silently downgrades the proxy and breaks `Secure` cookies in a confusing way).
 2. The host is in a known allow-list (Vercel preview branches with a stale env-var could proxy to an old staging backend that's been re-pointed).
 
@@ -224,7 +230,16 @@ This is a forwarding-policy hygiene issue. Today the surface is small; the lack 
 Maintain an explicit deny-list of hop-by-hop / risky headers:
 
 ```ts
-const HOP_BY_HOP = ["connection","keep-alive","proxy-authenticate","proxy-authorization","te","trailer","transfer-encoding","upgrade"];
+const HOP_BY_HOP = [
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+];
 for (const h of HOP_BY_HOP) headers.delete(h);
 ```
 
@@ -237,7 +252,7 @@ for (const h of HOP_BY_HOP) headers.delete(h);
 **Lines:** L38–L58
 
 **Description.**
-`event.notification.data` may carry `module: string` from the server push payload. The handler builds `const url = module ? \`/?module=${module}\` : "/";` and passes it to `self.clients.openWindow(url)`. While same-origin (so not a true open-redirect), `module` flows into `<App>` and is dispatched to module routers as a side-channel without validation. A poisoned push (compromised vendor key, mis-routed sub) could inject `module=../auth/callback?code=…` or similar to land users on unexpected routes mid-session.
+`event.notification.data` may carry `module: string` from the server push payload. The handler builds `const url = module ? \`/?module=${module}\` : "/";`and passes it to`self.clients.openWindow(url)`. While same-origin (so not a true open-redirect), `module`flows into`<App>`and is dispatched to module routers as a side-channel without validation. A poisoned push (compromised vendor key, mis-routed sub) could inject`module=../auth/callback?code=…` or similar to land users on unexpected routes mid-session.
 
 **Why it matters.**
 Push payloads should be treated as untrusted. The current code trusts server-provided strings to compose URLs.
@@ -259,7 +274,7 @@ const url = module && ALLOWED_MODULES.has(module) ? `/?module=${module}` : "/";
 **Lines:** L80–L99
 
 **Description.**
-`const title = payload.title || "Мій простір"; const options = { body: payload.body || "", ... }` — no length cap, no HTML-escape (notifications strip tags but spoofed Unicode RTL-overrides, zero-width joiners, or emoji-floods can be used for visual spoofing or notification-spam). `payload.tag || \`push_${Date.now()}\`` is also user-controlled and used as a dedup key — a long string of `Date.now()` collisions could disable dedup.
+`const title = payload.title || "Мій простір"; const options = { body: payload.body || "", ... }` — no length cap, no HTML-escape (notifications strip tags but spoofed Unicode RTL-overrides, zero-width joiners, or emoji-floods can be used for visual spoofing or notification-spam). `payload.tag || \`push\_${Date.now()}\``is also user-controlled and used as a dedup key — a long string of`Date.now()` collisions could disable dedup.
 
 **Why it matters.**
 Push payloads are signed by your backend's VAPID key — if a single backend compromise happens, the SW will faithfully render adversary-controlled notifications including potentially malicious deep-links (already worsened by F8). Defensive clamps reduce blast radius.
@@ -267,8 +282,12 @@ Push payloads are signed by your backend's VAPID key — if a single backend com
 **Recommendation.**
 
 ```ts
-const safeTitle = String(payload.title ?? "Мій простір").slice(0, 80).replace(/[\u202A-\u202E\u2066-\u2069]/g, "");
-const safeBody  = String(payload.body  ?? "").slice(0, 240).replace(/[\u202A-\u202E\u2066-\u2069]/g, "");
+const safeTitle = String(payload.title ?? "Мій простір")
+  .slice(0, 80)
+  .replace(/[\u202A-\u202E\u2066-\u2069]/g, "");
+const safeBody = String(payload.body ?? "")
+  .slice(0, 240)
+  .replace(/[\u202A-\u202E\u2066-\u2069]/g, "");
 ```
 
 ---
@@ -349,16 +368,17 @@ Optionally subscribe to `window.addEventListener("online", ...)` and auto-reload
 
 **Page:** Error pages
 **Files:**
+
 - `apps/web/src/core/errors/OfflinePage.tsx`
 - `apps/web/src/core/errors/NotFoundPage.tsx`
 - `apps/web/src/core/errors/ServerErrorPage.tsx`
-**Lines:** entire files
+  **Lines:** entire files
 
 **Description.**
 The directory `apps/web/src/core/errors/` ships three production surfaces but zero test files (`ls src/core/errors/` → `NotFoundPage.tsx`, `OfflinePage.tsx`, `ServerErrorPage.tsx`, `index.ts`). Critical-path regressions (broken navigate, illustration import errors, missing locale string) ship to prod uncaught.
 
 **Why it matters.**
-Error pages are the *last* surface users see before they leave. A regression on them is often only caught in production by user reports. Coverage is cheap (10–15 lines each).
+Error pages are the _last_ surface users see before they leave. A regression on them is often only caught in production by user reports. Coverage is cheap (10–15 lines each).
 
 **Recommendation.**
 Add minimal RTL tests asserting (a) `messages.errors.*` strings are rendered, (b) primary CTA calls `navigate(homePath, { replace: true })` / `window.location.reload()`, (c) `<NotFoundIllustration>` mounts. Co-locate as `OfflinePage.test.tsx` etc. and wire into the existing Vitest suite.
@@ -378,6 +398,7 @@ Every `trackEvent(...)` call performs a synchronous `localStorage.getItem(KEY)` 
 LocalStorage is synchronous and blocks the render thread. On low-end Android (the primary mobile target per `apps/web/AGENTS.md`), this materializes as input lag during burst interactions. Also violates the spirit of Rule #21 (no console.log of analytics payloads in prod).
 
 **Recommendation.**
+
 1. Move the ring-buffer to an in-memory array; flush to LS on `visibilitychange`/`pagehide` only (mirror the pattern in `webVitals.ts:L95-L107`).
 2. Gate `console.log("[analytics]", event)` behind `import.meta.env.DEV`.
 
@@ -449,6 +470,7 @@ The SQLite filename is constant per origin. Account-switching does not switch DB
 Same threat model as F2 — multi-user device. Even on single-user devices, leftover rows can replay against the new account and trigger duplicate-write or schema-conflict errors that look like sync bugs.
 
 **Recommendation.**
+
 1. Include user-id in the DB filename: `sergeant-${userId}.db` (or `kvvfs:` namespace per-user).
 2. On logout, run a "wipe local DBs" pass for the prior user-id.
 3. Add a Sentry breadcrumb on user-id transitions for forensic traceability.
@@ -516,7 +538,9 @@ Subscribe to a sync-engine event:
 
 ```ts
 const off = runtime.events.on("status", refresh);
-return () => { off(); /* ...other cleanup */ };
+return () => {
+  off(); /* ...other cleanup */
+};
 ```
 
 Or expose a `subscribe(callback)` API in `syncEngineWriter` and consume it here.
@@ -569,6 +593,7 @@ ReactDOM.createRoot(rootEl).render(...);
 
 **Pages:** Many
 **Files (sample):**
+
 - `apps/web/src/core/PricingPage.tsx` — no marker
 - `apps/web/src/core/status/StatusPage.tsx` — no marker (has JSDoc but not the `> **Last validated:**` form)
 - `apps/web/src/sw.ts` and most `apps/web/src/sw/*.ts` — no marker
@@ -703,9 +728,10 @@ if (import.meta.env.DEV) {
 
 **Page:** Error pages
 **Files:**
+
 - `apps/web/src/core/errors/OfflinePage.tsx`
 - `apps/web/src/core/errors/ServerErrorPage.tsx`
-**Lines:** entire `<main>` block
+  **Lines:** entire `<main>` block
 
 **Description.**
 The pages render a `<main>` with `<EmptyState>` inside. Unless `<EmptyState>` itself wires `aria-live` / `role="status"` / `role="alert"` (worth verifying — out of scope here), users on a screen reader hitting a transient offline/server-error overlay may not hear the new content announced. The canonical `NotFoundPage` is navigated to (so SR re-announces page title), but `OfflinePage` can be swapped in via SW interception without a route change.
@@ -739,7 +765,7 @@ Compositor jank during PIN entry, especially on low-end Android. Rule #17 is exp
 **Recommendation.**
 
 ```tsx
-className="... transition-colors duration-150 ease-out"
+className = "... transition-colors duration-150 ease-out";
 ```
 
 Or split: `transition-[background-color,transform] duration-150`.
@@ -759,6 +785,7 @@ The list `["/api/sync/", "/api/v2/sync/", "/api/coach", "/api/weekly-digest"]` i
 Easy to forget to update when adding endpoints. Causes confusing "feature works on web-dev but stops streaming in prod SW" bugs.
 
 **Recommendation.**
+
 1. Drive the allow-list from a single shared constant in `@sergeant/api-client` so the backend route declaration and the SW policy share a source of truth.
 2. Add a contract test that fails if `@sergeant/api-client` declares a `stream: true` endpoint absent from `VOLATILE_API_PREFIXES`.
 
@@ -768,31 +795,31 @@ Easy to forget to update when adding endpoints. Causes confusing "feature works 
 
 (X = audited, no findings; integer = number of findings; — = not applicable)
 
-| Page / area                                                                 | sec | a11y | perf | ux | bug | rule | ts | tw | i18n | test | ai | lifecycle |
-| --------------------------------------------------------------------------- | --- | ---- | ---- | -- | --- | ---- | -- | -- | ---- | ---- | -- | --------- |
-| `core/NotFoundPage.tsx` (shim)                                              |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    1      |
-| `core/errors/NotFoundPage.tsx`                                              |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| `core/errors/OfflinePage.tsx`                                               |  X  |  1   |  X   | 1  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| `core/errors/ServerErrorPage.tsx`                                           |  X  |  1   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| `core/PricingPage.tsx`                                                      |  1  |  X   |  X   | X  |  X  |  1   | X  | X  |  X   |  X   | X  |    1      |
-| `core/status/StatusPage.tsx`                                                |  1  |  X   |  1   | X  |  X  |  X   | X  | X  |  1   |  X   | X  |    1      |
-| `sw.ts` + `sw/cache.ts` + `sw/cachePolicy.ts` + `sw/messages.ts` (+ others) |  3  |  —   |  X   | 1  |  X  |  1   | X  | —  |  —   |  X   | X  |    1      |
-| `core/cloudSync/hook/useSyncStatus.ts`                                      |  X  |  —   |  X   | X  |  1  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/syncEngine/` (singleton, writer, outboxBoot)                          |  X  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/billing/PaywallModal.tsx`                                             |  X  |  X   |  X   | X  |  1  |  X   | X  | X  |  X   |  X   | X  |    1      |
-| `core/billing/usePlan.ts`                                                   |  X  |  —   |  1   | X  |  X  |  X   | X  | —  |  X   |  X   | X  |    1      |
-| `core/observability/sentry.ts`                                              |  1  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/observability/analytics.ts`                                           |  1  |  —   |  1   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/observability/posthog.ts` / `sanitizeUrl.ts` / `PageviewTracker.tsx`  |  X  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/observability/webVitals.ts`                                           |  X  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/observability/dualWriteTelemetry.ts` / `identifyTraits.ts`            |  X  |  —   |  X   | X  |  1  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/db/sqlite.ts` / `kvStoreBoot.ts`                                      |  1  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/security/AppLock.tsx`                                                 |  X  |  X   |  X   | X  |  X  |  X   | X  | 1  |  X   |  X   | X  |    1      |
-| `core/security/useAppLock.ts`                                               |  X  |  —   |  1   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `core/security/lockStorage.ts`                                              |  1  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `middleware.ts`                                                             |  2  |  —   |  X   | X  |  X  |  X   | X  | —  |  —   |  X   | X  |    1      |
-| `main.tsx`                                                                  |  1  |  —   |  X   | X  |  X  |  X   | 1  | —  |  X   |  X   | X  |    1      |
-| `index.css`                                                                 |  X  |  X   |  X   | X  |  —  |  X   | —  | X  |  —   |  —   | X  |    1      |
+| Page / area                                                                 | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
+| --------------------------------------------------------------------------- | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
+| `core/NotFoundPage.tsx` (shim)                                              | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | 1         |
+| `core/errors/NotFoundPage.tsx`                                              | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| `core/errors/OfflinePage.tsx`                                               | X   | 1    | X    | 1   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| `core/errors/ServerErrorPage.tsx`                                           | X   | 1    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| `core/PricingPage.tsx`                                                      | 1   | X    | X    | X   | X   | 1    | X   | X   | X    | X    | X   | 1         |
+| `core/status/StatusPage.tsx`                                                | 1   | X    | 1    | X   | X   | X    | X   | X   | 1    | X    | X   | 1         |
+| `sw.ts` + `sw/cache.ts` + `sw/cachePolicy.ts` + `sw/messages.ts` (+ others) | 3   | —    | X    | 1   | X   | 1    | X   | —   | —    | X    | X   | 1         |
+| `core/cloudSync/hook/useSyncStatus.ts`                                      | X   | —    | X    | X   | 1   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/syncEngine/` (singleton, writer, outboxBoot)                          | X   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/billing/PaywallModal.tsx`                                             | X   | X    | X    | X   | 1   | X    | X   | X   | X    | X    | X   | 1         |
+| `core/billing/usePlan.ts`                                                   | X   | —    | 1    | X   | X   | X    | X   | —   | X    | X    | X   | 1         |
+| `core/observability/sentry.ts`                                              | 1   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/observability/analytics.ts`                                           | 1   | —    | 1    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/observability/posthog.ts` / `sanitizeUrl.ts` / `PageviewTracker.tsx`  | X   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/observability/webVitals.ts`                                           | X   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/observability/dualWriteTelemetry.ts` / `identifyTraits.ts`            | X   | —    | X    | X   | 1   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/db/sqlite.ts` / `kvStoreBoot.ts`                                      | 1   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/security/AppLock.tsx`                                                 | X   | X    | X    | X   | X   | X    | X   | 1   | X    | X    | X   | 1         |
+| `core/security/useAppLock.ts`                                               | X   | —    | 1    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `core/security/lockStorage.ts`                                              | 1   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `middleware.ts`                                                             | 2   | —    | X    | X   | X   | X    | X   | —   | —    | X    | X   | 1         |
+| `main.tsx`                                                                  | 1   | —    | X    | X   | X   | X    | 1   | —   | X    | X    | X   | 1         |
+| `index.css`                                                                 | X   | X    | X    | X   | —   | X    | —   | X   | —    | —    | X   | 1         |
 
 ---
 

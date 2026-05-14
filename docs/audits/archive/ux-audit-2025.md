@@ -1,13 +1,13 @@
 # UX-аудит 2025 — PWA Sergeant
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2027-05-13.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2027-05-13.
 > **Status:** Archived
 
 > **Архівний документ.** Це історичний UX-чек-ліст 2025 року, перенесений у
 > `docs/audits/archive/` 2026-05-02 під час doc-hygiene-аудиту. Усі покращення,
 > описані тут, уже впроваджені; для актуальних дизайн-правил дивись
 > [`docs/design/design-system.md`](../../design/design-system.md), а для поточного
-> UX-tracker-у — [`2026-04-28-ux-improvement-plan.md`](../2026-04-28-ux-improvement-plan.md).
+> UX-tracker-у — [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md).
 
 Скоуп: 10 напрямків покращень (ключові флоу, стани, мікровзаємодії,
 HubChat, HubSearch, онбординг, a11y, PWA). Цей документ — чек-ліст

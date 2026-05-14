@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
 > **Status:** In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`

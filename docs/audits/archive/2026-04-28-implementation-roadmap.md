@@ -1,7 +1,7 @@
 # Sergeant - Детальний План Реалізації Покращень
 
 > **Last validated:** 2026-05-13 by Devin AI. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Archived — консолідовано у [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) (P1-4, прожарка [`2026-05-13-ftux-onboarding-roast.md`](../2026-05-13-ftux-onboarding-roast.md) § P1-4)
 
 > **Update 2026-05-05 (full refresh):** Документ оновлено за актуальним станом кодової бази.
 > Основні зміни від останнього ревʼю:

@@ -93,10 +93,12 @@ expense allowance. When the user is overspent (`dayBudget < 0`), the
 hero number is wrapped in `Math.abs(...)` before formatting:
 
 ```tsx
-{Math.round(Math.abs(dayBudget)).toLocaleString("uk-UA", {
-  maximumFractionDigits: 0,
-})}
-<span className="text-2xl font-semibold ml-1 opacity-70">₴/день</span>
+{
+  Math.round(Math.abs(dayBudget)).toLocaleString("uk-UA", {
+    maximumFractionDigits: 0,
+  });
+}
+<span className="text-2xl font-semibold ml-1 opacity-70">₴/день</span>;
 ```
 
 The status text under it (`computePulseStyle.statusText`) is the only
@@ -115,11 +117,13 @@ Render the explicit sign and adjust the colour token from the existing
 `color` slot:
 
 ```tsx
-<>{dayBudget < 0 ? "−" : ""}
-{Math.round(Math.abs(dayBudget)).toLocaleString("uk-UA", {
-  maximumFractionDigits: 0,
-})}
-…</>
+<>
+  {dayBudget < 0 ? "−" : ""}
+  {Math.round(Math.abs(dayBudget)).toLocaleString("uk-UA", {
+    maximumFractionDigits: 0,
+  })}
+  …
+</>
 ```
 
 Optionally swap the suffix to `"₴ перевитрата/день"` when negative.
@@ -259,11 +263,11 @@ Used in toast templates:
 
 Ukrainian declensions for "операція":
 
-| n              | nom.   | acc. (Приховано N _…_) | gen.pl (для N _…_) |
-| -------------- | ------ | ---------------------- | ------------------ |
-| 1, 21, 31…     | операція | операцію               | операції           |
-| 2/3/4, 22…24…  | операції | операції               | операцій           |
-| 5–20, 25–30…   | операцій | операцій               | операцій           |
+| n             | nom.     | acc. (Приховано N _…_) | gen.pl (для N _…_) |
+| ------------- | -------- | ---------------------- | ------------------ |
+| 1, 21, 31…    | операція | операцію               | операції           |
+| 2/3/4, 22…24… | операції | операції               | операцій           |
+| 5–20, 25–30…  | операцій | операцій               | операцій           |
 
 The function returns `операції` for n = 1 ("Приховано 1 операції" —
 should be `операцію`) and `операцій` for n = 2/3/4 ("Приховано 3
@@ -351,7 +355,9 @@ Either use the shared `Button` primitive (`size="iconOnly"` auto-applies
 <button
   className="w-11 h-11 rounded-xl border border-line …"
   aria-label="Попередній місяць"
->‹</button>
+>
+  ‹
+</button>
 ```
 
 ---
@@ -405,8 +411,7 @@ broadcast a "day-changed" tick. Minimal fix:
 const isCurrentMonth = (() => {
   const today = new Date();
   return (
-    selMonth.year === today.getFullYear() &&
-    selMonth.month === today.getMonth()
+    selMonth.year === today.getFullYear() && selMonth.month === today.getMonth()
   );
 })();
 ```
@@ -643,7 +648,7 @@ Drop the manual split and pass `emoji` + `name` as separate fields from
 `catSpends`:
 
 ```ts
-catSpends.map((c) => ({ id: c.id, emoji: c.emoji, name: c.name }))
+catSpends.map((c) => ({ id: c.id, emoji: c.emoji, name: c.name }));
 ```
 
 Then in the chip:
@@ -760,11 +765,7 @@ but the visual focus indicator is missing.
 **Recommendation.**
 
 ```tsx
-<Button
-  variant="ghost"
-  size="xs"
-  onClick={() => onNavigate("budgets")}
->
+<Button variant="ghost" size="xs" onClick={() => onNavigate("budgets")}>
   Усі →
 </Button>
 ```
@@ -807,6 +808,7 @@ and goals share one struct with optional fields surfacing on the index
 signature.
 
 **Why it matters.**
+
 - Every read site duplicates the cast logic (here, in
   `BudgetsLimitsSection.tsx`, in `useProactiveAdvice`, in
   `MonthlyPlanCard`).
@@ -1115,7 +1117,7 @@ Concerns:
 - Effect 3's 3 s timeout depends on a single `highlightedCategoryId` —
   if the deep-link triggers a second highlight before the first
   cleared, the timeout cleanup races. The user may see the highlight
-  vanish 3 s after the *first* highlight was set, not the most recent.
+  vanish 3 s after the _first_ highlight was set, not the most recent.
 - No `aria-live` region announcing "scrolled to Кафе"; keyboard users
   get no audible indication of the navigation.
 - `focusLimitCategoryId` is never reset by this component, so an
@@ -1171,12 +1173,22 @@ Have the parent clear `focusLimitCategoryId` once consumed.
 
 ```ts
 const handlersRef = useRef({
-  hideTx, overrideCategory, setSplitTx,
-  removeManualExpense, addManualExpense, onEditManualExpense, toast,
+  hideTx,
+  overrideCategory,
+  setSplitTx,
+  removeManualExpense,
+  addManualExpense,
+  onEditManualExpense,
+  toast,
 });
 handlersRef.current = {
-  hideTx, overrideCategory, setSplitTx,
-  removeManualExpense, addManualExpense, onEditManualExpense, toast,
+  hideTx,
+  overrideCategory,
+  setSplitTx,
+  removeManualExpense,
+  addManualExpense,
+  onEditManualExpense,
+  toast,
 };
 ```
 
@@ -1274,7 +1286,7 @@ the marker should be dropped.
 Stale `@scaffolded` markers desensitize the team to the marker.
 `pnpm dead-code:files` honours `@scaffolded` to suppress zero-importer
 warnings; if the marker outlives its purpose, knip warnings get
-suppressed for surface that *is* importable.
+suppressed for surface that _is_ importable.
 
 **Recommendation.**
 Either:
@@ -1291,16 +1303,16 @@ Either:
 
 X = audited, no findings recorded (this scope). Numeric = number of
 findings landing on this perspective for this page. The matrix counts
-findings by the *page* listed in the finding header.
+findings by the _page_ listed in the finding header.
 
-| Page         | sec | a11y | perf | ux | bug | rule | ts | tw | i18n | test | ai | lifecycle |
-| ------------ | --- | ---- | ---- | -- | --- | ---- | -- | -- | ---- | ---- | -- | --------- |
-| overview     |  X  |  1   |  1   | 1  |  3  |  X   | X  | 2  |  1   |  X   | X  |    X      |
-| transactions |  X  |  2   |  1   | X  |  2  |  X   | X  | X  |  1   |  X   | X  |    X      |
-| budgets      |  X  |  X   |  X   | X  |  1  |  X   | 1  | X  |  X   |  X   | X  |    X      |
-| analytics    |  X  |  1   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    X      |
-| assets       |  X  |  1   |  X   | 1  |  1  |  1   | X  | X  |  X   |  X   | X  |    X      |
-| all (test)   |  -  |  -   |  -   | -  |  -  |  -   | -  | -  |  -   |  1   | -  |    1      |
+| Page         | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
+| ------------ | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
+| overview     | X   | 1    | 1    | 1   | 3   | X    | X   | 2   | 1    | X    | X   | X         |
+| transactions | X   | 2    | 1    | X   | 2   | X    | X   | X   | 1    | X    | X   | X         |
+| budgets      | X   | X    | X    | X   | 1   | X    | 1   | X   | X    | X    | X   | X         |
+| analytics    | X   | 1    | X    | X   | X   | X    | X   | X   | X    | X    | X   | X         |
+| assets       | X   | 1    | X    | 1   | 1   | 1    | X   | X   | X    | X    | X   | X         |
+| all (test)   | -   | -    | -    | -   | -   | -    | -   | -   | -    | 1    | -   | 1         |
 
 Legend: `sec` = security, `a11y` = accessibility, `perf` = performance,
 `ux` = UX states, `bug` = bug hunting, `rule` = code-quality / hard

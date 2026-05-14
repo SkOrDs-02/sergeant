@@ -8,7 +8,7 @@
 
 - [`docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](./2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело §1.0–2.4 working-list-у (343 рядки, 4 P0 + 6 P1 + кілька P2)
 - [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) — оригінальна comprehensive прожарка
-- [`docs/audits/2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md) — sprint-roadmap по audit-items
+- [`docs/audits/archive/2026-04-28-implementation-roadmap.md`](./archive/2026-04-28-implementation-roadmap.md) — sprint-roadmap по audit-items
 - [`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration (in progress, Phase 2 of 5)
 - [`docs/initiatives/0013-module-decomposition-round-2.md`](../initiatives/0013-module-decomposition-round-2.md) — `max-lines: 600` burn-down (Sprint 1 closed, Sprint 2 pending)
 - [`docs/architecture/module-ownership.md`](../architecture/module-ownership.md) — ownership / test stack / RQ keys factory per path
@@ -109,7 +109,7 @@ P0 нових немає — попередні P0 закриті у попер�
 - **Скоуп:** `apps/web/src/{app,core,features}/**`. Backend (`apps/server`), mobile-shell (`apps/mobile`, `apps/mobile-shell`), packages — out of scope.
 - **Не торкається:** SQLite migration Stage 8/9 (окрема active initiative, see `docs/planning/storage-roadmap.md`).
 - **Verification:** `pnpm check` локально (format:check + lint + typecheck + test) + CI.
-- **Sources-of-truth:** `docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` (primary), `docs/initiatives/0006-frontend-routing-and-code-split.md`, `docs/initiatives/0013-module-decomposition-round-2.md`, `docs/architecture/module-ownership.md`, `docs/tech-debt/frontend.md`. Cross-checks: `docs/audits/2026-04-28-implementation-roadmap.md`, `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`.
+- **Sources-of-truth:** `docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` (primary), `docs/initiatives/0006-frontend-routing-and-code-split.md`, `docs/initiatives/0013-module-decomposition-round-2.md`, `docs/architecture/module-ownership.md`, `docs/tech-debt/frontend.md`. Cross-checks: `docs/audits/archive/2026-04-28-implementation-roadmap.md`, `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`.
 
 ---
 

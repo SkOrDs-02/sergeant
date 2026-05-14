@@ -1,6 +1,6 @@
 # Sprint 1 — Critical + найгірші High
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active (in flight — H2 closed, C2 Phase 1 closed, **C1 Phase 1 closed (2026-05-04)**, **H1 Phase 1 closed (2026-05-04)**; Phase 2 для C1 pending Monobank coordination, Phase 2 для H1 (TTL + device-binding) tracked в H3)
 
 **Тривалість:** 1–2 тижні (target close: 2026-05-17).
@@ -38,4 +38,4 @@
 
 - [README](./README.md) — індекс беклогу.
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — SLA для Critical = 24h на acknowledge + 14d на fix.
-- [docs/audits/2026-04-28-implementation-roadmap.md](../../audits/2026-04-28-implementation-roadmap.md) — попередній roadmap (для крос-контексту).
+- [docs/audits/archive/2026-04-28-implementation-roadmap.md](../../audits/archive/2026-04-28-implementation-roadmap.md) — попередній roadmap (для крос-контексту).

@@ -1,14 +1,14 @@
 # Генеральний аудит дизайну, UI/UX та користувацького досвіду
 
 > **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Closed (historical record — outstanding items відстежуються у [`2026-04-28-ux-improvement-plan.md`](../2026-04-28-ux-improvement-plan.md))
+> **Status:** Closed (historical record — outstanding items відстежуються у [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md))
 > **Initial audit date:** 2026-04-28 (історичний — секція "Виявлені проблеми").
 
 **Продукт:** Sergeant  
 **Версія:** 0.1.0  
 **Платформи:** React Native (iOS/Android) + Web
 **Статус:** БАЗОВІ UI/UX ПОКРАЩЕННЯ РЕАЛІЗОВАНІ; ЗАЛИШОК — ВАЛІДАЦІЯ, E2E, A11Y
-**Детальний план реалізації:** [2026-04-28-ux-improvement-plan.md](../2026-04-28-ux-improvement-plan.md)
+**Детальний план реалізації:** [2026-04-28-ux-improvement-plan.md](./2026-04-28-ux-improvement-plan.md)
 
 > **Doc-hygiene 2026-05-02.** Раніше шапка містила три розрізнені дати
 > («Last validated», «Дата аудиту», «Дата оновлення») — `lint-staged`
@@ -19,7 +19,7 @@
 > **Code-sync 2026-05-02.** Таблиці реалізованих покращень нижче звірені з
 > фактичними файлами `apps/mobile` і `apps/web`. Секція "Виявлені проблеми"
 > збережена як історичний audit trail від 2026-04-28; для поточного виконання
-> дивись актуальний tracker у [`2026-04-28-ux-improvement-plan.md`](../2026-04-28-ux-improvement-plan.md).
+> дивись актуальний tracker у [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md).
 > Канонічні правила дизайну мають вищий пріоритет за аудиторські приклади:
 > [`docs/design/design-system.md`](../../design/design-system.md).
 

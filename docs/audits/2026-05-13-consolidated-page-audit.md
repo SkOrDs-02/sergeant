@@ -8,19 +8,19 @@
 
 ## Coverage
 
-| #   | Scope                                       | Audit doc PR                                                       | Session                                                                   | Findings | C | H  | M  | L  |
-| --- | ------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- | -------- | - | -- | -- | -- |
-| 01  | Auth & Onboarding                           | [#2763](https://github.com/Skords-01/Sergeant/pull/2763)           | [9f2c…](https://app.devin.ai/sessions/9f2cdfd031a74c01bbe21761c904b3fc)   | 25       | 0 | 6  | 16 | 3  |
-| 02  | Hub Dashboard, Modules Grid, App shell      | [#2797](https://github.com/Skords-01/Sergeant/pull/2797) ¹         | [2956…](https://app.devin.ai/sessions/2956c2f7b4c94f7081b5313adeef6dcb)   | 24       | 0 | 4  | 10 | 10 |
-| 03  | Hub Chat, Search & Backup                   | [#2748](https://github.com/Skords-01/Sergeant/pull/2748)           | [3a0a…](https://app.devin.ai/sessions/3a0a090ab898412eb35820cf1e5cf506)   | 26       | 1 | 5  | 14 | 6  |
-| 04  | Hub Settings, Profile & Assistant Catalogue | **BLOCKED** — VM infra failure                                     | [772b…](https://app.devin.ai/sessions/772b6624cb984266866c6aa08f690baf)   | —        | — | —  | —  | —  |
-| 05  | Finyk module (5 pages)                      | [#2767](https://github.com/Skords-01/Sergeant/pull/2767)           | [0f48…](https://app.devin.ai/sessions/0f48de39c5254cb58a32181db0207816)   | 25       | 0 | 8  | 13 | 4  |
-| 06  | Fizruk Part 1 (Dashboard/Atlas/Workouts/Exercise) | [#2799](https://github.com/Skords-01/Sergeant/pull/2799) ¹    | [c9b0…](https://app.devin.ai/sessions/c9b04a79c3bb46ac90d3bfb09f1695e9)   | 27       | 0 | 5  | 15 | 7  |
-| 07  | Fizruk Part 2 (Progress/Measurements/Programs/Body) | [#2774](https://github.com/Skords-01/Sergeant/pull/2774)     | [f194…](https://app.devin.ai/sessions/f194e4aa3a724b3e8adc6051531ca88b)   | 50       | 0 | 6  | 25 | 19 |
-| 08  | Nutrition module (4 pages)                  | [#2798](https://github.com/Skords-01/Sergeant/pull/2798) ¹         | [3918…](https://app.devin.ai/sessions/3918e132a0b8450798eb70a6aca59182)   | 25       | 0 | 6  | 12 | 7  |
-| 09  | Routine module + Strategy page              | [#2747](https://github.com/Skords-01/Sergeant/pull/2747)           | [1a98…](https://app.devin.ai/sessions/1a98402bdac94eda9811a2632622c7a2)   | 23       | 0 | 7  | 12 | 4  |
-| 10  | Error/Status/Marketing + PWA/Sync/Billing   | [#2744](https://github.com/Skords-01/Sergeant/pull/2744)           | [d35e…](https://app.devin.ai/sessions/d35e2047d5614fc093be63cb8c39150e)   | 30       | 1 | 3  | 18 | 8  |
-|     | **Total (9 scopes)**                        |                                                                    |                                                                            | **255**  | **2** | **50** | **135** | **68** |
+| #   | Scope                                               | Audit doc PR                                               | Session                                                                 | Findings | C     | H      | M       | L      |
+| --- | --------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------- | -------- | ----- | ------ | ------- | ------ |
+| 01  | Auth & Onboarding                                   | [#2763](https://github.com/Skords-01/Sergeant/pull/2763)   | [9f2c…](https://app.devin.ai/sessions/9f2cdfd031a74c01bbe21761c904b3fc) | 25       | 0     | 6      | 16      | 3      |
+| 02  | Hub Dashboard, Modules Grid, App shell              | [#2797](https://github.com/Skords-01/Sergeant/pull/2797) ¹ | [2956…](https://app.devin.ai/sessions/2956c2f7b4c94f7081b5313adeef6dcb) | 24       | 0     | 4      | 10      | 10     |
+| 03  | Hub Chat, Search & Backup                           | [#2748](https://github.com/Skords-01/Sergeant/pull/2748)   | [3a0a…](https://app.devin.ai/sessions/3a0a090ab898412eb35820cf1e5cf506) | 26       | 1     | 5      | 14      | 6      |
+| 04  | Hub Settings, Profile & Assistant Catalogue         | **BLOCKED** — VM infra failure                             | [772b…](https://app.devin.ai/sessions/772b6624cb984266866c6aa08f690baf) | —        | —     | —      | —       | —      |
+| 05  | Finyk module (5 pages)                              | [#2767](https://github.com/Skords-01/Sergeant/pull/2767)   | [0f48…](https://app.devin.ai/sessions/0f48de39c5254cb58a32181db0207816) | 25       | 0     | 8      | 13      | 4      |
+| 06  | Fizruk Part 1 (Dashboard/Atlas/Workouts/Exercise)   | [#2799](https://github.com/Skords-01/Sergeant/pull/2799) ¹ | [c9b0…](https://app.devin.ai/sessions/c9b04a79c3bb46ac90d3bfb09f1695e9) | 27       | 0     | 5      | 15      | 7      |
+| 07  | Fizruk Part 2 (Progress/Measurements/Programs/Body) | [#2774](https://github.com/Skords-01/Sergeant/pull/2774)   | [f194…](https://app.devin.ai/sessions/f194e4aa3a724b3e8adc6051531ca88b) | 50       | 0     | 6      | 25      | 19     |
+| 08  | Nutrition module (4 pages)                          | [#2798](https://github.com/Skords-01/Sergeant/pull/2798) ¹ | [3918…](https://app.devin.ai/sessions/3918e132a0b8450798eb70a6aca59182) | 25       | 0     | 6      | 12      | 7      |
+| 09  | Routine module + Strategy page                      | [#2747](https://github.com/Skords-01/Sergeant/pull/2747)   | [1a98…](https://app.devin.ai/sessions/1a98402bdac94eda9811a2632622c7a2) | 23       | 0     | 7      | 12      | 4      |
+| 10  | Error/Status/Marketing + PWA/Sync/Billing           | [#2744](https://github.com/Skords-01/Sergeant/pull/2744)   | [d35e…](https://app.devin.ai/sessions/d35e2047d5614fc093be63cb8c39150e) | 30       | 1     | 3      | 18      | 8      |
+|     | **Total (9 scopes)**                                |                                                            |                                                                         | **255**  | **2** | **50** | **135** | **68** |
 
 > ¹ PR created by the parent session from the pushed branch because the child's `git_pr` builtin returned `Bad credentials` (operational blocker; PAT secrets were valid). All branch content was pushed by the child.
 
@@ -72,7 +72,7 @@ Six high-severity findings + ~12 medium ones describe inline `<button>` elements
 - 08 F4 (Nutrition pantry ItemRow delete).
 - 06 (Atlas anterior/posterior toggle).
 
-**Fix:** make the global `Button` primitive the *only* way to render touch targets in non-data-cell contexts; add a code-mod that converts inline `<button class="w-6 h-6 …">` to `<Button variant="ghost" iconSize="sm">`; an ESLint custom rule that flags inline `<button>` with explicit `w-*` / `h-*` below the floor.
+**Fix:** make the global `Button` primitive the _only_ way to render touch targets in non-data-cell contexts; add a code-mod that converts inline `<button class="w-6 h-6 …">` to `<Button variant="ghost" iconSize="sm">`; an ESLint custom rule that flags inline `<button>` with explicit `w-*` / `h-*` below the floor.
 
 ### Theme 3 — Tailwind tokens / palette violations (Hard Rule #11 / #13 / #9)
 
