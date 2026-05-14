@@ -75,6 +75,11 @@ const RECALL_MEMORY_SOURCES = [
   "journal",
   "digest",
   "cofounder",
+  // Migration 068 — PostHog → AI memory sync (PR-24). `product` source —
+  // behavioral events дзеркаляться з web `trackEvent` через
+  // `POST /api/ai-memory/event-sync`. Дозволяємо у recall-filter, щоб
+  // founder міг запитати combined `sources=['cofounder','product']` view.
+  "product",
 ] as const;
 
 /** POST /api/ai-memory/recall — semantic memory retrieval. */
