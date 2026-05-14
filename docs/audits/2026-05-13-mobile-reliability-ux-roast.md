@@ -82,6 +82,10 @@
   - `dualWrite/diff.ts` → split per-shape diff-utilities (`workoutsDiff`, `dailyLogDiff`, `templatesDiff`, …) як module-folder, mirror `dualWrite/adapter.ts` operation-family прийнятий patten.
   - `routine/pages/Calendar.tsx` → винести `DayCell`, `WeekHeader`, completion-aggregator hook у `pages/Calendar/` folder. Не блокер. **✅ Closed in #2780** — `Calendar.tsx` розкладено у `pages/Calendar/` folder (13 sub-files): `index.tsx` (183 LOC), `DayCell.tsx`, `WeekHeader.tsx`, `MonthGridView.tsx`, `MonthHeader.tsx`, `TimeModeSegmented.tsx`, `StatsPill.tsx`, `EventRow.tsx`, `GroupedEventList.tsx`, `useCalendarAggregates.ts` (completion-aggregator hook), `formatters.ts`, `constants.ts`, `types.ts`. Жоден файл не перевищує 200 LOC, page остаточно під лімітом 600 (Hard Rule #18).
 
+#### P2.2a — Decompose `dualWrite/diff.ts` ✅ Closed in #2750
+
+Монолітний `apps/mobile/src/modules/fizruk/lib/dualWrite/diff.ts` (633 LOC) розкладено у module-folder `apps/mobile/src/modules/fizruk/lib/dualWrite/diff/` з per-shape diff-helpers (`workouts.ts`, `customExercises.ts`, `measurements.ts`, `dailyLog.ts`, `monthlyPlan.ts`, `workoutTemplates.ts`, `programs.ts`, `planTemplate.ts`, `wellbeing.ts`, `activeWorkout.ts`) + спільний `diffArray.ts` хелпер + барель `index.ts` (orchestrator + state + union + публічні re-exports). Барель = 229 LOC, найбільший per-shape файл = 95 LOC; усе значно нижче порогу 600 (Hard Rule #18). Публічний API `from "./dualWrite/diff"` збережено байт-у-байт (resolves через folder + index.ts). Поведінкові тести (`__tests__/diff.test.ts`) проходять без змін; додано per-shape `__tests__/diff.perShape.test.ts` (21 кейс, 1 happy-path + 1 edge-case на кожен з 10 shape-ів).
+
 ### P2.3 — Domain-shape alignment fizruk × 4 + finyk × 2 (M3 + M4)
 
 - **Файли (зі стейлим allowlist у `eslint.config.js:685-690`):**
