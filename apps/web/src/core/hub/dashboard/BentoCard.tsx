@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo, useCallback, useMemo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -151,6 +155,12 @@ export const BentoCard = memo(function BentoCard({
         >
           {config.emoji} {config.label}
         </span>
+
+        {!inactive && (
+          <span className="text-style-meta text-muted truncate mt-0.5">
+            {config.description}
+          </span>
+        )}
 
         {adaptiveReason && !inactive && (
           <span
