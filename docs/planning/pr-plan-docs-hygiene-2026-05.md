@@ -92,6 +92,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-03 — Codemod-catalog ESLint guard (kvStore deep-imports) ✦ Stale-link / drift
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`lint:kvstore-deep-imports`, unit tests, root `pnpm lint` wiring, codemod catalog enforcement note).
 - **Group:** 1) stale-link / drift cleanup + governance-adjacent enforcement (closes P2-1 у roast).
 - **Trigger:** [`scripts/codemods/README.md`](../../scripts/codemods/README.md) каталогізує `@deprecated` codemods, але долгостроковий enforcement для `kvStore` deep-imports (per `2026-05-02-doc-hygiene-audit.md` PR #013) досі planned. Без guard-а codemod закінчиться regression-ом.
 - **Action:** додати правило у `eslint-plugin-sergeant-design` (або `no-restricted-imports` у root `eslint.config.js`) — заборона `import … from "@sergeant/<pkg>/.../kvStore"` / `"…/kv-store/..."` deep-paths у web/server/mobile, з allowlist для adapter-файлів. Long-term-enforcement entry додається у [`scripts/codemods/README.md`](../../scripts/codemods/README.md) каталог.
@@ -129,6 +130,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-05 — `docs/initiatives/README.md` + `docs/adr/README.md` indexing & reachability ✦ Discoverability
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup`: `docs/initiatives/README.md` і `docs/adr/README.md` уже існують; `lint:initiative-status-sync` покриває initiatives, `docs:check-adr-index` тепер є явним alias-ом до `check-adr-graph` і включений у root `pnpm lint`.
 - **Group:** 2) discoverability gaps.
 - **Trigger:** `docs/initiatives/` має 8 активних multi-phase trackers (0002, 0003, 0006, 0010, 0011, 0013, follow-ups, stack-pulse-2026-05) + `archive/` + `follow-ups.md`. README відсутній або тонкий — discoverability fails для нового contributor. Аналогічно `docs/adr/` має 40+ ADR-ів, single-flat-каталог без table-of-contents.
 - **Action:**
