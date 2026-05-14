@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import {
   memo,
   useCallback,
@@ -121,7 +125,7 @@ const MonthNav = memo(function MonthNav({
       <button
         type="button"
         onClick={() => go(-1)}
-        className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors"
+        className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors"
         aria-label="Попередній місяць"
       >
         ‹
@@ -131,7 +135,7 @@ const MonthNav = memo(function MonthNav({
         type="button"
         onClick={() => go(1)}
         disabled={isCurrentMonth}
-        className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
+        className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
         aria-label="Наступний місяць"
       >
         ›

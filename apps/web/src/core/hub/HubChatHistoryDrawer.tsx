@@ -1,6 +1,11 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import type { HubChatSession } from "./hubChatSessions";
 
@@ -99,14 +104,16 @@ export function HubChatHistoryDrawer({
             </div>
             <div className="text-base font-bold text-text">Бесіди</div>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
+            iconOnly
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
             aria-label="Закрити список бесід"
+            className="text-muted hover:text-text"
           >
             <Icon name="close" size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="px-3 pt-3 pb-2 shrink-0">
@@ -160,7 +167,7 @@ export function HubChatHistoryDrawer({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-style-label truncate">{s.title}</div>
-                    <div className="text-2xs text-muted mt-0.5 flex items-center gap-1.5">
+                    <div className="text-style-caption text-muted mt-0.5 flex items-center gap-1.5">
                       <span>{formatStamp(s.updatedAt)}</span>
                       <span className="text-line" aria-hidden>
                         ·
@@ -170,15 +177,17 @@ export function HubChatHistoryDrawer({
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    iconOnly
                     onClick={(e) => handleDelete(e, s.id)}
-                    className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
                     aria-label={`Видалити бесіду ${s.title}`}
                     title="Видалити"
+                    className="shrink-0 text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
                   >
                     <Icon name="trash" size={14} />
-                  </button>
+                  </Button>
                 </div>
               );
             })
