@@ -342,6 +342,14 @@ const envSchema = z.object({
   GIT_COMMIT: z.string().optional(),
   /** Vercel build commit SHA — fallback для Sentry / app_build_info. */
   VERCEL_GIT_COMMIT_SHA: z.string().optional(),
+  /**
+   * GitHub Actions commit SHA — використовується як fallback у
+   * `obs/tracing.ts` `resolveServiceVersion()` коли інші Git-SHA env-vars
+   * не виставлені (зазвичай у CI-build пайплайнах, перед production
+   * promotion). У prod-runtime (Railway/Vercel) RAILWAY_GIT_COMMIT_SHA /
+   * VERCEL_GIT_COMMIT_SHA мають пріоритет.
+   */
+  GITHUB_SHA: z.string().optional(),
   /** Версія пакета (npm/pnpm проставляють під час `pnpm run`-у). */
   npm_package_version: z.string().optional(),
 
