@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo, useState } from "react";
 import { daysUntil, fmtDate } from "../utils";
 import { cn } from "@shared/lib/ui/cn";
@@ -199,7 +203,7 @@ function SubCardComponent({
       padding="md"
       className={cn(
         "mb-3 flex items-center gap-3",
-        veryClose ? "border-danger/50" : soon ? "border-amber-500/40" : null,
+        veryClose ? "border-danger/50" : soon ? "border-warning/40" : null,
       )}
     >
       <span className="text-2xl shrink-0 leading-none">{sub.emoji}</span>
@@ -208,7 +212,7 @@ function SubCardComponent({
         <div
           className={cn(
             "text-xs mt-0.5",
-            veryClose ? "text-danger" : soon ? "text-amber-400" : "text-subtle",
+            veryClose ? "text-danger" : soon ? "text-warning" : "text-subtle",
           )}
         >
           {veryClose

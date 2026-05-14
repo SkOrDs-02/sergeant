@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState, useEffect, useId, useMemo } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
@@ -401,7 +405,7 @@ export function ManualExpenseSheet({
                     {personal ? (
                       <span
                         aria-hidden
-                        className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                        className="w-1.5 h-1.5 rounded-full bg-finyk"
                       />
                     ) : null}
                     {formatMoney(value)}
@@ -552,7 +556,7 @@ export function ManualExpenseSheet({
                 onClick={() => setValue("category", cat, { shouldDirty: true })}
                 className={`px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
                   category === cat
-                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                    ? "bg-finyk-strong text-white border-finyk-strong shadow-sm"
                     : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
                 }`}
               >

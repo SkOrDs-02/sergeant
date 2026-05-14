@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * Обчислення «пульсу» місяця — акцент-кольору, статусного текста і фону
  * для MonthPulseCard. Винесено з Overview як чиста функція, щоб:
  *  - легко тестувалось без React-контексту;
@@ -21,7 +25,7 @@ export function computePulseStyle({
   if (hasExpensePlan) {
     if (spendPlanRatio > 0.75) {
       return {
-        accentLeft: "border-l-red-500",
+        accentLeft: "border-l-danger",
         bg: "bg-pulse-b",
         color: "text-danger",
         statusText: "Понад 75% запланованого",
@@ -29,14 +33,14 @@ export function computePulseStyle({
     }
     if (spendPlanRatio > 0.5) {
       return {
-        accentLeft: "border-l-amber-500",
+        accentLeft: "border-l-warning",
         bg: "bg-pulse-w",
         color: "text-warning",
         statusText: "Понад 50% запланованого",
       };
     }
     return {
-      accentLeft: "border-l-emerald-500",
+      accentLeft: "border-l-success",
       bg: "bg-pulse-ok",
       color: "text-success",
       statusText: "В межах плану",
@@ -48,10 +52,10 @@ export function computePulseStyle({
   const pulseBad = dayBudget < 0;
   return {
     accentLeft: pulseGood
-      ? "border-l-emerald-500"
+      ? "border-l-success"
       : pulseWarn
-        ? "border-l-amber-500"
-        : "border-l-red-500",
+        ? "border-l-warning"
+        : "border-l-danger",
     bg: pulseGood ? "bg-pulse-ok" : pulseWarn ? "bg-pulse-w" : "bg-pulse-b",
     color: pulseGood
       ? "text-success"

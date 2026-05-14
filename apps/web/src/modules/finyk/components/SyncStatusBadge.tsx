@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -41,7 +45,7 @@ function SyncStatusBadgeComponent({
   const isSuccess = status === "success";
 
   const dotClass = isLoading
-    ? "bg-amber-400 motion-safe:animate-pulse"
+    ? "bg-warning motion-safe:animate-pulse"
     : isError
       ? "bg-danger"
       : isPartial

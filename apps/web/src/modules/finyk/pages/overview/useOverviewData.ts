@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import {
   trackEvent,
@@ -347,7 +351,7 @@ export function useOverviewData({
       ? "bg-danger"
       : forecastTrendPct > 50
         ? "bg-warning"
-        : "bg-emerald-500";
+        : "bg-success";
 
   const spendPlanRatio = expenseTarget > 0 ? spent / expenseTarget : 0;
   const hasExpensePlan = expenseTarget > 0;

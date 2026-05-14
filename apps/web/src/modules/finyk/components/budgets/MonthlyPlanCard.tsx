@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
@@ -240,7 +244,7 @@ function MonthlyPlanCardComponent({
                       ? "bg-danger"
                       : pctExpense >= 85
                         ? "bg-warning"
-                        : "bg-emerald-500",
+                        : "bg-success",
                   )}
                   style={{ width: `${Math.min(100, pctExpense)}%` }}
                 />

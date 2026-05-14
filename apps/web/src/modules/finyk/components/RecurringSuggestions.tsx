@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
@@ -22,8 +26,8 @@ const CONFIDENCE_LABEL: Record<Confidence, string> = {
 };
 
 const CONFIDENCE_DOT: Record<Confidence, string> = {
-  high: "bg-green-500",
-  medium: "bg-amber-500",
+  high: "bg-success",
+  medium: "bg-warning",
   low: "bg-muted",
 };
 

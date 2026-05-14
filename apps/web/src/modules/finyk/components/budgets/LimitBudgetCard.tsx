@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
@@ -117,7 +121,7 @@ function LimitBudgetCardComponent({
                   ? "bg-danger"
                   : warnLimit
                     ? "bg-warning"
-                    : "bg-emerald-500",
+                    : "bg-success",
               )}
               style={{ width: `${Math.min(100, pctRaw)}%` }}
             />

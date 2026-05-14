@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -17,9 +21,9 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
   onDismiss,
 }: FirstInsightBannerProps) {
   return (
-    <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 flex items-start gap-3">
+    <div className="rounded-2xl border border-finyk/25 bg-finyk/10 p-4 flex items-start gap-3">
       <div
-        className="w-10 h-10 shrink-0 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-xl"
+        className="w-10 h-10 shrink-0 rounded-2xl bg-finyk/15 flex items-center justify-center text-xl"
         aria-hidden
       >
         💡
@@ -35,7 +39,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
           <button
             type="button"
             onClick={onSetBudget}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
+            className="px-3 py-1.5 rounded-xl bg-finyk-strong text-white text-xs font-semibold hover:bg-finyk-strong/80 transition"
           >
             Поставити бюджет
           </button>
