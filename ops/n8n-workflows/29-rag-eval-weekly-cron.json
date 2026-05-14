@@ -1,0 +1,175 @@
+{
+  "name": "28 — RAG eval weekly cron (Mon 06:00 Kyiv → GH workflow_dispatch)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "cron-monday-06-kyiv",
+      "name": "Cron Mon 06:00 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/Skords-01/Sergeant/actions/workflows/rag-quality-gate.yml/dispatches",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_PAT }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"ref\": \"main\",\n  \"inputs\": {\n    \"mode\": \"mock\",\n    \"simulate_recall\": \"1.0\",\n    \"warn_threshold\": \"0.5\",\n    \"kill_threshold\": \"0.4\",\n    \"post_to_internal\": \"true\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "trigger-gh-workflow",
+      "name": "Trigger GH workflow_dispatch (rag-quality-gate.yml)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse GitHub response. 204 No Content == success, інші коди → fail-up.\nconst entry = $input.first()?.json ?? {};\nconst statusCode = entry.statusCode ?? entry.status ?? 0;\nconst ok = statusCode === 204;\n\nconst body = ok\n  ? '✅ RAG-eval weekly cron triggered (GH workflow_dispatch → rag-quality-gate.yml).'\n  : `⚠️ WF-28 failed to trigger GH workflow: HTTP ${statusCode}\\n\\nResponse:\\n${JSON.stringify(entry.body ?? entry, null, 2).slice(0, 500)}`;\n\nreturn [{ json: { ok, statusCode, text: body } }];"
+      },
+      "id": "parse-trigger-response",
+      "name": "Parse trigger response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "branch-ok",
+      "name": "OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_OPS }}",
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "notify-failure",
+      "name": "Telegram alert (fail)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1140, 460],
+      "credentials": {
+        "telegramApi": {
+          "id": "QvFiYouwUlfRJ5gM",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Mon 06:00 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "Trigger GH workflow_dispatch (rag-quality-gate.yml)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger GH workflow_dispatch (rag-quality-gate.yml)": {
+      "main": [
+        [
+          {
+            "node": "Parse trigger response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse trigger response": {
+      "main": [
+        [
+          {
+            "node": "OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OK?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Telegram alert (fail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

@@ -1,6 +1,6 @@
 # Аналіз README: чого не вистачає та повний гайд по проєкту
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-11-09.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-11-09.
 > **Status:** Active
 
 Цей документ робить дві речі:

@@ -102,7 +102,8 @@
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs",
     "pre-commit:timings": "node scripts/pre-commit-timings-report.mjs",
     "eval:rag": "node scripts/eval-rag-recall.mjs",
-    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs"
+    "eval:rag:weekly": "node scripts/rag-eval-weekly.mjs",
+    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs scripts/__tests__/rag-eval-weekly.test.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",

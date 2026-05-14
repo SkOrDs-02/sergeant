@@ -1,6 +1,6 @@
 # Playbook: Fix Failing CI on a PR
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 **Trigger:** один або кілька CI checks червоні на PR: `commitlint`, `lint`, `typecheck`, `test`, `build`, docs/governance gates, bundle або mobile jobs.

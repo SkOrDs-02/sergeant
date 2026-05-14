@@ -1,6 +1,6 @@
 # Engineering Metrics
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Lightweight process observability for the development system itself. The goal is not vanity metrics; it is to detect friction before it turns into slower delivery, hidden risk, or policy drift.
