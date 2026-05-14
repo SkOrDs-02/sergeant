@@ -52,7 +52,39 @@ import {
 } from "@opentelemetry/semantic-conventions";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 
+import { env as defaultEnv, type Env } from "../env.js";
+
 import { createRouteAwareSampler } from "./sampler.js";
+
+/**
+ * Narrow env shape that this module reads.  Aligns with backend-perf PR-02
+ * (`docs/planning/pr-plan-backend-perf-2026-05.md` § PR-02 « drop
+ * process.env DI default in obs/tracing.ts »): the old default-parameter
+ * `env: NodeJS.ProcessEnv = process.env` leaked raw `process.env` reads
+ * into the prod runtime and fought the env-single-source CI gate
+ * (`scripts/check-env-single-source.mjs`).  Now we require an explicit,
+ * Zod-validated env object — the module-evaluation side-effect at the
+ * bottom of this file passes `env` from `../env.js`; tests pass a typed
+ * fixture (a `Partial<TracingEnv>` literal).  `Partial` keeps the literal
+ * test shapes assignable even though Zod's `.optional()` makes the
+ * fields `string | undefined` rather than `string?`.
+ */
+export type TracingEnv = Partial<
+  Pick<
+    Env,
+    | "OTEL_EXPORTER_OTLP_ENDPOINT"
+    | "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
+    | "OTEL_SERVICE_NAME"
+    | "OTEL_SERVICE_VERSION"
+    | "OTEL_TRACES_SAMPLE_RATE"
+    | "OTEL_EXPORTER_OTLP_HEADERS"
+    | "OTEL_EXPORTER_OTLP_TRACES_HEADERS"
+    | "SENTRY_RELEASE"
+    | "RAILWAY_GIT_COMMIT_SHA"
+    | "VERCEL_GIT_COMMIT_SHA"
+    | "GITHUB_SHA"
+  >
+>;
 
 interface ResolvedTracingConfig {
   endpoint: string;
@@ -101,15 +133,13 @@ function parseHeaders(val: string | undefined): Record<string, string> {
   return out;
 }
 
-function resolveServiceVersion(
-  env: NodeJS.ProcessEnv = process.env,
-): string | undefined {
+function resolveServiceVersion(env: TracingEnv): string | undefined {
   const candidates = [
-    env["OTEL_SERVICE_VERSION"],
-    env["SENTRY_RELEASE"],
-    env["RAILWAY_GIT_COMMIT_SHA"],
-    env["VERCEL_GIT_COMMIT_SHA"],
-    env["GITHUB_SHA"],
+    env.OTEL_SERVICE_VERSION,
+    env.SENTRY_RELEASE,
+    env.RAILWAY_GIT_COMMIT_SHA,
+    env.VERCEL_GIT_COMMIT_SHA,
+    env.GITHUB_SHA,
   ];
   for (const v of candidates) {
     if (typeof v === "string" && v.trim() !== "") return v.trim();
@@ -117,22 +147,20 @@ function resolveServiceVersion(
   return undefined;
 }
 
-export function resolveTracingConfig(
-  env: NodeJS.ProcessEnv = process.env,
-): ResolvedTracingConfig {
+export function resolveTracingConfig(env: TracingEnv): ResolvedTracingConfig {
   const endpoint =
-    env["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] ||
-    env["OTEL_EXPORTER_OTLP_ENDPOINT"] ||
+    env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ||
+    env.OTEL_EXPORTER_OTLP_ENDPOINT ||
     "";
   const enabled = endpoint !== "";
   return {
     endpoint,
-    serviceName: env["OTEL_SERVICE_NAME"] || "sergeant-api",
+    serviceName: env.OTEL_SERVICE_NAME || "sergeant-api",
     serviceVersion: resolveServiceVersion(env),
-    defaultSampleRate: parseRate(env["OTEL_TRACES_SAMPLE_RATE"], 0.1),
+    defaultSampleRate: parseRate(env.OTEL_TRACES_SAMPLE_RATE, 0.1),
     headers: {
-      ...parseHeaders(env["OTEL_EXPORTER_OTLP_HEADERS"]),
-      ...parseHeaders(env["OTEL_EXPORTER_OTLP_TRACES_HEADERS"]),
+      ...parseHeaders(env.OTEL_EXPORTER_OTLP_HEADERS),
+      ...parseHeaders(env.OTEL_EXPORTER_OTLP_TRACES_HEADERS),
     },
     enabled,
   };
@@ -247,9 +275,7 @@ export function createTracingSdk(
   });
 }
 
-export function startTracing(
-  env: NodeJS.ProcessEnv = process.env,
-): BootstrappedTracing {
+export function startTracing(env: TracingEnv): BootstrappedTracing {
   if (bootstrapped) return bootstrapped;
   const config = resolveTracingConfig(env);
 
@@ -347,7 +373,12 @@ export function __resetTracingForTests(): void {
 // auto-instrumentation встигла обгорнути http/express до того, як index.ts
 // завантажить express. Якщо модуль імпортується з тесту — `__resetTracingForTests`
 // скидає state, і тести можуть викликати `startTracing()` явно з мок-env.
-startTracing();
+//
+// `defaultEnv` — валідований Zod-env із `../env.js` (ре-export з
+// `env/env.ts`).  Пряме `process.env`-читання вже не виконується
+// в цьому модулі — всі потрібні поля живуть у Zod-схемі (див.
+// `env/env.ts` § RAILWAY/VERCEL/GITHUB_SHA та OTEL_*).
+startTracing(defaultEnv);
 
 // Re-export для тих, хто хоче shutdown (наприклад, у тестах або
 // graceful-shutdown коді).
