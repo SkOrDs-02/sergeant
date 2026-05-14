@@ -44,6 +44,13 @@ groups:
             sum(rate(http_request_duration_ms_bucket{path!~"/api/(chat|coach|weekly-digest|nutrition/.*)"}[5m])) by (le)
           )
 
+      - record: job:health_p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_ms_bucket{path=~"/health(|/.*)|/healthz|/readyz|/livez|/startupz"}[5m])) by (le)
+          )
+
   # ──────────────────────────── Sync ────────────────────────────
   - name: sli_sync
     interval: 30s

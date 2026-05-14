@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -67,6 +67,22 @@ AI endpoint-и виключаємо — у них власний latency SLO в 
 
 **Алерт**: просто threshold `> 1000` стабільно 15m. Burn-rate на latency не
 рахуємо — latency SLO легше обсервити на дашборді, ніж через error-budget.
+
+### 2.1 Health endpoint p95
+
+Health/readiness/liveness probes мають окремий легший SLO: p95 `< 100ms` over
+5m для `path=~"/health(|/.*)|/healthz|/readyz|/livez|/startupz"`.
+
+Recording rule: `job:health_p95_5m` у
+[`prometheus/recording_rules.yml`](./prometheus/recording_rules.yml). Alert:
+`BackendHealthP95High` у
+[`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml), `severity=ticket`,
+`for=5m`.
+
+Це не page, бо повільний health endpoint сам по собі не означає downtime; це
+ранній сигнал cold-start / DB pool / event-loop деградації, який треба
+розслідувати до того, як Railway почне флапати deploy-и. Route для
+`severity=ticket` уже є в [`alertmanager.yml`](./alertmanager.yml).
 
 ## 3. Sync (SLO 99.5 %)
 

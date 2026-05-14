@@ -1075,7 +1075,7 @@ Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
 
 #### Showcase
 
-[`DesignShowcase`](../../apps/web/src/core/DesignShowcase.tsx) — розділ
+[`DesignShowcase`](../../apps/web/src/core/DesignShowcase/index.tsx) — розділ
 «A11y / States» (link `#a11y`): focus rings в 4 variants, selection wash
 на боді і в код-блоці, caret demo, global scrollbar + `custom-scrollbar`
 варіант, divider trio, token cheat-sheet.
