@@ -1,6 +1,6 @@
 # PR-план — Documentation Hygiene Follow-Up (2026-05)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-06-13.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-06-13.
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../audits/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
@@ -71,6 +71,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-02 — Add `docs:check-freshness-single-marker` lint gate ✦ Governance sync
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (скрипт + unit test + CI step + підключення до `pnpm lint`).
 - **Group:** 3) governance sync gates.
 - **Trigger:** PR-01 закриває multi-date drift руками — потрібен ME, який не дає reverted у наступних PR-ах. `docs:check-freshness-coverage` лише перевіряє наявність маркера, не його кількість.
 - **Action:** новий скрипт `scripts/docs/check-freshness-single-marker.mjs` — для кожного `.md` під `docs/**` рахує `^> \*\*Last validated:` lines; fail якщо `> 1` (поза code-блоками). Реєструється у `package.json` як `docs:check-freshness-single-marker` + додається до `lint:governance-sync` aggregate (або у CI workflow `.github/workflows/docs.yml` поряд з `docs:check-links`).
@@ -104,6 +105,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-04 — Expand discoverability ROUTES (writing-skills, mobile, hubchat, better-auth) ✦ Discoverability
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (11 маршрутів до specialist-skill, індекс initiatives і маршрут до policy-review).
 - **Group:** 2) discoverability gaps.
 - **Trigger:** [`scripts/check-discoverability.mjs ROUTES`](../../scripts/check-discoverability.mjs) сьогодні enforce-ить ≤2 hops до `start-here` + `review-and-merge` + on-call playbooks. Решта 8 Sergeant specialist-skill-ів (writing-skills, mobile-expo, hubchat, web-ui, server-api, data-and-migrations, bugfix-and-regression, monorepo-boundaries) + better-auth-best-practices, + new agent skills evolution (`docs/agents/skills-evolution-roadmap.md`) — НЕ покриті, тому drift у роутингу не ловиться. Аналогічно немає row-а для `docs/initiatives/README.md` (новий contributor не знаходить активних ініціатив).
 - **Action:** ~10 нових rows у `ROUTES` array (`role: new-agent` / `role: reviewer` / `role: on-call`):
@@ -141,6 +143,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-06 — AGENTS-family consistency lint (`AGENTS.md` ↔ `CLAUDE.md` ↔ `DEVIN.md`) ✦ AGENTS/DEVIN/CLAUDE
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`lint:agents-family-sync`, unit tests, підключення до `pnpm lint`).
 - **Group:** 4) AGENTS.md / DEVIN.md / CLAUDE.md consistency.
 - **Trigger:** Структурний diff показав drift:
   - `CLAUDE.md:7` vs `DEVIN.md:7` — у CLAUDE немає посилання на agent-skills-catalog у пункті 3 Startup flow.

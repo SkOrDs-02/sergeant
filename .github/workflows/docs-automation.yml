@@ -191,6 +191,11 @@ jobs:
         # user-agents (each entry carries a 'reason' field).
         run: node scripts/docs/check-markdown-links.mjs --strict-external
 
+      - name: Check docs have at most one freshness marker
+        # Coverage is enforced by docs:check-freshness-coverage; this catches
+        # the drift class where a doc accumulates multiple Last validated rows.
+        run: node scripts/docs/check-freshness-single-marker.mjs
+
   pr-body-validator:
     name: PR body validator
     if: github.event_name == 'pull_request'
@@ -235,6 +240,7 @@ jobs:
         run: |
           node --test \
             scripts/docs/__tests__/check-freshness.test.mjs \
+            scripts/docs/__tests__/check-freshness-single-marker.test.mjs \
             scripts/docs/__tests__/generate-playbook-index.test.mjs \
             scripts/docs/__tests__/generate-initiative-followups.test.mjs \
             scripts/docs/__tests__/generate-open-work.test.mjs \
@@ -243,5 +249,6 @@ jobs:
             scripts/docs/__tests__/check-adr-graph.test.mjs \
             scripts/docs/__tests__/check-playbook-schema.test.mjs \
             scripts/__tests__/check-playbook-language.test.mjs \
+            scripts/__tests__/check-agents-family-sync.test.mjs \
             scripts/__tests__/bootstrap.test.mjs \
             scripts/ci/__tests__/validate-pr-body.test.mjs

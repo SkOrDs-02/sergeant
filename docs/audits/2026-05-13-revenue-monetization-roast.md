@@ -38,7 +38,7 @@
 | P0-4 | Webhook: subscription_renewed emit               | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
 | P0-5 | Webhook: subscription_canceled emit              | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
 | P0-6 | Customer Portal endpoint (`/api/billing/portal`) | **Add** | `apps/server/src/routes/billing.ts`                | **Done (PR)** |
-| P0-7 | Stripe price_id env-config + validation          | **Add** | `apps/server/src/config/env.ts` (schema)           | Outstanding   |
+| P0-7 | Stripe price_id env-config + validation          | **Add** | `apps/server/src/env/env.ts` (schema)              | **Done (PR)** |
 
 ## P1 — High (launch quality / funnel completeness)
 
@@ -67,7 +67,7 @@
 
 ## Прогрес виконання (цей PR)
 
-Закрито **6 items** з P0/P1 у попередньому PR + **1 follow-up item** (P1-2) у поточному:
+Закрито **6 items** з P0/P1 у попередньому PR + **1 follow-up item** (P1-2) у поточному (+ **P0-7** окремим follow-up PR):
 
 ## Прогрес виконання — follow-up PR (2026-05-13, P1-9)
 
@@ -110,6 +110,20 @@
 - 4 нових events: `ACTIVATION_V2_HIT`, `LANDING_VIEWED`, `LANDING_EMAIL_CAPTURED`, `SIGNUP_PROVIDER_SELECTED`.
 - Inline payload contracts з типами + зв'язки з ініціативою 0010.
 - **Тест:** `packages/shared/src/lib/analyticsEvents.test.ts` (lines 57–76 added) — stability guard on canonical names.
+
+### P0-7 · Stripe price_id env-config + validation ✅ Closed in #2793
+
+- **Файли:** `apps/server/src/env/env.ts` (нова Stripe-секція + assertStartupEnv branch), `apps/server/src/modules/billing/stripe.ts` (`getStripeSecretKey` / `getPriceId` мігровано з `process.env` на zod-валідований `env`).
+- **`.env.example`:** додані placeholder-и для `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID_PRO_MONTHLY` / `STRIPE_PRICE_ID_PLUS_MONTHLY` / `STRIPE_WEBHOOK_TOLERANCE_SECONDS` з UA-коментарями.
+- **Zod-валідація:**
+  - `STRIPE_SECRET_KEY` — `/^sk_(test|live)_[A-Za-z0-9]+$/`.
+  - `STRIPE_WEBHOOK_SECRET` — `/^whsec_[A-Za-z0-9]+$/`.
+  - `STRIPE_PRICE_ID_PRO_MONTHLY` / `STRIPE_PRICE_ID_PLUS_MONTHLY` — `/^price_[A-Za-z0-9]+$/`.
+  - Malformed value падає при парсингу env-схеми (module-load), не лише в runtime.
+- **Startup-assertion:** у production, якщо `STRIPE_SECRET_KEY` виставлено, `STRIPE_PRICE_ID_PRO_MONTHLY` стає обов'язковим (паралельно існуючому checkу для `STRIPE_WEBHOOK_SECRET` з T2-аудиту #1). Дев / preview deploys лишаються толерантні.
+- **Тести:** `apps/server/src/env/__tests__/assertStartupEnv.test.ts` — новий `describe('STRIPE_PRICE_ID_PRO_MONTHLY (P0-7)')` блок з 5 кейсами (missing/missing+secret, malformed PRO + PLUS, valid happy-path, NODE_ENV=development tolerance).
+- **Зміна іменування:** legacy `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PLUS_MONTHLY` (без `_ID_`) замінено на канонічний `STRIPE_PRICE_ID_*` патерн з docs (ADR-0051 / 06-monetization-architecture). Railway env потребує оновлення (placeholders у `.env.example`).
+- **env-single-source budget:** `.tech-debt/env-single-source-budget.json` бампнуто з `105` → `103` (net −2 reads з `billing/stripe.ts`).
 
 ### Barrel export
 
