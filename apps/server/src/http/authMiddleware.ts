@@ -28,6 +28,7 @@ export function authSensitiveRateLimit(
     (url.includes("/sign-in") ||
       url.includes("/sign-up") ||
       url.includes("forget-password") ||
+      url.includes("request-password-reset") ||
       url.includes("reset-password"));
   if (!sensitive) {
     next();
@@ -86,7 +87,12 @@ export function authMetricsMiddleware(
   const op: AuthOp | null =
     (url.includes("/sign-in") && "sign_in") ||
     (url.includes("/sign-up") && "sign_up") ||
+    // Better Auth v1.6 renamed `/forget-password` to
+    // `/request-password-reset`; keep both spellings so the audit-log /
+    // `authAttemptsTotal{op="forget_password"}` counter survives the
+    // rename and stays compatible with older clients.
     (url.includes("forget-password") && "forget_password") ||
+    (url.includes("request-password-reset") && "forget_password") ||
     (url.includes("reset-password") && "reset_password") ||
     (url.includes("/sign-out") && "signout") ||
     null;
