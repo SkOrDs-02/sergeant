@@ -63,6 +63,34 @@ pnpm dev:web
 - `pnpm --filter @sergeant/mobile start`
 - `pnpm --filter @sergeant/openclaw dev`
 
+### Локальний secret-scan (gitleaks)
+
+Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни — це той самий сканер, що і у CI (`.github/workflows/ci.yml :: secret-scan`, [I5](./docs/security/hardening/I5-pre-commit-secret-detection.md)). Catching секретів локально (перед тим, як коміт потрапить у reflog) дешевше, ніж на PR-boundary — attacker timeline стартує з моменту локального коміту.
+
+Встанови `gitleaks` один раз:
+
+```bash
+# macOS
+brew install gitleaks
+
+# Linux — download прямо з GitHub Releases (приклад v8.21.2 / x64)
+curl -fsSL -o /tmp/gitleaks.tgz \
+  https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz
+tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+
+# Go install (будь-яка платформа)
+go install github.com/gitleaks/gitleaks/v8@latest
+```
+
+Перевірка staged-файлів вручну:
+
+```bash
+pnpm lint:secrets
+```
+
+Якщо `gitleaks` не встановлено, hook логує warning і пропускає скан (CI-gate однаково запустить той самий scanner на PR — defense in depth). Якщо hook ловить false-positive, додай entry у `.gitleaksignore` у **тому самому коміті** — Hard Rule #7 забороняє `--no-verify`. Break-glass для випадку, коли ignore-entry треба написати _після_ блокованого коміту: одноразовий `SERGEANT_SKIP_GITLEAKS=1 git commit …` (логається у stderr).
+
 ## Щоденний цикл
 
 1. Визнач surface: `web`, `server`, `mobile`, `console`, `ops`, `docs`, `packages/*`.
@@ -126,7 +154,10 @@ Playbooks - це канонічні покрокові рецепти викон
 
 ### Pre-commit hooks
 
-Husky `pre-commit` запускає `lint-staged` з трьома пайплайнами для staged-файлів:
+Husky `pre-commit` запускає два кроки послідовно:
+
+1. `lint-staged` з пайплайнами для staged-файлів (таблиця нижче).
+2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](./docs/security/hardening/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).
 
 | Pattern                      | Команди                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------ |

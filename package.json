@@ -100,6 +100,7 @@
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
     "lint:patches": "node scripts/check-patches-doc.mjs",
     "lint:html-sri": "node scripts/lint-html-sri.mjs",
+    "lint:secrets": "node scripts/pre-commit-gitleaks.mjs",
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
     "lint:overrides": "node scripts/check-pnpm-overrides-staleness.mjs",
     "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
