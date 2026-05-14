@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useEffect } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
@@ -46,13 +50,9 @@ export function ReEngagementCard({
             Продовжити
             <Icon name="chevron-right" size={14} />
           </Button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="text-xs text-muted hover:text-text px-3 py-2 rounded-xl transition-colors"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
             Пізніше
-          </button>
+          </Button>
         </div>
       </div>
     </section>

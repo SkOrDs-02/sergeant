@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 
 /**
@@ -91,7 +95,7 @@ export function FirstRunHintBanner({
             onClick={onDismiss}
             className={cn(
               "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1",
-              "text-xs font-semibold transition-colors",
+              "min-h-[44px] text-xs font-semibold transition-colors",
               v.cta,
             )}
           >

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useMemo } from "react";
 import {
   SOFT_AUTH_COPY_EXPERIMENT,
@@ -98,13 +102,14 @@ export function SoftAuthPromptCard({
             >
               {messages.auth.createAccount}
             </Button>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleDismiss}
-              className="text-xs text-muted hover:text-text px-3 py-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             >
               {messages.actions.later}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useEffect } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
@@ -84,7 +88,7 @@ export function DailyNudge({
               trigger={
                 <button
                   type="button"
-                  className="w-8 h-8 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   aria-label="Інші дії"
                 >
                   <Icon name="more-horizontal" size={16} />
@@ -101,14 +105,16 @@ export function DailyNudge({
             </Popover>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
           onClick={handleDismiss}
-          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           aria-label="Закрити"
+          className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
           <Icon name="close" size={14} />
-        </button>
+        </Button>
       </div>
     </section>
   );

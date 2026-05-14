@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -102,7 +106,7 @@ export function DemoModeBanner() {
           type="button"
           variant="primary"
           size="sm"
-          className="flex-1 min-h-[40px]"
+          className="flex-1"
           onClick={goToWizard}
         >
           Створити свій
