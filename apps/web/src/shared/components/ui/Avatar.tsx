@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -15,7 +19,7 @@ export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 export type AvatarStatus = "online" | "busy" | "offline";
 
 const sizeClasses: Record<AvatarSize, string> = {
-  xs: "h-6 w-6 text-2xs",
+  xs: "h-6 w-6 text-style-caption",
   sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",

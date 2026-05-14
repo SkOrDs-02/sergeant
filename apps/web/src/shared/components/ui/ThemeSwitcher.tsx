@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * ThemeSwitcher — uniform UI control for the 4-mode theme contract
  * (`useTheme`): light · dark · system · HC.
  *
@@ -257,7 +261,7 @@ function DropdownSwitcher({
             (no `uppercase`+`tracking-*`+`text-*`) so it stays inside
             the design-system primitive contract. */}
         {isHighContrast && choice !== "hc" && (
-          <span className="ml-1 text-2xs font-bold text-muted bg-panelHi px-1.5 py-0.5 rounded-md">
+          <span className="ml-1 text-style-caption font-bold text-muted bg-panelHi px-1.5 py-0.5 rounded-md">
             HC
           </span>
         )}

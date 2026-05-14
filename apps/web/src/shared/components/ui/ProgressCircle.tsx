@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -55,8 +59,8 @@ const variantClass: Record<ProgressCircleVariant, string> = {
 };
 
 const labelTextClass: Record<ProgressCircleSize, string> = {
-  xs: "text-2xs",
-  sm: "text-2xs",
+  xs: "text-style-caption",
+  sm: "text-style-caption",
   md: "text-xs",
   lg: "text-sm",
 };

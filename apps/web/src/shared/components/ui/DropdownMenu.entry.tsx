@@ -45,7 +45,7 @@ export function DropdownMenuEntryView({
       <div
         role="presentation"
         // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional group-header eyebrow inside DropdownMenu; SectionHeading is overkill here.
-        className="px-3 pt-2 pb-1 text-2xs uppercase tracking-wide font-semibold text-subtle"
+        className="px-3 pt-2 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle"
       >
         {entry.label}
       </div>
@@ -102,7 +102,7 @@ export function DropdownMenuEntryView({
           <kbd
             className={cn(
               "shrink-0 ml-2 inline-flex items-center px-1.5 h-5",
-              "text-2xs font-mono font-semibold text-muted",
+              "text-style-caption font-mono font-semibold text-muted",
               "bg-surface-muted border border-line rounded-md",
             )}
           >
@@ -221,7 +221,7 @@ function DropdownMenuSubmenuPanel({ entry, onClose }: SubmenuPanelProps) {
               <kbd
                 className={cn(
                   "shrink-0 ml-2 inline-flex items-center px-1.5 h-5",
-                  "text-2xs font-mono font-semibold text-muted",
+                  "text-style-caption font-mono font-semibold text-muted",
                   "bg-surface-muted border border-line rounded-md",
                 )}
               >

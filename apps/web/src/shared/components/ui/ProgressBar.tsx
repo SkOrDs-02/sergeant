@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -57,8 +61,8 @@ const fillClass: Record<ProgressBarVariant, string> = {
 };
 
 const labelTextClass: Record<ProgressBarSize, string> = {
-  xs: "text-2xs",
-  sm: "text-2xs",
+  xs: "text-style-caption",
+  sm: "text-style-caption",
   md: "text-xs",
   lg: "text-xs",
 };

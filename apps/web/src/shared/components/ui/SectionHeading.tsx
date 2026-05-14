@@ -6,7 +6,7 @@ import { cn } from "../../lib/ui/cn";
  *
  * Consolidates the 80+ "eyebrow"-style section titles scattered across
  * modules. Current de-facto drift:
- *   - text-2xs font-bold text-subtle uppercase tracking-widest  (53 matches)
+ *   - text-style-caption font-bold text-subtle uppercase tracking-widest  (53 matches)
  *   - text-xs  font-bold text-subtle uppercase tracking-widest  (majority of Fizruk)
  *   - text-xs  text-muted uppercase tracking-wide font-semibold (Finyk)
  *   - text-2xs text-nutrition/70 font-bold uppercase tracking-wide (nutrition macros)
@@ -48,12 +48,10 @@ export type SectionHeadingWeight =
 
 // Size-only tokens (font-scale + casing + tracking). Weight is applied
 // separately so `weight` prop overrides can compose cleanly. The `2xs`
-// step (10px) covers the compact eyebrow drift on hub-dashboard cards,
-// FTUX hero, sheet sub-headers, and weekly-digest module subheadings —
-// what was historically written as `text-[10px]`/`text-[11px]` /
-// `text-2xs` raw className triplets.
+// step maps to text-style-caption (12px) + uppercase + tracking-wide —
+// raised from 10px to satisfy HR#16 (minimum 12px text).
 const sizeTokens: Record<SectionHeadingSize, string> = {
-  "2xs": "text-2xs uppercase tracking-wide",
+  "2xs": "text-style-caption uppercase tracking-wide",
   xs: "text-xs uppercase tracking-wider",
   sm: "text-xs uppercase tracking-widest",
   md: "text-sm",

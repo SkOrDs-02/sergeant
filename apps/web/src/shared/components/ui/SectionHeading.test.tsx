@@ -83,12 +83,12 @@ describe("SectionHeading", () => {
     expect(container.querySelector("h3")).toBeNull();
   });
 
-  it("size='2xs' renders the compact eyebrow scale (text-2xs + uppercase + tracking-wide + bold)", () => {
+  it("size='2xs' renders the compact eyebrow scale (text-style-caption + uppercase + tracking-wide + bold)", () => {
     const { container } = render(
       <SectionHeading size="2xs">Загальні рекомендації</SectionHeading>,
     );
     const cls = container.querySelector("h3")!.className;
-    expect(cls).toContain("text-2xs");
+    expect(cls).toContain("text-style-caption");
     expect(cls).toContain("uppercase");
     expect(cls).toContain("tracking-wide");
     expect(cls).toContain("font-bold");

@@ -65,7 +65,7 @@ export const FinykEmptyIllustration = memo(function FinykEmptyIllustration({
         x="35"
         y="29"
         textAnchor="middle"
-        className="fill-brand-600 dark:fill-brand text-micro font-bold"
+        className="fill-brand-600 dark:fill-brand text-style-caption font-bold"
       >
         $
       </text>

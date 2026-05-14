@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * @status Active
  * @owner @Skords-01
  *
@@ -191,7 +195,7 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
     title: "text-style-label",
     description: "text-xs",
     descriptionMax: "max-w-xs",
-    eyebrow: "text-2xs",
+    eyebrow: "text-style-caption",
     actionGap: "mt-1 gap-2",
   },
   md: {
@@ -200,7 +204,7 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
     title: "text-base font-semibold",
     description: "text-sm",
     descriptionMax: "max-w-sm",
-    eyebrow: "text-2xs",
+    eyebrow: "text-style-caption",
     actionGap: "mt-2 gap-3",
   },
   lg: {
@@ -331,7 +335,7 @@ export function EmptyState({
           )}
         >
           {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional example label */}
-          <p className="text-2xs text-muted mb-2 uppercase tracking-wide font-medium">
+          <p className="text-style-caption text-muted mb-2 uppercase tracking-wide font-medium">
             Приклад
           </p>
           {examplePreview}
@@ -364,7 +368,7 @@ export function EmptyState({
       {hint && (
         <p
           className={cn(
-            "flex items-center gap-1.5 text-2xs text-subtle mt-2",
+            "flex items-center gap-1.5 text-style-caption text-subtle mt-2",
             !disableAnimation &&
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
           )}

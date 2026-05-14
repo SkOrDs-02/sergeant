@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import {
   forwardRef,
   useCallback,
@@ -360,7 +364,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
               aria-hidden="true"
               className={cn(
                 "absolute left-1/2 -translate-x-1/2 pointer-events-none",
-                "px-2 py-0.5 rounded-md text-2xs font-medium tabular-nums",
+                "px-2 py-0.5 rounded-md text-style-caption font-medium tabular-nums",
                 "bg-text text-bg shadow-card whitespace-nowrap",
                 isVertical
                   ? "right-full mr-3 top-1/2 -translate-y-1/2"

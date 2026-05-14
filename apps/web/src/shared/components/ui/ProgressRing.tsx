@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
 
@@ -64,7 +68,7 @@ const sizePx: Record<ProgressRingSize, number> = {
 };
 
 const labelTextSize: Record<ProgressRingSize, string> = {
-  xs: "text-micro",
+  xs: "text-style-caption",
   sm: "text-xs",
   md: "text-sm",
   lg: "text-lg",

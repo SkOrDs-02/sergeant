@@ -404,7 +404,7 @@ function CommandPaletteUI() {
           <kbd
             className={cn(
               "shrink-0 hidden sm:inline-flex items-center px-1.5 h-5",
-              "text-2xs font-mono font-semibold text-muted",
+              "text-style-caption font-mono font-semibold text-muted",
               "bg-surface-muted border border-line rounded-md",
             )}
           >
@@ -436,7 +436,7 @@ function CommandPaletteUI() {
             ))
           )}
         </div>
-        <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-line text-2xs text-muted">
+        <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-line text-style-caption text-muted">
           <span className="inline-flex items-center gap-1.5">
             <kbd className="inline-flex items-center px-1.5 h-4 font-mono font-semibold bg-surface-muted border border-line rounded-md">
               ↑↓
@@ -543,7 +543,7 @@ function CommandGroup({
     <div role="group" aria-label={group.label} className="mb-1.5">
       <div
         // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional palette group-header eyebrow; SectionHeading is overkill for inline list.
-        className="px-4 pt-1 pb-1 text-2xs uppercase tracking-wide font-semibold text-subtle"
+        className="px-4 pt-1 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle"
       >
         {group.label}
       </div>
@@ -589,7 +589,7 @@ function CommandGroup({
                 <kbd
                   className={cn(
                     "shrink-0 ml-2 inline-flex items-center px-1.5 h-5",
-                    "text-2xs font-mono font-semibold text-muted",
+                    "text-style-caption font-mono font-semibold text-muted",
                     "bg-surface-muted border border-line rounded-md",
                   )}
                 >

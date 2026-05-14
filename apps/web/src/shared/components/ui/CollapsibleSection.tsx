@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState, useCallback, useRef, type ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
@@ -126,7 +130,7 @@ export function CollapsibleSection({
               {title}
             </span>
             {collapsedSubtitle && (
-              <span className="block text-2xs text-muted mt-0.5 truncate">
+              <span className="block text-style-caption text-muted mt-0.5 truncate">
                 {collapsedSubtitle}
               </span>
             )}
