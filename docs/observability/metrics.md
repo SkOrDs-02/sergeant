@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by Codex. **Next review:** 2026-08-12.
 > **Status:** Active
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
@@ -165,7 +165,7 @@ rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])    #
 
 **Voyage cost (PR-33)**: `recordVoyageUsage()` після успішного embedding-batch-у пушить `usage.total_tokens` у `ai_tokens_total{provider="voyage", endpoint="embed", kind="prompt"}` і USD-переклад в `ai_cost_estimate_usd_total{provider="voyage", model, endpoint="embed"}`. Прайс-таблиця — `VOYAGE_PRICING_USD_PER_MTOK` у [embeddings.ts](../../apps/server/src/modules/ai-memory/embeddings.ts) (`voyage-3.5-lite=$0.02/MTok`, `voyage-3.5=$0.06/MTok`, `voyage-3-large=$0.18/MTok` тощо). Невідома модель → cost-counter не інкрементується (token-counter інкрементується завжди), щоб помилковий model-string не привʼязав ціну від іншої версії.
 
-**Кардинальність**: requests ~120; tokens ~25 (Anthropic 12 + Voyage 9 моделей × prompt-kind ≈ 13); cost ~25; quota ~5. Загалом ≈ **~180**.
+**Кардинальність**: requests ~120; tokens ~25 (Anthropic 12 + Voyage 9 моделей × prompt-kind ≈ 13); cost ~25; quota ~5. Загалом ≈ **~180**. `model` — низькокардинальний vendor-name (`claude-sonnet-4`, `claude-3-5-haiku-*`, `voyage-3.5-lite`, `voyage-3.5`, `voyage-3-large`); нові значення мають з'являтися тільки через зміну model-config/pricing-table.
 
 ```promql
 sum(rate(ai_requests_total{outcome!="ok"}[5m])) / sum(rate(ai_requests_total[5m]))         # SLI 97%
@@ -179,11 +179,12 @@ sum by (model) (rate(ai_cost_estimate_usd_total{provider="voyage"}[1d])) * 86400
 sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))
   / on(provider) sum by (provider) (infra_monthly_cost_usd{plan!="usage"})                 # actual vs budget
 
-# Per-release attribution via `app_build_info` join (див. §15a)
-sum by (model, release) (
+# Per-release attribution via `app_build_info` join (див. §15a).
+# `instance` приходить від Prometheus scrape target і є спільним для app_build_info та AI-метрик.
+sum by (model, kind, release) (
   rate(ai_tokens_total{provider="anthropic"}[5m])
-  * on() group_left(release) app_build_info
-)                                                                                          # tokens/s per model+release
+  * on(instance) group_left(release) app_build_info
+)                                                                                          # Anthropic tokens/s per model+kind+release
 sum by (model, release) (
   increase(ai_cost_estimate_usd_total{provider="anthropic"}[24h])
   * on() group_left(release) app_build_info
@@ -212,6 +213,16 @@ sum by (release) (
   increase(ai_cost_estimate_usd_total{provider="voyage",model="voyage-3.5-lite"}[24h])
   * on() group_left(release) app_build_info
 )                                                                                          # Voyage cheap-tier USD/24h split-нуті за release
+  * on(instance) group_left(release) app_build_info
+)                                                                                          # Anthropic USD/24h per model+release
+sum by (model, release) (
+  increase(ai_tokens_total{provider="voyage", endpoint="embed"}[24h])
+  * on(instance) group_left(release) app_build_info
+)                                                                                          # Voyage embedding input tokens/24h per model+release
+sum by (model, release) (
+  increase(ai_cost_estimate_usd_total{provider="voyage", endpoint="embed"}[24h])
+  * on(instance) group_left(release) app_build_info
+)                                                                                          # Voyage USD/24h per model+release
 ```
 
 Join-pattern із `app_build_info` (один gauge=1 на інстанс із лейблом `release`) дає per-release breakdown без копіювання `release` у кожен emitter — повний контракт цієї серії і ще приклади для `http_*` метрик див. [§15a](#15a-buildrelease-identity-app_build_info).
@@ -410,14 +421,14 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 histogram_quantile(0.99,
   sum by (le, release) (
     rate(http_request_duration_ms_bucket[5m])
-    * on() group_left(release) app_build_info
+    * on(instance) group_left(release) app_build_info
   )
 )
 
 # Error-rate per release (порівняти "зелену" і "червону" версії)
 sum by (release) (
   rate(http_requests_total{status_class=~"5xx"}[5m])
-  * on() group_left(release) app_build_info
+  * on(instance) group_left(release) app_build_info
 )
 
 # Перевірити, що на /metrics не зʼявилося кілька версій одночасно під час
@@ -483,8 +494,18 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 
 ## Відкриті питання
 
-Сиріт і несумісних label-set-ів **не знайдено**. Всі 36 метрик інкрементуються щонайменше в одному emitter.
+Сиріт і несумісних label-set-ів **не знайдено**. Всі 36 метрик інкрементуються щонайменше в одному emitter. Канонічний backlog — [`docs/planning/pr-plan-backend-perf-2026-05.md`](../planning/pr-plan-backend-perf-2026-05.md); тут — лише точки болю/розвитку observability-каталогу, які треба пам'ятати при дашборд-ревʼю.
 
-Потенційні покращення (не баги):
+### Нещодавно закрито
 
-1. `mono_webhook_duration_ms` записується на `ok` і `error` ([webhook.ts:173](../../apps/server/src/modules/mono/webhook.ts#L173), [:185](../../apps/server/src/modules/mono/webhook.ts#L185)), але **не** на ранніх exit-ах `invalid_secret`/`bad_payload` ([webhook.ts:63](../../apps/server/src/modules/mono/webhook.ts#L63), [:102](../../apps/server/src/modules/mono/webhook.ts#L102)). Свідомий вибір, але для повноти histogram можна записувати й там.
+- **Per-model token + cost attribution для Anthropic / Voyage** — закрите [PR-04 з backend-perf плану](../planning/pr-plan-backend-perf-2026-05.md). До цього PromQL-приклади в [§6](#6-ai-anthropic--voyage) показували лише per-release split через `app_build_info` без single-model breakdown-у; тепер є concrete deep-dive (`model="claude-sonnet-4-5"`, `model="voyage-3.5-lite"`) + повний перелік типових значень `model`-лейблу для обох провайдерів із посиланнями на canonical emitter-и + drift-detector для нових Voyage-моделей без cost-counter серії.
+- **Backend `/health` p95 SLO formalization** — закрите [PR-06 з backend-perf плану](../planning/pr-plan-backend-perf-2026-05.md). Informal AGENTS.md performance budget ("Backend `/health` p95 < 100 ms") тепер має recording-rule `sli:health_p95_ms:rate5m`, alert `BackendHealthP95High` (`severity=ticket`, `for: 5m`) і повноцінну SLO-секцію у [`SLO.md § 2a`](./SLO.md#2a-health-endpoint-p95-slo-p95--100-ms) + runbook-anchor у [`runbook.md`](./runbook.md#backendhealthp95high). Раніше pure-AGENTS.md target не мав emitter-trace.
+
+### Потенційні покращення (не баги)
+
+1. `mono_webhook_duration_ms` записується на `ok` і `error` ([webhook.ts:173](../../apps/server/src/modules/mono/webhook.ts#L173), [:185](../../apps/server/src/modules/mono/webhook.ts#L185)), але **не** на ранніх exit-ах `invalid_secret`/`bad_payload` ([webhook.ts:63](../../apps/server/src/modules/mono/webhook.ts#L63), [:102](../../apps/server/src/modules/mono/webhook.ts#L102)). Свідомий вибір (щоб не зашумити histogram cheap-paths-ами без бізнес-сенсу), але для повноти cardinality-діагностики можна додати окрему `mono_webhook_short_circuit_total{reason="invalid_secret"|"bad_payload"}` counter — без histogram-ового витрат.
+2. **`/health/*` nested + short-alias probes** (`/health/liveness`, `/health/readiness`, `/health/startup`, `/livez`, `/readyz`, `/startupz`, `/healthz`) накриті лише loose-1s SLO §2 у `SLO.md`. Якщо хоч одна probe-семантика виявиться окремо вартою власного бюджета (типу: `readiness` p95 < 250 ms бо ходить по worker fleet) — додати окремі recording-rules за патерном з PR-06.
+Незатреканих observability-питань у цьому довіднику немає. Поточний follow-up
+винесений у план, щоб footer не ставав backlog-дублікатом:
+
+1. `/api/internal/*` Sentry sampling baseline і rule-ordering — [backend perf plan PR-07](../planning/pr-plan-backend-perf-2026-05.md).

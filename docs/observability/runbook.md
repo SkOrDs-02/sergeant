@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -42,6 +42,21 @@
    (див. `AuthSessionLookupSlow` алерт нижче).
 3. Перевір `db_query_duration_ms` + `db_pool_waiting > 0` як симптом saturate-у.
 4. Якщо гарячий path — `/api/sync` чи AI endpoint — застосуй специфічний runbook.
+
+## BackendHealthP95High
+
+`job:health_p95_5m > 100` 5m → ticket. Health endpoint ще відповідає, але probe
+latency вже достатньо висока, щоб rolling deploy / cold start міг почати
+флапати.
+
+1. Перевір `max(db_pool_waiting)` і `db_pool_acquire_duration_seconds`: якщо
+   waiting > 0, дій за `DbPoolWaitingSustained`.
+2. Перевір `nodejs_eventloop_lag_seconds` і CPU/RSS default-метрики: health
+   може сповільнюватись без DB, якщо процес забитий GC або sync work.
+3. Звір останній deploy/release через `app_build_info`; якщо сигнал з'явився
+   тільки на новому release, відкрий regression-ticket і прив'яжи до PR.
+4. Якщо p95 росте тільки на `/health/workers`, дивись queue/worker секцію
+   detailed health output; це не обов'язково backend-global incident.
 
 ## SyncErrorBudgetBurn
 
