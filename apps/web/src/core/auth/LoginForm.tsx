@@ -87,7 +87,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
           <button
             type="button"
             onClick={() => onForgotPassword(emailValue)}
-            className="text-xs text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
+            className="text-xs text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded"
           >
             Забули пароль?
           </button>

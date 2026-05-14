@@ -562,7 +562,7 @@ function CommandGroup({
               className={cn(
                 "flex w-full items-center gap-3 px-2.5 py-2 text-left rounded-xl",
                 "transition-colors duration-150",
-                "outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+                "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 activeId === cmd.id && !cmd.disabled && "bg-panelHi",
                 cmd.disabled && "opacity-50 cursor-not-allowed",

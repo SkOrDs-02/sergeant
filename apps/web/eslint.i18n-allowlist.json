@@ -7,6 +7,7 @@
   "apps/web/src/core/DesignShowcase/_shared/primitives.tsx",
   "apps/web/src/core/DesignShowcase/index.tsx",
   "apps/web/src/core/DesignShowcase/sections/A11y.tsx",
+  "apps/web/src/core/DesignShowcase/sections/A11yStates.tsx",
   "apps/web/src/core/DesignShowcase/sections/Colors.tsx",
   "apps/web/src/core/DesignShowcase/sections/Elevation.tsx",
   "apps/web/src/core/DesignShowcase/sections/Feedback.tsx",

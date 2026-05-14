@@ -262,7 +262,7 @@ export function PresetSheet({
             className={cn(
               "w-full text-left px-3 py-3 rounded-2xl border border-line bg-panelHi",
               "hover:border-brand-500/50 hover:bg-brand-500/5 transition-[background-color,border-color,opacity]",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
             )}
           >
             <div className="flex items-center gap-3">
@@ -299,7 +299,7 @@ export function PresetSheet({
             "w-full text-center px-3 py-3 rounded-2xl border border-dashed border-line",
             "text-style-label text-muted hover:text-text hover:border-brand-500/50",
             "transition-[background-color,border-color,opacity]",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
           <div className="flex items-center justify-center gap-1.5">

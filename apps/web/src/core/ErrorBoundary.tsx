@@ -180,7 +180,7 @@ export class ErrorBoundary extends Component<
                 type="button"
                 onClick={this.copyRequestId}
                 aria-label="Скопіювати requestId"
-                className="text-xs px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="text-xs px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
               >
                 {copied ? "Скопійовано" : "Копіювати"}
               </button>
@@ -190,14 +190,14 @@ export class ErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.resetError}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50"
             >
               Спробувати ще
             </button>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
             >
               Перезавантажити
             </button>

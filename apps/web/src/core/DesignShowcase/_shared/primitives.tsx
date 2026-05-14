@@ -77,7 +77,7 @@ export function Sec({
       className="scroll-mt-24"
       data-showcase-section={id}
     >
-      <header className="mb-6 pb-3 border-b border-line flex items-center gap-3 flex-wrap">
+      <header className="mb-6 pb-3 border-b border-divider-strong flex items-center gap-3 flex-wrap">
         <h2 id={`${id}-title`} className="text-style-hero text-text">
           {title}
         </h2>

@@ -84,7 +84,7 @@ export function DailyNudge({
               trigger={
                 <button
                   type="button"
-                  className="w-8 h-8 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   aria-label="Інші дії"
                 >
                   <Icon name="more-horizontal" size={16} />
@@ -104,7 +104,7 @@ export function DailyNudge({
         <button
           type="button"
           onClick={handleDismiss}
-          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           aria-label="Закрити"
         >
           <Icon name="close" size={14} />

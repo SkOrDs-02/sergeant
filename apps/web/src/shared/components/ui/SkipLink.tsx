@@ -38,7 +38,7 @@ export function SkipLink({
         "focus:px-4 focus:py-2 focus:rounded-xl",
         "focus:border focus-visible:bg-panel focus-visible:text-text focus-visible:shadow-float focus-visible:border-line",
         "focus:text-sm focus:font-semibold",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         className,
       )}
     >

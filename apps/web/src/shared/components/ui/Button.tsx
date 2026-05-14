@@ -183,7 +183,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           "inline-flex items-center justify-center touch-manipulation",
           "motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-smooth",
           "motion-reduce:transition-none motion-reduce:active:scale-100!",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
           // Touch / coarse pointer: WCAG 2.5.5 / HIG ≥44×44px for compact controls.
           needsCoarseMinTarget &&

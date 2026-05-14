@@ -196,7 +196,7 @@ export function ModuleChecklist({
         className={cn(
           "w-full flex items-center justify-between gap-3 px-4 py-3",
           "hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset",
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -289,7 +289,7 @@ export function ModuleChecklist({
                   done
                     ? "bg-transparent cursor-default"
                     : "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
                 )}
                 style={{ animationDelay: `${idx * 50}ms` }}

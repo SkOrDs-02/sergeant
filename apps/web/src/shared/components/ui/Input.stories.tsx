@@ -13,7 +13,7 @@ import { Input } from "./Input";
  * відповідний `inputMode`, щоб мобільна клавіатура одразу показувала
  * правильний набір символів. Явний пропс перекриває дефолт.
  *
- * Focus-ring `ring-brand-500/30` синхронізований з `Button` — одна
+ * Focus-ring `ring-focus/30` синхронізований з `Button` — одна
  * клавіатурна мова на всіх interactive-елементах.
  */
 const meta: Meta<typeof Input> = {

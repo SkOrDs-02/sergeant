@@ -102,7 +102,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                 type="button"
                 onClick={onClearRecents}
                 // eslint-disable-next-line sergeant-design/no-rounded-lg -- pre-existing tech debt; semantic fix tracked in docs/tech-debt/frontend.md
-                className="text-xs text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-lg px-1.5 py-0.5"
+                className="text-xs text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg px-1.5 py-0.5"
               >
                 Очистити
               </button>
@@ -113,7 +113,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                   key={r}
                   type="button"
                   onClick={() => onPickRecent(r)}
-                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-panelHi border border-line text-sm text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-panelHi border border-line text-sm text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <svg
                     width="12"
@@ -184,7 +184,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                     onOpenModule(moduleId);
                     onClose();
                   }}
-                  className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+                  className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <span>
                     Показано {group.items.length} — відкрити {group.label}

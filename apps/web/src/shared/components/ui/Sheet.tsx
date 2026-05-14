@@ -226,7 +226,7 @@ export function Sheet({
               className={cn(
                 "flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full",
                 "bg-panelHi text-muted hover:text-text transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
               )}
             >
               <svg

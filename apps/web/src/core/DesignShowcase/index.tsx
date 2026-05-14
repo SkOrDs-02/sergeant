@@ -16,6 +16,7 @@ import { FeedbackSection } from "./sections/Feedback";
 import { OverlaysSection } from "./sections/Overlays";
 import { ThemingSection } from "./sections/Theming";
 import { A11ySection } from "./sections/A11y";
+import { A11yStatesSection } from "./sections/A11yStates";
 import { ModuleAccentsSection } from "./sections/ModuleAccents";
 import { MenusSection } from "./sections/Menus";
 import { PrimitivesSection } from "./sections/Primitives";
@@ -113,6 +114,7 @@ function ShowcaseShell() {
           <OverlaysSection />
           <ThemingSection />
           <A11ySection />
+          <A11yStatesSection />
           <ModuleAccentsSection />
           <MenusSection />
           <PrimitivesSection />

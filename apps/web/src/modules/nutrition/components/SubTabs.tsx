@@ -36,7 +36,7 @@ export function SubTabs({ value, onChange, tabs, className }: SubTabsProps) {
             onClick={() => onChange(t.id)}
             className={cn(
               "text-style-label flex-1 min-h-[40px] px-3 py-2 rounded-xl transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               active
                 ? "bg-panel text-text shadow-sm"
                 : "text-muted hover:text-text",

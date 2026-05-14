@@ -32,7 +32,7 @@ export function PushNotificationToggle({
         disabled={loading || blocked}
         onClick={subscribed ? unsubscribe : subscribe}
         className={cn(
-          "relative w-11 h-6 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+          "relative w-11 h-6 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           subscribed ? "bg-primary" : "bg-line",
           (loading || blocked) && "opacity-50 cursor-not-allowed",
         )}

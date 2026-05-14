@@ -154,6 +154,48 @@
     --c-border: var(--c-line);
     --c-border-strong: 221 211 197; /* #ddd3c5 — stronger warm divider */
 
+    /* ───────────────────────────────────────────────────────────────────
+       SEMANTIC A11Y / STATES — focus, selection, caret, scrollbar,
+       dividers. Decoupled from the raw `brand-*` / `line` palette so
+       call-sites never spell out a colour family for a keyboard-focus
+       ring or a `::selection` wash. WCAG 2.4.11 / 1.4.11 — the focus
+       and ring tokens are tuned to ≥3:1 against neighbour surfaces in
+       both themes.
+       ─────────────────────────────────────────────────────────────────── */
+    /* Focus ring — brand emerald is the canonical accent. Use
+       `focus-visible:ring-2 ring-focus/45 ring-offset-2 ring-offset-bg`
+       for the standard subtle ring; `ring-focus-strong` (no alpha) for
+       extra-punch focus on busy surfaces. */
+    --c-ring: 16 185 129; /* emerald-500 — primary keyboard-focus ring */
+    --c-ring-strong: 4 120 87; /* emerald-700 — WCAG-AA companion, solid */
+    --c-ring-offset: 255 255 255; /* white — matches panel; pair with `ring-offset-panel`/`ring-offset-bg` */
+
+    /* Selection — global `::selection` wash. Soft emerald tint with a
+       darker emerald foreground so links/code stay readable when
+       selected. */
+    --c-selection-bg: 167 243 208; /* emerald-200 */
+    --c-selection-fg: 6 78 59; /* emerald-900 */
+
+    /* Caret — text-input caret colour. Brand emerald reads as «active
+       composition» without competing with the placeholder text. */
+    --c-caret: 16 185 129; /* emerald-500 */
+
+    /* Scrollbar — warm-neutral thumb on cream track. The hover step is
+       one shade deeper so the affordance stays visible on every
+       overflow surface. */
+    --c-scrollbar-track: 250 247 241; /* panel-hi — warm cream */
+    --c-scrollbar-thumb: 221 211 197; /* #ddd3c5 — warm beige */
+    --c-scrollbar-thumb-hover: 180 174 169; /* #b4aea9 — warm muted on hover */
+
+    /* Dividers — three weights mirroring `border-strong` / `border` /
+       a new hairline. `divider` is the default split between rows in
+       a list / card; `-weak` is a feather-light separator inside a
+       single-surface group; `-strong` is the prominent split between
+       major sections that the eye should anchor to. */
+    --c-divider-weak: 245 238 228; /* #f5eee4 — feather hairline */
+    --c-divider: 235 228 218; /* matches --c-line */
+    --c-divider-strong: 221 211 197; /* matches --c-border-strong */
+
     /* Soft status backgrounds — tinted surfaces for banners/badges/cards.
        These resolve automatically between light & dark themes, eliminating
        the `bg-red-50 dark:bg-danger/15` string-gymnastics pattern. */
@@ -339,6 +381,24 @@
        `border-strong` now clears the 3:1 UI-contrast threshold so
        separators between sections read clearly on the dark bg. */
     --c-border-strong: 112 102 90; /* #70665a — prominent divider (was #4a423a) */
+
+    /* Dark-theme A11y / states overrides. Focus ring shifts to
+       emerald-400 so it clears ≥3:1 against the warm-charcoal panel
+       (`--c-panel` = #201c19). Selection flips to a deep emerald wash
+       with a bright foreground. Scrollbar uses warm-neutral steps that
+       sit just above the panel/border floor. */
+    --c-ring: 52 211 153; /* emerald-400 — brighter for dark panels */
+    --c-ring-strong: 110 231 183; /* emerald-300 — solid, punchy */
+    --c-ring-offset: 32 28 25; /* panel — matches `--c-panel` */
+    --c-selection-bg: 4 120 87; /* emerald-700 */
+    --c-selection-fg: 209 250 229; /* emerald-100 */
+    --c-caret: 52 211 153; /* emerald-400 — visible in dark inputs */
+    --c-scrollbar-track: 32 28 25; /* panel */
+    --c-scrollbar-thumb: 82 74 65; /* matches --c-line */
+    --c-scrollbar-thumb-hover: 135 128 121; /* matches --c-subtle */
+    --c-divider-weak: 60 53 47; /* between panel and line */
+    --c-divider: 82 74 65; /* matches --c-line */
+    --c-divider-strong: 112 102 90; /* matches --c-border-strong */
     --c-success-soft: 6 95 70; /* slightly brighter emerald-900 */
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */

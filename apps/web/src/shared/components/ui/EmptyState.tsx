@@ -498,7 +498,7 @@ export function ModuleEmptyState({
           className={cn(
             "absolute top-2 right-2 p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors z-10",
             // Hard Rule #14 — visible focus indicator via focus-visible:
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
           <Icon name="x" size={16} aria-hidden="true" />

@@ -106,8 +106,12 @@ const VARIANT_PILL: Record<TabsVariant, string> = {
     "bg-nutrition-soft text-nutrition-strong dark:bg-nutrition-surface-dark/15 dark:text-nutrition",
 };
 
+// `brand` tabs use the semantic `ring-focus` token so the keyboard focus
+// reads as «default app accent», not a hard-coded brand-500. Module
+// variants keep their own accent ring so focus reinforces the module
+// identity (Hard Rule #12 — module accent containment).
 const VARIANT_RING: Record<TabsVariant, string> = {
-  brand: "focus-visible:ring-brand-500/45",
+  brand: "focus-visible:ring-focus/45",
   finyk: "focus-visible:ring-finyk/45",
   fizruk: "focus-visible:ring-fizruk/45",
   routine: "focus-visible:ring-routine/45",
@@ -193,7 +197,7 @@ export function Tabs<V extends string = string>({
       className={cn(
         "flex items-stretch",
         style === "underline"
-          ? "gap-1 border-b border-line"
+          ? "gap-1 border-b border-divider"
           : "gap-1 p-1 rounded-2xl bg-surface-muted",
         fill && "w-full",
         className,

@@ -58,7 +58,7 @@ function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
       <button
         type="button"
         onClick={resetError}
-        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-style-label hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-style-label hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         Спробувати ще раз
       </button>
@@ -217,7 +217,7 @@ export const HubMainContent = memo(function HubMainContent({
         as="main"
         id="main"
         tabIndex={-1}
-        className="max-w-lg mx-auto w-full rounded-xl focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
+        className="max-w-lg mx-auto w-full rounded-xl focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         contentClassName="px-5 pb-28"
         onRefresh={handleRefresh}
         onScrollElement={handleScrollElement}

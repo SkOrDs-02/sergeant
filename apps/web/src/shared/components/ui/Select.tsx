@@ -24,15 +24,16 @@ const sizes: Record<SelectSize, string> = {
 
 /**
  * Focus treatment — mirrors `Input` and `Button`: keyboard focus shows a
- * `focus-visible:ring-2 ring-brand-500/30` ring, pointer clicks don't.
+ * `focus-visible:ring-2 ring-focus/30` ring (Hard Rule #14), pointer
+ * clicks don't.
  */
 const variants: Record<SelectVariant, string> = {
   default:
-    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
+    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
   filled:
-    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
+    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
   ghost:
-    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-brand-500/30",
+    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-focus/30",
 };
 
 export interface SelectProps extends Omit<

@@ -84,7 +84,7 @@ export function CollapsibleSection({
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl -ml-0.5 pl-0.5"
+          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-xl -ml-0.5 pl-0.5"
         >
           <Icon
             name="chevron-down"
@@ -107,7 +107,7 @@ export function CollapsibleSection({
             "px-3.5 py-3 rounded-2xl",
             "bg-panel/70 hover:bg-panelHi border border-line/70",
             "transition-colors active:scale-[0.99]",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
           )}
         >
           {collapsedIcon && (

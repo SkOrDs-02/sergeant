@@ -61,7 +61,7 @@ function FtuxModulesHint() {
         className={cn(
           "shrink-0 -mr-1 -mt-0.5 w-6 h-6 inline-flex items-center justify-center rounded-md",
           "text-muted hover:text-text hover:bg-panelHi transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
         )}
       >
         <Icon name="close" size={14} strokeWidth={2} aria-hidden />
@@ -130,7 +130,7 @@ export function HubModulesGrid({
           title={editMode ? "Готово" : "Налаштувати"}
           className={cn(
             "inline-flex items-center justify-center gap-1.5 text-2xs font-medium rounded-xl transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
             editMode
               ? "bg-primary text-bg px-2.5 py-1"
               : "text-muted hover:text-text hover:bg-panelHi w-7 h-7",
@@ -190,7 +190,7 @@ export function HubModulesGrid({
         <button
           type="button"
           onClick={toggleHideInactive}
-          className="mx-auto mt-2 block text-2xs text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className="mx-auto mt-2 block text-2xs text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
         >
           {hideInactive
             ? "Показати неактивні модулі"

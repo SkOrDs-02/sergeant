@@ -170,7 +170,7 @@ export function PersonalInfoSection({
             aria-label="Змінити аватар"
             className={cn(
               "relative w-20 h-20 rounded-[22px] overflow-hidden",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >
             {user.image ? (

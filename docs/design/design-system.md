@@ -66,8 +66,10 @@ Hard Rules + ESLint rules.
    див. `AGENTS.md` hard rule #12 + [`module-accent.md`](./module-accent.md),
    enforced by `sergeant-design/no-foreign-module-accent` (`error`).
 4. **Accessibility не опція.** Клавіатурний фокус завжди видимий
-   (`focus-visible:ring-2 ring-brand-500/45`), touch-targets ≥44×44 px,
-   контраст ≥4.5:1 для тексту, ≥3:1 для UI-елементів (WCAG AA).
+   (`focus-visible:ring-2 ring-focus/45 ring-offset-2 ring-offset-bg`),
+   touch-targets ≥44×44 px, контраст ≥4.5:1 для тексту, ≥3:1 для
+   UI-елементів (WCAG AA). Hard Rule #14 — `focus:` для viz-стилів
+   заборонений, тільки `focus-visible:`.
 5. **Мобільний first.** Базові пропси розраховані на 375px; планшет
    (768px) отримує додатковий breakpoint.
 
@@ -984,11 +986,99 @@ stroke-dasharray; indeterminate — чверть-дуга, яка обертає
 
 | Стан             | Поведінка                                                                                                       |
 | ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `:focus-visible` | `ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface` на кнопках, `ring-brand-500/30` на інпутах         |
+| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках, `ring-focus/30` на інпутах (без offset)         |
 | `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                       |
 | `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                       |
 | `:active`        | `active:scale-[0.98]` для прес-feedback                                                                         |
 | `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float` |
+
+### 6.1 Semantic A11y / states tokens (Wave 2, 2026-05-13)
+
+Migrated all primitives (`Button`, `Input`, `Select`, `Tabs`, `Switch`,
+`Sheet`, `EmptyState`, `ModuleBottomNav`, `SkipLink`, `InputDialog`) +
+high-traffic shell (Hub headers, search, onboarding, auth) від raw
+`brand-500` / `primary` на семантичні a11y-токени. Це розв'язує бренд-палітру
+від ролі (focus / selection / caret / scrollbar / divider) — оновлення
+бренду не ламає a11y-контракт.
+
+| Token (CSS-var)             | Tailwind utility(s)                      | Роль                                                   |
+| --------------------------- | ---------------------------------------- | ------------------------------------------------------ |
+| `--c-ring`                  | `ring-focus`, `bg-focus`, `text-focus`   | Канонічний клавіатурний focus ring (45% альфа default) |
+| `--c-ring-strong`           | `ring-focus-strong`, `bg-focus-strong`   | Солід focus для busy surfaces / hero карток            |
+| `--c-ring-offset`           | `ring-offset-focus-offset`               | Background-offset для ring-пари (рідко явно)           |
+| `--c-selection-bg` / `-fg`  | `bg-selection`, `text-selection-fg`      | `::selection` / `::-moz-selection` wash                |
+| `--c-caret`                 | `caret-brand` (спеціальний utility)      | Текстовий курсор в input/textarea                      |
+| `--c-scrollbar-thumb`       | `bg-scrollbar-thumb`                     | Default thumb (global scrollbar)                       |
+| `--c-scrollbar-thumb-hover` | `bg-scrollbar-thumb-hover`               | Hover-стейт thumb                                      |
+| `--c-scrollbar-track`       | `bg-scrollbar-track`                     | Опційно видимий track — default трансперентний         |
+| `--c-divider-weak`          | `border-divider-weak`, `bg-divider-weak` | Hairline між рядками у списку                          |
+| `--c-divider`               | `border-divider`, `bg-divider`           | Стандартний дільник усередині картки                   |
+| `--c-divider-strong`        | `border-divider-strong`                  | Дільник між великими секціями (header → content)       |
+
+#### Canonical focus pattern
+
+```tsx
+// Стандартна кнопка / link / iconbutton (Hard Rule #14)
+className =
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+
+// Інпут (без offset — краще всередині заповнення)
+className = "focus-visible:ring-2 focus-visible:ring-focus/30 caret-brand";
+
+// Hero / busy surface — solid ring для extra-punch
+className =
+  "focus-visible:ring-2 focus-visible:ring-focus-strong focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+```
+
+#### Module-accent focus exceptions (Hard Rule #12)
+
+Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
+зберігають модульний ring (`ring-finyk/45` і т.д.), щоб focus
+підсилював module identity. Це єдиний виявлений виняток; brand variant
+вже на `ring-focus`.
+
+#### Do / Don't
+
+```tsx
+// ❌ Раніше (raw палітра, ламається при ребренді)
+<button className="focus-visible:ring-2 focus-visible:ring-brand-500/45">
+
+// ✅ Тепер (семантичний a11y-токен)
+<button className="focus-visible:ring-2 focus-visible:ring-focus/45">
+
+// ❌ Чистий `focus:` кольоровий (ловиться sergeant-design/prefer-focus-visible)
+<button className="focus:ring-2 focus:ring-emerald-500">
+
+// ❌ Кольоровий ринг на своєму colour-family без module-context
+<button className="focus-visible:ring-violet-500">
+
+// ❌ Hex в className (Hard Rule #11)
+<hr className="border-[#ebe4da]" />
+
+// ✅ Семантичний divider
+<hr className="border-divider" />
+```
+
+#### Contrast / WCAG notes
+
+- `--c-ring` (#10b981 light / #34d399 dark) на `--c-panel` (#ffffff /
+  #201c19) резольвиться ≥ 3:1 в обох темах — WCAG 1.4.11
+  «non-text contrast» для focus-indicator passed.
+- `--c-ring-strong` (#047857 light / #6ee7b7 dark) для кольорових hero
+  surfaces де базовий ring втрачає видимість (градієнтні
+  картки) — ratio ≥ 4.5:1.
+- `--c-selection-bg` / `--c-selection-fg` (#a7f3d0 / #064e3b light;
+  #047857 / #d1fae5 dark) — ratio 7.8:1 light, 6.4:1 dark; selected
+  text завжди читається (WCAG 1.4.3 AA для text).
+- `--c-divider-weak` — явно нижче 3:1 проти panel; використовувати
+  тільки як hairline (не єдиний індикатор розмежування).
+
+#### Showcase
+
+[`DesignShowcase`](../../apps/web/src/core/DesignShowcase.tsx) — розділ
+«A11y / States» (link `#a11y`): focus rings в 4 variants, selection wash
+на боді і в код-блоці, caret demo, global scrollbar + `custom-scrollbar`
+варіант, divider trio, token cheat-sheet.
 
 ---
 

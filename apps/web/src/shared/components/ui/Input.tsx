@@ -57,17 +57,19 @@ const sizes: Record<InputSize, string> = {
 };
 
 /**
- * Focus treatment — mirrors `Button`'s `focus-visible:ring-2 ring-brand-500/45`
+ * Focus treatment — mirrors `Button`'s `focus-visible:ring-2 ring-focus/45`
  * contract so all interactive elements share one a11y language. Keyboard
  * users always see a ring; pointer clicks on text inputs don't flash it.
+ * Uses the semantic `ring-focus` token (Hard Rule #14) and the
+ * `caret-brand` utility for the text-caret colour.
  */
 const variants: Record<InputVariant, string> = {
   default:
-    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
+    "bg-panelHi border border-line caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
   filled:
-    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
+    "bg-panelHi border-transparent caret-brand focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
   ghost:
-    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-brand-500/30",
+    "bg-transparent border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-focus/30",
 };
 
 export interface InputProps extends Omit<
@@ -115,7 +117,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const stateClass = error
     ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
     : success
-      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-brand-500/25"
+      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-focus/25"
       : "";
 
   const maxLen = props.maxLength;

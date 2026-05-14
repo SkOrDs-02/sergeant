@@ -77,7 +77,7 @@ export function ModuleRow({
       aria-pressed={active}
       className={cn(
         "relative w-full text-left rounded-2xl border transition-all duration-200",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         expanded ? "p-3.5" : "p-3",
         active
           ? `${activeClasses.border} ${activeClasses.bg} shadow-card`

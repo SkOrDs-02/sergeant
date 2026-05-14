@@ -105,7 +105,7 @@ export function InlineAiRail({
             type="button"
             onClick={onDismiss}
             aria-label="Закрити відповідь"
-            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <Icon name="close" size={16} strokeWidth={2.2} />
           </button>
@@ -126,7 +126,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={onCancel}
-              className="text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-1"
+              className="text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
             >
               Скасувати
             </button>
@@ -149,7 +149,7 @@ export function InlineAiRail({
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 )}
               >
                 <Icon name="sparkle" size={14} strokeWidth={2.2} />
@@ -168,7 +168,7 @@ export function InlineAiRail({
               <button
                 type="button"
                 onClick={() => onRetry(state.question)}
-                className="ml-auto text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-1"
+                className="ml-auto text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
               >
                 Спробувати ще раз
               </button>
@@ -184,7 +184,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={() => onRetry(state.question)}
-              className="text-sm text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-1"
+              className="text-sm text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
             >
               Запитати знову
             </button>
@@ -203,7 +203,7 @@ export function InlineAiRail({
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-panel border border-line text-text hover:bg-panelHi",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 )}
               >
                 <Icon name="refresh-cw" size={14} strokeWidth={2.2} />
@@ -216,7 +216,7 @@ export function InlineAiRail({
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 )}
               >
                 <Icon name="sparkle" size={14} strokeWidth={2.2} />

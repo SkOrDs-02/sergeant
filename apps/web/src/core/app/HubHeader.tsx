@@ -13,7 +13,7 @@ import type { User } from "@sergeant/shared";
 // Focus-ring: суцільний brand-500 (без /45 альфи), щоб гарантовано холдити
 // ≥3:1 контраст до bg в dark-mode (alpha на panelHi-підкладках просідала).
 const ICON_BUTTON_CLS =
-  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-2xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-2xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 const GREETINGS: Record<string, string> = {
   morning: "Доброго ранку",

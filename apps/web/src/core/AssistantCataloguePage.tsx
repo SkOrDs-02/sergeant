@@ -183,7 +183,7 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук — наприклад, «витрата», «звичка», «1RM»…"
-            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-sm text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-brand-500/30 shadow-card"
+            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-sm text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/30 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
@@ -197,7 +197,7 @@ export function AssistantCataloguePage({
               className={cn(
                 "inline-flex items-center gap-1.5 text-xs font-semibold text-muted",
                 "rounded-full px-2.5 py-1 hover:bg-panel hover:text-text transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               )}
             >
               <Icon
@@ -278,7 +278,7 @@ function ModuleGroup({
         className={cn(
           "w-full flex items-center gap-3 text-left px-4 py-3",
           "hover:bg-panelHi/60 transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/45",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus/45",
         )}
       >
         <span
@@ -357,7 +357,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
       className={cn(
         "w-full text-left px-4 py-3",
         "hover:bg-panelHi/60 transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/45",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus/45",
         "flex items-start gap-3",
       )}
     >

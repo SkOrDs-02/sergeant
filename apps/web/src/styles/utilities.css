@@ -39,7 +39,7 @@
      ═══════════════════════════════════════════════════════════════════════ */
   @apply outline-hidden transition-colors
            focus-visible:border-brand-500/60
-           focus-visible:ring-2 focus-visible:ring-brand-500/30;
+           focus-visible:ring-2 focus-visible:ring-focus/30;
 }
 
 @utility input-focus-finyk {
@@ -257,11 +257,11 @@
 
 @utility finyk-sheet {
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-brand-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
 
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-brand-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
 }
 
@@ -399,7 +399,12 @@
 }
 
 @utility custom-scrollbar {
-  /* Custom scrollbar for desktop */
+  /* Custom scrollbar for desktop — backed by the semantic
+     `--c-scrollbar-*` tokens (see apps/web/src/styles/theme.css). Used
+     when a specific surface needs a tighter scrollbar than the global
+     base.css default (e.g. inside a popover / picker list). */
+  scrollbar-color: rgb(var(--c-scrollbar-thumb)) transparent;
+  scrollbar-width: thin;
   &::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -408,12 +413,24 @@
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: rgb(var(--c-line));
+    background-color: rgb(var(--c-scrollbar-thumb));
     border-radius: 3px;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(var(--c-muted));
+    background-color: rgb(var(--c-scrollbar-thumb-hover));
   }
+}
+
+@utility caret-brand {
+  /* Theme-aware caret colour. `caret-{color}` in Tailwind resolves the
+     palette family at build time, which doesn't pick up CSS variables;
+     this utility short-circuits to `var(--c-caret)` so the caret swaps
+     between light/dark themes without dark-mode overrides. Pair with
+     inputs / textareas:
+
+       <input className="caret-brand bg-surface-muted …" />
+  */
+  caret-color: rgb(var(--c-caret));
 }
 
 @utility text-balance {

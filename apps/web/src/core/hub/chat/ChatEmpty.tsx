@@ -98,7 +98,7 @@ export function ChatEmpty({ onPickSuggestion }: ChatEmptyProps) {
             type="button"
             data-testid={`chat-empty-suggestion-${s.id}`}
             onClick={() => onPickSuggestion(s.prompt)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-panel border border-line text-sm text-text text-left hover:border-muted hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-panel border border-line text-sm text-text text-left hover:border-muted hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
             <Icon
               name={s.icon}

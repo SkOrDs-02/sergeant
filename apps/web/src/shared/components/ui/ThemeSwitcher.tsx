@@ -28,7 +28,7 @@ import {
 import { hapticTap } from "@shared/lib/adapters/haptic";
 
 const FOCUS_RING =
-  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 type ThemeSwitcherVariant = "segmented" | "dropdown";
 
