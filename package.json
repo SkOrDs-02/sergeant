@@ -69,6 +69,7 @@
     "strict:coverage": "node scripts/strict-coverage.mjs",
     "dead-code:files": "node scripts/knip-respects-scaffolded.mjs",
     "knip": "knip",
+    "dedupe:check": "pnpm dedupe --check",
     "prepare": "husky",
     "gen": "plop",
     "gen:adr": "plop adr",
