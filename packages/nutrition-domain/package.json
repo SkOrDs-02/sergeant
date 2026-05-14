@@ -18,7 +18,8 @@
     "./pantry-text-parser": "./src/pantryTextParser.ts",
     "./recipe-ids": "./src/recipeIds.ts",
     "./shopping-list": "./src/shoppingList.ts",
-    "./water-log": "./src/waterLog.ts"
+    "./water-log": "./src/waterLog.ts",
+    "./daily-plan-validation": "./src/dailyPlanValidation.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

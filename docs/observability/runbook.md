@@ -168,6 +168,23 @@ session-check чекає слот.
    (`level=info` з `module=db, msg="slow query"`).
 4. Перевір, чи не відбувся нещодавно deploy, що додав новий heavy read-path.
 
+## DbPoolWaitingDeep
+
+`db_pool_waiting > 5` 5m → queue-depth saturation. Ticket-rank,
+проміжний між `DbPoolWaitingSustained` (будь-який waiting, тікет
+через 5m) і `DbPoolSaturated` (будь-який waiting, page через 10m).
+Сигнал, що проблема не в одиничному slow query, а у sustained backlog.
+
+1. Перевір `db_pool_acquire_duration_seconds` гістограму
+   (`histogram_quantile(0.99, ...)` у db-use дашборді — панель «Pool
+   acquire latency»). p99 має скочити одночасно з waiting > 5.
+2. `db_pool_size_current{state="idle"}` зазвичай впав до 0 — pool
+   повністю checked-out. Підтверджує, що це capacity, а не leak.
+3. Capacity-planning рішення: bump `PG_POOL_SIZE` (default 20 → 30/40).
+   Sizing guide — [`pg-pool-sizing.md`](./pg-pool-sizing.md).
+4. Якщо `PG_POOL_SIZE` уже високий — пошук leaky transactions через
+   `db_slow_queries_total{op}` як у `DbPoolSaturated` runbook.
+
 ## AiQuotaStoreDown
 
 `ai_quota_fail_open_total` зростає → `assertAiQuota` не може

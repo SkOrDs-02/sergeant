@@ -1,6 +1,6 @@
 # PR-план — Documentation Hygiene Follow-Up (2026-05)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-06-13.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-06-13.
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../audits/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
@@ -39,6 +39,8 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## Прогнозовані quick-wins (PR #0)
 
+**Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (QW-1/QW-2 status updates, QW-3/QW-4 freshness bumps).
+
 Зведений XS PR (≤30 хв скоп), що закриває 4 точкових drift-и за один прохід — наслідок аудиту + дрібного research-у при складанні цього плану. Створюється **окремо від решти** карток, щоб не сповільнювати дискусію по `M/L`-картках.
 
 | ID   | Зміна                                                                                                                                                                                                                                         | Файл:рядок                                                      |
@@ -54,6 +56,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-01 — Archive 3-date canonicalization + remaining stale-link sweep ✦ Stale-link / drift
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (archive audit dates canonicalized; legacy next-review row removed).
 - **Group:** 1) stale-link / drift cleanup.
 - **Trigger:** P1-2 у roast — `docs/audits/archive/2026-04-28-ux-ui-audit.md` тримає 3 окремі дати (`Last validated`, `Initial audit date`, in-content `Дата аудиту` / `Дата оновлення`). Аналогічний дрейф можливий у решті 18 archive-файлів — потрібен єдиний прохід.
 - **Action:** канонікалізувати на 1 freshness-marker (`Last validated:`) + 1 нерухомий `Initial audit date:` (якщо потрібен історичний context). In-content «Дата ...» рядки помічаються `<!-- frozen-original: 2026-04-28 -->` і виключаються з `bump-last-validated.mjs`.
@@ -71,6 +74,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-02 — Add `docs:check-freshness-single-marker` lint gate ✦ Governance sync
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (скрипт + unit test + CI step + підключення до `pnpm lint`).
 - **Group:** 3) governance sync gates.
 - **Trigger:** PR-01 закриває multi-date drift руками — потрібен ME, який не дає reverted у наступних PR-ах. `docs:check-freshness-coverage` лише перевіряє наявність маркера, не його кількість.
 - **Action:** новий скрипт `scripts/docs/check-freshness-single-marker.mjs` — для кожного `.md` під `docs/**` рахує `^> \*\*Last validated:` lines; fail якщо `> 1` (поза code-блоками). Реєструється у `package.json` як `docs:check-freshness-single-marker` + додається до `lint:governance-sync` aggregate (або у CI workflow `.github/workflows/docs.yml` поряд з `docs:check-links`).
@@ -104,6 +108,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-04 — Expand discoverability ROUTES (writing-skills, mobile, hubchat, better-auth) ✦ Discoverability
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (11 маршрутів до specialist-skill, індекс initiatives і маршрут до policy-review).
 - **Group:** 2) discoverability gaps.
 - **Trigger:** [`scripts/check-discoverability.mjs ROUTES`](../../scripts/check-discoverability.mjs) сьогодні enforce-ить ≤2 hops до `start-here` + `review-and-merge` + on-call playbooks. Решта 8 Sergeant specialist-skill-ів (writing-skills, mobile-expo, hubchat, web-ui, server-api, data-and-migrations, bugfix-and-regression, monorepo-boundaries) + better-auth-best-practices, + new agent skills evolution (`docs/agents/skills-evolution-roadmap.md`) — НЕ покриті, тому drift у роутингу не ловиться. Аналогічно немає row-а для `docs/initiatives/README.md` (новий contributor не знаходить активних ініціатив).
 - **Action:** ~10 нових rows у `ROUTES` array (`role: new-agent` / `role: reviewer` / `role: on-call`):
@@ -141,6 +146,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-06 — AGENTS-family consistency lint (`AGENTS.md` ↔ `CLAUDE.md` ↔ `DEVIN.md`) ✦ AGENTS/DEVIN/CLAUDE
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`lint:agents-family-sync`, unit tests, підключення до `pnpm lint`).
 - **Group:** 4) AGENTS.md / DEVIN.md / CLAUDE.md consistency.
 - **Trigger:** Структурний diff показав drift:
   - `CLAUDE.md:7` vs `DEVIN.md:7` — у CLAUDE немає посилання на agent-skills-catalog у пункті 3 Startup flow.
@@ -163,6 +169,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-07 — Playbook-language → 3-way sync gate (file ↔ INDEX ↔ catalog) ✦ Governance sync
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs:check-playbook-3way-sync`, CI step, unit tests, catalog inventory).
 - **Group:** 3) governance sync gates.
 - **Trigger:** `lint:playbook-language` + `docs:check-playbook-index` + `docs:check-playbook-schema` працюють незалежно. Якщо новий playbook доданий до `docs/playbooks/`, але не до `playbook-catalog.md` (canonical routing table), скрипти його не ловлять як drift до перших manual checks.
 - **Action:** розширити `scripts/check-playbook-language.mjs` (або новий `scripts/check-playbook-3way-sync.mjs`):
@@ -180,6 +187,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-08 — Freshness-cadence drift detector (governance docs cadence) ✦ Governance sync
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs:check-freshness-cadence`, CI step, unit tests, `pnpm lint` wiring).
 - **Group:** 3) governance sync gates.
 - **Trigger:** Cadence governance-доків (90-day review per `policy-review.md`) дрейфує без CI-сигналу. Сьогодні `docs:check-freshness-coverage` лише перевіряє наявність маркера; `check-tech-debt-freshness.mjs` обмежений `docs/tech-debt/{frontend,backend,mobile}.md` (закрито в roast P0-4). Аналогічного guard-а для `docs/governance/*.md` нема — приклад: `pnpm-overrides-policy.md` і `doc-freshness.md` тримали `Last validated: 2026-05-11`, поки решта вже на `2026-05-13` (закрито через QW-3/QW-4 quick-win).
 - **Action:** додати у `scripts/docs/check-freshness.mjs --check-coverage` (або новий `--check-cadence` режим) — для кожного `.md` під `docs/governance/`, `docs/agents/`, `docs/playbooks/README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README.md`: fail якщо `Last validated:` старіший за `Next review:` мінус 7 днів grace (тобто overdue review).
@@ -195,6 +203,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-09 — Freshness-marker dashboard surfacing in `docs/governance/README.md` ✦ Discoverability
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs/governance/freshness-dashboard.html`, `docs:check-freshness-dashboard`, CI step, discoverability route).
 - **Group:** 2) discoverability gaps + 3) governance sync (cross-cutting).
 - **Trigger:** `scripts/docs/generate-freshness-dashboard.mjs` існує (`docs:freshness-dashboard` script), але output не лінкується з `docs/governance/README.md`, `docs/README.md` або `AGENTS.md`. Дашборд невидимий для нового contributor / agent → drift не помічається до наступного аудиту.
 - **Action:**

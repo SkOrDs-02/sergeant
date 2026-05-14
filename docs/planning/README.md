@@ -1,25 +1,50 @@
 # Планування
 
-> **Last validated:** 2026-05-13 by Devin (синхронізовано зі станом Stage 7 storage-roadmap, OpenClaw Phase 3 prep + архівація `orm-drizzle-vs-kysely.md` після Kysely → Drizzle міграції). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by Codex (синхронізовано з фактичним набором `docs/planning/*.md`; додано нові PR-плани з прожарок 2026-05-13 та посилання на `docs/open-work.md` як єдиний дашборд активної роботи). **Next review:** 2026-08-12.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
 
+> **Швидко знайти активне:** [`../open-work.md`](../open-work.md) — автогенерований дашборд усіх відкритих tracker-документів. Цей README пояснює саме planning-директорію; open-work відповідає на питання "що зараз НЕ доробленого в репо загалом?".
+
 ## Активні документи
 
-| Документ                                                                           | Скоуп                                                                                                                                                         | Статус                                                         |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)                                       | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів)                                                | Active                                                         |
-| [`pr-plan-mobile-reliability-2026-05.md`](./pr-plan-mobile-reliability-2026-05.md) | 10 PR-карток closeout відкритих/partial items із прожарки 2026-05-13 (mobile reliability/UX, без SQLite Stage 8/9)                                            | Active                                                         |
-| [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)                                   | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance)                                                                     | Active (живий журнал)                                          |
-| [`storage-roadmap.md`](./storage-roadmap.md)                                       | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                                                                  | Active (Stage 7)                                               |
-| [`ai-coding-improvements.md`](./ai-coding-improvements.md)                         | План покращення AI-coding workflow (агентська інфраструктура, не продукт)                                                                                     | Active                                                         |
-| [`tools-research-2026-05.md`](./tools-research-2026-05.md)                         | Дослідження готових рішень / лібок / тулзів зі зрізу 2026-05                                                                                                  | Active research                                                |
-| [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md)       | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Active research                                                |
-| [`tailwind-v4-migration.md`](./tailwind-v4-migration.md)                           | Tailwind v3 → v4 migration plan                                                                                                                               | Phases 1/3/4 ✅ done; Phase 2 (mobile / NativeWind 5) blocked  |
-| [`mobile-e2e-testing.md`](./mobile-e2e-testing.md)                                 | Mobile E2E framework choice — Detox vs Maestro                                                                                                                | Рекомендація підготовлена (Maestro), впровадження не розпочато |
-| [`flyio-vs-railway.md`](./flyio-vs-railway.md)                                     | Decision-rationale: Railway зараз залишається, Fly.io — checklist «коли мігрувати»                                                                            | Reference (не потребує дій)                                    |
-| [`talk-to-your-data.md`](./talk-to-your-data.md)                                   | План для conversational data Q&A на даних користувача                                                                                                         | Draft                                                          |
+### Зведені роадмапи
+
+| Документ                                                       | Скоуп                                                                                                          | Статус                |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------- |
+| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)                   | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) | Active                |
+| [`sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) | Єдиний спринтовий трекер платформи: продуктові фічі + технічний борг Q2–Q3 2026                                | Active                |
+| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)       | План спринтів 9–10: продовження performance / reliability / product-surface робіт                              | Active                |
+| [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)               | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance)                      | Active (живий журнал) |
+| [`storage-roadmap.md`](./storage-roadmap.md)                   | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                   | Active (Stage 7)      |
+| [`openclaw-migration-plan.md`](./openclaw-migration-plan.md)   | Stage-by-stage OpenClaw migration / gateway cutover / legacy deletion tracker                                  | Active                |
+| [`openclaw-user-guide.md`](./openclaw-user-guide.md)           | Операційний user guide для OpenClaw / Telegram control-plane                                                   | Active                |
+
+### PR-плани з прожарок 2026-05-13
+
+| Документ                                                                               | Скоуп                                                                                                 | Статус |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
+| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency                           | Active |
+| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                                              | Active |
+| [`pr-plan-docs-hygiene-2026-05.md`](./pr-plan-docs-hygiene-2026-05.md)                 | Documentation hygiene follow-up: stale links, discoverability, governance sync gates                  | Active |
+| [`pr-plan-ftux-2026-05.md`](./pr-plan-ftux-2026-05.md)                                 | FTUX / onboarding PR-план за відкритими пунктами прожарки 2026-05-13                                  | Active |
+| [`pr-plan-mobile-reliability-2026-05.md`](./pr-plan-mobile-reliability-2026-05.md)     | 10 PR-карток closeout відкритих/partial items із mobile reliability/UX прожарки, без SQLite Stage 8/9 | Active |
+| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                                              | Active |
+| [`pr-plan-security-obs-2026-05.md`](./pr-plan-security-obs-2026-05.md)                 | Security & observability PR-план: CSP, secrets, Sentry/OTel/web-vitals, audit logs                    | Active |
+| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                                                  | Active |
+
+### Дослідження, міграції, рішення
+
+| Документ                                                                     | Скоуп                                                                                                                                                         | Статус                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [`ai-coding-improvements.md`](./ai-coding-improvements.md)                   | План покращення AI-coding workflow (агентська інфраструктура, не продукт)                                                                                     | Active                                                         |
+| [`tools-research-2026-05.md`](./tools-research-2026-05.md)                   | Дослідження готових рішень / лібок / тулзів зі зрізу 2026-05                                                                                                  | Active research                                                |
+| [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md) | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Active research                                                |
+| [`tailwind-v4-migration.md`](./tailwind-v4-migration.md)                     | Tailwind v3 → v4 migration plan                                                                                                                               | Phases 1/3/4 ✅ done; Phase 2 (mobile / NativeWind 5) blocked  |
+| [`mobile-e2e-testing.md`](./mobile-e2e-testing.md)                           | Mobile E2E framework choice — Detox vs Maestro                                                                                                                | Рекомендація підготовлена (Maestro), впровадження не розпочато |
+| [`flyio-vs-railway.md`](./flyio-vs-railway.md)                               | Decision-rationale: Railway зараз залишається, Fly.io — checklist «коли мігрувати»                                                                            | Reference (не потребує дій)                                    |
+| [`talk-to-your-data.md`](./talk-to-your-data.md)                             | План для conversational data Q&A на даних користувача                                                                                                         | Draft                                                          |
 
 ## Архів
 
