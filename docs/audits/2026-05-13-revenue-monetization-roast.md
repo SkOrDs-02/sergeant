@@ -2,6 +2,8 @@
 
 > **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
 > **Status:** Active
+>
+> _Update 2026-05-13: P1-9 closed — `apps/web/src/core/billing/TrialBanner.tsx` scaffolded + mounted in `HubMainContent` banner stack._
 
 ## Cross-refs
 
@@ -50,7 +52,7 @@
 | P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | Outstanding   |
 | P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding   |
 | P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | Outstanding   |
-| P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | Outstanding   |
+| P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | **Done (PR)** |
 
 ## P2 — Nice-to-have (post-launch polish)
 
@@ -66,6 +68,18 @@
 ## Прогрес виконання (цей PR)
 
 Закрито **6 items** з P0/P1 у цьому PR:
+
+## Прогрес виконання — follow-up PR (2026-05-13, P1-9)
+
+### P1-9 · `TrialBanner` scaffold — trial-expiry banner
+
+- **Файл:** `apps/web/src/core/billing/TrialBanner.tsx` (new)
+- **Тест:** `apps/web/src/core/billing/TrialBanner.test.tsx` (new, 8 tests)
+- **Mount:** `apps/web/src/core/app/HubMainContent.tsx` — у chrome banner stack, перед `showUpdate`, гейтиться `!inFtuxSession` (узгоджено з install / iOS банерами).
+- **Контракт:** читає `usePlan()` (P0-1); рендериться лише коли `subscription.status === 'trialing'` та `daysLeft ≤ 7`. ≤ 1 день → sticky-варіант з акцентом (`shadow-sm` + сильніший `border-warning/40`). CTA `Перейти на Pro` → `/pricing?source=trial_banner`.
+- **A11y:** `role="status"` + `aria-live="polite"`; CTA через `Button size="sm"` (touch-target 44×44 на coarse pointers); кольори через `text-warning-strong` / `bg-warning-soft` (Hard Rule #11 без arbitrary hex).
+- **Barrel:** `apps/web/src/core/billing/index.ts` — реекспорт `TrialBanner` + `TrialBannerProps`.
+- **i18n:** copy винесена у локальний `COPY` const (Phase 6.2 migration-ready — без inline cyrillic JSX literals, `sergeant-design/no-cyrillic-jsx-literal` чистий).
 
 ### P0-1 · `usePlan` hook — web billing skeleton
 
