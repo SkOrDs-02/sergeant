@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
@@ -158,7 +162,7 @@ function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
                     <div key={i} className="flex items-start gap-1.5">
                       <span
                         className={cn(
-                          "text-2xs font-bold mt-0.5 shrink-0",
+                          "text-style-caption font-bold mt-0.5 shrink-0",
                           cfg.colorClass,
                         )}
                       >
@@ -350,13 +354,13 @@ function DigestContent({
                       Recommendation block eyebrow uses `text-primary` (a bespoke
                       accent not exposed through SectionHeading tone tokens) so
                       it stays inline until a `primary` tone is added to DS. */}
-                      <p className="text-2xs font-bold text-primary uppercase tracking-wider">
+                      <p className="text-style-caption font-bold text-primary uppercase tracking-wider">
                         Загальні рекомендації
                       </p>
                       {d.overallRecommendations.map(
                         (rec: string, i: number) => (
                           <div key={i} className="flex items-start gap-1.5">
-                            <span className="text-2xs font-bold text-primary mt-0.5 shrink-0">
+                            <span className="text-style-caption font-bold text-primary mt-0.5 shrink-0">
                               ★
                             </span>
                             <span className="text-xs text-text leading-snug">
@@ -473,7 +477,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {digest?.generatedAt && (
-            <span className="text-2xs text-subtle">
+            <span className="text-style-caption text-subtle">
               {new Date(digest.generatedAt).toLocaleDateString("uk-UA", {
                 day: "numeric",
                 month: "short",
@@ -545,7 +549,9 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
               >
                 {h.weekRange}
                 {h.weekKey === currentWeekKey && (
-                  <span className="ml-1 text-2xs opacity-70">поточний</span>
+                  <span className="ml-1 text-style-caption opacity-70">
+                    поточний
+                  </span>
                 )}
               </button>
             ))}

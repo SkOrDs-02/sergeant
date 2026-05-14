@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -66,7 +70,7 @@ export function HubChatBody({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-panelHi hover:bg-line/40 text-muted hover:text-text text-2xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-panelHi hover:bg-line/40 text-muted hover:text-text text-style-caption font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               aria-label="Скасувати поточний запит"
             >
               <Icon name="close" size={12} />

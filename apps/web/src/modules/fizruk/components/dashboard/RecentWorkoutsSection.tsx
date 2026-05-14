@@ -1,6 +1,8 @@
 /**
  * Last validated: 2026-05-14
  * Status: Active
+ */
+/**
  *
  * `RecentWorkoutsSection` — bottom-of-dashboard list of the last few
  * completed workouts. Uses the pure `listRecentCompletedWorkouts`

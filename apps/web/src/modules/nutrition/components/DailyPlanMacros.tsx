@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -26,7 +30,7 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
       <div className="flex rounded-xl overflow-hidden h-5">
         {pctP > 0 && (
           <div
-            className="flex items-center justify-center text-2xs font-bold text-white"
+            className="flex items-center justify-center text-style-caption font-bold text-white"
             style={{ width: `${pctP}%`, backgroundColor: chartHex.protein }}
           >
             {pctP}%
@@ -34,7 +38,7 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
         )}
         {pctF > 0 && (
           <div
-            className="flex items-center justify-center text-2xs font-bold text-white"
+            className="flex items-center justify-center text-style-caption font-bold text-white"
             style={{ width: `${pctF}%`, backgroundColor: chartHex.fat }}
           >
             {pctF}%
@@ -42,7 +46,7 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
         )}
         {pctC > 0 && (
           <div
-            className="flex items-center justify-center text-2xs font-bold text-white"
+            className="flex items-center justify-center text-style-caption font-bold text-white"
             style={{ width: `${pctC}%`, backgroundColor: chartHex.carbs }}
           >
             {pctC}%
@@ -50,21 +54,21 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
         )}
       </div>
       <div className="flex gap-3 flex-wrap">
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+        <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.protein }}
           />{" "}
           Б {pctP}% · {prot}г · {Math.round(protKcal)} ккал
         </span>
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+        <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.fat }}
           />{" "}
           Ж {pctF}% · {fat}г · {Math.round(fatKcal)} ккал
         </span>
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+        <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.carbs }}

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -60,7 +64,7 @@ export function FromPantryRow({
             >
               {item.name}
               {item.qty != null && (
-                <span className="ml-1 text-2xs opacity-70">
+                <span className="ml-1 text-style-caption opacity-70">
                   {item.qty}
                   {item.unit || "г"}
                 </span>

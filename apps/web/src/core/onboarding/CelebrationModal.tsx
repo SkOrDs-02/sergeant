@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * CelebrationModal — First entry success celebration
  *
  * Full-screen modal celebrating the user's first real entry.
@@ -161,6 +165,9 @@ export function CelebrationModal({
   return (
     <div
       ref={backdropRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Вітаємо!"
       className={cn(
         "fixed inset-0 z-9999 flex items-center justify-center",
         "bg-bg/85 backdrop-blur-md",
@@ -168,17 +175,20 @@ export function CelebrationModal({
           ? "motion-safe:animate-fade-out"
           : "motion-safe:animate-fade-in",
       )}
-      onClick={handleClose}
-      onKeyDown={(e) => {
-        if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleClose();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label="Закрити святкування"
     >
+      {/* Transparent click-to-close backdrop — separate from dialog role */}
+      <button
+        type="button"
+        className="absolute inset-0 w-full h-full cursor-default"
+        aria-label="Закрити святкування"
+        onClick={handleClose}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClose();
+          }
+        }}
+      />
       {/* Confetti particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {particles.map((p) => (
@@ -238,7 +248,7 @@ export function CelebrationModal({
         {/* Tips for next steps */}
         <div className="w-full p-3 rounded-xl bg-panelHi/50 border border-line/50 text-left space-y-2">
           {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional overlay typography */}
-          <p className="text-2xs text-subtle uppercase tracking-wide font-medium">
+          <p className="text-style-caption text-subtle uppercase tracking-wide font-medium">
             Що далі
           </p>
           <div className="flex items-start gap-2.5">

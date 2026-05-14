@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
@@ -476,7 +480,9 @@ export function RecipesCard({
                     </div>
                     {r.macros?.kcal != null && (
                       <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-xs text-subtle">
-                        <div className="text-2xs text-subtle">≈ ккал</div>
+                        <div className="text-style-caption text-subtle">
+                          ≈ ккал
+                        </div>
                         <div className="text-style-label text-text">
                           {fmtMacro(r.macros.kcal)}
                         </div>

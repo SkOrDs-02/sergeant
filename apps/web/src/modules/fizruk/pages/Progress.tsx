@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -572,7 +576,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                             </span>
                           )}
                           {p.muscleGroupLabel && (
-                            <span className="ml-auto text-2xs px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk/70 font-medium shrink-0">
+                            <span className="ml-auto text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk/70 font-medium shrink-0">
                               {p.muscleGroupLabel}
                             </span>
                           )}

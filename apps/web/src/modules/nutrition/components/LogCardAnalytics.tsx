@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { useMemo, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -68,11 +72,11 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           { key: "carbs_g", label: "Сер. В/день", v: statsAvg.carbs_g },
         ].map((x) => (
           <div key={x.key} className="bg-panelHi rounded-2xl px-2 py-3">
-            <div className="text-2xs text-subtle">{x.label}</div>
+            <div className="text-style-caption text-subtle">{x.label}</div>
             <div className="text-base font-extrabold text-text tabular-nums">
               {Math.round(Number(x.v) || 0)}
             </div>
-            <div className="text-2xs text-subtle">
+            <div className="text-style-caption text-subtle">
               на {statsSummary.daysWithAnyMacros} активн. днів
             </div>
           </div>

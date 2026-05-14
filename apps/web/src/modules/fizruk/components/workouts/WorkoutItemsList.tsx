@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useMemo } from "react";
 import type {
   Workout,
@@ -155,12 +159,12 @@ export function WorkoutItemsList({
         <div className="flex items-center justify-between gap-2 px-1">
           <SupersetBadge type={group.type ?? "superset"} />
           <div className="flex items-center gap-1.5">
-            <span className="text-2xs text-subtle">
+            <span className="text-style-caption text-subtle">
               {groupItems.length} вправи разом
             </span>
             <button
               type="button"
-              className="text-2xs text-danger/70 hover:text-danger px-1"
+              className="text-style-caption text-danger/70 hover:text-danger px-1"
               onClick={() => handleRemoveGroup(group.id)}
               title="Розгрупувати"
             >

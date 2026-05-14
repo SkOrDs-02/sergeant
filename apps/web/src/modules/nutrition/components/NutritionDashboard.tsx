@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { Card } from "@shared/components/ui/Card";
@@ -141,7 +145,7 @@ function MiniBar({
             </div>
             <span
               className={cn(
-                "text-2xs leading-none",
+                "text-style-caption leading-none",
                 isToday ? "text-text font-bold" : "text-muted",
               )}
             >
@@ -234,11 +238,11 @@ export function NutritionDashboard({
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xs text-subtle font-semibold leading-none">
+                  <div className="text-style-caption text-subtle font-semibold leading-none">
                     {m.label}
                   </div>
                   {target > 0 && (
-                    <div className="text-2xs text-muted leading-none">
+                    <div className="text-style-caption text-muted leading-none">
                       / {target}
                       {m.unit}
                     </div>

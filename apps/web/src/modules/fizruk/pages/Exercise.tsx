@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { cn } from "@shared/lib/ui/cn";
@@ -210,7 +214,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 : "Немає силових сетів"}
             </div>
             {best.bestSet?._at && (
-              <div className="text-2xs text-subtle/70 mt-1">
+              <div className="text-style-caption text-subtle/70 mt-1">
                 {new Date(best.bestSet._at).toLocaleDateString("uk-UA", {
                   day: "numeric",
                   month: "short",
@@ -232,12 +236,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 : "Заповни сети, щоб зʼявилась рекомендація"}
             </div>
             {suggestedNext?.altWeightKg != null && (
-              <div className="text-2xs text-fizruk mt-1">
+              <div className="text-style-caption text-fizruk mt-1">
                 {`або ${fmt(suggestedNext.altWeightKg, 1)} × ${suggestedNext.altReps} повт.`}
               </div>
             )}
             {suggestedNext && best.lastTop && (
-              <div className="text-2xs text-subtle/70 mt-1">
+              <div className="text-style-caption text-subtle/70 mt-1">
                 {`зараз: ${best.lastTop.weightKg ?? 0} × ${best.lastTop.reps ?? 0}`}
               </div>
             )}
@@ -283,7 +287,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               unit="хв/км"
               color="rgb(234 88 12)"
             />
-            <div className="text-2xs text-subtle mt-1">
+            <div className="text-style-caption text-subtle mt-1">
               Менше — краще (швидший темп)
             </div>
           </Card>
@@ -333,7 +337,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                     </div>
                     <div
                       className={cn(
-                        "text-2xs px-2 py-1 rounded-full border",
+                        "text-style-caption px-2 py-1 rounded-full border",
                         item.type === "strength"
                           ? "border-line text-subtle"
                           : "border-line text-subtle",

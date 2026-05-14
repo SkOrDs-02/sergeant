@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -109,15 +113,15 @@ function WorkoutRow({
             {(w.items || []).length} вправ
           </span>
           {isEnded ? (
-            <span className="text-2xs px-2 py-0.5 rounded-full bg-panelHi text-subtle border border-line">
+            <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi text-subtle border border-line">
               Завершене
             </span>
           ) : isActive ? (
-            <span className="text-2xs px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/20">
               Активне
             </span>
           ) : (
-            <span className="text-2xs px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20">
               Чернетка
             </span>
           )}

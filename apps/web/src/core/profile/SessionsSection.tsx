@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -127,7 +131,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm text-text truncate">{ua.label}</p>
                       {isCurrent && (
-                        <span className="inline-flex items-center text-2xs font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 border border-brand-500/30">
+                        <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 border border-brand-500/30">
                           {COPY.thisDevice}
                         </span>
                       )}
@@ -138,7 +142,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                       {`${COPY.lastSeenPrefix} ${lastSeen}`}
                     </p>
                     {isExpired && (
-                      <span className="text-2xs text-danger font-medium">
+                      <span className="text-style-caption text-danger font-medium">
                         {COPY.expired}
                       </span>
                     )}

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useId } from "react";
 import type { Workout } from "@sergeant/fizruk-domain";
 import {
@@ -32,7 +36,10 @@ export function WorkoutTimeEditor({
         Час тренування
       </summary>
       <div className="mt-2 space-y-2">
-        <label className="block text-2xs text-subtle" htmlFor={startId}>
+        <label
+          className="block text-style-caption text-subtle"
+          htmlFor={startId}
+        >
           Початок
         </label>
         <input
@@ -47,7 +54,10 @@ export function WorkoutTimeEditor({
         />
         {activeWorkout.endedAt ? (
           <>
-            <label className="block text-2xs text-subtle" htmlFor={endId}>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={endId}
+            >
               Завершення (можна виправити після занесення)
             </label>
             <input

@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * Module bento grid for the Hub Dashboard (T1 decomposition).
  *
  * Drag-and-drop reordering, edit mode, inactive-module toggle, and
@@ -41,7 +45,7 @@ function FtuxModulesHint() {
       role="note"
       className={cn(
         "flex items-start gap-2 rounded-2xl border border-line bg-panel/70 px-3 py-2",
-        "text-2xs leading-snug text-muted",
+        "text-style-caption leading-snug text-muted",
       )}
     >
       <Icon
@@ -129,7 +133,7 @@ export function HubModulesGrid({
           }
           title={editMode ? "Готово" : "Налаштувати"}
           className={cn(
-            "inline-flex items-center justify-center gap-1.5 text-2xs font-medium rounded-xl transition-colors",
+            "inline-flex items-center justify-center gap-1.5 text-style-caption font-medium rounded-xl transition-colors",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
             editMode
               ? "bg-primary text-bg px-2.5 py-1"
@@ -190,7 +194,7 @@ export function HubModulesGrid({
         <button
           type="button"
           onClick={toggleHideInactive}
-          className="mx-auto mt-2 block text-2xs text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
+          className="mx-auto mt-2 block text-style-caption text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
         >
           {hideInactive
             ? "Показати неактивні модулі"

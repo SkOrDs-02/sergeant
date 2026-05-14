@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 
@@ -17,7 +21,7 @@ export function MacroChip({ label, value, unit = "г", color }: MacroChipProps) 
       <span className="text-base font-extrabold leading-tight">
         {value != null ? Math.round(value) : "—"}
       </span>
-      <span className="text-2xs opacity-60">{unit}</span>
+      <span className="text-style-caption opacity-60">{unit}</span>
     </div>
   );
 }

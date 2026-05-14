@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -86,11 +90,11 @@ export function Programs({
                           {prog.name}
                         </h2>
                         {isActive && (
-                          <span className="text-2xs font-bold px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/25">
+                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/25">
                             Активна
                           </span>
                         )}
-                        <span className="text-2xs text-subtle border border-line rounded-full px-2 py-0.5">
+                        <span className="text-style-caption text-subtle border border-line rounded-full px-2 py-0.5">
                           {prog.days} дн/тиждень
                         </span>
                       </div>
@@ -110,7 +114,7 @@ export function Programs({
                         <div
                           key={i}
                           className={cn(
-                            "flex-1 text-center rounded py-1 text-2xs font-bold transition-colors",
+                            "flex-1 text-center rounded py-1 text-style-caption font-bold transition-colors",
                             hasSession
                               ? isToday && isActive
                                 ? "bg-success-strong text-white"
@@ -212,14 +216,14 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
             className="rounded-xl bg-panel border border-line/40 p-3"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xs font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success border border-success/20">
+              <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success border border-success/20">
                 День {schedEntry.day}
               </span>
               <span className="text-style-label text-text">
                 {schedEntry.name}
               </span>
             </div>
-            <div className="flex items-center gap-3 mb-2 text-2xs text-subtle">
+            <div className="flex items-center gap-3 mb-2 text-style-caption text-subtle">
               <span>
                 Відпочинок:{" "}
                 <span className="font-semibold text-text">

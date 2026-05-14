@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
@@ -179,7 +183,7 @@ export function DailyPlanGoalSelectors({
           )}
         >
           {TDEE_COPY.triggerLabel}
-          <span aria-hidden className="text-2xs">
+          <span aria-hidden className="text-style-caption">
             ▾
           </span>
         </button>
@@ -210,7 +214,7 @@ export function DailyPlanGoalSelectors({
                     <div className="text-style-label">
                       {TDEE_GOAL_LABELS[goal]}
                     </div>
-                    <div className="text-2xs text-subtle mt-0.5">
+                    <div className="text-style-caption text-subtle mt-0.5">
                       {targets.kcal} ккал · Б{targets.protein_g} · Ж
                       {targets.fat_g} · В{targets.carbs_g}
                     </div>
@@ -249,7 +253,7 @@ export function DailyPlanGoalSelectors({
           {activePreset
             ? `Пресет: ${activePreset.label}`
             : "Підказати з пресету"}
-          <span aria-hidden className="text-2xs">
+          <span aria-hidden className="text-style-caption">
             ▾
           </span>
         </button>
@@ -277,7 +281,7 @@ export function DailyPlanGoalSelectors({
                 )}
               >
                 <div className="text-style-label">{preset.label}</div>
-                <div className="text-2xs text-subtle mt-0.5">
+                <div className="text-style-caption text-subtle mt-0.5">
                   {preset.kcal} ккал · Б{preset.protein_g} · Ж{preset.fat_g} · В
                   {preset.carbs_g}
                 </div>
@@ -305,7 +309,7 @@ export function DailyPlanGoalSelectors({
               )}
             >
               <div className="text-style-label">Скинути вибір</div>
-              <div className="text-2xs text-subtle mt-0.5">
+              <div className="text-style-caption text-subtle mt-0.5">
                 Очистити всі цілі
               </div>
             </button>

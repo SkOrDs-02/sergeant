@@ -91,7 +91,7 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
           </div>
         ))}
       </div>
-      <p className="text-2xs text-muted mt-2 text-center">
+      <p className="text-style-caption text-muted mt-2 text-center">
         Ваги округлені до найближчих 2.5 кг
       </p>
     </Card>

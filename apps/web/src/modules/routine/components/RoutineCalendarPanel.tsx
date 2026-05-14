@@ -274,7 +274,7 @@ export function RoutineCalendarPanel({
           onShiftWeek={shiftWeekStrip}
         />
         {timeMode === "day" && (
-          <p className="mt-2 text-center text-2xs text-subtle">
+          <p className="mt-2 text-center text-style-caption text-subtle">
             Обрано один день — натисни «Сьогодні» або «Тиждень», щоб повернути
             зріз
           </p>

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 interface FoodHitRowProduct {
   name?: string | null;
   brand?: string | null;
@@ -27,7 +31,9 @@ export function FoodHitRow({ p, badge, onPick }: FoodHitRowProps) {
           <div className="text-style-label text-text truncate">
             {[p.name, p.brand].filter(Boolean).join(" · ")}
             {badge && (
-              <span className="ml-1 text-2xs text-subtle">{badge}</span>
+              <span className="ml-1 text-style-caption text-subtle">
+                {badge}
+              </span>
             )}
           </div>
           <div className="text-xs font-semibold text-nutrition-strong dark:text-nutrition shrink-0">

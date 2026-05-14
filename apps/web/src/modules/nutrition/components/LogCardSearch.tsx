@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@shared/components/ui/Card";
@@ -76,14 +80,16 @@ export function LogCardSearch({
                     {meal.name}
                   </div>
                   <div className="flex gap-1.5 mt-0.5 flex-wrap">
-                    <span className="text-2xs text-subtle">{date}</span>
+                    <span className="text-style-caption text-subtle">
+                      {date}
+                    </span>
                     {mac.kcal != null && (
-                      <span className="text-2xs text-nutrition-strong dark:text-nutrition font-bold">
+                      <span className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold">
                         {Math.round(mac.kcal)} ккал
                       </span>
                     )}
                     {mac.protein_g != null && (
-                      <span className="text-2xs text-subtle">
+                      <span className="text-style-caption text-subtle">
                         Б{Math.round(mac.protein_g)}
                       </span>
                     )}

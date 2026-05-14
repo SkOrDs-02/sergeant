@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -125,7 +129,7 @@ export function RecoveryFocusCard({
 
       {open && (
         <>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-subtle mb-3 mt-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-style-caption text-subtle mb-3 mt-3">
             <span className="inline-flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-success" /> готово
             </span>

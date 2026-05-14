@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import {
@@ -118,15 +122,15 @@ export function HubChatHeader({
             </span>
           </div>
           {!hasData && (
-            <div className="px-2.5 py-2 bg-warning/10 border border-warning/30 rounded-xl text-2xs text-warning leading-snug">
+            <div className="px-2.5 py-2 bg-warning/10 border border-warning/30 rounded-xl text-style-caption text-warning leading-snug">
               Mono не підключено — фінансовий контекст обмежений.
             </div>
           )}
-          <p className="text-2xs text-subtle leading-snug">
+          <p className="text-style-caption text-subtle leading-snug">
             В контексті: {sessionInfo.historyCount} з останніх 10 повідомлень ·
             ~{Math.round(sessionInfo.chars / 100) / 10}k символів.
           </p>
-          <p className="text-2xs text-muted leading-snug">
+          <p className="text-style-caption text-muted leading-snug">
             Контекст (фінанси, тренування, звички, харчування) відправляється до
             AI.
           </p>

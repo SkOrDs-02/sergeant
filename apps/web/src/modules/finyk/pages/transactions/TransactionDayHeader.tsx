@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { fmtAmt } from "../../utils";
 import { CURRENCY } from "../../constants";
@@ -58,7 +62,7 @@ export function TransactionDayHeader({
           <polyline points="6 9 12 15 18 9" />
         </svg>
         <span className="truncate">{label}</span>
-        <span className="shrink-0 text-micro font-semibold text-muted normal-case tabular-nums">
+        <span className="shrink-0 text-style-caption font-semibold text-muted normal-case tabular-nums">
           · {summary.count}
         </span>
       </span>

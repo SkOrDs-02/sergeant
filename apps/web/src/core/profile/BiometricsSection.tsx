@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * Biometrics — hub-level form for the inputs Nutrition needs to run
  * the Mifflin-St Jeor BMR/TDEE estimate (height, birth-date, sex,
  * activity level, current weight). Lives on Profile so a user without
@@ -231,7 +235,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="activity" size={18} className="text-muted" />
         <span className="text-style-label text-text">{COPY.sectionTitle}</span>
-        <span className="ml-auto text-2xs text-muted">
+        <span className="ml-auto text-style-caption text-muted">
           {tdeeReady ? COPY.statusReady : COPY.statusIncomplete}
         </span>
       </div>

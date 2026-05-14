@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
@@ -93,7 +97,7 @@ export function ShoppingListCard({
               )}
             >
               <div>Рецепти</div>
-              <div className="text-2xs opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-70 mt-0.5">
                 {hasRecipes ? `${recipes.length} рецептів` : "немає рецептів"}
               </div>
             </button>
@@ -109,7 +113,7 @@ export function ShoppingListCard({
               )}
             >
               <div>Тижневий план</div>
-              <div className="text-2xs opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-70 mt-0.5">
                 {hasWeekPlan
                   ? `${weekPlan?.days?.length ?? 0} днів`
                   : "немає плану"}

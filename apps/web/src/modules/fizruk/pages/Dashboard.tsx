@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { FizrukPage } from "../shell/fizrukRoute";
 // FizrukPage is referenced in the JSDoc above and in the onNavigate type
 // signature — keep the import even when TS doesn't track JSDoc refs.
@@ -362,7 +366,7 @@ export function Dashboard({
                   <SectionHeading as="h2" size="sm">
                     Швидкий старт
                   </SectionHeading>
-                  <span className="text-2xs text-muted">
+                  <span className="text-style-caption text-muted">
                     {recentlyUsed.length > 0
                       ? "Нещодавно використані"
                       : "Останні шаблони"}

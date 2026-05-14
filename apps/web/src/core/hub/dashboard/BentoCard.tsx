@@ -167,7 +167,7 @@ export const BentoCard = memo(function BentoCard({
             className={cn(
               "mt-1 inline-flex items-start gap-1 self-start",
               "rounded-full border border-line bg-panel/80 px-2 py-0.5",
-              "text-2xs font-medium text-muted",
+              "text-style-caption font-medium text-muted",
               // Soft entry animation so the lifted card visibly *animates*
               // its reason chip in, instead of the previous instant-pop
               // that made the adaptive reorder feel like layout jitter.
@@ -189,7 +189,7 @@ export const BentoCard = memo(function BentoCard({
         )}
 
         {inactive ? (
-          <span className="text-2xs text-muted mt-1 leading-snug">
+          <span className="text-style-caption text-muted mt-1 leading-snug">
             Неактивний — увімкнути в налаштуваннях
           </span>
         ) : hasData ? (
@@ -200,7 +200,7 @@ export const BentoCard = memo(function BentoCard({
               </span>
             )}
             {preview.sub && (
-              <span className="text-2xs text-muted mt-0.5 truncate">
+              <span className="text-style-caption text-muted mt-0.5 truncate">
                 {preview.sub}
               </span>
             )}
@@ -235,7 +235,9 @@ export const BentoCard = memo(function BentoCard({
                 {config.emptyLabel}
               </span>
             </div>
-            <span className="text-2xs text-subtle">Натисни, щоб почати</span>
+            <span className="text-style-caption text-subtle">
+              Натисни, щоб почати
+            </span>
           </div>
         ) : (
           <span className="text-xs text-muted mt-1">{config.emptyLabel}</span>

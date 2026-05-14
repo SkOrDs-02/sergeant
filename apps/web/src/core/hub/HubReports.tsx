@@ -168,7 +168,7 @@ function BarChart({
             <span
               key={d}
               className={cn(
-                "flex-1 text-center text-micro leading-tight",
+                "flex-1 text-center text-style-caption leading-tight",
                 selected === i ? "text-text font-medium" : "text-muted",
               )}
             >

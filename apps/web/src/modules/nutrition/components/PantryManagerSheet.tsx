@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -155,7 +159,7 @@ export function PantryManagerSheet({
                   {p.name || "Склад"}
                 </div>
                 {active ? (
-                  <span className="text-2xs px-2 py-0.5 rounded-full bg-nutrition/15 text-nutrition-strong dark:text-nutrition border border-nutrition/25">
+                  <span className="text-style-caption px-2 py-0.5 rounded-full bg-nutrition/15 text-nutrition-strong dark:text-nutrition border border-nutrition/25">
                     Активний
                   </span>
                 ) : null}

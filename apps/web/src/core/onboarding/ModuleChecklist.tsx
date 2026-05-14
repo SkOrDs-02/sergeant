@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * ModuleChecklist — Compact onboarding checklist for each module.
  *
  * Displays 3-4 actionable steps that guide the user from first entry
@@ -247,7 +251,7 @@ export function ModuleChecklist({
             </svg>
             <span
               className={cn(
-                "absolute inset-0 flex items-center justify-center text-micro font-bold tabular-nums",
+                "absolute inset-0 flex items-center justify-center text-style-caption font-bold tabular-nums",
                 styles.accent,
               )}
             >

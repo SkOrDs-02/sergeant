@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import {
   useEffect,
   useMemo,
@@ -98,7 +102,7 @@ export function TodaySummaryStrip({
             >
               {pill.main || "\u2014"}
             </span>
-            <span className="text-2xs text-muted font-medium mt-0.5">
+            <span className="text-style-caption text-muted font-medium mt-0.5">
               {pill.label}
             </span>
           </button>
@@ -299,7 +303,9 @@ export function WeeklyDigestFooter({
             />
           )}
         </span>
-        <span className="text-2xs text-muted truncate">{weekRange}</span>
+        <span className="text-style-caption text-muted truncate">
+          {weekRange}
+        </span>
       </span>
       <Icon
         name="chevron-right"

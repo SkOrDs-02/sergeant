@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -127,7 +131,7 @@ export function HubInsightsPanel({
       >
         <span className="flex items-center gap-2 text-xs font-semibold text-text">
           {messages.hub.insights}
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-2xs font-bold text-muted">
+          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
             {total}
           </span>
         </span>

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -89,7 +93,7 @@ export function FoodPickerSection({
           Продукт
         </SectionHeading>
         {(foodBusy || offBusy) && (
-          <span className="text-2xs text-subtle flex items-center gap-1.5">
+          <span className="text-style-caption text-subtle flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 border border-nutrition/40 border-t-nutrition rounded-full motion-safe:animate-spin" />
             пошук…
           </span>
@@ -124,7 +128,7 @@ export function FoodPickerSection({
                   <>
                     {foodHits.length > 0 && (
                       // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Group-separator <li> inside a <ul> combobox listbox; SectionHeading would change semantics.
-                      <li className="px-3 py-1.5 text-2xs text-subtle bg-panelHi/50 font-semibold uppercase tracking-widest">
+                      <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold uppercase tracking-widest">
                         🌍 Open Food Facts
                       </li>
                     )}
@@ -158,7 +162,9 @@ export function FoodPickerSection({
                   .filter(Boolean)
                   .join(" · ")}
                 {pickedFood.source === "off" && (
-                  <span className="ml-1 text-2xs text-subtle">🌍</span>
+                  <span className="ml-1 text-style-caption text-subtle">
+                    🌍
+                  </span>
                 )}
               </div>
               <div className="text-xs text-subtle mt-0.5">

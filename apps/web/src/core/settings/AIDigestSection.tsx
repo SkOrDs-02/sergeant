@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
@@ -41,7 +45,7 @@ export function AIDigestSection() {
           <p className="text-xs font-semibold text-text">Поточний тиждень</p>
           <p className="text-xs text-muted mt-0.5">{weekRange}</p>
           {generatedAt && (
-            <p className="text-2xs text-subtle mt-1">
+            <p className="text-style-caption text-subtle mt-1">
               Згенеровано: {generatedAt}
             </p>
           )}

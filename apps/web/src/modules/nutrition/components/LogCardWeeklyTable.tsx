@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { useMemo, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -60,7 +64,7 @@ export function LogCardWeeklyTable({
               <tbody>
                 {weekRows.map((r) => (
                   <tr key={r.date} className="border-t border-line/40">
-                    <td className="py-1 pr-2 font-mono text-2xs">
+                    <td className="py-1 pr-2 font-mono text-style-caption">
                       {r.date.slice(5)}
                     </td>
                     <td className="py-1 pr-2">{Math.round(r.kcal)}</td>

@@ -88,7 +88,7 @@ export const chartGrid = {
 
 /** Tick label styling (numbers beside axes). */
 export const chartTick = {
-  className: "fill-muted text-micro tabular-nums",
+  className: "fill-muted text-style-caption tabular-nums",
   textAnchor: "middle" as const,
 } as const;
 
