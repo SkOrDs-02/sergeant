@@ -1,6 +1,11 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Badge } from "@shared/components/ui/Badge";
+import { Button } from "@shared/components/ui/Button";
 import { type Meal } from "@sergeant/nutrition-domain";
 import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
 
@@ -110,14 +115,16 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
           )}
         </div>
       </button>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="xs"
+        iconOnly
         onClick={onRemove}
-        className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         aria-label="Видалити запис"
+        className="text-muted hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >
         ✕
-      </button>
+      </Button>
     </div>
   );
 }
