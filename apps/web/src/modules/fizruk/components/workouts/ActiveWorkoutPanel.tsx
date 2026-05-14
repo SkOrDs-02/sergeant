@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useState } from "react";
 import type {
   ChecklistItem,
@@ -219,7 +223,7 @@ export function ActiveWorkoutPanel({
           items={activeWorkout.cooldown}
           onToggle={(id: string) => handleWarmupToggle("cooldown", id)}
           onInit={handleInitCooldown}
-          color={{ border: "border-blue-400/40", text: "text-blue-500" }}
+          color={{ border: "border-info/40", text: "text-info" }}
         />
       </div>
 

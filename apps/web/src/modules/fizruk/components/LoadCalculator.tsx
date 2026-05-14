@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -26,9 +30,9 @@ const CALC_ZONES = [
   },
   {
     goal: "Витривалість",
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/20",
+    color: "text-info",
+    bgColor: "bg-info/10",
+    borderColor: "border-info/20",
     percents: [65, 60, 55, 50],
     desc: "50–65% від 1RM",
   },
@@ -41,7 +45,9 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
         <SectionHeading as="div" size="sm">
           Калькулятор навантаження
         </SectionHeading>
-        <div className="text-2xs text-subtle">1RM = {fmt(oneRM, 0)} кг</div>
+        <div className="text-style-caption text-subtle">
+          1RM = {fmt(oneRM, 0)} кг
+        </div>
       </div>
       <div className="space-y-3">
         {CALC_ZONES.map((zone) => (
@@ -57,7 +63,9 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
               <span className={cn("text-xs font-bold", zone.color)}>
                 {zone.goal}
               </span>
-              <span className="text-2xs text-subtle">{zone.desc}</span>
+              <span className="text-style-caption text-subtle">
+                {zone.desc}
+              </span>
             </div>
             <div className="grid grid-cols-4 gap-1">
               {zone.percents.map((pct) => {
@@ -67,13 +75,15 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
                     key={pct}
                     className="text-center bg-panel/60 rounded-xl py-1.5 px-1"
                   >
-                    <div className="text-2xs text-subtle leading-none mb-0.5">
+                    <div className="text-style-caption text-subtle leading-none mb-0.5">
                       {pct}%
                     </div>
                     <div className="text-sm font-bold text-text tabular-nums leading-tight">
                       {kg > 0 ? `${kg}` : "—"}
                     </div>
-                    <div className="text-2xs text-muted leading-none">кг</div>
+                    <div className="text-style-caption text-muted leading-none">
+                      кг
+                    </div>
                   </div>
                 );
               })}

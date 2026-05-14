@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -252,7 +256,7 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
       <div className="flex items-center gap-2">
         <span className="text-style-label text-text">{dateLabel}</span>
         {!summary.isFinished ? (
-          <span className="text-micro uppercase font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-full">
+          <span className="text-style-caption uppercase font-bold text-warning-strong bg-warning/15 px-2 py-0.5 rounded-full">
             Чернетка
           </span>
         ) : null}

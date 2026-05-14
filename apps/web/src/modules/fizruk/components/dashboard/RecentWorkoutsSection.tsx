@@ -1,4 +1,7 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ *
  * `RecentWorkoutsSection` — bottom-of-dashboard list of the last few
  * completed workouts. Uses the pure `listRecentCompletedWorkouts`
  * selector from `@sergeant/fizruk-domain/domain/dashboard` so ordering,
@@ -107,7 +110,7 @@ export function RecentWorkoutsSection({
                 <span className="text-sm font-bold text-fizruk-strong">
                   {formatTonnage(row.tonnageKg)}
                 </span>
-                <span className="text-micro text-subtle">тоннаж</span>
+                <span className="text-style-caption text-subtle">тоннаж</span>
               </div>
             </li>
           ))}
