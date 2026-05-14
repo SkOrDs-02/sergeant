@@ -173,7 +173,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-04 — `docs(observability): document per-model AI-token join-pattern in metrics.md §6`
 
-> **Статус 2026-05-14:** ✅ Закрито в цьому PR. §6 тепер має Anthropic + Voyage `app_build_info` join-и, приклади `model`-лейблів і крослінк §6 ↔ §15a.
+> **Статус 2026-05-14:** ✅ Закрито в PR #2846. §6 тепер має Anthropic + Voyage `app_build_info` join-и, приклади `model`-лейблів і крослінк §6 ↔ §15a.
 
 **Surface**
 
@@ -244,7 +244,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-06 — `feat(observability): Alertmanager rule for backend /health p95 SLO`
 
-> **Статус 2026-05-14:** ✅ Закрито в цьому PR. Додано recording rule `job:health_p95_5m`, alert `BackendHealthP95High`, SLO-секцію й runbook.
+> **Статус 2026-05-14:** ✅ Закрито в PR #2846. Додано recording rule `job:health_p95_5m`, alert `BackendHealthP95High`, SLO-секцію й runbook.
 
 **Surface**
 
@@ -316,7 +316,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-08 — `docs(observability): refresh metrics.md §Відкриті питання`
 
-> **Статус 2026-05-14:** ✅ Закрито в цьому PR. Футер тепер лишає тільки затрекані наступні задачі й прибирає застарілу нотатку без власника.
+> **Статус 2026-05-14:** ✅ Закрито в PR #2846. Футер тепер лишає тільки затрекані наступні задачі й прибирає застарілу нотатку без власника.
 
 **Surface**
 
