@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { env } from "../../env.js";
 import { safeStringEqual } from "../../http/safeCompare.js";
+import { verifyWebhookSignature } from "../../http/verifyWebhookSignature.js";
 import { createBillingInternalRouter } from "./billing.js";
 import { createCategorizeInternalRouter } from "./categorize.js";
 import { createAiUsageInternalRouter } from "./ai-usage.js";
@@ -18,17 +19,28 @@ import { createMonoInternalRouter } from "./mono.js";
 import { createWebhookEventsInternalRouter } from "./webhook-events.js";
 import { createStrategicInternalRouter } from "./strategic.js";
 import { createAiMemoryInternalRouter } from "./ai-memory.js";
+import { createAiMemoryDlqInternalRouter } from "./ai-memory-dlq.js";
 
 /**
- * Mounts all /api/internal/* routes behind a shared bearer-token guard.
+ * Mounts all /api/internal/* routes behind a shared bearer-token guard +
+ * an optional HMAC-SHA256 webhook signature verifier (PR-48 follow-up).
  *
- * n8n workflows must include `Authorization: Bearer <INTERNAL_API_KEY>` on
- * every request. The key is set via the INTERNAL_API_KEY env var on the server
- * and on the n8n side as a Header Auth credential.
+ * Two layers, run in order:
  *
- * Bearer-token compare goes through `safeStringEqual` — naive `!==` leaks
- * the first mismatching byte through CPU branch timing and turns the secret
- * into a one-byte-at-a-time recovery problem for an on-path attacker.
+ *   1. `Authorization: Bearer <INTERNAL_API_KEY>` — required, fail-closed.
+ *      Compare via `safeStringEqual` (constant-time `crypto.timingSafeEqual`),
+ *      because naive `!==` leaks the first mismatching byte through CPU
+ *      branch timing and turns the secret into a one-byte-at-a-time
+ *      recovery problem for an on-path attacker.
+ *
+ *   2. `verifyWebhookSignature()` — runs ONLY when
+ *      `WEBHOOK_HMAC_SECRET` is set. Checks `X-Signature` (HMAC-SHA256
+ *      hex) and `X-Timestamp` (UNIX-seconds, 5-min replay window). Grace
+ *      mode (`WEBHOOK_HMAC_REQUIRED=false`, the default) warn-logs
+ *      mismatches but passes through, so n8n workflows can roll out one
+ *      at a time; flip `WEBHOOK_HMAC_REQUIRED=true` after every wired
+ *      workflow signs (`manifest.json: hmac_signed: true`). See
+ *      `docs/observability/security.md` for the rollout playbook.
  *
  * These routes are intentionally NOT session-auth — they are machine-to-machine.
  * They must NEVER be exposed to end-users or third-party services.
@@ -51,6 +63,12 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
     next();
   });
 
+  // HMAC verification runs AFTER the bearer-token guard so we never spend
+  // a constant-time compare on an unauthenticated request. The middleware
+  // is a no-op when `WEBHOOK_HMAC_SECRET` is empty — so mounting it
+  // unconditionally is safe across dev/test/prod.
+  router.use("/api/internal", verifyWebhookSignature());
+
   router.use(createBillingInternalRouter({ pool }));
   router.use(createCategorizeInternalRouter());
   router.use(createAiUsageInternalRouter({ pool }));
@@ -67,6 +85,7 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createWebhookEventsInternalRouter({ pool }));
   router.use(createStrategicInternalRouter({ pool }));
   router.use(createAiMemoryInternalRouter({ pool }));
+  router.use(createAiMemoryDlqInternalRouter({ pool }));
 
   return router;
 }

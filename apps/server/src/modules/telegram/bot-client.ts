@@ -32,6 +32,11 @@ export interface TelegramChat {
   title?: string;
   username?: string;
   is_forum?: boolean;
+  // Private chat fields (Bot API spec: present only when type=private).
+  // Surface them on the base `TelegramChat` so callers (e.g. `whois.ts`
+  // → resolveTelegramUser) avoid unsafe `as unknown as` casts.
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface TelegramUser {

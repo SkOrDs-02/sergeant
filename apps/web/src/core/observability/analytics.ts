@@ -16,7 +16,7 @@
 
 /** @typedef {{ eventName: string, payload: object, timestamp: string }} AnalyticsEvent */
 
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
@@ -53,7 +53,19 @@ export function trackEvent(
     timestamp: new Date().toISOString(),
   };
   try {
-    console.log("[analytics]", event);
+    // Контракт-документація вище забороняє передавати PII у payload, але
+    // captured-handler-и можуть зрегресити (audit S2 — захист у глибину).
+    // `console.log` ходить у:
+    //   - DevTools console (видно під час screen-share / paired support);
+    //   - Sentry breadcrumb-и (`@sentry/react` `console` integration on
+    //     by default);
+    //   - PostHog session-replay / Logpipe browser extensions.
+    // Тож логуємо клон з вирізаними PII-значеннями. Оригінальний `event`
+    // лишається незачепленим — він іде у localStorage ring-buffer і у
+    // PostHog як було.
+    const safeEvent = structuredClone(event);
+    scrubPII(safeEvent);
+    console.log("[analytics]", safeEvent);
     const current = safeReadLog();
     safeWriteLog([...current, event]);
     const analyticsWindow = window as Window & {

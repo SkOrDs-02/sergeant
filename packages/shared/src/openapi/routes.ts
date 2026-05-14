@@ -772,6 +772,42 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/billing/portal": {
+    post: {
+      summary: "Стартує Stripe Customer Portal session (self-serve billing)",
+      description:
+        "Створює short-lived redirect URL у Stripe Customer Portal, де користувач " +
+        "може скасувати підписку, оновити платіжний метод або змінити план. " +
+        "Потребує `provider_customer_id` у `subscriptions` (готується " +
+        "checkout-flow-ом + webhook-ом).",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Portal session готова; клієнт редіректить на `url`.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.BillingPortalResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description:
+            "Користувач не має billing customer record-у (ще не платив).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "Stripe billing env is not configured.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
   "/api/billing/stripe-webhook": {
     post: {
       summary: "Stripe webhook delivery endpoint",

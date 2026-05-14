@@ -43,6 +43,7 @@ import {
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { getAiMemory } from "./bootstrap.js";
+import { recordIngestDlq } from "./dlq.js";
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
 import { ALLOWED_MEMORY_SOURCES, type MemorySource } from "./types.js";
@@ -333,8 +334,23 @@ export async function processMemoryIngestJob(
         attempt: job.attemptsMade,
         err: serializeError(err, { includeStack: false }),
       });
+      // Non-retryable error → write до DLQ для системного replay-у після
+      // fix-у downstream-bug-у. BullMQ permanent-fail все одно лишається у
+      // failed-state (14d retention), DLQ — long-term SQL audit-trail.
+      aiMemoryIngestProcessedTotal.inc({
+        outcome: "dlq",
+        source: sourceLabel,
+      });
+      await recordIngestDlq({
+        payload: job.data,
+        errorMsg: err instanceof Error ? err.message : String(err),
+        attempts: job.attemptsMade + 1,
+      });
       return;
     }
+    // Retryable error — у BullMQ failed-event-handler-і нижче (startMemoryIngestWorker)
+    // ми перевіримо чи attemptsMade досяг max, і тільки тоді запишемо у DLQ.
+    // Тут — просто throw, щоб BullMQ запланував наступну спробу з backoff-ом.
     throw err;
   }
 }
@@ -421,6 +437,30 @@ export function startMemoryIngestWorker(): StartedMemoryIngestWorker | null {
       attempt: job?.attemptsMade,
       err: serializeError(err, { includeStack: false }),
     });
+    // Retries exhausted — write до DLQ. BullMQ emit-ить `failed` після КОЖНОЇ
+    // failed-спроби; ми пишемо лише коли retries-exhausted (final-attempt).
+    if (
+      job &&
+      isRetryableIngestError(err) &&
+      job.attemptsMade >= env.AI_MEMORY_INGEST_ATTEMPTS
+    ) {
+      aiMemoryIngestProcessedTotal.inc({
+        outcome: "dlq",
+        source: job.data.source,
+      });
+      void recordIngestDlq({
+        payload: job.data,
+        errorMsg: err.message,
+        attempts: job.attemptsMade,
+      }).catch((dlqErr: unknown) => {
+        logger.error({
+          msg: "ai_memory_ingest_dlq_record_failed",
+          source: job.data.source,
+          userId: job.data.userId,
+          err: serializeError(dlqErr, { includeStack: false }),
+        });
+      });
+    }
   });
 
   // Periodic depth sampling — те саме рішення, що й у authMail-worker.

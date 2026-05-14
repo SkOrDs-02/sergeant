@@ -17,6 +17,7 @@ import { workflowsShortcut } from "./workflows.js";
 import { refreshMetricsShortcut } from "./refresh-metrics.js";
 import { heartbeatShortcut } from "./heartbeat.js";
 import { recallShortcut } from "./recall.js";
+import { forgetShortcut } from "./forget.js";
 import { decisionsShortcut } from "./decisions.js";
 import { digestShortcut } from "./digest.js";
 import { remindShortcut } from "./remind.js";
@@ -42,6 +43,7 @@ export const ALL_SHORTCUTS: ShortcutDefinition[] = [
   heartbeatShortcut,
   // Memory & decisions
   recallShortcut,
+  forgetShortcut,
   decisionsShortcut,
   digestShortcut,
   // Reminders
@@ -62,6 +64,7 @@ export {
   refreshMetricsShortcut,
   heartbeatShortcut,
   recallShortcut,
+  forgetShortcut,
   decisionsShortcut,
   digestShortcut,
   remindShortcut,

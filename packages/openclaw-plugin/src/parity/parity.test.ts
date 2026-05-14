@@ -64,9 +64,9 @@ const ALLOWED_LEGACY_AGENTS: ReadonlySet<LegacyAgent> = new Set([
 ]);
 
 describe("Stage 6a parity harness — golden catalogue invariants", () => {
-  it("contains exactly 21 fixtures (17 shortcuts + 3 modes + 1 council)", () => {
-    expect(GOLDEN_CONVERSATIONS).toHaveLength(21);
-    expect(SHORTCUT_GOLDEN_CONVERSATIONS).toHaveLength(17);
+  it("contains exactly 22 fixtures (18 shortcuts + 3 modes + 1 council)", () => {
+    expect(GOLDEN_CONVERSATIONS).toHaveLength(22);
+    expect(SHORTCUT_GOLDEN_CONVERSATIONS).toHaveLength(18);
     expect(STRATEGIC_MODE_GOLDEN_CONVERSATIONS).toHaveLength(3);
     expect(COUNCIL_GOLDEN_CONVERSATIONS).toHaveLength(1);
   });
@@ -81,7 +81,7 @@ describe("Stage 6a parity harness — golden catalogue invariants", () => {
     const fixtureSlugs = new Set(
       SHORTCUT_GOLDEN_CONVERSATIONS.map((f) => f.expectedSlug),
     );
-    expect(realSlugs.size).toBe(17);
+    expect(realSlugs.size).toBe(18);
     expect(fixtureSlugs).toEqual(realSlugs);
   });
 

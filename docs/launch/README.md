@@ -23,13 +23,19 @@ docs/launch/
 │   ├── ai-memory-activation.md            ADR-0028 rollout: pgvector, Voyage, recall flows
 │   ├── openclaw-roadmap.md                OpenClaw v0 → v1 поетапний план у 4 фази
 │   └── telegram-improvements-roadmap.md   Telegram-surfaces (DM + supergroup) — 4-wave PR-план
-└── product-os/                          FTUX delivery (product-OS layer)
-    ├── ftux-master-tracker.md             FTUX SSOT — стан, sprint registry, PR plan, hero copy, sketch, SLO, decisions
-    ├── ftux-sprint-plan.md                (frozen reference — superseded by ftux-master-tracker.md)
-    └── sprint-retros/                     Per-sprint launch retrospectives (postmortems завершених PR-серій)
+├── product-os/                          FTUX delivery (product-OS layer)
+│   ├── ftux-master-tracker.md             FTUX SSOT — стан, sprint registry, PR plan, hero copy, sketch, SLO, decisions
+│   ├── ftux-sprint-plan.md                (frozen reference — superseded by ftux-master-tracker.md)
+│   └── sprint-retros/                     Per-sprint launch retrospectives (postmortems завершених PR-серій)
+└── phases/                              послідовні execution phases для запуску з реальними юзерами (Web → Capacitor → Native)
+    ├── README.md                          master synthesis plan-guide (TLDR, timeline, лендінг, блокери)
+    ├── 00-readiness-audit.md              audit готовності 4 surface-ів (Web, Server, Capacitor, Native, Landing)
+    ├── 01-web-launch-with-users.md        Phase 1 — Web launch with users (W-4 .. W+12)
+    ├── 02-capacitor-launch.md             Phase 2 — Capacitor launch with users (W+8 .. W+16)
+    └── 03-native-expo-launch.md           Phase 3 — Native Expo (conditional, decision gate W+16)
 ```
 
-> **Конвенція:** `business/01-…06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли в `tech/` — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. `product-os/` — FTUX-program: master-tracker (SSOT) + frozen sprint-plan + per-sprint retros.
+> **Конвенція:** `business/01-…06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли в `tech/` — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. `product-os/` — FTUX-program: master-tracker (SSOT) + frozen sprint-plan + per-sprint retros. `phases/` — **execution phases** запуску з реальними юзерами (Web → Capacitor → Native), з вхідними/вихідними критеріями і week-by-week планом.
 
 ## Як читати
 
@@ -49,6 +55,11 @@ docs/launch/
 | Як поетапно побудувати OpenClaw v0 → v1?                          | [openclaw-roadmap](./tech/openclaw-roadmap.md)                                                    |
 | Які покращення Telegram-сурфейсів заплановано?                    | [telegram-improvements-roadmap](./tech/telegram-improvements-roadmap.md)                          |
 | Який поточний стан FTUX (sprint registry, відкриті проблеми)?     | [ftux-master-tracker](./product-os/ftux-master-tracker.md)                                        |
+| Як саме запускати з реальними юзерами (Web → Capacitor → Native)? | [phases/README — master plan-guide](./phases/README.md)                                           |
+| Що готово, а що блокує запуск (readiness matrix)?                 | [phases/00 — Readiness audit](./phases/00-readiness-audit.md)                                     |
+| Тижневий план Web-launch з юзерами (W-4 .. W+12)?                 | [phases/01 — Web launch with users](./phases/01-web-launch-with-users.md)                         |
+| Як підключати бета-тестерів через TestFlight / Play?              | [phases/02 — Capacitor launch](./phases/02-capacitor-launch.md)                                   |
+| Чи варто запускати окремо Native Expo (apps/mobile)?              | [phases/03 — Native Expo launch](./phases/03-native-expo-launch.md)                               |
 | Як виправляти FTUX-онбординг (історичний sprint plan)?            | [ftux-sprint-plan](./product-os/ftux-sprint-plan.md) _(frozen)_                                   |
 | Як реалізувати paywall технічно (DB schema, webhook, plan-cache)? | [06 — Архітектура](./business/06-monetization-architecture.md#5-уточнена-розбивка-pr-10-шт)       |
 | Що може піти не так у monetization rollout?                       | [06 — Risk register](./business/06-monetization-architecture.md#7-risk-register)                  |

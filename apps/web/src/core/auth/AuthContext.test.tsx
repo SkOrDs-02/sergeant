@@ -31,7 +31,7 @@ const signUpEmail: ReturnType<
 const signOut: ReturnType<typeof vi.fn<() => Promise<void>>> = vi.fn(
   async () => undefined,
 );
-const forgetPassword: ReturnType<
+const requestPasswordReset: ReturnType<
   typeof vi.fn<
     (args: { email: string; redirectTo?: string }) => Promise<AuthResult>
   >
@@ -48,8 +48,8 @@ vi.mock("./authClient.js", () => ({
       signUpEmail(args),
   },
   signOut: () => signOut(),
-  forgetPassword: (args: { email: string; redirectTo?: string }) =>
-    forgetPassword(args),
+  requestPasswordReset: (args: { email: string; redirectTo?: string }) =>
+    requestPasswordReset(args),
 }));
 
 // Capture analytics events fired by AuthContext без реальної transport.
@@ -149,7 +149,7 @@ describe("AuthContext", () => {
     signInSocial.mockClear();
     signUpEmail.mockClear();
     signOut.mockClear();
-    forgetPassword.mockClear();
+    requestPasswordReset.mockClear();
     useUserMock.mockReset();
     trackEventMock.mockClear();
   });
@@ -303,7 +303,7 @@ describe("AuthContext", () => {
       const ok = await result.current.requestPasswordReset("a@b.c");
       expect(ok).toBe(true);
     });
-    expect(forgetPassword).toHaveBeenCalled();
+    expect(requestPasswordReset).toHaveBeenCalled();
     // Reset doesn't change identity, so me-cache must stay untouched.
     expect(invalidateSpy).not.toHaveBeenCalledWith({
       queryKey: apiQueryKeys.me.current(),

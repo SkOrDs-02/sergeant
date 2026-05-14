@@ -14,6 +14,7 @@ import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { IOSInstallBanner } from "./IOSInstallBanner";
+import { TrialBanner } from "../billing/TrialBanner";
 
 // Profile/Reports/Settings code-split out of the main hub bundle. Static
 // imports defeat `useRoutePrefetch.prefetchPage("profile")` (Vite warns
@@ -168,6 +169,8 @@ export const HubMainContent = memo(function HubMainContent({
 
   return (
     <>
+      {!inFtuxSession && <TrialBanner />}
+
       {showUpdate && (
         <HubChromeBanner iconName="refresh-cw" title="Доступна нова версія">
           <Button

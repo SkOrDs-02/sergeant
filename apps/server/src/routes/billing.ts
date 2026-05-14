@@ -4,6 +4,7 @@ import type { Pool } from "pg";
 import {
   BillingCheckoutRequestSchema,
   BillingCheckoutResponseSchema,
+  BillingPortalResponseSchema,
   BillingStatusResponseSchema,
 } from "@sergeant/shared";
 import {
@@ -15,7 +16,9 @@ import {
 } from "../http/index.js";
 import {
   BillingConfigurationError,
+  NoBillingCustomerError,
   createCheckoutSession,
+  createCustomerPortalSession,
   getSubscriptionStatus,
   processStripeWebhook,
   verifyStripeSignature,
@@ -80,6 +83,43 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
         await getSubscriptionStatus(pool, req.user!.id),
       );
       res.json(payload);
+    }),
+  );
+
+  r.post(
+    "/api/billing/portal",
+    requireSession(),
+    rateLimitExpress({
+      key: "api:billing:portal",
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    }),
+    asyncHandler(async (req: AuthedRequest, res: Response) => {
+      try {
+        const payload = BillingPortalResponseSchema.parse(
+          await createCustomerPortalSession({
+            pool,
+            userId: req.user!.id,
+          }),
+        );
+        res.json(payload);
+      } catch (err) {
+        if (err instanceof BillingConfigurationError) {
+          res.status(503).json({
+            error: "Billing is not configured",
+            code: "BILLING_UNAVAILABLE",
+          });
+          return;
+        }
+        if (err instanceof NoBillingCustomerError) {
+          res.status(409).json({
+            error: "User has no billing customer record",
+            code: "NO_BILLING_CUSTOMER",
+          });
+          return;
+        }
+        throw err;
+      }
     }),
   );
 

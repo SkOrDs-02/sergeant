@@ -41,6 +41,19 @@ vi.mock("../../lib/jobs/connection.js", async () => {
   };
 });
 
+// DLQ-module mock — щоб permanent_fail / retries-exhausted paths
+// не намагалися ходити у PG під unit-тестами.
+vi.mock("./dlq.js", () => ({
+  recordIngestDlq: vi.fn().mockResolvedValue(undefined),
+  markDlqRowReplayed: vi.fn().mockResolvedValue(undefined),
+  listDlqRows: vi.fn().mockResolvedValue([]),
+  __resetDlqRateLimit: vi.fn(),
+  __getDlqRateLimitState: vi.fn(() => ({
+    lastAlertAtMs: 0,
+    suppressedCount: 0,
+  })),
+}));
+
 import {
   aiMemoryIngestEnqueuedTotal as _enqueued,
   aiMemoryIngestProcessedTotal as _processed,
@@ -55,6 +68,11 @@ import {
 } from "./ingestQueue.js";
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
+import { recordIngestDlq as _recordIngestDlq } from "./dlq.js";
+
+const recordIngestDlqMock = _recordIngestDlq as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 const enqueuedInc = (_enqueued as unknown as { inc: ReturnType<typeof vi.fn> })
   .inc;
@@ -180,7 +198,7 @@ describe("processMemoryIngestJob — processor contract", () => {
     });
   });
 
-  it("на permanent error (4xx): НЕ re-throw, outcome=permanent_fail", async () => {
+  it("на permanent error (4xx): НЕ re-throw, outcome=permanent_fail + DLQ write", async () => {
     const err = new VoyageHttpError(400, "Invalid input", false);
     const remember = vi.fn().mockRejectedValue(err);
     __resetMemoryIngestQueueForTesting(makeFakeService(remember));
@@ -197,9 +215,19 @@ describe("processMemoryIngestJob — processor contract", () => {
       outcome: "permanent_fail",
       source: "finyk",
     });
+    expect(processedInc).toHaveBeenCalledWith({
+      outcome: "dlq",
+      source: "finyk",
+    });
+    expect(recordIngestDlqMock).toHaveBeenCalledTimes(1);
+    expect(recordIngestDlqMock).toHaveBeenCalledWith({
+      payload: samplePayload,
+      errorMsg: expect.stringContaining("Invalid input"),
+      attempts: 2, // attemptsMade=1 → attempts=2 (next attempt counter)
+    });
   });
 
-  it("на missing API key: НЕ re-throw, outcome=permanent_fail", async () => {
+  it("на missing API key: НЕ re-throw, outcome=permanent_fail + DLQ write", async () => {
     const err = new MissingVoyageApiKeyError();
     const remember = vi.fn().mockRejectedValue(err);
     __resetMemoryIngestQueueForTesting(makeFakeService(remember));
@@ -214,6 +242,31 @@ describe("processMemoryIngestJob — processor contract", () => {
 
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "permanent_fail",
+      source: "finyk",
+    });
+    expect(processedInc).toHaveBeenCalledWith({
+      outcome: "dlq",
+      source: "finyk",
+    });
+    expect(recordIngestDlqMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retryable error НЕ пише у DLQ (BullMQ retries-exhausted-event робить це окремо)", async () => {
+    const err = new VoyageHttpError(503, "Service Unavailable", true);
+    const remember = vi.fn().mockRejectedValue(err);
+    __resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await expect(
+      processMemoryIngestJob({
+        data: samplePayload,
+        attemptsMade: 1,
+        name: "finyk",
+      }),
+    ).rejects.toThrow();
+
+    expect(recordIngestDlqMock).not.toHaveBeenCalled();
+    expect(processedInc).not.toHaveBeenCalledWith({
+      outcome: "dlq",
       source: "finyk",
     });
   });

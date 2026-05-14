@@ -32,6 +32,14 @@ export type BodySizeRule =
        * `application/reports+json`).
        */
       readonly type?: string;
+      /**
+       * If `true`, stashes the raw request bytes on `req.rawBody`. Needed
+       * for downstream HMAC-signature verification (`/api/internal/*`).
+       * Setting this on a sub-prefix that is shadowed by a more-specific
+       * rule is a bug — the more-specific rule wins (longest-prefix-first
+       * sort) and the raw bytes never get captured.
+       */
+      readonly captureRawBody?: boolean;
     }
   | {
       readonly pathPrefix: string;
@@ -105,6 +113,13 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     reason: "Monobank webhook payload",
   },
   {
+    pathPrefix: "/api/internal",
+    kind: "json",
+    limit: "128kb",
+    reason: "Machine-to-machine API (n8n workflows); rawBody for HMAC verify",
+    captureRawBody: true,
+  },
+  {
     pathPrefix: "/api/billing/stripe-webhook",
     kind: "raw",
     limit: "128kb",
@@ -159,10 +174,19 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
  */
 function buildMiddleware(rule: BodySizeRule): RequestHandler {
   if (rule.kind === "json") {
-    if (rule.type !== undefined) {
-      return express.json({ limit: rule.limit, type: rule.type });
-    }
-    return express.json({ limit: rule.limit });
+    const verify = rule.captureRawBody
+      ? (req: import("express").Request, _res: unknown, buf: Buffer): void => {
+          // Copy the buffer — body-parser reuses its internal Buffer between
+          // requests, so holding a reference past parse-time can read into
+          // another request's body. The cost is negligible (≤128KB for
+          // /api/internal) and the safety is non-negotiable.
+          (req as { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+        }
+      : undefined;
+    const opts: Parameters<typeof express.json>[0] = { limit: rule.limit };
+    if (rule.type !== undefined) opts.type = rule.type;
+    if (verify !== undefined) opts.verify = verify;
+    return express.json(opts);
   }
   return express.raw({ limit: rule.limit, type: rule.type });
 }

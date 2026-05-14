@@ -31,6 +31,8 @@ export const messages = {
 
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Невірний email або пароль.",
+    invalidToken:
+      "Посилання для скидання пароля невалідне або вже використане. Запроси новий лист на сторінці входу.",
     userAlreadyExists: "Цей email вже зареєстровано. Спробуй увійти.",
     invalidEmail: "Невірний формат email.",
     invalidPassword: "Невірний пароль.",

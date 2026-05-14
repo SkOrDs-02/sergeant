@@ -127,18 +127,20 @@ $ rg "fixed inset-0" apps/web/src --files-with-matches | wc -l
 - **Add** `mapApiErrorToUserCopy(error)` — централізована функція в `apps/web/src/shared/lib/api/` що мапить `error.code` → UA-copy.
 - **Change** 5-7 callsite-ів у `core/profile/*` — використовувати `mapApiErrorToUserCopy(res.error)` замість прямого `.message`.
 
-### F6: Pull-to-refresh під час активного sync — P2
+### F6: Pull-to-refresh під час активного sync — P2 ✅ Closed in #2743
 
 **З 2026-05-03 §3.10** — PTR не повинен дозволяти подвійний тригер.
 
 **Поточний стан коду:**
 
-- [`PullToRefresh.tsx`](../../apps/web/src/shared/components/ui/PullToRefresh.tsx) дозволяє тригерити `onRefresh()` повторно поки попередня не resolve-нула. Раніше була race, але `disabled` prop існує — просто не wired-up з `requestCloudPull` state.
+- [`PullToRefresh.tsx`](../../apps/web/src/shared/components/ui/PullToRefresh.tsx) дозволяв тригерити `onRefresh()` повторно поки попередня не resolve-нула. Раніше була race; проп `enabled` існував, але не був wired-up з `requestCloudPull` state.
 
-**Дії (не в цьому PR):**
+**Зроблено (PR #2743):**
 
-- **Add** `useCloudPullPending()` hook що повертає boolean — чи зараз pending pull.
-- **Change** call-sites `<PullToRefresh disabled={cloudPullPending}>` у `routine`, `nutrition`, `finyk` модулях.
+- **Added** `useCloudPullPending()` hook у `apps/web/src/shared/hooks/useCloudPullPending.ts` — `useSyncExternalStore` обгортка над in-process counter `requestCloudPull`-ів, що повертає `true` поки хоч один pull у польоті.
+- **Added** `subscribeCloudPullPending` / `getCloudPullPending` + захищений `Math.max(0, ...)` counter у [`cloudPullRequest.ts`](../../apps/web/src/shared/lib/modules/cloudPullRequest.ts).
+- **Changed** call-sites — `<PullToRefresh enabled={!cloudPullPending}>` у [`RoutineTimeline.tsx`](../../apps/web/src/modules/routine/RoutineTimeline.tsx), [`NutritionApp.tsx`](../../apps/web/src/modules/nutrition/NutritionApp.tsx), [`TransactionList.tsx`](../../apps/web/src/modules/finyk/pages/transactions/TransactionList.tsx) (фактичний PTR call-site для finyk; `FinykApp.tsx` сам PTR не рендерить).
+- **Tests:** 5 у `useCloudPullPending.test.tsx` (hook happy-path + overlap + timeout + behavior: spy на `HTMLDivElement.prototype.addEventListener` підтверджує, що `<PullToRefresh>` від'єднує touch-listener-и поки cloud-pull pending) + 3 у `cloudPullRequest.test.ts` (subscribe API, counter не йде в негатив на overlapping settles).
 
 ### F7: `useApiForm` rollout burndown — P2
 

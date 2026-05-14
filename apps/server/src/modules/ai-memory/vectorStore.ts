@@ -180,7 +180,13 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
           serializeEmbedding(opts.embedding),
           opts.topK,
         ];
-        let where = `user_id = $1`;
+        // PR-23 (`/forget` slash-команда, migration 067): додаємо
+        // `deleted_at IS NULL` як hard read-filter. Soft-deleted rows
+        // лишаються у table 7 днів (cleanup cron), але виключаються з
+        // recall / digest / RAG. Partial index `ai_memories_active_idx`
+        // (`(user_id, created_at DESC) WHERE deleted_at IS NULL`) робить
+        // це efficiency-neutral — planner вибирає його для recall hot-path.
+        let where = `user_id = $1 AND deleted_at IS NULL`;
         if (opts.sources && opts.sources.length > 0) {
           // Source enum — guard-нутий у CHECK constraint, тож параметрицькі
           // значення безпечні. Використовуємо ANY($N::text[]) для

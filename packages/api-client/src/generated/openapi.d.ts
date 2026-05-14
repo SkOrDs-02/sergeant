@@ -2055,6 +2055,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Стартує Stripe Customer Portal session (self-serve billing)
+         * @description Створює short-lived redirect URL у Stripe Customer Portal, де користувач може скасувати підписку, оновити платіжний метод або змінити план. Потребує `provider_customer_id` у `subscriptions` (готується checkout-flow-ом + webhook-ом).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Portal session готова; клієнт редіректить на `url`. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BillingPortalResponse"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Користувач не має billing customer record-у (ще не платив). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Stripe billing env is not configured. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/stripe-webhook": {
         parameters: {
             query?: never;
@@ -3002,6 +3068,13 @@ export interface components {
                 active: boolean;
                 currentPeriodEnd: string | null;
             };
+        };
+        /** @description Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal. */
+        BillingPortalResponse: {
+            /** @constant */
+            ok: true;
+            /** Format: uri */
+            url: string;
         };
         /** @description Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо. */
         TranscribeResponse: {

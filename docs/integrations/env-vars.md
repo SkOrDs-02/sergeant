@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -637,6 +637,26 @@ Telegram bot-token для alert-бота. Той самий env-var, що йог
 Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable hash, e.g. `wf-15:railway-deploy-failed:api`). Якщо в межах вікна (`windowMs`, default `600_000` ms = 10 хв) уже існує row з тим самим `(topic, dedup_signature)` — викликається `editMessageText` із counter-prefix `🔁 N× за 10 хв:\n<original>`. Інакше — фрешевий `sendMessage` + INSERT into `tg_alert_acks`. Fail-open: будь-яка DB/Telegram-помилка логуються `level=warn` через Pino + сесія fallback-ить на `sendMessage` (нове повідомлення замість edit-у). Edit-failure (e.g. `message_not_found`) → response action=`sent_after_edit_failure`.
 
 Реалізація: [`apps/server/src/modules/alerts/telegramShipper.ts`](../../apps/server/src/modules/alerts/telegramShipper.ts) + міграція [`060_tg_alert_acks_dedup_signature.sql`](../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql). Roadmap-контекст: [`docs/launch/tech/telegram-improvements-roadmap.md` §4.2](../launch/tech/telegram-improvements-roadmap.md), [`docs/planning/sprint-roadmap-q2q3-2026.md` §1.2 B.1](../planning/sprint-roadmap-q2q3-2026.md).
+
+---
+
+## 24. `/api/internal/*` HMAC webhook signing (PR-48 follow-up)
+
+> Defence-in-depth поверх `INTERNAL_API_KEY`. Trio змінних читається в [`apps/server/src/http/verifyWebhookSignature.ts`](../../apps/server/src/http/verifyWebhookSignature.ts) і застосовується middleware-ом на `/api/internal/*` ПІСЛЯ bearer-token guard. Same trio має бути виставлений на n8n Railway env — workflow Function-node читає `$env.WEBHOOK_HMAC_SECRET` (template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](../../ops/n8n-workflows/_lib/sign-internal-request.js)).
+
+### `WEBHOOK_HMAC_SECRET` _(optional, recommended for prod)_
+
+32+ байтовий shared-secret. Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — middleware no-op, тільки bearer guard. Виставлений → перевіряється `X-Signature` = `hex(HMAC-SHA256(secret, "<X-Timestamp>.<rawBody>"))`. Той самий байтовий вміст має бути виставлений на n8n Railway, інакше Function-node-template падає з `WEBHOOK_HMAC_SECRET is not set`. Ротація — атомарно в обох місцях через [`rotate-secrets.md`](../playbooks/rotate-secrets.md) (replay-window 5min робить тимчасовий розфаз нешкідливим).
+
+### `WEBHOOK_HMAC_REQUIRED` _(optional, default `false`)_
+
+Двофазний rollout. `false` (grace, default) — server warn-логує `webhook_hmac_mismatch` + Sentry breadcrumb на mismatch, але пропускає запит. Дозволяє per-workflow міграцію без cross-cutting cut-over-у. `true` — flip після того, як усі 25 `INTERNAL_API_KEY`-using workflows у `manifest.json` показують `hmacSigned: true`; з цього моменту missing/invalid signature → `401 WEBHOOK_HMAC_INVALID`.
+
+### `WEBHOOK_HMAC_TS_TOLERANCE_SEC` _(optional, default `300`)_
+
+Replay-вікно для `X-Timestamp` (UNIX seconds, симетрично навколо `now`). 5min default матчить Stripe/GitHub/Slack webhook signatures. Збільшувати лише за наявністю clock-skew у конкретного n8n воркера (видно у Grafana `reason="timestamp_out_of_window"`); зменшувати — лише з твердим NTP-sync на n8n Railway side.
+
+Full rollout playbook: [`docs/security/api-internal-hmac.md`](../security/api-internal-hmac.md). Audit context: [`docs/security/better-auth-audit-2026-05.md#f5b`](../security/better-auth-audit-2026-05.md).
 
 ---
 
