@@ -4,6 +4,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import {
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
+  ONBOARDING_GOAL_FIRST_EXPERIMENT,
   ONBOARDING_HERO_COPY_EXPERIMENT,
   overrideVariant,
 } from "@sergeant/shared";
@@ -41,6 +42,7 @@ describe("OnboardingWizard — opt-in module selection (S6.1)", () => {
     // explicitly so any leftover persisted variant from a previous
     // test cannot influence the EXPERIMENT_EXPOSED payload shape.
     overrideVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id, "none");
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
   });
 
   it("starts with no module pre-selected and disables the primary CTA", () => {
@@ -98,6 +100,7 @@ describe("S6.1 audit-guard", () => {
     vi.restoreAllMocks();
     overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
     overrideVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id, "none");
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
   });
 
   it("inline hint copy is the exact audit-spec phrasing", () => {

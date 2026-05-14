@@ -6,6 +6,7 @@ import {
   ANALYTICS_EVENTS,
   ONBOARDING_COMPLETED_FIRED_KEY,
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
+  ONBOARDING_GOAL_FIRST_EXPERIMENT,
   ONBOARDING_HERO_COPY_EXPERIMENT,
   overrideVariant,
 } from "@sergeant/shared";
@@ -50,6 +51,7 @@ describe("OnboardingWizard — onboarding_completed event (PR-07)", () => {
     // hardcoding interact in ways that flake the CTA query.
     overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
     overrideVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id, "none");
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
     // mockClear() runs after restoreAllMocks() so the assignment writes
     // above don't leak into the trackEvent expectations below.
     trackEventMock.mockClear();

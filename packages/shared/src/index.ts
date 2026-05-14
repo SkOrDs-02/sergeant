@@ -75,6 +75,11 @@ export * from "./lib/onboardingHeroCopy";
 // decide whether the splash starts with empty picks or pre-selected.
 export * from "./lib/onboardingDefaultPicks";
 
+// PR-13 / S5.1: 50/50 A/B between module-first (`control`) and
+// outcome-first (`goal_first`) onboarding. Outcome → module mapping
+// + experiment definition shared with the mobile parity PR-21.
+export * from "./lib/onboardingGoalFirst";
+
 // Reset helpers for Settings ("Restart onboarding").
 export * from "./lib/onboardingReset";
 

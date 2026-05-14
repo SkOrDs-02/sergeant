@@ -309,6 +309,16 @@ export const messages = {
       "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (транзакції, тренування, прийоми їжі) лишаться без змін.",
     tourResetConfirmAction: "Почати з початку",
     tourResetSuccess: "Знайомство перезапущено",
+
+    // PR-13 / S5.1 goal-first wizard A/B copy. The headline + body
+    // frame the outcome-first variant of the welcome screen, and
+    // `goalFirstSkipLabel` is the tertiary escape hatch back to the
+    // legacy module-checklist welcome.
+    goalFirstHeading: "Що для тебе зараз важливо?",
+    goalFirstSubtitle:
+      "Обери головне — Sergeant підбере розділ, з якого почнемо.",
+    goalFirstSkipLabel: "Подивитись усе",
+    goalFirstAriaLabel: "Цілі онбордингу",
   },
 
   form: {

@@ -14,12 +14,17 @@ import {
 } from "./onboardingGate";
 import {
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
+  ONBOARDING_GOAL_FIRST_EXPERIMENT,
   ONBOARDING_HERO_COPY_EXPERIMENT,
   assignVariant,
   getOnboardingHeroCopy,
+  getOutcomeById,
+  type DashboardModuleId,
   type OnboardingDefaultPicksVariant,
+  type OnboardingGoalFirstVariant,
   type OnboardingHeroCopy,
   type OnboardingHeroCopyVariant,
+  type OnboardingOutcomeId,
 } from "@sergeant/shared";
 import {
   clearPersistedPicks,
@@ -70,6 +75,36 @@ export interface UseOnboardingWizardStateReturn {
    */
   submitting: boolean;
   secondaryAction?: () => void;
+  /**
+   * Resolved PR-13 goal-first A/B variant. `control` keeps the legacy
+   * module-checklist welcome; `goal_first` swaps in `GoalFirstScreen`
+   * (single-outcome commit → derived module). Tour replay always
+   * resolves to `control` so the marketing screenshot stays stable.
+   */
+  goalFirstVariant: OnboardingGoalFirstVariant;
+  /**
+   * Goal-first arm handler. Persists the derived module as the only
+   * pick, fires the FTUX completion / vibe-picked events with the
+   * outcome-first intent payload, marks onboarding done and routes
+   * to the hub — symmetric to {@link finish} but with the single
+   * outcome-derived pick already known.
+   */
+  pickGoal: (outcomeId: OnboardingOutcomeId) => void;
+  /**
+   * Tertiary escape hatch from the goal-first arm. Switches the
+   * wizard back to the module-checklist welcome without exiting the
+   * experiment cohort (`goal_first_skipped` is still reported via
+   * `ONBOARDING_GOAL_FIRST_PICKED` with `outcome="skip"` so PostHog
+   * can split converted vs. skipped exposures).
+   */
+  skipGoalFirst: () => void;
+  /**
+   * `true` after the user falls back from the goal-first arm to the
+   * legacy module welcome via {@link skipGoalFirst}. Drives the
+   * wizard's switch between `GoalFirstScreen` and `WelcomeOneScreen`
+   * without losing the experiment exposure.
+   */
+  goalFirstSkipped: boolean;
 }
 
 /**
@@ -113,11 +148,26 @@ export function useOnboardingWizardState({
     return "none";
   }, [isTour]);
 
+  // PR-13 / S5.1 goal-first A/B. Assignment is deterministic per
+  // device fingerprint so a returning user always re-enters the same
+  // arm (S5.1 D7 retention measurement is meaningless if the cohort
+  // flips between sessions). Tour replay pins to `control` so the
+  // read-only replay never appears to advertise an experiment the
+  // user is not actually enrolled in.
+  const goalFirstVariant = useMemo<OnboardingGoalFirstVariant>(() => {
+    if (isTour) return "control";
+    return assignVariant(
+      webKVStore,
+      ONBOARDING_GOAL_FIRST_EXPERIMENT,
+    ) as OnboardingGoalFirstVariant;
+  }, [isTour]);
+
   const [picks, setPicks] = useState<string[]>(() =>
     isTour ? [...ALL_MODULES] : loadPersistedPicks(defaultPicksVariant),
   );
   const [expanded, setExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [goalFirstSkipped, setGoalFirstSkipped] = useState(false);
 
   // Double-submit guard. `finish()` is synchronous today, but a
   // double-tap on the primary CTA during the same React commit (e.g.
@@ -251,6 +301,76 @@ export function useOnboardingWizardState({
     });
   }, [picks, onDone, isTour, defaultPicksVariant]);
 
+  // Goal-first arm completion (PR-13). Symmetric to {@link finish}
+  // but driven by a single outcome → module mapping instead of the
+  // module-checklist. Shares the same re-entry guard + once-per-
+  // account `onboarding_completed` semantics so the funnel never
+  // double-counts a user that bounced between arms via Settings
+  // reset. Tour replay refuses the call so the read-only replay
+  // cannot accidentally persist a goal pick against the host store.
+  const pickGoal = useCallback(
+    (outcomeId: OnboardingOutcomeId) => {
+      if (isTour) return;
+      if (submittingRef.current) return;
+
+      const outcome = getOutcomeById(outcomeId);
+      if (!outcome) return;
+
+      submittingRef.current = true;
+      setSubmitting(true);
+
+      const chosen: DashboardModuleId[] = [outcome.module];
+      saveVibePicks(chosen as never[]);
+
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
+        picks: chosen,
+        picksCount: chosen.length,
+        intent: "goal_first",
+        outcome: outcomeId,
+      });
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
+        step: "goal_first",
+        durationMs: Math.max(
+          0,
+          Date.now() - (startedAtRef.current ?? Date.now()),
+        ),
+      });
+      if (!isOnboardingCompletedFired()) {
+        trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+          intent: "goal_first",
+          outcome: outcomeId,
+          picksCount: chosen.length,
+        });
+        markOnboardingCompletedFired();
+      }
+
+      markFirstActionStartedAt();
+      markFirstActionPending();
+      markOnboardingDone();
+      clearPersistedPicks();
+
+      onDone(outcome.module, {
+        intent: "goal_first",
+        picks: chosen,
+      });
+    },
+    [isTour, onDone],
+  );
+
+  // Goal-first escape hatch. Switches the wizard back to the legacy
+  // module welcome without mutating onboarding state — the user
+  // stays in the same experiment cohort but reports a `skip`
+  // outcome so PostHog can split conversion among exposures.
+  const skipGoalFirst = useCallback(() => {
+    if (isTour) return;
+    if (goalFirstSkipped) return;
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_GOAL_FIRST_PICKED, {
+      outcome: "skip",
+      module: null,
+    });
+    setGoalFirstSkipped(true);
+  }, [isTour, goalFirstSkipped]);
+
   // Hero copy A/B (S1.1 + S1.2). Assignment is deterministic per
   // device fingerprint and persists across renders, so the user always
   // sees the same headline / CTA throughout the funnel. Tour replay
@@ -284,7 +404,11 @@ export function useOnboardingWizardState({
       experiment_id: ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id,
       variant: defaultPicksVariant,
     });
-  }, [isTour, heroVariant, defaultPicksVariant]);
+    trackEvent(ANALYTICS_EVENTS.EXPERIMENT_EXPOSED, {
+      experiment_id: ONBOARDING_GOAL_FIRST_EXPERIMENT.id,
+      variant: goalFirstVariant,
+    });
+  }, [isTour, heroVariant, defaultPicksVariant, goalFirstVariant]);
 
   // S6.1: only the `none` arm disables the CTA on empty picks. Tour
   // replay never disables the CTA — replay always renders all four
@@ -309,5 +433,9 @@ export function useOnboardingWizardState({
     finish,
     submitting,
     secondaryAction,
+    goalFirstVariant,
+    pickGoal,
+    skipGoalFirst,
+    goalFirstSkipped,
   };
 }

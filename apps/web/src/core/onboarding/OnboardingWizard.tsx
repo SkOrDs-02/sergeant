@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { shouldShowOnboarding as sharedShouldShowOnboarding } from "./onboardingGate";
 import { WelcomeOneScreen } from "./WelcomeOneScreen";
+import { GoalFirstScreen } from "./GoalFirstScreen";
 import { useOnboardingWizardState } from "./useOnboardingWizardState";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 
@@ -89,7 +90,17 @@ export function OnboardingWizard({
     finish,
     submitting,
     secondaryAction,
+    goalFirstVariant,
+    pickGoal,
+    skipGoalFirst,
+    goalFirstSkipped,
   } = useOnboardingWizardState({ mode, onDone, onSecondaryAction });
+
+  // PR-13: render the outcome-first screen for users assigned to the
+  // `goal_first` arm until they either pick an outcome (the hook
+  // routes to the hub) or skip back to the legacy module welcome.
+  // Tour replay always sees `control` so the screenshot stays stable.
+  const showGoalFirst = goalFirstVariant === "goal_first" && !goalFirstSkipped;
 
   // Refs for the modal-variant focus contract. `panelRef` is the
   // scope passed to `useDialogFocusTrap` (Tab cycle + Escape).
@@ -145,23 +156,34 @@ export function OnboardingWizard({
   });
 
   const content = useMemo(
-    () => (
-      <WelcomeOneScreen
-        picks={picks}
-        togglePick={togglePick}
-        onOpen={finish}
-        expanded={expanded}
-        onToggleExpanded={toggleExpanded}
-        copy={heroCopy}
-        ctaLabelOverride={ctaLabelOverride}
-        ctaDisabled={ctaDisabled}
-        emptyPicksHint={emptyPicksHint}
-        onSecondaryAction={secondaryAction}
-        headingRef={headingRef}
-        ctaBusy={submitting}
-      />
-    ),
+    () =>
+      showGoalFirst ? (
+        <GoalFirstScreen
+          onChoose={(outcomeId) => pickGoal(outcomeId)}
+          onSkip={skipGoalFirst}
+          busy={submitting}
+          headingRef={headingRef}
+        />
+      ) : (
+        <WelcomeOneScreen
+          picks={picks}
+          togglePick={togglePick}
+          onOpen={finish}
+          expanded={expanded}
+          onToggleExpanded={toggleExpanded}
+          copy={heroCopy}
+          ctaLabelOverride={ctaLabelOverride}
+          ctaDisabled={ctaDisabled}
+          emptyPicksHint={emptyPicksHint}
+          onSecondaryAction={secondaryAction}
+          headingRef={headingRef}
+          ctaBusy={submitting}
+        />
+      ),
     [
+      showGoalFirst,
+      pickGoal,
+      skipGoalFirst,
       picks,
       togglePick,
       finish,

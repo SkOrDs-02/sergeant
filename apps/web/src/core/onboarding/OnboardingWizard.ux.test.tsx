@@ -4,6 +4,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import {
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
+  ONBOARDING_GOAL_FIRST_EXPERIMENT,
   ONBOARDING_HERO_COPY_EXPERIMENT,
   overrideVariant,
 } from "@sergeant/shared";
@@ -38,6 +39,7 @@ describe("OnboardingWizard — focus management on mount", () => {
     vi.restoreAllMocks();
     overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
     overrideVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id, "none");
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
   });
 
   it("focuses the splash heading on mount (modal variant)", () => {
@@ -68,6 +70,7 @@ describe("OnboardingWizard — Escape soft-pause (real-mode modal)", () => {
     vi.restoreAllMocks();
     overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
     overrideVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id, "none");
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
   });
 
   it("Escape forwards to onSecondaryAction without firing onDone or marking onboarding done", () => {
@@ -150,6 +153,7 @@ describe("OnboardingWizard — double-submit guard", () => {
     vi.restoreAllMocks();
     overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
     overrideVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id, "none");
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
   });
 
   it("does not call onDone twice when the primary CTA is double-clicked (real mode)", () => {
