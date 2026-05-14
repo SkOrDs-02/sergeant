@@ -74,6 +74,35 @@ export interface VoyageSnapshot {
   cumulativeSinceRestartUsd: number;
 }
 
+/**
+ * Один день у trend-серії — Anthropic-only (Voyage не пишеться у
+ * `ai_usage_daily`; для Voyage показуємо лише cumulative since restart).
+ */
+export interface DailyCostPoint {
+  /** Kyiv-day `YYYY-MM-DD`. */
+  day: string;
+  totalCostUsd: number;
+  totalTokens: number;
+  requestCount: number;
+}
+
+export interface AnthropicTrendBlock {
+  /** Скільки днів запросили (1..MAX_TREND_DAYS). */
+  days: number;
+  /** Inclusive [startDay, endDay] Kyiv-day window. */
+  startDay: string;
+  endDay: string;
+  /**
+   * Per-day Anthropic-rollup, відсортований ASCENDING by day. Дні, у яких
+   * нічого не витрачали, заповнені нулями (zero-fill) — щоб sparkline
+   * мав стабільну ширину = days.
+   */
+  points: ReadonlyArray<DailyCostPoint>;
+  /** Сума всіх `points[i].totalCostUsd`. */
+  totalCostUsd: number;
+  totalTokens: number;
+}
+
 export interface AiCostSummary {
   /** Момент генерації (UTC ISO). */
   generatedAt: string;
@@ -91,6 +120,12 @@ export interface AiCostSummary {
   voyage: VoyageSnapshot;
   /** Бюджет із env-конфігу. */
   budget: BudgetSnapshot;
+  /**
+   * Anthropic per-day trend — populated тільки коли caller передав
+   * `trendDays >= 1`. Voyage у trend-і не присутній — він не пишеться
+   * у `ai_usage_daily` (PR-12), тому historical breakdown недоступний.
+   */
+  trend?: AnthropicTrendBlock;
   /**
    * Run-rate (today_spent / day_of_month_so_far × days_in_month). 0 коли
    * day_of_month=1 і spent=0 — щоб projection не показував Infinity.
@@ -213,6 +248,43 @@ function modelFromBucket(bucket: string): string {
   return bucket;
 }
 
+/** Max-cap для `<days>` arg у `/ai_cost`. 30 = 1 month rolling window. */
+export const MAX_TREND_DAYS = 30;
+
+/**
+ * Zero-fill helper для trend-points: будує безперервний day-range між
+ * `startDay`..`endDay` (inclusive, Kyiv).
+ */
+function enumerateKyivDayRange(
+  startDay: string,
+  endDay: string,
+): ReadonlyArray<string> {
+  const out: string[] = [];
+  const start = parseKyivDay(startDay);
+  const end = parseKyivDay(endDay);
+  // Через UTC-noon (як kyivDayToUtcDate) — стабільно для DST-edge-кейсів.
+  let cursor = new Date(
+    Date.UTC(start.year, start.month - 1, start.day, 12, 0, 0),
+  );
+  const last = new Date(Date.UTC(end.year, end.month - 1, end.day, 12, 0, 0));
+  // Hard-cap на 366 ітерацій (один рік) — захист від caller-bug-у.
+  for (let i = 0; i < 366 && cursor.getTime() <= last.getTime(); i++) {
+    out.push(kyivDayKey(cursor));
+    cursor = new Date(cursor.getTime() + 86_400_000);
+  }
+  return out;
+}
+
+/**
+ * Повертає Kyiv-день за (todayKyiv − N днів). `N=0` ⇒ той самий день.
+ */
+export function kyivDayMinus(todayKyiv: string, n: number): string {
+  const { year, month, day } = parseKyivDay(todayKyiv);
+  const base = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  base.setUTCDate(base.getUTCDate() - n);
+  return kyivDayKey(base);
+}
+
 /**
  * Зчитує per-model aggregate за inclusive Kyiv-day range. Підсумовує
  * `ai_usage_daily` рядки із `subject_key='provider:anthropic'` і
@@ -250,6 +322,72 @@ export async function fetchAnthropicCostsForRange(
   const totalCostUsd = models.reduce((acc, m) => acc + m.estCostUsd, 0);
   const totalTokens = models.reduce((acc, m) => acc + m.totalTokens, 0);
   return { startDay, endDay, models, totalCostUsd, totalTokens };
+}
+
+interface AnthropicDailyTrendRow {
+  usage_day: string | Date;
+  request_count: string | number;
+  input_tokens: string | number;
+  output_tokens: string | number;
+  total_tokens: string | number;
+  est_cost_usd: string | number;
+}
+
+function kyivDayFromUsageDay(value: string | Date): string {
+  if (value instanceof Date) {
+    // pg повертає DATE як Date у local-time-zone; беремо лише ISO date part.
+    return kyivDayKey(value);
+  }
+  // DATE-як-string («2026-05-13») — beraемо як є.
+  return String(value).slice(0, 10);
+}
+
+/**
+ * Per-day Anthropic rollup для trend-series. Zero-fill: дні без рядків
+ * у `ai_usage_daily` додаються з нулями (потрібно для sparkline-ширини).
+ * Single SQL query через `GROUP BY usage_day`, JS заповнює gap-и.
+ */
+export async function fetchAnthropicDailyTrend(
+  pool: Pool,
+  startDay: string,
+  endDay: string,
+): Promise<ReadonlyArray<DailyCostPoint>> {
+  const result = await pool.query<AnthropicDailyTrendRow>(
+    `SELECT usage_day,
+            SUM(request_count)::bigint AS request_count,
+            SUM(input_tokens)::bigint  AS input_tokens,
+            SUM(output_tokens)::bigint AS output_tokens,
+            SUM(total_tokens)::bigint  AS total_tokens,
+            SUM(est_cost_usd)::numeric AS est_cost_usd
+       FROM ai_usage_daily
+      WHERE subject_key = 'provider:anthropic'
+        AND bucket LIKE 'anthropic:%'
+        AND usage_day >= $1::date
+        AND usage_day <= $2::date
+      GROUP BY usage_day
+      ORDER BY usage_day ASC`,
+    [startDay, endDay],
+  );
+  const byDay = new Map<string, DailyCostPoint>();
+  for (const row of result.rows) {
+    const day = kyivDayFromUsageDay(row.usage_day);
+    byDay.set(day, {
+      day,
+      requestCount: toNumber(row.request_count),
+      totalCostUsd: toNumber(row.est_cost_usd),
+      totalTokens: toNumber(row.total_tokens),
+    });
+  }
+  const allDays = enumerateKyivDayRange(startDay, endDay);
+  return allDays.map(
+    (day) =>
+      byDay.get(day) ?? {
+        day,
+        totalCostUsd: 0,
+        totalTokens: 0,
+        requestCount: 0,
+      },
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -339,6 +477,13 @@ export interface BuildAiCostSummaryInput {
   /** Inject-имо щоб тести могли заморозити час. */
   now?: Date;
   budget: BudgetSnapshot;
+  /**
+   * Опційний trend window для `/ai_cost <days>`. `undefined` (default) — без
+   * trend-блоку (legacy behaviour). 1..30 — Anthropic-only per-day series.
+   * Caller відповідає за валідацію boundary; за value-том більш-30 буде
+   * `Math.min(days, MAX_TREND_DAYS)`.
+   */
+  trendDays?: number;
 }
 
 /**
@@ -349,6 +494,7 @@ export async function buildAiCostSummary({
   pool,
   now = new Date(),
   budget,
+  trendDays,
 }: BuildAiCostSummaryInput): Promise<AiCostSummary> {
   const todayKyiv = kyivDayKey(now);
   const weekStart = kyivWeekStart(todayKyiv);
@@ -374,13 +520,58 @@ export async function buildAiCostSummary({
     }
   }
 
-  const [today, week, monthSoFar, topEndpoints, voyage] = await Promise.all([
-    safeFetch(todayKyiv, todayKyiv),
-    safeFetch(weekStart, todayKyiv),
-    safeFetch(monthStart, todayKyiv),
-    fetchTopEndpointsFromProm(3),
-    fetchVoyageCumulativeFromProm(),
-  ]);
+  const trendDaysClamped =
+    typeof trendDays === "number" && Number.isFinite(trendDays)
+      ? Math.max(1, Math.min(MAX_TREND_DAYS, Math.floor(trendDays)))
+      : null;
+
+  async function safeFetchTrend(
+    days: number,
+  ): Promise<AnthropicTrendBlock | undefined> {
+    const startDay = kyivDayMinus(todayKyiv, days - 1);
+    try {
+      const points = await fetchAnthropicDailyTrend(pool, startDay, todayKyiv);
+      const totalCostUsd = points.reduce((acc, p) => acc + p.totalCostUsd, 0);
+      const totalTokens = points.reduce((acc, p) => acc + p.totalTokens, 0);
+      return {
+        days,
+        startDay,
+        endDay: todayKyiv,
+        points,
+        totalCostUsd,
+        totalTokens,
+      };
+    } catch {
+      // Partial-failure: повертаємо порожній trend-block (zero-fill за range)
+      // — UI відрендерить «no data» line замість зривати весь reply.
+      const points = enumerateKyivDayRange(startDay, todayKyiv).map((day) => ({
+        day,
+        totalCostUsd: 0,
+        totalTokens: 0,
+        requestCount: 0,
+      }));
+      return {
+        days,
+        startDay,
+        endDay: todayKyiv,
+        points,
+        totalCostUsd: 0,
+        totalTokens: 0,
+      };
+    }
+  }
+
+  const [today, week, monthSoFar, topEndpoints, voyage, trend] =
+    await Promise.all([
+      safeFetch(todayKyiv, todayKyiv),
+      safeFetch(weekStart, todayKyiv),
+      safeFetch(monthStart, todayKyiv),
+      fetchTopEndpointsFromProm(3),
+      fetchVoyageCumulativeFromProm(),
+      trendDaysClamped !== null
+        ? safeFetchTrend(trendDaysClamped)
+        : Promise.resolve(undefined),
+    ]);
 
   const { day: domToday } = parseKyivDay(todayKyiv);
   const daysInMonth = kyivDaysInMonth(todayKyiv);
@@ -404,6 +595,7 @@ export async function buildAiCostSummary({
       daysElapsedInMonth,
       daysInMonth,
     },
+    ...(trend ? { trend } : {}),
   };
 }
 

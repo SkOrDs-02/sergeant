@@ -11,7 +11,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser, apiQueryKeys } from "@sergeant/api-client/react";
 import type { User } from "@sergeant/shared";
-import { signIn, signUp, signOut, forgetPassword } from "./authClient";
+import {
+  signIn,
+  signUp,
+  signOut,
+  requestPasswordReset as requestPasswordResetApi,
+} from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -23,7 +28,7 @@ import { messages } from "../../shared/i18n/uk";
  * Дані про поточного користувача тягнемо через `useUser()` з
  * `@sergeant/api-client/react` (`GET /api/v1/me` + runtime-валідація
  * `MeResponseSchema`). Better Auth лишається тільки як actions-layer
- * (`signIn.email`, `signUp.email`, `signOut`, `forgetPassword`) — після
+ * (`signIn.email`, `signUp.email`, `signOut`, `requestPasswordReset`) — після
  * кожної дії інвалідуємо `apiQueryKeys.me.current()`, щоб наступний
  * рендер побачив свіжий профіль.
  */
@@ -94,6 +99,9 @@ export function translateAuthError(
     case "FAILED_TO_CREATE_SESSION":
     case "FAILED_TO_CREATE_USER":
       return messages.auth.sessionFailure;
+    case "INVALID_TOKEN":
+    case "TOKEN_EXPIRED":
+      return messages.auth.invalidToken;
   }
 
   return translateByMessage(message, fallback);
@@ -101,6 +109,11 @@ export function translateAuthError(
 
 function translateByMessage(message: string, fallback: string): string {
   if (!message) return fallback;
+  // Better Auth повертає невалідний / прострочений reset-link як
+  // `code: "INVALID_TOKEN"` + `message: "Invalid token"` (англ.).
+  // На випадок, коли code не доїхав, ловимо message-level patern,
+  // щоб не лишити англомовну "Invalid token" у UI.
+  if (/^invalid token$/i.test(message)) return messages.auth.invalidToken;
   // Перевіряти specific-перед-generic: `"Invalid email or password"`
   // містить підрядок `"Invalid email"`, тож загальна гілка
   // `/invalid email/i` фальш-метчила wrong-password як «Невірний формат
@@ -317,7 +330,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthError(null);
     try {
       const redirectTo = `${window.location.origin}/reset-password`;
-      const result = await forgetPassword({ email, redirectTo });
+      const result = await requestPasswordResetApi({ email, redirectTo });
       if (result?.error) {
         setAuthError(
           translateAuthError(

@@ -1017,7 +1017,17 @@ export const aiMemoryIngestEnqueuedTotal = new client.Counter({
 export const aiMemoryIngestProcessedTotal = new client.Counter({
   name: "ai_memory_ingest_processed_total",
   help: "AI memory ingest job outcomes",
-  labelNames: ["outcome", "source"], // outcome: ok|retry|permanent_fail|skipped
+  // outcome:
+  //   ok             — job succeeded.
+  //   retry          — retryable error; BullMQ scheduled next attempt.
+  //   permanent_fail — non-retryable error (e.g. Voyage 4xx, invalid payload).
+  //   dlq            — written to ai_memory_ingest_failed (DLQ); either
+  //                    non-retryable error OR retries-exhausted final attempt.
+  //                    Counted IN ADDITION to permanent_fail / retry outcome
+  //                    so dashboards can distinguish "wrote to DLQ" from
+  //                    "final fail outcome".
+  //   skipped        — pre-flight skip (legacy; kept for back-compat).
+  labelNames: ["outcome", "source"],
   registers: [register],
 });
 

@@ -1,5 +1,6 @@
 /**
- * Render + interaction tests for `pages/Calendar.tsx` (Phase 5 / PR 2).
+ * Render + interaction tests for `pages/Calendar/` (Phase 5 / PR 2,
+ * decomposed into a folder by audit `P2.2b` on 2026-05-13).
  *
  * Covers:
  *  - Порожній стан (без звичок) рендерить календар без краху;
@@ -25,10 +26,10 @@ import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,
   getCachedSqliteCompletions,
-} from "../lib/sqliteReader";
-import { __resetRoutineSqliteReadGateForTests } from "../lib/sqliteReadGate";
+} from "../../lib/sqliteReader";
+import { __resetRoutineSqliteReadGateForTests } from "../../lib/sqliteReadGate";
 
-import { Calendar } from "./Calendar";
+import { Calendar } from "./index";
 
 beforeEach(() => {
   // Stage 8 PR #057r-tombstone-mobile — load/persist now read from the

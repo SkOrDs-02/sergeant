@@ -198,6 +198,7 @@ Decision-tree коли щось «не працює»:
 | Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md) |
 | Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                    |
 | Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                         |
+| DB index audit (prod-replica snapshot)         | Раз на квартал        | [§ 9 «Index hygiene»](#9-index-hygiene)                                        |
 | Access review (хто має які доступи)            | Квартальна            | [`docs/playbooks/run-access-review.md`](../playbooks/run-access-review.md)     |
 
 ### 8.1. Migration `down.sql` drill
@@ -300,7 +301,54 @@ pnpm lint:migrations         # парсер + всі pure-checks
 node --test scripts/__tests__/lint-migrations.test.mjs   # 75 unit + integration тестів
 ```
 
-## 9. Як написати postmortem
+## 9. Index hygiene
+
+Постійний моніторинг DB indexes — щоб (а) часті queries не падали на seq-scan-ах при рості таблиць, (б) zero-scan indexes не з'їдали disk + INSERT/UPDATE write-amplification, (в) duplicate / overlapping indexes не накопичувалися від PR до PR.
+
+Два компоненти, які працюють разом:
+
+1. **Static heuristic linter** — `pnpm lint:db-indexes` (CI WARN-only). Сканує **нові** `*.up.sql` migrations у diff поточного PR-а проти `origin/main`. Шукає колонки виду `*_id` та `... REFERENCES <table>(...)`, які НЕ покриті жодним index-ом (inline `PRIMARY KEY` / `UNIQUE`, table-level constraint, окремий `CREATE INDEX` зі leading-column == FK column). У `--all` режимі сканує всю історію (baseline-audit). У `--strict` — fail-stop (поки що не enabled у CI; майбутній opt-in після baseline-cleanup-у).
+
+   ```bash
+   pnpm lint:db-indexes               # diff-режим (CI defaults)
+   pnpm lint:db-indexes --all         # baseline audit (43 known warnings на 2026-05-13)
+   pnpm lint:db-indexes --all --strict   # exit 1 на будь-якому warning
+   ```
+
+   Heuristic свідомо conservative — flag-ає FK без leading-column index навіть якщо є composite index, де FK column не на першому місці (Postgres-planner використає leading-column index для inequality / range queries, але point-lookup на FK column окремо seq-scan-не).
+
+2. **Runtime audit script** — `pnpm db:index-audit` (manual, поза CI). Опитує `pg_stat_user_indexes` + `pg_stat_user_tables` живої БД і генерує markdown report з трьома секціями:
+   - **Heavy seq-scan tables**: `seq_scan ≥ 1`, `live_rows ≥ 1000`, `seq_scan / max(idx_scan, 1) ≥ 0.5`. Сортовано за `seq_scan desc`.
+   - **Unused indexes**: `idx_scan = 0`, non-unique, non-primary. Сортовано за `pg_relation_size desc` (найбільший waste — нагорі).
+   - **Overlapping indexes**: пари `(a, b)` на одній таблиці, де `a.columns` — префікс `b.columns`. Postgres-planner може використати `b` для лук-апів `a` (якщо немає партикулярних INCLUDE / WHERE clause).
+
+   ```bash
+   # Read-only replica preferred — audit не пише.
+   export DATABASE_URL=postgresql://devin-audit:***@prod-replica:5432/sergeant
+   pnpm db:index-audit > /tmp/audit.md            # stdout
+   pnpm db:index-audit --write                     # docs/runbooks/db-index-audit-YYYY-MM-DD.md
+   ```
+
+   Template + format: [`db-index-audit-template.md`](./db-index-audit-template.md).
+
+### Як триажити audit-report
+
+Для кожного row з 3-х секцій ухвали одне з:
+
+- **Add index** (heavy seq-scan): окремий PR з `feat(server):` / `chore(server):`. Нова `NNN_add_<table>_<col>_idx.sql` міграція. `pnpm lint:db-indexes` має одразу зелено пройти для PR-а.
+- **Drop unused index**: this is a DROP — **Hard Rule #4 two-phase обов'язковий**. Phase 1: deprecation marker (не пишемо, просто spec у PR-описі що це Phase 1 — index активно ловиться seq-scan-ом ≥14 днів). Phase 2: окремий PR з header `-- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD` ([§ 8.2](#82-two-phase-drop-authoring)).
+- **Drop redundant overlapping index**: те ж саме — `DROP INDEX` через `-- TWO-PHASE-DROP:` header. Винятки: shorter index має INCLUDE-stored columns longer не має, або partial WHERE — manual confirm `EXPLAIN ANALYZE`.
+- **Keep as-is з reason**: додай рядок у секцію `## Triage notes` audit-report-а: `idx_scan=0 because: <reason>` (e.g. `seasonal traffic — Q4 only`, `feature flag not yet activated`, `enforces uniqueness`).
+
+### Чому НЕ автоматизувати
+
+Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
+
+- Stat-counter-и Postgres зануляються на restart / `pg_stat_reset()`. Railway restart Postgres-instance-у за upgrade-у — і ти стер пам'ять про використання index-у. CI-decision на цій базі = вистрелити собі в ногу.
+- INDEX на high-write table зі складною query-pattern-ою (наприклад, `mono_transaction` зі специфічним partial scope) — рішення повинна приймати людина з knowledge query-патернів. Heuristic тільки підсвічує candidates.
+- Drop unused index без 14-day soak-вікна = guaranteed-incident, якщо у production raptam з'явиться seasonal-query, яка раніше йшла через цей index.
+
+## 10. Як написати postmortem
 
 Якщо incident → SEV-2+ або duration > 30min → обов'язково postmortem.
 
@@ -310,7 +358,7 @@ node --test scripts/__tests__/lint-migrations.test.mjs   # 75 unit + integration
 4. Action items → GitHub issues з label `postmortem-action-item`.
 5. Review через PR (звичайний flow); merge після того, як `@Skords-01` (або acting on-call) одобрив.
 
-## 10. Що НЕ робити
+## 11. Що НЕ робити
 
 - ❌ `git push --force` у `main` або захищених гілках. Branch protection блокує, але не у admin-override-режимі — не override-и без incident.
 - ❌ `pnpm db:migrate -- --rollback` у production. `down.sql` — для local rollbacks. Production rollback = compensating migration.

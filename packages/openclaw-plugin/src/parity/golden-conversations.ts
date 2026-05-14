@@ -300,6 +300,17 @@ const SHORTCUT_FIXTURES: ShortcutFixture[] = [
   },
   {
     kind: "shortcut",
+    id: "shortcut.forget.slash",
+    description:
+      "/forget id|topic|since|query — Layer 0 founder-control AI-memory soft-delete (PR-23).",
+    input: "/forget id 123",
+    expectedLayer: "shortcut",
+    expectedSlug: "forget",
+    expectedToolCalls: shortcutToolNames("forget"),
+    legacyAgent: "unknown",
+  },
+  {
+    kind: "shortcut",
     id: "shortcut.decisions.slash",
     description: "/decisions — Layer 0 recent-decisions log.",
     input: "/decisions",
@@ -395,7 +406,7 @@ const COUNCIL_FIXTURES: CouncilFixture[] = [
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Full parity catalogue. 21 fixtures total: 17 shortcuts + 3 modes + 1
+ * Full parity catalogue. 22 fixtures total: 18 shortcuts + 3 modes + 1
  * council. Order is shortcut → strategic-mode → council so the test
  * names group naturally у vitest output.
  */

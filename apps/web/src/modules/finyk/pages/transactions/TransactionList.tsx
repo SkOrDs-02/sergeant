@@ -10,6 +10,7 @@ import {
   DataState,
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
+import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
@@ -111,6 +112,7 @@ export function TransactionList({
   onRefresh,
 }: TransactionListProps) {
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
+  const cloudPullPending = useCloudPullPending();
 
   // DataState contract:
   //   - `data === undefined` triggers the skeleton slot. We mark the
@@ -258,6 +260,7 @@ export function TransactionList({
         <PullToRefresh
           onRefresh={onRefresh}
           variant="finyk"
+          enabled={!cloudPullPending}
           onScrollElement={setScrollParent}
         >
           {content}

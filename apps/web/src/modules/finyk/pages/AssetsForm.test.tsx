@@ -37,6 +37,68 @@ describe("SubscriptionForm", () => {
     expect(buttonLabels).toContain("Скасувати");
   });
 
+  it("rejects out-of-range billing days (0, 99) and saves a valid one", () => {
+    const setSubscriptions = vi.fn();
+    const setShowSubForm = vi.fn();
+    const baseSub = {
+      name: "Netflix",
+      emoji: "\u{1F3AC}",
+      keyword: "",
+      currency: "UAH" as const,
+    };
+
+    // 0 — must NOT call setSubscriptions
+    const { container: c0, unmount: u0 } = render(
+      <SubscriptionForm
+        newSub={{ ...baseSub, billingDay: 0 }}
+        setNewSub={vi.fn()}
+        setSubscriptions={setSubscriptions}
+        setShowSubForm={setShowSubForm}
+      />,
+    );
+    fireEvent.click(
+      within(c0)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setSubscriptions).not.toHaveBeenCalled();
+    u0();
+
+    // 99 — must NOT call setSubscriptions
+    const { container: c99, unmount: u99 } = render(
+      <SubscriptionForm
+        newSub={{ ...baseSub, billingDay: 99 }}
+        setNewSub={vi.fn()}
+        setSubscriptions={setSubscriptions}
+        setShowSubForm={setShowSubForm}
+      />,
+    );
+    fireEvent.click(
+      within(c99)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setSubscriptions).not.toHaveBeenCalled();
+    u99();
+
+    // 15 — valid, must commit and close the form
+    const { container: c15 } = render(
+      <SubscriptionForm
+        newSub={{ ...baseSub, billingDay: 15 }}
+        setNewSub={vi.fn()}
+        setSubscriptions={setSubscriptions}
+        setShowSubForm={setShowSubForm}
+      />,
+    );
+    fireEvent.click(
+      within(c15)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setSubscriptions).toHaveBeenCalledTimes(1);
+    expect(setShowSubForm).toHaveBeenCalledWith(false);
+  });
+
   it("calls setShowSubForm(false) on cancel", () => {
     const onCancel = vi.fn();
     const { container } = render(

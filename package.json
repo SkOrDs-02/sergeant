@@ -28,7 +28,9 @@
     "lint": "turbo run lint && node scripts/check-imports.mjs && node tools/tsconfig-guard/check.mjs && pnpm lint:plugins && pnpm lint:skills && pnpm lint:playbook-language && pnpm lint:tech-debt-freshness && pnpm lint:initiative-status-sync && pnpm lint:localstorage-allowlist && pnpm lint:env-single-source && pnpm lint:discoverability && pnpm lint:patches && pnpm api:check-openapi && pnpm api:check-openapi-types",
     "lint:imports": "node scripts/check-imports.mjs",
     "lint:migrations": "node scripts/lint-migrations.mjs",
+    "lint:db-indexes": "node scripts/lint-db-indexes.mjs",
     "db:drill:down": "node scripts/migration-down-drill.mjs",
+    "db:index-audit": "node scripts/db-index-audit.mjs",
     "ops:n8n:validate": "node scripts/n8n/validate-n8n-workflows.mjs",
     "n8n:import": "node scripts/n8n/n8n-workflows.mjs import",
     "n8n:export": "node scripts/n8n/n8n-workflows.mjs export",
@@ -59,6 +61,7 @@
     "db:migrate": "pnpm --filter @sergeant/server db:migrate",
     "dev:db": "pnpm db:up && pnpm db:migrate",
     "replay:webhook": "node scripts/replay-webhook.mjs",
+    "replay:dlq": "node scripts/replay-dlq.mjs",
     "ai-memory:backfill": "node scripts/ai-memory-backfill.mjs",
     "licenses:gen": "node scripts/generate-licenses.mjs",
     "licenses:check": "node scripts/generate-licenses.mjs check",
@@ -118,7 +121,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "eslint --fix --max-warnings=0",
+      "eslint --fix --max-warnings=0 --no-warn-ignored",
       "prettier --write"
     ],
     "*.{ts,tsx}": [

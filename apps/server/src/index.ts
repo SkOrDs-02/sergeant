@@ -41,6 +41,7 @@ import {
   startFtuxDripWorker,
   type StartedFtuxDripWorker,
 } from "./lib/jobs/ftuxDrip.js";
+import { endPoolWithAbortTimeout } from "./lib/poolShutdown.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
   startMemoryIngestWorker,
@@ -366,15 +367,13 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
       });
     }
 
-    try {
-      await pool.end();
-      logger.info({ msg: "pg_pool_ended" });
-    } catch (err) {
-      logger.warn({
-        msg: "pg_pool_end_error",
-        err: serializeError(err, { includeStack: false }),
-      });
-    }
+    // Audit P2-5: bounded drain з `SHUTDOWN_GRACE_MS / 2` AbortController-ом.
+    // На abort helper лог-warn-ить `pg_pool_end_timeout`; shutdown продовжує
+    // йти далі (Redis, Sentry), а `hardTimer` залишається last-resort safety net.
+    await endPoolWithAbortTimeout(pool, {
+      timeoutMs: Math.floor(SHUTDOWN_GRACE_MS / 2),
+      logger,
+    });
 
     try {
       await disconnectRedis();

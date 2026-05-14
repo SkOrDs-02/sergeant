@@ -84,11 +84,19 @@ function SubCardComponent({
 
   const saveEdit = () => {
     if (!form.name || !form.billingDay) return;
+    // The day-of-month input is a free <input type="number">, so the
+    // min/max attributes are only browser hints — keyboard/paste/programmatic
+    // entry bypasses them. Clamp to the calendar range here so we never
+    // persist `0`, `99`, or `NaN` and render nonsense like "Через 18 днів · 0-го".
+    const parsedDay = Math.trunc(Number(form.billingDay));
+    if (!Number.isFinite(parsedDay) || parsedDay < 1 || parsedDay > 31) {
+      return;
+    }
     onEdit?.({
       name: form.name,
       emoji: form.emoji,
       keyword: form.keyword,
-      billingDay: Number(form.billingDay),
+      billingDay: parsedDay,
       currency: form.currency,
     });
     setEditing(false);

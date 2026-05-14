@@ -15,6 +15,7 @@ import {
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { SkeletonHabitRow } from "@shared/components/ui/Skeleton";
+import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { RoutineCalendarPanel } from "./components/RoutineCalendarPanel";
 import { RoutineStatsPanel } from "./components/RoutineStatsPanel";
 import {
@@ -55,6 +56,7 @@ export function RoutineTimeline({
     data: calendarBusy ? undefined : (true as const),
     isLoading: calendarBusy,
   };
+  const cloudPullPending = useCloudPullPending();
 
   const calendarLoadingSkeleton = (
     <div className="px-4 pt-2 space-y-2 motion-safe:animate-pulse">
@@ -78,6 +80,7 @@ export function RoutineTimeline({
         onRefresh={onPullRefresh}
         onError={onPullRefreshError}
         variant="routine"
+        enabled={!cloudPullPending}
         contentClassName="page-tabbar-pad routine-main-pad"
       >
         <div className="max-w-4xl mx-auto w-full pt-4 space-y-4">

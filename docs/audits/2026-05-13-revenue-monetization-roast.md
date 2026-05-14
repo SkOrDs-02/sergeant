@@ -2,6 +2,8 @@
 
 > **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
 > **Status:** Active
+>
+> _Update 2026-05-13: P1-9 closed — `apps/web/src/core/billing/TrialBanner.tsx` scaffolded + mounted in `HubMainContent` banner stack._
 
 ## Cross-refs
 
@@ -18,13 +20,13 @@
 1. **Paywall modal відсутній** — PAYWALL_VIEWED оголошений, але ніде не емітиться; Pro-gate UI не існує → free users бачать Pro-фічі без обмежень.
 2. **`usePlan` hook не існує** — web-сторона не знає план користувача; downstream (paywall, settings, AI-ліміти) не може gate-ити.
 3. **Webhook lifecycle неповний** — `subscription_started` emit працює, але `subscription_renewed` і `subscription_canceled` — ні. MRR / churn dashboards PostHog неможливі.
-4. **Customer Portal endpoint відсутній** — self-serve cancel / update payment — лише Stripe Dashboard.
+4. ~~**Customer Portal endpoint відсутній** — self-serve cancel / update payment — лише Stripe Dashboard.~~ → Closed: `POST /api/billing/portal` shipped (P0-6 follow-up PR); UI-кнопка в `PlanSection` чекає P1-6.
 5. **Analytics event registry неповний** — initiative 0010 Phases 4–6 потребує ACTIVATION_V2_HIT, LANDING_VIEWED, LANDING_EMAIL_CAPTURED, SIGNUP_PROVIDER_SELECTED — жодного не було в canonical registry.
 6. **billingKeys factory пропущена** — Hard Rule #2 compliance gap для billing domain RQ queries.
 7. **Landing page (Phase 6.1) — 0 LOC** — публічний `/` для SEO/paid-acquisition не існує.
 8. **EN locale (Phase 6.2) — 0 progress** — i18n framework не інтегрований; hero copy тільки uk.
 9. **LiqPay placeholder — відсутній** — UA-локальний платіжний шлюз не scaffolded.
-10. **Activation v2 web-side capture — не wired** — `evaluateActivationV2()` pure function існує в packages/insights, але ніхто її не викликає на client.
+10. **Activation v2 web-side capture — wired ✅** — `evaluateActivationV2()` тепер кличеться з `apps/web/src/core/activation/useActivationV2.ts`; Boot-адаптер агрегує snapshot з Auth + finyk RQ-кешу і запускає `ACTIVATION_V2_HIT` одноразово (`sergeant.activation_v2_fired` localStorage-флаг). Будж-фіксація через React Query — наступний крок (TODO у `useActivationV2Boot.ts`).
 
 ## P0 — Blocker (без цього launch неможливий)
 
@@ -35,7 +37,7 @@
 | P0-3 | billingKeys factory (Hard Rule #2)               | **Add** | `apps/web/src/shared/lib/api/queryKeys.ts:101–111` | **Done (PR)** |
 | P0-4 | Webhook: subscription_renewed emit               | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
 | P0-5 | Webhook: subscription_canceled emit              | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
-| P0-6 | Customer Portal endpoint (`/api/billing/portal`) | **Add** | `apps/server/src/routes/billing.ts`                | Outstanding   |
+| P0-6 | Customer Portal endpoint (`/api/billing/portal`) | **Add** | `apps/server/src/routes/billing.ts`                | **Done (PR)** |
 | P0-7 | Stripe price_id env-config + validation          | **Add** | `apps/server/src/config/env.ts` (schema)           | Outstanding   |
 
 ## P1 — High (launch quality / funnel completeness)
@@ -43,14 +45,14 @@
 | #    | Item                                                       | Дія        | Файл / шлях                                                         | Статус        |
 | ---- | ---------------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------- |
 | P1-1 | Analytics events: init 0010 Phase 4–6 constants            | **Add**    | `packages/shared/src/lib/analyticsEvents.ts:218–259`                | **Done (PR)** |
-| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | Outstanding   |
+| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | **Done (PR)** |
 | P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | Outstanding   |
 | P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding   |
 | P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
 | P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)** |
 | P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding   |
 | P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | Outstanding   |
-| P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | Outstanding   |
+| P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | **Done (PR)** |
 
 ## P2 — Nice-to-have (post-launch polish)
 
@@ -65,7 +67,19 @@
 
 ## Прогрес виконання (цей PR)
 
-Закрито **6 items** з P0/P1 у цьому PR:
+Закрито **6 items** з P0/P1 у попередньому PR + **1 follow-up item** (P1-2) у поточному:
+
+## Прогрес виконання — follow-up PR (2026-05-13, P1-9)
+
+### P1-9 · `TrialBanner` scaffold — trial-expiry banner
+
+- **Файл:** `apps/web/src/core/billing/TrialBanner.tsx` (new)
+- **Тест:** `apps/web/src/core/billing/TrialBanner.test.tsx` (new, 8 tests)
+- **Mount:** `apps/web/src/core/app/HubMainContent.tsx` — у chrome banner stack, перед `showUpdate`, гейтиться `!inFtuxSession` (узгоджено з install / iOS банерами).
+- **Контракт:** читає `usePlan()` (P0-1); рендериться лише коли `subscription.status === 'trialing'` та `daysLeft ≤ 7`. ≤ 1 день → sticky-варіант з акцентом (`shadow-sm` + сильніший `border-warning/40`). CTA `Перейти на Pro` → `/pricing?source=trial_banner`.
+- **A11y:** `role="status"` + `aria-live="polite"`; CTA через `Button size="sm"` (touch-target 44×44 на coarse pointers); кольори через `text-warning-strong` / `bg-warning-soft` (Hard Rule #11 без arbitrary hex).
+- **Barrel:** `apps/web/src/core/billing/index.ts` — реекспорт `TrialBanner` + `TrialBannerProps`.
+- **i18n:** copy винесена у локальний `COPY` const (Phase 6.2 migration-ready — без inline cyrillic JSX literals, `sergeant-design/no-cyrillic-jsx-literal` чистий).
 
 ### P0-1 · `usePlan` hook — web billing skeleton
 
@@ -100,6 +114,13 @@
 ### Barrel export
 
 - **Файл:** `apps/web/src/core/billing/index.ts` — re-exports `usePlan`, `PaywallModal` + types.
+
+### P1-2 · Activation v2 web-side capture ✅ Closed in #2756
+
+- **Файли:** `apps/web/src/core/activation/useActivationV2.ts` (core hook), `apps/web/src/core/activation/useActivationV2Boot.ts` (RQ-cache adapter), `apps/web/src/core/activation/index.ts` (barrel), `apps/web/src/core/App.tsx` (mount-point у `AppInner`).
+- **Тести:** `apps/web/src/core/activation/useActivationV2.test.tsx` (5 кейсів — happy path, null input, not-activated, persisted fire-flag, A/B variant payload). Mock-ане `evaluateActivationV2` + analytics-spy через `vi.mock`.
+- `useActivationV2(input)` рахує `ActivationResult` через pure-fn з `@sergeant/insights` і фає `ACTIVATION_V2_HIT` рівно один раз — гард localStorage-флага `sergeant.activation_v2_fired` (контракт у `analyticsEvents.ts:222`). Payload: `time_to_activate_hours`, `mono_connected: true`, `transactions_categorized`, `budgets_set`, опціональний `variant`.
+- `useActivationV2Boot()` агрегує snapshot з `useAuth().user.createdAt` (signedUpAt) + cache-prefix walk `["finyk", "mono", "webhook-tx"]` (categorized txn count з `MonoTransactionDto.categorySlug !== null`) + `finykKeys.monoWebhookAccounts.length`. Будж-кількість поки `0` (TODO: budget RQ-key зараз немає — `finyk/budgets` читає з SQLite напряму; follow-up плагне count сюди й активаційний funnel запрацює end-to-end на live data).
 
 ## Файли змінено у цьому PR
 

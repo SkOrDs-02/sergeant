@@ -31,6 +31,8 @@ export type { UseLocalStorageStateOptions } from "./useLocalStorageState";
 
 export { useOnlineStatus } from "./useOnlineStatus";
 
+export { useCloudPullPending } from "./useCloudPullPending";
+
 export { usePushNotifications } from "./usePushNotifications";
 export type { UsePushNotificationsResult } from "./usePushNotifications";
 
