@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useShortcutGlyph } from "@shared/hooks";
@@ -5,6 +9,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { ThemeSwitcher } from "@shared/components/ui/ThemeSwitcher";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
+import { messages } from "@shared/i18n/uk";
 import type { User } from "@sergeant/shared";
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
@@ -46,6 +51,7 @@ function formatUkrainianDate(): string {
 
 interface HubHeaderProps {
   onOpenSearch: () => void;
+  onOpenPrivacy?: () => void;
   user: User | null;
   authLoading?: boolean;
   onShowAuth?: () => void;
@@ -54,6 +60,7 @@ interface HubHeaderProps {
 
 export function HubHeader({
   onOpenSearch,
+  onOpenPrivacy,
   user,
   authLoading,
   onShowAuth,
@@ -103,6 +110,29 @@ export function HubHeader({
               <Icon name="search" size="lg" />
             </button>
           </Tooltip>
+
+          {onOpenPrivacy && (
+            <Tooltip
+              content={messages.privacy.chipTooltip}
+              placement="bottom-center"
+            >
+              <button
+                type="button"
+                onClick={onOpenPrivacy}
+                aria-label={messages.privacy.chip}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full",
+                  "bg-brand-soft text-brand-strong border border-brand-soft-border",
+                  "text-style-caption font-semibold",
+                  "hover:bg-brand-soft-hover transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                )}
+              >
+                <Icon name="shield" size="xs" strokeWidth={2} aria-hidden />
+                <span>{messages.privacy.chip}</span>
+              </button>
+            </Tooltip>
+          )}
 
           {/* AI-assistant entry was previously surfaced here as a sparkle
               icon (#1507) after the floating FAB was retired in #1357. It

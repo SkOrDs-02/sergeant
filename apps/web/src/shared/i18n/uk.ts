@@ -424,6 +424,13 @@ export const messages = {
 
   // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
   privacy: {
+    // G4-a — privacy indicator chip in HubHeader + soft-prompt banner.
+    chip: "Тільки ти",
+    chipTooltip: "Усі дані — локально, без хмари",
+    bannerTitle: "Захисти Sergeant блокуванням",
+    bannerHint: "PIN · Face ID — для Mono-токена і медичних даних",
+    bannerCta: "Налаштувати",
+
     lock: {
       sectionTitle: "Конфіденційність",
       enableLabel: "Блокування додатку",

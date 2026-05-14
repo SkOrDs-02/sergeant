@@ -1,10 +1,7 @@
 /**
- * Hub Dashboard — thin container (T1 decomposition, Sprint 6).
- *
- * Composes: HubHeroBlock, HubModulesGrid, HubInsightsBlock.
- * All state lives in `useHubDashboardState`.
+ * Last validated: 2026-05-14
+ * Status: Active
  */
-
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import { DemoModeBanner } from "../onboarding/DemoModeBanner";
 import { CelebrationModal } from "../onboarding/CelebrationModal";
@@ -14,6 +11,7 @@ import { HubModulesGrid } from "./HubModulesGrid";
 import { HubInsightsBlock } from "./HubInsightsBlock";
 import { useHubDashboardState } from "./useHubDashboardState";
 import { DENSITY_OUTER_SPACE, type HubDashboardProps } from "./hub.types";
+import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 export {
@@ -77,6 +75,9 @@ export function HubDashboard({
           toggleHideInactive={s.toggleHideInactive}
         />
       </StaggerChild>
+
+      {/* G4 — App-lock soft-prompt. Self-hides via LS dismissal. */}
+      <PrivacyLockBanner />
 
       {/* GROUP 2 — Insights (post-first-entry) */}
       {s.hasRealEntry && (
