@@ -7,6 +7,13 @@ export interface DialogFocusTrapOptions {
 /**
  * Tab циклічно лишається в межах контейнера; Escape викликає onEscape.
  *
+ * On open, focus is moved into the panel (first focusable, or the panel
+ * itself as a fallback). This is required for the trap to actually
+ * function — if focus stays on a control outside the panel (e.g. on
+ * `<body>` or a skip-link when a modal is auto-opened on mount), the
+ * cycle-at-edges check below never fires and Tab silently escapes the
+ * dialog. WCAG 2.4.3 — initial focus must land inside the dialog.
+ *
  * Additionally, the element that was focused when the dialog opened is
  * remembered and receives focus back after the dialog closes. This is a
  * WCAG 2.4.3 (Focus Order) requirement — otherwise a keyboard user who
@@ -63,6 +70,25 @@ export function useDialogFocusTrap(
           el.getAttribute("aria-hidden") !== "true",
       );
 
+    // Move initial focus into the panel. Without this, modals opened
+    // without a user-driven trigger (e.g. the WhatsNew release-notes
+    // overlay that auto-mounts on first paint) leave focus on whatever
+    // was active beforehand — usually `<body>` or the skip-link — and
+    // Tab silently walks the page chrome behind the dialog. We focus
+    // the first interactive descendant when one exists, falling back
+    // to the panel itself (with a transient `tabindex="-1"`) so that
+    // even a content-only dialog keeps focus inside.
+    if (!panel.contains(document.activeElement)) {
+      const initial = getFocusable()[0];
+      if (initial) {
+        initial.focus({ preventScroll: true });
+      } else {
+        const hadTabIndex = panel.hasAttribute("tabindex");
+        if (!hadTabIndex) panel.setAttribute("tabindex", "-1");
+        panel.focus({ preventScroll: true });
+      }
+    }
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         const cb = onEscapeRef.current;
@@ -75,16 +101,25 @@ export function useDialogFocusTrap(
       if (e.key !== "Tab") return;
       const nodes = getFocusable();
       if (nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      // If focus has somehow escaped the panel (programmatic blur, an
+      // unmount that re-parented the focused node, an Esc-cancelled
+      // close handler, etc.), pull it back to the appropriate edge of
+      // the trap instead of letting Tab continue out of the dialog.
+      if (!panel.contains(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
+      }
       if (e.shiftKey) {
         if (document.activeElement === first) {
           e.preventDefault();
-          last!.focus()!;
+          last.focus();
         }
       } else if (document.activeElement === last) {
         e.preventDefault();
-        first!.focus()!;
+        first.focus();
       }
     };
 
