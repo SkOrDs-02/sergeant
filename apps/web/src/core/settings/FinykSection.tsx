@@ -20,6 +20,8 @@ import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
 import { useMonoBackfillProgress } from "../../modules/finyk/hooks/useMonoBackfillProgress";
 import { BackfillProgressPill } from "../../modules/finyk/components/BackfillProgressPill";
+import { PaywallModal } from "../billing/PaywallModal";
+import { usePlan } from "../billing/usePlan";
 import {
   ConfirmModal,
   SettingsGroup,
@@ -43,10 +45,12 @@ interface FinykStorageShape {
 
 export function FinykSection() {
   const queryClient = useQueryClient();
+  const { isPro } = usePlan();
   const { customCategories, addCustomCategory, removeCustomCategory } =
     useFinykStorage({}) as FinykStorageShape;
 
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
 
   const [privatIdInput, setPrivatIdInput] = useState<string>(
@@ -157,6 +161,10 @@ export function FinykSection() {
   });
 
   const connectWebhook = async () => {
+    if (!isPro) {
+      setPaywallOpen(true);
+      return;
+    }
     const clean = webhookTokenInput.trim();
     if (!clean) {
       setWebhookError("Введи токен");
@@ -207,6 +215,10 @@ export function FinykSection() {
   };
 
   const triggerBackfill = async () => {
+    if (!isPro) {
+      setPaywallOpen(true);
+      return;
+    }
     try {
       await monoWebhookApi.backfill();
       // Refresh sync-state and progress simultaneously: progress flips to
@@ -255,6 +267,13 @@ export function FinykSection() {
 
   return (
     <SettingsGroup title="Фінік" emoji="💳">
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        surface="mono_auto_sync"
+        title="Авто-Mono sync доступний у Pro"
+        description="Free лишається для ручного ведення фінансів. Pro підключає серверний Monobank webhook, backfill і автоматичне оновлення транзакцій."
+      />
       <ConfirmModal
         open={confirmKind !== null}
         title={confirmKind === "cache" ? "Очистити кеш?" : "Вийти з Monobank?"}

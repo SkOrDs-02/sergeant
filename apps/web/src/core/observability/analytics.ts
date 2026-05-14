@@ -27,6 +27,20 @@ export { initPostHog, identifyPostHogUser, resetPostHog } from "./posthog";
 const LOG_KEY = "hub_analytics_log_v1";
 const MAX_LOG = 200;
 
+function clonePayload(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  try {
+    return structuredClone(payload) as Record<string, unknown>;
+  } catch {
+    try {
+      return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+}
+
 function safeReadLog(): unknown[] {
   const parsed = safeReadLS<unknown[]>(LOG_KEY);
   return Array.isArray(parsed) ? parsed : [];
@@ -48,9 +62,12 @@ export function trackEvent(
   payload: Record<string, unknown> = {},
 ) {
   if (!eventName || typeof eventName !== "string") return;
+  const safePayload =
+    payload && typeof payload === "object" ? clonePayload(payload) : {};
+  scrubPII(safePayload);
   const event = {
     eventName,
-    payload: payload && typeof payload === "object" ? payload : {},
+    payload: safePayload,
     timestamp: new Date().toISOString(),
   };
   try {
@@ -64,9 +81,8 @@ export function trackEvent(
     // Тож логуємо клон з вирізаними PII-значеннями. Оригінальний `event`
     // лишається незачепленим — він іде у localStorage ring-buffer і у
     // PostHog як було.
-    const safeEvent = structuredClone(event);
-    scrubPII(safeEvent);
-    console.log("[analytics]", safeEvent);
+    // All sinks below use this scrubbed `event`.
+    console.log("[analytics]", event);
     const current = safeReadLog();
     safeWriteLog([...current, event]);
     const analyticsWindow = window as Window & {

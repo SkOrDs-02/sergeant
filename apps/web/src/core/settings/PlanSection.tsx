@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { billingApi } from "@shared/api";
 import { usePlan } from "../billing/usePlan";
 import { SettingsGroup } from "./SettingsPrimitives";
 
@@ -18,14 +19,14 @@ import { SettingsGroup } from "./SettingsPrimitives";
  *   • CTA: «Перейти на Pro» (→ `/pricing?source=settings`) для Free;
  *     «Керувати підпискою» (→ `/api/billing/portal`) для Pro.
  *
- * `/api/billing/portal` створює Stripe Customer Portal session і редіректить
- * у його UI. Server-side endpoint — окремий outstanding item (P0-6 у тому ж
- * аудіті); UI шле браузер на канонічний URL уже зараз, щоб не плодити
- * proxy-методи у `billingApi` (api-client `openCustomerPortal` — Phase 3.3
- * ініціативи 0010).
+ * `/api/billing/portal` створює Stripe Customer Portal session і повертає
+ * Stripe-hosted URL. Browser redirect робимо тільки після успішного POST-а:
+ * endpoint не має GET-форми, тож прямий `location.assign("/api/...")` ламає
+ * self-serve billing flow.
  */
 
-const BILLING_PORTAL_URL = "/api/billing/portal";
+const BILLING_PORTAL_UNAVAILABLE =
+  "Stripe Portal тимчасово недоступний. Спробуй ще раз за хвилину.";
 
 function formatKyivDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
@@ -43,14 +44,22 @@ export function PlanSection() {
   const navigate = useNavigate();
   const { isPro, isLoading, subscription } = usePlan();
   const [redirecting, setRedirecting] = useState(false);
+  const [portalError, setPortalError] = useState("");
 
   const status = subscription?.status ?? null;
   const periodEnd = formatKyivDate(subscription?.currentPeriodEnd);
   const planLabel = isPro ? "Pro" : "Free";
 
-  function handleManage() {
+  async function handleManage() {
     setRedirecting(true);
-    window.location.assign(BILLING_PORTAL_URL);
+    setPortalError("");
+    try {
+      const portal = await billingApi.createPortal();
+      window.location.assign(portal.url);
+    } catch {
+      setPortalError(BILLING_PORTAL_UNAVAILABLE);
+      setRedirecting(false);
+    }
   }
 
   function handleUpgrade() {
@@ -159,12 +168,18 @@ export function PlanSection() {
             </Button>
           )}
         </div>
+        {portalError ? (
+          <p
+            role="alert"
+            data-testid="plan-portal-error"
+            className="text-sm text-danger-strong"
+          >
+            {portalError}
+          </p>
+        ) : null}
       </div>
     </SettingsGroup>
   );
 }
 
-// Re-export the resolved plan label so the test can sanity-check without
-// reaching into `usePlan` internals. Kept narrow to avoid a barrel export
-// that drags `usePlan` into modules that only need plain JSX strings.
-export const __PLAN_SECTION_PORTAL_URL = BILLING_PORTAL_URL;
+export const __PLAN_SECTION_PORTAL_UNAVAILABLE = BILLING_PORTAL_UNAVAILABLE;

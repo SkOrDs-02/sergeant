@@ -28,6 +28,25 @@ vi.mock("./observability/analytics", async () => {
   };
 });
 
+vi.mock("./pricing/WaitlistForm", () => ({
+  WaitlistForm: ({
+    source,
+    onSuccess,
+  }: {
+    source: string;
+    onSuccess?: (created: boolean) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="landing-email-capture"
+      data-source={source}
+      onClick={() => onSuccess?.(true)}
+    >
+      email capture
+    </button>
+  ),
+}));
+
 import { LandingPage } from "./LandingPage";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 
@@ -73,6 +92,10 @@ describe("LandingPage (initiative 0010 Phase 6.1, audit P1-3)", () => {
     expect(screen.getByTestId("landing-login-cta")).toBeTruthy();
     expect(screen.getByTestId("landing-register-cta")).toBeTruthy();
     expect(screen.getByTestId("landing-pricing-link")).toBeTruthy();
+    expect(screen.getByTestId("landing-email-capture")).toHaveAttribute(
+      "data-source",
+      "landing",
+    );
 
     // CTAs route to the expected destinations.
     fireEvent.click(screen.getByTestId("landing-register-cta"));
@@ -83,6 +106,17 @@ describe("LandingPage (initiative 0010 Phase 6.1, audit P1-3)", () => {
 
     fireEvent.click(screen.getByTestId("landing-pricing-link"));
     expect(navigateMock).toHaveBeenLastCalledWith("/pricing?source=landing");
+  });
+
+  it("fires LANDING_EMAIL_CAPTURED after the landing email form succeeds", () => {
+    renderLanding();
+
+    fireEvent.click(screen.getByTestId("landing-email-capture"));
+
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED,
+      { source: "hero", locale: "uk" },
+    );
   });
 
   it("includes `referrer` in LANDING_VIEWED payload when document.referrer is non-empty (paid-acquisition split)", () => {

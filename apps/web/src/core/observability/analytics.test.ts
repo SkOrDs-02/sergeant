@@ -99,15 +99,18 @@ describe("trackEvent", () => {
       expect(loggedEvent.payload.email).toBe("[redacted]");
       expect(loggedEvent.payload.password).toBe("[redacted]");
       expect(loggedEvent.payload.userId).toBe("abc");
+      expect(capturePostHogEvent).toHaveBeenCalledWith("pii_leak_guard", {
+        userId: "abc",
+        email: "[redacted]",
+        password: "[redacted]",
+      });
 
-      // Оригінальний event (LS ring-buffer) лишається з payload as-is —
-      // PII-scrub застосовується лише до console-клону.
       const stored = JSON.parse(
         localStorage.getItem("hub_analytics_log_v1") ?? "[]",
       ) as Array<{ payload: Record<string, unknown> }>;
       expect(stored).toHaveLength(1);
       const [firstStored] = stored;
-      expect(firstStored?.payload.email).toBe("leak@example.com");
+      expect(firstStored?.payload.email).toBe("[redacted]");
     } finally {
       logSpy.mockRestore();
     }

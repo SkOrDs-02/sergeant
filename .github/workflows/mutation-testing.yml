@@ -1,0 +1,46 @@
+name: Mutation testing
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  shared-utils:
+    name: shared utils tier-1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Stryker shared utils tier-1
+        run: pnpm --filter @sergeant/shared mutation:utils
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-utils-mutation-report
+          path: |
+            packages/shared/reports/mutation/utils/index.html
+            packages/shared/reports/mutation/utils/mutation-report.json
+          if-no-files-found: warn
+          retention-days: 30

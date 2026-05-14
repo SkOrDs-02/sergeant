@@ -53,6 +53,7 @@ import {
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 
 import { env as defaultEnv, type Env } from "../env.js";
+import { REDACT_KEY_NAMES } from "@sergeant/shared";
 
 import { createRouteAwareSampler } from "./sampler.js";
 
@@ -109,6 +110,11 @@ const HEADER_DENYLIST = new Set(
     "proxy-authorization",
   ].map((h) => h.toLowerCase()),
 );
+
+export const OTEL_ATTRIBUTE_DENYLIST: ReadonlySet<string> = new Set([
+  ...REDACT_KEY_NAMES.map((key) => key.toLowerCase()),
+  ...Array.from(HEADER_DENYLIST),
+]);
 
 function parseRate(val: string | undefined, fallback: number): number {
   if (val == null || val === "") return fallback;

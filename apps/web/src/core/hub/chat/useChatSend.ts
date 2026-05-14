@@ -27,8 +27,47 @@ import { buildActionCard } from "../../lib/hubChatActionCards";
 import type { ChatActionCard } from "../../lib/hubChatActionCards";
 import { useFinykHubPreview } from "../useFinykHubPreview";
 import type { HubChatSession } from "../hubChatSessions";
+import { usePlan } from "../../billing/usePlan";
 
 type ChatMessage = HubChatSession["messages"][number];
+const FREE_DAILY_AI_CHAT_LIMIT = 5;
+const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
+
+function kyivDayKey(date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function readDailyChatCount(): { day: string; count: number } {
+  if (typeof localStorage === "undefined") {
+    return { day: kyivDayKey(), count: 0 };
+  }
+  const today = kyivDayKey();
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(DAILY_CHAT_COUNT_KEY) || "null",
+    ) as { day?: unknown; count?: unknown } | null;
+    if (parsed?.day === today && typeof parsed.count === "number") {
+      return { day: today, count: Math.max(0, parsed.count) };
+    }
+  } catch {
+    /* corrupt local counter — reset below */
+  }
+  return { day: today, count: 0 };
+}
+
+function incrementDailyChatCount(): void {
+  if (typeof localStorage === "undefined") return;
+  const current = readDailyChatCount();
+  localStorage.setItem(
+    DAILY_CHAT_COUNT_KEY,
+    JSON.stringify({ day: current.day, count: current.count + 1 }),
+  );
+}
 
 export interface UseChatSendOptions {
   messages: ChatMessage[];
@@ -52,6 +91,8 @@ export interface UseChatSendResult {
   send: (text?: string, fromVoice?: boolean) => Promise<void>;
   /** Abort the in-flight request (cancel button or close while streaming). */
   cancelInFlight: () => void;
+  paywallOpen: boolean;
+  closePaywall: () => void;
   /** Imperative send ref — used by the autofocus / quick-action handlers. */
   sendRef: React.MutableRefObject<
     ((text?: string, fromVoice?: boolean) => Promise<void>) | null
@@ -82,12 +123,14 @@ export function useChatSend({
   const toast = useToast();
   const queryClient = useQueryClient();
   const finykPreview = useFinykHubPreview();
+  const { isPro } = usePlan();
   const hasData = finykPreview.data?.hasMonoData ?? false;
   const online = useOnlineStatus();
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   // AbortController for cancelling the active request (cancel button).
   // Lives in a ref because it does not affect render — we just need a
@@ -196,6 +239,15 @@ export function useChatSend({
         ]);
         setInput("");
         return;
+      }
+
+      if (!isPro) {
+        const usage = readDailyChatCount();
+        if (usage.count >= FREE_DAILY_AI_CHAT_LIMIT) {
+          setPaywallOpen(true);
+          return;
+        }
+        incrementDailyChatCount();
       }
 
       const shouldSpeak =
@@ -430,6 +482,7 @@ export function useChatSend({
     },
     [
       input,
+      isPro,
       loading,
       messages,
       online,
@@ -445,6 +498,7 @@ export function useChatSend({
   const cancelInFlight = useCallback(() => {
     abortRef.current?.abort();
   }, []);
+  const closePaywall = useCallback(() => setPaywallOpen(false), []);
 
   // Cancel the in-flight request if the chat is closed mid-stream —
   // otherwise fetch keeps "burning" tokens in the background and the
@@ -480,6 +534,8 @@ export function useChatSend({
     activeModule,
     send,
     cancelInFlight,
+    paywallOpen,
+    closePaywall,
     sendRef,
     focusInputRef,
   };

@@ -25,6 +25,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
 const specPath = path.join(repoRoot, "docs", "api", "openapi.json");
+const specCliPath = path.relative(repoRoot, specPath);
 const outPath = path.join(
   repoRoot,
   "packages",
@@ -47,7 +48,7 @@ const openApiTypescriptBin = path.join(
 try {
   const gen = spawnSync(
     process.execPath,
-    [openApiTypescriptBin, specPath, "-o", tmpOut],
+    [openApiTypescriptBin, specCliPath, "-o", tmpOut],
     { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] },
   );
   if (gen.status !== 0) {

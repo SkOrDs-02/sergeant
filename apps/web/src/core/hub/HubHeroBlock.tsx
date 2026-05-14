@@ -14,6 +14,8 @@ import { CrossModulePreview } from "./CrossModulePreview";
 import { ReEngagementCard } from "../onboarding/ReEngagementCard";
 import { ModuleChecklist } from "../onboarding/ModuleChecklist";
 import { OnboardingProgress } from "../onboarding/OnboardingProgress";
+import { useFlag } from "../lib/featureFlags";
+import { OutcomeCard } from "./OutcomeCard";
 import { ValueProgressBar } from "./ValueProgressBar";
 import { StreakIndicator } from "./dashboard/dashboardCards";
 import type { DashboardModuleId, User } from "./hub.types";
@@ -61,6 +63,7 @@ export function HubHeroBlock({
   hasValueBar,
 }: HubHeroBlockProps) {
   const reengagementIsHero = reengagement.show;
+  const outcomeCardEnabled = useFlag("ftux_outcome_card_v1");
 
   let hero: React.ReactNode;
   if (onboardingState.showFirstAction) {
@@ -116,7 +119,13 @@ export function HubHeroBlock({
         />
       )}
       {!hasRealEntry &&
-        (hasValueBar ? (
+        (outcomeCardEnabled ? (
+          <OutcomeCard
+            activeModules={activeModules}
+            primaryModule={primaryModule}
+            onOpenModule={onOpenModule}
+          />
+        ) : hasValueBar ? (
           <ValueProgressBar activeModules={activeModules} goals={goals} />
         ) : (
           <OnboardingProgress activeModules={activeModules} />

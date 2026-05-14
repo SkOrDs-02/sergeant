@@ -24,6 +24,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
 const specPath = path.join(repoRoot, "docs", "api", "openapi.json");
+const specCliPath = path.relative(repoRoot, specPath);
 const outPath = path.join(
   repoRoot,
   "packages",
@@ -32,10 +33,17 @@ const outPath = path.join(
   "generated",
   "openapi.d.ts",
 );
+const openApiTypescriptBin = path.join(
+  repoRoot,
+  "node_modules",
+  "openapi-typescript",
+  "bin",
+  "cli.js",
+);
 
 const result = spawnSync(
-  "pnpm",
-  ["exec", "openapi-typescript", specPath, "-o", outPath],
+  process.execPath,
+  [openApiTypescriptBin, specCliPath, "-o", outPath],
   { cwd: repoRoot, stdio: "inherit" },
 );
 

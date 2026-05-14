@@ -72,7 +72,7 @@ export function PricingPage() {
   }, []);
 
   // Stripe Checkout повертає юзера на `/pricing?checkout=success` (success_url)
-  // або `/pricing?checkout=cancelled` (cancel_url). `success` означає, що
+  // або `/pricing?checkout=cancel|cancelled` (cancel_url). `success` означає, що
   // webhook міг ще не долетіти / `billingApi.status` у кеші лишається stale →
   // інвалідовуємо `billingKeys.status` (Hard Rule #2), щоб `usePlan` пере-fetch-нувся
   // і paywall пропустив користувача. Toast із action веде в Settings, де живе
@@ -82,7 +82,12 @@ export function PricingPage() {
   useEffect(() => {
     if (checkoutReturnHandledRef.current) return;
     const checkout = searchParams.get("checkout");
-    if (checkout !== "success" && checkout !== "cancelled") return;
+    if (
+      checkout !== "success" &&
+      checkout !== "cancel" &&
+      checkout !== "cancelled"
+    )
+      return;
     checkoutReturnHandledRef.current = true;
     const next = new URLSearchParams(searchParams);
     next.delete("checkout");

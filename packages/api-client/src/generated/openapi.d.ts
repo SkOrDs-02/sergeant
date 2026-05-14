@@ -2561,7 +2561,7 @@ export interface components {
         RecallMemoryRequest: {
             query: string;
             topK?: number;
-            sources?: ("chat" | "finyk" | "fizruk" | "nutrition" | "routine" | "journal" | "digest" | "cofounder")[];
+            sources?: ("chat" | "finyk" | "fizruk" | "nutrition" | "routine" | "journal" | "digest" | "cofounder" | "product")[];
         };
         /** @description POST /api/coach/memory. */
         CoachMemoryPost: {
@@ -2873,7 +2873,7 @@ export interface components {
              * @default pricing_page
              * @enum {string}
              */
-            source: "pricing_page" | "paywall" | "settings" | "onboarding";
+            source: "pricing_page" | "landing" | "paywall" | "settings" | "onboarding";
             locale?: string;
         };
         /** @description POST /api/billing/checkout — Stripe Checkout session request. */
@@ -2921,7 +2921,7 @@ export interface components {
             memories: {
                 id: number;
                 /** @enum {string} */
-                source: "chat" | "finyk" | "fizruk" | "nutrition" | "routine" | "journal" | "digest" | "cofounder";
+                source: "chat" | "finyk" | "fizruk" | "nutrition" | "routine" | "journal" | "digest" | "cofounder" | "product";
                 sourceRef: string | null;
                 content: string;
                 score: number;

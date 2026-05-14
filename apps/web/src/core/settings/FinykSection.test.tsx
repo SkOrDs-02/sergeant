@@ -8,6 +8,7 @@ import {
   cleanup,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@shared/api", async () => {
   const actual =
@@ -24,6 +25,11 @@ vi.mock("@shared/api", async () => {
     },
     privatApi: {
       balanceFinal: vi.fn(),
+    },
+    billingApi: {
+      status: vi.fn(),
+      createCheckout: vi.fn(),
+      createPortal: vi.fn(),
     },
     isApiError: actual.isApiError,
   };
@@ -43,13 +49,16 @@ vi.mock("../../modules/finyk/utils", () => ({
   getAccountLabel: (acc: { id: string }) => `Account ${acc.id}`,
 }));
 
-import { monoWebhookApi } from "@shared/api";
+import { billingApi, monoWebhookApi } from "@shared/api";
 import { FinykSection } from "./FinykSection";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedConnect = monoWebhookApi.connect as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedBillingStatus = billingApi.status as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -59,7 +68,9 @@ function renderWithProviders() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <FinykSection />
+      <MemoryRouter>
+        <FinykSection />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -67,6 +78,16 @@ function renderWithProviders() {
 describe("FinykSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedBillingStatus.mockResolvedValue({
+      subscription: {
+        id: 42,
+        provider: "stripe",
+        plan: "pro",
+        status: "active",
+        active: true,
+        currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+      },
+    });
     localStorage.clear();
     sessionStorage.clear();
   });

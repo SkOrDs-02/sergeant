@@ -26,6 +26,7 @@ test-results/
 .stryker-tmp/
 stryker-tmp/
 reports/mutation/
+**/reports/mutation/
 stryker-reports/
 
 # Session-only artifacts from the DS visual-QA harness

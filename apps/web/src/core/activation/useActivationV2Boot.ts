@@ -9,6 +9,8 @@ import {
   type ActivationInput,
   type UseActivationV2Options,
 } from "./useActivationV2";
+import { safeReadLS, webKVStore } from "@shared/lib/storage/storage";
+import { getCachedFinykSqliteState } from "../../modules/finyk/lib/sqliteReader";
 
 /**
  * Wire-up adapter for `useActivationV2` (audit
@@ -24,7 +26,8 @@ import {
  *     in the React Query cache (`finykKeys.monoWebhookAccounts`).
  *   - `categorizedTransactions` — count of cached Mono webhook
  *     transactions with a non-null `categorySlug`.
- *   - `budgetsCreated` — TODO (see follow-up note below).
+ *   - `budgetsCreated` — count from the Finyk SQLite warm cache, falling
+ *     back to the `finyk_budgets` KV slot before SQLite refresh.
  *
  * The Boot subscribes to the React Query cache so the snapshot is
  * recomputed whenever any of the source queries change. The
@@ -36,14 +39,9 @@ import {
  * compute `hoursElapsed` without `signedUpAt`, and there is no
  * activation funnel to capture for an anonymous visitor.
  *
- * NOTE — budgets data source is not yet plumbed into React Query
- * (the `finyk/budgets` page reads from SQLite directly). Until that
- * lands, `budgetsCreated` stays at `0` and the predicate cannot flip
- * for real users. The wire-up infrastructure is in place so the
- * follow-up PR only needs to plumb the budgets count into this
- * adapter — the evaluator + capture pipeline already work end-to-end
- * for the other two conditions, and the unit test suite covers the
- * full happy path on mocked input.
+ * Budgets are not mirrored into React Query today, so this adapter listens
+ * to the KV slot and reads the SQLite warm cache directly. That keeps the
+ * activation predicate able to flip without waiting for a new budgets query.
  */
 export function useActivationV2Boot(options: UseActivationV2Options = {}) {
   const { user } = useAuth();
@@ -62,6 +60,12 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
     });
   }, [queryClient]);
 
+  useEffect(() => {
+    return webKVStore.onChange("finyk_budgets", () => {
+      setCacheTick((t) => t + 1);
+    });
+  }, []);
+
   const input = useMemo<ActivationInput | null>(() => {
     if (!user) return null;
     const signedUpAt = parseSignedUpAt(user.createdAt);
@@ -75,11 +79,7 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
 
     const categorizedTransactions = countCategorizedTransactions(queryClient);
 
-    // TODO(2026-05-13): plumb budget count from `apps/web/src/modules/
-    // finyk/pages/budgets/Budgets.tsx` (currently reads from SQLite
-    // directly without a React Query mirror). Tracked in audit P1-2
-    // follow-up. Activation cannot fire until this is wired.
-    const budgetsCreated = 0;
+    const budgetsCreated = countBudgetsCreated();
 
     return {
       signedUpAt,
@@ -135,4 +135,13 @@ function countCategorizedTransactions(
     }
   }
   return count;
+}
+
+function countBudgetsCreated(): number {
+  const sqliteCache = getCachedFinykSqliteState();
+  if (sqliteCache.refreshedAt !== null) {
+    return sqliteCache.budgets.length;
+  }
+  const localBudgets = safeReadLS<unknown[]>("finyk_budgets", []);
+  return Array.isArray(localBudgets) ? localBudgets.length : 0;
 }

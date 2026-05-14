@@ -198,7 +198,7 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
   });
 
   // P1-8 (audit `2026-05-13-revenue-monetization-roast.md`): Stripe Checkout
-  // повертає юзера на `/pricing?checkout=success|cancelled`. На success ми
+  // повертає юзера на `/pricing?checkout=success|cancel|cancelled`. На success ми
   // інвалідовуємо `billingKeys.status` (щоб `usePlan` перевірив новий plan
   // без очікування на webhook) + success-toast із "Перейти у налаштування" action.
   // На cancelled виводимо нейтральний info-toast (без invalidate — підписка
@@ -261,6 +261,19 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
       });
       expect(billingInvalidations).toHaveLength(0);
 
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    });
+
+    it("on ?checkout=cancel: accepts the server cancel_url spelling", async () => {
+      const client = makeClient();
+      renderPricing("/pricing?checkout=cancel", client);
+
+      await waitFor(() => {
+        expect(toastInfoMock).toHaveBeenCalledTimes(1);
+      });
+      expect(String(toastInfoMock.mock.calls[0]![0])).toMatch(
+        /Оплату скасовано/i,
+      );
       expect(toastSuccessMock).not.toHaveBeenCalled();
     });
 

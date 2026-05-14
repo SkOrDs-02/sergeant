@@ -19,7 +19,8 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "mutation:utils": "stryker run stryker.utils.conf.json"
   },
   "dependencies": {
     "@sergeant/design-tokens": "workspace:*",
@@ -28,6 +29,8 @@
   },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^20.19.0",
     "@vitest/coverage-v8": "^4.1.5",
     "typescript": "^6.0.3",

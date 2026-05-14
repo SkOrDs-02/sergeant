@@ -5,6 +5,7 @@ import { useChatSend } from "./chat/useChatSend";
 import { HubChatHeader } from "./chat/HubChatHeader";
 import { HubChatBody } from "./chat/HubChatBody";
 import { HubChatComposer } from "./chat/HubChatComposer";
+import { PaywallModal } from "../billing/PaywallModal";
 
 interface HubChatProps {
   onClose: () => void;
@@ -69,6 +70,8 @@ function HubChat({
     activeModule,
     send,
     cancelInFlight,
+    paywallOpen,
+    closePaywall,
     sendRef,
     focusInputRef,
   } = sendState;
@@ -144,6 +147,14 @@ function HubChat({
         onSelect={handleSelectSession}
         onCreate={handleCreateSession}
         onDelete={handleDeleteSession}
+      />
+
+      <PaywallModal
+        open={paywallOpen}
+        onClose={closePaywall}
+        surface="ai_chat_limit"
+        title="Безлімітний AI-чат у Pro"
+        description="Free-тариф має 5 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
       />
     </div>
   );

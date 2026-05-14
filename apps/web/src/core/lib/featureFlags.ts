@@ -59,6 +59,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "ftux_outcome_card_v1",
+    label: "FTUX outcome-card",
+    description:
+      "РџРѕРєР°Р·СѓС” outcome-card Р·Р°РјС–СЃС‚СЊ РїСЂРѕРіСЂРµСЃСѓ РґР»СЏ cold-start cohort Р±РµР· РїРµСЂС€РѕРіРѕ Р·Р°РїРёСЃСѓ.",
+    defaultValue: false,
+    experimental: true,
+  },
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.

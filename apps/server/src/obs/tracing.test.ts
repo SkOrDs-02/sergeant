@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { resolveTracingConfig } from "./tracing.js";
+import {
+  HEADER_DENYLIST,
+  OTEL_ATTRIBUTE_DENYLIST,
+  resolveTracingConfig,
+} from "./tracing.js";
+import { REDACT_KEY_NAMES } from "@sergeant/shared";
 
 // Тестуємо чисто config-розв'язку без побічних ефектів. Сам `startTracing()`
 // уже виконався на module-evaluation у режимі no-op (без OTLP endpoint),
@@ -104,5 +109,19 @@ describe("resolveTracingConfig", () => {
       OTEL_EXPORTER_OTLP_HEADERS: "broken,x-good=1,=novalue",
     });
     expect(config.headers).toEqual({ "x-good": "1" });
+  });
+});
+
+describe("OTel PII denylist parity", () => {
+  it("mirrors the shared REDACT_KEY_NAMES contract", () => {
+    for (const key of REDACT_KEY_NAMES) {
+      expect(OTEL_ATTRIBUTE_DENYLIST.has(key.toLowerCase())).toBe(true);
+    }
+  });
+
+  it("keeps sensitive HTTP headers covered by the same denylist family", () => {
+    for (const key of HEADER_DENYLIST) {
+      expect(OTEL_ATTRIBUTE_DENYLIST.has(key)).toBe(true);
+    }
   });
 });

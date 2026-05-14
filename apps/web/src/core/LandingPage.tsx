@@ -6,6 +6,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { BrandLogo } from "./app/BrandLogo";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { PRICING_PATH, SIGN_IN_PATH, WELCOME_PATH } from "./app/appPaths";
+import { WaitlistForm } from "./pricing/WaitlistForm";
 
 // Phase 6.1 landing surface (initiative 0010, ADR-0051). Публічний `/`
 // для SEO/paid-acquisition: non-auth відвідувач бачить hero з UA-copy,
@@ -194,6 +195,32 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
               </p>
             </article>
           ))}
+        </section>
+
+        <section
+          className="rounded-3xl border border-line bg-panel p-6 sm:p-8 space-y-4"
+          aria-label="Підписатися на запуск Sergeant"
+        >
+          <div className="max-w-2xl mx-auto text-center space-y-2">
+            <h2 className="text-style-hero text-text">
+              Лист, коли Pro буде готовий
+            </h2>
+            <p className="text-sm text-muted">
+              Залиш email для launch-апдейту. Це той самий список інтересу, але
+              тепер із attribution `source=landing`.
+            </p>
+          </div>
+          <WaitlistForm
+            source="landing"
+            defaultTier="pro"
+            className="max-w-xl mx-auto"
+            onSuccess={() => {
+              trackEvent(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED, {
+                source: "hero",
+                locale: "uk",
+              });
+            }}
+          />
         </section>
 
         <section

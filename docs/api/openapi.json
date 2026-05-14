@@ -2561,7 +2561,8 @@
                 "routine",
                 "journal",
                 "digest",
-                "cofounder"
+                "cofounder",
+                "product"
               ]
             }
           }
@@ -4346,6 +4347,7 @@
             "type": "string",
             "enum": [
               "pricing_page",
+              "landing",
               "paywall",
               "settings",
               "onboarding"
@@ -4585,7 +4587,8 @@
                     "routine",
                     "journal",
                     "digest",
-                    "cofounder"
+                    "cofounder",
+                    "product"
                   ]
                 },
                 "sourceRef": {

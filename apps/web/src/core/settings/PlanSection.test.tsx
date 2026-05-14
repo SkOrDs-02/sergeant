@@ -14,18 +14,26 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { BillingStatusResponse } from "@sergeant/shared";
 
-const { statusMock } = vi.hoisted(() => ({
+const { statusMock, createPortalMock } = vi.hoisted(() => ({
   statusMock:
     vi.fn<
       (opts?: { signal?: AbortSignal }) => Promise<BillingStatusResponse>
     >(),
+  createPortalMock:
+    vi.fn<
+      (opts?: { signal?: AbortSignal }) => Promise<{ ok: true; url: string }>
+    >(),
 }));
 
 vi.mock("@shared/api", () => ({
-  billingApi: { status: statusMock, createCheckout: vi.fn() },
+  billingApi: {
+    status: statusMock,
+    createCheckout: vi.fn(),
+    createPortal: createPortalMock,
+  },
 }));
 
-import { __PLAN_SECTION_PORTAL_URL, PlanSection } from "./PlanSection";
+import { PlanSection } from "./PlanSection";
 
 function renderSection() {
   const client = new QueryClient({
@@ -90,6 +98,11 @@ const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
 describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () => {
   beforeEach(() => {
     statusMock.mockReset();
+    createPortalMock.mockReset();
+    createPortalMock.mockResolvedValue({
+      ok: true,
+      url: "https://billing.stripe.com/session/bps_test_42",
+    });
     // jsdom's `location.assign` is a no-op; stub it so we can assert the
     // browser-navigation contract for the «Керувати підпискою» button.
     Object.defineProperty(window, "location", {
@@ -135,8 +148,11 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(within(activeInfo).getByText(/1 червня 2026/)).toBeInTheDocument();
 
     fireEvent.click(manage);
+    await waitFor(() => {
+      expect(createPortalMock).toHaveBeenCalledTimes(1);
+    });
     expect(window.location.assign).toHaveBeenCalledWith(
-      __PLAN_SECTION_PORTAL_URL,
+      "https://billing.stripe.com/session/bps_test_42",
     );
   });
 

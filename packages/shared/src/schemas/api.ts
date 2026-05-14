@@ -993,6 +993,7 @@ export type WaitlistTier = z.infer<typeof WaitlistTierSchema>;
 
 export const WaitlistSourceSchema = z.enum([
   "pricing_page",
+  "landing",
   "paywall",
   "settings",
   "onboarding",
