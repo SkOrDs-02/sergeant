@@ -106,7 +106,7 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
   },
   {
     command: "ai_cost",
-    description: "AI spend rollup: today/week/month + budget + top endpoints",
+    description: "AI spend rollup; /ai_cost <N> — N-day trend (1..30)",
   },
   {
     command: "openclaw",
