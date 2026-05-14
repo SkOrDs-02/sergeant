@@ -1,15 +1,3 @@
-/**
- * @scaffolded — extracted from `AuthPage.tsx` by [a53e10b0](https://github.com/Skords-01/Sergeant/commit/a53e10b0)
- *   for Hard Rule #18 (max-lines: 600). [PR #2586](https://github.com/Skords-01/Sergeant/pull/2586)
- *   re-inlined AuthPage UX (autocomplete, password toggle, errors) and
- *   reverted the decomposition — `AuthPage.tsx` is now 693 LOC again.
- *   These helpers stay as the canonical re-decomposition target.
- *
- * @nextStep Re-wire `AuthPage.tsx` to import this module + the other
- *   sibling `auth/*` helpers; bring AuthPage.tsx back below 600 LOC.
- *   Tracked in 2026-05-13 dead-code roast § P1.6.
- */
-
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -34,10 +22,13 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
   // hook. Серверні top-level-помилки сюди НЕ протікають — Better Auth
   // повертає їх через `authError` з `useAuth()`, тож ми просто
   // перекидаємо `Error("")` в `onSubmit`, щоб придушити `onSuccess`.
-  const { register, submit, formState, isSubmitting } = useApiForm<
-    LoginValues,
-    boolean
-  >({
+  const {
+    register,
+    submit,
+    formState,
+    formState: { errors },
+    isSubmitting,
+  } = useApiForm<LoginValues, boolean>({
     schema: loginSchema,
     defaultValues: { email: "", password: "" },
     onSubmit: async (values) => {
@@ -74,12 +65,15 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
           type="email"
           placeholder="email@example.com"
           autoComplete="email"
-          error={!!formState.errors.email}
-          aria-invalid={!!formState.errors.email}
+          // eslint-disable-next-line jsx-a11y/no-autofocus -- login form: first required input, expected UX for auth pages
+          autoFocus
+          error={!!errors.email}
+          aria-invalid={!!errors.email}
+          aria-describedby={errors.email ? "auth-email-error" : undefined}
           disabled={isSubmitting}
           {...register("email")}
         />
-        <FieldError message={formState.errors.email?.message} />
+        <FieldError id="auth-email-error" message={errors.email?.message} />
       </div>
 
       <div>
@@ -104,9 +98,10 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
             type={showPassword ? "text" : "password"}
             placeholder="Пароль"
             autoComplete="current-password"
-            className="pr-10"
-            error={!!formState.errors.password}
-            aria-invalid={!!formState.errors.password}
+            className="pr-12"
+            error={!!errors.password}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "auth-pw-error" : undefined}
             disabled={isSubmitting}
             {...register("password")}
           />
@@ -115,7 +110,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
             onToggle={() => setShowPassword((v) => !v)}
           />
         </div>
-        <FieldError message={formState.errors.password?.message} />
+        <FieldError id="auth-pw-error" message={errors.password?.message} />
       </div>
 
       {/* `authError` тримає локалізоване повідомлення з Better Auth

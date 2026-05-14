@@ -4,7 +4,7 @@
 > **Status:** Active — усі Wave-2/3 задачи верифіковані на предмет залежностей та PR-статусу
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
-> Джерела: [`docs/audits/2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md),
+> Джерела: [`docs/audits/archive/2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md),
 > [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md),
 > [`docs/launch/tech/telegram-improvements-roadmap.md`](../launch/tech/telegram-improvements-roadmap.md).
 
@@ -25,7 +25,7 @@
 
 ### 1.1. Тех-борг (відкриті задачі)
 
-Повний контекст і деталі реалізації — у [`2026-04-28-implementation-roadmap.md`](../audits/2026-04-28-implementation-roadmap.md).
+Повний контекст і деталі реалізації — у [`2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md).
 
 **Останнє оновлення:** 2026-05-13 — T5 closed (Lighthouse CI workflow shipped); раніше в цей день синхронізовано з main після T2/T3/T6/T10/O6/O7 close-out.
 

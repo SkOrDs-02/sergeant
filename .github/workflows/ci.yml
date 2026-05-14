@@ -90,6 +90,26 @@ jobs:
         # like `^14` keep one copy of the dep in the tree.
         run: pnpm lint:pnpm-overrides
 
+      - name: pnpm dedupe drift guard (P2-1)
+        # Closes audit item P2-1 in
+        # docs/audits/2026-05-13-testing-devx-roast.md. `pnpm install`
+        # without `--frozen-lockfile` can silently introduce duplicate
+        # copies of a transitive dep when the lockfile drifts (e.g. a
+        # local `pnpm add` resolves a newer compatible version that the
+        # rest of the tree can also satisfy). `pnpm dedupe --check`
+        # exits non-zero when the lockfile is not minimal; the fix is to
+        # run `pnpm dedupe` locally and commit the lockfile delta.
+        run: pnpm dedupe --check
+
+      - name: CI dedupe-gate shape regression test (P2-1)
+        # Unit-tests for the dedupe gate above: asserts the step exists
+        # in this `check` job, runs `pnpm dedupe --check`, and is fail-
+        # stop (no `continue-on-error: true` / `|| true` escape). Cheap
+        # parser-level guard so an accidental config refactor cannot
+        # silently drop the gate. Source:
+        # scripts/__tests__/ci-dedupe-gate.test.mjs.
+        run: node --test scripts/__tests__/ci-dedupe-gate.test.mjs
+
       - name: License policy check (production tree)
         # Validates that every package in the production dependency
         # tree of @sergeant/web + @sergeant/server carries an allowed
