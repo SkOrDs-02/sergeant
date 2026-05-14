@@ -15,6 +15,7 @@ import {
   freshnessMarker,
   issueTitle,
   issueBody,
+  evaluateFreshnessCadence,
 } from "../check-freshness.mjs";
 
 // ── parseHeader ──────────────────────────────────────────────────────────────
@@ -227,5 +228,36 @@ describe("issueBody", () => {
   it("handles unknown lastValidated gracefully", () => {
     const body = issueBody("README.md", null, "2026-07-26", 10);
     assert.ok(body.includes("**Last validated:** unknown"));
+  });
+});
+
+// ── evaluateFreshnessCadence ────────────────────────────────────────────────
+
+describe("evaluateFreshnessCadence", () => {
+  it("reports tracked docs past their effective next review date", () => {
+    const files = {
+      "docs/fresh.md":
+        "> **Last validated:** 2026-05-01 by @dev. **Next review:** 2026-08-01.",
+      "docs/overdue.md":
+        "> **Last validated:** 2026-01-01 by @dev. **Next review:** 2026-02-01.",
+      "docs/legacy.md": "> Last reviewed: 2026-01-01. Reviewer: @dev",
+    };
+    const failures = evaluateFreshnessCadence({
+      tracked: [
+        { path: "docs/fresh.md", cadenceDays: 90 },
+        { path: "docs/overdue.md", cadenceDays: 90 },
+        { path: "docs/legacy.md", cadenceDays: 30 },
+      ],
+      readFile: (path) => files[path],
+      today: "2026-05-14",
+    });
+
+    assert.deepEqual(
+      failures.map((f) => [f.path, f.status, f.nextReview]),
+      [
+        ["docs/overdue.md", "overdue", "2026-02-01"],
+        ["docs/legacy.md", "overdue", "2026-01-31"],
+      ],
+    );
   });
 });

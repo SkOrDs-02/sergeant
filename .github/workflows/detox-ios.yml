@@ -16,24 +16,55 @@ name: Detox (iOS)
 # the same suite set (`apps/mobile/e2e/*.e2e.ts`) and the same
 # `pnpm e2e:*` entry points.
 
+# Path trigger covers two failure modes (PR-18, M2):
+#   1. Direct mobile surface changes (`apps/mobile/**`, mobile-facing
+#      packages) — the original trigger set.
+#   2. Server-shape changes that mobile silently depends on:
+#      `apps/server/src/modules/**/*.routes.ts` (route signatures),
+#      `**/serializers/**` (response shape), `apps/server/src/migrations/**`
+#      (schema that often precedes a serializer rename). These three
+#      paths catch the original M2 failure mode where a server-only PR
+#      shipped a renamed response field, `packages/api-client/` lagged
+#      behind, and the bug only surfaced in production. The freshness
+#      gate `pnpm api:check-openapi-types` (root `lint` script) is the
+#      first defence; Detox catches anything the codegen + types miss
+#      (e.g. behavioural drift, route ordering, header changes).
+#   See `docs/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
 on:
   push:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "apps/mobile-shell/**"
+      # Server response-shape sources — a /api/* response shape change in
+      # apps/server/src/routes/** (or a migration that reshapes a Zod
+      # response schema) can silently break mobile consumers if Detox
+      # isn't rerun. Stack-pulse PR-18 (M2): keep these in lockstep with
+      # detox-android.yml.
+      - "apps/server/src/routes/**"
+      - "apps/server/src/migrations/**"
       - "packages/finyk-domain/**"
       - "packages/routine-domain/**"
       - "packages/api-client/**"
       - "packages/shared/**"
+      - "apps/server/src/modules/**/*.routes.ts"
+      - "apps/server/src/modules/**/serializers/**"
+      - "apps/server/src/migrations/**"
       - "pnpm-lock.yaml"
       - ".github/workflows/detox-ios.yml"
   pull_request:
     paths:
       - "apps/mobile/**"
+      - "apps/mobile-shell/**"
+      - "apps/server/src/routes/**"
+      - "apps/server/src/migrations/**"
       - "packages/finyk-domain/**"
       - "packages/routine-domain/**"
       - "packages/api-client/**"
       - "packages/shared/**"
+      - "apps/server/src/modules/**/*.routes.ts"
+      - "apps/server/src/modules/**/serializers/**"
+      - "apps/server/src/migrations/**"
       - "pnpm-lock.yaml"
       - ".github/workflows/detox-ios.yml"
   workflow_dispatch:

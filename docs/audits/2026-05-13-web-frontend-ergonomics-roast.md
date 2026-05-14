@@ -1,6 +1,6 @@
 # Прожарка #2/10: Web Frontend Ergonomics
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (child session) — додано landing `sergeant-design/no-bare-fixed-inset-modal` rule (warn-only, F2 part-1). **Next review:** 2026-08-11.
 > **Status:** Active
 > **Скоуп:** Web UI ergonomics — форми, accessibility, control-flow, error-boundaries, loading states, empty states, мікро-копірайт.
 
@@ -54,7 +54,7 @@
 - **Change** `useRoutineAppState.ts:317` і `NutritionApp.tsx:366` — додано `action: { label: "Повторити", onClick: retry }` (показові first-converts).
 - **Change** [`eslint.config.js`](../../eslint.config.js) — wire rule як `warn` для `apps/web/**/*.{ts,tsx,js,jsx}`.
 
-### F2: Modal a11y «псевдо-діалоги» в API `fixed inset-0` — P1
+### F2: Modal a11y «псевдо-діалоги» в API `fixed inset-0` — P1 [PART-1 FIXED, PART-II OUTSTANDING]
 
 **З 2026-05-03 §3.5** — рекомендує ESLint custom rule + axe prop-тест.
 
@@ -73,13 +73,13 @@ $ rg "fixed inset-0" apps/web/src --files-with-matches | wc -l
 - `apps/web/src/shared/components/layout/ModuleSettingsDrawer.tsx:60` — drawer без focus-trap.
 - `apps/web/src/shared/components/ui/FloatingActionButton.tsx:234` — backdrop без `role="presentation"`.
 
-**Дії (не в цьому PR):**
+**Дії:**
 
-- **Add** ESLint rule `sergeant-design/no-bare-fixed-inset-modal` — warn-only з allowlist для тих ~5 легітимних use-cases.
-- **Add** axe prop-test snippet у `Modal.test.tsx` (вже існує) + поширення на `QuickActionsMenu`, `StreakCelebration`, `ModuleSettingsDrawer`.
-- **Change** 4-5 файлів вище: додати `role="dialog"` або `role="presentation"`, focus-trap, scroll-lock.
+- ✅ **Add** ESLint rule `sergeant-design/no-bare-fixed-inset-modal` — warn-only з file-path allowlist для 6 легітимних модальних примітивів (`Modal`, `Sheet`, `ConfirmDialog`, `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`). FIXED у follow-up PR (rule only, part-1).
+- **Add** axe prop-test snippet у `Modal.test.tsx` (вже існує) + поширення на `QuickActionsMenu`, `StreakCelebration`, `ModuleSettingsDrawer`. **OUTSTANDING — part-II.**
+- **Change** 4-5 файлів вище: додати `role="dialog"` або `role="presentation"`, focus-trap, scroll-lock. **OUTSTANDING — part-II.**
 
-**Чому не зараз:** треба inventory + risky a11y-зміни (focus-trap може ламати existing flows). Окрема прожарка #2.X — Modal/Dialog a11y.
+**Чому part-II не зараз:** rule додано як warn-only, щоб підсвічувати нові регресії; виправлення існуючих файлів потребує risky a11y-зміни (focus-trap може ламати existing flows) — окрема прожарка #2.X — Modal/Dialog a11y.
 
 ### F3: Keyboard shortcuts — handler-und-coverage — P1 [DOC FIXED]
 
@@ -161,7 +161,7 @@ $ rg "fixed inset-0" apps/web/src --files-with-matches | wc -l
 
 - Burndown rollout — мігрувати per-form, кожна = окремий невеликий PR.
 
-## Прогрес виконання (у цьому PR)
+## Прогрес виконання
 
 | Item                            | Action                                                                                                                                                                                                                                                                                                                  | Status            |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |

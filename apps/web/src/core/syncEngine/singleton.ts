@@ -70,6 +70,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     dbSchema,
     { runMigrations },
     { createSqliteAdapter },
+    { getSession },
   ] = await Promise.all([
     import("../db/sqlite"),
     import("@shared/api"),
@@ -77,6 +78,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     import("@sergeant/db-schema/sqlite"),
     import("@sergeant/db-schema/migrate/runner"),
     import("@sergeant/db-schema/migrate/sqlite"),
+    import("../auth/authClient"),
   ]);
 
   const db = await getSqliteDb();
@@ -176,6 +178,17 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     throw err;
   }
 
+  // Per-tick userId resolver. The runtime itself is user-agnostic; the
+  // drain wrapper closes over `authClient.getSession()` to scope reads
+  // to the currently signed-in user (Hard finding T3#2: prevents
+  // shared-device session-swap from pushing user A's queued ops under
+  // user B's session cookie). When no user is signed in we return an
+  // empty drain — the next tick will try again.
+  const resolveUserId = async (): Promise<string | null> => {
+    const session = await getSession();
+    return session.data?.user?.id ?? null;
+  };
+
   // Stable per-install device id. Without this, every push lands on
   // the server with `origin_device_id = NULL`, and the pull/SSE filter
   // `WHERE origin_device_id IS DISTINCT FROM $3` with $3=NULL drops
@@ -216,11 +229,15 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
 
   return createSyncEngineWriterRuntime({
     pushDeps: {
-      drain: (options) =>
-        dbSchema.drainSyncOpOutbox(client, {
+      drain: async (options) => {
+        const userId = await resolveUserId();
+        if (!userId) return [];
+        return dbSchema.drainSyncOpOutbox(client, {
           ...options,
+          userId,
           onQuarantine: onOutboxQuarantine,
-        }),
+        });
+      },
       push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
       markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
       markRetry: (id, plan) => dbSchema.markOutboxRetry(client, id, plan),

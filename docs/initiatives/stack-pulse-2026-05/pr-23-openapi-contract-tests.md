@@ -1,7 +1,7 @@
 # PR-23: OpenAPI spec contract-tested vs runtime
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
+> **Status:** Active — Phase 1 (generation + freshness gate) shipped; ADR-0056 + contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.
 
 |                    |                                                                           |
 | ------------------ | ------------------------------------------------------------------------- |
@@ -13,7 +13,31 @@
 | **Touches**        | `apps/server/src/`, нова `tests/contract/` директорія, CI                 |
 | **Trigger**        | first contract-bug у production (server response shape ≠ documented spec) |
 
-## Контекст
+## Outcome (Phase 1 shipped)
+
+Code-first OpenAPI generation pipeline + freshness gate **уже працюють** (хоч ADR-0056 формально не написаний — рішення прийнято de facto через імплементацію). Що зроблено:
+
+- **Generator:** [`scripts/api/generate-openapi.mjs`](../../../scripts/api/generate-openapi.mjs) + `scripts/api/generate-openapi-types.mjs` — читає Zod-schemas з `apps/server/src/modules/**/serializers/` (через `buildOpenApiDocument`) і генерує `docs/api/openapi.json` + `packages/api-client/src/generated/openapi.d.ts`.
+- **Committed artifacts:**
+  - `docs/api/openapi.json` (`openapi: 3.1.0`) — single source-of-truth для documented spec.
+  - `packages/api-client/src/generated/openapi.d.ts` — auto-generated TS types для web/mobile клієнтів.
+- **Freshness gate:**
+  - `pnpm api:check-openapi` (= [`scripts/api/check-openapi-fresh.mjs`](../../../scripts/api/check-openapi-fresh.mjs)) — regenerates spec у пам'яті + порівнює з committed файлом. Fail на drift.
+  - `pnpm api:check-openapi-types` (= [`scripts/api/check-openapi-types-fresh.mjs`](../../../scripts/api/check-openapi-types-fresh.mjs)) — analogous для generated types.
+  - Обидва інтегровані у root `pnpm lint` → запускається в CI через `pnpm check` (`.github/workflows/ci.yml` § "Format, lint, test, build").
+
+Що **НЕ** зроблено (deferred):
+
+- **ADR-0056 (`docs/adr/0056-openapi-source-of-truth.md`):** не написаний (numbering jump 0055 → 0057). Decision вже прийнято (code-first), але без формального ADR. Reactivation trigger: якщо хтось предложить spec-first refactor.
+- **Contract roundtrip tests (`tests/contract/openapi-roundtrip.test.ts`):** немає. Testcontainers Postgres + supertest fetch + schema validation проти live responses не зроблено.
+- **Schemathesis property-based testing:** не імплементовано. `.github/workflows/contract-tests.yml` не існує.
+- **CI-job `lint:api-client` drift detector (per PR-18):** не зроблено.
+
+Чому Phase 1 покриває M7 досить добре: основний risk був "documented spec drift-ить vs runtime Zod" — це тепер impossible бо spec **генерується** з тих самих Zod-схем (single source-of-truth). Залишковий gap (Phase 2) — chain "client expects shape X" vs "client actually sends/receives X" — захищено generated `openapi.d.ts` типами + runtime Zod-схемами; property-based testing був би додатковою belt-and-braces, але не critical для M7 закриття.
+
+Reactivation trigger для Phase 2: перший production contract-bug де generated types сказали "OK" але runtime поведінка дала 500.
+
+## Контекст (історично)
 
 Якщо OpenAPI spec існує (placeholder — перевірити `apps/server/openapi*` або `docs/api/`), він **manually-written** і drift-ить vs реальної runtime-поведінки сервера. Жоден тест не співставляє documented schema з actual responses.
 

@@ -25,7 +25,8 @@
     "build:ios": "pnpm build:web && pnpm sync ios",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && pnpm test:scripts",
+    "test:scripts": "node --test scripts/__tests__/*.test.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
