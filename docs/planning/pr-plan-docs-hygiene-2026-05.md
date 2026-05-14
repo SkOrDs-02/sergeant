@@ -39,6 +39,8 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## Прогнозовані quick-wins (PR #0)
 
+**Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (QW-1/QW-2 status updates, QW-3/QW-4 freshness bumps).
+
 Зведений XS PR (≤30 хв скоп), що закриває 4 точкових drift-и за один прохід — наслідок аудиту + дрібного research-у при складанні цього плану. Створюється **окремо від решти** карток, щоб не сповільнювати дискусію по `M/L`-картках.
 
 | ID   | Зміна                                                                                                                                                                                                                                         | Файл:рядок                                                      |
@@ -201,6 +203,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-09 — Freshness-marker dashboard surfacing in `docs/governance/README.md` ✦ Discoverability
 
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs/governance/freshness-dashboard.html`, `docs:check-freshness-dashboard`, CI step, discoverability route).
 - **Group:** 2) discoverability gaps + 3) governance sync (cross-cutting).
 - **Trigger:** `scripts/docs/generate-freshness-dashboard.mjs` існує (`docs:freshness-dashboard` script), але output не лінкується з `docs/governance/README.md`, `docs/README.md` або `AGENTS.md`. Дашборд невидимий для нового contributor / agent → drift не помічається до наступного аудиту.
 - **Action:**

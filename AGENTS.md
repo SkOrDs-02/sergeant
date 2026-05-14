@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -166,5 +166,6 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
 - [`docs/architecture/`](docs/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
 - [`docs/governance/rules/`](docs/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
+- [`docs/governance/freshness-dashboard.html`](docs/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
 - [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
 - [`docs/tech-debt/frontend.md`](docs/tech-debt/frontend.md), [`docs/tech-debt/backend.md`](docs/tech-debt/backend.md).
