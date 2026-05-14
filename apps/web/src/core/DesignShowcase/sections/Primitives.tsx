@@ -6,7 +6,7 @@ import {
   PopoverItem,
   Tooltip,
 } from "@shared/components/ui";
-import { Sec, Group } from "../_shared";
+import { Sec, Group } from "../_shared/primitives";
 
 /**
  * Floating primitives — Tooltip + Popover.

@@ -10,7 +10,7 @@ import {
   useCommandPaletteControls,
   type DropdownMenuEntry,
 } from "@shared/components/ui";
-import { Sec, Group } from "../_shared";
+import { Sec, Group } from "../_shared/primitives";
 
 const basicItems: DropdownMenuEntry[] = [
   { type: "item", id: "edit", label: "Редагувати", icon: <Icon name="edit" /> },

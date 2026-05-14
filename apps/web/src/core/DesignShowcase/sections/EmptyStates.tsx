@@ -9,7 +9,7 @@
  * story in one scroll without navigating to `/404` etc.
  */
 import { Button, Card, EmptyState, Icon } from "@shared/components/ui";
-import { Sec, Group } from "../_shared";
+import { Sec, Group } from "../_shared/primitives";
 import {
   EmptyListIllustration,
   NoResultsIllustration,

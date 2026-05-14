@@ -3,14 +3,46 @@ import { Button } from "@shared/components/ui";
 import { Modal } from "@shared/components/ui/Modal";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { Sec, Group } from "../_shared";
+import {
+  CodeBlock,
+  DoDont,
+  Group,
+  RuleBadges,
+  Sec,
+} from "../_shared/primitives";
+
+const SAMPLE_USAGE = `// Modal portals to document.body to escape transformed ancestors (PR #2227)
+<Modal open={open} onClose={close} size="md" title="…">
+  <p className="text-sm text-muted">…</p>
+</Modal>
+
+// ConfirmDialog — destructive irreversible action
+<ConfirmDialog
+  open={confirmOpen}
+  title="Видалити запис?"
+  description="Цю дію неможливо скасувати."
+  confirmLabel="Видалити"
+  onConfirm={remove}
+  onCancel={close}
+/>`;
 
 export function OverlaysSection() {
   const [modal, setModal] = useState<"sm" | "md" | "lg" | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
-    <Sec id="overlays" title="Overlays">
+    <Sec
+      id="overlays"
+      title="Overlays"
+      intro={
+        <>
+          Modal / Sheet / ConfirmDialog портують у <code>document.body</code>{" "}
+          (PR #2227) — щоб не страждати від transformed-ancestor контейнерів.
+          Контракт фокусу: focus-trap + Esc + click-outside-to-dismiss.
+        </>
+      }
+    >
       <Group label="Modal — розміри" row>
         {(["sm", "md", "lg"] as const).map((size) => (
           <Button
@@ -95,6 +127,43 @@ export function OverlaysSection() {
         cancelLabel="Скасувати"
         onConfirm={() => setConfirmOpen(false)}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <Group label="Приклад використання">
+        <CodeBlock>{SAMPLE_USAGE}</CodeBlock>
+      </Group>
+
+      <Group label="Do / Don't">
+        <DoDont
+          rows={[
+            {
+              label: "Mount",
+              good: <code>&lt;Modal /&gt; (portals to body)</code>,
+              bad: <code>&lt;div&gt; inline у subtree з transform</code>,
+            },
+            {
+              label: "Confirm destructive",
+              good: <code>&lt;ConfirmDialog /&gt;</code>,
+              bad: <code>window.confirm()</code>,
+            },
+            {
+              label: "Close action",
+              good: <code>Esc + click-outside + Cancel button</code>,
+              bad: <code>лише X в кутку</code>,
+            },
+          ]}
+        />
+      </Group>
+
+      <RuleBadges
+        hardRules={[
+          { label: "HR #14", hint: "focus-visible only" },
+          { label: "HR #17", hint: "Motion budget — fade-in" },
+        ]}
+        lintRules={[
+          { label: "prefer-focus-visible" },
+          { label: "prefer-data-state" },
+        ]}
       />
     </Sec>
   );

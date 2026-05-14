@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** з Emerald/Teal-акцентом.
@@ -468,8 +468,35 @@ background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
 
 ### Motion
 
-- Поважати prefers-reduced-motion
+Motion-словник синхронізовано з `design-system.md` § Motion. Три бюджети:
+
+- **Ambient** — фонові стани (skeleton, spinner, pulse-soft).
+- **Response** — реакція на дію користувача (button press, focus, success).
+- **Celebrate** — рідкі віхи (стрік 7/30/100, level-up, milestone reached).
+
+Усі контракти задокументовані в `design-system.md` § Motion і відображені в
+живому showcase у розділі `#motion`. Жодна анімація не запускається без
+`motion-safe:` обгортки — `prefers-reduced-motion: reduce` гасить
+все, окрім opacity-transitions.
+
+- Поважати `prefers-reduced-motion`
 - Жодних автозапускних анімацій, довших за 5 секунд
+
+### Elevation
+
+Toolkit: `shadow-soft`, `shadow-card`, `shadow-float` плюс card-варіанти
+(`default`, `interactive`, `flat`, `elevated`, `ghost`). Module hero cards
+використовують `module-accent-strong` тон + `shadow-card`. Деталі —
+[`design-system.md`](./design-system.md) § Elevation і showcase-якір
+`#elevation`.
+
+### Type scale
+
+Канонічний type-scale живе в `design-system.md` § Typography. Семантичні
+утиліти `.text-style-{hero,title,body,label,caption,overline}` — обов'язкові
+для нового UI-коду. Голий `text-2xl font-extrabold` ловить ESLint
+`prefer-text-style` як warning, eyebrow combo (`uppercase + tracking-* + text-*`)
+— `no-eyebrow-drift` як error.
 
 ---
 

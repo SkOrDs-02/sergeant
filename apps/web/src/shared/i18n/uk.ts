@@ -82,7 +82,7 @@ export const messages = {
     // PR-31 / §C6 — `fieldRequired` deprecated. Безособове «Поле
     // обовʼязкове» виграло від уніфікації під 1-у особу («Введи X»
     // / «Обери X»). Лишаємо до follow-up міграції design-showcase
-    // demo (`core/designShowcase/sections/Forms.tsx`); прохід через
+    // demo (`core/DesignShowcase/sections/Forms.tsx`); прохід через
     // production-форми вже не звертається до цього key-а.
     /** @deprecated PR-31: use `<entity>Required` ключі замість безособового. */
     fieldRequired: "Поле обовʼязкове.",
