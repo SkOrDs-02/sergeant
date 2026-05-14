@@ -60,6 +60,21 @@ groups:
             `db_query_duration_ms`, and N+1 query patterns.
           runbook: "docs/observability/runbook.md#httplatencyp95high"
 
+      - alert: BackendHealthP95High
+        expr: job:health_p95_5m > 100
+        for: 5m
+        labels:
+          severity: ticket
+          slo: health_latency
+        annotations:
+          summary: "Backend health endpoint p95 >100ms for 5m"
+          description: |
+            Health probe p95 is {{ $value }} ms over 5m. This is a ticket,
+            not a page: the endpoint is still responding, but probes are
+            close to failing during rolling deploys or cold starts. Check DB
+            pool waiting, process event-loop lag, and recent deploys.
+          runbook: "docs/observability/runbook.md#backendhealthp95high"
+
   # ──────────────────────────── Sync (SLO 99.5%) ────────────────
   - name: slo_sync
     rules:
