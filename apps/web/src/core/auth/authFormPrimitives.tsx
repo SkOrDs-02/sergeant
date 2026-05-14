@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { estimatePasswordStrength } from "@shared/lib/auth/passwordStrength";
@@ -10,10 +14,10 @@ export function PasswordStrengthBar({ password }: { password: string }) {
   // не виправдано для трьох коротких токенів.
   const { level } = estimatePasswordStrength(password);
   const widths = ["w-1/3", "w-2/3", "w-full"];
-  const colors = ["bg-error", "bg-amber-400", "bg-brand-500"];
+  const colors = ["bg-danger", "bg-amber-400", "bg-brand-500"];
   const labels = ["Слабкий", "Середній", "Надійний"];
   const labelColors = [
-    "text-error",
+    "text-danger",
     "text-amber-500",
     "text-brand-strong dark:text-brand",
   ];
@@ -69,7 +73,7 @@ interface FieldErrorProps {
 export function FieldError({ id, message }: FieldErrorProps) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1.5 text-meta text-error" role="alert">
+    <p id={id} className="mt-1.5 text-meta text-danger" role="alert">
       {message}
     </p>
   );

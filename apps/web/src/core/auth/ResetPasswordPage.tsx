@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -124,7 +128,7 @@ export function ResetPasswordPage() {
           {!token ? (
             <div
               role="alert"
-              className="text-sm text-text bg-error/10 border border-error/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
+              className="text-sm text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
             >
               <p>
                 Посилання на скидання пароля неповне або протерміноване. Відкрий
@@ -211,7 +215,7 @@ export function ResetPasswordPage() {
                   role={serverError ? "alert" : "status"}
                   className={
                     serverError
-                      ? "text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2.5"
+                      ? "text-xs text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
                       : "text-xs text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
                   }
                 >

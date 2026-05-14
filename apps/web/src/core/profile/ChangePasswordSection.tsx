@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -156,7 +160,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         {serverError && (
           <div
             role="alert"
-            className="text-xs text-error bg-error/10 border border-error/20 rounded-xl px-3 py-2"
+            className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
           >
             {serverError}
           </div>

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -163,7 +167,7 @@ export function PendingVoiceChip({
           hapticTap();
           onCancel();
         }}
-        className="shrink-0 w-7 h-7 rounded-full bg-line/30 text-muted hover:text-error hover:bg-error/15 flex items-center justify-center pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
+        className="shrink-0 w-7 h-7 rounded-full bg-line/30 text-muted hover:text-danger hover:bg-danger/15 flex items-center justify-center pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
         aria-label="Скасувати"
         title="Скасувати"
       >

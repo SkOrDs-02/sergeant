@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { SyntheticEvent } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -71,7 +75,7 @@ export function ForgotPasswordPanel({
             <p
               id="auth-forgot-email-error"
               role="alert"
-              className="text-error text-meta font-medium"
+              className="text-danger text-meta font-medium"
             >
               {authError}
             </p>

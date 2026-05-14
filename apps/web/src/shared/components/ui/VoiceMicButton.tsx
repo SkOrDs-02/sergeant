@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -192,7 +196,7 @@ export function VoiceMicButton({
           "motion-safe:transition-all motion-reduce:transition-none",
           sizeMap[size] || sizeMap.md,
           busy
-            ? "bg-error/15 text-error border border-error/30 motion-safe:animate-pulse"
+            ? "bg-danger/15 text-danger border border-danger/30 motion-safe:animate-pulse"
             : "bg-panelHi text-muted hover:text-text hover:bg-line/40 border border-line",
           (disabled || isUploading) && "opacity-40 pointer-events-none",
           className,
