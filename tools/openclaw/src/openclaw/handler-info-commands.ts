@@ -32,6 +32,8 @@ import { executeRitualCommand } from "./ritual-runner.js";
 import { executeOpenclawStatusCommand } from "./status-runner.js";
 import { parseOpenclawCommand } from "./status-format.js";
 import { executeOpenclawWhoisCommand } from "./whois-runner.js";
+import { executePerfCommand } from "./perf-runner.js";
+import type { PerfSnapshotResponse } from "./perfFormat.js";
 import type { HandlerContext } from "./handler-context.js";
 import {
   HELP_TEXT,
@@ -695,6 +697,71 @@ export function registerInfoCommands(ctx: HandlerContext): void {
     });
 
     await c.reply(result.reply, { parse_mode: "HTML" });
+  });
+
+  // `/perf` — server-side performance snapshot для founder DM.
+  // Продовження observability-cluster (`/ai_cost` PR-26 #2706,
+  // `/alerts history` #2715, `/openclaw status` #2709). Counters
+  // cumulative since-process-restart (не 5min-rate — для того
+  // потрібен Prometheus-side query, а ми працюємо з in-process
+  // register-ом). Layout — ≤30 рядків HTML.
+  //
+  // Audit-row пишемо у `openclaw_invocations` (trigger=dm,
+  // metadata.slashCommand="/perf"). Rate-limit — той самий per-founder
+  // bucket, що й у `/audit`, `/openclaw`, `/ritual` (3/min).
+  bot.command("perf", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+    if (!rateLimiter.allow(String(c.from?.id))) {
+      await c.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const founderTgUserId =
+      parseFounderTgUserId(process.env["OPENCLAW_FOUNDER_TG_USER_ID"]) ??
+      c.from?.id ??
+      0;
+
+    const result = await executePerfCommand({
+      founderUserId,
+      founderTgUserId,
+      ...(c.chat?.id !== undefined ? { telegramChatId: c.chat.id } : {}),
+      fetcher: {
+        async getPerfSnapshot() {
+          const r = await postJson<PerfSnapshotResponse>(
+            `${serverUrl}/api/internal/openclaw/perf-snapshot`,
+            internalApiKey,
+            {},
+          );
+          return { ok: r.ok, status: r.status, data: r.data };
+        },
+        async openInvocation(input) {
+          const r = await postJson<OpenInvocationResponse>(
+            `${serverUrl}/api/internal/openclaw/invocations/open`,
+            internalApiKey,
+            input,
+          );
+          return {
+            ok: r.ok,
+            status: r.status,
+            invocationId: r.data?.invocationId ?? null,
+          };
+        },
+        async finalizeInvocation(input) {
+          const r = await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            input,
+          );
+          return { ok: r.ok, status: r.status };
+        },
+      },
+      addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
+    });
+
+    await c.reply(result.reply, {
+      parse_mode: "HTML",
+      link_preview_options: { is_disabled: true },
+    });
   });
 
   // PR-/mute (Phase 5b): "do not disturb" — пауза вихідних bot pings

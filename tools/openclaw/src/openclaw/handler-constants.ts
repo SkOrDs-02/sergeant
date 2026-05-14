@@ -180,6 +180,7 @@ export const HELP_TEXT = [
   "/budget — поточний денний spend",
   "/ritual [morning|weekly|monthly|help] — ad-hoc ritual trigger (WF-25 mirror)",
   "/ai_cost — AI-spend rollup: today/week/month + budget + top endpoints",
+  "/perf — server perf snapshot: HTTP/AI latency, DB pool, AI memory queue, top errors",
   "/openclaw [status|whois|help] — debug snapshot або per-user whois",
   "       <code>/openclaw whois &lt;tg_id|@username&gt;</code>: allowlist/founder/invocations/mute/top-tools",
   "/mute [30m|1h|4h|8h|until-morning|status|off|help] — pause bot pings (P0 alerts override)",
