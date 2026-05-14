@@ -505,7 +505,7 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 
 1. `mono_webhook_duration_ms` записується на `ok` і `error` ([webhook.ts:173](../../apps/server/src/modules/mono/webhook.ts#L173), [:185](../../apps/server/src/modules/mono/webhook.ts#L185)), але **не** на ранніх exit-ах `invalid_secret`/`bad_payload` ([webhook.ts:63](../../apps/server/src/modules/mono/webhook.ts#L63), [:102](../../apps/server/src/modules/mono/webhook.ts#L102)). Свідомий вибір (щоб не зашумити histogram cheap-paths-ами без бізнес-сенсу), але для повноти cardinality-діагностики можна додати окрему `mono_webhook_short_circuit_total{reason="invalid_secret"|"bad_payload"}` counter — без histogram-ового витрат.
 2. **`/health/*` nested + short-alias probes** (`/health/liveness`, `/health/readiness`, `/health/startup`, `/livez`, `/readyz`, `/startupz`, `/healthz`) накриті лише loose-1s SLO §2 у `SLO.md`. Якщо хоч одна probe-семантика виявиться окремо вартою власного бюджета (типу: `readiness` p95 < 250 ms бо ходить по worker fleet) — додати окремі recording-rules за патерном з PR-06.
-Незатреканих observability-питань у цьому довіднику немає. Поточний follow-up
-винесений у план, щоб footer не ставав backlog-дублікатом:
+   Незатреканих observability-питань у цьому довіднику немає. Поточний follow-up
+   винесений у план, щоб footer не ставав backlog-дублікатом:
 
-1. `/api/internal/*` Sentry sampling baseline і rule-ordering — [backend perf plan PR-07](../planning/pr-plan-backend-perf-2026-05.md).
+3. `/api/internal/*` Sentry sampling baseline і rule-ordering — [backend perf plan PR-07](../planning/pr-plan-backend-perf-2026-05.md).
