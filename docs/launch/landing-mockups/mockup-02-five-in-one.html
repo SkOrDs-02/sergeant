@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · Один додаток замість 5 — закрита бета</title>
+    <meta
+      name="description"
+      content="Прибери MyFitnessPal, YNAB, Habit-Tracker та інші. Sergeant обʼєднує фінанси, тренування, харчування і звички в одному hub-і з AI."
+    />
+    <!-- Mockup variant: 02 / Five-in-one comparison. Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Manrope", "system-ui", "sans-serif"] },
+            colors: {
+              brand: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                800: "#065f46",
+                900: "#064e3b",
+              },
+              teal: { 500: "#14b8a6", 700: "#0f766e" },
+              coral: { 500: "#f97066", 700: "#c23a3a" },
+              lime: { 500: "#92cc17", 700: "#567c0f" },
+              cream: {
+                50: "#fefdfb",
+                100: "#fdf9f3",
+                200: "#faf3e8",
+                300: "#f5ead8",
+              },
+              ink: "#1c1917",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background: #fdf9f3;
+      }
+      .strike {
+        text-decoration: line-through;
+        text-decoration-color: #f97066;
+        text-decoration-thickness: 3px;
+      }
+      .grid-bg {
+        background-image:
+          linear-gradient(rgba(28, 25, 23, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(28, 25, 23, 0.04) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+    </style>
+  </head>
+  <body class="font-sans text-ink antialiased">
+    <header class="bg-cream-50 border-b border-stone-200/70">
+      <div
+        class="max-w-7xl mx-auto px-5 sm:px-8 py-5 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <div
+            class="w-9 h-9 rounded-xl bg-ink text-white grid place-items-center font-bold"
+          >
+            S
+          </div>
+          <span class="font-extrabold text-lg">Sergeant</span>
+        </div>
+        <nav
+          class="hidden md:flex items-center gap-7 text-sm font-medium text-stone-700"
+        >
+          <a href="#why" class="hover:text-ink">Чому одне місце</a>
+          <a href="#modules" class="hover:text-ink">4 модулі</a>
+          <a href="#pricing" class="hover:text-ink">Ціна</a>
+          <a href="#faq" class="hover:text-ink">Питання</a>
+        </nav>
+        <a
+          href="#beta"
+          class="bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition"
+        >
+          У бету →
+        </a>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="relative grid-bg">
+      <div
+        class="max-w-7xl mx-auto px-5 sm:px-8 pt-16 sm:pt-24 pb-16 text-center"
+      >
+        <span
+          class="inline-block text-xs uppercase tracking-[0.2em] font-bold text-brand-700 bg-brand-100 px-3 py-1.5 rounded-full"
+        >
+          🎖️ Public beta · травень 2026
+        </span>
+        <h1
+          class="mt-8 text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.95]"
+        >
+          Один додаток<br />
+          <span class="text-stone-400 font-semibold">замість</span>
+          <span class="text-coral-500 strike">пʼяти</span>
+        </h1>
+        <p
+          class="mt-8 text-lg sm:text-xl text-stone-600 max-w-2xl mx-auto leading-relaxed"
+        >
+          Закрий MyFitnessPal, YNAB, Habit-Tracker, Notion-табличку і замітку
+          про калорії. Sergeant веде усе — і AI-чат бачить картину цілком.
+        </p>
+
+        <form
+          class="mt-10 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+          onsubmit="
+            event.preventDefault();
+            this.querySelector('button').textContent = 'Готово ✓';
+          "
+        >
+          <input
+            type="email"
+            required
+            placeholder="твоя пошта"
+            class="flex-1 px-5 py-4 rounded-xl border-2 border-ink bg-white focus:outline-none focus:ring-4 focus:ring-brand-200 text-base shadow-[4px_4px_0_#1c1917]"
+          />
+          <button
+            type="submit"
+            class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-4 rounded-xl border-2 border-ink shadow-[4px_4px_0_#1c1917] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1c1917] transition"
+          >
+            Хочу спробувати
+          </button>
+        </form>
+        <p class="mt-3 text-sm text-stone-500">
+          Без картки. Без спаму. Вийти можна одним кліком.
+        </p>
+      </div>
+    </section>
+
+    <!-- Before / After -->
+    <section id="why" class="max-w-7xl mx-auto px-5 sm:px-8 py-16 sm:py-24">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Before -->
+        <div
+          class="bg-white rounded-3xl border-2 border-stone-200 p-7 sm:p-9 relative overflow-hidden"
+        >
+          <div
+            class="absolute top-4 right-4 text-xs uppercase tracking-wider font-bold text-stone-400"
+          >
+            До
+          </div>
+          <h3 class="text-2xl font-extrabold flex items-center gap-2">
+            <span class="text-coral-500">😩</span> Звичайний день
+          </h3>
+          <p class="text-stone-500 text-sm mt-1">
+            5 додатків · 5 акаунтів · 0 цілісної картини
+          </p>
+
+          <ul class="mt-8 space-y-4">
+            <li class="flex items-center gap-3 p-3 rounded-xl bg-stone-50">
+              <div
+                class="w-10 h-10 rounded-lg bg-blue-500/15 grid place-items-center text-blue-700 text-lg"
+              >
+                💳
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-sm">YNAB</div>
+                <div class="text-xs text-stone-500">$15/міс</div>
+              </div>
+              <span class="text-xs text-stone-400">Фінанси</span>
+            </li>
+            <li class="flex items-center gap-3 p-3 rounded-xl bg-stone-50">
+              <div
+                class="w-10 h-10 rounded-lg bg-orange-500/15 grid place-items-center text-orange-700 text-lg"
+              >
+                🍎
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-sm">MyFitnessPal</div>
+                <div class="text-xs text-stone-500">$10/міс</div>
+              </div>
+              <span class="text-xs text-stone-400">Калорії</span>
+            </li>
+            <li class="flex items-center gap-3 p-3 rounded-xl bg-stone-50">
+              <div
+                class="w-10 h-10 rounded-lg bg-purple-500/15 grid place-items-center text-purple-700 text-lg"
+              >
+                🏋️
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-sm">Strong</div>
+                <div class="text-xs text-stone-500">$5/міс</div>
+              </div>
+              <span class="text-xs text-stone-400">Тренування</span>
+            </li>
+            <li class="flex items-center gap-3 p-3 rounded-xl bg-stone-50">
+              <div
+                class="w-10 h-10 rounded-lg bg-rose-500/15 grid place-items-center text-rose-700 text-lg"
+              >
+                ✅
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-sm">Habitica + Notion</div>
+                <div class="text-xs text-stone-500">$8/міс</div>
+              </div>
+              <span class="text-xs text-stone-400">Звички</span>
+            </li>
+          </ul>
+
+          <div
+            class="mt-6 pt-6 border-t-2 border-dashed border-stone-200 flex justify-between items-center"
+          >
+            <span class="text-sm text-stone-500">Всього</span>
+            <span class="text-2xl font-black text-coral-600 strike"
+              >$38 / міс</span
+            >
+          </div>
+        </div>
+
+        <!-- After -->
+        <div
+          class="bg-ink text-white rounded-3xl p-7 sm:p-9 relative overflow-hidden"
+        >
+          <div
+            class="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-brand-500/20 blur-3xl"
+          ></div>
+          <div
+            class="absolute top-4 right-4 text-xs uppercase tracking-wider font-bold text-brand-300"
+          >
+            Після
+          </div>
+          <h3 class="text-2xl font-extrabold flex items-center gap-2">
+            <span>🎖️</span> Sergeant
+          </h3>
+          <p class="text-stone-400 text-sm mt-1">
+            1 додаток · 1 акаунт · цілісна картина дня
+          </p>
+
+          <ul class="mt-8 space-y-3 relative">
+            <li
+              class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-brand-500/30 grid place-items-center text-brand-300 text-lg"
+              >
+                💸
+              </div>
+              <div class="flex-1 font-semibold text-sm">
+                Фінік — Monobank, бюджети, борги
+              </div>
+            </li>
+            <li
+              class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-teal-500/30 grid place-items-center text-teal-300 text-lg"
+              >
+                💪
+              </div>
+              <div class="flex-1 font-semibold text-sm">
+                Фізрук — тренування, біометрія
+              </div>
+            </li>
+            <li
+              class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-coral-500/30 grid place-items-center text-coral-400 text-lg"
+              >
+                📌
+              </div>
+              <div class="flex-1 font-semibold text-sm">
+                Рутина — звички, стріки
+              </div>
+            </li>
+            <li
+              class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-lime-500/30 grid place-items-center text-lime-300 text-lg"
+              >
+                🥗
+              </div>
+              <div class="flex-1 font-semibold text-sm">
+                Харчування — сканер + AI-фото
+              </div>
+            </li>
+            <li
+              class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-brand-500/40 to-teal-500/30 border border-brand-400/40"
+            >
+              <div
+                class="w-10 h-10 rounded-lg bg-brand-400 grid place-items-center text-ink font-bold"
+              >
+                ✨
+              </div>
+              <div class="flex-1">
+                <div class="font-bold text-sm">
+                  HubChat — AI бачить усі 4 модулі
+                </div>
+                <div class="text-xs text-stone-300 mt-0.5">
+                  «Скільки калорій я зʼїв і чи був дефіцит?»
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <div
+            class="mt-6 pt-6 border-t border-white/20 flex justify-between items-center"
+          >
+            <span class="text-sm text-stone-400">Pro-тариф</span>
+            <div class="text-right">
+              <div class="text-2xl font-black text-brand-300">$7 / міс</div>
+              <div class="text-xs text-stone-400">або Free назавжди</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-10 text-center">
+        <p class="text-sm text-stone-500">
+          ≈ <span class="font-bold text-ink">$31 економії на місяць</span>,
+          мінус 4 акаунти, мінус когнітивне навантаження.
+        </p>
+      </div>
+    </section>
+
+    <!-- Modules detailed -->
+    <section id="modules" class="bg-cream-100 border-y border-stone-200">
+      <div class="max-w-7xl mx-auto px-5 sm:px-8 py-20">
+        <p
+          class="text-xs uppercase tracking-[0.2em] font-bold text-stone-500 text-center"
+        >
+          4 модулі
+        </p>
+        <h2
+          class="mt-3 text-3xl sm:text-5xl font-black text-center tracking-tight"
+        >
+          Кожен модуль — окремий продукт.<br />
+          <span class="text-brand-700">Разом — цілий світогляд.</span>
+        </h2>
+
+        <div class="mt-14 grid md:grid-cols-2 gap-5">
+          <article class="bg-white rounded-2xl p-6 border-l-4 border-brand-500">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">💸</span>
+              <h3 class="font-extrabold text-xl">Фінік — Фінанси</h3>
+            </div>
+            <p class="mt-3 text-stone-600 text-sm leading-relaxed">
+              Monobank webhook автоматично тягне транзакції. Категорії, бюджети,
+              борги, обмеження на витрати, експорт у CSV.
+            </p>
+            <ul class="mt-4 text-sm text-stone-700 space-y-1">
+              <li>· Авто-категоризація через AI</li>
+              <li>· Multi-currency UAH/EUR/USD</li>
+              <li>· Прогноз місяця</li>
+            </ul>
+          </article>
+
+          <article class="bg-white rounded-2xl p-6 border-l-4 border-teal-500">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">💪</span>
+              <h3 class="font-extrabold text-xl">Фізрук — Фітнес</h3>
+            </div>
+            <p class="mt-3 text-stone-600 text-sm leading-relaxed">
+              Програми тренувань, підходи, ваги. Біометрія (вага, % жиру,
+              талія). Графіки прогресу. Інтеграція з Apple Health.
+            </p>
+            <ul class="mt-4 text-sm text-stone-700 space-y-1">
+              <li>· 100+ готових програм</li>
+              <li>· Recovery score</li>
+              <li>· Plate-калькулятор</li>
+            </ul>
+          </article>
+
+          <article class="bg-white rounded-2xl p-6 border-l-4 border-coral-500">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">📌</span>
+              <h3 class="font-extrabold text-xl">Рутина — Звички</h3>
+            </div>
+            <p class="mt-3 text-stone-600 text-sm leading-relaxed">
+              Habit tracker з heatmap, стріками і нагадуваннями. Підтримує
+              бінарні, числові і тайм-звички (медитація, читання).
+            </p>
+            <ul class="mt-4 text-sm text-stone-700 space-y-1">
+              <li>· Push-нагадування</li>
+              <li>· Heatmap календар</li>
+              <li>· Тижневі ритуали</li>
+            </ul>
+          </article>
+
+          <article class="bg-white rounded-2xl p-6 border-l-4 border-lime-500">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🥗</span>
+              <h3 class="font-extrabold text-xl">Харчування</h3>
+            </div>
+            <p class="mt-3 text-stone-600 text-sm leading-relaxed">
+              Сканер штрих-кодів (OpenFoodFacts), AI-фото-розпізнавання їжі, log
+              сніданку / обіду / вечері, добові цілі по БЖВ.
+            </p>
+            <ul class="mt-4 text-sm text-stone-700 space-y-1">
+              <li>· 14M+ продуктів</li>
+              <li>· AI-фото: точність 87 %</li>
+              <li>· Власні рецепти</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="max-w-5xl mx-auto px-5 sm:px-8 py-20">
+      <h2 class="text-3xl sm:text-5xl font-black text-center tracking-tight">
+        Чесна ціна
+      </h2>
+      <p class="text-center text-stone-600 mt-3 max-w-xl mx-auto">
+        Free — назавжди для базового щоденного трекінгу. Pro — для тих, кому
+        потрібен AI без лімітів.
+      </p>
+
+      <div class="mt-12 grid md:grid-cols-2 gap-5">
+        <div class="bg-white border-2 border-stone-200 rounded-3xl p-8">
+          <p class="text-xs uppercase tracking-wider font-bold text-stone-500">
+            Free
+          </p>
+          <div class="mt-3 text-5xl font-black">₴0</div>
+          <p class="text-sm text-stone-500 mt-1">Назавжди</p>
+
+          <ul class="mt-6 space-y-3 text-sm text-stone-700">
+            <li class="flex gap-2">
+              <span class="text-brand-600 font-bold">✓</span> Всі 4 модулі
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-600 font-bold">✓</span> 5
+              AI-повідомлень/день
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-600 font-bold">✓</span> 3 AI-фото їжі/день
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-600 font-bold">✓</span> Ручний
+              Monobank-імпорт
+            </li>
+            <li class="flex gap-2 text-stone-400"><span>—</span> CloudSync</li>
+          </ul>
+        </div>
+
+        <div
+          class="bg-ink text-white rounded-3xl p-8 relative ring-4 ring-brand-500/30"
+        >
+          <span
+            class="absolute -top-3 right-6 text-xs font-bold bg-brand-500 text-ink px-3 py-1 rounded-full"
+          >
+            Free for beta-юзерів
+          </span>
+          <p class="text-xs uppercase tracking-wider font-bold text-brand-300">
+            Pro
+          </p>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span class="text-5xl font-black">$7</span>
+            <span class="text-stone-400">/ міс</span>
+          </div>
+          <p class="text-sm text-stone-400 mt-1">або $49 / рік (-42 %)</p>
+
+          <ul class="mt-6 space-y-3 text-sm">
+            <li class="flex gap-2">
+              <span class="text-brand-400 font-bold">✓</span> Все з Free
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-400 font-bold">✓</span> Безлімітний AI-чат
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-400 font-bold">✓</span> Авто Monobank
+              webhook
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-400 font-bold">✓</span> CloudSync між
+              пристроями
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-400 font-bold">✓</span> Експорт CSV / PDF
+            </li>
+            <li class="flex gap-2">
+              <span class="text-brand-400 font-bold">✓</span> Кастомні теми
+            </li>
+          </ul>
+
+          <a
+            href="#beta"
+            class="mt-8 block text-center bg-brand-500 hover:bg-brand-600 text-ink font-bold py-3.5 rounded-xl transition"
+          >
+            Забронювати у беті
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Beta CTA -->
+    <section id="beta" class="px-5 sm:px-8 pb-20">
+      <div
+        class="max-w-4xl mx-auto bg-brand-600 text-white rounded-[2rem] p-8 sm:p-14 text-center relative overflow-hidden"
+      >
+        <div class="absolute inset-0 grid-bg opacity-30"></div>
+        <div class="relative">
+          <h2 class="text-3xl sm:text-5xl font-black tracking-tight">
+            Готовий замінити 5 на 1?
+          </h2>
+          <p class="mt-4 text-brand-50 text-lg max-w-lg mx-auto">
+            Заповни форму — за 24 години відправимо інвайт у Telegram-канал
+            бета-юзерів.
+          </p>
+          <form
+            class="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+            onsubmit="
+              event.preventDefault();
+              this.querySelector('button').textContent = 'Готово ✓';
+            "
+          >
+            <input
+              type="email"
+              required
+              placeholder="email"
+              class="flex-1 px-5 py-4 rounded-xl bg-white text-ink placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-white/40"
+            />
+            <button
+              type="submit"
+              class="bg-ink hover:bg-stone-800 text-white font-bold px-6 py-4 rounded-xl transition"
+            >
+              Хочу в бету
+            </button>
+          </form>
+          <p class="mt-5 text-sm text-brand-100">
+            Перші 500 — Pro безкоштовно назавжди.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="border-t border-stone-200 py-8">
+      <div
+        class="max-w-7xl mx-auto px-5 sm:px-8 flex flex-wrap items-center justify-between gap-3 text-sm text-stone-500"
+      >
+        <p>© 2026 Sergeant · UA-проєкт</p>
+        <div class="flex gap-5">
+          <a href="#" class="hover:text-ink">Telegram</a>
+          <a href="#" class="hover:text-ink">GitHub</a>
+          <a href="#" class="hover:text-ink">Приватність</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

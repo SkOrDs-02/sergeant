@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · AI-помічник, що памʼятає твій день — beta-доступ</title>
+    <meta
+      name="description"
+      content="Sergeant — local-first AI-помічник для фінансів, тренувань, харчування і звичок. Закрита бета. Безкоштовно."
+    />
+    <!-- Mockup variant: 01 / AI Coach hero. Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
+            colors: {
+              brand: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                200: "#a7f3d0",
+                300: "#6ee7b7",
+                400: "#34d399",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                800: "#065f46",
+                900: "#064e3b",
+              },
+              teal: {
+                500: "#14b8a6",
+                600: "#0d9488",
+                700: "#0f766e",
+              },
+              cream: {
+                50: "#fefdfb",
+                100: "#fdf9f3",
+                200: "#faf3e8",
+                300: "#f5ead8",
+              },
+              coral: { 500: "#f97066", 600: "#e64d4d" },
+              lime: { 500: "#92cc17" },
+              ink: "#1c1917",
+            },
+            keyframes: {
+              float: {
+                "0%, 100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-6px)" },
+              },
+              "slide-in": {
+                "0%": { opacity: 0, transform: "translateY(8px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+              blink: { "50%": { opacity: 0.4 } },
+            },
+            animation: {
+              float: "float 4s ease-in-out infinite",
+              "slide-in": "slide-in 0.4s ease-out both",
+              blink: "blink 1.2s ease-in-out infinite",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background:
+          radial-gradient(
+            1100px 600px at 10% -10%,
+            #d1fae5 0%,
+            transparent 55%
+          ),
+          radial-gradient(900px 500px at 100% 0%, #ccfbf1 0%, transparent 60%),
+          linear-gradient(180deg, #fefdfb 0%, #fdf9f3 100%);
+      }
+      .grain {
+        background-image: radial-gradient(
+          rgba(28, 25, 23, 0.04) 1px,
+          transparent 1px
+        );
+        background-size: 3px 3px;
+      }
+      .chat-tail-l::after {
+        content: "";
+        position: absolute;
+        left: -6px;
+        bottom: 10px;
+        width: 14px;
+        height: 14px;
+        background: inherit;
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+      }
+      .chat-tail-r::after {
+        content: "";
+        position: absolute;
+        right: -6px;
+        bottom: 10px;
+        width: 14px;
+        height: 14px;
+        background: inherit;
+        clip-path: polygon(0 0, 100% 100%, 0 100%);
+      }
+    </style>
+  </head>
+  <body class="font-sans text-ink antialiased">
+    <!-- Top banner -->
+    <div class="bg-ink text-cream-100 text-center text-xs sm:text-sm py-2 px-4">
+      <span class="inline-flex items-center gap-2">
+        <span
+          class="inline-block w-2 h-2 rounded-full bg-brand-400 animate-blink"
+        ></span>
+        Закрита бета · 423 / 500 спот зайнято · ранній доступ відкривається 1
+        червня
+      </span>
+    </div>
+
+    <!-- Header -->
+    <header
+      class="max-w-6xl mx-auto px-5 sm:px-8 pt-6 sm:pt-8 flex items-center justify-between"
+    >
+      <div class="flex items-center gap-2">
+        <div
+          class="w-9 h-9 rounded-2xl bg-brand-700 text-white grid place-items-center font-bold shadow-md"
+        >
+          S
+        </div>
+        <span class="font-bold text-lg tracking-tight">Sergeant</span>
+        <span
+          class="hidden sm:inline ml-2 text-xs uppercase tracking-wider text-brand-700 font-semibold"
+          >Beta</span
+        >
+      </div>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-stone-600">
+        <a href="#how" class="hover:text-ink">Як це працює</a>
+        <a href="#modules" class="hover:text-ink">Модулі</a>
+        <a href="#privacy" class="hover:text-ink">Приватність</a>
+        <a href="#beta" class="hover:text-ink">Бета</a>
+      </nav>
+      <a
+        href="#beta"
+        class="inline-flex items-center gap-2 bg-ink text-cream-50 text-sm font-semibold px-4 py-2 rounded-full hover:bg-stone-800 transition"
+      >
+        Отримати доступ
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path d="M5 12h14M13 5l7 7-7 7" />
+        </svg>
+      </a>
+    </header>
+
+    <!-- HERO -->
+    <section
+      class="max-w-6xl mx-auto px-5 sm:px-8 pt-12 sm:pt-20 pb-16 sm:pb-24"
+    >
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div>
+          <p
+            class="text-xs uppercase tracking-[0.18em] text-brand-700 font-semibold mb-4"
+          >
+            Local-first · AI · Українською
+          </p>
+          <h1
+            class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight"
+          >
+            AI-помічник,<br />
+            що <span class="text-brand-700">памʼятає</span> твій
+            <span class="relative inline-block">
+              день
+              <svg
+                class="absolute -bottom-2 left-0 w-full"
+                viewBox="0 0 200 12"
+                fill="none"
+              >
+                <path
+                  d="M2 8 Q60 -2 100 6 T 198 4"
+                  stroke="#34d399"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+          </h1>
+          <p class="mt-6 text-lg text-stone-600 max-w-xl leading-relaxed">
+            Гроші, тіло, звички, їжа — в одному додатку. Sergeant зʼєднує
+            <strong class="text-ink">4 модулі</strong> і AI-чат, що бачить весь
+            твій день і пропонує наступний крок. Дані живуть на твоєму пристрої.
+          </p>
+
+          <form
+            id="beta-form-1"
+            class="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg"
+            onsubmit="
+              event.preventDefault();
+              this.querySelector('button').textContent = 'Готово ✓';
+              this.querySelector('button').classList.add('bg-brand-700');
+            "
+          >
+            <input
+              type="email"
+              required
+              placeholder="твоя.пошта@example.com"
+              class="flex-1 px-5 py-4 rounded-2xl border border-stone-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-400 text-base"
+            />
+            <button
+              type="submit"
+              class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-4 rounded-2xl shadow-lg shadow-brand-600/20 transition"
+            >
+              Хочу в бету
+            </button>
+          </form>
+          <p class="mt-3 text-xs text-stone-500">
+            Безкоштовно · 7-денний Pro-тріал без картки · ти можеш вийти в один
+            клік.
+          </p>
+
+          <div
+            class="mt-10 flex flex-wrap items-center gap-6 text-sm text-stone-600"
+          >
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+              Працює офлайн
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+              Без реклами
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-coral-500"></span>
+              UA-проєкт
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat demo -->
+        <div class="relative">
+          <div
+            class="absolute -inset-4 bg-gradient-to-br from-brand-200/40 to-teal-500/10 blur-2xl rounded-3xl"
+          ></div>
+          <div
+            class="relative bg-white rounded-3xl shadow-2xl border border-stone-100 p-5 sm:p-7 animate-float"
+          >
+            <div class="flex items-center gap-3 pb-4 border-b border-stone-100">
+              <div
+                class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-teal-600 text-white grid place-items-center font-bold"
+              >
+                S
+              </div>
+              <div>
+                <div class="font-semibold text-sm">HubChat</div>
+                <div class="text-xs text-stone-500">AI-Sergeant · онлайн</div>
+              </div>
+              <div class="ml-auto w-2 h-2 rounded-full bg-brand-500"></div>
+            </div>
+
+            <div class="pt-5 space-y-3">
+              <div
+                class="flex justify-end animate-slide-in"
+                style="animation-delay: 0ms"
+              >
+                <div
+                  class="chat-tail-r relative bg-brand-100 text-ink px-4 py-3 rounded-2xl max-w-xs text-sm"
+                >
+                  Скільки витратив на каву цього тижня?
+                </div>
+              </div>
+              <div
+                class="flex justify-start animate-slide-in"
+                style="animation-delay: 250ms"
+              >
+                <div
+                  class="chat-tail-l relative bg-stone-100 text-ink px-4 py-3 rounded-2xl max-w-sm text-sm"
+                >
+                  <strong>₴487</strong> за 6 чашок. Це
+                  <span class="text-coral-600 font-semibold">+34 %</span>
+                  до минулого тижня. Бюджет «кав'ярні» на травень — ₴800,
+                  лишилось ₴313.
+                </div>
+              </div>
+              <div
+                class="flex justify-end animate-slide-in"
+                style="animation-delay: 700ms"
+              >
+                <div
+                  class="chat-tail-r relative bg-brand-100 text-ink px-4 py-3 rounded-2xl max-w-xs text-sm"
+                >
+                  Чи був я в дефіциті калорій сьогодні?
+                </div>
+              </div>
+              <div
+                class="flex justify-start animate-slide-in"
+                style="animation-delay: 1100ms"
+              >
+                <div
+                  class="chat-tail-l relative bg-stone-100 text-ink px-4 py-3 rounded-2xl max-w-sm text-sm"
+                >
+                  Так. <strong>1 840 kcal</strong> зʼїв, ціль —
+                  <strong>2 100</strong>. Тренування спалило 420 kcal. Дефіцит
+                  сьогодні ≈ 680 kcal. Можна додати грецький йогурт + банан.
+                </div>
+              </div>
+              <div
+                class="flex items-center gap-1 px-4 pt-2 text-stone-400 text-sm"
+              >
+                <span
+                  class="w-2 h-2 rounded-full bg-stone-400 animate-blink"
+                ></span>
+                <span
+                  class="w-2 h-2 rounded-full bg-stone-400 animate-blink"
+                  style="animation-delay: 0.2s"
+                ></span>
+                <span
+                  class="w-2 h-2 rounded-full bg-stone-400 animate-blink"
+                  style="animation-delay: 0.4s"
+                ></span>
+              </div>
+            </div>
+
+            <div
+              class="mt-4 flex items-center gap-2 border-t border-stone-100 pt-4"
+            >
+              <input
+                type="text"
+                placeholder="Запитай Sergeant…"
+                class="flex-1 bg-stone-50 rounded-xl px-3 py-2 text-sm focus:outline-none"
+                disabled
+              />
+              <button class="bg-brand-600 text-white p-2 rounded-xl">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="absolute -top-5 -right-5 bg-coral-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg rotate-6"
+          >
+            Beta · Free Pro forever
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
+      <h2
+        class="text-3xl sm:text-4xl font-extrabold tracking-tight text-center"
+      >
+        AI-чат, що <span class="text-brand-700">розуміє контекст</span>
+      </h2>
+      <p class="text-center text-stone-600 mt-4 max-w-2xl mx-auto">
+        Sergeant читає твої транзакції, тренування і логи — і відповідає так,
+        ніби бачив твій день своїми очима.
+      </p>
+
+      <div class="mt-12 grid md:grid-cols-3 gap-5">
+        <div class="bg-white border border-stone-100 rounded-3xl p-6 shadow-sm">
+          <div
+            class="w-11 h-11 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center mb-4"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M9 12l2 2 4-4M21 12c0 5-3.5 8-9 8s-9-3-9-8 3-8 9-8 9 3 9 8Z"
+              />
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">1. Логи зʼявляються самі</h3>
+          <p class="text-sm text-stone-600 mt-2 leading-relaxed">
+            Monobank webhook — фінанси. Сканер штрих-кодів — їжа. Звички — один
+            тап. Тренування — таймер.
+          </p>
+        </div>
+        <div class="bg-white border border-stone-100 rounded-3xl p-6 shadow-sm">
+          <div
+            class="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-700 grid place-items-center mb-4"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+              />
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">2. AI бачить усе разом</h3>
+          <p class="text-sm text-stone-600 mt-2 leading-relaxed">
+            HubChat читає 4 модулі одночасно і знаходить звʼязки — як їжа
+            впливає на тренування і гаманець.
+          </p>
+        </div>
+        <div class="bg-white border border-stone-100 rounded-3xl p-6 shadow-sm">
+          <div
+            class="w-11 h-11 rounded-2xl bg-coral-500/15 text-coral-600 grid place-items-center mb-4"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="m5 12 5 5L20 7" />
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">3. Дія за одну фразу</h3>
+          <p class="text-sm text-stone-600 mt-2 leading-relaxed">
+            «Додай тренування 45 хв» — Sergeant сам створить запис, оновить
+            прогрес, нагадає завтра.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modules -->
+    <section id="modules" class="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
+      <div class="flex items-end justify-between flex-wrap gap-3 mb-10">
+        <div>
+          <p
+            class="text-xs uppercase tracking-[0.18em] text-stone-500 font-semibold"
+          >
+            4 модулі + HubChat
+          </p>
+          <h2 class="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
+            Все в одному hub-і
+          </h2>
+        </div>
+        <span class="text-sm text-stone-500"
+          >Заміняє MyFitnessPal, YNAB, Habit-tracker і блокнот</span
+        >
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-3xl p-6 bg-brand-50 border border-brand-100">
+          <div class="text-2xl">💸</div>
+          <h3 class="font-bold mt-3">Фінік</h3>
+          <p class="text-sm text-stone-600 mt-1">
+            Monobank sync, бюджети, борги
+          </p>
+        </div>
+        <div class="rounded-3xl p-6 bg-teal-500/10 border border-teal-500/20">
+          <div class="text-2xl">💪</div>
+          <h3 class="font-bold mt-3">Фізрук</h3>
+          <p class="text-sm text-stone-600 mt-1">
+            Тренування, біометрія, плани
+          </p>
+        </div>
+        <div class="rounded-3xl p-6 bg-coral-500/10 border border-coral-500/20">
+          <div class="text-2xl">📌</div>
+          <h3 class="font-bold mt-3">Рутина</h3>
+          <p class="text-sm text-stone-600 mt-1">Звички, стріки, календар</p>
+        </div>
+        <div class="rounded-3xl p-6 bg-lime-500/10 border border-lime-500/20">
+          <div class="text-2xl">🥗</div>
+          <h3 class="font-bold mt-3">Харчування</h3>
+          <p class="text-sm text-stone-600 mt-1">Meal-логи, сканер, AI-фото</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Beta CTA -->
+    <section id="beta" class="max-w-4xl mx-auto px-5 sm:px-8 py-20">
+      <div
+        class="relative rounded-[2rem] bg-gradient-to-br from-brand-700 via-brand-600 to-teal-600 text-white p-8 sm:p-12 overflow-hidden"
+      >
+        <div class="absolute inset-0 grain opacity-30 mix-blend-overlay"></div>
+        <div class="relative">
+          <span
+            class="inline-block text-xs uppercase tracking-[0.18em] font-bold bg-white/20 backdrop-blur px-3 py-1 rounded-full"
+          >
+            Closed Beta · 77 / 500 спот лишилось
+          </span>
+          <h2
+            class="text-3xl sm:text-5xl font-extrabold mt-5 tracking-tight leading-tight"
+          >
+            Отримай ранній доступ + <br class="hidden sm:block" />
+            <span
+              class="underline decoration-brand-200 decoration-4 underline-offset-8"
+              >Pro назавжди безкоштовно</span
+            >
+          </h2>
+          <p class="mt-5 text-brand-50 text-lg max-w-xl">
+            Перші 500 бета-юзерів зберігають Pro-тариф довічно, навіть після
+            публічного запуску. Ми обіцяємо чесно — без темних патернів.
+          </p>
+
+          <form
+            class="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg"
+            onsubmit="
+              event.preventDefault();
+              this.querySelector('button').textContent =
+                'Готово ✓ перевір пошту';
+            "
+          >
+            <input
+              type="email"
+              required
+              placeholder="email"
+              class="flex-1 px-5 py-4 rounded-2xl bg-white/95 text-ink placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-white/30"
+            />
+            <button
+              type="submit"
+              class="bg-ink hover:bg-stone-800 text-white font-semibold px-6 py-4 rounded-2xl transition"
+            >
+              Забронювати
+            </button>
+          </form>
+
+          <div
+            class="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-50"
+          >
+            <span>✓ 7 днів Pro без картки</span>
+            <span>✓ 3 інвайти для друзів</span>
+            <span>✓ Закритий Telegram-канал</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer
+      class="max-w-6xl mx-auto px-5 sm:px-8 py-10 border-t border-stone-200/70 text-sm text-stone-500 flex flex-wrap items-center justify-between gap-4"
+    >
+      <p>© 2026 Sergeant. Зроблено в Україні з ❤️</p>
+      <div class="flex gap-5">
+        <a href="#" class="hover:text-ink">Telegram</a>
+        <a href="#" class="hover:text-ink">GitHub</a>
+        <a href="#" class="hover:text-ink">Приватність</a>
+      </div>
+    </footer>
+  </body>
+</html>

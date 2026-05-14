@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · Closed beta — 77 спот лишилось</title>
+    <meta
+      name="description"
+      content="Закрита бета Sergeant. Перші 500 founding-members зберігають Pro назавжди. Старт — 1 червня 2026."
+    />
+    <!-- Mockup variant: 05 / Closed beta urgency + countdown. Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                100: "#d1fae5",
+                400: "#34d399",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                800: "#065f46",
+              },
+              teal: { 500: "#14b8a6", 700: "#0f766e" },
+              coral: { 500: "#f97066", 600: "#e64d4d", 700: "#c23a3a" },
+              lime: { 400: "#b0e636", 500: "#92cc17" },
+              cream: {
+                50: "#fefdfb",
+                100: "#fdf9f3",
+                200: "#faf3e8",
+                300: "#f5ead8",
+              },
+              ink: "#1c1917",
+            },
+            keyframes: {
+              "pulse-ring": {
+                "0%": { transform: "scale(0.95)", opacity: 0.7 },
+                "100%": { transform: "scale(1.6)", opacity: 0 },
+              },
+              tick: {
+                from: { transform: "translateY(0)" },
+                to: { transform: "translateY(-100%)" },
+              },
+            },
+            animation: {
+              "pulse-ring":
+                "pulse-ring 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background: #1c1917;
+        color: #fdf9f3;
+        background-image:
+          radial-gradient(
+            900px 500px at 75% 0%,
+            rgba(249, 112, 102, 0.18),
+            transparent 60%
+          ),
+          radial-gradient(
+            700px 500px at 10% 60%,
+            rgba(16, 185, 129, 0.18),
+            transparent 65%
+          );
+      }
+      .ticker {
+        animation: scroll 30s linear infinite;
+      }
+      @keyframes scroll {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      .live-dot::before {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border-radius: 9999px;
+        border: 2px solid rgba(249, 112, 102, 0.6);
+        animation: pulse-ring 2s infinite;
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased">
+    <!-- Live ticker -->
+    <div
+      class="bg-coral-500 text-cream-50 overflow-hidden border-b border-coral-700"
+    >
+      <div class="flex whitespace-nowrap py-2 text-sm font-semibold ticker">
+        <div class="flex gap-10 px-5">
+          <span>🎖️ Closed beta · старт 01.06.2026</span>
+          <span>· 423 / 500 founding spots filled</span>
+          <span>· Pro forever для перших 500</span>
+          <span>· Інвайти за 24 години після запиту</span>
+          <span>· 🇺🇦 UA-проєкт</span>
+        </div>
+        <div class="flex gap-10 px-5" aria-hidden="true">
+          <span>🎖️ Closed beta · старт 01.06.2026</span>
+          <span>· 423 / 500 founding spots filled</span>
+          <span>· Pro forever для перших 500</span>
+          <span>· Інвайти за 24 години після запиту</span>
+          <span>· 🇺🇦 UA-проєкт</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header
+      class="max-w-6xl mx-auto px-5 sm:px-8 py-6 flex items-center justify-between"
+    >
+      <div class="flex items-center gap-2.5">
+        <div
+          class="w-10 h-10 rounded-2xl bg-brand-500 text-ink grid place-items-center font-extrabold"
+        >
+          S
+        </div>
+        <div>
+          <div class="font-extrabold text-lg leading-none">Sergeant</div>
+          <div class="text-xs text-cream-300 mt-0.5">closed beta</div>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-3 text-xs text-cream-300">
+        <span class="relative inline-flex items-center gap-2">
+          <span
+            class="live-dot relative w-2 h-2 rounded-full bg-coral-500"
+          ></span>
+          <span class="font-semibold text-coral-400 ml-3">LIVE</span>
+        </span>
+        <span>build-in-public · Sprint 12</span>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-16">
+      <div class="grid lg:grid-cols-5 gap-12 lg:gap-16 items-start">
+        <div class="lg:col-span-3">
+          <span
+            class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-bold bg-coral-500/15 text-coral-400 px-3 py-1.5 rounded-full"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-coral-500"></span>
+            Закрита бета · 77 спот лишилось
+          </span>
+
+          <h1
+            class="mt-6 text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[0.98]"
+          >
+            Стань одним з <br />
+            <span
+              class="bg-gradient-to-r from-brand-400 via-lime-400 to-teal-500 bg-clip-text text-transparent"
+            >
+              500 founding </span
+            ><br />
+            юзерів Sergeant.
+          </h1>
+
+          <p class="mt-7 text-lg text-cream-200 max-w-xl leading-relaxed">
+            Один додаток замість пʼяти. Local-first AI-помічник. Перші 500 —
+            отримують
+            <strong class="text-brand-400">Pro назавжди безкоштовно</strong>,
+            прямий канал до фаундера і голос у roadmap.
+          </p>
+
+          <!-- Countdown -->
+          <div class="mt-9">
+            <p
+              class="text-xs uppercase tracking-[0.18em] text-cream-300 font-semibold"
+            >
+              Старт публічної бети через
+            </p>
+            <div id="countdown" class="mt-3 grid grid-cols-4 gap-3 max-w-md">
+              <div
+                class="bg-white/5 border border-white/10 rounded-2xl py-4 text-center"
+              >
+                <div
+                  data-tick="d"
+                  class="text-4xl font-extrabold tabular-nums text-brand-400"
+                >
+                  14
+                </div>
+                <div
+                  class="text-[10px] uppercase tracking-wider text-cream-300 mt-1"
+                >
+                  днів
+                </div>
+              </div>
+              <div
+                class="bg-white/5 border border-white/10 rounded-2xl py-4 text-center"
+              >
+                <div
+                  data-tick="h"
+                  class="text-4xl font-extrabold tabular-nums text-brand-400"
+                >
+                  07
+                </div>
+                <div
+                  class="text-[10px] uppercase tracking-wider text-cream-300 mt-1"
+                >
+                  год
+                </div>
+              </div>
+              <div
+                class="bg-white/5 border border-white/10 rounded-2xl py-4 text-center"
+              >
+                <div
+                  data-tick="m"
+                  class="text-4xl font-extrabold tabular-nums text-brand-400"
+                >
+                  42
+                </div>
+                <div
+                  class="text-[10px] uppercase tracking-wider text-cream-300 mt-1"
+                >
+                  хв
+                </div>
+              </div>
+              <div
+                class="bg-white/5 border border-white/10 rounded-2xl py-4 text-center"
+              >
+                <div
+                  data-tick="s"
+                  class="text-4xl font-extrabold tabular-nums text-brand-400"
+                >
+                  19
+                </div>
+                <div
+                  class="text-[10px] uppercase tracking-wider text-cream-300 mt-1"
+                >
+                  сек
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <form
+            class="mt-9 flex flex-col sm:flex-row gap-3 max-w-lg"
+            onsubmit="
+              event.preventDefault();
+              this.querySelector('button').textContent =
+                'Готово ✓ перевір пошту';
+            "
+          >
+            <input
+              type="email"
+              required
+              placeholder="твоя пошта"
+              class="flex-1 px-5 py-4 rounded-2xl bg-white/95 text-ink placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-brand-400/30 text-base"
+            />
+            <button
+              type="submit"
+              class="bg-coral-500 hover:bg-coral-600 text-cream-50 font-bold px-6 py-4 rounded-2xl shadow-xl shadow-coral-500/30 transition"
+            >
+              Забронювати спот →
+            </button>
+          </form>
+          <p class="mt-3 text-xs text-cream-300">
+            ✓ Pro forever для перших 500 · ✓ 3 інвайти друзям · ✓ Прямий доступ
+            до фаундера в Telegram
+          </p>
+        </div>
+
+        <!-- Founder card -->
+        <aside
+          class="lg:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-400 to-coral-500 grid place-items-center text-ink font-extrabold"
+            >
+              D
+            </div>
+            <div>
+              <div class="font-semibold">Дмитро Стахов</div>
+              <div class="text-xs text-cream-300">Solo-фаундер · UA</div>
+            </div>
+          </div>
+          <p class="mt-5 text-sm text-cream-100 leading-relaxed italic">
+            «Я будую Sergeant у відкриту. Кожен тиждень — публічний апдейт у
+            Telegram. Кожен баг — на GitHub. Якщо тобі це резонує — приєднуйся
+            до перших 500.»
+          </p>
+
+          <div class="mt-6 pt-6 border-t border-white/10 space-y-3 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-cream-300">Спринтів зроблено</span>
+              <span class="font-bold text-brand-400">12</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-cream-300">Open PR-ів</span>
+              <span class="font-bold text-brand-400">8</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-cream-300">Беті-юзерів</span>
+              <span class="font-bold text-brand-400">423</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-cream-300">Telegram-канал</span>
+              <span class="font-bold text-brand-400">1 274</span>
+            </div>
+          </div>
+
+          <a
+            href="#"
+            class="mt-6 block text-center border border-white/20 hover:bg-white/10 text-cream-50 font-semibold py-3 rounded-xl transition text-sm"
+          >
+            → Відкрити Telegram-канал
+          </a>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Filling bar -->
+    <section class="max-w-5xl mx-auto px-5 sm:px-8 py-12">
+      <div class="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <p
+              class="text-xs uppercase tracking-[0.18em] text-cream-300 font-semibold"
+            >
+              Founding members
+            </p>
+            <p class="font-extrabold text-2xl mt-1">
+              423 / 500 spot заброньовано
+            </p>
+          </div>
+          <span class="text-coral-400 font-bold text-sm">⚠ закінчуються</span>
+        </div>
+        <div class="h-4 rounded-full bg-white/10 overflow-hidden">
+          <div
+            class="h-full bg-gradient-to-r from-brand-500 via-lime-500 to-coral-500 rounded-full transition-all"
+            style="width: 84.6%"
+          ></div>
+        </div>
+        <p class="mt-3 text-xs text-cream-300">
+          77 spot до закриття. Після — Pro повернеться до $7/міс для всіх нових
+          юзерів.
+        </p>
+      </div>
+    </section>
+
+    <!-- Founding perks -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 py-16">
+      <p class="text-xs uppercase tracking-[0.18em] text-coral-400 font-bold">
+        Founding perks
+      </p>
+      <h2 class="mt-3 text-3xl sm:text-5xl font-extrabold tracking-tight">
+        Що отримаєш, якщо встигнеш у топ-500
+      </h2>
+
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div
+          class="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden"
+        >
+          <div class="absolute top-2 right-2 text-xs font-bold text-brand-400">
+            $84 / рік
+          </div>
+          <div class="text-3xl">🎖️</div>
+          <h3 class="font-bold text-lg mt-4">Pro forever</h3>
+          <p class="text-sm text-cream-300 mt-2">
+            Безлімітний AI-чат, CloudSync, Monobank webhook, експорт — назавжди
+            безплатно.
+          </p>
+        </div>
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div class="text-3xl">📨</div>
+          <h3 class="font-bold text-lg mt-4">3 інвайти друзям</h3>
+          <p class="text-sm text-cream-300 mt-2">
+            Поділись бетою з командою або колегами — кожен друг теж отримує
+            Free-forever.
+          </p>
+        </div>
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div class="text-3xl">💬</div>
+          <h3 class="font-bold text-lg mt-4">Прямий DM до фаундера</h3>
+          <p class="text-sm text-cream-300 mt-2">
+            Закритий Telegram-канал. Roadmap-голосування. Фічі за фідбеком —
+            раніше за всіх.
+          </p>
+        </div>
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div class="text-3xl">🏷️</div>
+          <h3 class="font-bold text-lg mt-4">Founder badge</h3>
+          <p class="text-sm text-cream-300 mt-2">
+            У профілі — назавжди. Сертифікат «Founding member of Sergeant», PDF.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Build-in-public feed -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 py-16">
+      <div class="flex items-end justify-between flex-wrap gap-4 mb-8">
+        <div>
+          <p
+            class="text-xs uppercase tracking-[0.18em] text-brand-400 font-bold"
+          >
+            Build in public
+          </p>
+          <h2 class="mt-2 text-3xl font-extrabold tracking-tight">
+            Останні апдейти зі спринтів
+          </h2>
+        </div>
+        <a href="#" class="text-sm text-cream-300 hover:text-cream-50"
+          >Усі → Telegram</a
+        >
+      </div>
+
+      <div class="space-y-3">
+        <div
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-start gap-4"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-brand-500/15 grid place-items-center text-xl"
+          >
+            🟢
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 text-xs text-cream-300">
+              <span class="font-bold text-brand-400">Sprint 12</span>
+              <span>·</span>
+              <span>2 дні тому</span>
+            </div>
+            <p class="mt-1.5 text-sm text-cream-100 leading-relaxed">
+              ✅ Закрив AI-фото для їжі (точність 87 %). 6 беті-юзерів вже
+              тестують. Один знайшов баг з борщем — фіксимо у Sprint 13.
+            </p>
+          </div>
+        </div>
+        <div
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-start gap-4"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-teal-500/15 grid place-items-center text-xl"
+          >
+            🚀
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 text-xs text-cream-300">
+              <span class="font-bold text-teal-500">Sprint 11</span>
+              <span>·</span>
+              <span>9 днів тому</span>
+            </div>
+            <p class="mt-1.5 text-sm text-cream-100 leading-relaxed">
+              ✅ Monobank webhook → авто-категоризація через AI. 14M+ продуктів
+              у базі їжі (OpenFoodFacts).
+            </p>
+          </div>
+        </div>
+        <div
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-start gap-4"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-coral-500/15 grid place-items-center text-xl"
+          >
+            🧪
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 text-xs text-cream-300">
+              <span class="font-bold text-coral-400">Sprint 10</span>
+              <span>·</span>
+              <span>16 днів тому</span>
+            </div>
+            <p class="mt-1.5 text-sm text-cream-100 leading-relaxed">
+              ✅ Перший повний onboarding flow. D1 retention у тест-групи — 47
+              %. Цілимось на ≥60 % до публічного запуску.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+      <h2 class="text-3xl font-extrabold tracking-tight">
+        Питання, які ставлять часто
+      </h2>
+      <div class="mt-8 space-y-3">
+        <details
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 group"
+        >
+          <summary
+            class="cursor-pointer font-semibold flex items-center justify-between"
+          >
+            Чи треба платити в беті?
+            <span class="text-cream-300 group-open:rotate-45 transition"
+              >+</span
+            >
+          </summary>
+          <p class="mt-3 text-sm text-cream-300 leading-relaxed">
+            Ні. Free-тариф — безкоштовно назавжди. Перші 500 founding-юзерів
+            отримують Pro-тариф теж безкоштовно і назавжди.
+          </p>
+        </details>
+        <details
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 group"
+        >
+          <summary
+            class="cursor-pointer font-semibold flex items-center justify-between"
+          >
+            На яких платформах?
+            <span class="text-cream-300 group-open:rotate-45 transition"
+              >+</span
+            >
+          </summary>
+          <p class="mt-3 text-sm text-cream-300 leading-relaxed">
+            Web (PWA) — вже в беті. iOS + Android (Capacitor) — у Sprint 14.
+            Apple Watch / Wear OS — на roadmap-і.
+          </p>
+        </details>
+        <details
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 group"
+        >
+          <summary
+            class="cursor-pointer font-semibold flex items-center justify-between"
+          >
+            Чи можна мігрувати з MyFitnessPal / YNAB?
+            <span class="text-cream-300 group-open:rotate-45 transition"
+              >+</span
+            >
+          </summary>
+          <p class="mt-3 text-sm text-cream-300 leading-relaxed">
+            CSV-імпорт уже працює для обох. Прямі інтеграції — у roadmap Sprint
+            15-16.
+          </p>
+        </details>
+        <details
+          class="bg-white/5 border border-white/10 rounded-2xl p-5 group"
+        >
+          <summary
+            class="cursor-pointer font-semibold flex items-center justify-between"
+          >
+            Що з моїми даними після беті?
+            <span class="text-cream-300 group-open:rotate-45 transition"
+              >+</span
+            >
+          </summary>
+          <p class="mt-3 text-sm text-cream-300 leading-relaxed">
+            Залишаються у тебе. Local-first означає, що дані живуть у IndexedDB
+            / MMKV. Експорт у CSV і JSON — у будь-який момент, у налаштуваннях.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="max-w-4xl mx-auto px-5 sm:px-8 pb-20">
+      <div class="bg-coral-500 text-ink rounded-3xl p-8 sm:p-12 text-center">
+        <p class="text-xs uppercase tracking-[0.2em] font-bold">
+          Останнє нагадування
+        </p>
+        <h2 class="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight">
+          Після 500-го юзера ціна повертається до $7/міс
+        </h2>
+        <p class="mt-4 text-ink/80 max-w-lg mx-auto">
+          Зараз — найдешевший спосіб увійти. Лишилось 77 spot. Запит обробляємо
+          за 24 години.
+        </p>
+        <form
+          class="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+          onsubmit="
+            event.preventDefault();
+            this.querySelector('button').textContent = 'Готово ✓';
+          "
+        >
+          <input
+            type="email"
+            required
+            placeholder="email"
+            class="flex-1 px-5 py-4 rounded-2xl bg-cream-50 text-ink placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-ink/20"
+          />
+          <button
+            type="submit"
+            class="bg-ink hover:bg-stone-800 text-cream-50 font-bold px-6 py-4 rounded-2xl transition"
+          >
+            Забронювати →
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <footer class="border-t border-white/5">
+      <div
+        class="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-wrap items-center justify-between gap-3 text-sm text-cream-300"
+      >
+        <p>© 2026 Sergeant · UA-проєкт</p>
+        <div class="flex gap-5">
+          <a href="#" class="hover:text-cream-50">Telegram</a>
+          <a href="#" class="hover:text-cream-50">GitHub</a>
+          <a href="#" class="hover:text-cream-50">Twitter</a>
+          <a href="#" class="hover:text-cream-50">Privacy</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Simple countdown — purely cosmetic for the mockup.
+      const target = new Date();
+      target.setDate(target.getDate() + 14);
+      target.setHours(7, 42, 19, 0);
+      const el = (k) => document.querySelector(`[data-tick="${k}"]`);
+      function tick() {
+        const diff = Math.max(0, target - new Date());
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff / 3600000) % 24);
+        const m = Math.floor((diff / 60000) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        if (el("d")) el("d").textContent = String(d).padStart(2, "0");
+        if (el("h")) el("h").textContent = String(h).padStart(2, "0");
+        if (el("m")) el("m").textContent = String(m).padStart(2, "0");
+        if (el("s")) el("s").textContent = String(s).padStart(2, "0");
+      }
+      tick();
+      setInterval(tick, 1000);
+    </script>
+  </body>
+</html>

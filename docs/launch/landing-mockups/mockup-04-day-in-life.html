@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · Один день із Sergeant — приєднуйся до бети</title>
+    <meta
+      name="description"
+      content="Як виглядає звичайний день з Sergeant. Від ранкової кави до вечірньої медитації — один додаток, що знає твій ритм."
+    />
+    <!-- Mockup variant: 04 / Day-in-the-life storytelling. Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ["Fraunces", "Georgia", "serif"],
+              sans: ["Inter", "system-ui", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                200: "#a7f3d0",
+                400: "#34d399",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+              },
+              teal: { 400: "#2dd4bf", 500: "#14b8a6", 700: "#0f766e" },
+              coral: {
+                400: "#ff8c78",
+                500: "#f97066",
+                600: "#e64d4d",
+                700: "#c23a3a",
+              },
+              lime: { 400: "#b0e636", 500: "#92cc17", 700: "#567c0f" },
+              cream: {
+                50: "#fefdfb",
+                100: "#fdf9f3",
+                200: "#faf3e8",
+                300: "#f5ead8",
+                400: "#eedcc4",
+                500: "#e4ccab",
+              },
+              ink: "#3b2a20",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background: #fdf9f3;
+        color: #3b2a20;
+        background-image:
+          radial-gradient(800px 600px at 90% 5%, #ffe8e3 0%, transparent 50%),
+          radial-gradient(700px 500px at 5% 60%, #d1fae5 0%, transparent 50%);
+      }
+      .timeline-line {
+        background: linear-gradient(
+          180deg,
+          transparent,
+          #34d399 10%,
+          #14b8a6 40%,
+          #f97066 70%,
+          #92cc17 90%,
+          transparent
+        );
+      }
+      .underline-wavy {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8'><path d='M0 4 Q 25 0 50 4 T 100 4' fill='none' stroke='%2334d399' stroke-width='2'/></svg>");
+        background-repeat: repeat-x;
+        background-position: bottom;
+        background-size: 100px 8px;
+        padding-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased">
+    <header
+      class="max-w-6xl mx-auto px-5 sm:px-8 py-6 flex items-center justify-between"
+    >
+      <div class="flex items-center gap-2.5">
+        <div
+          class="w-10 h-10 rounded-full bg-coral-500 text-cream-50 grid place-items-center font-extrabold shadow-sm"
+        >
+          S
+        </div>
+        <span class="font-serif text-xl font-bold tracking-tight"
+          >Sergeant</span
+        >
+      </div>
+      <nav
+        class="hidden md:flex items-center gap-7 text-sm font-medium text-ink/70"
+      >
+        <a href="#story" class="hover:text-ink">Звичайний день</a>
+        <a href="#why" class="hover:text-ink">Чому це працює</a>
+        <a href="#beta" class="hover:text-ink">Бета</a>
+      </nav>
+      <a
+        href="#beta"
+        class="bg-ink text-cream-50 text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-coral-700 transition"
+      >
+        Хочу в бету
+      </a>
+    </header>
+
+    <!-- Hero -->
+    <section
+      class="max-w-4xl mx-auto px-5 sm:px-8 pt-12 sm:pt-20 pb-10 text-center"
+    >
+      <p class="text-xs uppercase tracking-[0.25em] font-bold text-coral-600">
+        📖 Розповідь
+      </p>
+      <h1
+        class="mt-5 font-serif text-5xl sm:text-7xl font-bold tracking-tight leading-[1.05]"
+      >
+        Звичайний понеділок.<br />
+        <span class="italic">Тільки</span> з
+        <span class="underline-wavy">Sergeant.</span>
+      </h1>
+      <p class="mt-7 text-lg text-ink/70 max-w-2xl mx-auto leading-relaxed">
+        Без push-нотифікацій кожні 5 хвилин. Без 5 додатків, що змагаються за
+        увагу. Один hub — один ритм. Подивись, як це виглядає зсередини.
+      </p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <a
+          href="#story"
+          class="bg-brand-700 hover:bg-brand-800 text-cream-50 font-semibold px-6 py-3.5 rounded-full transition"
+        >
+          ↓ Подивитись день
+        </a>
+        <a
+          href="#beta"
+          class="border-2 border-ink/20 hover:border-ink text-ink font-semibold px-6 py-3.5 rounded-full transition"
+        >
+          Записатись у бету
+        </a>
+      </div>
+    </section>
+
+    <!-- Day timeline -->
+    <section id="story" class="max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
+      <div class="relative">
+        <div
+          class="timeline-line absolute left-7 sm:left-1/2 top-2 bottom-2 w-px -translate-x-1/2"
+        ></div>
+
+        <!-- 07:30 — Морнинг -->
+        <article
+          class="relative mb-16 sm:mb-20 sm:flex sm:items-center sm:gap-8"
+        >
+          <div
+            class="absolute left-7 sm:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-coral-500 border-4 border-cream-100 shadow"
+          ></div>
+          <div class="pl-16 sm:pl-0 sm:pr-12 sm:text-right sm:w-1/2">
+            <p class="font-serif text-3xl sm:text-4xl font-bold text-coral-600">
+              07:30
+            </p>
+            <p class="text-xs uppercase tracking-wider text-ink/50 mt-1">
+              Прокидання
+            </p>
+            <h3 class="font-serif text-xl mt-3">Перший погляд у Hub</h3>
+            <p class="text-ink/70 text-sm mt-2 leading-relaxed">
+              «Доброго ранку. Сьогодні в тебе тренування 18:00 і дедлайн на
+              роботі. Витрати тижня — ₴2 100, в межах бюджету.»
+            </p>
+          </div>
+          <div class="pl-16 sm:pl-12 sm:w-1/2 mt-4 sm:mt-0">
+            <div
+              class="bg-white rounded-3xl shadow-lg border border-cream-300 p-5"
+            >
+              <div
+                class="flex items-center gap-2 text-xs text-coral-600 font-semibold"
+              >
+                <span class="w-2 h-2 rounded-full bg-coral-500"></span>
+                Ранковий брифінг
+              </div>
+              <p class="mt-3 text-sm leading-relaxed">
+                Спав <strong>7 год 12 хв</strong>. Recovery score
+                <strong class="text-brand-700">82</strong>. У календарі — 1
+                мітинг.
+              </p>
+              <div class="mt-3 flex gap-2 text-xs">
+                <span
+                  class="px-2 py-1 rounded-md bg-brand-100 text-brand-700 font-semibold"
+                  >3 звички</span
+                >
+                <span
+                  class="px-2 py-1 rounded-md bg-teal-500/15 text-teal-700 font-semibold"
+                  >тренування ⏱</span
+                >
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 09:15 -->
+        <article
+          class="relative mb-16 sm:mb-20 sm:flex sm:items-center sm:gap-8"
+        >
+          <div
+            class="absolute left-7 sm:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-brand-500 border-4 border-cream-100 shadow"
+          ></div>
+          <div
+            class="pl-16 sm:pl-0 sm:pr-12 sm:text-right sm:w-1/2 sm:order-2 sm:text-left sm:pl-12 sm:pr-0"
+          >
+            <p class="font-serif text-3xl sm:text-4xl font-bold text-brand-700">
+              09:15
+            </p>
+            <p class="text-xs uppercase tracking-wider text-ink/50 mt-1">
+              Кавʼярня
+            </p>
+            <h3 class="font-serif text-xl mt-3">
+              Mono сповістив — Sergeant категоризував
+            </h3>
+            <p class="text-ink/70 text-sm mt-2 leading-relaxed">
+              Транзакція ₴87 у «One Love Coffee» автоматично додалась у бюджет
+              «Кавʼярні». Лишилось ₴213 цього місяця.
+            </p>
+          </div>
+          <div class="pl-16 sm:pl-0 sm:pr-12 sm:w-1/2 mt-4 sm:mt-0 sm:order-1">
+            <div
+              class="bg-white rounded-3xl shadow-lg border border-cream-300 p-5"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div
+                    class="w-8 h-8 rounded-full bg-brand-500 grid place-items-center text-cream-50 text-sm"
+                  >
+                    ☕
+                  </div>
+                  <div>
+                    <div class="font-semibold text-sm">One Love Coffee</div>
+                    <div class="text-xs text-ink/50">щойно</div>
+                  </div>
+                </div>
+                <span class="font-serif font-bold text-coral-600">−₴87</span>
+              </div>
+              <div class="mt-4 pt-3 border-t border-cream-300">
+                <div class="flex justify-between text-xs text-ink/70 mb-2">
+                  <span>Бюджет «Кавʼярні»</span>
+                  <span class="font-semibold">₴587 / ₴800</span>
+                </div>
+                <div class="h-2 rounded-full bg-cream-300 overflow-hidden">
+                  <div
+                    class="h-full bg-brand-500 rounded-full"
+                    style="width: 73%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 13:00 -->
+        <article
+          class="relative mb-16 sm:mb-20 sm:flex sm:items-center sm:gap-8"
+        >
+          <div
+            class="absolute left-7 sm:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-lime-500 border-4 border-cream-100 shadow"
+          ></div>
+          <div class="pl-16 sm:pl-0 sm:pr-12 sm:text-right sm:w-1/2">
+            <p class="font-serif text-3xl sm:text-4xl font-bold text-lime-700">
+              13:00
+            </p>
+            <p class="text-xs uppercase tracking-wider text-ink/50 mt-1">
+              Обід
+            </p>
+            <h3 class="font-serif text-xl mt-3">
+              Фото тарілки → BJV за 2 секунди
+            </h3>
+            <p class="text-ink/70 text-sm mt-2 leading-relaxed">
+              Сфотографував салат із куркою. AI розпізнав інгредієнти, додав 480
+              kcal у log. «Точність ~87 %». Підтверджуєш у тапі.
+            </p>
+          </div>
+          <div class="pl-16 sm:pl-12 sm:w-1/2 mt-4 sm:mt-0">
+            <div
+              class="bg-white rounded-3xl shadow-lg border border-cream-300 p-5"
+            >
+              <div
+                class="aspect-video rounded-2xl bg-gradient-to-br from-lime-400 to-brand-500 grid place-items-center text-cream-50 text-5xl"
+              >
+                🥗
+              </div>
+              <div class="mt-4 grid grid-cols-4 gap-2 text-center">
+                <div class="bg-lime-500/15 rounded-xl p-2">
+                  <div class="font-serif font-bold text-lime-700">480</div>
+                  <div class="text-[10px] uppercase tracking-wider text-ink/50">
+                    kcal
+                  </div>
+                </div>
+                <div class="bg-cream-200 rounded-xl p-2">
+                  <div class="font-serif font-bold">38</div>
+                  <div class="text-[10px] uppercase tracking-wider text-ink/50">
+                    Б
+                  </div>
+                </div>
+                <div class="bg-cream-200 rounded-xl p-2">
+                  <div class="font-serif font-bold">22</div>
+                  <div class="text-[10px] uppercase tracking-wider text-ink/50">
+                    Ж
+                  </div>
+                </div>
+                <div class="bg-cream-200 rounded-xl p-2">
+                  <div class="font-serif font-bold">28</div>
+                  <div class="text-[10px] uppercase tracking-wider text-ink/50">
+                    В
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 18:00 -->
+        <article
+          class="relative mb-16 sm:mb-20 sm:flex sm:items-center sm:gap-8"
+        >
+          <div
+            class="absolute left-7 sm:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-teal-500 border-4 border-cream-100 shadow"
+          ></div>
+          <div
+            class="pl-16 sm:pl-0 sm:pr-12 sm:text-right sm:w-1/2 sm:order-2 sm:text-left sm:pl-12 sm:pr-0"
+          >
+            <p class="font-serif text-3xl sm:text-4xl font-bold text-teal-700">
+              18:00
+            </p>
+            <p class="text-xs uppercase tracking-wider text-ink/50 mt-1">
+              Тренування
+            </p>
+            <h3 class="font-serif text-xl mt-3">
+              Фізрук сам відраховує підходи
+            </h3>
+            <p class="text-ink/70 text-sm mt-2 leading-relaxed">
+              Програма «Push day» уже завантажена. Жим лежачи 80 кг × 8 × 4.
+              Таймер відпочинку, графік навантаження за тиждень.
+            </p>
+          </div>
+          <div class="pl-16 sm:pl-0 sm:pr-12 sm:w-1/2 mt-4 sm:mt-0 sm:order-1">
+            <div
+              class="bg-white rounded-3xl shadow-lg border border-cream-300 p-5"
+            >
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs text-teal-700 font-semibold uppercase tracking-wider"
+                  >Push day</span
+                >
+                <span class="text-xs text-ink/50">3 / 7 вправ</span>
+              </div>
+              <div class="mt-3 space-y-2">
+                <div
+                  class="flex items-center justify-between p-3 rounded-xl bg-teal-500/10"
+                >
+                  <div>
+                    <div class="font-semibold text-sm">Жим лежачи</div>
+                    <div class="text-xs text-ink/60">80 кг × 8 × 4</div>
+                  </div>
+                  <div class="font-serif font-bold text-teal-700 text-xl">
+                    3/4
+                  </div>
+                </div>
+                <div
+                  class="flex items-center justify-between p-3 rounded-xl bg-cream-200"
+                >
+                  <div>
+                    <div class="font-semibold text-sm">Жим над головою</div>
+                    <div class="text-xs text-ink/60">50 кг × 10 × 3</div>
+                  </div>
+                  <span class="text-ink/40 text-sm">далі</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 22:30 -->
+        <article class="relative sm:flex sm:items-center sm:gap-8">
+          <div
+            class="absolute left-7 sm:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-ink border-4 border-cream-100 shadow"
+          ></div>
+          <div class="pl-16 sm:pl-0 sm:pr-12 sm:text-right sm:w-1/2">
+            <p class="font-serif text-3xl sm:text-4xl font-bold">22:30</p>
+            <p class="text-xs uppercase tracking-wider text-ink/50 mt-1">
+              Перед сном
+            </p>
+            <h3 class="font-serif text-xl mt-3">Підсумок дня одним свайпом</h3>
+            <p class="text-ink/70 text-sm mt-2 leading-relaxed">
+              «Сьогодні: 3/3 звички, тренування ✓, дефіцит -240 kcal, витрати
+              ₴487. Завтра — знову Push day?»
+            </p>
+          </div>
+          <div class="pl-16 sm:pl-12 sm:w-1/2 mt-4 sm:mt-0">
+            <div class="bg-ink text-cream-100 rounded-3xl shadow-xl p-5">
+              <div
+                class="flex items-center justify-between text-xs uppercase tracking-wider text-cream-300"
+              >
+                <span>Підсумок дня</span>
+                <span>пн</span>
+              </div>
+              <div class="mt-4 grid grid-cols-4 gap-2 text-center">
+                <div class="rounded-xl bg-cream-50/5 p-2">
+                  <div class="font-serif font-bold text-coral-400">3/3</div>
+                  <div class="text-[10px] text-cream-300">звички</div>
+                </div>
+                <div class="rounded-xl bg-cream-50/5 p-2">
+                  <div class="font-serif font-bold text-teal-400">✓</div>
+                  <div class="text-[10px] text-cream-300">тренування</div>
+                </div>
+                <div class="rounded-xl bg-cream-50/5 p-2">
+                  <div class="font-serif font-bold text-lime-400">-240</div>
+                  <div class="text-[10px] text-cream-300">kcal</div>
+                </div>
+                <div class="rounded-xl bg-cream-50/5 p-2">
+                  <div class="font-serif font-bold text-brand-400">₴487</div>
+                  <div class="text-[10px] text-cream-300">витрат</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Why it works -->
+    <section id="why" class="bg-cream-200/70 border-y border-cream-400/40">
+      <div class="max-w-5xl mx-auto px-5 sm:px-8 py-20">
+        <h2
+          class="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-center"
+        >
+          Один ритм. <em>Чотири модулі.</em>
+        </h2>
+        <p class="text-center text-ink/70 mt-4 max-w-2xl mx-auto">
+          Sergeant не намагається бути «ще одним додатком». Він замінює пʼять і
+          робить це м'яко.
+        </p>
+
+        <div class="mt-14 grid sm:grid-cols-3 gap-5">
+          <div class="bg-cream-50 rounded-3xl p-7 shadow-sm">
+            <div class="text-4xl">🤝</div>
+            <h3 class="font-serif text-xl font-bold mt-4">Без сайд-квестів</h3>
+            <p class="text-sm text-ink/70 mt-2 leading-relaxed">
+              Звичка → тренування → калорії → витрати — все в одній стрічці, в
+              одному прогресі.
+            </p>
+          </div>
+          <div class="bg-cream-50 rounded-3xl p-7 shadow-sm">
+            <div class="text-4xl">🌿</div>
+            <h3 class="font-serif text-xl font-bold mt-4">Без тривоги</h3>
+            <p class="text-sm text-ink/70 mt-2 leading-relaxed">
+              Без push-нотифікацій-стресу. Sergeant нагадує лише про те, що ти
+              сам вибрав.
+            </p>
+          </div>
+          <div class="bg-cream-50 rounded-3xl p-7 shadow-sm">
+            <div class="text-4xl">📓</div>
+            <h3 class="font-serif text-xl font-bold mt-4">
+              Без перевантаження
+            </h3>
+            <p class="text-sm text-ink/70 mt-2 leading-relaxed">
+              UI спроєктований під «1 тап → 1 запис». Більшість дій займає 3
+              секунди.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Beta CTA -->
+    <section id="beta" class="max-w-3xl mx-auto px-5 sm:px-8 py-20 text-center">
+      <p class="text-xs uppercase tracking-[0.25em] font-bold text-coral-600">
+        Запрошуємо у бету
+      </p>
+      <h2
+        class="mt-5 font-serif text-4xl sm:text-6xl font-bold tracking-tight leading-tight"
+      >
+        Як виглядатиме <em>твій</em> понеділок?
+      </h2>
+      <p class="mt-6 text-ink/70 text-lg">
+        Залиш пошту — і за 24 години отримаєш інвайт у бета-канал. Перші 500
+        юзерів — Pro безкоштовно назавжди.
+      </p>
+
+      <form
+        class="mt-10 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+        onsubmit="
+          event.preventDefault();
+          this.querySelector('button').textContent = 'Готово ✓';
+        "
+      >
+        <input
+          type="email"
+          required
+          placeholder="email"
+          class="flex-1 px-5 py-4 rounded-full border border-cream-400 bg-cream-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-coral-400 text-base"
+        />
+        <button
+          type="submit"
+          class="bg-coral-500 hover:bg-coral-600 text-cream-50 font-semibold px-7 py-4 rounded-full shadow-lg shadow-coral-500/20 transition"
+        >
+          Хочу в бету
+        </button>
+      </form>
+      <p class="mt-4 text-sm text-ink/50">
+        Без картки · вийти можна в один клік.
+      </p>
+    </section>
+
+    <footer class="border-t border-cream-300">
+      <div
+        class="max-w-6xl mx-auto px-5 sm:px-8 py-8 text-center text-sm text-ink/50"
+      >
+        <p class="font-serif italic">
+          «Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.»
+        </p>
+        <p class="mt-2">© 2026 Sergeant · Зроблено в Україні</p>
+      </div>
+    </footer>
+  </body>
+</html>
