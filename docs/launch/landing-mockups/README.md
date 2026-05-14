@@ -3,10 +3,10 @@
 > **Last validated:** 2026-05-14 by @Skords-01 / Devin. **Next review:** 2026-08-12.
 > **Status:** Scaffolded
 
-5 self-contained HTML-мокапів лендингу для збору waitlist-у закритої бети та паралельного запуску
-рекламних креативів (Twitter/X, Meta Ads, Threads). Кожен файл — статичний, без build-step, з
-Tailwind CDN — щоб дизайн-рев'ю проходив за 1 клік (open file у Chrome) і preview-деплой був
-тривіальним (Vercel static / Netlify drop / `python -m http.server`).
+8 self-contained HTML-мокапів лендингу для збору waitlist-у закритої бети та паралельного запуску
+рекламних креативів (Twitter/X, Meta Ads, Threads, DOU, Telegram-канали). Кожен файл —
+статичний, без build-step, з Tailwind CDN — щоб дизайн-рев'ю проходив за 1 клік (open file у
+Chrome) і preview-деплой був тривіальним (Vercel static / Netlify drop / `python -m http.server`).
 
 ## Як це лягає у roadmap
 
@@ -21,13 +21,16 @@ Tailwind CDN — щоб дизайн-рев'ю проходив за 1 клік 
 
 ## Варіанти
 
-| #   | Файл                                                                         | Концепт               | Hero-CTA                       | Target traffic                                              |
-| --- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------ | ----------------------------------------------------------- |
-| 01  | [`mockup-01-ai-coach.html`](./mockup-01-ai-coach.html)                       | AI Coach hero         | «Хочу в бету» + email          | Twitter/X · DOU.ua · аудиторія, що любить AI                |
-| 02  | [`mockup-02-five-in-one.html`](./mockup-02-five-in-one.html)                 | 5-в-1 / Before-After  | «Хочу спробувати»              | Product Hunt · Threads · users з SaaS-fatigue               |
-| 03  | [`mockup-03-local-first-privacy.html`](./mockup-03-local-first-privacy.html) | Local-first manifesto | «Запит на доступ»              | Hacker News · privacy-aware · Indie Hackers                 |
-| 04  | [`mockup-04-day-in-life.html`](./mockup-04-day-in-life.html)                 | Day-in-the-life       | «Хочу в бету»                  | Instagram · Threads · аудиторія, що любить storytelling     |
-| 05  | [`mockup-05-beta-exclusive.html`](./mockup-05-beta-exclusive.html)           | Closed-beta urgency   | «Забронювати спот» + countdown | Meta Ads · paid traffic · retargeting · founder-DM-кампанія |
+| #   | Файл                                                                         | Концепт                 | Hero-CTA                       | Target traffic                                                |
+| --- | ---------------------------------------------------------------------------- | ----------------------- | ------------------------------ | ------------------------------------------------------------- |
+| 01  | [`mockup-01-ai-coach.html`](./mockup-01-ai-coach.html)                       | AI Coach hero           | «Хочу в бету» + email          | Twitter/X · DOU.ua · аудиторія, що любить AI                  |
+| 02  | [`mockup-02-five-in-one.html`](./mockup-02-five-in-one.html)                 | 5-в-1 / Before-After    | «Хочу спробувати»              | Product Hunt · Threads · users з SaaS-fatigue                 |
+| 03  | [`mockup-03-local-first-privacy.html`](./mockup-03-local-first-privacy.html) | Local-first manifesto   | «Запит на доступ»              | Hacker News · privacy-aware · Indie Hackers                   |
+| 04  | [`mockup-04-day-in-life.html`](./mockup-04-day-in-life.html)                 | Day-in-the-life         | «Хочу в бету»                  | Instagram · Threads · аудиторія, що любить storytelling       |
+| 05  | [`mockup-05-beta-exclusive.html`](./mockup-05-beta-exclusive.html)           | Closed-beta urgency     | «Забронювати спот» + countdown | Meta Ads · paid traffic · retargeting · founder-DM-кампанія   |
+| 06  | [`mockup-06-founder-letter.html`](./mockup-06-founder-letter.html)           | Founder letter / IH     | «Запиши мене у бету»           | Substack · Telegram-канал · email-list · founder-friendly DOU |
+| 07  | [`mockup-07-roi-calculator.html`](./mockup-07-roi-calculator.html)           | ROI / Savings calc      | «Хочу зекономити»              | Google Search · «alternatives to YNAB» queries · cost-aware   |
+| 08  | [`mockup-08-made-in-ukraine.html`](./mockup-08-made-in-ukraine.html)         | Made in Ukraine (UA-UA) | «🇺🇦 Записатись у бету»         | DOU · Telegram-канали (укр-патріотичні) · локальні медіа      |
 
 ### Спільне для всіх
 
@@ -55,8 +58,11 @@ python3 -m http.server 8000
 1. **Якісне рев'ю:** open у Chrome desktop + DevTools mobile emulator (375 / 768 / 1280). Лови
    broken layout-и, перевір CTA-видимість above the fold, скрипти курсорних анімацій.
 2. **A/B-кандидати:** для closed-beta period — рекомендую `01` (AI Coach) як primary і `05`
-   (Beta exclusive) як paid-ads variant. `03` (privacy) — для HN/Indie Hackers лонч-постів.
-   `02` і `04` — резервні для post-launch content marketing.
+   (Beta exclusive) як paid-ads variant. `03` (privacy) — для HN/Indie Hackers лонч-постів,
+   `06` (Founder letter) — для Telegram-каналу і Substack, `07` (ROI calc) — для Google Search
+   ads на keyword-ах «alternative to YNAB / MyFitnessPal», `08` (Made in UA) — для локальних
+   медіа і Telegram-каналів з патріотичним позиціонуванням. `02` і `04` — резервні для
+   post-launch content marketing.
 3. **Метрики, які треба ловити після deploy-у:** `LANDING_VIEWED` (см. `LandingPage.tsx`
    contract), email-submit rate, referrer split, scroll depth. PostHog event-схема —
    [`packages/shared/src/lib/analyticsEvents.ts § Landing page`](../../../packages/shared/src/lib/analyticsEvents.ts).

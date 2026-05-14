@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · Зроблено в Україні — для українського гаманця</title>
+    <meta
+      name="description"
+      content="Sergeant — український local-first додаток для фінансів, тренувань, харчування і звичок. UAH-first, monobank-сумісність, серверy в EU. Без YC і USD-pricing."
+    />
+    <!-- Mockup variant: 08 / Made in Ukraine / local-market patriotic angle. Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              display: ["Manrope", "Inter", "system-ui", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                800: "#065f46",
+                900: "#064e3b",
+              },
+              ua: {
+                blue: "#0057b7",
+                "blue-dark": "#003d80",
+                yellow: "#ffd700",
+                "yellow-soft": "#fff3a0",
+              },
+              cream: { 50: "#fefdfb", 100: "#fdf9f3", 200: "#faf3e8" },
+              coral: { 500: "#f97066" },
+              ink: "#1c1917",
+            },
+            keyframes: {
+              wave: {
+                "0%, 100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-3px)" },
+              },
+            },
+            animation: { wave: "wave 3s ease-in-out infinite" },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background:
+          radial-gradient(900px 500px at 100% 0%, #fff3a0 0%, transparent 50%),
+          radial-gradient(900px 500px at 0% 30%, #d1fae5 0%, transparent 55%),
+          linear-gradient(180deg, #fefdfb 0%, #fdf9f3 100%);
+      }
+      .flag-strip {
+        background: linear-gradient(
+          180deg,
+          #0057b7 0%,
+          #0057b7 50%,
+          #ffd700 50%,
+          #ffd700 100%
+        );
+      }
+      .vyshyvanka {
+        background-image:
+          radial-gradient(
+            circle,
+            rgba(0, 87, 183, 0.18) 1.2px,
+            transparent 1.5px
+          ),
+          radial-gradient(
+            circle,
+            rgba(255, 215, 0, 0.18) 1.2px,
+            transparent 1.5px
+          );
+        background-size:
+          16px 16px,
+          16px 16px;
+        background-position:
+          0 0,
+          8px 8px;
+      }
+    </style>
+  </head>
+  <body class="font-sans text-ink antialiased">
+    <!-- Flag strip -->
+    <div class="flag-strip h-1 w-full"></div>
+
+    <!-- Top banner -->
+    <div class="bg-ink text-cream-100 text-center text-xs sm:text-sm py-2 px-4">
+      <span class="inline-flex items-center gap-2">
+        🇺🇦 Київ → твій телефон · Закрита бета · 423/500 спотів зайнято
+      </span>
+    </div>
+
+    <!-- Header -->
+    <header
+      class="max-w-6xl mx-auto px-5 sm:px-8 pt-6 sm:pt-8 flex items-center justify-between"
+    >
+      <a href="/" class="flex items-center gap-2">
+        <div
+          class="w-9 h-9 rounded-2xl bg-ua-blue text-ua-yellow grid place-items-center font-bold shadow-md font-display"
+        >
+          S
+        </div>
+        <span class="font-bold text-lg tracking-tight font-display"
+          >Sergeant</span
+        >
+        <span
+          class="hidden sm:inline ml-2 text-xs uppercase tracking-wider text-ua-blue font-semibold"
+          >Made in UA</span
+        >
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-stone-600">
+        <a href="#why" class="hover:text-ink">Чому український</a>
+        <a href="#stack" class="hover:text-ink">Стек</a>
+        <a href="#donate" class="hover:text-ink">ЗСУ</a>
+      </nav>
+      <a
+        href="#cta"
+        class="inline-flex items-center gap-2 bg-ua-blue text-ua-yellow text-sm font-semibold px-4 py-2 rounded-full hover:bg-ua-blue-dark transition"
+      >
+        Хочу в бету →
+      </a>
+    </header>
+
+    <!-- Hero -->
+    <section
+      class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 grid lg:grid-cols-12 gap-10 items-center"
+    >
+      <div class="lg:col-span-7">
+        <div
+          class="inline-flex items-center gap-2 bg-ua-yellow-soft text-ua-blue-dark text-xs sm:text-sm font-bold px-3 py-1 rounded-full"
+        >
+          <span class="text-base">🇺🇦</span> Зроблено в Києві · з ❤️ та упертістю
+        </div>
+
+        <h1
+          class="font-display mt-4 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]"
+        >
+          Для українського гаманця, годинника
+          <br />
+          і характеру.
+        </h1>
+        <p class="mt-5 text-base sm:text-lg text-stone-700 max-w-2xl">
+          Sergeant — local-first персональний хаб для фінансів, тренувань,
+          харчування і звичок. <strong>UAH-first, monobank-сумісність,</strong>
+          серверы у Falkenstein (EU). Без YC, без $20/міс «only-USD», без
+          російських залежностей у стеку.
+        </p>
+
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a
+            href="#cta"
+            class="inline-flex items-center gap-2 bg-ua-blue text-ua-yellow font-bold px-6 py-3 rounded-full shadow-lg hover:bg-ua-blue-dark transition min-h-[44px]"
+          >
+            Хочу в бету
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+          </a>
+          <a
+            href="#why"
+            class="inline-flex items-center gap-2 bg-white border-2 border-stone-200 text-ink font-semibold px-6 py-3 rounded-full hover:border-ua-blue transition min-h-[44px]"
+          >
+            Чому український
+          </a>
+        </div>
+
+        <div
+          class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-stone-600"
+        >
+          <span class="inline-flex items-center gap-2">
+            <span class="text-lg">🏦</span> Сумісність з monobank export
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <span class="text-lg">💸</span> ₴99 / міс, без conversion fees
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <span class="text-lg">🛡️</span> Серверы у EU (Hetzner)
+          </span>
+        </div>
+      </div>
+
+      <!-- Right visual -->
+      <div class="lg:col-span-5 relative">
+        <div
+          class="vyshyvanka absolute inset-0 -m-6 rounded-3xl opacity-50"
+        ></div>
+        <div
+          class="relative rounded-3xl bg-white border border-stone-200 shadow-2xl overflow-hidden"
+        >
+          <div class="flag-strip h-2 w-full"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-full bg-ua-blue text-ua-yellow grid place-items-center font-bold text-sm"
+              >
+                ДС
+              </div>
+              <div>
+                <div class="font-semibold text-sm">Дмитро · Київ</div>
+                <div class="text-xs text-stone-500">Фаундер, ФОП 3-я група</div>
+              </div>
+              <span
+                class="ml-auto text-[10px] uppercase font-bold tracking-wider bg-brand-100 text-brand-800 px-2 py-1 rounded-full"
+                >online</span
+              >
+            </div>
+
+            <div class="mt-5 space-y-2 text-sm">
+              <div
+                class="rounded-2xl bg-stone-50 px-4 py-3 border border-stone-200"
+              >
+                <div class="text-xs uppercase text-stone-500 tracking-wider">
+                  Цього місяця
+                </div>
+                <div class="mt-1 flex items-baseline gap-2">
+                  <span class="font-mono text-2xl font-bold text-ink"
+                    >₴27 430</span
+                  >
+                  <span class="text-xs text-coral-500 font-semibold"
+                    >−₴2 100 на каву</span
+                  >
+                </div>
+              </div>
+              <div
+                class="rounded-2xl bg-stone-50 px-4 py-3 border border-stone-200"
+              >
+                <div class="text-xs uppercase text-stone-500 tracking-wider">
+                  Сьогодні
+                </div>
+                <div class="mt-1 text-sm text-stone-700">
+                  Сніданок · 480 ккал · 32 г білка ·
+                  <span class="text-brand-700 font-semibold">borshch ✓</span>
+                </div>
+              </div>
+              <div class="rounded-2xl bg-ua-blue text-cream-50 px-4 py-3">
+                <div class="text-xs uppercase tracking-wider opacity-80">
+                  HubChat
+                </div>
+                <div class="mt-1 text-sm">
+                  «Тобі залишилось ₴3 200 на каву до кінця місяця. Хочеш —
+                  переведу у Cиньку?»
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating badge -->
+        <div
+          class="hidden sm:block absolute -bottom-5 -left-4 bg-ua-yellow text-ua-blue-dark px-3 py-1.5 rounded-full font-bold text-xs shadow-lg ring-2 ring-white animate-wave"
+        >
+          🌻 UAH-first since day one
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Ukrainian -->
+    <section id="why" class="max-w-6xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28">
+      <div class="max-w-3xl">
+        <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">
+          Чому це важливо: 5 причин обрати український продукт
+        </h2>
+        <p class="mt-3 text-stone-600">
+          Це не «купи бо український». Це конкретний tradelist того, чим
+          український hub-додаток вирізняється від загальних SaaS, що ігнорують
+          реалії нашого ринку.
+        </p>
+      </div>
+
+      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-6 hover:border-ua-blue transition"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-ua-yellow-soft text-ua-blue-dark grid place-items-center font-bold mb-4"
+          >
+            ₴
+          </div>
+          <h3 class="font-bold text-lg">UAH-first pricing</h3>
+          <p class="mt-2 text-sm text-stone-600">
+            ₴99 на місяць — без USD-конверсії, без курсових сюрпризів. Платіж
+            проходить через українські процесинги (LiqPay / WayForPay / Fondy).
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-6 hover:border-ua-blue transition"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-ua-yellow-soft text-ua-blue-dark grid place-items-center font-bold mb-4"
+          >
+            🏦
+          </div>
+          <h3 class="font-bold text-lg">Monobank export</h3>
+          <p class="mt-2 text-sm text-stone-600">
+            Імпорт виписок з monobank, Privat24 і ПриватБанку Business за кілька
+            секунд (CSV / open-banking запит на API — у roadmap-і Q3 2026).
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-6 hover:border-ua-blue transition"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-ua-yellow-soft text-ua-blue-dark grid place-items-center font-bold mb-4"
+          >
+            🇪🇺
+          </div>
+          <h3 class="font-bold text-lg">Серверы — Hetzner, Falkenstein</h3>
+          <p class="mt-2 text-sm text-stone-600">
+            EU-юрисдикція, GDPR-compliant. Жодного хмарного провайдера з
+            російським слідом у dependency-tree або власності. Аудит залежностей
+            — публічний.
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-6 hover:border-ua-blue transition"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-ua-yellow-soft text-ua-blue-dark grid place-items-center font-bold mb-4"
+          >
+            🕒
+          </div>
+          <h3 class="font-bold text-lg">Київський час, тиждень з понеділка</h3>
+          <p class="mt-2 text-sm text-stone-600">
+            ISO 8601, Europe/Kyiv timezone у всьому продукті. Без US-week-start,
+            без AM/PM, без «sunday confusion». Усе зведення — у Kyiv local.
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-6 hover:border-ua-blue transition"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-ua-yellow-soft text-ua-blue-dark grid place-items-center font-bold mb-4"
+          >
+            👤
+          </div>
+          <h3 class="font-bold text-lg">ФОП-friendly</h3>
+          <p class="mt-2 text-sm text-stone-600">
+            Перші 100 founding-members отримають інвойс на ФОП 3-ї групи — щоб
+            ти міг віднести підписку у витрати без перекладача.
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-6 hover:border-ua-blue transition"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-ua-yellow-soft text-ua-blue-dark grid place-items-center font-bold mb-4"
+          >
+            🛠️
+          </div>
+          <h3 class="font-bold text-lg">Solo-dev, без раунду</h3>
+          <p class="mt-2 text-sm text-stone-600">
+            12 спринтів build-in-public, $0 raised. Гроші бети йдуть на сервери
+            і твої feature-requests, а не на CEO-зарплати в Делавері.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ЗСУ commitment -->
+    <section id="donate" class="max-w-6xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28">
+      <div
+        class="relative rounded-3xl bg-gradient-to-br from-ua-blue to-ua-blue-dark text-white p-8 sm:p-12 overflow-hidden"
+      >
+        <div class="absolute top-0 right-0 text-9xl opacity-10">🌻</div>
+        <div class="relative max-w-3xl">
+          <div
+            class="inline-flex items-center gap-2 bg-ua-yellow text-ua-blue-dark px-3 py-1 rounded-full text-xs font-bold"
+          >
+            🪖 Sergeant supports ЗСУ
+          </div>
+          <h2
+            class="font-display mt-4 text-3xl sm:text-4xl font-bold leading-tight"
+          >
+            Частина кожного pre-order — на українські фонди
+          </h2>
+          <p class="mt-3 text-cream-100/90 max-w-2xl">
+            Founder-витрати ще не покриті (це bootstrap), але кожні 10
+            founding-Pro оплат я фіксую перший внесок у благодійні фонди (Come
+            Back Alive, Hospitallers або Прит ЗСУ за публічним голосуванням
+            спільноти). Звіти — у Telegram-каналі, місяць у місяць.
+          </p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <a
+              href="#cta"
+              class="inline-flex items-center gap-2 bg-ua-yellow text-ua-blue-dark font-bold px-5 py-3 rounded-full hover:bg-cream-100 transition min-h-[44px]"
+            >
+              Хочу долучитись
+            </a>
+            <a
+              href="#"
+              class="inline-flex items-center gap-2 text-ua-yellow hover:text-white font-semibold text-sm underline"
+            >
+              Подивитись попередні звіти у Telegram →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stack -->
+    <section id="stack" class="max-w-6xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28">
+      <div class="max-w-2xl">
+        <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">
+          5 модулів, які тебе зрозуміють
+        </h2>
+        <p class="mt-3 text-stone-600">
+          Один контекст, один підпис, один UAH-payment. Без 5 окремих
+          «english-only» додатків.
+        </p>
+      </div>
+
+      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <article
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:shadow-lg transition"
+        >
+          <div class="text-3xl mb-2">💰</div>
+          <h3 class="font-bold">Фінік</h3>
+          <p class="text-xs text-stone-600 mt-1">
+            Бюджети, ENV-конверти, monobank-імпорт
+          </p>
+        </article>
+        <article
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:shadow-lg transition"
+        >
+          <div class="text-3xl mb-2">🏋️</div>
+          <h3 class="font-bold">Фізрук</h3>
+          <p class="text-xs text-stone-600 mt-1">
+            Силові + кардіо + програми. UA-копірайт у вправах.
+          </p>
+        </article>
+        <article
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:shadow-lg transition"
+        >
+          <div class="text-3xl mb-2">🥗</div>
+          <h3 class="font-bold">Харчування</h3>
+          <p class="text-xs text-stone-600 mt-1">
+            UA-страви у базі: борщ, вареники, голубці.
+          </p>
+        </article>
+        <article
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:shadow-lg transition"
+        >
+          <div class="text-3xl mb-2">🎯</div>
+          <h3 class="font-bold">Рутина</h3>
+          <p class="text-xs text-stone-600 mt-1">
+            Звички, ритуали. Тиждень з понеділка, як у нормальних людей.
+          </p>
+        </article>
+        <article
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:shadow-lg transition"
+        >
+          <div class="text-3xl mb-2">🤖</div>
+          <h3 class="font-bold">HubChat</h3>
+          <p class="text-xs text-stone-600 mt-1">
+            AI-помічник з контекстом 4-х модулів. Розуміє «синька», «Сільпо».
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section id="cta" class="max-w-3xl mx-auto px-5 sm:px-8 mt-20 mb-12">
+      <div
+        class="rounded-3xl bg-white border-2 border-ua-blue p-6 sm:p-10 shadow-2xl"
+      >
+        <div class="flag-strip h-1.5 rounded-full mb-6"></div>
+        <h3
+          class="font-display text-3xl sm:text-4xl font-extrabold tracking-tight"
+        >
+          Підтримай український продукт
+        </h3>
+        <p class="mt-3 text-stone-700">
+          Залиш email — пришлю інвайт-лінк особисто, як тільки відкриється твій
+          спот. 7 днів Pro безкоштовно. Founding-members — Pro назавжди + інвойс
+          на ФОП.
+        </p>
+        <form
+          onsubmit="
+            event.preventDefault();
+            this.querySelector('button').innerHTML = '✓ Дякую, друже!';
+            this.querySelector('button').classList.add('bg-brand-500');
+            this.querySelector('input').disabled = true;
+          "
+          class="mt-6 flex flex-col sm:flex-row gap-3"
+        >
+          <input
+            type="email"
+            required
+            placeholder="dmytro@example.com.ua"
+            class="flex-1 rounded-full bg-cream-50 border border-stone-200 px-5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ua-blue"
+          />
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center gap-2 rounded-full bg-ua-blue text-ua-yellow font-bold px-6 py-3 hover:bg-ua-blue-dark transition min-h-[44px]"
+          >
+            🇺🇦 Записатись у бету
+          </button>
+        </form>
+        <p class="mt-4 text-xs text-stone-500">
+          Без спаму. Один лист — твій invite, далі тільки Telegram-канал
+          (опціонально).
+        </p>
+      </div>
+
+      <p class="mt-8 text-center text-sm text-stone-500">
+        Sergeant · ФОП Стахов Д.С. · Київ · serverу у Falkenstein, DE
+      </p>
+    </section>
+  </body>
+</html>

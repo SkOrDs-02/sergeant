@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · Лист від фаундера — закрита бета</title>
+    <meta
+      name="description"
+      content="Дмитро, фаундер Sergeant, пише особистий лист про те, чому будує другий-мозок-додаток і як приєднатися до бети."
+    />
+    <!-- Mockup variant: 06 / Founder letter (Substack / build-in-public). Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              serif: ["Fraunces", "Georgia", "serif"],
+              hand: ["Caveat", "cursive"],
+            },
+            colors: {
+              brand: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                900: "#064e3b",
+              },
+              paper: {
+                50: "#fefdfb",
+                100: "#fdf8ee",
+                200: "#f8ecd6",
+                300: "#f0deba",
+              },
+              ink: "#1f1d1a",
+              coral: { 500: "#f97066" },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background:
+          radial-gradient(800px 500px at 0% 0%, #fdf8ee 0%, transparent 60%),
+          linear-gradient(180deg, #fefdfb 0%, #fdf8ee 100%);
+      }
+      .paper {
+        background:
+          repeating-linear-gradient(
+            180deg,
+            transparent 0px,
+            transparent 31px,
+            rgba(31, 29, 26, 0.04) 31px,
+            rgba(31, 29, 26, 0.04) 32px
+          ),
+          #fefdfb;
+        box-shadow:
+          0 1px 0 rgba(31, 29, 26, 0.04),
+          0 24px 64px -32px rgba(31, 29, 26, 0.18),
+          0 8px 24px -12px rgba(31, 29, 26, 0.06);
+      }
+      .highlight {
+        background: linear-gradient(120deg, transparent 0%, #fde68a 0%)
+          no-repeat;
+        background-size: 100% 0.5em;
+        background-position: 0 88%;
+        padding: 0 0.1em;
+      }
+      .pen {
+        text-decoration: underline;
+        text-decoration-color: #f97066;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 4px;
+      }
+      .stamp {
+        transform: rotate(-6deg);
+        border: 2px solid #047857;
+        color: #047857;
+        font-family: Fraunces, serif;
+        letter-spacing: 0.1em;
+      }
+      .dropcap::first-letter {
+        font-family: Fraunces, serif;
+        font-weight: 700;
+        font-size: 3.5rem;
+        float: left;
+        line-height: 1;
+        padding: 0.25rem 0.5rem 0 0;
+        color: #047857;
+      }
+    </style>
+  </head>
+  <body class="font-sans text-ink antialiased">
+    <!-- Top banner -->
+    <div class="bg-ink text-paper-100 text-center text-xs sm:text-sm py-2 px-4">
+      <span class="inline-flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-brand-500"></span>
+        Особистий лист від Дмитра · 423/500 спотів зайнято · 12 тижнів
+        build-in-public
+      </span>
+    </div>
+
+    <!-- Header -->
+    <header
+      class="max-w-3xl mx-auto px-5 sm:px-8 pt-8 flex items-center justify-between"
+    >
+      <a href="/" class="flex items-center gap-2">
+        <div
+          class="w-9 h-9 rounded-2xl bg-brand-700 text-white grid place-items-center font-bold shadow"
+        >
+          S
+        </div>
+        <span class="font-bold text-lg tracking-tight">Sergeant</span>
+        <span
+          class="hidden sm:inline ml-2 text-xs uppercase tracking-wider text-brand-700 font-semibold"
+          >Beta</span
+        >
+      </a>
+      <a
+        href="#beta"
+        class="text-sm font-semibold text-brand-700 hover:text-brand-900"
+        >Хочу в бету →</a
+      >
+    </header>
+
+    <!-- Letter -->
+    <main class="max-w-3xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
+      <!-- Date + meta -->
+      <div
+        class="flex items-baseline justify-between mb-4 text-xs sm:text-sm text-stone-500 font-serif"
+      >
+        <span>Київ · 14 травня 2026</span>
+        <span class="font-hand text-xl text-brand-700">№ 12 / build-log</span>
+      </div>
+
+      <!-- Subject line -->
+      <h1
+        class="font-serif text-3xl sm:text-5xl font-bold leading-[1.05] tracking-tight mb-3"
+      >
+        Привіт. Мене звати Дмитро, і це лист — особисто тобі.
+      </h1>
+      <p class="text-stone-600 text-base sm:text-lg max-w-2xl">
+        Я будую Sergeant — один додаток, який тримає мої гроші, тренування, їжу
+        і звички в одному місці. Без хмар-першими. Без 5 саб-ів. Без раунду. І я
+        хочу позвати тебе в бету.
+      </p>
+
+      <!-- Stamp + photo -->
+      <div class="mt-8 flex flex-wrap items-center gap-5">
+        <div class="relative">
+          <div
+            class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white font-bold text-2xl shadow-lg ring-4 ring-paper-100"
+          >
+            ДС
+          </div>
+          <span
+            class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-coral-500 grid place-items-center text-white text-xs ring-2 ring-paper-100"
+            >✎</span
+          >
+        </div>
+        <div>
+          <div class="font-semibold">Дмитро Стахов</div>
+          <div class="text-sm text-stone-500">
+            фаундер · solo dev · @dmytro_s_stakhov
+          </div>
+        </div>
+        <div
+          class="stamp ml-auto px-3 py-1 rounded-md text-xs font-bold uppercase"
+        >
+          Open beta · serial #06
+        </div>
+      </div>
+
+      <!-- Letter body -->
+      <article
+        class="paper rounded-2xl px-6 sm:px-10 py-10 mt-10 font-serif text-[1.05rem] leading-[1.85] text-ink"
+      >
+        <p class="dropcap">
+          12 тижнів тому я зрозумів, що плачу
+          <span class="highlight">₴1520 за місяць</span> за п'ять додатків, які
+          ледь розмовляють один з одним. YNAB знає про мої гроші, MyFitnessPal —
+          про їжу, Strong — про залі, Habitica — про звички, а AI-чат — нічого з
+          того. І я переплачував не лише грошима, я переплачував увагою. Кожен з
+          цих додатків хотів окремий контекст, окремий ритуал, окремий
+          нотифікейшн.
+        </p>
+
+        <p class="mt-5">
+          Я не хотів робити «ще один tracker». Я хотів зробити
+          <span class="pen">особистого старшину</span> — того, хто бачить мій
+          день цілком. Купив каву → бачить контекст «у тебе 25% бюджету на каву
+          залишилось до кінця тижня». Сфоткав ланч → знає, що ти вранці
+          тренувався, тому білка треба більше. Спитав AI про звичку →
+          відповідає, спираючись на твою реальну історію, а не випадкові поради
+          з GPT.
+        </p>
+
+        <p class="mt-5">
+          Я будую це сам. Без раунду, без 12-членної команди, без
+          YC-стартап-кліше. Просто
+          <span class="highlight">я + 12 спринтів + 8 PR-ів</span>, які ти можеш
+          переглянути на GitHub. Кожен тиждень — публічний звіт у
+          Telegram-каналі. Кожна метрика — на видноті. Це build-in-public у
+          самому буквальному сенсі.
+        </p>
+
+        <p class="mt-5">
+          <strong class="font-semibold">Чому я пишу тобі особисто?</strong>
+          Тому що бета — це не «ще один продукт-хант reveal». Це 500 людей, які
+          реально щодня користуються тим, що я будую, і пишуть мені у Telegram,
+          що не працює. Я хочу, щоб ти був одним із них — і вийшов з бети не
+          «early adopter»-ом, а
+          <span class="pen">співавтором продукту</span>.
+        </p>
+
+        <!-- Build stats -->
+        <div
+          class="my-8 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 font-sans text-sm"
+        >
+          <div
+            class="rounded-xl bg-paper-200 border border-paper-300 px-4 py-3"
+          >
+            <div class="text-2xl font-bold text-brand-700">12</div>
+            <div class="text-xs text-stone-600">тижнів build-in-public</div>
+          </div>
+          <div
+            class="rounded-xl bg-paper-200 border border-paper-300 px-4 py-3"
+          >
+            <div class="text-2xl font-bold text-brand-700">423</div>
+            <div class="text-xs text-stone-600">бета-тестерів</div>
+          </div>
+          <div
+            class="rounded-xl bg-paper-200 border border-paper-300 px-4 py-3"
+          >
+            <div class="text-2xl font-bold text-brand-700">1 274</div>
+            <div class="text-xs text-stone-600">читачів Telegram</div>
+          </div>
+          <div
+            class="rounded-xl bg-paper-200 border border-paper-300 px-4 py-3"
+          >
+            <div class="text-2xl font-bold text-brand-700">$0</div>
+            <div class="text-xs text-stone-600">залученого фандингу</div>
+          </div>
+        </div>
+
+        <h2 class="font-bold text-xl sm:text-2xl mt-10 mb-3">
+          Що ти отримаєш, якщо приєднаєшся зараз
+        </h2>
+        <ul class="space-y-3 list-none pl-0">
+          <li class="flex gap-3">
+            <span class="font-hand text-brand-700 text-2xl leading-none mt-1"
+              >✓</span
+            >
+            <span>
+              <strong class="font-semibold">Pro назавжди</strong> — без
+              щомісячної оплати. Тільки для перших 500 founding members.
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <span class="font-hand text-brand-700 text-2xl leading-none mt-1"
+              >✓</span
+            >
+            <span>
+              <strong class="font-semibold">Прямий DM-доступ</strong> до мене у
+              Telegram. Кожен баг, кожна ідея — відповідаю особисто, не
+              support-бот.
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <span class="font-hand text-brand-700 text-2xl leading-none mt-1"
+              >✓</span
+            >
+            <span>
+              <strong class="font-semibold">3 інвайти</strong> для друзів — щоб
+              привести своїх людей у спільноту, поки ще можна.
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <span class="font-hand text-brand-700 text-2xl leading-none mt-1"
+              >✓</span
+            >
+            <span>
+              <strong class="font-semibold">Founding-member badge</strong> у
+              профілі. Маленька деталь, але тебе там видно — і поки залишилось
+              77 спотів, ти ще можеш бути серед перших.
+            </span>
+          </li>
+        </ul>
+
+        <h2 class="font-bold text-xl sm:text-2xl mt-10 mb-3">
+          Що буде, якщо НЕ приєднаєшся
+        </h2>
+        <p>
+          Нічого жахливого. Sergeant вийде у відкритий доступ 1 серпня. Просто
+          ти будеш платити $7 на місяць замість $0, і твій profile-badge буде
+          звичайним. Я не граю у штучну urgency — це реальна математика, не
+          countdown-маніпуляція.
+        </p>
+
+        <!-- Signature -->
+        <div class="mt-10 pt-6 border-t border-paper-300">
+          <p class="mb-2">З повагою і вдячністю,</p>
+          <div class="font-hand text-4xl text-brand-700 leading-none">
+            Дмитро
+          </div>
+          <p class="mt-2 text-sm text-stone-500 italic">
+            P.S. Якщо хочеш просто почитати, перш ніж записуватись — я веду
+            відкритий Telegram-канал, де щотижня пишу sprint-зведення з
+            графіками,
+            <a href="#" class="text-brand-700 underline">@sergeant_buildlog</a>.
+          </p>
+        </div>
+      </article>
+
+      <!-- CTA -->
+      <section
+        id="beta"
+        class="mt-12 rounded-2xl bg-ink text-paper-100 px-6 sm:px-10 py-10"
+      >
+        <h2
+          class="font-serif text-2xl sm:text-3xl font-bold tracking-tight mb-2"
+        >
+          Так, пиши мені, коли буде вільний слот
+        </h2>
+        <p class="text-stone-300 max-w-xl">
+          Залиш email — я особисто пришлю invite-лінк, як тільки відкриється
+          твій спот (зазвичай протягом 1-3 днів).
+        </p>
+        <form
+          onsubmit="
+            event.preventDefault();
+            this.querySelector('button').innerHTML =
+              '✓ Готово — лист уже летить';
+            this.querySelector('button').classList.add('bg-brand-500');
+            this.querySelector('input').disabled = true;
+          "
+          class="mt-6 flex flex-col sm:flex-row gap-3 max-w-xl"
+        >
+          <input
+            type="email"
+            required
+            placeholder="dmytro@example.com"
+            class="flex-1 rounded-full bg-stone-800 text-paper-100 placeholder:text-stone-500 border border-stone-700 px-5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          />
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center gap-2 rounded-full bg-paper-100 text-ink font-semibold px-6 py-3 hover:bg-white transition min-h-[44px]"
+          >
+            Запиши мене у бету
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+          </button>
+        </form>
+        <p class="mt-4 text-xs text-stone-400">
+          7 днів Pro безкоштовно. Карта не потрібна. Можеш зіскочити будь-коли.
+        </p>
+      </section>
+
+      <!-- Footer -->
+      <footer
+        class="mt-14 text-center text-xs text-stone-500 font-serif italic"
+      >
+        Sergeant — local-first персональний хаб. Зроблено в Києві, з рук і
+        серця.
+      </footer>
+    </main>
+  </body>
+</html>

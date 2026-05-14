@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant · Скільки ти витрачаєш на саб-стек?</title>
+    <meta
+      name="description"
+      content="Інтерактивний калькулятор: порахуй, скільки твій SaaS-стек коштує на рік, і скільки економиш, переходячи на Sergeant за ₴99/міс."
+    />
+    <!-- Mockup variant: 07 / ROI / Savings calculator. Status: Mockup. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+            },
+            colors: {
+              brand: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                200: "#a7f3d0",
+                400: "#34d399",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                800: "#065f46",
+                900: "#064e3b",
+              },
+              lime: { 100: "#ecfccb", 400: "#a3e635", 500: "#92cc17" },
+              coral: { 100: "#ffe4e1", 500: "#f97066", 600: "#e64d4d" },
+              cream: { 50: "#fefdfb", 100: "#fdf9f3", 200: "#faf3e8" },
+              ink: "#1c1917",
+            },
+            keyframes: {
+              "count-pop": {
+                "0%": { transform: "scale(1)" },
+                "50%": { transform: "scale(1.04)" },
+                "100%": { transform: "scale(1)" },
+              },
+            },
+            animation: { "count-pop": "count-pop 0.3s ease-out" },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background:
+          radial-gradient(800px 400px at 100% 0%, #d1fae5 0%, transparent 60%),
+          linear-gradient(180deg, #fefdfb 0%, #fdf9f3 100%);
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum" 1;
+      }
+      input[type="checkbox"]:checked + label .check {
+        background: #10b981;
+        border-color: #10b981;
+      }
+      input[type="checkbox"]:checked + label .check::after {
+        content: "✓";
+        color: white;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body class="font-sans text-ink antialiased">
+    <!-- Top banner -->
+    <div class="bg-ink text-cream-100 text-center text-xs sm:text-sm py-2 px-4">
+      <span class="inline-flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-lime-400"></span>
+        Sergeant Pro · ₴99/міс · замість $43/міс розкиданих по 5 додатках
+      </span>
+    </div>
+
+    <!-- Header -->
+    <header
+      class="max-w-6xl mx-auto px-5 sm:px-8 pt-6 sm:pt-8 flex items-center justify-between"
+    >
+      <a href="/" class="flex items-center gap-2">
+        <div
+          class="w-9 h-9 rounded-2xl bg-brand-700 text-white grid place-items-center font-bold shadow-md"
+        >
+          S
+        </div>
+        <span class="font-bold text-lg tracking-tight">Sergeant</span>
+        <span
+          class="hidden sm:inline ml-2 text-xs uppercase tracking-wider text-brand-700 font-semibold"
+          >Pro</span
+        >
+      </a>
+      <a
+        href="#cta"
+        class="inline-flex items-center gap-2 bg-ink text-cream-50 text-sm font-semibold px-4 py-2 rounded-full hover:bg-stone-800 transition"
+      >
+        Хочу зекономити →
+      </a>
+    </header>
+
+    <!-- Hero -->
+    <section class="max-w-5xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16">
+      <div
+        class="inline-flex items-center gap-2 bg-coral-100 text-coral-600 text-xs sm:text-sm font-semibold px-3 py-1 rounded-full"
+      >
+        <span class="text-base">💸</span> SaaS-fatigue calculator
+      </div>
+      <h1
+        class="mt-4 text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]"
+      >
+        Прикинь, скільки ти платиш
+        <br />
+        за <span class="text-brand-700">5 додатків</span>, які не розмовляють.
+      </h1>
+      <p class="mt-5 text-base sm:text-lg text-stone-700 max-w-2xl">
+        Sergeant — один підпис, один контекст. Постав галочки на тому, чим
+        користуєшся, і дізнайся, скільки твій стек коштує тобі на рік — і
+        скільки залишиться у твоїй кишені, якщо переїхати.
+      </p>
+    </section>
+
+    <!-- Calculator -->
+    <section class="max-w-5xl mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
+      <div
+        class="rounded-3xl bg-white border border-stone-200 shadow-xl p-5 sm:p-8 grid lg:grid-cols-5 gap-6 sm:gap-8"
+      >
+        <!-- LEFT: app picker -->
+        <div class="lg:col-span-3 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h2 class="font-bold text-lg sm:text-xl">
+              Що у твоєму стеку прямо зараз?
+            </h2>
+            <div
+              class="inline-flex bg-stone-100 rounded-full p-1 text-xs font-semibold"
+            >
+              <button
+                onclick="setCurrency('UAH')"
+                id="btn-uah"
+                class="px-3 py-1 rounded-full bg-brand-700 text-white transition"
+              >
+                ₴ UAH
+              </button>
+              <button
+                onclick="setCurrency('USD')"
+                id="btn-usd"
+                class="px-3 py-1 rounded-full text-stone-600 transition"
+              >
+                $ USD
+              </button>
+            </div>
+          </div>
+
+          <ul class="space-y-2.5">
+            <!-- Items injected by data attributes; we'll render inline -->
+            <!-- YNAB -->
+            <li>
+              <input
+                type="checkbox"
+                id="app-ynab"
+                class="peer sr-only"
+                data-app="YNAB"
+                data-icon="💰"
+                data-cat="Бюджет"
+                data-usd="14.99"
+                checked
+              />
+              <label
+                for="app-ynab"
+                class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border-2 border-stone-200 peer-checked:border-brand-500 peer-checked:bg-brand-50 cursor-pointer transition min-h-[44px]"
+              >
+                <span
+                  class="check w-6 h-6 rounded-md border-2 border-stone-300 grid place-items-center text-sm shrink-0"
+                ></span>
+                <span class="text-2xl">💰</span>
+                <span class="flex-1">
+                  <span class="font-semibold block">YNAB</span>
+                  <span class="text-xs text-stone-500">Бюджет / фінанси</span>
+                </span>
+                <span class="num font-mono text-sm font-semibold text-stone-700"
+                  >$14.99/міс</span
+                >
+              </label>
+            </li>
+            <!-- MyFitnessPal -->
+            <li>
+              <input
+                type="checkbox"
+                id="app-mfp"
+                class="peer sr-only"
+                data-app="MyFitnessPal Premium"
+                data-icon="🥗"
+                data-cat="Калорії"
+                data-usd="9.99"
+                checked
+              />
+              <label
+                for="app-mfp"
+                class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border-2 border-stone-200 peer-checked:border-brand-500 peer-checked:bg-brand-50 cursor-pointer transition min-h-[44px]"
+              >
+                <span
+                  class="check w-6 h-6 rounded-md border-2 border-stone-300 grid place-items-center text-sm shrink-0"
+                ></span>
+                <span class="text-2xl">🥗</span>
+                <span class="flex-1">
+                  <span class="font-semibold block">MyFitnessPal Premium</span>
+                  <span class="text-xs text-stone-500">Підрахунок калорій</span>
+                </span>
+                <span class="num font-mono text-sm font-semibold text-stone-700"
+                  >$9.99/міс</span
+                >
+              </label>
+            </li>
+            <!-- Strong -->
+            <li>
+              <input
+                type="checkbox"
+                id="app-strong"
+                class="peer sr-only"
+                data-app="Strong"
+                data-icon="🏋️"
+                data-cat="Залі"
+                data-usd="4.99"
+                checked
+              />
+              <label
+                for="app-strong"
+                class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border-2 border-stone-200 peer-checked:border-brand-500 peer-checked:bg-brand-50 cursor-pointer transition min-h-[44px]"
+              >
+                <span
+                  class="check w-6 h-6 rounded-md border-2 border-stone-300 grid place-items-center text-sm shrink-0"
+                ></span>
+                <span class="text-2xl">🏋️</span>
+                <span class="flex-1">
+                  <span class="font-semibold block">Strong</span>
+                  <span class="text-xs text-stone-500">Силові тренування</span>
+                </span>
+                <span class="num font-mono text-sm font-semibold text-stone-700"
+                  >$4.99/міс</span
+                >
+              </label>
+            </li>
+            <!-- Habitica / Streaks -->
+            <li>
+              <input
+                type="checkbox"
+                id="app-habit"
+                class="peer sr-only"
+                data-app="Streaks / Habitica+"
+                data-icon="🎯"
+                data-cat="Звички"
+                data-usd="4.99"
+                checked
+              />
+              <label
+                for="app-habit"
+                class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border-2 border-stone-200 peer-checked:border-brand-500 peer-checked:bg-brand-50 cursor-pointer transition min-h-[44px]"
+              >
+                <span
+                  class="check w-6 h-6 rounded-md border-2 border-stone-300 grid place-items-center text-sm shrink-0"
+                ></span>
+                <span class="text-2xl">🎯</span>
+                <span class="flex-1">
+                  <span class="font-semibold block">Streaks / Habitica+</span>
+                  <span class="text-xs text-stone-500">Звички / routine</span>
+                </span>
+                <span class="num font-mono text-sm font-semibold text-stone-700"
+                  >$4.99/міс</span
+                >
+              </label>
+            </li>
+            <!-- ChatGPT Plus -->
+            <li>
+              <input
+                type="checkbox"
+                id="app-gpt"
+                class="peer sr-only"
+                data-app="ChatGPT Plus"
+                data-icon="🤖"
+                data-cat="AI-чат"
+                data-usd="20"
+                checked
+              />
+              <label
+                for="app-gpt"
+                class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border-2 border-stone-200 peer-checked:border-brand-500 peer-checked:bg-brand-50 cursor-pointer transition min-h-[44px]"
+              >
+                <span
+                  class="check w-6 h-6 rounded-md border-2 border-stone-300 grid place-items-center text-sm shrink-0"
+                ></span>
+                <span class="text-2xl">🤖</span>
+                <span class="flex-1">
+                  <span class="font-semibold block">ChatGPT Plus</span>
+                  <span class="text-xs text-stone-500"
+                    >AI-помічник (без контексту)</span
+                  >
+                </span>
+                <span class="num font-mono text-sm font-semibold text-stone-700"
+                  >$20/міс</span
+                >
+              </label>
+            </li>
+            <!-- Notion -->
+            <li>
+              <input
+                type="checkbox"
+                id="app-notion"
+                class="peer sr-only"
+                data-app="Notion Plus"
+                data-icon="📓"
+                data-cat="Нотатки"
+                data-usd="8"
+              />
+              <label
+                for="app-notion"
+                class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border-2 border-stone-200 peer-checked:border-brand-500 peer-checked:bg-brand-50 cursor-pointer transition min-h-[44px]"
+              >
+                <span
+                  class="check w-6 h-6 rounded-md border-2 border-stone-300 grid place-items-center text-sm shrink-0"
+                ></span>
+                <span class="text-2xl">📓</span>
+                <span class="flex-1">
+                  <span class="font-semibold block">Notion Plus</span>
+                  <span class="text-xs text-stone-500">Особисті нотатки</span>
+                </span>
+                <span class="num font-mono text-sm font-semibold text-stone-700"
+                  >$8/міс</span
+                >
+              </label>
+            </li>
+          </ul>
+
+          <p class="text-xs text-stone-500 mt-2">
+            * Ціни — з офіційних сторінок станом на травень 2026. Курс
+            фіксований: 1 USD = ₴40 (НБУ trailing 30d).
+          </p>
+        </div>
+
+        <!-- RIGHT: live counter -->
+        <aside
+          class="lg:col-span-2 rounded-2xl bg-gradient-to-br from-brand-700 to-brand-900 text-white p-6 sm:p-8 flex flex-col"
+        >
+          <div class="text-xs uppercase tracking-wider opacity-70">
+            Твій стек коштує
+          </div>
+          <div class="mt-2">
+            <span class="text-xs opacity-70">за місяць</span>
+            <div
+              id="stack-month"
+              class="num font-mono text-3xl sm:text-4xl font-bold mt-1"
+            >
+              ₴2 196
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="text-xs opacity-70">за рік</span>
+            <div
+              id="stack-year"
+              class="num font-mono text-4xl sm:text-5xl font-extrabold leading-none mt-1"
+            >
+              ₴26 352
+            </div>
+          </div>
+
+          <div class="mt-6 border-t border-white/20 pt-6">
+            <div class="text-xs uppercase tracking-wider opacity-70">
+              На Sergeant Pro
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="num font-mono text-3xl font-bold">₴99</span>
+              <span class="text-sm opacity-70">/міс · ₴1 188/рік</span>
+            </div>
+          </div>
+
+          <div
+            class="mt-6 rounded-2xl bg-lime-400 text-ink p-4 sm:p-5 shadow-inner"
+          >
+            <div class="text-xs uppercase font-bold tracking-wider opacity-80">
+              Економія за рік
+            </div>
+            <div
+              id="save-year"
+              class="num font-mono text-3xl sm:text-4xl font-extrabold mt-1 leading-none"
+            >
+              ₴25 164
+            </div>
+            <div id="save-equiv" class="mt-2 text-sm font-semibold">
+              ~ 12 заправок або 6 походів у Сільпо
+            </div>
+          </div>
+
+          <a
+            href="#cta"
+            class="mt-6 inline-flex items-center justify-center gap-2 bg-white text-brand-900 font-bold py-3 px-5 rounded-full hover:bg-cream-50 transition min-h-[44px]"
+          >
+            Хочу цю економію →
+          </a>
+        </aside>
+      </div>
+    </section>
+
+    <!-- What Sergeant replaces -->
+    <section class="max-w-5xl mx-auto px-5 sm:px-8 mt-14 sm:mt-20">
+      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-6">
+        Одна підписка → 5 модулів
+      </h2>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:border-brand-500 transition"
+        >
+          <div class="text-2xl">💰</div>
+          <div class="font-bold mt-2">Фінік</div>
+          <div class="text-xs text-stone-600">Бюджети, транзакції, ENV</div>
+          <div class="mt-3 text-xs text-stone-400 line-through">
+            YNAB $14.99
+          </div>
+        </div>
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:border-brand-500 transition"
+        >
+          <div class="text-2xl">🥗</div>
+          <div class="font-bold mt-2">Харчування</div>
+          <div class="text-xs text-stone-600">Калорії, макроси, фото-лог</div>
+          <div class="mt-3 text-xs text-stone-400 line-through">MFP $9.99</div>
+        </div>
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:border-brand-500 transition"
+        >
+          <div class="text-2xl">🏋️</div>
+          <div class="font-bold mt-2">Фізрук</div>
+          <div class="text-xs text-stone-600">Силові, кардіо, програми</div>
+          <div class="mt-3 text-xs text-stone-400 line-through">
+            Strong $4.99
+          </div>
+        </div>
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:border-brand-500 transition"
+        >
+          <div class="text-2xl">🎯</div>
+          <div class="font-bold mt-2">Рутина</div>
+          <div class="text-xs text-stone-600">Звички, ритуали, чек-листи</div>
+          <div class="mt-3 text-xs text-stone-400 line-through">
+            Streaks $4.99
+          </div>
+        </div>
+        <div
+          class="rounded-2xl bg-white border border-stone-200 p-5 hover:border-brand-500 transition"
+        >
+          <div class="text-2xl">🤖</div>
+          <div class="font-bold mt-2">HubChat AI</div>
+          <div class="text-xs text-stone-600">З контекстом 4-х модулів</div>
+          <div class="mt-3 text-xs text-stone-400 line-through">GPT $20</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section
+      id="cta"
+      class="max-w-3xl mx-auto px-5 sm:px-8 mt-14 sm:mt-20 mb-10"
+    >
+      <div
+        class="rounded-3xl bg-ink text-cream-50 p-6 sm:p-10 shadow-2xl text-center"
+      >
+        <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          Залиш email — пришлемо invite, як тільки відкриється спот
+        </h3>
+        <p class="mt-3 text-stone-300 text-sm sm:text-base">
+          Закрита бета · 7 днів Pro безкоштовно · картка не потрібна
+        </p>
+        <form
+          onsubmit="
+            event.preventDefault();
+            this.querySelector('button').innerHTML = '✓ Готово';
+            this.querySelector('button').classList.add(
+              'bg-lime-400',
+              'text-ink',
+            );
+            this.querySelector('input').disabled = true;
+          "
+          class="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+        >
+          <input
+            type="email"
+            required
+            placeholder="you@example.com"
+            class="flex-1 rounded-full bg-stone-800 text-cream-50 placeholder:text-stone-500 border border-stone-700 px-5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          />
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 hover:bg-brand-400 text-ink font-semibold px-6 py-3 transition min-h-[44px]"
+          >
+            Зарезервувати
+          </button>
+        </form>
+      </div>
+
+      <p class="mt-6 text-center text-xs text-stone-500">
+        Sergeant — local-first персональний хаб. UAH-first ціни, серверы у EU.
+      </p>
+    </section>
+
+    <script>
+      const RATE = 40; // 1 USD = ₴40
+      let currency = "UAH";
+
+      const fmt = (n, c) => {
+        const v = c === "USD" ? n / RATE : n;
+        const rounded = Math.round(v);
+        const sep = rounded
+          .toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f");
+        return (c === "USD" ? "$" : "₴") + sep;
+      };
+
+      function setCurrency(c) {
+        currency = c;
+        document
+          .getElementById("btn-uah")
+          .classList.toggle("bg-brand-700", c === "UAH");
+        document
+          .getElementById("btn-uah")
+          .classList.toggle("text-white", c === "UAH");
+        document
+          .getElementById("btn-uah")
+          .classList.toggle("text-stone-600", c !== "UAH");
+        document
+          .getElementById("btn-usd")
+          .classList.toggle("bg-brand-700", c === "USD");
+        document
+          .getElementById("btn-usd")
+          .classList.toggle("text-white", c === "USD");
+        document
+          .getElementById("btn-usd")
+          .classList.toggle("text-stone-600", c !== "USD");
+        recompute();
+      }
+
+      function recompute() {
+        const boxes = document.querySelectorAll(
+          'input[type="checkbox"][data-app]',
+        );
+        let monthUSD = 0;
+        boxes.forEach((b) => {
+          if (b.checked) monthUSD += parseFloat(b.dataset.usd);
+        });
+        const monthUAH = monthUSD * RATE;
+        const yearUAH = monthUAH * 12;
+        const sergeantYearUAH = 99 * 12;
+        const saveUAH = Math.max(0, yearUAH - sergeantYearUAH);
+
+        const stackMonth = document.getElementById("stack-month");
+        const stackYear = document.getElementById("stack-year");
+        const saveYear = document.getElementById("save-year");
+        const saveEquiv = document.getElementById("save-equiv");
+
+        stackMonth.textContent = fmt(monthUAH, currency);
+        stackYear.textContent = fmt(yearUAH, currency);
+        saveYear.textContent = fmt(saveUAH, currency);
+        [stackMonth, stackYear, saveYear].forEach((el) => {
+          el.classList.remove("animate-count-pop");
+          void el.offsetWidth;
+          el.classList.add("animate-count-pop");
+        });
+
+        // equivalence (UAH only)
+        if (currency === "UAH") {
+          const fuel = Math.round(saveUAH / 2100); // 1 fill ≈ ₴2100
+          const grocery = Math.round(saveUAH / 4000); // 1 grocery trip ≈ ₴4000
+          saveEquiv.textContent =
+            saveUAH > 0
+              ? `~ ${fuel} заправ${fuel === 1 ? "ка" : "ки"} або ${grocery} похід${grocery === 1 ? "" : "и"} у Сільпо`
+              : "Sergeant дешевший за твій поточний стек уже сам по собі";
+        } else {
+          saveEquiv.textContent =
+            saveUAH > 0
+              ? `~ ${Math.round(saveUAH / RATE)} \u00a0$ — eq. 1 month дороги ${Math.round(saveUAH / RATE / 60)} лекцій MasterClass`
+              : "Sergeant вже дешевший за твій стек";
+        }
+      }
+
+      document
+        .querySelectorAll('input[type="checkbox"][data-app]')
+        .forEach((b) => b.addEventListener("change", recompute));
+      recompute();
+    </script>
+  </body>
+</html>
