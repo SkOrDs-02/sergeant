@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import webpush from "web-push";
 import pool from "../../db.js";
+import { env } from "../../env/env.js";
 import { sendWebPush } from "../../lib/webpushSend.js";
 import { logger } from "../../obs/logger.js";
 import { pushSendsTotal } from "../../obs/metrics.js";
@@ -33,8 +34,13 @@ function recordDomainOutcome(outcome: string): void {
   }
 }
 
-const VAPID_PUBLIC = process.env["VAPID_PUBLIC_KEY"];
-const VAPID_PRIVATE = process.env["VAPID_PRIVATE_KEY"];
+// VAPID config read once at module-load via the zod-validated `env`
+// singleton (P2-1 з 2026-05-13-backend-performance-roast). Раніше це були
+// raw `process.env["VAPID_*"]`-риди, що обходили startup-assert і
+// породжували 15+ тестів, які patch-или process.env. Тепер — одна
+// точка входу; валідація в `apps/server/src/env/env.ts`.
+const VAPID_PUBLIC = env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE = env.VAPID_PRIVATE_KEY;
 
 /**
  * Resolve the VAPID contact. Some push services downgrade or drop requests
@@ -44,9 +50,9 @@ const VAPID_PRIVATE = process.env["VAPID_PRIVATE_KEY"];
  * the keys are configured.
  */
 export function resolveVapidEmail(): string | null {
-  const raw = process.env["VAPID_EMAIL"]?.trim();
+  const raw = env.VAPID_EMAIL?.trim();
   if (raw) return raw.startsWith("mailto:") ? raw : `mailto:${raw}`;
-  if (process.env["NODE_ENV"] === "production") {
+  if (env.NODE_ENV === "production") {
     logger.error({
       msg: "vapid_email_missing",
       hint: "Set VAPID_EMAIL (e.g. mailto:admin@your-domain) to avoid push deliverability issues",
@@ -262,19 +268,13 @@ interface PushSubscriptionRow {
  *
  * Tunable via `PUSH_SEND_TARGET_LIMIT` / `PUSH_SEND_TARGET_WINDOW_MS` for
  * incident response (raise during a legitimate broadcast, lower during
- * abuse), but the defaults match the hardening spec.
+ * abuse), but the defaults match the hardening spec. Значення реад-аються
+ * раз на module-load через zod-валідований `env` (P2-1). Silent
+ * fallback на default при `0` / відʼємному / NaN-input — семантика
+ * legacy-IIFE збережена в `env.ts`.
  */
-const PUSH_SEND_TARGET_LIMIT = (() => {
-  const raw = Number.parseInt(process.env["PUSH_SEND_TARGET_LIMIT"] ?? "", 10);
-  return Number.isFinite(raw) && raw > 0 ? raw : 10;
-})();
-const PUSH_SEND_TARGET_WINDOW_MS = (() => {
-  const raw = Number.parseInt(
-    process.env["PUSH_SEND_TARGET_WINDOW_MS"] ?? "",
-    10,
-  );
-  return Number.isFinite(raw) && raw > 0 ? raw : 60_000;
-})();
+const PUSH_SEND_TARGET_LIMIT = env.PUSH_SEND_TARGET_LIMIT;
+const PUSH_SEND_TARGET_WINDOW_MS = env.PUSH_SEND_TARGET_WINDOW_MS;
 
 /**
  * POST /api/push/send — надіслати push конкретному користувачу (внутрішній API).

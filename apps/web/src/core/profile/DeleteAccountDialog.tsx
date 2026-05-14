@@ -72,7 +72,7 @@ export function DeleteAccountDialog({
             type="password"
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
-            placeholder="Ваш пароль"
+            placeholder="Пароль"
             autoComplete="current-password"
           />
         </div>

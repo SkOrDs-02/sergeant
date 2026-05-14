@@ -19,31 +19,41 @@ export function ReminderPresets({
   return (
     <div className="space-y-2">
       <div className="text-xs text-subtle">Нагадування (необовʼязково)</div>
-      <div className="flex flex-wrap gap-1.5">
-        {REMINDER_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
-              JSON.stringify(times.slice().sort()) ===
-                JSON.stringify(preset.times.slice().sort())
-                ? C.chipOn
-                : C.chipOff,
-            )}
-            onClick={() =>
-              setHabitDraft((d) => ({
-                ...d,
-                reminderTimes: [...preset.times],
-                timeOfDay: preset.times[0] || "",
-              }))
-            }
-          >
-            {preset.label}
-          </button>
-        ))}
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="radiogroup"
+        aria-label="Нагадування"
+      >
+        {REMINDER_PRESETS.map((preset) => {
+          const active =
+            JSON.stringify(times.slice().sort()) ===
+            JSON.stringify(preset.times.slice().sort());
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              className={cn(
+                "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
+                active ? C.chipOn : C.chipOff,
+              )}
+              onClick={() =>
+                setHabitDraft((d) => ({
+                  ...d,
+                  reminderTimes: [...preset.times],
+                  timeOfDay: preset.times[0] || "",
+                }))
+              }
+            >
+              {preset.label}
+            </button>
+          );
+        })}
         <button
           type="button"
+          role="radio"
+          aria-checked={times.length === 0}
           className={cn(
             "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
             times.length === 0 ? C.chipOn : C.chipOff,

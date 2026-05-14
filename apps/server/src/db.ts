@@ -7,6 +7,7 @@ import { logger } from "./obs/logger.js";
 import { env } from "./env.js";
 import {
   dbErrorsTotal,
+  dbPoolAcquireDurationSeconds,
   dbQueryDurationMs,
   dbSlowPoolConnectsTotal,
   dbSlowQueriesTotal,
@@ -160,6 +161,11 @@ const instrumentedConnect = ((...args: Parameters<PoolConnect>) => {
   ) {
     return (result as Promise<PoolClient>).finally(() => {
       const ms = Number(process.hrtime.bigint() - start) / 1e6;
+      try {
+        dbPoolAcquireDurationSeconds.observe(ms / 1000);
+      } catch {
+        /* ignore */
+      }
       observeSlowConnect(ms);
     });
   }

@@ -140,6 +140,30 @@ export default [
         "warn",
         { allowlist: toastErrorActionAllowlist },
       ],
+      // `no-bare-fixed-inset-modal` — audit 2026-05-13 § F2 (P1):
+      // JSX elements that wear `fixed inset-0` overlay classNames but
+      // forget to announce themselves as dialog/presentation for
+      // assistive tech are flagged as warnings. Canonical modal
+      // primitives (Modal, Sheet, ConfirmDialog, InputDialog,
+      // KeyboardShortcutsModal, OnboardingWizard) own focus-trap +
+      // scroll-lock + a11y plumbing — they're opted out via the
+      // inline `allow` list. Existing offenders (QuickActionsMenu,
+      // StreakCelebration, FeatureSpotlight, …) stay as warnings
+      // until partII (file fixes + axe prop-tests). See
+      // docs/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.
+      "sergeant-design/no-bare-fixed-inset-modal": [
+        "warn",
+        {
+          allow: [
+            "apps/web/src/shared/components/ui/Modal.tsx",
+            "apps/web/src/shared/components/ui/Sheet.tsx",
+            "apps/web/src/shared/components/ui/ConfirmDialog.tsx",
+            "apps/web/src/shared/components/ui/InputDialog.tsx",
+            "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
+            "apps/web/src/core/onboarding/OnboardingWizard.tsx",
+          ],
+        },
+      ],
     },
   },
   // Stack-pulse PR-07 — body-size declarative policy.
@@ -667,6 +691,27 @@ export default [
     ],
     rules: {
       "sergeant-design/no-anthropic-key-in-logs": "error",
+    },
+  },
+  // PII-in-console guardrail (audit S2,
+  // `docs/audits/2026-05-13-security-observability-roast.md`). Forbids
+  // `console.{log,error,warn,info}` with a string / template literal
+  // matching `/email|phone|password|token|secret|auth/i` or an object
+  // literal whose (nested) keys match the same regex. Sentry's `console`
+  // integration, DevTools screen-share, and PostHog session-replay
+  // extensions all consume `console.*`, so PII leaks here propagate
+  // beyond the dev machine. Scoped to server + web production code
+  // (mirrors `no-anthropic-key-in-logs`); test files are exempt.
+  {
+    files: ["apps/server/src/**/*.{js,ts}", "apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/server/src/**/*.test.{js,ts}",
+      "apps/server/src/**/__tests__/**",
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-console-pii": "error",
     },
   },
   // Type-safety bypass guardrail — PR-6.E: forbid new `@ts-expect-error`,

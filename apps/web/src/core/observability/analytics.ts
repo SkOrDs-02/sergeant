@@ -16,8 +16,9 @@
 
 /** @typedef {{ eventName: string, payload: object, timestamp: string }} AnalyticsEvent */
 
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
+import { syncEventToMemory } from "./productMemorySync";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export { ANALYTICS_EVENTS };
@@ -53,7 +54,19 @@ export function trackEvent(
     timestamp: new Date().toISOString(),
   };
   try {
-    console.log("[analytics]", event);
+    // Контракт-документація вище забороняє передавати PII у payload, але
+    // captured-handler-и можуть зрегресити (audit S2 — захист у глибину).
+    // `console.log` ходить у:
+    //   - DevTools console (видно під час screen-share / paired support);
+    //   - Sentry breadcrumb-и (`@sentry/react` `console` integration on
+    //     by default);
+    //   - PostHog session-replay / Logpipe browser extensions.
+    // Тож логуємо клон з вирізаними PII-значеннями. Оригінальний `event`
+    // лишається незачепленим — він іде у localStorage ring-buffer і у
+    // PostHog як було.
+    const safeEvent = structuredClone(event);
+    scrubPII(safeEvent);
+    console.log("[analytics]", safeEvent);
     const current = safeReadLog();
     safeWriteLog([...current, event]);
     const analyticsWindow = window as Window & {
@@ -71,5 +84,16 @@ export function trackEvent(
     capturePostHogEvent(eventName, event.payload as Record<string, unknown>);
   } catch {
     /* PostHog transport never breaks trackEvent callers */
+  }
+  // PR-24 — PostHog → AI memory sync. Дзеркалить allowlist-events до
+  // server-side ingest queue як `source='product'`, щоб `/recall`
+  // мав behavioral context. Fire-and-forget, ніколи не throw-ить.
+  // Server-side allowlist authoritative (`PRODUCT_MEMORY_EVENTS`);
+  // тут — фільтр-shortcut, що пропускає лишні network-trip-и.
+  try {
+    syncEventToMemory(eventName, event.payload as Record<string, unknown>);
+  } catch {
+    /* AI memory sync best-effort — analytics call-site не повинен
+       впасти, якщо fetch() throw-нув на CSP/lock-tab edge-кейсі. */
   }
 }

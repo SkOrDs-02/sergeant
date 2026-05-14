@@ -1,15 +1,3 @@
-/**
- * @scaffolded — extracted from `AuthPage.tsx` by [a53e10b0](https://github.com/Skords-01/Sergeant/commit/a53e10b0)
- *   for Hard Rule #18 (max-lines: 600). [PR #2586](https://github.com/Skords-01/Sergeant/pull/2586)
- *   re-inlined AuthPage UX (autocomplete, password toggle, errors) and
- *   reverted the decomposition — `AuthPage.tsx` is now 693 LOC again.
- *   These helpers stay as the canonical re-decomposition target.
- *
- * @nextStep Re-wire `AuthPage.tsx` to import this module + the other
- *   sibling `auth/*` helpers; bring AuthPage.tsx back below 600 LOC.
- *   Tracked in 2026-05-13 dead-code roast § P1.6.
- */
-
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -33,10 +21,13 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
   const { achievement } = useCelebration();
   const [showPassword, setShowPassword] = useState(false);
 
-  const { register, submit, formState, isSubmitting, watch } = useApiForm<
-    RegisterValues,
-    boolean
-  >({
+  const {
+    register,
+    submit,
+    formState: { errors },
+    isSubmitting,
+    watch,
+  } = useApiForm<RegisterValues, boolean>({
     schema: registerSchema,
     defaultValues: { email: "", password: "", name: "" },
     onSubmit: async (values) => {
@@ -85,12 +76,13 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
           type="text"
           placeholder={"Твоє ім'я"}
           autoComplete="name"
-          error={!!formState.errors.name}
-          aria-invalid={!!formState.errors.name}
+          error={!!errors.name}
+          aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? "auth-name-error" : undefined}
           disabled={isSubmitting}
           {...register("name")}
         />
-        <FieldError message={formState.errors.name?.message} />
+        <FieldError id="auth-name-error" message={errors.name?.message} />
       </div>
 
       <div>
@@ -105,12 +97,15 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
           type="email"
           placeholder="email@example.com"
           autoComplete="email"
-          error={!!formState.errors.email}
-          aria-invalid={!!formState.errors.email}
+          // eslint-disable-next-line jsx-a11y/no-autofocus -- signup form: first required input (name is optional)
+          autoFocus
+          error={!!errors.email}
+          aria-invalid={!!errors.email}
+          aria-describedby={errors.email ? "auth-email-error" : undefined}
           disabled={isSubmitting}
           {...register("email")}
         />
-        <FieldError message={formState.errors.email?.message} />
+        <FieldError id="auth-email-error" message={errors.email?.message} />
       </div>
 
       <div>
@@ -126,9 +121,10 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
             type={showPassword ? "text" : "password"}
             placeholder="Мінімум 10 символів"
             autoComplete="new-password"
-            className="pr-10"
-            error={!!formState.errors.password}
-            aria-invalid={!!formState.errors.password}
+            className="pr-12"
+            error={!!errors.password}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "auth-pw-error" : undefined}
             disabled={isSubmitting}
             {...register("password")}
           />
@@ -137,7 +133,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
             onToggle={() => setShowPassword((v) => !v)}
           />
         </div>
-        <FieldError message={formState.errors.password?.message} />
+        <FieldError id="auth-pw-error" message={errors.password?.message} />
         <PasswordStrengthBar password={passwordValue} />
       </div>
 

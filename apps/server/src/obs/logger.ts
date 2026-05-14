@@ -65,6 +65,82 @@ export function currentLogLevel(): string {
 // імпортує `apps/server/src/sentry.ts` і mock-и в інтеграційних тестах.
 export const redactKeyNames = REDACT_KEY_NAMES;
 
+// Lower-cased set для O(1) case-insensitive lookup у `redactKeysRecursively`.
+// Імена ключів у `REDACT_KEY_NAMES` зберігають канонічну casing для grep-у,
+// але матч у логах — case-insensitive (наприклад, axios прокидає
+// `err.config.headers.Authorization` з великої літери).
+const REDACT_KEY_SET: ReadonlySet<string> = new Set(
+  REDACT_KEY_NAMES.map((k) => k.toLowerCase()),
+);
+
+/**
+ * S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
+ * рекурсивний non-mutating редактор, що ходить по всіх рівнях лог-обʼєкта
+ * і маскує значення ключів з `REDACT_KEY_NAMES` за іменем (case-insensitive).
+ *
+ * Раніше pino-конфіг покладався на статичні `*.password`, `*.*.password`
+ * patterns, які працювали тільки 1–2 рівні вглиб; `req.body.nested.user.password`
+ * (3 рівні) тихо потрапляв у Loki через axios `err.config.data` capture.
+ * Тепер цей walker викликається у `formatters.log` і покриває довільну глибину.
+ *
+ * Інваріанти:
+ *   - Non-mutating: повертає той самий reference, якщо нічого не змінилось;
+ *     новий обʼєкт/масив будується тільки коли реально треба замаскувати
+ *     поле. Це критично, бо pino передає сюди merged-обʼєкт, який ділить
+ *     nested-references із caller-обʼєктами — мутація би пошкодила бізнес-стан.
+ *   - Cycle-safe: `WeakSet` ловить self-referencing обʼєкти (`Error.cause`
+ *     chains, OTel span attributes), щоб walker не зациклився.
+ *   - Object-valued sensitive keys мапляться у `null`, щоб не лишати
+ *     структуру дочірніх полів (наприклад, `{ password: { hash: ... } }` →
+ *     `{ password: null }`); primitive-значення стають `"[redacted]"`.
+ */
+export function redactKeysRecursively(
+  value: unknown,
+  seen: WeakSet<object> = new WeakSet(),
+): unknown {
+  if (value == null || typeof value !== "object") return value;
+  if (seen.has(value as object)) return value;
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    let mutated = false;
+    const next: unknown[] = new Array<unknown>(value.length);
+    for (let i = 0; i < value.length; i++) {
+      const item = value[i];
+      const redacted = redactKeysRecursively(item, seen);
+      if (redacted !== item) mutated = true;
+      next[i] = redacted;
+    }
+    return mutated ? next : value;
+  }
+
+  const src = value as Record<string, unknown>;
+  let mutated = false;
+  const next: Record<string, unknown> = {};
+  for (const key of Object.keys(src)) {
+    const v = src[key];
+    if (REDACT_KEY_SET.has(key.toLowerCase())) {
+      next[key] = v != null && typeof v === "object" ? null : "[redacted]";
+      mutated = true;
+      continue;
+    }
+    const redacted = redactKeysRecursively(v, seen);
+    if (redacted !== v) mutated = true;
+    next[key] = redacted;
+  }
+  return mutated ? next : value;
+}
+
+// Explicit path-based redaction для documented sensitive-полів. Це defense-in-depth
+// поверх `formatters.log → redactKeysRecursively`: pino-fast-redact швидший за
+// recursive walk, тож для гарячих відомих path-ів (headers, body) лишаємо явну
+// конфігурацію. Нові sensitive-ключі додавай у `REDACT_KEY_NAMES` у
+// `packages/shared/src/lib/pii.ts` — recursive walker одразу їх покриє;
+// сюди потрібно дописувати тільки якщо path не матиметься за іменем
+// (наприклад, `req.headers["x-csrf-token"]` — ключ містить дефіс, але вже
+// у списку, тож достатньо). Старі статичні `*.password`, `*.*.password`,
+// `*.email`, `req.body.email`-варіанти видалено (S4 closed): рекурсивний
+// walker покриває їх детерміновано.
 export const redactPaths = [
   "req.headers.authorization",
   "req.headers.cookie",
@@ -96,13 +172,10 @@ export const redactPaths = [
   "signature",
   "dsn",
   "connectionString",
-  // M3 — provider-specific API keys у root + 1 рівень.
+  // M3 — provider-specific API keys у root.
   "groqKey",
   "anthropicKey",
   "voyageKey",
-  "*.groqKey",
-  "*.anthropicKey",
-  "*.voyageKey",
   // M3 — типові ділянки `req.body` для login/register flows. Зазвичай ми
   // НЕ логуємо body, але якщо хтось зробить `logger.error({ req })` через
   // pino-std-serializer, body буде включений — і ми хочемо його зачистити.
@@ -118,47 +191,10 @@ export const redactPaths = [
   "err.config.headers.Cookie",
   "err.config.headers.cookie",
   'err.config.headers["x-mono-webhook-secret"]',
-  // Wildcard-шляхи для типових 1-2 рівнів вкладеності (pino redact матчить
-  // wildcard рівно на одну глибину, тому потрібно явно прописати обидва).
-  // Ширша редакція (будь-яка глибина) робиться у `sentry.ts:scrubPII()`
-  // через `redactKeyNames`.
-  "*.password",
-  "*.token",
-  "*.apiKey",
-  "*.secret",
-  "*.clientSecret",
-  "*.privateKey",
-  "*.dsn",
-  "*.connectionString",
-  "*.*.password",
-  "*.*.token",
-  "*.*.apiKey",
-  "*.*.secret",
-  "*.*.clientSecret",
-  "*.*.privateKey",
-  // PII — емейл/телефон. Pino redact-wildcard матчиться рівно на одну
-  // глибину: `*.email` ловить `user.email` / `body.email` / `ctx.email`,
-  // але НЕ `req.body.email` (це 3 рівні: `req` → `body` → `email`).
-  // Тому 2-level wildcards + явні `req.body.*` / `res.body.*` шляхи
-  // додаються окремо. Round 17 — закриває гап для login/register/OTP
-  // flow-ів, де email/phone приходять як body на API і виходять
-  // як body у response (наприклад, `me`-endpoint, friend-pickers).
-  // Sentry-скрабер ловить ці ж ключі рекурсивно через `redactKeyNames`,
-  // тому за межами `req`/`res`/`body`-ієрархії покриття не страждає.
+  // PII — root-level fallback. Усі вкладені `*.email`, `req.body.email`,
+  // `result.user.email` рівні тепер покриваються `redactKeysRecursively`.
   "email",
   "phone",
-  "*.email",
-  "*.phone",
-  "*.*.email",
-  "*.*.phone",
-  "user.email",
-  "user.phone",
-  "body.email",
-  "body.phone",
-  "req.body.email",
-  "req.body.phone",
-  "res.body.email",
-  "res.body.phone",
 ];
 
 const usePretty = process.env["LOG_PRETTY"] === "1";
@@ -182,6 +218,19 @@ const pinoOptions: LoggerOptions = {
     // `level` як string замість числа — зручніше для grep у Railway.
     level(label) {
       return { level: label };
+    },
+    // S4 (audit §6.5) — рекурсивний редактор для довільної глибини.
+    // Pino `redact.paths` ловить лише статичні шляхи (1–2 рівні через
+    // `*.foo` / `*.*.foo`); `redactKeysRecursively` ходить по всіх
+    // рівнях merged-обʼєкта і маскує ключі з `REDACT_KEY_NAMES` за іменем.
+    // Це закриває гап для `req.body.nested.user.password` (3+ рівні) та
+    // axios `err.config.data` capture-ів.
+    log(obj) {
+      const redacted = redactKeysRecursively(obj);
+      // pino-fast-redact очікує object на виході; `redactKeysRecursively`
+      // зберігає форму (object → object, array → array), повертає той самий
+      // reference коли немає чого редагувати — алокацій нуль у hot path.
+      return redacted as Record<string, unknown>;
     },
   },
   mixin() {

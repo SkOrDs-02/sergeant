@@ -8,6 +8,7 @@ import {
   setModule,
 } from "../http/index.js";
 import { requirePlan } from "../modules/billing/requirePlan.js";
+import { buildEventSyncHandler } from "../modules/ai-memory/eventSyncRoute.js";
 import { ingestMemoryHandler } from "../modules/ai-memory/ingestRoute.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 
@@ -48,6 +49,16 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     requireSession(),
     requirePlan(pool, "pro"),
     asyncHandler(recallMemoryHandler),
+  );
+  // PR-24: PostHog → AI memory sync. Не вимагаємо pro-plan — behavioral
+  // events важливі для founder-recall на будь-якому tier-і (founder теж
+  // user-row, на free-tier у dev). Memory ingest сам перевіряє
+  // `AI_MEMORY_ENABLED`; per-user Voyage квоту обмежує
+  // `service.remember()`.
+  r.post(
+    "/api/ai-memory/event-sync",
+    requireSession(),
+    asyncHandler(buildEventSyncHandler(pool)),
   );
   return r;
 }

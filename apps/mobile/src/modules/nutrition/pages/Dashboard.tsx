@@ -27,6 +27,7 @@ import { hapticTap, toLocalISODate, type Macros } from "@sergeant/shared";
 import { Card } from "@/components/ui/Card";
 
 import { AddMealSheet, type MealSavePayload } from "../components/AddMealSheet";
+import { DailyPlanCard } from "../components/DailyPlanCard";
 import { MacroRing } from "../components/MacroRing";
 import { WaterTrackerCard } from "../components/WaterTrackerCard";
 import { WeekKcalChart } from "../components/WeekKcalChart";
@@ -87,7 +88,7 @@ export interface DashboardProps {
 
 export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const { nutritionLog, addMeal } = useNutritionLog();
-  const { prefs } = useNutritionPrefs();
+  const { prefs, updatePrefs } = useNutritionPrefs();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const handleSave = useCallback(
@@ -179,6 +180,14 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
           </View>
         )}
       </Card>
+
+      <DailyPlanCard
+        prefs={prefs}
+        updatePrefs={updatePrefs}
+        nutritionLog={nutritionLog}
+        selectedDate={today}
+        testID="nutrition-daily-plan-card"
+      />
 
       <Card testID="nutrition-week-card">
         <Text className="text-sm font-semibold text-fg mb-2 leading-none">

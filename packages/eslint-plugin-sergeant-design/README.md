@@ -285,6 +285,21 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 Канарка міграції на `react-router@7` ([initiative 0006](../../docs/initiatives/0006-frontend-routing-and-code-split.md)). Підсвічує hash-router callsite-и у `apps/web/src/modules/**`: імпорти з модулів, що містять `useHashRouter` / `useHashRoute` у шляху (включно з ре-експортом), іменовані `ImportSpecifier`-и `useHashRouter` / `useHashRoute`, прямі call-expression-и тих самих хуків і assignment-и `window.location.hash = ...` (та `location.hash = ...`). Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються — там legacy-shim навмисно мокаємо. Scope: тільки `apps/web/src/modules/**` (не `core/`, не `shared/`, не `apps/server/`). Severity: **warn** під час міграції, переходить у **error** після Phase 2 (per-domain route migration).
 
+### `sergeant-design/no-bare-fixed-inset-modal`
+
+Підсвічує JSX-елементи, що використовують overlay-className `fixed inset-0` (з опційним `z-*` / `pointer-events-*` сусідом), але не оголошують себе як dialog для assistive tech: на тому самому елементі немає `role="dialog"` / `role="alertdialog"` / `role="presentation"` АБО `aria-modal`. Канонічні модальні примітиви (`Modal`, `Sheet`, `ConfirmDialog`, `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`) інкапсулюють focus-trap + scroll-lock + a11y-атрибути всередині — вони у `options.allow`. Парсить `className`-літерали, template-літерали і аргументи `cn(...)` / `clsx(...)` / `classnames(...)` / `twMerge(...)`. Variable-resolved classNames навмисно поза скоупом. Audit: [`docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../../docs/audits/2026-05-13-web-frontend-ergonomics-roast.md) § F2. Severity: **warn** (поки відкриті legacy offender-и; partII — file fixes + axe prop-tests — окремий PR).
+
+```tsx
+// ❌ BAD — overlay без `role` / `aria-modal` на тому самому елементі
+<div className="fixed inset-0 z-50 bg-black/40" />
+<div className={cn("fixed inset-0", isOpen && "animate-in")} />
+
+// ✅ GOOD — інлайн a11y або канонічний примітив
+<div className="fixed inset-0 z-50" role="dialog" aria-modal="true" />
+<div className="fixed inset-0" role="presentation" />
+<Modal isOpen={open} onClose={close}>…</Modal>
+```
+
 ## Запуск тестів
 
 ```sh

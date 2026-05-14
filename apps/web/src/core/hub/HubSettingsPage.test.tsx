@@ -36,6 +36,9 @@ vi.mock("../settings/NotificationsSection", () => ({
 vi.mock("../settings/NutritionSection", () => ({
   NutritionSection: () => <section>Nutrition section</section>,
 }));
+vi.mock("../settings/PlanSection", () => ({
+  PlanSection: () => <section>Plan section</section>,
+}));
 vi.mock("../settings/RoutineSection", () => ({
   RoutineSection: () => <section>Routine section</section>,
 }));

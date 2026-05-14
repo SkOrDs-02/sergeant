@@ -32,7 +32,7 @@ export function JournalEntryCard({
     weekday: "short",
     day: "numeric",
     month: "short",
-    year: "2-digit",
+    year: "numeric",
   });
 
   // Cyrillic abbreviations matching the expanded labels («Енергія» / «Настрій»)

@@ -106,7 +106,7 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
   },
   {
     command: "ai_cost",
-    description: "AI spend rollup: today/week/month + budget + top endpoints",
+    description: "AI spend rollup; /ai_cost <N> — N-day trend (1..30)",
   },
   {
     command: "perf",
@@ -114,7 +114,7 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
   },
   {
     command: "openclaw",
-    description: "Debug snapshot: persona / WF / invocations / budget",
+    description: "Debug snapshot or whois <tg_id|@username> (founder DM)",
   },
   {
     command: "mute",

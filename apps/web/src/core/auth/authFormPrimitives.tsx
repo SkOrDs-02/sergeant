@@ -1,16 +1,5 @@
-/**
- * @scaffolded — extracted from `AuthPage.tsx` by [a53e10b0](https://github.com/Skords-01/Sergeant/commit/a53e10b0)
- *   for Hard Rule #18 (max-lines: 600). [PR #2586](https://github.com/Skords-01/Sergeant/pull/2586)
- *   re-inlined AuthPage UX (autocomplete, password toggle, errors) and
- *   reverted the decomposition — `AuthPage.tsx` is now 693 LOC again.
- *   These helpers stay as the canonical re-decomposition target.
- *
- * @nextStep Re-wire `AuthPage.tsx` to import this module + the other
- *   sibling `auth/*` helpers; bring AuthPage.tsx back below 600 LOC.
- *   Tracked in 2026-05-13 dead-code roast § P1.6.
- */
-
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 import { estimatePasswordStrength } from "@shared/lib/auth/passwordStrength";
 
 export function PasswordStrengthBar({ password }: { password: string }) {
@@ -56,55 +45,31 @@ export function PasswordVisibilityToggle({
   visible,
   onToggle,
 }: PasswordVisibilityToggleProps) {
+  // ≥44×44 hit-area (WCAG 2.5.5 / Apple HIG): icon 20px + p-3 (12px) на
+  // кожен бік → 44×44 інтерактивна площа. Сусідній Input має мати
+  // `pr-12` (48 px) — рівно ширина кнопки + 4 px відступу від краю.
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-label={visible ? "Приховати пароль" : "Показати пароль"}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
+      aria-label={visible ? "Сховати пароль" : "Показати пароль"}
+      aria-pressed={visible}
+      className="absolute inset-y-0 right-1 inline-flex items-center justify-center p-3 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-xl"
     >
-      {visible ? (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </svg>
-      ) : (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      )}
+      <Icon name={visible ? "eye-off" : "eye"} size="lg" />
     </button>
   );
 }
 
 interface FieldErrorProps {
+  id?: string;
   message: string | undefined;
 }
 
-export function FieldError({ message }: FieldErrorProps) {
+export function FieldError({ id, message }: FieldErrorProps) {
   if (!message) return null;
   return (
-    <p className="mt-1.5 text-meta text-error" role="alert">
+    <p id={id} className="mt-1.5 text-meta text-error" role="alert">
       {message}
     </p>
   );

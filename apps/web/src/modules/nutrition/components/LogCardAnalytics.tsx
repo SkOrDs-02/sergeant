@@ -73,7 +73,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
               {Math.round(Number(x.v) || 0)}
             </div>
             <div className="text-2xs text-subtle">
-              на {statsAvg.denom} активн. днів
+              на {statsSummary.daysWithAnyMacros} активн. днів
             </div>
           </div>
         ))}

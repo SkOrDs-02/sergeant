@@ -1,5 +1,5 @@
 /**
- * Stage 4b — coverage of the 17-shortcut catalog.
+ * Stage 4b — coverage of the 18-shortcut catalog (17 base + `forget` PR-23).
  *
  * Each shortcut is exercised against its `patterns` (we feed every regex a
  * canonical positive sample and one obvious negative) and its `render` path
@@ -16,6 +16,7 @@ import {
   buildsShortcut,
   decisionsShortcut,
   digestShortcut,
+  forgetShortcut,
   heartbeatShortcut,
   metricsShortcut,
   posthogShortcut,
@@ -53,8 +54,8 @@ function runShortcut(
 }
 
 describe("ALL_SHORTCUTS catalog", () => {
-  it("exposes exactly 17 shortcuts", () => {
-    expect(ALL_SHORTCUTS).toHaveLength(17);
+  it("exposes exactly 18 shortcuts", () => {
+    expect(ALL_SHORTCUTS).toHaveLength(18);
   });
 
   it("has unique slugs", () => {
@@ -192,6 +193,74 @@ describe("Slash command coverage", () => {
     });
     const result = await router.match("/recall founder OKRs Q2");
     expect(result?.response).toContain("q=founder OKRs Q2");
+  });
+
+  it("/forget id captures the memoryId", async () => {
+    const router = new ShortcutRouter({
+      shortcuts: [forgetShortcut],
+      executeTool: async (_name, params) =>
+        textResult(
+          `mode=${String(params["mode"])} mid=${String(params["memoryId"])}`,
+        ),
+    });
+    const result = await router.match("/forget id 123");
+    expect(result?.slug).toBe("forget");
+    expect(result?.response).toContain("mode=byId");
+    expect(result?.response).toContain("mid=123");
+  });
+
+  it("/forget query routes to previewQuery mode", async () => {
+    const router = new ShortcutRouter({
+      shortcuts: [forgetShortcut],
+      executeTool: async (_name, params) =>
+        textResult(
+          `mode=${String(params["mode"])} q=${String(params["query"])}`,
+        ),
+    });
+    const result = await router.match("/forget query founder OKRs");
+    expect(result?.response).toContain("mode=previewQuery");
+    expect(result?.response).toContain("q=founder OKRs");
+  });
+
+  it("/forget topic routes to byTopic mode", async () => {
+    const router = new ShortcutRouter({
+      shortcuts: [forgetShortcut],
+      executeTool: async (_name, params) =>
+        textResult(
+          `mode=${String(params["mode"])} t=${String(params["topic"])}`,
+        ),
+    });
+    const result = await router.match("/forget topic project-x");
+    expect(result?.response).toContain("mode=byTopic");
+    expect(result?.response).toContain("t=project-x");
+  });
+
+  it("/forget since routes to since mode", async () => {
+    const router = new ShortcutRouter({
+      shortcuts: [forgetShortcut],
+      executeTool: async (_name, params) =>
+        textResult(
+          `mode=${String(params["mode"])} d=${String(params["sinceDate"])}`,
+        ),
+    });
+    const result = await router.match("/forget since 2025-04-01");
+    expect(result?.response).toContain("mode=since");
+    expect(result?.response).toContain("d=2025-04-01");
+  });
+
+  it("/forget confirm routes to confirm mode з UUID", async () => {
+    const router = new ShortcutRouter({
+      shortcuts: [forgetShortcut],
+      executeTool: async (_name, params) =>
+        textResult(
+          `mode=${String(params["mode"])} t=${String(params["token"])}`,
+        ),
+    });
+    const result = await router.match(
+      "/forget confirm 12345678-1234-1234-1234-123456789abc",
+    );
+    expect(result?.response).toContain("mode=confirm");
+    expect(result?.response).toContain("12345678-1234-1234-1234-123456789abc");
   });
 
   it("/remind captures when + what", async () => {
