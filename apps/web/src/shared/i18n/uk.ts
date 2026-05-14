@@ -108,6 +108,11 @@ export const messages = {
     // — «Обери …». Snapshot-и `AddBudgetForm.test.tsx` оновлюються
     // разом з цим (тести закривають user-facing copy contract).
     tagNameRequired: "Введи назву тега",
+    // PR-058 (web): Reducer-level dedupe в `applyCreateTag` /
+    // `applyCreateCategory` (case-insensitive trim) — UI ловить
+    // `next === state` після `setRoutine` і показує цей copy у toast.
+    tagNameDuplicate: "Тег з такою назвою вже існує",
+    categoryNameDuplicate: "Категорія з такою назвою вже існує",
     goalNameRequired: "Введи назву цілі",
     goalAmountRequired: "Введи суму цілі більше 0",
     goalSavedNonNegative: "Відкладена сума не може бути від'ємною",

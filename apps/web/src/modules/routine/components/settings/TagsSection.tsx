@@ -57,7 +57,25 @@ export function TagsSection({
     defaultValues: { tagName: "" },
     onSubmit: async (values) => {
       if (!editingTagId) return;
-      setRoutine((s) => updateTag(s, editingTagId, values.tagName));
+      const trimmed = values.tagName.trim();
+      // PR-058 (web): дзеркало create-flow. Reducer-level `applyUpdateTag`
+      // тепер returns same state при conflict (інший тег уже носить таку
+      // назву) — без цього guard'у `onSuccess` би прогнав reset, edit-mode
+      // зник, а тег у списку лишився б зі старим імʼям без жодного UI
+      // signal. Throw тримає edit-mode активним, toast показує copy.
+      const conflict = routine.tags.some(
+        (t) =>
+          t.id !== editingTagId &&
+          t.name.trim().toLocaleLowerCase() === trimmed.toLocaleLowerCase(),
+      );
+      if (conflict) {
+        // Validation-feedback tone-table (docs/ui/toast-policy.md):
+        // «duplicate» — не fail-stop, а soft-fail в автовиправляємому
+        // стані (user перепринтує інше імʼя) — tone=warning без action.
+        toast.warning(messages.validation.tagNameDuplicate);
+        throw new Error(messages.validation.tagNameDuplicate);
+      }
+      setRoutine((s) => updateTag(s, editingTagId, trimmed));
     },
     onSuccess: () => {
       setEditingTagId(null);
@@ -95,7 +113,26 @@ export function TagsSection({
           variant="secondary"
           className="min-h-[44px] shrink-0 px-4"
           onClick={() => {
-            setRoutine((s) => createTag(s, tagDraft));
+            // PR-058 (web): пара з reducer-level dedupe у `applyCreateTag`.
+            // Якщо запис із такою trim-назвою (case-insensitive) уже існує,
+            // reducer повертає той самий state — раніше `setRoutine` тихо
+            // запускався без жодного UI feedback, тож натиск «+» вдруге
+            // підряд виглядав так, ніби нічого не відбулось (хоча в
+            // деяких попередніх версіях він навпаки створював дублікат).
+            // Тепер ми перехоплюємо обидва no-op кейси (порожнє + дублікат)
+            // в UI і показуємо точний copy у toast.
+            const trimmed = tagDraft.trim();
+            if (!trimmed) return;
+            const isDuplicate = routine.tags.some(
+              (t) =>
+                t.name.trim().toLocaleLowerCase() ===
+                trimmed.toLocaleLowerCase(),
+            );
+            if (isDuplicate) {
+              toast.warning(messages.validation.tagNameDuplicate);
+              return;
+            }
+            setRoutine((s) => createTag(s, trimmed));
             setTagDraft("");
           }}
         >

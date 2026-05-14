@@ -6,6 +6,7 @@ import { Card } from "@shared/components/ui/Card";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import {
   createCategory,
@@ -60,6 +61,26 @@ export function CategoriesSection({
                 variant="secondary"
                 className="min-h-[44px] min-w-0 sm:min-w-28"
                 onClick={() => {
+                  // PR-058 (web): пара до reducer-level dedupe в
+                  // `applyUpdateCategory`. Перевіряємо conflict в UI
+                  // (свіжий `routine`), дженжимо edit-mode активним
+                  // і показуємо toast — без цього save був би silent
+                  // no-op з побічним рефрешем входу.
+                  const trimmed = catDraft.name.trim();
+                  if (trimmed) {
+                    const conflict = routine.categories.some(
+                      (c) =>
+                        c.id !== editingCatId &&
+                        c.name.trim().toLocaleLowerCase() ===
+                          trimmed.toLocaleLowerCase(),
+                    );
+                    if (conflict) {
+                      // tone=warning per docs/ui/toast-policy.md
+                      // (validation-style soft-fail, no recovery action).
+                      toast.warning(messages.validation.categoryNameDuplicate);
+                      return;
+                    }
+                  }
                   setRoutine((s) =>
                     updateCategory(s, editingCatId, {
                       name: catDraft.name,
@@ -90,9 +111,22 @@ export function CategoriesSection({
               variant="secondary"
               className="min-h-[44px] w-full min-w-0 sm:w-auto sm:min-w-28"
               onClick={() => {
-                setRoutine((s) =>
-                  createCategory(s, catDraft.name, catDraft.emoji),
+                // PR-058 (web): дзеркало TagsSection. Reducer-level dedupe
+                // у `applyCreateCategory` повертає same state при
+                // дублікаті — ловимо це в UI і показуємо toast,
+                // щоб користувач розумів, чому «Додати» не працює.
+                const trimmed = catDraft.name.trim();
+                if (!trimmed) return;
+                const isDuplicate = routine.categories.some(
+                  (c) =>
+                    c.name.trim().toLocaleLowerCase() ===
+                    trimmed.toLocaleLowerCase(),
                 );
+                if (isDuplicate) {
+                  toast.warning(messages.validation.categoryNameDuplicate);
+                  return;
+                }
+                setRoutine((s) => createCategory(s, trimmed, catDraft.emoji));
                 setCatDraft({ name: "", emoji: "" });
               }}
             >

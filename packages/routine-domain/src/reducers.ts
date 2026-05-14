@@ -28,17 +28,34 @@ import type {
   Tag,
 } from "./types.js";
 
-/** Додає новий тег. Ігнорує порожнє імʼя. */
+/**
+ * Додає новий тег. Ігнорує порожнє імʼя. Також ігнорує дублікат
+ * (case-insensitive trim-порівняння з вже існуючими тегами) — раніше
+ * `applyCreateTag` сліпо пушив новий запис із новим `id`, через що у
+ * routine-settings можна було натиснути «+» двічі підряд й отримати
+ * двох однакових з виду тегів. Reducer тепер є джерелом істини для
+ * інваріанта «унікальна назва у scope='routine'»; UI-шари показують
+ * toast, щоб користувач розумів, що submit не пройшов.
+ */
 export function applyCreateTag(
   state: RoutineState,
   name: string,
 ): RoutineState {
   const n = (name || "").trim();
   if (!n) return state;
+  const key = n.toLocaleLowerCase();
+  if (state.tags.some((t) => t.name.trim().toLocaleLowerCase() === key)) {
+    return state;
+  }
   const t: Tag = { id: routineUid("tag"), name: n, scope: "routine" };
   return { ...state, tags: [...state.tags, t] };
 }
 
+/**
+ * Додає нову категорію. Окрім ignore порожнього імені, відсіює
+ * дублікати (case-insensitive trim-порівняння). Параллель до
+ * `applyCreateTag` — див. коментар вище.
+ */
 export function applyCreateCategory(
   state: RoutineState,
   name: string,
@@ -46,6 +63,10 @@ export function applyCreateCategory(
 ): RoutineState {
   const n = (name || "").trim();
   if (!n) return state;
+  const key = n.toLocaleLowerCase();
+  if (state.categories.some((c) => c.name.trim().toLocaleLowerCase() === key)) {
+    return state;
+  }
   const c: Category = {
     id: routineUid("cat"),
     name: n,
@@ -366,6 +387,16 @@ export function applyUpdateTag(
 ): RoutineState {
   const n = (newName || "").trim();
   if (!n) return state;
+  const key = n.toLocaleLowerCase();
+  // Reject rename, якщо інший тег вже носить таку назву — інакше у
+  // списку зʼявляться два візуально однакових теги. Тег зберігає
+  // власну назву (включно з оригінальним casing-ом) — це матчить
+  // поведінку `applyUpdateHabit`, де `normalizeHabit` повертає той
+  // самий `Habit` при no-op-патчі.
+  const conflict = state.tags.some(
+    (t) => t.id !== id && t.name.trim().toLocaleLowerCase() === key,
+  );
+  if (conflict) return state;
   return {
     ...state,
     tags: state.tags.map((t) => (t.id === id ? { ...t, name: n } : t)),
@@ -377,6 +408,17 @@ export function applyUpdateCategory(
   id: string,
   patch: { name?: string; emoji?: string },
 ): RoutineState {
+  // Дзеркало `applyUpdateTag`: відсіюємо conflict з іншою категорією за
+  // case-insensitive trim-назвою. Patch без `name` (наприклад, тільки
+  // emoji) обробляється як раніше — `nextName` лишається `null`.
+  const nextName = patch.name !== undefined ? (patch.name || "").trim() : null;
+  if (nextName) {
+    const key = nextName.toLocaleLowerCase();
+    const conflict = state.categories.some(
+      (c) => c.id !== id && c.name.trim().toLocaleLowerCase() === key,
+    );
+    if (conflict) return state;
+  }
   return {
     ...state,
     categories: state.categories.map((c) =>

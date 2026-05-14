@@ -86,6 +86,15 @@ describe("routine-domain/reducers — теги і категорії", () => {
       expect(second.tags.map((t) => t.name)).toEqual(["A", "B"]);
       expect(first.tags).toHaveLength(1);
     });
+
+    it("відхиляє дублікати за case-insensitive trim-порівнянням", () => {
+      // Reducer-level fix: «+» двічі підряд в routine-settings більше
+      // не створює дві однакові теги; UI ловить `next === state` для toast.
+      const a = applyCreateTag(baseState(), "Здоровʼя");
+      const dup = applyCreateTag(a, "  здоровʼя  ");
+      expect(dup).toBe(a);
+      expect(dup.tags.map((t) => t.name)).toEqual(["Здоровʼя"]);
+    });
   });
 
   describe("applyCreateCategory", () => {
@@ -114,6 +123,16 @@ describe("routine-domain/reducers — теги і категорії", () => {
       const next = applyCreateCategory(baseState(), "Спорт", "");
       expect(next.categories[0]!.emoji).toBeUndefined();
     });
+
+    it("відхиляє дублікати за case-insensitive trim-порівнянням (emoji не враховується)", () => {
+      // emoji-prefix знаходиться окремою властивістю (тип малюнка)
+      // — дублікат визначається лише по текстовій назві (вона є ключем
+      // для користувача при виборі у фільтрах).
+      const a = applyCreateCategory(baseState(), "Спорт", "🏋");
+      const dup = applyCreateCategory(a, "  спорт  ", "🏃");
+      expect(dup).toBe(a);
+      expect(dup.categories.map((c) => c.name)).toEqual(["Спорт"]);
+    });
   });
 
   describe("applyUpdateTag", () => {
@@ -137,6 +156,23 @@ describe("routine-domain/reducers — теги і категорії", () => {
       const s = applyCreateTag(baseState(), "A");
       const next = applyUpdateTag(s, "unknown", "B");
       expect(next.tags.map((t) => t.name)).toEqual(["A"]);
+    });
+
+    it("відхиляє rename якщо інший тег вже носить таку назву (case-insensitive)", () => {
+      const a = applyCreateTag(baseState(), "A");
+      const b = applyCreateTag(a, "B");
+      const idA = b.tags[0]!.id;
+      const next = applyUpdateTag(b, idA, "  b  ");
+      expect(next).toBe(b);
+      expect(next.tags.map((t) => t.name)).toEqual(["A", "B"]);
+    });
+
+    it("дозволяє self-rename (casing-only change того ж тега)", () => {
+      const s = applyCreateTag(baseState(), "Робота");
+      const id = s.tags[0]!.id;
+      const next = applyUpdateTag(s, id, "РОБОТА");
+      expect(next).not.toBe(s);
+      expect(next.tags[0]!.name).toBe("РОБОТА");
     });
   });
 
@@ -167,6 +203,21 @@ describe("routine-domain/reducers — теги і категорії", () => {
       const s = applyCreateCategory(baseState(), "X", "❓");
       const next = applyUpdateCategory(s, "unknown", { name: "Y" });
       expect(next.categories[0]!.name).toBe("X");
+    });
+
+    it("відхиляє rename якщо інша категорія вже носить таку назву (case-insensitive)", () => {
+      const a = applyCreateCategory(baseState(), "Спорт");
+      const b = applyCreateCategory(a, "Навчання");
+      const idSport = b.categories[0]!.id;
+      const next = applyUpdateCategory(b, idSport, { name: "  навчання  " });
+      expect(next).toBe(b);
+    });
+
+    it("emoji-only patch не блокується дуплікат-перевіркою", () => {
+      const s = applyCreateCategory(baseState(), "Спорт", "🏃");
+      const id = s.categories[0]!.id;
+      const next = applyUpdateCategory(s, id, { emoji: "🏋" });
+      expect(next.categories[0]!.emoji).toBe("🏋");
     });
   });
 
