@@ -21,6 +21,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 import prettier from "prettier";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +29,22 @@ const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const REGISTRY_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
 const MATRIX_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules-matrix.md");
+const AUTHOR_MAP_PATH = resolve(__dirname, "author-map.json");
+
+/** Resolve git committer email → @handle via author-map (mirrors bump-last-validated logic). */
+function resolveAuthorHandle() {
+  try {
+    const { emailToHandle } = JSON.parse(readFileSync(AUTHOR_MAP_PATH, "utf8"));
+    const email = execSync("git config user.email", { encoding: "utf8" })
+      .trim()
+      .toLowerCase();
+    if (email in emailToHandle) return emailToHandle[email];
+    const local = email.split("@")[0].replace(/^[0-9]+\+/, "");
+    return local || "Skords-01";
+  } catch {
+    return "Skords-01";
+  }
+}
 const RULES_DIR = resolve(REPO_ROOT, "docs/governance/rules");
 
 /**
@@ -236,7 +253,7 @@ export function renderMatrixRaw(
   lines.push("# Hard rules — enforcement matrix");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${today} by @Skords-01. **Next review:** ${nextReviewISO}.`,
+    `> **Last validated:** ${today} by @${resolveAuthorHandle()}. **Next review:** ${nextReviewISO}.`,
   );
   lines.push(`> **Status:** Active`);
   lines.push("");

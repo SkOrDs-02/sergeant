@@ -50,7 +50,7 @@ Decide one of:
 **Lines:** L102–L104, L155–L158, L228–L232
 
 **Description.**
-`fetchGoals` and `createGoalApi` both throw `new Error(\`list goals failed: ${res.status}\`)` and `new Error(data.error ?? "list goals not-ok")`. The `useMutation.onError` then stores `err.message` into `submitError`, which is rendered verbatim inside `<p role="alert" className="text-sm text-red-600">{submitError}</p>`. There is no sanitization layer, no friendly Ukrainian copy, and `data.error` may include server-side detail (DB constraint names, validation IDs, stack hints).
+`fetchGoals` and `createGoalApi` both throw `new Error(\`list goals failed: ${res.status}\`)`and`new Error(data.error ?? "list goals not-ok")`. The `useMutation.onError`then stores`err.message`into`submitError`, which is rendered verbatim inside `<p role="alert" className="text-sm text-red-600">{submitError}</p>`. There is no sanitization layer, no friendly Ukrainian copy, and `data.error` may include server-side detail (DB constraint names, validation IDs, stack hints).
 
 **Why it matters.**
 A leaked server-internal error string is a low-grade information disclosure (Hard Rule #21 spirit — Pino redaction is about logs, but the same posture applies to user-visible diagnostics). Worse, it teaches users that an error string is normal English-language text, undermining the rest of the UI's Ukrainian copy.
@@ -169,6 +169,7 @@ The `useEffect` driving `fireAndSchedule` depends on `[enabled]` (the prefs flag
 Quiet permission loss is a UX/observability dead zone. The user toggles "Нагадування увімкнено" inside the app, the browser silently denies, and nothing happens.
 
 **Recommendation.**
+
 1. Subscribe to `navigator.permissions.query({ name: "notifications" })` and re-render `enabled` whenever the state flips.
 2. When `enabled && permission !== "granted"`, render a banner inside the Stats panel offering a "Дозволити нагадування" CTA that re-requests permission.
 
@@ -181,7 +182,7 @@ Quiet permission loss is a UX/observability dead zone. The user toggles "Наг�
 **Lines:** L116–L117
 
 **Description.**
-`const title = \`${h.emoji || "✓"} ${h.name}\`` is passed straight to `reg.showNotification(title, …)`. The habit name is rendered to the OS lock screen and any connected smartwatch. Users with sensitive habits ("Therapy", "AA meeting", "Antidepressant") have no way to opt out of broadcasting their habit name to a shoulder-surfer.
+`const title = \`${h.emoji || "✓"} ${h.name}\``is passed straight to`reg.showNotification(title, …)`. The habit name is rendered to the OS lock screen and any connected smartwatch. Users with sensitive habits ("Therapy", "AA meeting", "Antidepressant") have no way to opt out of broadcasting their habit name to a shoulder-surfer.
 
 **Why it matters.**
 This is the same class as iOS Health/Apple Watch's "Show on Lock Screen" — even non-PII text can be sensitive in context. Discoverable via a hostile bystander.
@@ -475,35 +476,35 @@ return [...map.entries()].sort(([ah], [bh]) => {
 
 `X` = audited, no findings · number = findings count · `—` = not applicable.
 
-| Page                                                                             | sec | a11y | perf | ux | bug | rule | ts | tw | i18n | test | ai | lifecycle |
-| -------------------------------------------------------------------------------- | --- | ---- | ---- | -- | --- | ---- | -- | -- | ---- | ---- | -- | --------- |
-| `apps/web/src/pages/strategy/StrategyPage.tsx`                                   |  2  |  1   |  1   | 1  |  X  |  X   | 1  | 1  |  1   |  1   | 1  |    X      |
-| Routine module — `RoutineApp.tsx`                                                |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `RoutineApp.helpers.ts`                                         |  X  |  X   |  X   | X  |  1  |  X   | 1  | X  |  X   |  X   | X  |    X      |
-| Routine module — `RoutineActions.tsx`                                            |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `RoutineHeader.tsx`                                             |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `RoutineTimeline.tsx`                                           |  X  |  1   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `useRoutineAppState.ts`                                         |  X  |  X   |  X   | X  |  1  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `useRoutineDerivedData.ts`                                      |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `useRoutineTimeState.ts`                                        |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    X      |
-| Routine module — `components/RoutineCalendarPanel.tsx`                           |  X  |  1   |  X   | X  |  X  |  2   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/RoutineCalendarMonthGrid.tsx`                       |  X  |  X   |  X   | X  |  X  |  1   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/FizrukDayPlanSheet.tsx`                             |  X  |  X   |  X   | X  |  X  |  1   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/HabitDetailSheet.tsx`                               |  X  |  X   |  X   | X  |  1  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/HabitHeatmap.tsx`                                   |  X  |  X   |  X   | X  |  1  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/RoutineStatsPanel.tsx`                              |  X  |  X   |  X   | X  |  1  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/RoutineCalendarHero.tsx`                            |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/HabitQuickCreateDialog.tsx`                         |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/PushupsWidget.tsx`                                  |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/WeekDayStrip.tsx`                                   |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/settings/ActiveHabitsSection.tsx`                   |  X  |  X   |  X   | X  |  X  |  X   | 1  | X  |  X   |  1   | X  |    X      |
-| Routine module — `components/settings/{Categories,Archived,HabitForm,…}.tsx`     |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `context/RoutineCalendarContext.tsx`                            |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    X      |
-| Routine module — `hooks/useRoutineReminders.ts`                                  |  1  |  X   |  X   | X  |  2  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `hooks/useRoutineRoute.ts`                                      |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `hooks/useRoutinePushups.ts`, `useSqliteReadBoot.ts`, etc.      |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  1   | X  |    X      |
-| Routine module — `lib/routineConstants.ts`                                       |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    X      |
-| Routine module — `lib/{routineRouter,hubCalendarAggregate,…}.ts`                 |  X  |  X   |  X   | X  |  X  |  X   | X  | X  |  X   |  X   | X  |    X      |
+| Page                                                                         | sec | a11y | perf | ux  | bug | rule | ts  | tw  | i18n | test | ai  | lifecycle |
+| ---------------------------------------------------------------------------- | --- | ---- | ---- | --- | --- | ---- | --- | --- | ---- | ---- | --- | --------- |
+| `apps/web/src/pages/strategy/StrategyPage.tsx`                               | 2   | 1    | 1    | 1   | X   | X    | 1   | 1   | 1    | 1    | 1   | X         |
+| Routine module — `RoutineApp.tsx`                                            | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `RoutineApp.helpers.ts`                                     | X   | X    | X    | X   | 1   | X    | 1   | X   | X    | X    | X   | X         |
+| Routine module — `RoutineActions.tsx`                                        | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `RoutineHeader.tsx`                                         | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `RoutineTimeline.tsx`                                       | X   | 1    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `useRoutineAppState.ts`                                     | X   | X    | X    | X   | 1   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `useRoutineDerivedData.ts`                                  | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `useRoutineTimeState.ts`                                    | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | X         |
+| Routine module — `components/RoutineCalendarPanel.tsx`                       | X   | 1    | X    | X   | X   | 2    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/RoutineCalendarMonthGrid.tsx`                   | X   | X    | X    | X   | X   | 1    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/FizrukDayPlanSheet.tsx`                         | X   | X    | X    | X   | X   | 1    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/HabitDetailSheet.tsx`                           | X   | X    | X    | X   | 1   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/HabitHeatmap.tsx`                               | X   | X    | X    | X   | 1   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/RoutineStatsPanel.tsx`                          | X   | X    | X    | X   | 1   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/RoutineCalendarHero.tsx`                        | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/HabitQuickCreateDialog.tsx`                     | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/PushupsWidget.tsx`                              | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/WeekDayStrip.tsx`                               | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `components/settings/ActiveHabitsSection.tsx`               | X   | X    | X    | X   | X   | X    | 1   | X   | X    | 1    | X   | X         |
+| Routine module — `components/settings/{Categories,Archived,HabitForm,…}.tsx` | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `context/RoutineCalendarContext.tsx`                        | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | X         |
+| Routine module — `hooks/useRoutineReminders.ts`                              | 1   | X    | X    | X   | 2   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `hooks/useRoutineRoute.ts`                                  | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `hooks/useRoutinePushups.ts`, `useSqliteReadBoot.ts`, etc.  | X   | X    | X    | X   | X   | X    | X   | X   | X    | 1    | X   | X         |
+| Routine module — `lib/routineConstants.ts`                                   | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | X         |
+| Routine module — `lib/{routineRouter,hubCalendarAggregate,…}.ts`             | X   | X    | X    | X   | X   | X    | X   | X   | X    | X    | X   | X         |
 
 > Notes on the matrix:
 >

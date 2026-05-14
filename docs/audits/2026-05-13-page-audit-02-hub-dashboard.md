@@ -28,9 +28,9 @@ Hook `useReportData` читає інпути напряму з `localStorage` ч
 ```typescript
 // HubReports.tsx
 const rawFizrukWorkouts = safeReadStringLS("fizruk_workouts_v1");
-const rawFinykCache     = safeReadLS("finyk_tx_cache", null);
-const rawRoutineState   = safeReadLS("hub_routine_v1", null);
-const rawNutritionLog   = safeReadLS("nutrition_log_v1", {});
+const rawFinykCache = safeReadLS("finyk_tx_cache", null);
+const rawRoutineState = safeReadLS("hub_routine_v1", null);
+const rawNutritionLog = safeReadLS("nutrition_log_v1", {});
 ```
 
 Це обходить `packages/shared/src/lib/storageKeys.ts` — `STORAGE_KEYS.FIZRUK_WORKOUTS`, `STORAGE_KEYS.FINYK_TX_CACHE`, `STORAGE_KEYS.HUB_ROUTINE`, `STORAGE_KEYS.NUTRITION_LOG`. Реєстр містить додатковий метадані (deprecated-маркери, dual-write coverage), тож ключі тут — це source-of-truth для міграцій. Окрема дуплікація `TX_CACHE_LS_KEY = "finyk_tx_cache"` живе також у `useFinykHubPreview.ts:20`.
@@ -44,9 +44,9 @@ const rawNutritionLog   = safeReadLS("nutrition_log_v1", {});
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 const rawFizrukWorkouts = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
-const rawFinykCache     = safeReadLS(STORAGE_KEYS.FINYK_TX_CACHE, null);
-const rawRoutineState   = safeReadLS(STORAGE_KEYS.HUB_ROUTINE, null);
-const rawNutritionLog   = safeReadLS(STORAGE_KEYS.NUTRITION_LOG, {});
+const rawFinykCache = safeReadLS(STORAGE_KEYS.FINYK_TX_CACHE, null);
+const rawRoutineState = safeReadLS(STORAGE_KEYS.HUB_ROUTINE, null);
+const rawNutritionLog = safeReadLS(STORAGE_KEYS.NUTRITION_LOG, {});
 ```
 
 Те саме у `useFinykHubPreview.ts:20`: `STORAGE_KEYS.FINYK_TX_CACHE`. Додати `eslint-no-restricted-syntax` правило, що ловить string-literal `"fizruk_workouts_v1"|"finyk_tx_cache"|…`.
@@ -68,8 +68,10 @@ const rawNutritionLog   = safeReadLS(STORAGE_KEYS.NUTRITION_LOG, {});
   onClick={() => setSelected((s) => (s === i ? null : i))}
   className="flex-1 flex items-end justify-center min-w-0 group"
 >
-  <div className={cn("w-full rounded-t-md ...", colorClass)}
-       style={{ height: `${pct}%` }} />
+  <div
+    className={cn("w-full rounded-t-md ...", colorClass)}
+    style={{ height: `${pct}%` }}
+  />
 </button>
 ```
 
@@ -125,7 +127,10 @@ useEffect(() => {
     window.removeEventListener("storage", onBump);
   };
 }, []);
-const data = useMemo(() => aggregateReport(period, offset, inputs), [period, offset, bumpKey, /* … */]);
+const data = useMemo(
+  () => aggregateReport(period, offset, inputs),
+  [period, offset, bumpKey /* … */],
+);
 ```
 
 Writers (Fizruk-save, Nutrition-meal-add, Routine-toggle, Finyk-tx-save) уже мають місця інвалідації RQ — додати `window.dispatchEvent(new Event("hub-storage-updated"))` поряд.
@@ -400,15 +405,18 @@ const entryCount = useMemo(() => countRealEntries(localStorageStore), [tick]);
 **Recommendation.**
 
 ```tsx
-{import.meta.env.DEV ? (
-  <pre className="text-xs text-danger overflow-auto">
-    {this.state.error.message}
-  </pre>
-) : (
-  <p className="text-xs text-muted">
-    Сталась внутрішня помилка. Спробуй оновити сторінку або повернутись до головної.
-  </p>
-)}
+{
+  import.meta.env.DEV ? (
+    <pre className="text-xs text-danger overflow-auto">
+      {this.state.error.message}
+    </pre>
+  ) : (
+    <p className="text-xs text-muted">
+      Сталась внутрішня помилка. Спробуй оновити сторінку або повернутись до
+      головної.
+    </p>
+  );
+}
 ```
 
 Зберегти повний message у Sentry (вже робиться через `captureException`), а юзеру показувати тільки санітизовану строку.
@@ -634,12 +642,11 @@ brand: { ... },
 
 ```typescript
 const raw = safeReadLS<unknown[] | { txs?: unknown[] }>("finyk_tx_cache", null);
-const txList =
-  Array.isArray(raw)
-    ? (raw as Parameters<typeof calcFinykSpendingByDate>[0])
-    : Array.isArray(raw?.txs)
-      ? raw!.txs
-      : [];
+const txList = Array.isArray(raw)
+  ? (raw as Parameters<typeof calcFinykSpendingByDate>[0])
+  : Array.isArray(raw?.txs)
+    ? raw!.txs
+    : [];
 ```
 
 `raw?.txs` уже narrow-ить `raw` (якщо не null/undefined, він — об'єкт). Заплямувати `raw!.txs` після `Array.isArray(raw?.txs)` — формально redundant: TS вже знає, що `raw` not nullable у цій гілці. `!` тут шум, але не bug.
@@ -651,12 +658,10 @@ Code-style, не функціональна. Видимий маркер обх�
 
 ```typescript
 const isWrappedShape = (v: unknown): v is { txs: unknown[] } =>
-  typeof v === "object" && v !== null && Array.isArray((v as { txs?: unknown }).txs);
-const txList = Array.isArray(raw)
-  ? raw
-  : isWrappedShape(raw)
-    ? raw.txs
-    : [];
+  typeof v === "object" &&
+  v !== null &&
+  Array.isArray((v as { txs?: unknown }).txs);
+const txList = Array.isArray(raw) ? raw : isWrappedShape(raw) ? raw.txs : [];
 ```
 
 ---
@@ -737,7 +742,10 @@ const trackedRef = useRef(false);
 useEffect(() => {
   if (trackedRef.current) return;
   trackedRef.current = true;
-  trackEvent(ANALYTICS_EVENTS.CROSS_MODULE_PREVIEW_SHOWN, { source: sourceModule, target: copy.targetModule });
+  trackEvent(ANALYTICS_EVENTS.CROSS_MODULE_PREVIEW_SHOWN, {
+    source: sourceModule,
+    target: copy.targetModule,
+  });
 }, [sourceModule, copy.targetModule]);
 ```
 
@@ -811,6 +819,7 @@ Test coverage gap для одного з найскладніших компон
 
 **Recommendation.**
 Додати `HubReports.test.tsx` із:
+
 - Render-smoke (mounting не падає);
 - Period switcher (week ↔ month) → range у заголовку оновлюється;
 - StatCard collapsible toggling;
@@ -831,6 +840,7 @@ Test coverage gap для одного з найскладніших компон
 
 **Recommendation.**
 Додати `ErrorBoundary.test.tsx`:
+
 - Throw синтетичний chunk-load error → перевірити, що cooldown-flag встановлено;
 - Throw generic error → перевірити `requestId` extraction;
 - Reset → перевірити, що Sentry breadcrumb додано.
@@ -839,31 +849,31 @@ Test coverage gap для одного з найскладніших компон
 
 ## Per-page coverage matrix
 
-| Page | sec | a11y | perf | ux | bug | rule | ts | tw | i18n | test | ai | lifecycle |
-| ---- | --- | ---- | ---- | -- | --- | ---- | -- | -- | ---- | ---- | -- | --------- |
-| App.tsx | X | X | 1 (F19) | X | X | X | X | X | X | 1 (F24) | X | X |
-| app/router.tsx | X | X | X | X | X | X | X | X | X | X | X | X |
-| ErrorBoundary.tsx | X | X | X | X | X | X | X | X | X | 1 (F24) | X | X |
-| ModuleErrorBoundary.tsx | 1 (F11) | X | X | X | X | X | X | X | X | X | X | X |
-| hub/HubDashboard.tsx | X | X | X | X | X | X | X | X | X | X | X | X |
-| hub/HubHeroBlock.tsx | X | X | X | X | X | X | X | X | X | X | X | X |
-| hub/HubInsightsBlock.tsx | X | X | X | X | X | X | X | X | X | X | X | X |
-| hub/HubInsightsPanel.tsx | X | X | X | X | X | 1 (F9) | 1 (F22) | X | X | X | X | X |
-| hub/HubReports.tsx | X | 2 (F2, F4) | X | 1 (F7) | 2 (F3, F6) | 2 (F1, F16) | 1 (F18) | 1 (F5) | X | 1 (F23) | X | X |
-| hub/HubModulesGrid.tsx | X | X | X | X | X | 1 (F13) | X | X | X | X | X | X |
-| hub/ValueProgressBar.tsx | X | X | X | X | X | X | X | X | X | X | X | X |
-| hub/CrossModulePreview.tsx | X | X | X | X | 1 (F20) | X | X | X | X | X | X | X |
-| hub/useHubDashboardState.ts | X | X | 1 (F8) | X | X | X | X | X | X | X | X | X |
-| hub/useFinykHubPreview.ts | X | X | X | X | X | 1 (F21) | X | X | X | X | X | X |
-| hub/hubReports.aggregation.ts | X | — | X | X | X | X | 1 (F15-related) | — | X | X | X | X |
-| hub/hub.types.ts | X | — | — | — | — | X | X | — | — | — | — | X |
-| hub/dashboard/adaptiveSort.ts | X | — | X | X | X | X | 1 (F15) | — | X | X | X | X |
-| hub/dashboard/dashboardStore.ts | X | — | X | X | X | X | X | — | X | X | X | X |
-| hub/dashboard/moduleConfigs.tsx | X | X | X | X | X | X | X | X | X | X | X | X |
-| hub/dashboard/useMondayAutoDigest.ts | X | — | X | X | 1 (F12) | X | X | — | X | X | X | X |
-| hub/dashboard/BentoCard.tsx | X | 1 (F14) | X | X | X | X | X | X | X | X | X | X |
-| hub/dashboard/dashboardCards.tsx | X | X | 1 (F10) | X | X | X | 1 (F15-related) | 1 (F17) | X | X | X | X |
-| lib/useRoutePrefetch.ts | X | — | X | X | X | X | X | — | X | X | X | X |
+| Page                                 | sec     | a11y       | perf    | ux     | bug        | rule        | ts              | tw      | i18n | test    | ai  | lifecycle |
+| ------------------------------------ | ------- | ---------- | ------- | ------ | ---------- | ----------- | --------------- | ------- | ---- | ------- | --- | --------- |
+| App.tsx                              | X       | X          | 1 (F19) | X      | X          | X           | X               | X       | X    | 1 (F24) | X   | X         |
+| app/router.tsx                       | X       | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| ErrorBoundary.tsx                    | X       | X          | X       | X      | X          | X           | X               | X       | X    | 1 (F24) | X   | X         |
+| ModuleErrorBoundary.tsx              | 1 (F11) | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/HubDashboard.tsx                 | X       | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/HubHeroBlock.tsx                 | X       | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/HubInsightsBlock.tsx             | X       | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/HubInsightsPanel.tsx             | X       | X          | X       | X      | X          | 1 (F9)      | 1 (F22)         | X       | X    | X       | X   | X         |
+| hub/HubReports.tsx                   | X       | 2 (F2, F4) | X       | 1 (F7) | 2 (F3, F6) | 2 (F1, F16) | 1 (F18)         | 1 (F5)  | X    | 1 (F23) | X   | X         |
+| hub/HubModulesGrid.tsx               | X       | X          | X       | X      | X          | 1 (F13)     | X               | X       | X    | X       | X   | X         |
+| hub/ValueProgressBar.tsx             | X       | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/CrossModulePreview.tsx           | X       | X          | X       | X      | 1 (F20)    | X           | X               | X       | X    | X       | X   | X         |
+| hub/useHubDashboardState.ts          | X       | X          | 1 (F8)  | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/useFinykHubPreview.ts            | X       | X          | X       | X      | X          | 1 (F21)     | X               | X       | X    | X       | X   | X         |
+| hub/hubReports.aggregation.ts        | X       | —          | X       | X      | X          | X           | 1 (F15-related) | —       | X    | X       | X   | X         |
+| hub/hub.types.ts                     | X       | —          | —       | —      | —          | X           | X               | —       | —    | —       | —   | X         |
+| hub/dashboard/adaptiveSort.ts        | X       | —          | X       | X      | X          | X           | 1 (F15)         | —       | X    | X       | X   | X         |
+| hub/dashboard/dashboardStore.ts      | X       | —          | X       | X      | X          | X           | X               | —       | X    | X       | X   | X         |
+| hub/dashboard/moduleConfigs.tsx      | X       | X          | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/dashboard/useMondayAutoDigest.ts | X       | —          | X       | X      | 1 (F12)    | X           | X               | —       | X    | X       | X   | X         |
+| hub/dashboard/BentoCard.tsx          | X       | 1 (F14)    | X       | X      | X          | X           | X               | X       | X    | X       | X   | X         |
+| hub/dashboard/dashboardCards.tsx     | X       | X          | 1 (F10) | X      | X          | X           | 1 (F15-related) | 1 (F17) | X    | X       | X   | X         |
+| lib/useRoutePrefetch.ts              | X       | —          | X       | X      | X          | X           | X               | —       | X    | X       | X   | X         |
 
 > Legend: X = audited, no findings · число = кількість findings на цій сторінці у цій перспективі · — = не застосовно для цього файлу (наприклад, a11y у pure-data модулі).
 
