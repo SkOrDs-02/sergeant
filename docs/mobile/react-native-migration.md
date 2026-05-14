@@ -518,6 +518,21 @@ Per module — які файли `apps/web` переносяться і в що 
   тож рерун ідемпотентний. Помилки `402`/`429` → інлайн «Перевищено
   AI-квоту», `network` → «Немає звʼязку». Тести —
   `apps/mobile/src/modules/nutrition/pages/__tests__/Shopping.generate.test.tsx`.
+- **DailyPlan card (Partially Done — Phase 7 PR 1):**
+  - `DailyPlanCard.tsx` — root card на Dashboard з goal-inputs (kcal /
+    Б/Ж/В), preset-chips, macro-ratio bar, plan-vs-actual progress bar,
+    warnings (over-budget, дефіцити, range), reset двійним tap-ом.
+  - `DailyPlanGoalSelectors.tsx` — 3 пресети (cutting / maintenance /
+    bulking). TDEE-розрахунок відкладено (нема `useBiometrics` у RN).
+  - `DailyPlanMacros.tsx` — `MacroRatioBar` + `MacroBadge`.
+  - `DailyPlanMealRow.tsx` — AI-план прийому: `+ Журнал`, `↻ Замінити`.
+  - `DailyPlanWarnings.tsx` — `MacroKcalWarning`, `MissingMacrosHint`,
+    `GoalRangeWarning`. Inline UA i18n (нема мобільного i18n-словника).
+  - Pure-validation logic: `@sergeant/nutrition-domain` —
+    `calcMacroKcalMismatch`, `calcGoalRangeIssues`, `GOAL_BOUNDS`.
+  - **Ще не портовано:** AI-генерація денного / тижневого плану (нема
+    mobile-хука `useNutritionRemoteActions`), TDEE з біометрії, FTUX
+    first-run hint banner.
 - **TODO:** weekplan-джерело для shopping-list — мобільний клієнт ще
   не зберігає `weekPlan` локально (web-only `useNutritionUiState`).
   Доки week-plan не персиститься в MMKV/SQLite, у UI лишається

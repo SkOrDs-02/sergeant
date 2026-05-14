@@ -1,7 +1,7 @@
 # PR-18: Detox path-trigger пропускає server-shape changes
 
-> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** **Closed (2026-05-14)** — path-trigger у `detox-ios.yml` + `detox-android.yml` розширено (server routes + serializers + migrations); CONTRIBUTING.md документує новий contract. Scope `lint:api-client` зведено до існуючих gate-ів `api:check-openapi` / `api:check-openapi-types` (див. § Implementation).
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Status:** In progress — Detox iOS + Android `paths` extended to include `apps/server/src/routes/**` + `apps/server/src/migrations/**` (the actual server layout — there is no `apps/server/src/modules/**/*.routes.ts` tree as the original card assumed). CONTRIBUTING.md updated. The `scripts/check-api-client-coverage.mjs` drift detector + `lint:api-client` CI gate are deferred to a follow-up: response Zod schemas live in `@sergeant/shared` and are imported into the per-domain routers in `apps/server/src/routes/*.ts`, not exported from a uniform `<X>.routes.ts` module — designing the drift detector against the real shape needs a separate ADR.
 
 |                    |                                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------------- |

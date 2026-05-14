@@ -52,7 +52,7 @@
 | `docs/planning/sprint-roadmap-q2q3-2026.md:374` | Workflow link замінено на текст із поміткою **planned**                                         |
 | `AGENTS.md:117,123,129`                         | Performance budgets рядок переписано: workflow planned, локально через `pnpm lighthouse`        |
 
-**Action: Add (recommended P2)** — створити `.github/workflows/lighthouse-ci.yml` із `pull_request` тригером, `warn`-only severity (як описано у [`docs/planning/sprint-roadmap-q2q3-2026.md` § T5](../planning/sprint-roadmap-q2q3-2026.md)). Не в цьому PR — поза скоупом «documentation hygiene».
+**Status:** ✅ Closed in `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726) — `.github/workflows/lighthouse-ci.yml` зашиплений як `pull_request` gate з `warn`-only Lighthouse thresholds.
 
 ### P0-3. `useHashRoute.ts` ghost reference ✓
 
@@ -99,7 +99,7 @@
 
 ### P1-3. `.github/workflows/lighthouse-ci.yml` follow-up
 
-Виокремити у окрему ініціативу: створити `lighthouse-ci.yml` workflow + закрити T5 (зараз `🚧 Local-only` у тех-боргу sprint-roadmap). Workflow `warn`-only severity → tightening до `error` після baseline.
+✅ Closed in `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726): `lighthouse-ci.yml` workflow зашиплений. Залишок поза цим roast-ом — future tightening thresholds до `error` після baseline.
 
 ## P2 — long-term (не блокує)
 
@@ -109,7 +109,7 @@
 
 ### P2-2. Knip respects-scaffolded edge case
 
-[`scripts/knip-respects-scaffolded.mjs`](../../scripts/knip-respects-scaffolded.mjs) фільтрує `@scaffolded`, але не `@experimental` (рідкісно вживаний lifecycle marker). Низький пріоритет: 0 файлів зараз із `@experimental`.
+✅ Closed (already covered): [`scripts/knip-respects-scaffolded.mjs`](../../scripts/knip-respects-scaffolded.mjs) `MARKER_RE` уже фільтрує `@scaffolded`, `@deprecated` і `@experimental`.
 
 ## Прогрес виконання (в цьому PR)
 
@@ -118,7 +118,9 @@
 - ✅ **P0-3**: useHashRoute.ts ghost ref → виправлено + bumped `[x] 4/4`.
 - ✅ **P0-4**: tech-debt-freshness тепер покриває `backend.md`; marker grammar розширена для canonical `Last validated:` pattern; +1 unit-test, +1 default list test.
 - ✅ **P1-1** (follow-up PR): `docs/audits/README.md` row для `2026-05-03-readme-gap-analysis.md` пересинхронізовано з `Implemented: 0/8 ≈ / Outstanding: 8 ≈` на `Implemented: 13/15 ≈ / Outstanding: 2`. Реальний стан зачекдено по `README.md` (13 секцій присутні: Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map; 2 залишаються outstanding — Packages як окрема таблиця-каталог і Environment Variables як окрема секція). `docs/audits/README.md` `Last validated` бампнуто. Сам `2026-05-03-readme-gap-analysis.md` не редагувався — деталізовані §Резюме-пункти живуть там як історичний знімок 2026-05-03.
-- ⏸ **P1-2/P1-3, P2-1/P2-2**: рекомендовані follow-up-и, не блокуючі.
+- ✅ **P1-3**: `.github/workflows/lighthouse-ci.yml` зашиплений у `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726).
+- ✅ **P2-2**: `@experimental` уже покритий у `scripts/knip-respects-scaffolded.mjs`.
+- ⏸ **P1-2, P2-1**: рекомендовані follow-up-и, не блокуючі.
 
 ## Файли у цьому PR (~7-9)
 

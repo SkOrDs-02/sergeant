@@ -74,6 +74,7 @@ async function enqueueFresh(
   idempotencyKey: string,
 ): Promise<number> {
   const r = await enqueueOutboxIncrement(client, {
+    userId: "u-test",
     table: "routine_streaks",
     row: { delta: 1 },
     clientTs: "2026-05-05T10:00:00.000+00:00",

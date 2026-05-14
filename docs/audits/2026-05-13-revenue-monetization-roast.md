@@ -45,8 +45,8 @@
 | #    | Item                                                       | Дія        | Файл / шлях                                                         | Статус        |
 | ---- | ---------------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------- |
 | P1-1 | Analytics events: init 0010 Phase 4–6 constants            | **Add**    | `packages/shared/src/lib/analyticsEvents.ts:218–259`                | **Done (PR)** |
-| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | **Done (PR)** |
-| P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | Outstanding   |
+| P1-2 | Activation v2 web-side capture (call evaluateActivationV2) | **Add**    | `apps/web/src/core/activation/` (нова директорія)                   | Outstanding   |
+| P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | **Done (PR)** |
 | P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding   |
 | P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
 | P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)** |
@@ -129,12 +129,14 @@
 
 - **Файл:** `apps/web/src/core/billing/index.ts` — re-exports `usePlan`, `PaywallModal` + types.
 
-### P1-2 · Activation v2 web-side capture ✅ Closed in #2756
+## Прогрес виконання — follow-up PRs
 
-- **Файли:** `apps/web/src/core/activation/useActivationV2.ts` (core hook), `apps/web/src/core/activation/useActivationV2Boot.ts` (RQ-cache adapter), `apps/web/src/core/activation/index.ts` (barrel), `apps/web/src/core/App.tsx` (mount-point у `AppInner`).
-- **Тести:** `apps/web/src/core/activation/useActivationV2.test.tsx` (5 кейсів — happy path, null input, not-activated, persisted fire-flag, A/B variant payload). Mock-ане `evaluateActivationV2` + analytics-spy через `vi.mock`.
-- `useActivationV2(input)` рахує `ActivationResult` через pure-fn з `@sergeant/insights` і фає `ACTIVATION_V2_HIT` рівно один раз — гард localStorage-флага `sergeant.activation_v2_fired` (контракт у `analyticsEvents.ts:222`). Payload: `time_to_activate_hours`, `mono_connected: true`, `transactions_categorized`, `budgets_set`, опціональний `variant`.
-- `useActivationV2Boot()` агрегує snapshot з `useAuth().user.createdAt` (signedUpAt) + cache-prefix walk `["finyk", "mono", "webhook-tx"]` (categorized txn count з `MonoTransactionDto.categorySlug !== null`) + `finykKeys.monoWebhookAccounts.length`. Будж-кількість поки `0` (TODO: budget RQ-key зараз немає — `finyk/budgets` читає з SQLite напряму; follow-up плагне count сюди й активаційний funnel запрацює end-to-end на live data).
+### P1-3 · Landing page scaffold (Phase 6.1 — `/`) ✅ Closed in PR
+
+- **Файл:** `apps/web/src/core/LandingPage.tsx` (new) — публічний `/` для не-auth-відвідувачів: hero з UA-copy, CTA «Створити акаунт» / «Вже маю акаунт», trust-bullets (AI-помічник, local-first, без зайвих списань) + лінк на `/pricing?source=landing` для атрибуції funnel-події.
+- **Реєстрація:** `apps/web/src/core/app/StandaloneRoutes.tsx` — новий entry `paths: ["/"]` у typed `STANDALONE_ROUTES` registry (web-architecture-state-roast §1.2). Гейт: `!authLoading && !user && shouldShowOnboarding()` — аутентифіковані та warm local-first юзери fall-through-яться у Hub home, fresh відвідувачі бачать лендинг.
+- **PostHog:** `LANDING_VIEWED` файриться раз на маунт з canonical payload `{ path: "/", locale: "uk", referrer? }` по контракту з `packages/shared/src/lib/analyticsEvents.ts § Landing page`. EN locale відкладений до Phase 6.2 (окремий PR — P1-4).
+- **Тести:** `apps/web/src/core/LandingPage.test.tsx` (new, 4 tests) — happy-path (`LANDING_VIEWED` payload + 3 CTA маршрути) + edge case (referrer round-trip у payload, skip-prop бранчі). `apps/web/src/core/app/StandaloneRoutes.test.tsx` — розширено: 3 бранчі для `/` (auth/warm-local/fresh-visitor) + ексгостивність `KNOWN_PATHS` ↔ `STANDALONE_ROUTE_PATHS` без винятку для `/`.
 
 ## Файли змінено у цьому PR
 

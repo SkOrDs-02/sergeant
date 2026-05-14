@@ -68,6 +68,16 @@ import type { SqliteMigrationClient } from "../migrate/adapters/sqlite.js";
 
 export interface OutboxIncrementInput {
   /**
+   * Owner of the row — the currently-authenticated user's id
+   * (Better Auth opaque string). Persisted into the new `user_id`
+   * column added by `005_sync_op_outbox_user_id.sql` (HIGH-#2 of the
+   * T3 audit). Used by `drainSyncOpOutbox` as the scope filter so a
+   * shared-device session swap cannot smuggle the previous user's
+   * queued ops under the new user's cookie. Empty string is rejected
+   * (the column is `NOT NULL` and an empty owner is a programmer bug).
+   */
+  readonly userId: string;
+  /**
    * Target table. Must be a member of `INCREMENT_OP_SUPPORTED_TABLES`
    * (server engine-gate + api-client allowlist) — the helper does
    * NOT re-validate. Use `buildSyncV2IncrementOp` upstream for
@@ -126,7 +136,13 @@ export async function enqueueOutboxIncrement(
   client: SqliteMigrationClient,
   input: OutboxIncrementInput,
 ): Promise<EnqueueOutboxIncrementResult> {
-  const { table, row, clientTs, idempotencyKey } = input;
+  const { userId, table, row, clientTs, idempotencyKey } = input;
+  if (typeof userId !== "string" || userId.length === 0) {
+    throw new Error(
+      `enqueueOutboxIncrement: userId is required (NOT NULL column ` +
+        `since migration 005). Pass the authenticated session userId.`,
+    );
+  }
   const rowJson = JSON.stringify(row);
 
   // Pre-check: if a row already owns this idempotency_key, return
@@ -151,9 +167,9 @@ export async function enqueueOutboxIncrement(
   // the surviving row's id.
   await client.run(
     `INSERT OR IGNORE INTO sync_op_outbox
-       (table_name, op, row, client_ts, idempotency_key)
-     VALUES (?, 'increment', ?, ?, ?)`,
-    [table, rowJson, clientTs, idempotencyKey],
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, 'increment', ?, ?, ?)`,
+    [userId, table, rowJson, clientTs, idempotencyKey],
   );
 
   const after = await client.all<{ id: number }>(

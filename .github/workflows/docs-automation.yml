@@ -203,6 +203,11 @@ jobs:
         # Network-free CI twin of the nightly freshness issue creator.
         run: node scripts/docs/check-freshness.mjs --check-cadence
 
+      - name: Check docs/governance/freshness-dashboard.html is up to date
+        # Committed dashboard ignores daily relative counters in --check mode,
+        # but catches changed row membership and freshness header values.
+        run: node scripts/docs/generate-freshness-dashboard.mjs --check
+
   pr-body-validator:
     name: PR body validator
     if: github.event_name == 'pull_request'

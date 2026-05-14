@@ -142,13 +142,19 @@ export type SubmitSyncV2IncrementOpFn = (
 export async function submitSyncV2IncrementOp(
   submit: SubmitSyncV2IncrementOpFn,
   input: BuildSyncV2IncrementOpInput,
+  userId: string,
 ): Promise<SubmitSyncV2IncrementOpResult> {
   const built = buildSyncV2IncrementOp(input);
   if (!built.ok) {
     return { ok: false, reason: built.reason };
   }
+  // `userId` is threaded into the mapper so the outbox row's `user_id`
+  // column (NOT NULL since migration 005, HIGH-#2 of the T3 audit) is
+  // always populated. The mapper rejects an empty string so callers
+  // cannot accidentally enqueue under an unauthenticated session.
   const outboxInput = mapSyncV2IncrementOpToOutboxInput(
     built.op as SyncV2IncrementPushOp,
+    userId,
   );
   const enqueued = await submit(outboxInput);
   return { ok: true, id: enqueued.id, inserted: enqueued.inserted };

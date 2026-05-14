@@ -13,7 +13,7 @@
 // this module's pure helpers; the file-system entry point is `loadConfig`.
 
 import { existsSync, readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -177,7 +177,7 @@ export function readLegacyAllowlist(path = LEGACY_ALLOWLIST_PATH) {
  *   3. it's already required by the rest of CI.
  */
 export function listTrackedMarkdown(rootDir = REPO_ROOT) {
-  const out = execSync("git ls-files -z -- '*.md'", {
+  const out = execFileSync("git", ["ls-files", "-z", "--", "*.md"], {
     cwd: rootDir,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
