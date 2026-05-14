@@ -102,6 +102,72 @@ export const ROUTES = [
     entrypoints: ["AGENTS.md"],
     target: "docs/governance/hard-rules-matrix.md",
   },
+  {
+    role: "new-agent",
+    reason: "feature-delivery skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-feature-delivery/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "bugfix-and-regression skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-bugfix-and-regression/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "web UI specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-web-ui/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "server API specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-server-api/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "data and migrations specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-data-and-migrations/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "mobile Expo specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-mobile-expo/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "HubChat specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-hubchat/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "monorepo boundaries specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-monorepo-boundaries/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "deploy and observability specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-deploy-and-observability/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "Better Auth specialist skill",
+    entrypoints: ["docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/better-auth-best-practices/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "skill-writing specialist skill",
+    entrypoints: ["AGENTS.md", "docs/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-writing-skills/SKILL.md",
+  },
 
   // ── New human contributor landing on the repo ────────────────────────────
   {
@@ -127,6 +193,12 @@ export const ROUTES = [
     reason: "doc index",
     entrypoints: ["README.md"],
     target: "docs/README.md",
+  },
+  {
+    role: "new-contributor",
+    reason: "active initiatives index",
+    entrypoints: ["README.md", "docs/README.md"],
+    target: "docs/initiatives/README.md",
   },
 
   // ── On-call: hot-path playbooks reachable from any landing page ──────────
@@ -173,6 +245,12 @@ export const ROUTES = [
     reason: "review-and-merge skill",
     entrypoints: ["AGENTS.md"],
     target: ".agents/skills/sergeant-review-and-merge/SKILL.md",
+  },
+  {
+    role: "reviewer",
+    reason: "governance policy review process",
+    entrypoints: ["docs/governance/README.md", "AGENTS.md", "CONTRIBUTING.md"],
+    target: "docs/governance/policy-review.md",
   },
 ];
 
