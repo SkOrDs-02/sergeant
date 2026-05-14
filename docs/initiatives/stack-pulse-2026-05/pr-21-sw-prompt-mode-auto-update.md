@@ -1,7 +1,7 @@
 # PR-21: SW `prompt`-mode auto-update on inactivity
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned (refresh: build-id rename — `__SW_BUILD_ID__` → `import.meta.env.VITE_BUILD_ID` post PR-28 merge, [#2309](https://github.com/Skords-01/Sergeant/pull/2309))
+> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
+> **Status:** Shipped — SW prompt-mode auto-update wired in [PR-21 stack-pulse 2026-05](#); `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts` + `apps/server/src/http/buildIdHeader.ts` issues `X-Server-Build-Id` on every response.
 
 |                    |                                                                          |
 | ------------------ | ------------------------------------------------------------------------ |
@@ -76,16 +76,16 @@ document.addEventListener("visibilitychange", async () => {
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/web/src/sw/version.ts` має `setupAutoUpdate()` функцію.
-- [ ] `apps/web/src/main.tsx` викликає `setupAutoUpdate()` після SW registration.
-- [ ] Server response додає `X-Server-Build-Id` header (`apps/server/src/http/security.ts` або middleware).
-- [ ] E2E тест: stale-build-id → force-prompt у `apps/web/src/test/integration/sw-update.test.ts`.
-- [ ] `docs/web/service-worker.md` оновлений.
+- [x] `apps/web/src/core/app/autoUpdate.ts` експортує `setupAutoUpdate()` з periodic-update + visibility-change + build-id mismatch гілками. Файл перенесений з `apps/web/src/sw/` у `apps/web/src/core/app/` бо логіка рунається на головному треді (вимагає DOM lib, а `tsconfig.sw.json` має лише WebWorker lib).
+- [x] `apps/web/src/main.tsx` викликає `setupAutoUpdate({ updateSW })` після `registerSW`, підписуючи controller на `subscribeServerBuildId`.
+- [x] Server response додає `X-Server-Build-Id` header (`apps/server/src/http/buildIdHeader.ts`, викликається з `apps/server/src/app.ts` після Helmet). `apps/server/src/http/apiCors.ts` викладає хедер у `Access-Control-Expose-Headers` — cross-origin Vercel → Railway бачить його.
+- [x] Unit-тести: `apps/web/src/core/app/autoUpdate.test.ts` (8 cases, JSDOM + fake timers), `apps/server/src/http/buildIdHeader.test.ts` (8 cases, supertest).
+- [x] `docs/web/service-worker.md` додано з секцією «Update strategy: prompt + idle-auto + hard-floor».
 
 ## Тести
 
-- `apps/web/src/sw/__tests__/version.test.ts` — registration.update() called every 30min.
-- `apps/web/src/test/integration/sw-update.test.ts` — `X-Server-Build-Id` mismatch → force update.
+- `apps/web/src/core/app/autoUpdate.test.ts` — periodic update polling, saveData skip, idle-auto-skipWaiting, no-op when no waiting SW, build-id mismatch force-prompt, server-catches-up reset, ignores empty/null observations.
+- `apps/server/src/http/buildIdHeader.test.ts` — cascade priority (SENTRY_RELEASE → RAILWAY → VERCEL → GITHUB → BUILD_ID), 7-char truncation, header omitted when env is empty.
 
 ## Rollout
 
@@ -101,9 +101,14 @@ document.addEventListener("visibilitychange", async () => {
 
 ## Touchpoints (file:line)
 
-- `apps/web/src/sw.ts` — existing SW
-- `apps/web/src/sw/version.ts` — new auto-update logic
-- `apps/web/src/main.tsx` — wire-up
+- `apps/web/src/core/app/autoUpdate.ts` — `setupAutoUpdate({ updateSW, ... })` controller (periodic update / idle skipWaiting / build-id mismatch).
+- `apps/web/src/shared/api/serverBuildIdBus.ts` — in-process pub-sub bus that bridges `@sergeant/api-client` `onResponseHeaders` → `setupAutoUpdate` controller.
+- `apps/web/src/shared/api/index.ts` — wires `onResponseHeaders` hook on the default `apiClient`.
+- `apps/web/src/main.tsx` — lazy-imports `setupAutoUpdate` + `subscribeServerBuildId` after `registerSW`.
+- `apps/server/src/http/buildIdHeader.ts` — short-SHA cascade + middleware.
+- `apps/server/src/http/apiCors.ts` — adds `X-Server-Build-Id` to `Access-Control-Expose-Headers`.
+- `apps/server/src/app.ts` — mounts `serverBuildIdMiddleware()` after Helmet.
+- `packages/api-client/src/httpClient.ts` — adds optional `onResponseHeaders` hook to `HttpClientConfig` (status-agnostic, swallowed errors).
 - `apps/web/vite.config.js` — VitePWA config (no change, prompt-mode lишається)
 - `apps/server/src/http/security.ts` — додати X-Server-Build-Id header
 - `docs/web/service-worker.md` — new section
