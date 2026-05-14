@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction } from "react";
 import type {
   FizrukData,
@@ -127,9 +131,10 @@ export function WorkoutCatalogSection({
       <Card radius="lg" padding="none" className="overflow-hidden">
         {grouped.length === 0 ? (
           <EmptyState
-            icon={<FizrukEmptyIllustration size={72} />}
+            illustration={<FizrukEmptyIllustration size={96} />}
             title="Поки немає вправ"
             description="Додай першу через кнопку «+ Додати»."
+            module="fizruk"
           />
         ) : (
           grouped.map((g) => {

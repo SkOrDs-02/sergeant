@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -78,9 +82,10 @@ export function ActiveHabitsSection({
       </p>
       {!hasActive && (
         <EmptyState
-          icon={<RoutineEmptyIllustration size={72} />}
+          illustration={<RoutineEmptyIllustration size={96} />}
           title="Поки порожньо"
           description="Додай першу звичку формою вище."
+          module="routine"
           action={
             typeof onOpenCalendar === "function" ? (
               <Button
