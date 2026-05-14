@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -461,7 +465,7 @@ function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-1 text-2xs font-medium leading-none",
+        "inline-flex items-center gap-1 text-style-caption font-medium leading-none",
         "border rounded-full px-1.5 py-[3px]",
         cls,
       )}

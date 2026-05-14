@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { OnboardingWizard } from "../onboarding/OnboardingWizard";
@@ -171,7 +175,9 @@ function PeekBackdrop() {
                 <span className="text-style-title text-text tabular-nums mt-1">
                   {card.metric}
                 </span>
-                <span className="text-2xs text-muted mt-0.5">{card.sub}</span>
+                <span className="text-style-caption text-muted mt-0.5">
+                  {card.sub}
+                </span>
               </div>
             ))}
           </div>
