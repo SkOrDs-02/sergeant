@@ -233,7 +233,7 @@ if (
   !isCapacitor() &&
   "serviceWorker" in navigator
 ) {
-  import("virtual:pwa-register").then(({ registerSW }) => {
+  import("virtual:pwa-register").then(async ({ registerSW }) => {
     const updateSW = registerSW({
       onNeedRefresh() {
         window.__pwaUpdateReady = true;
@@ -244,6 +244,20 @@ if (
         window.dispatchEvent(new CustomEvent("pwa-offline-ready"));
       },
     });
+    window.__pwaUpdateSW = updateSW;
+
+    // PR-21 (stack-pulse 2026-05): periodic update polling + idle
+    // auto-skip-waiting + build-id hard-floor. Tied to api-client
+    // response interceptor via `subscribeServerBuildIdObservers`.
+    try {
+      const { setupAutoUpdate } = await import("./core/app/autoUpdate");
+      const { subscribeServerBuildId } =
+        await import("@shared/api/serverBuildIdBus");
+      const ctrl = setupAutoUpdate({ updateSW });
+      subscribeServerBuildId((id) => ctrl.reportServerBuildId(id));
+    } catch (err) {
+      logger.warn("[main] setupAutoUpdate failed", err);
+    }
 
     // Opt-in SW debug mode via `?sw=debug` (for support / triage).
     try {

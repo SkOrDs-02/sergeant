@@ -15,6 +15,7 @@ import { createApiClient } from "@sergeant/api-client";
 
 import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
 import { getBearerToken } from "@shared/lib/api/bearerToken";
+import { publishServerBuildId } from "./serverBuildIdBus";
 
 export const apiClient = createApiClient({
   baseUrl: apiUrl(""),
@@ -27,6 +28,14 @@ export const apiClient = createApiClient({
   // `getBearerToken()` повертає `null` і header не ставиться, cookie-флов
   // працює як раніше.
   getToken: () => getBearerToken(),
+  // PR-21 (stack-pulse 2026-05) — server stamps every response with
+  // `X-Server-Build-Id`. We forward observations into the SW auto-update
+  // controller through `serverBuildIdBus`; the SW controller is the only
+  // subscriber today, but the indirection keeps the api-client agnostic.
+  onResponseHeaders: (headers) => {
+    const buildId = headers.get("X-Server-Build-Id");
+    if (buildId) publishServerBuildId(buildId);
+  },
 });
 
 export const coachApi = apiClient.coach;
