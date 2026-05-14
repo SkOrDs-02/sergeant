@@ -100,8 +100,10 @@ export default async function transcribeHandler(
   const groqKey = (req as WithGroqKey).groqKey;
   if (!groqKey) {
     // requireGroqKey() мав уже відсіяти, але double-check для безпеки.
+    // Не світимо назву env-змінної клієнту: вона потрапляє у formatApiError
+    // і показується юзеру дослівно. Дискримінатор для frontend — `code`.
     res.status(503).json({
-      error: "GROQ_API_KEY не сконфігурований",
+      error: "Голосове введення тимчасово недоступне. Спробуй пізніше.",
       code: "GROQ_KEY_MISSING",
     });
     return;
