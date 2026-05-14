@@ -53,6 +53,17 @@ export interface HttpClientConfig {
    * Дефолтні заголовки, що додаються до кожного запиту (після `getToken`).
    */
   defaultHeaders?: Record<string, string>;
+  /**
+   * Опційний hook, що викликається на КОЖНУ відповідь (status-agnostic, до
+   * парсингу тіла), отримуючи `Response.headers` + URL запиту. Призначений
+   * для side-channel observation: SW auto-update tracker (`X-Server-Build-Id`),
+   * tracing correlation тощо. Помилки у callback ковтаються — він не повинен
+   * ламати API-flow.
+   *
+   * Не використовуй для трансформації відповіді — для цього є per-call
+   * `RequestOptions`.
+   */
+  onResponseHeaders?: (headers: Headers, url: string) => void;
 }
 
 /**
@@ -300,6 +311,7 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
     fetchImpl,
     defaultCredentials = "include",
     defaultHeaders,
+    onResponseHeaders,
   } = config;
 
   async function buildHeaders(opts: RequestOptions): Promise<Headers> {
@@ -369,6 +381,15 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
     let res: Response;
     try {
       res = await fetchFn(url, init);
+      if (onResponseHeaders) {
+        try {
+          onResponseHeaders(res.headers, url);
+        } catch {
+          // Hook errors must not affect the request. PR-21 (SW auto-update)
+          // tracker can fail (e.g. exception while comparing build ids) without
+          // breaking the API call.
+        }
+      }
     } catch (cause) {
       cancel();
       const name =
