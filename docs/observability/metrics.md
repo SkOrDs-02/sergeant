@@ -188,9 +188,40 @@ sum by (model, release) (
   increase(ai_cost_estimate_usd_total{provider="anthropic"}[24h])
   * on() group_left(release) app_build_info
 )                                                                                          # USD/24h per model+release
+
+# Single-model deep-dive (filter за конкретним model-slug + per-release split)
+sum by (release, kind) (
+  rate(ai_tokens_total{provider="anthropic",model="claude-sonnet-4-5"}[5m])
+  * on() group_left(release) app_build_info
+)                                                                                          # tokens/s по claude-sonnet-4-5 split-нуті за release+kind
+sum by (release) (
+  increase(ai_cost_estimate_usd_total{provider="anthropic",model="claude-haiku-4-5-20251001"}[24h])
+  * on() group_left(release) app_build_info
+)                                                                                          # 24h USD по claude-haiku-4-5 split-нуті за release
+
+# Per-model Voyage embeddings (analogous join — Voyage пише ті ж лейбли provider/model)
+sum by (model, release) (
+  rate(ai_tokens_total{provider="voyage",endpoint="embed"}[5m])
+  * on() group_left(release) app_build_info
+)                                                                                          # embed-tokens/s per Voyage model+release
+sum by (model, release) (
+  increase(ai_cost_estimate_usd_total{provider="voyage",endpoint="embed"}[24h])
+  * on() group_left(release) app_build_info
+)                                                                                          # Voyage USD/24h per model+release
+sum by (release) (
+  increase(ai_cost_estimate_usd_total{provider="voyage",model="voyage-3.5-lite"}[24h])
+  * on() group_left(release) app_build_info
+)                                                                                          # Voyage cheap-tier USD/24h split-нуті за release
 ```
 
 Join-pattern із `app_build_info` (один gauge=1 на інстанс із лейблом `release`) дає per-release breakdown без копіювання `release` у кожен emitter — повний контракт цієї серії і ще приклади для `http_*` метрик див. [§15a](#15a-buildrelease-identity-app_build_info).
+
+**Типові значення лейблу `model`** (повний список — у коді емітерів, тут — найчастіші, щоб PromQL-приклади вище можна було підставити одразу):
+
+- `provider="anthropic"`: `claude-haiku-4-5-20251001`, `claude-sonnet-4-5`, `claude-sonnet-4-6`, `claude-3-5-sonnet-latest`, `claude-3-5-haiku` ([anthropic.ts:75](../../apps/server/src/lib/anthropic.ts#L75); канонічний slug — у [`spans.ts`](../../apps/server/src/obs/spans.ts) `AiSpanContext.model`). Невідомий slug у emitter-і → `model="unknown"` ([anthropic.ts:89](../../apps/server/src/lib/anthropic.ts#L89)). Слот: `endpoint="messages"`, `kind` ∈ {`prompt`, `completion`, `cache_write`, `cache_read`}.
+- `provider="voyage"`: `voyage-3.5-lite`, `voyage-3.5`, `voyage-3-large`, `voyage-3-lite`, `voyage-3`, `voyage-code-3`, `voyage-multimodal-3`, `voyage-finance-2`, `voyage-law-2`, `voyage-2` (ключі `VOYAGE_PRICING_USD_PER_MTOK` у [embeddings.ts:42](../../apps/server/src/modules/ai-memory/embeddings.ts#L42); $0.02–$0.18 / MTok). Слот: `endpoint="embed"`, `kind="prompt"` (Voyage-billing — input-tokens лише).
+
+Для per-model дашбордів у Grafana: підставте `model="..."` фільтр у будь-який із PromQL-блоків вище, або зніміть фільтр для top-N breakdown через `topk(5, sum by (model) (...))`. Cost-counter не інкрементується для невідомого Voyage `model` ([embeddings.ts:59](../../apps/server/src/modules/ai-memory/embeddings.ts#L59)), тому per-model USD-серії завжди матчаться до прайс-таблиці — token-counter тим часом інкрементується завжди, що дозволяє ловити drift нових Voyage-моделей через `sum by (model) (rate(ai_tokens_total{provider="voyage"}[1h])) unless on(model) sum by (model) (ai_cost_estimate_usd_total{provider="voyage"})`.
 
 **SLO/alerts**: [SLO.md §5](./SLO.md#5-ai-anthropic-slo-970-) · `AiErrorBudgetBurn{Fast,Slow}` · `AiLatencyP95High` · `AiQuotaStoreDown` — [runbook.md](./runbook.md#aierrorbudgetburn).
 
@@ -396,7 +427,7 @@ count(app_build_info) by (release)
 
 **Кардинальність**: **1** серія на інстанс (per-process), значення фіксується на стартапі і не змінюється. При rolling deploy-і Prometheus побачить дві серії на час перетину версій — це нормально і не порушує cardinality budget.
 
-Per-model AI-token / cost join-приклади (де `release` лейбл прокидається у бізнес-метрики Anthropic / Voyage) — див. [§6](#6-ai-anthropic--voyage).
+Per-model AI-token / cost join-приклади (де `release` лейбл прокидається у бізнес-метрики Anthropic / Voyage, включно з per-model deep-dive `model="claude-sonnet-4-5"` / `model="voyage-3.5-lite"`) — див. [§6](#6-ai-anthropic--voyage).
 
 ---
 
