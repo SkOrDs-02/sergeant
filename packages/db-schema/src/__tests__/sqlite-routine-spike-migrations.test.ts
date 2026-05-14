@@ -71,6 +71,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "003_sync_op_outbox_increment_op.sql",
       "004_routine_full_state.sql",
       "005_sync_op_outbox_quarantine.sql",
+      "006_sync_op_outbox_user_id.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -96,12 +97,14 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "sync_op_outbox",
     ]);
 
-    // PR #040 retry columns are present on the rebuilt sync_op_outbox.
+    // PR #040 retry columns + HIGH-#2 user_id column are present on
+    // the rebuilt sync_op_outbox.
     const outboxCols = db
       .prepare("SELECT name FROM pragma_table_info('sync_op_outbox')")
       .all() as { name: string }[];
     expect(outboxCols.map((c) => c.name)).toEqual([
       "id",
+      "user_id",
       "table_name",
       "op",
       "row",
@@ -215,6 +218,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "003_sync_op_outbox_increment_op.sql",
       "004_routine_full_state.sql",
       "005_sync_op_outbox_quarantine.sql",
+      "006_sync_op_outbox_user_id.sql",
     ]);
   });
 
@@ -250,9 +254,10 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
 
     db.prepare(
       `INSERT INTO sync_op_outbox
-         (table_name, op, row, client_ts, idempotency_key)
-       VALUES (?, ?, ?, ?, ?)`,
+         (user_id, table_name, op, row, client_ts, idempotency_key)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     ).run(
+      "u-test",
       "routine_entries",
       "insert",
       JSON.stringify({ id: "x", name: "y" }),
@@ -269,10 +274,11 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       db
         .prepare(
           `INSERT INTO sync_op_outbox
-             (table_name, op, row, client_ts, idempotency_key)
-           VALUES (?, ?, ?, ?, ?)`,
+             (user_id, table_name, op, row, client_ts, idempotency_key)
+           VALUES (?, ?, ?, ?, ?, ?)`,
         )
         .run(
+          "u-test",
           "routine_entries",
           "insert",
           "{}",
@@ -292,10 +298,11 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     // dead_letter is now a legal terminal status (was rejected pre-PR-040).
     db.prepare(
       `INSERT INTO sync_op_outbox
-         (table_name, op, row, client_ts, idempotency_key, status,
+         (user_id, table_name, op, row, client_ts, idempotency_key, status,
           attempts, last_error)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
+      "u-test",
       "routine_entries",
       "insert",
       "{}",
@@ -321,10 +328,11 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       db
         .prepare(
           `INSERT INTO sync_op_outbox
-             (table_name, op, row, client_ts, idempotency_key, status)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+             (user_id, table_name, op, row, client_ts, idempotency_key, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
+          "u-test",
           "routine_entries",
           "insert",
           "{}",
@@ -406,9 +414,10 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     // literal, so the outbox must accept them durably.
     db.prepare(
       `INSERT INTO sync_op_outbox
-         (table_name, op, row, client_ts, idempotency_key)
-       VALUES (?, ?, ?, ?, ?)`,
+         (user_id, table_name, op, row, client_ts, idempotency_key)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     ).run(
+      "user-1",
       "routine_streaks",
       "increment",
       JSON.stringify({ user_id: "user-1", delta: 1 }),
@@ -430,10 +439,11 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       db
         .prepare(
           `INSERT INTO sync_op_outbox
-             (table_name, op, row, client_ts, idempotency_key)
-           VALUES (?, ?, ?, ?, ?)`,
+             (user_id, table_name, op, row, client_ts, idempotency_key)
+           VALUES (?, ?, ?, ?, ?, ?)`,
         )
         .run(
+          "u-test",
           "routine_streaks",
           "incr",
           "{}",
@@ -531,6 +541,14 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       next_retry_at: string | null;
       last_error: string | null;
     }[];
+    // After the `005_sync_op_outbox_user_id.sql` migration (HIGH-#2 of
+    // the T3 audit), pending rows enqueued under the pre-005 shape are
+    // dropped — they have no `user_id` and the client cannot guess one
+    // safely. Terminal rows (`'rejected'` / `'dead_letter'`) are
+    // preserved with the synthetic `user_id='__legacy__'` placeholder
+    // so forensic value (status / reject_reason / last_error) survives
+    // the rebuild without risking a cross-user leak. See migration
+    // docstring in `packages/db-schema/src/sqlite/migrations/index.ts`.
     expect(rows).toEqual([
       {
         idempotency_key: "idem-dead",
@@ -539,15 +557,6 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
         reject_reason: null,
         attempts: 10,
         next_retry_at: null,
-        last_error: "http_503",
-      },
-      {
-        idempotency_key: "idem-pending",
-        op: "insert",
-        status: "pending",
-        reject_reason: null,
-        attempts: 3,
-        next_retry_at: "2026-05-04T12:00:08.000Z",
         last_error: "http_503",
       },
       {
