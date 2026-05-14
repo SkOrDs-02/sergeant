@@ -1,6 +1,6 @@
 # `@sergeant/mobile-shell` — Capacitor shell
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
 > **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/adr/0052-mobile-strategy-capacitor-primary.md).
 
 Тонкий native-shell навколо `@sergeant/web`. Спочатку задумувався як PoC
@@ -102,6 +102,21 @@ pnpm --filter @sergeant/mobile-shell open:android
 'v*'` + `workflow_dispatch`): сам робить `cap add ios` на `macos-latest`,
 архівує, експортує `.ipa` і заливає у TestFlight. Контракт секретів і
 інструкції для першого запуску — у [`docs/mobile/shell.md` → Release — iOS](../../docs/mobile/shell.md#release--ios).
+
+### ATS-audit (`NSAppTransportSecurity`)
+
+Обидва iOS-ворфлоу запускають `node apps/mobile-shell/scripts/check-info-plist.mjs`
+між `cap sync ios` і `xcodebuild` — це L12-hardening guard, який падає,
+якщо у згенерованому `ios/App/App/Info.plist` хтось виставив
+`NSAllowsArbitraryLoads` (або `NSAllowsArbitraryLoadsForMedia` /
+`...InWebContent` / `NSAllowsLocalNetworking`) у `<true/>`. Це
+дзеркало `cleartext: false` із `capacitor.config.ts`: без guard-у iOS
+WebView мовчки би пропустив http-трафік незалежно від Capacitor-конфігу.
+Скрипт читається парсером XML-plist на Node — працює і на macOS-runner-і,
+і на Linux-боксах розробників (`node --test apps/mobile-shell/scripts/__tests__/check-info-plist.test.mjs`).
+Per-domain винятки (`NSExceptionDomains`) дозволені — додавай їх разом
+із записом у [`docs/security/audit-exceptions.md`](../../docs/security/audit-exceptions.md).
+Деталі — у [`docs/security/hardening/L12-ios-app-transport-security.md`](../../docs/security/hardening/L12-ios-app-transport-security.md).
 
 ## Що НЕ зроблено
 

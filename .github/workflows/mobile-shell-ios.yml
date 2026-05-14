@@ -125,6 +125,16 @@ jobs:
         # Podfile and refreshes the plugin graph / web assets.
         run: pnpm exec cap sync ios
 
+      - name: Audit iOS App Transport Security (L12)
+        # Runs after `cap sync ios` has written the freshly-generated
+        # Info.plist and before xcodebuild consumes it. Fails the build
+        # if `NSAppTransportSecurity.NSAllowsArbitraryLoads` (or any of
+        # the related per-surface flags) is `true` — which would
+        # silently bypass the `cleartext: false` guarantee declared in
+        # `apps/mobile-shell/capacitor.config.ts`. See
+        # `docs/security/hardening/L12-ios-app-transport-security.md`.
+        run: node apps/mobile-shell/scripts/check-info-plist.mjs
+
       - name: Build App scheme for iOS Simulator (no signing)
         working-directory: apps/mobile-shell/ios/App
         # NSBuildDesktopApp: xcodebuild needs an explicit -destination when
