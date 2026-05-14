@@ -93,6 +93,7 @@ pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 - `mobile`: `pnpm --filter @sergeant/mobile test`
 - `console`: `pnpm --filter @sergeant/openclaw exec vitest run`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
+- `testing/devx`: звіряйся з [`docs/planning/pr-plan-testing-devx-2026-05.md`](./docs/planning/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
 
 Якщо сценарій має окремий playbook, секція `Verification` у playbook має пріоритет над загальним списком вище.
 
