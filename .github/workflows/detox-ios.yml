@@ -21,6 +21,14 @@ on:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "apps/mobile-shell/**"
+      # Server response-shape sources — a /api/* response shape change in
+      # apps/server/src/routes/** (or a migration that reshapes a Zod
+      # response schema) can silently break mobile consumers if Detox
+      # isn't rerun. Stack-pulse PR-18 (M2): keep these in lockstep with
+      # detox-android.yml.
+      - "apps/server/src/routes/**"
+      - "apps/server/src/migrations/**"
       - "packages/finyk-domain/**"
       - "packages/routine-domain/**"
       - "packages/api-client/**"
@@ -30,6 +38,9 @@ on:
   pull_request:
     paths:
       - "apps/mobile/**"
+      - "apps/mobile-shell/**"
+      - "apps/server/src/routes/**"
+      - "apps/server/src/migrations/**"
       - "packages/finyk-domain/**"
       - "packages/routine-domain/**"
       - "packages/api-client/**"
