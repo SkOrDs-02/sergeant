@@ -114,6 +114,8 @@ pnpm docs:check-links --strict-external
 
 ### P1.1 — `pnpm knip` ще ловить 4 Unused dependencies + 10 Unused devDependencies + 38 Unlisted
 
+> **2026-05-14 update:** `idb-keyval` видалено з `apps/web`. Перелік нижче лишається historical baseline для прожарки; `@fontsource-variable/dm-sans` виявився live import-ом у `apps/web/src/index.css`, а `@sergeant/shared` уже відсутній у `packages/openclaw-plugin/package.json`.
+
 ```
 Unused dependencies (4)
   @capacitor/ios            apps/mobile-shell/package.json
@@ -174,6 +176,8 @@ Unlisted dependencies (38)
 
 ### P1.5 — App-audit §1.3 mobile-shell knip — 5 unused exports
 
+> **2026-05-14 update:** пункт застарів. Поточні exported symbols у `apps/mobile-shell` відрізняються від перелічених нижче; `scanBarcodeNative` / `subscribeNativePush` використовуються через web dynamic-import gates, а `platform.ts` покритий boundary tests. Не видаляємо без native smoke.
+
 [`2026-05-07-app-audit.md` § 1.3](./2026-05-07-app-audit.md) — `apps/mobile-shell` має 5 unused exports (`requestNativeBarcode`, `requestPermissions`, `subscribePushTokens`, `isCapacitorReady`, `getPlatform`). Знесено з нашого `knip.json` cleanup-у (redundant entries), але самі exports все ще unused. Окремий micro-PR — або delete, або wire-up у capacitor-shell entry.
 
 ### P1.6 — AuthPage re-decomposition (Hard Rule #18 regression) — ✅ Closed
@@ -189,7 +193,7 @@ Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`Log
 ## P2 — Cosmetic / Watchlist
 
 - **Watchlist:** `pnpm knip` Unlisted (38) — переважно false-positives через hoisted deps; перевірити, чи `nohoist`-конфіг pnpm коректний для тестів.
-- **Watchlist:** archive-move depth-drift буде повторюватись, коли наступний раз будемо архівувати `docs/audits/*.md`. Запропоновано додати lint-rule `pnpm lint:archive-move-depth` — пробігтись по `docs/audits/archive/*.md` і перевірити, що жоден `../X/` не вказує на `docs/audits/X/` (бо такого folder-а немає). Або, простіше, `pnpm docs:check-links --include archive` як required CI step (он зараз працює, але хочемо ловити drift у момент moveу, а не наступного PR).
+- **Closed 2026-05-14:** archive-move depth-drift тепер ловить `pnpm lint:archive-move-depth`; Hard Rule #23 синхронізований у registry / AGENTS / CONTRIBUTING / matrix.
 
 ## Прогрес виконання (цей PR)
 

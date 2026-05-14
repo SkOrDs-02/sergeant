@@ -384,7 +384,7 @@
       "links": [
         {
           "type": "doc",
-          "ref": "docs/audits/2026-04-28-ux-ui-audit.md"
+          "ref": "docs/audits/archive/2026-04-28-ux-ui-audit.md"
         },
         {
           "type": "agents",
@@ -575,6 +575,33 @@
         {
           "type": "agents",
           "ref": "#22"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Archive-move depth integrity — no broken `../X` links in docs archives",
+      "scope": ["docs/**/archive/**/*.md"],
+      "severity": "blocker",
+      "category": "lint-enforced-convention",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:archive-move-depth"
+        },
+        {
+          "kind": "test",
+          "ref": "scripts/__tests__/check-archive-move-depth.test.mjs"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/audits/2026-05-13-dead-code-hard-rules-roast.md § P2"
+        },
+        {
+          "type": "agents",
+          "ref": "#23"
         }
       ]
     }
