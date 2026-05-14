@@ -89,6 +89,7 @@
     "hard-rules:check": "node scripts/docs/generate-hard-rules-matrix.mjs --check",
     "hard-rules:list": "node scripts/docs/generate-hard-rules-matrix.mjs --list",
     "docs:freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs",
+    "docs:check-freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs --check",
     "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
@@ -98,6 +99,7 @@
     "lint:overrides": "node scripts/check-pnpm-overrides-staleness.mjs",
     "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs",
+    "pre-commit:timings": "node scripts/pre-commit-timings-report.mjs",
     "eval:rag": "node scripts/eval-rag-recall.mjs",
     "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs"
   },
