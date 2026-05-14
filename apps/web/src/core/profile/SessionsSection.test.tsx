@@ -98,9 +98,13 @@ describe("SessionsSection — revoke flow", () => {
     expect(await screen.findByText(/Немає сесій/i)).toBeTruthy();
   });
 
-  it("surfaces server error message in a toast on failure", async () => {
+  it("maps Better Auth error code into a UA toast on failure", async () => {
+    // F5 (web-frontend-ergonomics-roast): сирий `error.message` тепер
+    // прокидується через `mapApiErrorToUserCopy`. Сервер віддає `code`
+    // (`SESSION_NOT_FRESH` Better Auth), мапер повертає UA-копію — і
+    // саме її ми очікуємо у toast-і.
     revokeSessionMock.mockResolvedValueOnce({
-      error: { message: "boom" },
+      error: { code: "SESSION_NOT_FRESH", message: "Session is not fresh" },
     } as never);
     render(<SessionsSection online={true} />);
 
@@ -110,7 +114,11 @@ describe("SessionsSection — revoke flow", () => {
 
     fireEvent.click(revokeButton);
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith("boom"));
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Для цієї дії потрібен свіжий вхід. Увійди ще раз.",
+      ),
+    );
   });
 });
 

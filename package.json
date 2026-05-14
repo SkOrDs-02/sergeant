@@ -69,6 +69,7 @@
     "strict:coverage": "node scripts/strict-coverage.mjs",
     "dead-code:files": "node scripts/knip-respects-scaffolded.mjs",
     "knip": "knip",
+    "dedupe:check": "pnpm dedupe --check",
     "prepare": "husky",
     "gen": "plop",
     "gen:adr": "plop adr",
@@ -94,13 +95,15 @@
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
     "lint:patches": "node scripts/check-patches-doc.mjs",
+    "lint:html-sri": "node scripts/lint-html-sri.mjs",
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
     "lint:overrides": "node scripts/check-pnpm-overrides-staleness.mjs",
     "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs",
     "pre-commit:timings": "node scripts/pre-commit-timings-report.mjs",
     "eval:rag": "node scripts/eval-rag-recall.mjs",
-    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs"
+    "eval:rag:weekly": "node scripts/rag-eval-weekly.mjs",
+    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs scripts/__tests__/rag-eval-weekly.test.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
@@ -119,6 +122,7 @@
     "knip": "^6.11.0",
     "lint-staged": "^16.4.0",
     "openapi-typescript": "^7",
+    "parse5": "^8.0.1",
     "plop": "^4.0.5",
     "prettier": "^3.8.2",
     "tsc-files": "^1.1.4",

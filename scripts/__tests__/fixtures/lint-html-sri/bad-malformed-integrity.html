@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SRI fixture — malformed integrity</title>
+    <!-- Cross-origin CDN with garbage integrity value -->
+    <script
+      src="https://cdn.example.com/widget.js"
+      integrity="md5-notavalidhash"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
