@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
@@ -16,7 +20,7 @@ interface ChatMessageProps {
  */
 function RiskyBadge() {
   return (
-    <span className="shrink-0 inline-flex items-center gap-0.5 text-2xs font-semibold text-warning rounded-full bg-warning/15 px-1.5 py-0.5">
+    <span className="shrink-0 inline-flex items-center gap-0.5 text-style-caption font-semibold text-warning rounded-full bg-warning/15 px-1.5 py-0.5">
       <svg
         width="10"
         height="10"
@@ -81,7 +85,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
           <>
             <div
               className={cn(
-                "text-2xs text-subtle mt-0.5 wrap-break-word",
+                "text-style-caption text-subtle mt-0.5 wrap-break-word",
                 !expanded && "line-clamp-2",
               )}
             >
@@ -91,7 +95,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="text-2xs text-brand-500 hover:text-brand-600 mt-0.5 transition-colors"
+                className="text-style-caption text-brand-500 hover:text-brand-600 mt-0.5 transition-colors"
               >
                 {expanded ? "Згорнути" : "Показати все"}
               </button>
@@ -140,13 +144,13 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
         <span className="text-xs font-semibold text-danger flex-1 truncate">
           {card.title}
         </span>
-        <span className="shrink-0 text-2xs font-semibold text-danger/70 rounded-full bg-danger/10 px-1.5 py-0.5">
+        <span className="shrink-0 text-style-caption font-semibold text-danger/70 rounded-full bg-danger/10 px-1.5 py-0.5">
           Виконано
         </span>
       </div>
       {/* Summary */}
       {card.summary && (
-        <p className="px-3 py-2 text-2xs text-subtle leading-relaxed wrap-break-word">
+        <p className="px-3 py-2 text-style-caption text-subtle leading-relaxed wrap-break-word">
           {card.summary}
         </p>
       )}

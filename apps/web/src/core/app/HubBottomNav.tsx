@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
@@ -101,7 +105,9 @@ function HubBottomNavTab({
       >
         <Icon name={iconName} size={20} strokeWidth={2} />
       </span>
-      <span className="text-2xs font-semibold leading-none">{label}</span>
+      <span className="text-style-caption font-semibold leading-none">
+        {label}
+      </span>
     </button>
   );
 }
