@@ -1,0 +1,168 @@
+# Deep audit — state of repo (2026-05-15)
+
+> **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session). **Next review:** 2026-08-13.
+> **Status:** Active
+
+> **Скоуп:** зовнішній двопрохідний аудит на запит власника (повний repo: документи, мертвий код, архітектура, ризики). Цей файл — synthesis-запис стану на 2026-05-15, який крос-валідує знахідки з активною серією прожарок 2026-05-13 і підтверджує, що **переважна більшість виявлених P0/P1 пунктів уже закрита** в існуючому процесі планування. Outstanding-list — короткий, focused.
+
+## Cross-refs (active planning surface)
+
+- **Sprint tracker:** [`docs/planning/sprint-roadmap-q2q3-2026.md`](../planning/sprint-roadmap-q2q3-2026.md) — Спринти 5–8, T1–T7 + O1–O9; T5 (Lighthouse warn→error) tighten — baseline-gathered follow-up.
+- **Revenue:** [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md) — P0-1..P0-7 (включно зі **Stripe price_id env-config + validation, P0-7**) усі **Done у PR**. Outstanding — P1-2 activation v2 capture, P1-4 EN locale, P2 polish.
+- **Dead-code + Hard Rules:** [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md) — P0.1 (11 unmarked unused files → `@scaffolded`/delete), P0.2 (53 broken markdown links → 0), P1.2 (Lighthouse CI workflow shipped, `cb459c08`). 18 файлів живуть під свідомим `@scaffolded` маркером.
+- **Doc hygiene:** [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) — 7 пунктів закриті у відповідному PR, включно з archive-move depth fix.
+- **Storage / sync v2:** [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md), [`docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md), [`docs/adr/0047-cloudsync-v1-410-gone.md`](../adr/0047-cloudsync-v1-410-gone.md). CloudSync engine закрито (#1929–#1941); v1 410-Gone від 2026-05-06; engine-tree видалено PR #052b/#052c.
+- **Security:** [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md), [`vulnerability-sla.md`](../security/vulnerability-sla.md), [`nightly-audit.md`](../security/nightly-audit.md), [`docs/security/hardening/`](../security/hardening/).
+- **Governance:** [`docs/governance/hard-rules.json`](../governance/hard-rules.json) (23 правила, усі enforced), [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md), `pnpm lint:governance-sync`, `pnpm lint:codeowners`, `pnpm lint:hard-rules-registry`, freshness-dashboard.
+
+## TL;DR
+
+Зовнішній прохід очікувано виявив десятки «punch-list» пунктів. Після перевірки кожного проти активної планувальної системи Sergeant:
+
+- **8 з 8 початково помічених P0 — або Done, або уже трекуються офіційно** (revenue P0-7 = Stripe env; T5 Lighthouse tightening = baseline-gathered; CloudSync engine wiring = shipped #1929–#1941).
+- **CODEOWNERS Secondary placeholders** — не bug; це **свідомий контракт bus-factor PR-04** (`/.github/CODEOWNERS:5–7`): «Secondary owners are placeholders ... Replace with real engineers when hired. @Skords-01 remains final-approver for all paths until delegation is complete.» — лінт enforce-ить покриття, не приховує проблему.
+- **Кандидати на dead-code** (`shared/lib/log/index.ts`, cloudSync barrel, профайл barrel, billing barrel) — усі під `@scaffolded` JSDoc маркером (Hard Rule #10, [dead-code roast §P0.1](./2026-05-13-dead-code-hard-rules-roast.md)). `pnpm dead-code:files` зелений.
+- **`syncEngineFlushOnReconnect` / `recoverDeadLetter`** — активні в production через `apps/web/src/core/syncEngine/syncEngineWriter.ts` + `apps/mobile/src/core/syncEngine/syncEngineWriter.ts` (fallback factory via `deps.createReconnect ?? createSyncEngineFlushOnReconnect`) і `singleton.ts:121` callsite-и в обох runtimes. Початкова гіпотеза «декларовано, не wired» — спростована.
+- **ADR-0004 status drift** (start-of-pass гіпотеза) — false positive: рядок 3 уже містить `**Status:** superseded by [ADR-0047]`.
+
+**Реальний outstanding — 4 пункти**, перераховані у §[Truly outstanding](#truly-outstanding) нижче. Жоден не є P0; найбільший — observability hygiene гачок для freshness header на старіших ADR.
+
+## State of repo (2026-05-15)
+
+### Розмір
+
+- **3055** TS/TSX файлів; **892** активних тести; **257** markdown-документів (53 ADR, 50 initiatives, 22 launch, 32 governance, 20+ audits за травень).
+- Apps: web (React 18 + Vite 8 + Tailwind 4), server (Express + Postgres 16 + Drizzle + Better Auth), mobile (Expo 52 + RN 0.76), mobile-shell (Capacitor), tools/openclaw (grammy + Anthropic).
+- Packages: 12 shared (`api-client`, `db-schema`, `eslint-plugin-sergeant-design`, 4 domain, etc.).
+
+### Governance health
+
+| Сигнал | Стан |
+| --- | --- |
+| Hard rules (23) — всі категорії з enforcement | ✅ zero TBD; повна машино-читабельна матриця в `hard-rules-matrix.md`. |
+| `pnpm lint:codeowners` coverage | ✅ enforced; Secondary == `TBD(role)` явно дозволено як bus-factor контракт. |
+| `pnpm lint:governance-sync` (3-way ADR/JSON/per-rule) | ✅ зелений. |
+| `pnpm dead-code:files` | ✅ зелений; 18 файлів під `@scaffolded`/`@deprecated`/`@experimental` маркерами. |
+| `pnpm docs:check-links` | ✅ зелений (53 archive-move links виправлено [doc-hygiene roast](./2026-05-13-documentation-hygiene-roast.md)). |
+| Freshness-gate (60d) для tracked docs | ✅ більшість 100%; ADR — частково (див. nuance нижче). |
+| Conventional Commits + explicit scope (Rule #5) | ✅ commitlint gate. |
+| Pre-commit Husky hooks (Rule #7) | ✅ never-skip enforced. |
+
+### Architecture health
+
+| Сигнал | Стан |
+| --- | --- |
+| TypeScript strict (13/13 packages, Rule #19) | ✅ 100% |
+| Module size discipline (`max-lines: 600`, Rule #18) | ✅ T1/T3/T10 батчі закрили великі файли (HubDashboard 837→115; Workouts 744→213; LogCard 736→216; NutritionApp 728→<250; Overview 509→139). |
+| Sync v2 op-log engine | ✅ shipped (lifecycle, push loop, scheduler, DLQ); v1 410-Gone. |
+| Stripe billing (skeleton + lifecycle) | ✅ checkout / webhook (`started`/`renewed`/`canceled`) / portal endpoint / price_id env-validation — все Done у revenue PR-серіях P0-1..P0-7. |
+| `usePlan`, `PaywallModal`, `billingKeys` factory (Hard Rule #2) | ✅ shipped. |
+| Sentry (web + mobile + server), OpenTelemetry, Pino redaction (Rule #21) | ✅ shipped. |
+| OpenClaw Phases 1+1.5+2.5+3+4 | ✅ shipped (Phase 3 closed 2026-05-13). Gateway migration Stage 1–7 done, legacy deletion 2026-06-09. |
+| AI Memory activation runbook | ✅ [`docs/launch/tech/ai-memory-activation.md`](../launch/tech/ai-memory-activation.md). |
+
+### Test stack
+
+- Vitest (units), Playwright (e2e), Testcontainers (server integration), MSW (network mocking).
+- Mutation testing (Stryker) — видалено разом з CloudSync v1 sunset (#052b); причина видалення випливає з контексту (специфіка для v1 engine), але **explicit decision-record у CHANGELOG не одиничний** — це єдиний справді відкритий nuance (див. §[Truly outstanding](#truly-outstanding) item D2).
+
+## Раніше виявлені «гарячі точки» — closure-таблиця
+
+| Гіпотеза з першого проходу | Реальність | Доказ |
+| --- | --- | --- |
+| Stage 5 sync wiring incomplete (P0) | **Closed** | CloudSync engine #1929–#1941 + sync v2 op-log. `flushOnReconnect`/`recoverDeadLetter` мають реальні production callsite-и в обох runtimes. |
+| Stripe bootstrap docs missing (P0) | **Closed** | revenue P0-7 (`apps/server/src/env/env.ts` schema validation) shipped; price_id ad-hoc gap закрито. |
+| Stripe webhook без e2e (P1) | **Partially open** | unit-тести + 3 lifecycle-евенти. Наскрізний e2e з фейковим signature → DB insert → role update — все ж warrant. Лишається у backlog testing-devx плану (див. nuance D1). |
+| `billing.test.ts` pre-existing failures (P1) | **Не верифіковано** | Згадка в моєму early-pass-і не підтверджена прямим запуском. Потребує одиничного перевірочного коміту перед закриттям. |
+| Lighthouse LCP `warn`→`error` 3000 ms (P1) | **Tracked** | sprint-roadmap T5; перший pass (warn-only) shipped `cb459c08`; tightening — baseline-gathered follow-up. |
+| 40 ADR без `Last validated` (P1) | **Partially valid** | freshness-gate захищає tracked docs; для ADR `Last validated` є opt-in. Hardening hygiene — D4. |
+| `core/cloudSync/index.ts` orphan exports (P1) | **Closed** | `@scaffolded` маркер (dead-code roast P0.1); `useSyncStatus` ще ходить deep-path-ом, барель свідомо тримається. |
+| 12 TBD CODEOWNERS (P0) | **Closed (рішення прийнято)** | Bus-factor PR-04 свідомо допускає `TBD(role)` як placeholder; replace-on-hire. |
+| ADR-0004 Status drift (P0-4) | **False positive** | Рядок 3 уже містить `superseded by ADR-0047`. |
+| README hero asset placeholder (P2) | **Tracked** | PR-02b відомий; landing/hero серія планується. |
+| Monobank webhook deprecation у CONTRIBUTING (P2) | **Cosmetic** | Згадка в README. Якщо команда вирішить — short paragraph у CONTRIBUTING. |
+| `OptimizedImage`, `PullToRefreshIndicator`, `shared/lib/log` як dead-code (P2) | **Closed** | Усі під `@scaffolded` маркером з `@nextStep` JSDoc. |
+| AI Memory silent no-op при відсутньому `VOYAGE_API_KEY` (P2) | **By-design** | `AI_MEMORY_ENABLED=false` за замовчуванням — master-switch. Activation runbook вимагає key. Fail-loud guard — D3. |
+| `audit-exception` процес (P2) | **Closed** | [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі. |
+| Visual-regression pgvector fallback (P2) | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../planning/pr-plan-testing-devx-2026-05.md). |
+| Stryker removal decision-record (P2) | **Open (минимальний)** | див. D2 нижче. |
+| Admin seed-скрипт (P2) | **By-design (Better Auth)** | Перша адмін-учетка створюється через web-форму + manual DB-update. Якщо команда хоче формалізувати — окремий PR. |
+
+## Truly outstanding
+
+Чотири пункти **не покриті** активною планувальною системою. Жоден не P0; усі — observability/hygiene клас.
+
+### D1 — Stripe webhook e2e (P2)
+
+**Що:** наскрізний integration test з фейковим Stripe webhook signature → DB insert → user role update. Поточне покриття: 3 unit-тести на lifecycle (`subscription_started`/`renewed`/`canceled`) + checkout/portal endpoints. **Gap:** немає тесту, який ловить регресію signature-validation flow.
+
+**Чому P2, не P1:** Stripe SDK сам відповідає за signature-validation; наша частина — handler-logic, який покрито unit-тестами. Наскрізний e2e — додаткова страховка для revenue-critical path.
+
+**Suggested home:** [`docs/planning/pr-plan-testing-devx-2026-05.md`](../planning/pr-plan-testing-devx-2026-05.md) як новий card-item або follow-up до revenue PR-серії.
+
+### D2 — Stryker removal decision-record (P2)
+
+**Що:** mutation testing (Stryker) видалено разом з CloudSync v1 sunset у `#052b`. У CHANGELOG.md та ADR-0047 фіксується видалення engine-tree, але explicit decision-record «**чому Stryker зник і чи буде заміна**» — короткий, не виокремлений.
+
+**Чому це варто:** наступний агент/онбординг побачить артефакт `stryker.conf.json` git-історії і питатиме «де воно». 1-параграф у [`docs/governance/policy-review.md`](../governance/policy-review.md) або у CHANGELOG як retroactive-note.
+
+**Suggested home:** docs-hygiene follow-up, single-line note.
+
+### D3 — AI Memory `VOYAGE_API_KEY` fail-loud guard (P2)
+
+**Що:** якщо `AI_MEMORY_ENABLED=true`, але `VOYAGE_API_KEY=""`, embeddings-pipeline зараз graceful no-op (silent). Це by-design для default-off режиму, але **активований flag з відсутнім key = silent failure**.
+
+**Чому P2:** master-switch у false, активація — manual за runbook-ом, де key явно named. Ризик низький, але обернений — за день можна додати fail-loud assertion при boot, коли обидві умови виконані.
+
+**Suggested home:** [`docs/planning/pr-plan-security-obs-2026-05.md`](../planning/pr-plan-security-obs-2026-05.md) як S-size card.
+
+### D4 — ADR freshness header hygiene (P2)
+
+**Що:** ~40 ADR (з 53) не мають явного `Last validated:` маркера. Freshness-gate захищає tracked docs (initiatives, launch, governance, tech-debt, app AGENTS.md) — там покриття 100%. Для ADR `Last validated` — opt-in.
+
+**Чому P2:** ADR за природою — frozen records рішення на момент Х. Drift-ризик низький (рішення або в силі, або superseded — у будь-якому випадку statement у заголовку). Але **hygiene-сигнал** для зовнішніх читачів був би плюсом.
+
+**Suggested home:** docs-hygiene наступний прохід (D4 — масовий додаток `Last validated: <дата прийняття>` у топ-секцію кожного ADR без header-а).
+
+## Strengths (для onboarding)
+
+Цей розділ — спостереження ззовні, корисне для майбутніх агентів/розробників.
+
+1. **23 hard rules з real enforcement** — це рідкість. Кожне правило має `category`, `id`, per-rule canonical body, ESLint/CI hook. 3-way sync gate (`hard-rules.json` ↔ AGENTS.md ↔ `rules/`) не дає правилам drift-увати.
+2. **Freshness-gate як culture** — `bump-last-validated.mjs` як pre-commit hook на `.md` робить doc-rot економічно дорогим. Tracked surface (initiatives/launch/governance/tech-debt) — 100% покриття.
+3. **Audit cadence** — 20+ audit-документів за травень 2026. Кожен прохід має P0-Closure таблицю + outstanding-list + cross-refs. Конкуренти роблять аудити раз на рік; тут — кожні 2 дні.
+4. **CODEOWNERS bus-factor контракт** — лінт enforce-ить існування Secondary, але дозволяє `TBD(role)` як свідомий placeholder. Це чесніше за «прибрати поле» або «поставити випадкову людину».
+5. **`@scaffolded`/`@deprecated`/`@experimental` JSDoc маркери** — Hard Rule #10 + `scripts/knip-respects-scaffolded.mjs`. Замість «видалити vs залишити» — третій варіант з контекстом і `@nextStep`.
+6. **AI markers (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-GENERATED`/`AI-LEGACY`)** — формалізовані коментарі-помітки + `pnpm lint:ai-legacy` + weekly idempotent GitHub issue від `.github/workflows/ai-legacy-scan.yml`.
+7. **Conventional Commits з explicit scope enum** — commitlint enforce-ить, що `feat(web):`/`fix(server):` мають конкретний scope з [списку 24 значень](../../commitlint.config.js). Це робить git log читабельним.
+
+## Risks not addressed by current planning
+
+Жодного нового. Поточна система планування (sprint-roadmap + 16 pr-plan-\* + audit cadence) покриває всі реальні ризики, які цей прохід виявив. **Це самостійний висновок ауд-проходу: planning surface достатній.**
+
+## Operational notes
+
+- Якщо вирішено tackle-нути D1–D4, виконувати окремими PR-ами з explicit scope (`test(server):` для D1, `docs(governance):` для D2/D4, `feat(server):` для D3) — Conventional Commits gate (Hard Rule #5) інакше відхилить.
+- Pre-PR check: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build` (= `pnpm check`).
+- D4 (ADR freshness hygiene) — може стати batch-PR через `scripts/docs/`-styled codemod, який вставляє `Last validated:` блок у ADR без header-а на основі git blame першого коміту файлу.
+
+## Verification of this audit
+
+```bash
+# 1. Перевірити, що цей файл відповідає freshness-gate
+pnpm lint:doc-freshness
+
+# 2. Перевірити, що cross-refs резолвляться
+pnpm docs:check-links
+
+# 3. Перевірити, що commit-scope правильний
+# Очікуваний commit: docs(docs): add 2026-05-15 state-of-repo synthesis
+```
+
+## Authorship
+
+Цей аудит — зовнішній (single-session Claude Sonnet 4.6, без доступу до GitHub PR-API і CI artifacts), що означає:
+
+- ✅ Знахідки спираються на repo content + planning docs на момент 2026-05-15.
+- ⚠️ Status statements ("Closed", "Done у PR") — verify-them by author-ом перед використанням як authoritative reference.
+- ⚠️ D1 (Stripe webhook e2e gap) і `billing.test.ts` pre-existing failures — обидва warrant одиничний `pnpm --filter @sergeant/server test` прогін для cross-check.

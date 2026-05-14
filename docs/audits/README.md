@@ -54,6 +54,8 @@
 
 | [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md) | Revenue / monetization / paywall roast — follow-up до 2026-05-04 | Active | 7/18 | 11 | self (Прогрес виконання) + [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) |
 
+| [`2026-05-15-deep-audit-state-of-repo.md`](./2026-05-15-deep-audit-state-of-repo.md) | Synthesis-аудит зовнішнім проходом — крос-валідація P0/P1 закриттів, 4 hygiene-outstanding | Active | n/a (synthesis) | 4 | self (§Truly outstanding D1–D4) |
+
 | [`archive/2026-04-26-sergeant-audit-devin.md`](./archive/2026-04-26-sergeant-audit-devin.md) | Незалежний аудит Devin (historical record) | Archived | 30/31 | 1 | embedded таблиця у самому файлі |
 | [`archive/2026-04-28-implementation-roadmap.md`](./archive/2026-04-28-implementation-roadmap.md) | План реалізації покращень (архівовано P1-4 — консолідовано у master tracker) | Archived | — | — | [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) |
 | [`archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит | Archived | 12/18 ≈ | 6 ≈ | [`archive/2026-04-28-implementation-roadmap.md`](./archive/2026-04-28-implementation-roadmap.md) |
