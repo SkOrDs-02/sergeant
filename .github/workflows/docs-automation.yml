@@ -54,6 +54,9 @@ jobs:
       - name: Check docs/playbooks/INDEX.md is up to date
         run: node scripts/docs/generate-playbook-index.mjs --check
 
+      - name: Check playbook files are in INDEX.md and catalog
+        run: node scripts/docs/check-playbook-3way-sync.mjs
+
       - name: Check playbook schema (H1 + freshness + Status + Trigger)
         # Every playbook in docs/playbooks/ (excluding INDEX.md, README.md and
         # _TEMPLATE*) must declare an H1 title, a `Last validated` freshness
@@ -196,6 +199,10 @@ jobs:
         # the drift class where a doc accumulates multiple Last validated rows.
         run: node scripts/docs/check-freshness-single-marker.mjs
 
+      - name: Check tracked docs are within freshness cadence
+        # Network-free CI twin of the nightly freshness issue creator.
+        run: node scripts/docs/check-freshness.mjs --check-cadence
+
   pr-body-validator:
     name: PR body validator
     if: github.event_name == 'pull_request'
@@ -241,6 +248,7 @@ jobs:
           node --test \
             scripts/docs/__tests__/check-freshness.test.mjs \
             scripts/docs/__tests__/check-freshness-single-marker.test.mjs \
+            scripts/docs/__tests__/check-playbook-3way-sync.test.mjs \
             scripts/docs/__tests__/generate-playbook-index.test.mjs \
             scripts/docs/__tests__/generate-initiative-followups.test.mjs \
             scripts/docs/__tests__/generate-open-work.test.mjs \
