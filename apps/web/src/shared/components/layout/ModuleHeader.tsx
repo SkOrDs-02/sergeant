@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
@@ -122,8 +126,7 @@ export function ModuleHeader({
           {titleSlot ?? (
             <>
               {eyebrow ? (
-                // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Module hero kicker uses text-brand-700 tint (WCAG AA ≥4.5:1 on panel); SectionHeading xs does not expose a brand-700 tone, so we render the eyebrow inline rather than via SectionHeading.
-                <span className="text-2xs text-brand-700 dark:text-brand/70 font-bold tracking-widest uppercase block leading-none mb-0.5">
+                <span className="text-style-overline text-brand-700 dark:text-brand/70 block leading-none mb-0.5">
                   {eyebrow}
                 </span>
               ) : null}
@@ -144,7 +147,7 @@ export function ModuleHeader({
               {subtitle ? (
                 <span
                   className={cn(
-                    "text-2xs font-medium truncate",
+                    "text-style-caption font-medium truncate",
                     mt ? mt.subtitle : "text-subtle",
                   )}
                 >
@@ -460,7 +463,7 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
               openHubModule(id);
             }}
             className={cn(
-              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 pointer-coarse:h-9 px-2 rounded-xl text-2xs font-semibold tracking-wide transition-colors",
+              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 pointer-coarse:h-9 px-2 rounded-xl text-style-caption font-semibold transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
               isActive ? tokens.active : tokens.inactive,
               tokens.ring,
