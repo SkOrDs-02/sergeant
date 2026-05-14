@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState, useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
@@ -472,7 +476,7 @@ export function HubReports() {
               key={`${period}-${offset}`}
               data={data.workouts.cur.daily}
               dates={dates}
-              colorClass="bg-sky-500"
+              colorClass="bg-chart-fizruk"
               unit=" трен."
             />
           }
@@ -491,7 +495,7 @@ export function HubReports() {
               key={`${period}-${offset}`}
               data={data.spending.cur.daily}
               dates={dates}
-              colorClass="bg-emerald-500"
+              colorClass="bg-chart-finyk"
               unit=" ₴"
             />
           }
@@ -510,7 +514,7 @@ export function HubReports() {
               key={`${period}-${offset}`}
               data={data.habits.cur.daily}
               dates={dates}
-              colorClass="bg-orange-500"
+              colorClass="bg-chart-routine"
               maxValue={100}
               unit="%"
             />
@@ -530,7 +534,7 @@ export function HubReports() {
               key={`${period}-${offset}`}
               data={data.kcal.cur.daily}
               dates={dates}
-              colorClass="bg-lime-500"
+              colorClass="bg-chart-nutrition"
               unit=" ккал"
             />
           }

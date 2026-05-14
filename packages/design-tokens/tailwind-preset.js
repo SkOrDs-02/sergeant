@@ -191,6 +191,14 @@ const preset = {
         // ═══════════════════════════════════════════════════════════════════
         chart: chartPalette,
 
+        // Chart-series tokens — semantic per-module tokens for bar charts.
+        // Each maps to its module's -strong tier so bars read ≥ 5:1 against
+        // cream bg-bg. No new hex: reuses the -strong values declared above.
+        "chart-finyk": "rgb(4 120 87 / <alpha-value>)", // emerald-700 — 5.23:1
+        "chart-fizruk": "rgb(15 118 110 / <alpha-value>)", // teal-700    — 5.22:1
+        "chart-routine": "rgb(194 58 58 / <alpha-value>)", // coral-700   — 5.06:1
+        "chart-nutrition": "rgb(70 98 18 / <alpha-value>)", // lime-800    — 6.64:1
+
         // ═══════════════════════════════════════════════════════════════════
         // MODULE-SPECIFIC COLORS — Each module has its own personality
         // ═══════════════════════════════════════════════════════════════════

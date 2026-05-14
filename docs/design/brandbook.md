@@ -74,6 +74,23 @@ Teal 700: #0f766e
 | Routine   | #f97066 | #fff5f3 | Звички     |
 | Nutrition | #92cc17 | #f8fee7 | Харчування |
 
+#### Chart series
+
+Bar-чарти у `HubReports` та майбутніх дашбордах використовують семантичні
+`chart-{module}` токени замість raw Tailwind-палітри. Кожен токен маппується
+до `-strong` тіру свого модуля — це гарантує ≥ 5:1 на кремовому `bg-bg`.
+
+| Токен             | Utility              | Hex       | Contrast vs `bg-bg` |
+| ----------------- | -------------------- | --------- | ------------------- |
+| `chart-finyk`     | `bg-chart-finyk`     | `#047857` | 5.23 : 1            |
+| `chart-fizruk`    | `bg-chart-fizruk`    | `#0f766e` | 5.22 : 1            |
+| `chart-routine`   | `bg-chart-routine`   | `#c23a3a` | 5.06 : 1            |
+| `chart-nutrition` | `bg-chart-nutrition` | `#466212` | 6.64 : 1            |
+
+Raw `bg-sky-500`, `bg-orange-500`, `bg-emerald-500`, `bg-lime-500` тощо у
+`core/hub/Hub*.tsx` заборонені lint rule `no-foreign-module-accent`
+(G2, 2026-05-14). Додавай лише `bg-chart-*` токени.
+
 ### Семантичні кольори
 
 ```
