@@ -123,6 +123,7 @@ avg_over_time(db_pool_idle[5m])
 | Alert                    | Expr                  | For | Severity | Runbook                                                                  |
 | ------------------------ | --------------------- | --- | -------- | ------------------------------------------------------------------------ |
 | `DbPoolWaitingSustained` | `db_pool_waiting > 0` | 5m  | ticket   | [runbook.md#dbpoolwaitingsustained](./runbook.md#dbpoolwaitingsustained) |
+| `DbPoolWaitingDeep`      | `db_pool_waiting > 5` | 5m  | ticket   | [runbook.md#dbpoolwaitingdeep](./runbook.md#dbpoolwaitingdeep)           |
 | `DbPoolSaturated`        | `db_pool_waiting > 0` | 10m | page     | [runbook.md#dbpoolsaturated](./runbook.md#dbpoolsaturated)               |
 
 Майбутній follow-up (out of scope PR-13): додати `DbSlowPoolConnects`

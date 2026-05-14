@@ -38,4 +38,4 @@
 
 - [README](./README.md) — індекс беклогу.
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — SLA для Critical = 24h на acknowledge + 14d на fix.
-- [docs/audits/2026-04-28-implementation-roadmap.md](../../audits/2026-04-28-implementation-roadmap.md) — попередній roadmap (для крос-контексту).
+- [docs/audits/archive/2026-04-28-implementation-roadmap.md](../../audits/archive/2026-04-28-implementation-roadmap.md) — попередній roadmap (для крос-контексту).

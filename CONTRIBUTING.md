@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -78,7 +78,10 @@ pnpm dev:web
 ```bash
 pnpm lint
 pnpm typecheck
+pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 ```
+
+`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності — типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс — `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. Той же gate стоїть у CI (`format-lint-test-build` matrix у `.github/workflows/ci.yml`, audit item P2-1 у [`docs/audits/2026-05-13-testing-devx-roast.md`](./docs/audits/2026-05-13-testing-devx-roast.md)).
 
 Далі додатково за surface:
 
@@ -130,6 +133,8 @@ Husky `pre-commit` запускає `lint-staged` з трьома пайплай
 | `*.{json,css,html,yml,yaml}` | `prettier --write`                                                       |
 
 Скрипт `scripts/staged-typecheck.mjs` групує staged TS/TSX за найближчим `tsconfig.json` (apps/web, apps/server, packages/\*…) і викликає `tsc-files --noEmit --skipLibCheck` під cwd кожного sub-project — це уникнення повного `pnpm typecheck` (16 турбо-task-ів) на кожен коміт. На гарячому кеші проходить за 3–8 сек на 10–20 staged файлів. На холодному (після `git pull` зі змінами в `node_modules` або `tsconfig`) — 15–30 сек. Якщо typecheck падає на staged-файлі, виправ помилку — `--no-verify` залишається забороненим.
+
+Хук обгорнуто wrapper-ом [`scripts/pre-commit-timing.mjs`](./scripts/pre-commit-timing.mjs), що міряє wall-clock час і друкує markdown summary одразу після commit-у. Історичний p50/p95 — `pnpm pre-commit:timings`. Деталі (env-контракт `SERGEANT_TIMING_LOG`, opt-out `SERGEANT_SKIP_TIMING=1`) — [`docs/development/pre-commit-timing.md`](./docs/development/pre-commit-timing.md).
 
 Перед відкриттям PR:
 

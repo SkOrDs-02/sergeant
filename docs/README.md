@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -10,6 +10,8 @@ Main documentation index for Sergeant.
 - Repo overview: [README.md](../README.md)
 - Contributor manual: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - Repo contract and hard rules: [AGENTS.md](../AGENTS.md)
+- **Відкрита робота — єдиний дашборд:** [open-work.md](./open-work.md) — автозведення активних документів з усіх tracker-ів; відповідь на "що зараз НЕ доробленого?"
+- **Свіжість документації:** [governance/freshness-dashboard.html](./governance/freshness-dashboard.html) — автозведення `Last validated` / `Next review` по відстежуваних документах.
 - Agent skills catalog: [agents/agent-skills-catalog.md](./agents/agent-skills-catalog.md)
 - Playbook catalog: [playbooks/playbook-catalog.md](./playbooks/playbook-catalog.md)
 - Service catalog: [architecture/service-catalog.md](./architecture/service-catalog.md)
@@ -51,6 +53,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 | Section                                                 | Purpose                                                                                                   |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [`open-work.md`](./open-work.md)                        | **Автогенерований єдиний дашборд** активних документів з усіх 7 tracker-ів (Rule #10 sweep)               |
 | [`audits/`](./audits/README.md)                         | Code, architecture, UX audits with `Active → Closed → Archived` lifecycle and freshness gate              |
 | [`initiatives/`](./initiatives/README.md)               | Numbered multi-PR initiatives with acceptance criteria, progress tables, and 90-day stabilization window  |
 | [`launch/`](./launch/README.md)                         | Go-to-market, monetization, ops, and product-OS roadmaps (FTUX master tracker + sprint plans)             |

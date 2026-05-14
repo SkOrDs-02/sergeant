@@ -1,6 +1,10 @@
 import * as Sentry from "@sentry/node";
 import type { Express } from "express";
-import { scrubPII as sharedScrubPII } from "@sergeant/shared";
+import {
+  scrubPII as sharedScrubPII,
+  scrubPIIString,
+  redactSensitiveQueryParams,
+} from "@sergeant/shared";
 import { als } from "./obs/requestContext.js";
 import { redactSensitiveUrl } from "./obs/sensitiveUrl.js";
 
@@ -213,8 +217,13 @@ export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
   // і Sentry capture-ить його у `event.request.url`. Рятуємо до того, як
   // подія йде на ingest. Хелпер ідемпотентний — викликати двічі безпечно,
   // якщо `requestDataIntegration` колись стане сам редагувати ці шляхи.
+  // Plus PII roast 2026-05-13 §P0-S2: `?token=` / `?api_key=` /
+  // `?code=` query params get the same treatment so OAuth callbacks
+  // and magic-link error captures don't leak the credential.
   if (typeof event.request?.url === "string") {
-    event.request.url = redactSensitiveUrl(event.request.url);
+    event.request.url = redactSensitiveQueryParams(
+      redactSensitiveUrl(event.request.url),
+    );
   }
   // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs. Ловимо
   // випадки, коли user-payload потрапив у `event.extra` через
@@ -222,11 +231,32 @@ export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
   // `Sentry.captureException(e, { extra })`.
   if (event.extra) scrubPII(event.extra);
   if (event.contexts) scrubPII(event.contexts);
+  // PII roast §P0-S3: also scrub the top-level `event.message` and every
+  // exception `value` for embedded emails / telegram tokens / JWT / AWS
+  // keys. `scrubPII` deliberately skips string contents (false-positive
+  // minefield on user-entered prose), but error messages and exception
+  // values are explicitly machine-generated diagnostics where pattern
+  // hits are almost always real leaks.
+  if (typeof event.message === "string") {
+    event.message = scrubPIIString(event.message);
+  }
+  const exceptionValues = event.exception?.values;
+  if (Array.isArray(exceptionValues)) {
+    for (const ex of exceptionValues) {
+      if (ex && typeof ex.value === "string") {
+        ex.value = scrubPIIString(ex.value);
+      }
+    }
+  }
   if (event.breadcrumbs) {
     for (const bc of event.breadcrumbs) {
       if (bc.data) scrubPII(bc.data);
-      // breadcrumb.message — string; нічого скрабити (occurrence rate низький
-      // і парсинг рядка на email/phone дав би false-positive-и).
+      // Breadcrumb message-и іноді містять stringified error payload
+      // (axios upstream-fail, чи user-input echoes). Сканеро лише ці
+      // рядки — `bc.data` вже покрито структурним scrubPII вище.
+      if (typeof bc.message === "string") {
+        bc.message = scrubPIIString(bc.message);
+      }
     }
   }
   // user.email/phone не пускаємо — лишаємо тільки id. `sendDefaultPii=false`
@@ -273,12 +303,35 @@ export function applyBeforeBreadcrumb(
     // (`/api/mono/webhook/<secret>`) сюди не потрапляє — Sentry HTTP-breadcrumb-и
     // для inbound-у не створюються.
     if (typeof breadcrumb.data["url"] === "string") {
-      breadcrumb.data["url"] = redactSensitiveUrl(breadcrumb.data["url"]);
+      breadcrumb.data["url"] = redactSensitiveQueryParams(
+        redactSensitiveUrl(breadcrumb.data["url"]),
+      );
     }
     scrubPII(breadcrumb.data);
   }
+  if (typeof breadcrumb?.message === "string") {
+    breadcrumb.message = scrubPIIString(breadcrumb.message);
+  }
   return breadcrumb;
 }
+
+/**
+ * URL substrings that suppress event capture entirely (Sentry `denyUrls`).
+ * Sampling drops most health-check traces to 0.1 %, but error events still
+ * fire on every failure — uptime monitors hammering `/health` would burn
+ * the Sentry error budget on transient 502s. Exported for tests + docs.
+ *
+ * Use plain strings (not regex) because the Sentry SDK accepts both and
+ * strings are easier to audit against `docs/observability/sentry-sampling.md`.
+ */
+export const SENTRY_DENY_URLS: readonly (string | RegExp)[] = [
+  "/api/health",
+  "/health",
+  // Browser-side request to `/favicon.ico` from monitoring crawlers
+  // sometimes generates 404 noise — filter at SDK level rather than
+  // teaching every route to handle it.
+  /\/favicon\.ico$/,
+];
 
 // ВАЖЛИВО: ініціалізація робиться у module top-level, а не в окремій функції,
 // яку треба викликати. У ESM (`"type": "module"`) усі `import` хостяться і
@@ -330,6 +383,11 @@ if (dsn) {
     },
     // Приберемо request body зі звітів — там можуть бути фото/паролі.
     sendDefaultPii: false,
+    // PII roast 2026-05-13 §P0-S4: drop events from health probes so
+    // uptime monitor 502s never burn the Sentry error budget. Traces
+    // are still sampled at 0.001 (see `SENTRY_SAMPLING_RULES`) but
+    // error events bypass sampling entirely without this list.
+    denyUrls: [...SENTRY_DENY_URLS],
     beforeSend: applyBeforeSend,
     beforeBreadcrumb: applyBeforeBreadcrumb,
   });

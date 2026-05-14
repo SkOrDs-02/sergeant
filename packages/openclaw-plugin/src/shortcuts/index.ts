@@ -11,6 +11,7 @@ import { heartbeatShortcut } from "./heartbeat.js";
 import { metricsShortcut } from "./metrics.js";
 import { posthogShortcut } from "./posthog.js";
 import { prsShortcut } from "./prs.js";
+import { forgetShortcut } from "./forget.js";
 import { recallShortcut } from "./recall.js";
 import { refreshMetricsShortcut } from "./refresh-metrics.js";
 import { releasesShortcut } from "./releases.js";
@@ -44,6 +45,7 @@ export const ALL_SHORTCUTS: ShortcutDefinition[] = [
   heartbeatShortcut,
   // Memory & decisions
   recallShortcut,
+  forgetShortcut,
   decisionsShortcut,
   digestShortcut,
   // Reminders
@@ -54,6 +56,7 @@ export {
   buildsShortcut,
   decisionsShortcut,
   digestShortcut,
+  forgetShortcut,
   heartbeatShortcut,
   metricsShortcut,
   posthogShortcut,

@@ -31,6 +31,8 @@ export const messages = {
 
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Невірний email або пароль.",
+    invalidToken:
+      "Посилання для скидання пароля невалідне або вже використане. Запроси новий лист на сторінці входу.",
     userAlreadyExists: "Цей email вже зареєстровано. Спробуй увійти.",
     invalidEmail: "Невірний формат email.",
     invalidPassword: "Невірний пароль.",
@@ -80,7 +82,7 @@ export const messages = {
     // PR-31 / §C6 — `fieldRequired` deprecated. Безособове «Поле
     // обовʼязкове» виграло від уніфікації під 1-у особу («Введи X»
     // / «Обери X»). Лишаємо до follow-up міграції design-showcase
-    // demo (`core/designShowcase/sections/Forms.tsx`); прохід через
+    // demo (`core/DesignShowcase/sections/Forms.tsx`); прохід через
     // production-форми вже не звертається до цього key-а.
     /** @deprecated PR-31: use `<entity>Required` ключі замість безособового. */
     fieldRequired: "Поле обовʼязкове.",
@@ -108,6 +110,11 @@ export const messages = {
     // — «Обери …». Snapshot-и `AddBudgetForm.test.tsx` оновлюються
     // разом з цим (тести закривають user-facing copy contract).
     tagNameRequired: "Введи назву тега",
+    // PR-058 (web): Reducer-level dedupe в `applyCreateTag` /
+    // `applyCreateCategory` (case-insensitive trim) — UI ловить
+    // `next === state` після `setRoutine` і показує цей copy у toast.
+    tagNameDuplicate: "Тег з такою назвою вже існує",
+    categoryNameDuplicate: "Категорія з такою назвою вже існує",
     goalNameRequired: "Введи назву цілі",
     goalAmountRequired: "Введи суму цілі більше 0",
     goalSavedNonNegative: "Відкладена сума не може бути від'ємною",

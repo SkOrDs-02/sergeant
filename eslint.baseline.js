@@ -69,6 +69,12 @@ export const baselineIgnores = {
     "**/.turbo/**",
     "storybook-static/**",
     "**/storybook-static/**",
+    // `ops/n8n-workflows/_lib/*` ships paste-into-n8n Function-node
+    // templates. They use top-level `return` (legal inside an n8n
+    // sandbox, not legal in a regular ES module) and run inside n8n's
+    // own bundled lint/sandbox — eslint here would only produce false
+    // positives. Prettier still formats them via lint-staged.
+    "ops/n8n-workflows/_lib/**",
   ],
 };
 

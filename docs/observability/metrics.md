@@ -48,15 +48,17 @@ histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_ms_bucket
 
 ## 2. Postgres (USE)
 
-| Metric                        | Type      | Labels | Emitter                                                                                                                                                                        |
-| ----------------------------- | --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `db_query_duration_ms`        | Histogram | `op`   | [db.ts:86](../../apps/server/src/db.ts#L86)                                                                                                                                    |
-| `db_errors_total`             | Counter   | `code` | [db.ts:46](../../apps/server/src/db.ts#L46), [db.ts:108](../../apps/server/src/db.ts#L108)                                                                                     |
-| `db_slow_queries_total`       | Counter   | `op`   | [db.ts:92](../../apps/server/src/db.ts#L92)                                                                                                                                    |
-| `db_pool_total`               | Gauge     | —      | [metrics.ts:341](../../apps/server/src/obs/metrics.ts#L341) `startPoolSampler()`                                                                                               |
-| `db_pool_idle`                | Gauge     | —      | ↑                                                                                                                                                                              |
-| `db_pool_waiting`             | Gauge     | —      | ↑                                                                                                                                                                              |
-| `db_slow_pool_connects_total` | Counter   | —      | [db.ts](../../apps/server/src/db.ts) `instrumentedConnect` (PR-13) — `pool.connect()` довший за `PG_SLOW_CONNECT_MS`. Sizing/debug — [pg-pool-sizing.md](./pg-pool-sizing.md). |
+| Metric                             | Type      | Labels  | Emitter                                                                                                                                                                        |
+| ---------------------------------- | --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `db_query_duration_ms`             | Histogram | `op`    | [db.ts:86](../../apps/server/src/db.ts#L86)                                                                                                                                    |
+| `db_errors_total`                  | Counter   | `code`  | [db.ts:46](../../apps/server/src/db.ts#L46), [db.ts:108](../../apps/server/src/db.ts#L108)                                                                                     |
+| `db_slow_queries_total`            | Counter   | `op`    | [db.ts:92](../../apps/server/src/db.ts#L92)                                                                                                                                    |
+| `db_pool_total`                    | Gauge     | —       | [metrics.ts:341](../../apps/server/src/obs/metrics.ts#L341) `startPoolSampler()`                                                                                               |
+| `db_pool_idle`                     | Gauge     | —       | ↑                                                                                                                                                                              |
+| `db_pool_waiting`                  | Gauge     | —       | ↑                                                                                                                                                                              |
+| `db_pool_size_current`             | Gauge     | `state` | ↑ — single labeled mirror of the three above (`state=active\|idle\|waiting`). Prefer for new dashboards.                                                                       |
+| `db_pool_acquire_duration_seconds` | Histogram | —       | [db.ts](../../apps/server/src/db.ts) `instrumentedConnect` — every `pool.connect()` checkout. Buckets 1 ms → 10 s. Pairs with `db_slow_pool_connects_total`.                   |
+| `db_slow_pool_connects_total`      | Counter   | —       | [db.ts](../../apps/server/src/db.ts) `instrumentedConnect` (PR-13) — `pool.connect()` довший за `PG_SLOW_CONNECT_MS`. Sizing/debug — [pg-pool-sizing.md](./pg-pool-sizing.md). |
 
 Buckets duration: `1, 5, 25, 100, 250, 1000, 5000` ms. Slow threshold: `DB_SLOW_MS` (default 200 ms). Pool sampler кожні 10 с, запускається з [index.ts:44](../../apps/server/src/index.ts#L44).
 
@@ -176,7 +178,19 @@ sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))                   
 sum by (model) (rate(ai_cost_estimate_usd_total{provider="voyage"}[1d])) * 86400           # Voyage USD/day per model
 sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))
   / on(provider) sum by (provider) (infra_monthly_cost_usd{plan!="usage"})                 # actual vs budget
+
+# Per-release attribution via `app_build_info` join (див. §15a)
+sum by (model, release) (
+  rate(ai_tokens_total{provider="anthropic"}[5m])
+  * on() group_left(release) app_build_info
+)                                                                                          # tokens/s per model+release
+sum by (model, release) (
+  increase(ai_cost_estimate_usd_total{provider="anthropic"}[24h])
+  * on() group_left(release) app_build_info
+)                                                                                          # USD/24h per model+release
 ```
+
+Join-pattern із `app_build_info` (один gauge=1 на інстанс із лейблом `release`) дає per-release breakdown без копіювання `release` у кожен emitter — повний контракт цієї серії і ще приклади для `http_*` метрик див. [§15a](#15a-buildrelease-identity-app_build_info).
 
 **SLO/alerts**: [SLO.md §5](./SLO.md#5-ai-anthropic-slo-970-) · `AiErrorBudgetBurn{Fast,Slow}` · `AiLatencyP95High` · `AiQuotaStoreDown` — [runbook.md](./runbook.md#aierrorbudgetburn).
 
@@ -381,6 +395,8 @@ count(app_build_info) by (release)
 ```
 
 **Кардинальність**: **1** серія на інстанс (per-process), значення фіксується на стартапі і не змінюється. При rolling deploy-і Prometheus побачить дві серії на час перетину версій — це нормально і не порушує cardinality budget.
+
+Per-model AI-token / cost join-приклади (де `release` лейбл прокидається у бізнес-метрики Anthropic / Voyage) — див. [§6](#6-ai-anthropic--voyage).
 
 ---
 

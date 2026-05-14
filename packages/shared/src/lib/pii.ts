@@ -74,6 +74,26 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "x-openclaw-webhook-secret",
   "x-api-secret",
   "x-internal-token",
+  // PR-48 follow-up (HMAC #2733): `signature` (key) already covers
+  // `X-Signature`-named fields only at root; header keys arrive lowercased
+  // and prefixed, so we need an explicit entry.
+  "x-signature",
+  "x-webhook-signature",
+  "x-hmac-signature",
+  // OTP / magic-link / verification flows. Pre-2026-05-13 these leaked
+  // through `event.request.data` once we ever set up a form-state context
+  // capture; today `request.data` is wholesale-deleted, but adding the
+  // keys closes the secondary leak path through `setExtra({ otp })` or
+  // accidental `req.body` echoes.
+  "otp",
+  "otpCode",
+  "verificationCode",
+  "verifyCode",
+  "magicLink",
+  "magicLinkToken",
+  "resetToken",
+  "passwordResetToken",
+  "pin",
   // Provider keys that occasionally land in `extra` diagnostics.
   "groqKey",
   "anthropicKey",
@@ -126,4 +146,174 @@ export function scrubPII(
     }
     scrubPII(obj[key], seen);
   }
+}
+
+/**
+ * Pattern-based PII scrubber for **string values** (error messages,
+ * exception text, breadcrumb messages, query-string params).
+ *
+ * `scrubPII` (above) intentionally never inspects string contents — it
+ * would create a false-positive minefield over user-entered free text
+ * (chat messages, journal entries, etc.) and structured context where
+ * UUID-like substrings happen to look like JWTs. This helper is the
+ * **opt-in** complement: callers know which surface is high-risk
+ * (Sentry `event.message`, `exception.value`, breadcrumb messages,
+ * URL query-strings) and apply the regex pass explicitly.
+ *
+ * Patterns are intentionally conservative to keep false-positive rate
+ * low — each pattern was chosen against historical real leaks (see
+ * audit `docs/audits/2026-05-13-security-observability-roast.md`):
+ *
+ *   - **Email** — RFC 5322 simplified form. Matches `local@host.tld` and
+ *     strips the local-part but preserves the domain hint
+ *     (`[email redacted]@host.tld`) — domain alone is not PII per GDPR
+ *     Art. 4(1) when stripped of the identifier; helps incident triage
+ *     (e.g. `*@enterprise.com` reveals tenant scope without exposing
+ *     individual users).
+ *   - **Telegram bot token** — `<bot-id>:<35-char-base64>`; tokens leak
+ *     when ops Function-nodes log `console.error("send failed", JSON.stringify(resp))`.
+ *   - **JWT** — three URL-safe-base64 segments joined by `.` with the
+ *     middle segment ≥ 16 chars (filters out short UUIDs like
+ *     `abc.def.ghi`). Sergeant doesn't issue JWTs (Better Auth uses
+ *     opaque session cookies) but upstream `axios` / `fetch` calls to
+ *     third-party APIs sometimes capture them in error bodies.
+ *   - **AWS Access Key ID** — `AKIA` / `ASIA` / `AGPA` prefix +
+ *     16 alphanumerics. Catches the most common shape; not exhaustive
+ *     (Amazon publishes the full list at
+ *     https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html
+ *     — we accept the false-negative rate in favour of keeping the
+ *     regex narrow and low-cost).
+ *   - **Bearer token in error text** — `bearer <opaque>` substring, since
+ *     axios `error.response.config.headers.Authorization` sometimes
+ *     ends up serialised into a stack trace through interceptors that
+ *     throw `new Error(\`upstream failed: \${JSON.stringify(resp)}\`)`.
+ *
+ * Returns the scrubbed string. Never throws. Empty / non-string input
+ * collapses to the original value so it is safe to call unconditionally.
+ */
+export const PII_STRING_PATTERNS: ReadonlyArray<{
+  readonly name: string;
+  readonly pattern: RegExp;
+  readonly replacement: string;
+}> = [
+  {
+    name: "email",
+    // Conservative — requires `@` + at least one dot in the domain.
+    // Captures local-part separately so we can preserve domain hint.
+    pattern: /\b([\w.+-]{1,64})@([\w-]+(?:\.[\w-]+)+)\b/g,
+    replacement: "[email redacted]@$2",
+  },
+  {
+    name: "telegram-bot-token",
+    // Telegram bot tokens — `<numeric-id>:<35-char-token>` (the token
+    // half is URL-safe base64 with `_` and `-`). Numeric prefix is
+    // typically 9–11 digits; we accept 5–15 to keep the rule simple.
+    pattern: /\b\d{5,15}:[A-Za-z0-9_-]{30,45}\b/g,
+    replacement: "[telegram-token redacted]",
+  },
+  {
+    name: "jwt",
+    // 3 base64url segments separated by `.`, payload at least 16 chars
+    // (filters out short identifier-like triples).
+    pattern: /\b[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{8,}\b/g,
+    replacement: "[jwt redacted]",
+  },
+  {
+    name: "aws-access-key",
+    pattern: /\b(?:AKIA|ASIA|AGPA|AIDA|AROA|ANPA|ANVA|APKA)[A-Z0-9]{16}\b/g,
+    replacement: "[aws-key redacted]",
+  },
+  {
+    name: "bearer-token",
+    // `Bearer ` + opaque token (≥ 16 chars to avoid false-positives on
+    // header dumps where the placeholder string is short).
+    pattern: /\b[Bb]earer\s+[A-Za-z0-9._-]{16,}/g,
+    replacement: "Bearer [redacted]",
+  },
+];
+
+export function scrubPIIString(value: string): string {
+  if (!value || typeof value !== "string") return value;
+  let out = value;
+  for (const { pattern, replacement } of PII_STRING_PATTERNS) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
+/**
+ * Sensitive URL query-string parameter names that must be replaced with
+ * `[redacted]` before the URL is sent to Sentry or any other observability
+ * sink. The list mirrors `REDACT_KEY_NAMES` for the most common
+ * surface-level leaks; deep / case-insensitive matching is provided by
+ * `redactSensitiveQueryParams` below.
+ *
+ * Why a separate list (not just `REDACT_KEY_NAMES`)?  Query-string
+ * conventions skew toward snake_case (`api_key`, `access_token`) while
+ * the structured-context list uses camelCase (`apiKey`, `accessToken`).
+ * Maintaining the alias here keeps both grep-friendly.
+ */
+export const SENSITIVE_QUERY_PARAM_NAMES: ReadonlySet<string> = new Set([
+  "token",
+  "api_key",
+  "apikey",
+  "access_token",
+  "accesstoken",
+  "refresh_token",
+  "refreshtoken",
+  "id_token",
+  "idtoken",
+  "secret",
+  "client_secret",
+  "clientsecret",
+  "signature",
+  "x-signature",
+  "code", // OAuth authorization code; covers /auth/callback?code=...
+  "state", // OAuth state often carries CSRF token in compact form
+  "magic_link",
+  "magiclink",
+  "magic_link_token",
+  "magiclinktoken",
+  "otp",
+  "verify_code",
+  "verifycode",
+  "verification_code",
+  "verificationcode",
+  "password",
+]);
+
+/**
+ * Replaces values of sensitive query-string parameters with `[redacted]`
+ * inside an absolute or path-relative URL. Returns the input unchanged
+ * when no `?`-delimited query is present.
+ *
+ * Conservative parser — does not try to handle malformed URLs; falls
+ * back to splitting on `?` once and walking pairs joined by `&`. We
+ * cannot use `URL` here because Sentry sometimes captures path-relative
+ * strings (`/auth/callback?token=...`) that `new URL()` rejects without
+ * a base.
+ */
+export function redactSensitiveQueryParams(url: string): string {
+  if (!url || typeof url !== "string") return url;
+  const qIdx = url.indexOf("?");
+  if (qIdx < 0) return url;
+
+  const hashIdx = url.indexOf("#", qIdx);
+  const queryEnd = hashIdx < 0 ? url.length : hashIdx;
+  const head = url.slice(0, qIdx + 1);
+  const tail = hashIdx < 0 ? "" : url.slice(hashIdx);
+  const queryPart = url.slice(qIdx + 1, queryEnd);
+
+  const pairs = queryPart.split("&").map((pair) => {
+    const eq = pair.indexOf("=");
+    if (eq < 0) return pair;
+    const name = pair.slice(0, eq);
+    const value = pair.slice(eq + 1);
+    if (SENSITIVE_QUERY_PARAM_NAMES.has(name.toLowerCase())) {
+      return `${name}=${PII_REDACTED}`;
+    }
+    return `${name}=${value}`;
+  });
+
+  return `${head}${pairs.join("&")}${tail}`;
 }

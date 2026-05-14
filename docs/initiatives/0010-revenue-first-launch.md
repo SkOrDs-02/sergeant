@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
 > **Status:** In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
@@ -430,5 +430,11 @@ Billing backend реалізовано поза plan-документом; ко�
 
 - `apps/web/src/core/PricingPage.tsx` — ADR-0051 2-тір: Free + Pro ($7/міс, $49/рік, 7-денний trial). Plus tier прибрано. `CHECKOUT_OPENED` PostHog-event додано.
 - `packages/shared/src/lib/analyticsEvents.ts` — `CHECKOUT_OPENED` зареєстровано.
+
+### Trial-banner ✅ (2026-05-13)
+
+- `apps/web/src/core/billing/TrialBanner.tsx` (new) — читає `usePlan()`, рендерить інлайн-банер для `subscription.status === 'trialing'` коли `daysLeft ≤ 7`; ≤ 1 день → sticky-варіант з акцентом. CTA → `/pricing?source=trial_banner`. A11y `role="status"` + `aria-live="polite"`. Touch-target 44×44 через `<Button size="sm">`. Mounted у `HubMainContent` banner stack за існуючим `!inFtuxSession`-гейтом.
+- Тести: `apps/web/src/core/billing/TrialBanner.test.tsx` (8 тестів — loading / free / active / >7d / 3d inline / 1d sticky / 0d past-due / CTA navigation).
+- Закриває audit-item `P1-9` у [`docs/audits/2026-05-13-revenue-monetization-roast.md`](../audits/2026-05-13-revenue-monetization-roast.md).
 
 **Наступний крок:** `POST /api/billing/portal` (Phase 3.1) → `usePlan()` + `PaywallModal` (Phase 4.1) → real `/pricing` з portal link (Phase 4.2).

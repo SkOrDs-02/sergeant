@@ -254,7 +254,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               <div className="text-xs text-subtle">Сон</div>
               <div className="text-base font-extrabold text-text tabular-nums">
                 {stats.avgSleep != null
-                  ? `${stats.avgSleep.toFixed(1)} г`
+                  ? `${stats.avgSleep.toFixed(1)} год`
                   : "—"}
               </div>
             </div>

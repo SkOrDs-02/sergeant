@@ -1,0 +1,162 @@
+{
+  "$schema": "./smoke-tests.schema.md",
+  "description": "Post-deploy smoke-test config. Список critical-endpoint-ів, які запускає scripts/post-deploy-smoke.mjs після кожного deploy на staging/prod. Не редагуй цей файл руками без оновлення docs/testing/smoke-tests.md.",
+  "defaults": {
+    "timeoutMs": 8000,
+    "latencyBudgetMs": 2500,
+    "expectedStatus": 200,
+    "method": "GET"
+  },
+  "tests": [
+    {
+      "name": "liveness:livez",
+      "method": "GET",
+      "path": "/livez",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 800,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "liveness:health-liveness-nested",
+      "method": "GET",
+      "path": "/health/liveness",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 800,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "readiness:readyz",
+      "method": "GET",
+      "path": "/readyz",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 1500,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "readiness:health-alias",
+      "method": "GET",
+      "path": "/health",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 1500,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "startup:startupz",
+      "method": "GET",
+      "path": "/startupz",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 800,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "diag:healthz",
+      "method": "GET",
+      "path": "/healthz",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 2500,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean", "db": "object" }
+    },
+    {
+      "name": "diag:health-workers",
+      "method": "GET",
+      "path": "/health/workers",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 2500,
+      "auth": "none",
+      "tier": "extended",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "diag:api-status",
+      "method": "GET",
+      "path": "/api/status",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 2500,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "ok": "boolean" }
+    },
+    {
+      "name": "push:vapid-public",
+      "method": "GET",
+      "path": "/api/push/vapid-public",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 1500,
+      "auth": "none",
+      "tier": "critical",
+      "shape": { "publicKey": "string" }
+    },
+    {
+      "name": "push:vapid-public-v1",
+      "method": "GET",
+      "path": "/api/v1/push/vapid-public",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 1500,
+      "auth": "none",
+      "tier": "extended",
+      "shape": { "publicKey": "string" }
+    },
+    {
+      "name": "obs:metrics",
+      "method": "GET",
+      "path": "/metrics",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 3000,
+      "auth": "none",
+      "tier": "extended",
+      "expectedBodyContains": "# HELP"
+    },
+    {
+      "name": "auth:me-anonymous-401",
+      "method": "GET",
+      "path": "/api/v1/me",
+      "expectedStatus": 401,
+      "latencyBudgetMs": 1500,
+      "auth": "none",
+      "tier": "critical",
+      "comment": "Запит без cookie має повертати 401 — це smoke-test самого auth-middleware-а. Зеленим smoke цей тест означає, що requireSession() не зламано і не пускає неавтентифіковані запити."
+    },
+    {
+      "name": "auth:me-session",
+      "method": "GET",
+      "path": "/api/v1/me",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 2500,
+      "auth": "session",
+      "tier": "critical",
+      "shape": { "user": { "id": "string", "email": "string" } }
+    },
+    {
+      "name": "barcode:public-lookup",
+      "method": "GET",
+      "path": "/api/v1/barcode?barcode=4820010840443",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 4000,
+      "auth": "session",
+      "tier": "extended",
+      "shape": { "product": "object" }
+    },
+    {
+      "name": "coach:memory-empty",
+      "method": "GET",
+      "path": "/api/v1/coach/memory",
+      "expectedStatus": 200,
+      "latencyBudgetMs": 2500,
+      "auth": "session",
+      "tier": "extended",
+      "shape": { "facts": "array" }
+    }
+  ]
+}

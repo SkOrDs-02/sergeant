@@ -1,6 +1,6 @@
 # Прожарка #2/10: Web Frontend Ergonomics
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (child session) — додано landing `sergeant-design/no-bare-fixed-inset-modal` rule (warn-only, F2 part-1). **Next review:** 2026-08-11.
 > **Status:** Active
 > **Скоуп:** Web UI ergonomics — форми, accessibility, control-flow, error-boundaries, loading states, empty states, мікро-копірайт.
 
@@ -13,7 +13,7 @@
 - [`docs/audits/2026-05-03-web-deep-dive/00-overview.md`](./2026-05-03-web-deep-dive/00-overview.md) — master 18-item roadmap (web deep-dive).
 - [`docs/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](./2026-05-03-web-deep-dive/01-frontend-ergonomics.md) — §3.1–§3.12 з ергономікою (форми, DataState, toast, modal, safe-area, PWA, i18n, reduced-motion, PTR, shortcuts, dark mode).
 - [`docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](./2026-05-03-web-deep-dive/round-13-burndown-sprint.md) — sprint plan (Superseded — статуси перенесені в `00-overview.md` § 11.5 round 14).
-- [`docs/audits/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — execution tracker для базових UX-покращень (форми, dark mode, sheet gestures).
+- [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — execution tracker для базових UX-покращень (форми, dark mode, sheet gestures).
 - [`docs/audits/archive/2026-04-28-ux-ui-audit.md`](./archive/2026-04-28-ux-ui-audit.md) — генеральний UX/UI аудит 2026-04-28 (historical record).
 - [`docs/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — UX-прожарка post-onboarding day 0-7.
 - [`docs/design/empty-states.md`](../design/empty-states.md) — тиер-система (Tier 1 full-screen / Tier 2 compact / Tier 3 inline-text).
@@ -54,7 +54,7 @@
 - **Change** `useRoutineAppState.ts:317` і `NutritionApp.tsx:366` — додано `action: { label: "Повторити", onClick: retry }` (показові first-converts).
 - **Change** [`eslint.config.js`](../../eslint.config.js) — wire rule як `warn` для `apps/web/**/*.{ts,tsx,js,jsx}`.
 
-### F2: Modal a11y «псевдо-діалоги» в API `fixed inset-0` — P1
+### F2: Modal a11y «псевдо-діалоги» в API `fixed inset-0` — P1 [PART-1 FIXED, PART-II OUTSTANDING]
 
 **З 2026-05-03 §3.5** — рекомендує ESLint custom rule + axe prop-тест.
 
@@ -73,13 +73,13 @@ $ rg "fixed inset-0" apps/web/src --files-with-matches | wc -l
 - `apps/web/src/shared/components/layout/ModuleSettingsDrawer.tsx:60` — drawer без focus-trap.
 - `apps/web/src/shared/components/ui/FloatingActionButton.tsx:234` — backdrop без `role="presentation"`.
 
-**Дії (не в цьому PR):**
+**Дії:**
 
-- **Add** ESLint rule `sergeant-design/no-bare-fixed-inset-modal` — warn-only з allowlist для тих ~5 легітимних use-cases.
-- **Add** axe prop-test snippet у `Modal.test.tsx` (вже існує) + поширення на `QuickActionsMenu`, `StreakCelebration`, `ModuleSettingsDrawer`.
-- **Change** 4-5 файлів вище: додати `role="dialog"` або `role="presentation"`, focus-trap, scroll-lock.
+- ✅ **Add** ESLint rule `sergeant-design/no-bare-fixed-inset-modal` — warn-only з file-path allowlist для 6 легітимних модальних примітивів (`Modal`, `Sheet`, `ConfirmDialog`, `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`). FIXED у follow-up PR (rule only, part-1).
+- **Add** axe prop-test snippet у `Modal.test.tsx` (вже існує) + поширення на `QuickActionsMenu`, `StreakCelebration`, `ModuleSettingsDrawer`. **OUTSTANDING — part-II.**
+- **Change** 4-5 файлів вище: додати `role="dialog"` або `role="presentation"`, focus-trap, scroll-lock. **OUTSTANDING — part-II.**
 
-**Чому не зараз:** треба inventory + risky a11y-зміни (focus-trap може ламати existing flows). Окрема прожарка #2.X — Modal/Dialog a11y.
+**Чому part-II не зараз:** rule додано як warn-only, щоб підсвічувати нові регресії; виправлення існуючих файлів потребує risky a11y-зміни (focus-trap може ламати existing flows) — окрема прожарка #2.X — Modal/Dialog a11y.
 
 ### F3: Keyboard shortcuts — handler-und-coverage — P1 [DOC FIXED]
 
@@ -127,18 +127,20 @@ $ rg "fixed inset-0" apps/web/src --files-with-matches | wc -l
 - **Add** `mapApiErrorToUserCopy(error)` — централізована функція в `apps/web/src/shared/lib/api/` що мапить `error.code` → UA-copy.
 - **Change** 5-7 callsite-ів у `core/profile/*` — використовувати `mapApiErrorToUserCopy(res.error)` замість прямого `.message`.
 
-### F6: Pull-to-refresh під час активного sync — P2
+### F6: Pull-to-refresh під час активного sync — P2 ✅ Closed in #2743
 
 **З 2026-05-03 §3.10** — PTR не повинен дозволяти подвійний тригер.
 
 **Поточний стан коду:**
 
-- [`PullToRefresh.tsx`](../../apps/web/src/shared/components/ui/PullToRefresh.tsx) дозволяє тригерити `onRefresh()` повторно поки попередня не resolve-нула. Раніше була race, але `disabled` prop існує — просто не wired-up з `requestCloudPull` state.
+- [`PullToRefresh.tsx`](../../apps/web/src/shared/components/ui/PullToRefresh.tsx) дозволяв тригерити `onRefresh()` повторно поки попередня не resolve-нула. Раніше була race; проп `enabled` існував, але не був wired-up з `requestCloudPull` state.
 
-**Дії (не в цьому PR):**
+**Зроблено (PR #2743):**
 
-- **Add** `useCloudPullPending()` hook що повертає boolean — чи зараз pending pull.
-- **Change** call-sites `<PullToRefresh disabled={cloudPullPending}>` у `routine`, `nutrition`, `finyk` модулях.
+- **Added** `useCloudPullPending()` hook у `apps/web/src/shared/hooks/useCloudPullPending.ts` — `useSyncExternalStore` обгортка над in-process counter `requestCloudPull`-ів, що повертає `true` поки хоч один pull у польоті.
+- **Added** `subscribeCloudPullPending` / `getCloudPullPending` + захищений `Math.max(0, ...)` counter у [`cloudPullRequest.ts`](../../apps/web/src/shared/lib/modules/cloudPullRequest.ts).
+- **Changed** call-sites — `<PullToRefresh enabled={!cloudPullPending}>` у [`RoutineTimeline.tsx`](../../apps/web/src/modules/routine/RoutineTimeline.tsx), [`NutritionApp.tsx`](../../apps/web/src/modules/nutrition/NutritionApp.tsx), [`TransactionList.tsx`](../../apps/web/src/modules/finyk/pages/transactions/TransactionList.tsx) (фактичний PTR call-site для finyk; `FinykApp.tsx` сам PTR не рендерить).
+- **Tests:** 5 у `useCloudPullPending.test.tsx` (hook happy-path + overlap + timeout + behavior: spy на `HTMLDivElement.prototype.addEventListener` підтверджує, що `<PullToRefresh>` від'єднує touch-listener-и поки cloud-pull pending) + 3 у `cloudPullRequest.test.ts` (subscribe API, counter не йде в негатив на overlapping settles).
 
 ### F7: `useApiForm` rollout burndown — P2
 
@@ -157,13 +159,15 @@ $ rg "fixed inset-0" apps/web/src --files-with-matches | wc -l
 
 - Burndown rollout — мігрувати per-form, кожна = окремий невеликий PR.
 
-## Прогрес виконання (у цьому PR)
+## Прогрес виконання
 
-| Item                            | Action                                                                                                                                                                                                             | Status |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| F1 — Toast-policy + ESLint rule | Додано `sergeant-design/require-toast-error-action` з burndown allowlist; додано `docs/ui/toast-policy.md`; виправлено 2 high-traffic PTR-fail callsite-и; решта 14 файлів — у allowlist для burndown.             | DONE   |
-| F3 — Shortcuts registry doc     | Додано `docs/ui/shortcuts.md` — реєстр + browser-conflict matrix + TBD-handler-и зі `DEFAULT_SHORTCUTS`.                                                                                                           | DONE   |
-| F2 / F4 / F5 / F6 / F7          | Інвентаризовані вище з конкретними `file:line` посиланнями та діями Add/Change. Не закриваються у цьому PR — потребують окремих focused прожарок (Modal a11y, SW-update defer, error-mapping, useApiForm rollout). | LOGGED |
+| Item                                | Action                                                                                                                                                                                                             | Status         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| F1 — Toast-policy + ESLint rule     | Додано `sergeant-design/require-toast-error-action` з burndown allowlist; додано `docs/ui/toast-policy.md`; виправлено 2 high-traffic PTR-fail callsite-и; решта 14 файлів — у allowlist для burndown.             | DONE (initial) |
+| F3 — Shortcuts registry doc         | Додано `docs/ui/shortcuts.md` — реєстр + browser-conflict matrix + TBD-handler-и зі `DEFAULT_SHORTCUTS`.                                                                                                           | DONE (initial) |
+| F2 part-1 — ESLint rule (warn-only) | Додано `sergeant-design/no-bare-fixed-inset-modal` (warn) з file-path allowlist для 6 канонічних модальних примітивів + 25 unit-тестів. Існуючі offender-и (StreakCelebration, FeatureSpotlight, …) тепер як warn. | DONE (PR #2)   |
+| F2 part-II — file fixes + axe tests | Додати `role` / `aria-modal` / focus-trap у 4-5 ad-hoc overlay-файлів; axe prop-тести для `Modal`, `Sheet`, `QuickActionsMenu`, `StreakCelebration`. Окрема прожарка #2.X — Modal/Dialog a11y.                     | OUTSTANDING    |
+| F4 / F5 / F6 / F7                   | Інвентаризовані вище з конкретними `file:line` посиланнями та діями Add/Change. Потребують окремих focused прожарок (SW-update defer, error-mapping, PTR-race, useApiForm rollout).                                | LOGGED         |
 
 ## Файли цього PR
 

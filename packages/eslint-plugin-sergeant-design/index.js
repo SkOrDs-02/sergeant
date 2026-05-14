@@ -3865,6 +3865,459 @@ const requireToastErrorAction = {
   },
 };
 
+// ─── no-console-pii ─────────────────────────────────────────────────────
+//
+// S2 (audit `docs/audits/2026-05-13-security-observability-roast.md`).
+//
+// Forbid `console.{log,error,warn,info}(...)` when an argument is a
+// string literal / template literal whose text matches
+// `/email|phone|password|token|secret|auth/i`, OR an object literal
+// whose (recursively) keys match the same regex.
+//
+// Why:
+//   - `@sentry/react` enables a `console` integration by default, so
+//     anything routed through `console.*` shows up as a Sentry breadcrumb
+//     in production.
+//   - DevTools console is visible during screen-share / paired support;
+//     accidental `console.log({ email })` leaks PII to whoever is
+//     watching.
+//   - PostHog session-replay extensions and Logpipe browser extensions
+//     also tap into `console.*`.
+//
+// Rule scope (intentionally narrow per audit §S2):
+//   - Methods covered: `log`, `error`, `warn`, `info`. `console.debug`,
+//     `console.table`, etc. are intentionally out of scope — they are
+//     either dev-only (`debug` is filtered by most consoles) or do not
+//     carry PII shapes in practice.
+//   - Only direct `console.<method>(...)` member calls. Aliased
+//     `const log = console.log; log({email})` is not detected — match
+//     the AST conservatively to keep false-positive rate low.
+//   - String / template-literal arg: match regex on the raw text of the
+//     literal AND on each template substitution's identifier or
+//     non-computed property name (catches `${user.email}`).
+//   - Object literal arg: check every property key (Identifier name or
+//     string-literal value) recursively, including nested
+//     ObjectExpressions. Spread (`...obj`) and computed keys are
+//     conservatively ignored — they would require flow analysis we do
+//     not do here.
+//
+// Test files are exempt via the eslint.config.js scope-block `ignores`.
+
+const NO_CONSOLE_PII_REGEX = /email|phone|password|token|secret|auth/i;
+const NO_CONSOLE_PII_METHODS = new Set(["log", "error", "warn", "info"]);
+const NO_CONSOLE_PII_MESSAGE =
+  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. See docs/audits/2026-05-13-security-observability-roast.md § S2.";
+
+function isConsolePiiMethodCall(callee) {
+  return (
+    callee &&
+    callee.type === "MemberExpression" &&
+    !callee.computed &&
+    callee.object &&
+    callee.object.type === "Identifier" &&
+    callee.object.name === "console" &&
+    callee.property &&
+    callee.property.type === "Identifier" &&
+    NO_CONSOLE_PII_METHODS.has(callee.property.name)
+  );
+}
+
+function noConsolePiiNodeName(node) {
+  if (!node) return null;
+  if (node.type === "Identifier") return node.name;
+  if (
+    node.type === "MemberExpression" &&
+    !node.computed &&
+    node.property &&
+    node.property.type === "Identifier"
+  ) {
+    return node.property.name;
+  }
+  return null;
+}
+
+function noConsolePiiObjectHasPiiKey(node, seen) {
+  if (!node || node.type !== "ObjectExpression") return false;
+  if (seen.has(node)) return false;
+  seen.add(node);
+  for (const prop of node.properties) {
+    if (!prop || prop.type !== "Property") continue;
+    if (prop.computed) continue;
+    let keyName = null;
+    if (prop.key) {
+      if (prop.key.type === "Identifier") keyName = prop.key.name;
+      else if (
+        prop.key.type === "Literal" &&
+        typeof prop.key.value === "string"
+      ) {
+        keyName = prop.key.value;
+      }
+    }
+    if (keyName && NO_CONSOLE_PII_REGEX.test(keyName)) return true;
+    if (
+      prop.value &&
+      prop.value.type === "ObjectExpression" &&
+      noConsolePiiObjectHasPiiKey(prop.value, seen)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function noConsolePiiArgMatches(arg) {
+  if (!arg) return false;
+  if (arg.type === "Literal" && typeof arg.value === "string") {
+    return NO_CONSOLE_PII_REGEX.test(arg.value);
+  }
+  if (arg.type === "TemplateLiteral") {
+    for (const quasi of arg.quasis) {
+      const text = quasi.value && (quasi.value.cooked ?? quasi.value.raw);
+      if (typeof text === "string" && NO_CONSOLE_PII_REGEX.test(text)) {
+        return true;
+      }
+    }
+    for (const expr of arg.expressions) {
+      const name = noConsolePiiNodeName(expr);
+      if (name && NO_CONSOLE_PII_REGEX.test(name)) return true;
+    }
+    return false;
+  }
+  if (arg.type === "ObjectExpression") {
+    return noConsolePiiObjectHasPiiKey(arg, new WeakSet());
+  }
+  return false;
+}
+
+const noConsolePii = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid passing PII / secret-shaped string literals, template literals, or object keys (email, phone, password, token, secret, auth) to console.{log,error,warn,info}.",
+    },
+    schema: [],
+    messages: { noConsolePii: NO_CONSOLE_PII_MESSAGE },
+  },
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (!isConsolePiiMethodCall(node.callee)) return;
+        for (const arg of node.arguments) {
+          if (noConsolePiiArgMatches(arg)) {
+            context.report({ node, messageId: "noConsolePii" });
+            return;
+          }
+        }
+      },
+    };
+  },
+};
+
+// ─── no-bare-fixed-inset-modal ──────────────────────────────────────────
+//
+// Audit `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2
+// (P1). Web-only guardrail для «псевдо-модалок» — JSX-елементів, що
+// займають увесь viewport (`fixed inset-0`, з опційним `z-*` чи
+// `pointer-events-*` сусідом), але не оголошують себе як dialog для
+// assistive tech: відсутні `role="dialog"` / `role="alertdialog"` /
+// `role="presentation"` АБО `aria-modal` на тому самому елементі.
+//
+// Канонічні модальні примітиви (`Modal`, `Sheet`, `ConfirmDialog`,
+// `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`)
+// інкапсулюють focus-trap + scroll-lock + a11y-атрибути і виводять
+// `fixed inset-0` всередині — вони у allowlist (`options.allow`).
+//
+// Чому warn-only: rule покликаний підсвічувати нові регресії на час,
+// поки існуючі offender-и (`QuickActionsMenu`, `StreakCelebration`,
+// `FeatureSpotlight`, …) ще не рефакторені. Файлові виправлення +
+// axe prop-тести — окрема partII (див. audit § F2 «Дії (не в цьому
+// PR)»).
+//
+// What the rule flags (per JSX opening element):
+//   1. The element's `className` (string-literal, template literal,
+//      `cn(...)` / `clsx(...)` / `classnames(...)` argument tree)
+//      contains BOTH the `fixed` token AND the `inset-0` token
+//      (separated by any whitespace / interleaving utilities).
+//   2. The same element has NONE of:
+//        - `role="dialog"` | `role="alertdialog"` | `role="presentation"`
+//        - `aria-modal` (any truthy value, bare boolean, or expression)
+//
+// What it does NOT flag:
+//   - Files whose normalized path (forward-slash) ends with — or
+//     contains — any entry from `options.allow`. Suggested baseline
+//     allowlist (legit primitives) lives in the eslint config.
+//   - className soup without `inset-0` (e.g. `fixed bottom-0 left-0`).
+//   - className soup without `fixed` (e.g. `absolute inset-0`).
+//   - Variable-resolved classNames (`const overlay = "fixed inset-0";
+//     <div className={overlay}>`). Out of scope — variable tracking is
+//     intentionally skipped to keep the rule cheap and predictable.
+//
+// Example offenders (audit § F2):
+//   - `apps/web/src/shared/components/ui/StreakCelebration.tsx:138`
+//     `role="alert"` (not in the dialog-role allowlist).
+//   - `apps/web/src/shared/components/ui/FeatureSpotlight.tsx:323`
+//     overlay without role/aria-modal.
+//
+// BAD:
+//   <div className="fixed inset-0 z-50 bg-black/40" />
+//   <div className={cn("fixed inset-0", isOpen && "animate-in")} />
+//
+// GOOD:
+//   <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" />
+//   <div className="fixed inset-0" role="presentation" />
+//   <Modal isOpen={open} onClose={close}>…</Modal>
+//   <Sheet isOpen={open} onClose={close}>…</Sheet>
+
+const NO_BARE_FIXED_INSET_MODAL_MESSAGE =
+  '`fixed inset-0` overlay declares a full-viewport dialog surface but the same element is missing `role="dialog"` / `role="alertdialog"` / `role="presentation"` AND `aria-modal`. Wrap the content in `<Modal>` / `<Sheet>` / `<ConfirmDialog>`, or add the missing a11y attributes inline. See docs/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.';
+
+const BARE_FIXED_INSET_DIALOG_ROLES = new Set([
+  "dialog",
+  "alertdialog",
+  "presentation",
+]);
+
+const BARE_FIXED_INSET_CN_FNS = new Set([
+  "cn",
+  "clsx",
+  "classnames",
+  "classNames",
+  "twMerge",
+  "twJoin",
+]);
+
+function bareFixedInsetMatchesAllowEntry(fwd, entry) {
+  if (!entry) return false;
+  const norm = entry.replace(/\\/g, "/").replace(/^\.\//, "");
+  if (!norm) return false;
+  return (
+    fwd === norm ||
+    fwd.endsWith("/" + norm) ||
+    fwd.includes("/" + norm + "/") ||
+    fwd.includes(norm)
+  );
+}
+
+// Walks any expression that ultimately feeds `className={...}` and
+// returns the concatenation of every literal-ish string fragment it
+// can see (joined by a single space so multi-arg `cn("fixed",
+// "inset-0")` still matches the both-tokens-present check).
+function collectClassNameStrings(node, sink) {
+  if (!node) return;
+  switch (node.type) {
+    case "Literal":
+      if (typeof node.value === "string") sink.push(node.value);
+      return;
+    case "TemplateLiteral":
+      for (const q of node.quasis) {
+        if (q.value && typeof q.value.cooked === "string") {
+          sink.push(q.value.cooked);
+        } else if (q.value && typeof q.value.raw === "string") {
+          sink.push(q.value.raw);
+        }
+      }
+      for (const expr of node.expressions) {
+        collectClassNameStrings(expr, sink);
+      }
+      return;
+    case "ConditionalExpression":
+      collectClassNameStrings(node.consequent, sink);
+      collectClassNameStrings(node.alternate, sink);
+      return;
+    case "LogicalExpression":
+      collectClassNameStrings(node.left, sink);
+      collectClassNameStrings(node.right, sink);
+      return;
+    case "BinaryExpression":
+      if (node.operator === "+") {
+        collectClassNameStrings(node.left, sink);
+        collectClassNameStrings(node.right, sink);
+      }
+      return;
+    case "ArrayExpression":
+      for (const el of node.elements) collectClassNameStrings(el, sink);
+      return;
+    case "ObjectExpression":
+      // `cn({ "fixed inset-0": isOpen })` — keys are className soup,
+      // values are truthy gates.
+      for (const prop of node.properties) {
+        if (prop.type !== "Property") continue;
+        const key = prop.key;
+        if (!key) continue;
+        if (key.type === "Literal" && typeof key.value === "string") {
+          sink.push(key.value);
+        } else if (key.type === "Identifier" && !prop.computed) {
+          sink.push(key.name);
+        } else if (key.type === "TemplateLiteral" || key.type === "Literal") {
+          collectClassNameStrings(key, sink);
+        }
+      }
+      return;
+    case "CallExpression": {
+      const callee = node.callee;
+      let calleeName = null;
+      if (callee.type === "Identifier") calleeName = callee.name;
+      else if (
+        callee.type === "MemberExpression" &&
+        callee.property &&
+        callee.property.type === "Identifier"
+      ) {
+        calleeName = callee.property.name;
+      }
+      if (calleeName && BARE_FIXED_INSET_CN_FNS.has(calleeName)) {
+        for (const arg of node.arguments) {
+          if (arg.type === "SpreadElement") {
+            collectClassNameStrings(arg.argument, sink);
+          } else {
+            collectClassNameStrings(arg, sink);
+          }
+        }
+      }
+      return;
+    }
+    case "JSXExpressionContainer":
+      collectClassNameStrings(node.expression, sink);
+      return;
+    case "SpreadElement":
+      collectClassNameStrings(node.argument, sink);
+      return;
+    case "ParenthesizedExpression":
+      collectClassNameStrings(node.expression, sink);
+      return;
+    default:
+      return;
+  }
+}
+
+// Token-aware: ensures `fixed` and `inset-0` appear as standalone
+// utilities (not as suffixes of something like `unfixed` or
+// `inset-0.5`). Whitespace (including newlines from template literals)
+// is the canonical delimiter.
+const RX_FIXED_TOKEN = /(?:^|\s)fixed(?:\s|$)/;
+const RX_INSET_0_TOKEN = /(?:^|\s)inset-0(?:\s|$)/;
+
+function classNameHasBareFixedInset(joined) {
+  if (typeof joined !== "string" || joined.length === 0) return false;
+  return RX_FIXED_TOKEN.test(joined) && RX_INSET_0_TOKEN.test(joined);
+}
+
+function openingElementHasDialogA11y(openingEl) {
+  if (!openingEl || !Array.isArray(openingEl.attributes)) return false;
+  for (const attr of openingEl.attributes) {
+    if (attr.type !== "JSXAttribute") continue;
+    const name = attr.name;
+    if (!name || name.type !== "JSXIdentifier") continue;
+    if (name.name === "aria-modal") {
+      // `aria-modal` (any presence — bare, literal, expression).
+      // Strict ARIA semantics: only `aria-modal="true"` matters at
+      // runtime, but the audit's goal is «author signaled intent»,
+      // so accept any non-explicit-false value.
+      if (attr.value == null) return true;
+      if (
+        attr.value.type === "Literal" &&
+        typeof attr.value.value === "string" &&
+        attr.value.value.toLowerCase() === "false"
+      ) {
+        continue;
+      }
+      return true;
+    }
+    if (name.name === "role") {
+      const val = attr.value;
+      if (!val) continue;
+      if (val.type === "Literal" && typeof val.value === "string") {
+        if (BARE_FIXED_INSET_DIALOG_ROLES.has(val.value)) return true;
+      } else if (val.type === "JSXExpressionContainer") {
+        const expr = val.expression;
+        if (
+          expr &&
+          expr.type === "Literal" &&
+          typeof expr.value === "string" &&
+          BARE_FIXED_INSET_DIALOG_ROLES.has(expr.value)
+        ) {
+          return true;
+        }
+        if (
+          expr &&
+          expr.type === "TemplateLiteral" &&
+          expr.expressions.length === 0 &&
+          expr.quasis.length === 1 &&
+          BARE_FIXED_INSET_DIALOG_ROLES.has(
+            expr.quasis[0].value.cooked ?? expr.quasis[0].value.raw,
+          )
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function findClassNameAttribute(openingEl) {
+  if (!openingEl || !Array.isArray(openingEl.attributes)) return null;
+  for (const attr of openingEl.attributes) {
+    if (attr.type !== "JSXAttribute") continue;
+    const name = attr.name;
+    if (!name || name.type !== "JSXIdentifier") continue;
+    if (name.name === "className") return attr;
+  }
+  return null;
+}
+
+const noBareFixedInsetModal = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        'Warn on JSX elements with `fixed inset-0` className that lack `role="dialog"` / `role="alertdialog"` / `role="presentation"` or `aria-modal`. Use a canonical modal primitive instead.',
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allow: {
+            type: "array",
+            items: { type: "string" },
+            uniqueItems: true,
+            description:
+              "File-path patterns (forward-slash, substring / suffix match) that opt the file out of this rule. Use for canonical modal primitives (Modal, Sheet, ConfirmDialog, …) whose `fixed inset-0` overlay is encapsulated.",
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { bare: NO_BARE_FIXED_INSET_MODAL_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    const fwd = filename.replace(/\\/g, "/");
+    const opts = context.options[0] ?? {};
+    const allow = Array.isArray(opts.allow) ? opts.allow : [];
+    for (const entry of allow) {
+      if (bareFixedInsetMatchesAllowEntry(fwd, entry)) return {};
+    }
+
+    return {
+      JSXOpeningElement(node) {
+        const classNameAttr = findClassNameAttribute(node);
+        if (!classNameAttr || !classNameAttr.value) return;
+        const sink = [];
+        collectClassNameStrings(classNameAttr.value, sink);
+        if (sink.length === 0) return;
+        const joined = sink.join(" ");
+        if (!classNameHasBareFixedInset(joined)) return;
+        if (openingElementHasDialogA11y(node)) return;
+        context.report({
+          node: classNameAttr,
+          messageId: "bare",
+        });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -3880,6 +4333,7 @@ const plugin = {
     "no-bigint-string": noBigintString,
     "rq-keys-only-from-factory": rqKeysOnlyFromFactory,
     "no-anthropic-key-in-logs": noAnthropicKeyInLogs,
+    "no-console-pii": noConsolePii,
     "no-raw-req-in-pino-log": noRawReqInPinoLog,
     "no-strict-bypass": noStrictBypass,
     "no-raw-dark-palette": noRawDarkPalette,
@@ -3897,6 +4351,7 @@ const plugin = {
     "prefer-data-state": preferDataState,
     "no-inline-body-size-limit": noInlineBodySizeLimit,
     "require-toast-error-action": requireToastErrorAction,
+    "no-bare-fixed-inset-modal": noBareFixedInsetModal,
   },
 };
 
@@ -3912,6 +4367,7 @@ export {
   RQ_KEYS_MESSAGE,
   DEFAULT_FACTORY_PATH,
   NO_ANTHROPIC_KEY_MESSAGE,
+  NO_CONSOLE_PII_MESSAGE,
   NO_STRICT_BYPASS_MESSAGES,
   DEFAULT_FORBID_PATTERNS,
   RAW_DARK_PALETTE_FAMILIES,
@@ -3930,6 +4386,7 @@ export {
   NO_FLAT_SHARED_LIB_ALLOWED_TOP,
   NO_HASH_ROUTER_MESSAGE,
   NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE,
+  NO_BARE_FIXED_INSET_MODAL_MESSAGE,
 };
 
 export default plugin;

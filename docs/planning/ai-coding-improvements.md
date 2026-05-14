@@ -1,40 +1,40 @@
-# AI-coding improvements roadmap
+# Roadmap покращень AI-coding
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by Codex (перекладено українською та синхронізовано з planning index). **Next review:** 2026-08-12.
 > **Status:** Active
 
-Roadmap for the agent infrastructure in Sergeant. This is not the product roadmap; it is the plan for making AI-assisted development faster, safer, and more disciplined.
+Roadmap для агентської інфраструктури Sergeant. Це не продуктовий roadmap; це план, як зробити AI-assisted development швидшим, безпечнішим і дисциплінованішим.
 
-## Already done
+## Уже зроблено
 
-| Block                              | Status | Notes                                                                                             |
-| ---------------------------------- | ------ | ------------------------------------------------------------------------------------------------- |
-| Repo-level contract and hard rules | done   | `AGENTS.md` + registry + matrix + CI sync gates                                                   |
-| First-wave playbooks               | done   | initial execution recipes in `docs/playbooks/`                                                    |
-| AI markers and enforcement         | done   | lifecycle/generation markers under CI                                                             |
-| Preview/test infra                 | done   | Playwright, visual regression, CI coverage                                                        |
-| Repo-owned skills overhaul         | done   | narrow Sergeant-specific skill surface without generic duplication                                |
-| Entrypoint consolidation           | done   | `README`, `CONTRIBUTING`, `AGENTS`, `CLAUDE`, `DEVIN` aligned by role                             |
-| Playbook overhaul                  | done   | taxonomy, catalog, priority playbooks, routing clarity                                            |
-| Governance source-of-truth cleanup | done   | ownership split across `AGENTS.md`, `hard-rules.json`, generated matrix, review docs              |
-| PR / review hardening              | done   | PR template, review checklist, CODEOWNERS alignment                                               |
-| Operating maturity wave            | done   | service catalog, release policy, incident system, feature flag registry, DR, engineering metrics  |
-| Security access operating system   | done   | privileged access policy, access matrix, secret ownership register, compromise-response playbooks |
+| Блок                                 | Статус | Нотатки                                                                                           |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------- |
+| Repo-level контракт і hard rules     | done   | `AGENTS.md` + registry + matrix + CI sync gates                                                   |
+| Перша хвиля playbook-ів              | done   | початкові execution recipes у `docs/playbooks/`                                                   |
+| AI-маркери й enforcement             | done   | lifecycle / generation markers під CI                                                             |
+| Preview / test інфраструктура        | done   | Playwright, visual regression, CI coverage                                                        |
+| Оновлення repo-owned skills          | done   | вузька Sergeant-specific skill surface без generic-дублювання                                     |
+| Консолідація entrypoint-ів           | done   | `README`, `CONTRIBUTING`, `AGENTS`, `CLAUDE`, `DEVIN` вирівняні за ролями                         |
+| Оновлення playbook-ів                | done   | taxonomy, catalog, priority playbooks, routing clarity                                            |
+| Cleanup governance source-of-truth   | done   | ownership split між `AGENTS.md`, `hard-rules.json`, generated matrix, review docs                 |
+| PR / review hardening                | done   | PR template, review checklist, CODEOWNERS alignment                                               |
+| Хвиля операційної зрілості           | done   | service catalog, release policy, incident system, feature flag registry, DR, engineering metrics  |
+| Operating system для security access | done   | privileged access policy, access matrix, secret ownership register, compromise-response playbooks |
 
-## Next blocks
+## Наступні блоки
 
-| Block                              | Status | Notes                                                                                |
-| ---------------------------------- | ------ | ------------------------------------------------------------------------------------ |
-| Skill trigger eval harness         | next   | 2 trigger + 1 anti-trigger + 1 workflow compliance prompt per skill                  |
-| Playbook routing eval harness      | next   | one obvious playbook match for priority scenarios                                    |
-| Discoverability tests              | next   | new contributor / new agent can find the route in under two clicks                   |
-| PR template compliance sampling    | next   | dry-run quality gate for PR descriptions                                             |
-| Operator dashboards automation     | next   | saved searches / issue views for lead time, stale flags, postmortem actions          |
-| Privacy and data-rights operations | next   | turn launch/privacy draft into canonical retention, consent, export, delete surfaces |
+| Блок                               | Статус | Нотатки                                                                                    |
+| ---------------------------------- | ------ | ------------------------------------------------------------------------------------------ |
+| Eval harness для skill trigger-ів  | next   | 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на кожен skill                   |
+| Eval harness для playbook routing  | next   | один очевидний playbook match для priority-сценаріїв                                       |
+| Discoverability tests              | next   | new contributor / new agent знаходить потрібний route менш ніж за два кліки                |
+| Sampling відповідності PR template | next   | dry-run quality gate для PR descriptions                                                   |
+| Автоматизація operator dashboards  | next   | saved searches / issue views для lead time, stale flags, postmortem actions                |
+| Privacy and data-rights operations | next   | перетворити launch/privacy draft на канонічні retention, consent, export, delete surface-и |
 
-## Evaluation plan
+## План оцінювання
 
-1. Skills: trigger, anti-trigger, routing, and guardrail prompts.
-2. Playbooks: obvious-match tests for API, migrations, HubChat, mobile, ops.
+1. Skills: trigger, anti-trigger, routing і guardrail prompts.
+2. Playbooks: obvious-match tests для API, migrations, HubChat, mobile, ops.
 3. Docs: link integrity, freshness coverage, playbook schema, generated index freshness.
 4. Governance: registry sync, CODEOWNERS coverage, dangling source refs.

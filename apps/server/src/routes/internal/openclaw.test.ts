@@ -27,6 +27,7 @@ const {
   clearFounderMuteMock,
   getFounderMuteMock,
   isFounderMutedMock,
+  lookupWhoisMock,
 } = vi.hoisted(() => ({
   listRecentWriteAuditsMock: vi.fn(),
   recordWriteAuditMock: vi.fn(),
@@ -41,6 +42,7 @@ const {
   clearFounderMuteMock: vi.fn(),
   getFounderMuteMock: vi.fn(),
   isFounderMutedMock: vi.fn(),
+  lookupWhoisMock: vi.fn(),
 }));
 
 vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
@@ -61,6 +63,7 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
     clearFounderMute: clearFounderMuteMock,
     getFounderMute: getFounderMuteMock,
     isFounderMuted: isFounderMutedMock,
+    lookupWhois: lookupWhoisMock,
   };
 });
 
@@ -699,5 +702,115 @@ describe("/api/internal/openclaw/mute/*", () => {
       .send({});
     expect(res.status).toBe(400);
     expect(isFounderMutedMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/internal/openclaw/whois", () => {
+  beforeEach(() => {
+    lookupWhoisMock.mockReset();
+  });
+
+  it("forwards numeric tgUserId + founder ids to lookupWhois", async () => {
+    lookupWhoisMock.mockResolvedValueOnce({
+      tgUserId: 123,
+      resolvedFrom: "numeric",
+      username: null,
+      firstName: null,
+      lastName: null,
+      inAllowlist: false,
+      isFounder: false,
+      invocations7d: 0,
+      lastSeenIso: null,
+      topTools: [],
+      muteState: null,
+      telegramError: null,
+    });
+    const app = await makeApp();
+    const res = await request(app).post("/api/internal/openclaw/whois").send({
+      founderUserId: "user-1",
+      founderTgUserId: 999,
+      tgUserId: 123,
+    });
+    expect(res.status).toBe(200);
+    expect(lookupWhoisMock).toHaveBeenCalledTimes(1);
+    const arg = lookupWhoisMock.mock.calls[0]![1];
+    expect(arg.founderUserId).toBe("user-1");
+    expect(arg.founderTgUserId).toBe(999);
+    expect(arg.tgUserId).toBe(123);
+    expect(arg.username).toBeUndefined();
+  });
+
+  it("forwards @username (drops @ at boundary)", async () => {
+    lookupWhoisMock.mockResolvedValueOnce({
+      tgUserId: 42,
+      resolvedFrom: "username",
+      username: "foo",
+      firstName: "Foo",
+      lastName: null,
+      inAllowlist: false,
+      isFounder: false,
+      invocations7d: 0,
+      lastSeenIso: null,
+      topTools: [],
+      muteState: null,
+      telegramError: null,
+    });
+    const app = await makeApp();
+    const res = await request(app).post("/api/internal/openclaw/whois").send({
+      founderUserId: "user-1",
+      founderTgUserId: 999,
+      username: "@foo",
+    });
+    expect(res.status).toBe(200);
+    const arg = lookupWhoisMock.mock.calls[0]![1];
+    expect(arg.username).toBe("@foo");
+  });
+
+  it("rejects when neither tgUserId nor username present with 400", async () => {
+    const app = await makeApp();
+    const res = await request(app).post("/api/internal/openclaw/whois").send({
+      founderUserId: "user-1",
+      founderTgUserId: 999,
+    });
+    expect(res.status).toBe(400);
+    expect(lookupWhoisMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed username with 400", async () => {
+    const app = await makeApp();
+    const res = await request(app).post("/api/internal/openclaw/whois").send({
+      founderUserId: "user-1",
+      founderTgUserId: 999,
+      username: "ab",
+    });
+    expect(res.status).toBe(400);
+    expect(lookupWhoisMock).not.toHaveBeenCalled();
+  });
+
+  it("returns hydrated aggregator output", async () => {
+    lookupWhoisMock.mockResolvedValueOnce({
+      tgUserId: 999,
+      resolvedFrom: "numeric",
+      username: "founder",
+      firstName: "Founder",
+      lastName: null,
+      inAllowlist: true,
+      isFounder: true,
+      invocations7d: 17,
+      lastSeenIso: "2026-05-13T19:00:00.000Z",
+      topTools: [{ tool: "recall_memory", count: 6 }],
+      muteState: null,
+      telegramError: null,
+    });
+    const app = await makeApp();
+    const res = await request(app).post("/api/internal/openclaw/whois").send({
+      founderUserId: "user-1",
+      founderTgUserId: 999,
+      tgUserId: 999,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.isFounder).toBe(true);
+    expect(res.body.invocations7d).toBe(17);
+    expect(res.body.topTools).toEqual([{ tool: "recall_memory", count: 6 }]);
   });
 });

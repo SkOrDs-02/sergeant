@@ -5,6 +5,7 @@ import {
   applyBeforeSend,
   resolveSentryRelease,
   scrubPII,
+  SENTRY_DENY_URLS,
 } from "./sentry.js";
 
 function makeEvent(overrides: Partial<ErrorEvent> = {}): ErrorEvent {
@@ -309,5 +310,108 @@ describe("applyBeforeBreadcrumb", () => {
     const bc: Breadcrumb = { category: "http" };
     const out = applyBeforeBreadcrumb(bc);
     expect(out).toEqual({ category: "http" });
+  });
+
+  // PII roast 2026-05-13 §P0-S2/S3: string scrubbing in breadcrumb message
+  // and query-string params in breadcrumb url.
+  it("PII-roast: маскує query-string token у http breadcrumb URL", () => {
+    const bc: Breadcrumb = {
+      category: "http",
+      data: {
+        url: "/auth/callback?token=abc123&api_key=xxx&ok=1",
+        method: "GET",
+      },
+    };
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out?.data?.["url"]).toBe(
+      "/auth/callback?token=[redacted]&api_key=[redacted]&ok=1",
+    );
+  });
+
+  it("PII-roast: маскує email у breadcrumb message (axios upstream-fail trace)", () => {
+    const bc: Breadcrumb = {
+      category: "http",
+      message: "POST /accounts/signup failed for leak@example.com",
+    };
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out?.message).toBe(
+      "POST /accounts/signup failed for [email redacted]@example.com",
+    );
+  });
+});
+
+// PII roast 2026-05-13 §P0-S3: applyBeforeSend must scrub strings in
+// `event.message` and every `exception.values[].value` for embedded
+// emails / telegram tokens / JWT / AWS access keys. Structural scrubPII
+// already covers headers / extra / contexts; these tests cover the
+// pattern-based path explicitly.
+describe("applyBeforeSend (PII roast: string scrubbing)", () => {
+  it("маскує email у event.message", () => {
+    const ev = makeEvent({
+      message: "user login failed for user@example.com",
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.message).toBe(
+      "user login failed for [email redacted]@example.com",
+    );
+  });
+
+  it("маскує telegram bot token у exception.values[].value", () => {
+    const token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const ev = makeEvent({
+      exception: {
+        values: [
+          {
+            type: "Error",
+            value: `Telegram send failed: bot token ${token} got 401`,
+          },
+        ],
+      },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.exception?.values?.[0]?.value).toBe(
+      "Telegram send failed: bot token [telegram-token redacted] got 401",
+    );
+  });
+
+  it("маскує query-string token у event.request.url", () => {
+    const ev = makeEvent({
+      request: { url: "https://example.com/auth/cb?token=secret123&ok=1" },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.request?.url).toBe(
+      "https://example.com/auth/cb?token=[redacted]&ok=1",
+    );
+  });
+
+  it("маскує AWS access key ID у exception value (upstream S3 error trace)", () => {
+    const ev = makeEvent({
+      exception: {
+        values: [
+          {
+            type: "S3Error",
+            value: "Access denied for key AKIAIOSFODNN7EXAMPLE",
+          },
+        ],
+      },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.exception?.values?.[0]?.value).toBe(
+      "Access denied for key [aws-key redacted]",
+    );
+  });
+});
+
+describe("SENTRY_DENY_URLS", () => {
+  it("блокує health-probe URL-и (uptime monitor 502 noise)", () => {
+    // String match is substring per Sentry SDK contract.
+    expect(SENTRY_DENY_URLS).toContain("/api/health");
+    expect(SENTRY_DENY_URLS).toContain("/health");
+    // favicon noise — regex.
+    const faviconRe = SENTRY_DENY_URLS.find((r) => r instanceof RegExp) as
+      | RegExp
+      | undefined;
+    expect(faviconRe).toBeDefined();
+    expect(faviconRe!.test("https://example.com/favicon.ico")).toBe(true);
   });
 });

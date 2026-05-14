@@ -19,6 +19,7 @@ import { Banner } from "@shared/components/ui/Banner";
 import { ModuleAccentProvider } from "@shared/components/layout";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
+import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { useQueryClient } from "@tanstack/react-query";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import { useNutritionPantries } from "./hooks/useNutritionPantries";
@@ -375,6 +376,8 @@ export default function NutritionApp({
     });
   }, [toast, handlePullRefresh]);
 
+  const cloudPullPending = useCloudPullPending();
+
   const dayPlanQuery: DataStateQueryLike<NutritionDayPlan | null> = {
     data: dayPlanBusy ? undefined : dayPlan,
     isLoading: dayPlanBusy,
@@ -408,6 +411,7 @@ export default function NutritionApp({
         onRefresh={handlePullRefresh}
         onError={handlePullRefreshError}
         variant="nutrition"
+        enabled={!cloudPullPending}
       >
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
           <NutritionPantrySelector pantry={pantry} busy={busy} />

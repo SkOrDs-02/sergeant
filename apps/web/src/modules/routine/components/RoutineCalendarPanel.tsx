@@ -287,12 +287,17 @@ export function RoutineCalendarPanel({
         aria-label="Пошук подій"
       />
 
-      <div className="flex flex-wrap gap-1.5 items-center">
+      <div
+        className="flex flex-wrap gap-1.5 items-center"
+        role="group"
+        aria-label="Фільтр за тегом"
+      >
         <SectionHeading as="span" size="xs" className="w-full sm:w-auto">
           Теги
         </SectionHeading>
         <button
           type="button"
+          aria-pressed={tagFilter === null}
           onClick={() => setTagFilter(null)}
           className={cn(
             "text-style-caption px-2.5 py-1.5 rounded-full border",
@@ -304,6 +309,7 @@ export function RoutineCalendarPanel({
         {routine.prefs.showFizrukInCalendar !== false && (
           <button
             type="button"
+            aria-pressed={tagFilter === "__fizruk"}
             onClick={() =>
               setTagFilter((f) => (f === "__fizruk" ? null : "__fizruk"))
             }
@@ -320,6 +326,7 @@ export function RoutineCalendarPanel({
         {routine.prefs.showFinykSubscriptionsInCalendar !== false && (
           <button
             type="button"
+            aria-pressed={tagFilter === "__finyk_sub"}
             onClick={() =>
               setTagFilter((f) => (f === "__finyk_sub" ? null : "__finyk_sub"))
             }
@@ -337,6 +344,7 @@ export function RoutineCalendarPanel({
           <button
             key={name}
             type="button"
+            aria-pressed={tagFilter === name}
             onClick={() => setTagFilter((f) => (f === name ? null : name))}
             className={cn(
               "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[160px] truncate",
