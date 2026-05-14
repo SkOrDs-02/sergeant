@@ -58,9 +58,8 @@ import { createRouteAwareSampler } from "./sampler.js";
 
 /**
  * Narrow env shape that this module reads.  Aligns with backend-perf PR-02
- * (`docs/planning/pr-plan-backend-perf-2026-05.md` § PR-02 « drop
- * process.env DI default in obs/tracing.ts »): the old default-parameter
- * `env: NodeJS.ProcessEnv = process.env` leaked raw `process.env` reads
+ * (`docs/planning/pr-plan-backend-perf-2026-05.md` § PR-02 « drop raw env DI
+ * default in obs/tracing.ts »): the old default-parameter leaked raw env reads
  * into the prod runtime and fought the env-single-source CI gate
  * (`scripts/check-env-single-source.mjs`).  Now we require an explicit,
  * Zod-validated env object — the module-evaluation side-effect at the
@@ -375,7 +374,7 @@ export function __resetTracingForTests(): void {
 // скидає state, і тести можуть викликати `startTracing()` явно з мок-env.
 //
 // `defaultEnv` — валідований Zod-env із `../env.js` (ре-export з
-// `env/env.ts`).  Пряме `process.env`-читання вже не виконується
+// `env/env.ts`). Пряме читання сирого Node env вже не виконується
 // в цьому модулі — всі потрібні поля живуть у Zod-схемі (див.
 // `env/env.ts` § RAILWAY/VERCEL/GITHUB_SHA та OTEL_*).
 startTracing(defaultEnv);

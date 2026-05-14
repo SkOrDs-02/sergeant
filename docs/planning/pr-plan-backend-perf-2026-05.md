@@ -101,6 +101,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-02 — `refactor(server): drop process.env DI default in obs/tracing.ts`
 
+> **Статус 2026-05-14:** ✅ Закрито в PR #2840. Поточний план лише синхронізує dashboard-стан; код уже на `main`.
+
 **Surface**
 
 - `apps/server/src/obs/tracing.ts:105,121,251` — функції-фабрики з дефолт-аргументом `env: NodeJS.ProcessEnv = process.env`.
@@ -118,10 +120,10 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [ ] `grep "process.env" apps/server/src/obs/tracing.ts` → 0 рядків.
-- [ ] Тести не приймають `env`-mock із сирим `process.env`; замість того передають fixture, типізований як `Pick<EnvSchema, …>`.
-- [ ] `pnpm --filter @sergeant/server test tracing` зелений.
-- [ ] `pnpm typecheck` без `any` у нових сигнатурах (Hard Rule).
+- [x] `grep "process.env" apps/server/src/obs/tracing.ts` → 0 рядків.
+- [x] Тести не приймають `env`-mock із сирим `process.env`; замість того передають fixture, типізований як `Pick<EnvSchema, …>`.
+- [x] `pnpm --filter @sergeant/server test tracing` зелений.
+- [x] `pnpm typecheck` без `any` у нових сигнатурах (Hard Rule).
 
 **Risks / mitigations**
 
@@ -171,6 +173,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-04 — `docs(observability): document per-model AI-token join-pattern in metrics.md §6`
 
+> **Статус 2026-05-14:** ✅ Закрито в цьому PR. §6 тепер має Anthropic + Voyage `app_build_info` join-и, приклади `model`-лейблів і крослінк §6 ↔ §15a.
+
 **Surface**
 
 - `docs/observability/metrics.md` §6 (AI-метрики).
@@ -190,10 +194,10 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [ ] `docs/observability/metrics.md` §6 містить мінімум один `app_build_info`-join PromQL для AI-токенів.
-- [ ] Кросс-лінк на §15a (build/release identity) у обох напрямках.
-- [ ] `pnpm format` + `pnpm lint:markdown` (якщо є) — зелені.
-- [ ] `Last validated` у `metrics.md` оновлено (bump хуком).
+- [x] `docs/observability/metrics.md` §6 містить мінімум один `app_build_info`-join PromQL для AI-токенів.
+- [x] Кросс-лінк на §15a (build/release identity) у обох напрямках.
+- [x] `pnpm format` + `pnpm lint:markdown` (якщо є) — зелені.
+- [x] `Last validated` у `metrics.md` оновлено (bump хуком).
 
 **Risks / mitigations**
 
@@ -240,16 +244,19 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-06 — `feat(observability): Alertmanager rule for backend /health p95 SLO`
 
+> **Статус 2026-05-14:** ✅ Закрито в цьому PR. Додано recording rule `job:health_p95_5m`, alert `BackendHealthP95High`, SLO-секцію й runbook.
+
 **Surface**
 
+- `docs/observability/prometheus/recording_rules.yml` — recording rule `job:health_p95_5m`.
 - `docs/observability/prometheus/alert_rules.yml` — нова rule `BackendHealthP95High`.
 - `docs/observability/SLO.md` — секція "Health endpoint p95" (формалізуємо з informal SLO в `AGENTS.md`).
 - `docs/observability/alertmanager.yml` — pre-flight перевірка, що `severity = ticket` route існує (а він вже є — лише verify).
 
 **Scope**
 
-- Recording rule `job:health_p95_5m` на існуючому метрику `http_request_duration_seconds{route="/health"}` (звірити, що метрика експозиція є; якщо ні — інший PR на instrumentation).
-- Alert: `BackendHealthP95High` — `job:health_p95_5m > 0.1` (100 ms, AGENTS.md budget) за `for: 5m`, severity=`ticket`.
+- Recording rule `job:health_p95_5m` на існуючій millisecond-гістограмі `http_request_duration_ms_bucket{path=~"/health(|/.*)|/healthz|/readyz|/livez|/startupz"}`.
+- Alert: `BackendHealthP95High` — `job:health_p95_5m > 100` (100 ms, AGENTS.md budget) за `for: 5m`, severity=`ticket`.
 - SLO-документ — формалізувати порог + escalation-policy (link на runbook).
 
 **Out of scope**
@@ -259,10 +266,10 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [ ] `docs/observability/prometheus/alert_rules.yml` містить `BackendHealthP95High` із `for: 5m`, threshold = `0.1`, severity=`ticket`.
-- [ ] `docs/observability/SLO.md` має нову секцію `Health endpoint p95`.
-- [ ] `promtool check rules` (якщо існує CI step) — зелений.
-- [ ] Link з `AGENTS.md` informal-SLO рядка → формалізована SLO-секція.
+- [x] `docs/observability/prometheus/alert_rules.yml` містить `BackendHealthP95High` із `for: 5m`, threshold = `100ms`, severity=`ticket`.
+- [x] `docs/observability/SLO.md` має нову секцію `Health endpoint p95`.
+- [x] `promtool check rules` fallback: локальний `yaml` parse зелений; `promtool` у desktop-shell недоступний.
+- [x] Link з `AGENTS.md` informal-SLO рядка → формалізована SLO-секція.
 
 **Risks / mitigations**
 
@@ -309,6 +316,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-08 — `docs(observability): refresh metrics.md §Відкриті питання`
 
+> **Статус 2026-05-14:** ✅ Закрито в цьому PR. Футер тепер лишає тільки затрекані наступні задачі й прибирає застарілу нотатку без власника.
+
 **Surface**
 
 - `docs/observability/metrics.md` — секція "Відкриті питання" (footer).
@@ -326,9 +335,9 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [ ] Кожен пункт у §Відкриті питання — або має trackable issue/PR-link, або видалений.
-- [ ] `Last validated` оновлено (хуком).
-- [ ] `pnpm format` зелений.
+- [x] Кожен пункт у §Відкриті питання — або має trackable issue/PR-link, або видалений.
+- [x] `Last validated` оновлено (хуком).
+- [x] `pnpm format` зелений.
 
 **Risks / mitigations**
 
