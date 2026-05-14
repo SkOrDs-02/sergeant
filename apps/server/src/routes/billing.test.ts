@@ -53,8 +53,8 @@ describe("billing routes", () => {
       email: "billing@example.com",
     });
     delete process.env["STRIPE_SECRET_KEY"];
-    delete process.env["STRIPE_PRICE_PLUS_MONTHLY"];
-    delete process.env["STRIPE_PRICE_PRO_MONTHLY"];
+    delete process.env["STRIPE_PRICE_ID_PLUS_MONTHLY"];
+    delete process.env["STRIPE_PRICE_ID_PRO_MONTHLY"];
     delete process.env["STRIPE_WEBHOOK_SECRET"];
     delete process.env["PUBLIC_WEB_BASE_URL"];
     originalFetch = globalThis.fetch;

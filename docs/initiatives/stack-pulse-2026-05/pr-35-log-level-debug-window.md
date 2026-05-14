@@ -1,7 +1,7 @@
 # PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Partially closed (server-side merged via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec)); `tools/openclaw` `/debug-window` CLI винесено у follow-up (див. нижче).
+> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
+> **Status:** Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger).
 
 |                    |                                                                                 |
 | ------------------ | ------------------------------------------------------------------------------- |
