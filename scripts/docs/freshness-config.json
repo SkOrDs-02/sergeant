@@ -21,6 +21,7 @@
   },
   "excludeGlobs": [
     "docs/initiatives/follow-ups.md",
+    "docs/open-work.md",
     "scripts/__tests__/fixtures/**"
   ],
   "explicitInclude": [],
