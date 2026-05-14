@@ -1,10 +1,12 @@
 # Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor)
 
-> **Last validated:** 2026-05-13 by Devin (mobile reliability/UX roast: wired `core/ModuleErrorBoundary.tsx` to `captureError`, dropped stale `useRoutineReminders.ts` allowlist entry, re-counted >600 LOC inventory — 4 files current, up from 2). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (mobile reliability/UX roast: wired `core/ModuleErrorBoundary.tsx` to `captureError`, dropped stale `useRoutineReminders.ts` allowlist entry, re-counted >600 LOC inventory — 4 files current, up from 2; follow-up dead-code mini-PR removed `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC) after pre-flight cross-repo grep — audit roast P2.1 closed). **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Оновлено 2026-05-13 (roast #10).** Registry revalidated alongside `docs/audits/2026-05-13-mobile-reliability-ux-roast.md`:
 > ModuleErrorBoundary TODO(phase-10) closed — `componentDidCatch` now forwards via `captureError` (no DSN required for the call itself; gating remains inside `lib/observability.ts`). `useRoutineReminders.ts` no longer holds a stale entry in the mobile `no-strict-bypass` allowlist. Large-file inventory drifted: `fizruk/lib/dualWrite/adapter.ts` 737 → 804 (+67), `PlanCalendar.tsx` 616 → 661 (+45), plus two newly-over-600 files — `fizruk/lib/dualWrite/diff.ts` 633 and `routine/pages/Calendar.tsx` 628.
+>
+> **Оновлено 2026-05-13 (roast #10 follow-up).** Видалено dead-code файл `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC) — audit roast P2.1 ✅ closed. Pre-flight `grep -rn "modules/shared/ModuleErrorBoundary\|shared/ModuleErrorBoundary" apps/mobile` → 0; `grep -rn 'require\.context\|import(".*ModuleErrorBoundary' apps/mobile` → 0. Єдиним живим пер-модульним боундарі залишається `apps/mobile/src/core/ModuleErrorBoundary.tsx`.
 >
 > **Оновлено 2026-05-13 (T7 verification job).** Додано T7 verification job: `.github/workflows/mobile-flaky-verify.yml`
 > гонить mobile jest-suite 20 разів поспіль (workflow_dispatch + weekly Monday 05:00 UTC cron) і
