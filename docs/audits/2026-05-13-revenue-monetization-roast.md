@@ -38,7 +38,7 @@
 | P0-4 | Webhook: subscription_renewed emit               | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
 | P0-5 | Webhook: subscription_canceled emit              | **Add** | `apps/server/src/modules/billing/stripe.ts`        | **Done (PR)** |
 | P0-6 | Customer Portal endpoint (`/api/billing/portal`) | **Add** | `apps/server/src/routes/billing.ts`                | **Done (PR)** |
-| P0-7 | Stripe price_id env-config + validation          | **Add** | `apps/server/src/config/env.ts` (schema)           | Outstanding   |
+| P0-7 | Stripe price_id env-config + validation          | **Add** | `apps/server/src/env/env.ts` (schema)              | **Done (PR)** |
 
 ## P1 — High (launch quality / funnel completeness)
 
@@ -49,7 +49,7 @@
 | P1-3 | Landing page scaffold (Phase 6.1 — `/`)                    | **Add**    | `apps/web/src/core/LandingPage.tsx` + route                         | **Done (PR)** |
 | P1-4 | EN locale integration (Phase 6.2 — i18next або подібне)    | **Add**    | `packages/shared/src/i18n/` + `apps/web/` wiring                    | Outstanding   |
 | P1-5 | LiqPay payment gateway placeholder                         | **Add**    | `apps/server/src/modules/billing/liqpay.ts` (scaffold)              | Outstanding   |
-| P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | Outstanding   |
+| P1-6 | Pro plan limits UI in Settings (show plan + manage sub)    | **Add**    | `apps/web/src/core/settings/PlanSection.tsx`                        | **Done (PR)** |
 | P1-7 | Paywall integration points (AI chat, Mono auto-sync)       | **Change** | `apps/web/src/core/chat/ChatInput.tsx`, finyk hooks                 | Outstanding   |
 | P1-8 | PricingPage: handle `?checkout=success` return URL         | **Change** | `apps/web/src/core/PricingPage.tsx` (invalidate billingKeys.status) | Outstanding   |
 | P1-9 | Trial expiry banner / notification                         | **Add**    | `apps/web/src/core/billing/TrialBanner.tsx`                         | **Done (PR)** |
@@ -67,7 +67,7 @@
 
 ## Прогрес виконання (цей PR)
 
-Закрито **6 items** з P0/P1 у попередньому PR + **1 follow-up item** (P1-2) у поточному:
+Закрито **6 items** з P0/P1 у попередньому PR + **1 follow-up item** (P1-2) у поточному (+ **P0-7** окремим follow-up PR):
 
 ## Прогрес виконання — follow-up PR (2026-05-13, P1-9)
 
@@ -111,6 +111,20 @@
 - Inline payload contracts з типами + зв'язки з ініціативою 0010.
 - **Тест:** `packages/shared/src/lib/analyticsEvents.test.ts` (lines 57–76 added) — stability guard on canonical names.
 
+### P0-7 · Stripe price_id env-config + validation ✅ Closed in #2793
+
+- **Файли:** `apps/server/src/env/env.ts` (нова Stripe-секція + assertStartupEnv branch), `apps/server/src/modules/billing/stripe.ts` (`getStripeSecretKey` / `getPriceId` мігровано з `process.env` на zod-валідований `env`).
+- **`.env.example`:** додані placeholder-и для `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID_PRO_MONTHLY` / `STRIPE_PRICE_ID_PLUS_MONTHLY` / `STRIPE_WEBHOOK_TOLERANCE_SECONDS` з UA-коментарями.
+- **Zod-валідація:**
+  - `STRIPE_SECRET_KEY` — `/^sk_(test|live)_[A-Za-z0-9]+$/`.
+  - `STRIPE_WEBHOOK_SECRET` — `/^whsec_[A-Za-z0-9]+$/`.
+  - `STRIPE_PRICE_ID_PRO_MONTHLY` / `STRIPE_PRICE_ID_PLUS_MONTHLY` — `/^price_[A-Za-z0-9]+$/`.
+  - Malformed value падає при парсингу env-схеми (module-load), не лише в runtime.
+- **Startup-assertion:** у production, якщо `STRIPE_SECRET_KEY` виставлено, `STRIPE_PRICE_ID_PRO_MONTHLY` стає обов'язковим (паралельно існуючому checkу для `STRIPE_WEBHOOK_SECRET` з T2-аудиту #1). Дев / preview deploys лишаються толерантні.
+- **Тести:** `apps/server/src/env/__tests__/assertStartupEnv.test.ts` — новий `describe('STRIPE_PRICE_ID_PRO_MONTHLY (P0-7)')` блок з 5 кейсами (missing/missing+secret, malformed PRO + PLUS, valid happy-path, NODE_ENV=development tolerance).
+- **Зміна іменування:** legacy `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PLUS_MONTHLY` (без `_ID_`) замінено на канонічний `STRIPE_PRICE_ID_*` патерн з docs (ADR-0051 / 06-monetization-architecture). Railway env потребує оновлення (placeholders у `.env.example`).
+- **env-single-source budget:** `.tech-debt/env-single-source-budget.json` бампнуто з `105` → `103` (net −2 reads з `billing/stripe.ts`).
+
 ### Barrel export
 
 - **Файл:** `apps/web/src/core/billing/index.ts` — re-exports `usePlan`, `PaywallModal` + types.
@@ -141,32 +155,13 @@
 | 11  | `docs/audits/2026-05-13-revenue-monetization-roast.md` | New     |
 | 12  | `docs/audits/README.md`                                | Changed |
 
-## Прогрес виконання (P0-6 follow-up PR — Customer Portal endpoint)
+## Прогрес виконання (follow-up PR — P1-6)
 
-Закрито **1 item** з P0:
+### P1-6 · Pro plan limits UI in Settings (show plan + manage sub) ✅ Closed in #2778
 
-### P0-6 · Customer Portal endpoint (`POST /api/billing/portal`) ✅ Зроблено в цьому PR
-
-- **Server:** `apps/server/src/routes/billing.ts` — додано `r.post("/api/billing/portal", requireSession(), rateLimitExpress({ key: "api:billing:portal", limit: 10, windowMs: 1h }), …)`. Помилки маплимо у `503 BILLING_UNAVAILABLE` (немає `STRIPE_SECRET_KEY`) та `409 NO_BILLING_CUSTOMER` (немає `provider_customer_id` у `subscriptions`).
-- **Module:** `apps/server/src/modules/billing/stripe.ts` — нова `createCustomerPortalSession({ pool, userId })` + `NoBillingCustomerError`. Дзеркалить pattern `createCheckoutSession`: дістає `provider_customer_id` із `subscriptions WHERE status IN ('active','trialing','past_due')`, POSTить на `https://api.stripe.com/v1/billing_portal/sessions` із `return_url=${PUBLIC_WEB_BASE_URL}/settings?billing=portal-return`.
-- **Contract triplet (Hard Rule #3):** `BillingPortalResponseSchema` у `packages/shared/src/schemas/api.ts` (SSOT) → OpenAPI registry/routes → `api-client` `createPortal()` + регенерований `docs/api/openapi.json` і `packages/api-client/src/generated/openapi.d.ts`.
-- **Тести:** `apps/server/src/routes/billing.test.ts` — 3 нові кейси (happy path + 503 + 409), мок `globalThis.fetch`. `packages/api-client/src/endpoints/billing.test.ts` — нові unit-тести на `createPortal()` (URL, method) + schema rejection regression-guard.
-- **Web:** `PlanSection` ще не існує (P1-6 outstanding) — endpoint expose-нуто в `api-client` (`http.billing.createPortal()`); UI-кнопка чекає P1-6.
-
-## Файли змінено у P0-6 follow-up PR
-
-| #   | Файл                                                   | Тип                 |
-| --- | ------------------------------------------------------ | ------------------- |
-| 1   | `packages/shared/src/schemas/api.ts`                   | Changed             |
-| 2   | `packages/shared/src/openapi/registry.ts`              | Changed             |
-| 3   | `packages/shared/src/openapi/routes.ts`                | Changed             |
-| 4   | `apps/server/src/modules/billing/stripe.ts`            | Changed             |
-| 5   | `apps/server/src/routes/billing.ts`                    | Changed             |
-| 6   | `apps/server/src/routes/billing.test.ts`               | Changed             |
-| 7   | `packages/api-client/src/endpoints/billing.ts`         | Changed             |
-| 8   | `packages/api-client/src/endpoints/billing.test.ts`    | New                 |
-| 9   | `packages/api-client/src/index.ts`                     | Changed             |
-| 10  | `docs/api/openapi.json`                                | Changed (generated) |
-| 11  | `packages/api-client/src/generated/openapi.d.ts`       | Changed (generated) |
-| 12  | `docs/audits/2026-05-13-revenue-monetization-roast.md` | Changed             |
-| 13  | `docs/audits/README.md`                                | Changed             |
+- **Файл:** `apps/web/src/core/settings/PlanSection.tsx` (new, ~155 LOC)
+- **Тест:** `apps/web/src/core/settings/PlanSection.test.tsx` (new, 3 tests — free / pro-active / pro-canceled)
+- **Інтеграція:** `apps/web/src/core/hub/HubSettingsPage.tsx` — додано секцію `plan` у tab `general` між `general` та `notifications`.
+- `usePlan()` (Hard Rule #2 ✓ через `billingKeys.status`) → бейдж Free/Pro, дата trial-end (`status === "trialing"` + `currentPeriodEnd`), warning для `canceled` / `past_due` / `inactive-canceled`.
+- CTA: «Перейти на Pro» (`/pricing?source=settings`) для Free; «Керувати підпискою» (`window.location.assign("/api/billing/portal")`) для Pro. Server-side endpoint — окремий outstanding item (**P0-6**); UI шле браузер на канонічний URL уже зараз, щоб не плодити dead-code wrapper у `billingApi` (api-client `openCustomerPortal` — Phase 3.3 ініціативи 0010).
+- i18n: новий файл додано до `apps/web/eslint.i18n-allowlist.json` (consistent з рештою `apps/web/src/core/settings/*Section.tsx`).

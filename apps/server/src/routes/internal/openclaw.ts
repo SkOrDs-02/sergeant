@@ -946,7 +946,12 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const apiKey = env.ANTHROPIC_API_KEY;
       if (!apiKey) {
-        res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
+        // Не світимо назву env-змінної клієнту: вона потрапляє у formatApiError
+        // і показується юзеру дослівно. Дискримінатор для frontend — `code`.
+        res.status(503).json({
+          error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+          code: "ANTHROPIC_KEY_MISSING",
+        });
         return;
       }
       const parsed = validateBody(ClassifyBody, req, res);

@@ -14,7 +14,12 @@ export function requireAnthropicKey(): RequestHandler {
   return (req, res, next) => {
     const key = process.env["ANTHROPIC_API_KEY"];
     if (!key) {
-      res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
+      // Не світимо назву env-змінної клієнту: вона потрапляє у formatApiError
+      // і показується юзеру дослівно. Дискримінатор для frontend — `code`.
+      res.status(503).json({
+        error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        code: "ANTHROPIC_KEY_MISSING",
+      });
       return;
     }
     (req as WithAnthropicKey).anthropicKey = key;

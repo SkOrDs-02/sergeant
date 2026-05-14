@@ -8,7 +8,7 @@
 
 - [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний audit `2026-05-07`; mobile-частина закрита PR #2215 (Jest reliability), #2192/#2199 (sync_op_outbox), umbrella imports.
 - [`2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — fix-pass log, mobile TransactionsPage providers fix, mobile Jest OOM closure.
-- [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — UX тех-план, mobile-частина 12/14 Done, дві Partial: E2E and device validation, Accessibility audit.
+- [`2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — UX тех-план, mobile-частина 12/14 Done, дві Partial: E2E and device validation, Accessibility audit.
 - [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md) — living burndown, recount-нуто разом з цією прожаркою.
 - [`apps/mobile/AGENTS.md`](../../apps/mobile/AGENTS.md) — surface-specific gotchas (NativeWind, MMKV-only, Expo Router).
 - [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md) — Capacitor/Expo dual-track, sunset зараз не active.

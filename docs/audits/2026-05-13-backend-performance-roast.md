@@ -150,14 +150,15 @@ migration), поза скоупом цієї прожарки.
 
 ## P2 (DX, тести, документація)
 
-### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ❌ Не в цьому PR
+### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ✅ Closed in #2752
 
-- **Files:** [`apps/server/src/modules/push/push.ts:36-49,268-273`](../../apps/server/src/modules/push/push.ts), [`apps/server/src/routes/push.ts:87`](../../apps/server/src/routes/push.ts#L87).
-- **Why виносимо:** module-load-time const-reads (`VAPID_PUBLIC`,
-  `VAPID_PRIVATE`) — будь-яке переписування на `env`-import зачіпає 15+
-  testів, які паттерн-патчать `process.env["VAPID_*"]` між it-блоками.
-  Запропоновано як окрема прожарка (`refactor(server): centralize push
-env reads through env.ts`).
+- **Files:**
+  - [`apps/server/src/env/env.ts:470-515`](../../apps/server/src/env/env.ts#L470) — додано `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`, `PUSH_INTERNAL_ALLOWED_IPS` (зод-валідовані; VAPID-поля вже були).
+  - [`apps/server/src/modules/push/push.ts:37-75,260-270`](../../apps/server/src/modules/push/push.ts) — 6 `process.env[...]`-reads (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `NODE_ENV`, `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`) → `env.*`.
+  - [`apps/server/src/routes/push.ts:87`](../../apps/server/src/routes/push.ts#L87) — `PUSH_INTERNAL_ALLOWED_IPS` → `env.PUSH_INTERNAL_ALLOWED_IPS`.
+  - [`apps/server/src/modules/push/push.test.ts`](../../apps/server/src/modules/push/push.test.ts) — 16+ env-патч-сайтів мігровано на canonical pattern `vi.resetModules() + vi.stubEnv() + dynamic import` (як у `auth.test.ts`). Додано 5 нових unit-тестів на zod-defaults і CIDR-round-trip для нових env-полів.
+  - [`.tech-debt/env-single-source-budget.json`](../../.tech-debt/env-single-source-budget.json) — бюджет 105 → 98 (net −7 reads).
+- **Why P2:** [`2026-05-07-app-audit.md:396`](./2026-05-07-app-audit.md#L396) (P2) і §4 TL;DR цього аудиту. Module-load-time `process.env[...]` обходив startup-assert + zod-валідацію — typo в Railway env (`VAPID_PUBL=...`) тихо вимикав push-сурфейс без alerts. Перенесли на `env.ts` singleton, тести мігрували на vitest-канонічний pattern, щоб майбутні зміни env-shape ловилися type-системою, а не runtime-патчем `process.env`.
 
 ### P2-2. `obs/tracing.ts` `process.env` reads (через дефолтний argument) ❌ Тут не торкаємось
 

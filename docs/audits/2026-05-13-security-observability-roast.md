@@ -74,11 +74,13 @@
 
 ## P1 — закрити в найближчий квартал
 
-### S4 — Pino redact wildcard depth (audit §6.5 carry-over)
+### S4 — Pino redact wildcard depth (audit §6.5 carry-over) ✅ Closed in #2749
 
 - **Change:** `apps/server/src/obs/logger.ts:155-169` — `*.password`, `*.*.password` зараз вкриває 1+2 рівні; додати генератор, що розширює до 5 (рідкісно глибше). Або (краще): свій `redactor`-helper, що ловить ключі за іменем рекурсивно.
 - **Why:** Sentry-scrubber ходить рекурсивно через `REDACT_KEY_NAMES` (тепер shared), Pino — ні. У Loki access-логи проходять тільки через Pino. Витік `req.body.nested.user.password` (3 рівні) — теоретично можливий через axios `err.config.data` capture.
 - **Add:** тест у `apps/server/src/obs/logger.test.ts` (новий), який пише `logger.info({ a: { b: { c: { password: 'x' } } } })` і перевіряє, що substring `'x'` відсутній у stringify-output.
+
+**Зроблено:** `apps/server/src/obs/logger.ts` тепер експонує `redactKeysRecursively` (non-mutating, cycle-safe `WeakSet`) як `formatters.log`-хук; він ходить по всіх рівнях merged-лог-обʼєкта і маскує ключі з `REDACT_KEY_NAMES` (case-insensitive) незалежно від глибини (3+ рівні `req.body.nested.user.password` більше не витікають). Старі статичні варіанти (`*.password`, `*.*.password`, `*.email`, `*.*.email`, `*.*.password`, `req.body.email`, `res.body.email`, ...) видалено — вони були редундантні до рекурсивного walker-а. `logger.test.ts` розширено новим `S4 — recursive redactor (deep nesting)` describe-блоком: happy-path acceptance criteria (3-level password, substring `'x'` не їсть в stringify-output) + edge case-и (4-level email, sensitive-keys в масивах, case-insensitive `Password`/`AUTHORIZATION`, object-valued sensitive keys в `null`, cycle-safety).
 
 ### S5 — OTel denylist parity test
 

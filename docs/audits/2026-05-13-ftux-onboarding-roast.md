@@ -6,7 +6,7 @@
 >
 > **Cross-refs:**
 > [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](./archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (frozen reference) ·
-> [`docs/audits/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
+> [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
 > [`docs/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — post-onboarding UX-прожарка (day 0-7) ·
 > [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](./2026-05-06-ux-roast-pr-plan.md) — виконавчий план UX-прожарки ·
 > [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — поточний SSOT FTUX-стану ·
@@ -144,7 +144,7 @@ events працюють, dashboards задокументовані, retention-co
 - **Дія (наступний спринт):** P1 PR відновлює focus management + double-submit guard + Escape→onSecondaryAction wiring; знімає `it.skip` маркери; коротка регресія у `apps/web/src/core/onboarding/useOnboardingWizardState.ts` (додати `submitted` ref + early-return) + `useAutoFocus(headingRef)` у `OnboardingWizard.tsx`. Розмір очікуваний < 60 LOC.
 - **Власник:** TBD (Web Frontend); ризик — медіум (a11y + double-fire analytics).
 
-### P1-4. PR-08 — archive stale audits + delete `.replit`
+### P1-4. PR-08 — archive stale audits + delete `.replit` — ✅ Closed in #2768
 
 - **Файли:**
   - `docs/audits/2026-04-28-implementation-roadmap.md` → archive
@@ -154,7 +154,7 @@ events працюють, dashboards задокументовані, retention-co
 - **Проблема:** `docs/audits/` indexed (per README.md status table) і
   Sergeant founder-а тікає чек ока на stale-tracker-и при кожному
   pre-roast scan-і. PR-08 у scope master tracker-а §3.1, статус ⏳.
-- **Дія:** не в скоупі цієї прожарки — окремий PR-08.
+- **Дія:** виконано у цьому PR — обидва audit-tracker-и перенесено у `docs/audits/archive/`, `.replit` видалено, cross-refs у `docs/audits/README.md` + сторонніх документах оновлено (`./` → `./archive/`, `../X.md` → `./X.md` в archive sibling-ах, depth-drift в moved файлах).
 
 ## P2 (постлоунч / якщо є час)
 
@@ -207,7 +207,7 @@ Outstanding (не у scope цього PR, лишається у master tracker):
 - ⏳ S6.3 (P2-15 CelebrationModal CTA promise) — у scope master tracker §2.2,
   ROUTING piece (P2-1 вище) ще open.
 - ⏳ S6.8, S6.10, S6.11, S6.12, S6.13 — Sprint 6 carryover.
-- ⏳ PR-08 (cleanup .replit + archive stale audits).
+- ✅ PR-08 (cleanup .replit + archive stale audits) — закрито у #2768 (P1-4).
 - ⏳ PR-09 (cold-start outcome-card, замінить `OnboardingProgress`).
 - ⏳ PR-10 (empty-state A/B).
 - ⏳ PR-13 (goal-first wizard A/B, S5.1).

@@ -7,14 +7,14 @@
 
 ## Modules
 
-| Surface      | File / table                                                                                                               | Roles                                                                                                                                                                                               |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Storage      | [`apps/server/src/migrations/025_ai_memories_pgvector.sql`](../../apps/server/src/migrations/025_ai_memories_pgvector.sql) | pgvector HALFVEC(1024) partitioned by user_id; CHECK source IN (`chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal`, `digest`, `cofounder`).                                               |
-| Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../apps/server/src/modules/ai-memory/voyageBudget.ts).                             |
-| Service      | [`apps/server/src/modules/ai-memory/service.ts`](../../apps/server/src/modules/ai-memory/service.ts)                       | `remember()` + `recall()` орchestrator. Викликається BullMQ-worker-ом + recall-route.                                                                                                               |
-| Ingest queue | [`apps/server/src/modules/ai-memory/ingestQueue.ts`](../../apps/server/src/modules/ai-memory/ingestQueue.ts)               | BullMQ `ai-memory-ingest`. `enqueueMemoryIngest()` — public producer. Per-source gating через `AI_MEMORY_ENABLED` (master) + `MONO_AI_MEMORY_INGEST_ENABLED` (finyk).                               |
-| Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`packages/openclaw-plugin/src/legacy/tools/recall-memory.ts`](../../packages/openclaw-plugin/src/legacy/tools/recall-memory.ts). |
-| Backfill     | [`apps/server/src/modules/ai-memory/backfill.ts`](../../apps/server/src/modules/ai-memory/backfill.ts)                     | Resumable backfill з `tg_topic_archive` → cofounder memory. Detailed нижче.                                                                                                                         |
+| Surface      | File / table                                                                                                               | Roles                                                                                                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Storage      | [`apps/server/src/migrations/025_ai_memories_pgvector.sql`](../../apps/server/src/migrations/025_ai_memories_pgvector.sql) | pgvector HALFVEC(1024) partitioned by user_id; CHECK source IN (`chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal`, `digest`, `cofounder`, `product`). `cofounder` додано у 028, `product` у 068 (PR-24). |
+| Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../apps/server/src/modules/ai-memory/voyageBudget.ts).                                             |
+| Service      | [`apps/server/src/modules/ai-memory/service.ts`](../../apps/server/src/modules/ai-memory/service.ts)                       | `remember()` + `recall()` орchestrator. Викликається BullMQ-worker-ом + recall-route.                                                                                                                               |
+| Ingest queue | [`apps/server/src/modules/ai-memory/ingestQueue.ts`](../../apps/server/src/modules/ai-memory/ingestQueue.ts)               | BullMQ `ai-memory-ingest`. `enqueueMemoryIngest()` — public producer. Per-source gating через `AI_MEMORY_ENABLED` (master) + `MONO_AI_MEMORY_INGEST_ENABLED` (finyk).                                               |
+| Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`packages/openclaw-plugin/src/legacy/tools/recall-memory.ts`](../../packages/openclaw-plugin/src/legacy/tools/recall-memory.ts).                 |
+| Backfill     | [`apps/server/src/modules/ai-memory/backfill.ts`](../../apps/server/src/modules/ai-memory/backfill.ts)                     | Resumable backfill з `tg_topic_archive` → cofounder memory. Detailed нижче.                                                                                                                                         |
 
 ## Ingest flow (current state)
 
@@ -23,9 +23,12 @@ producer-callsite                            BullMQ queue                worker
 ─────────────────                            ─────────────                ──────
  mono webhook  (source=finyk)         ┐                                  ┌─ Voyage embed
  weekly digest (source=digest)        ├─→  ai-memory-ingest    ───→     ├─ INSERT ai_memories
- hub/chat user posts (chat)           ┘                                  └─ metrics + breadcrumb
- backfill CLI (source=cofounder)
+ hub/chat user posts (chat)           │                                  └─ metrics + breadcrumb
+ backfill CLI (source=cofounder)      │
+ event-sync route (source=product)    ┘
 ```
+
+`event-sync` (PR-24): web `trackEvent` дзеркалить allowlist analytics events (`onboarding_completed`, `first_action_completed`, `signup_completed`, `subscription_started`) до `POST /api/ai-memory/event-sync`. Route форматує payload у людський text (`"2026-05-13: completed onboarding wizard (vibe_picked)"`), scrubPII, enqueue-ить як `source='product'`. Idempotency: `sourceRef = "<eventName>:<userId>:<dayKey>"` — повторні fire-и тієї ж події у Kyiv-добу дедуплікуються.
 
 `enqueueMemoryIngest` gating:
 
@@ -90,6 +93,22 @@ SELECT source, COUNT(*) AS active_failures
  WHERE replayed_at IS NULL
  GROUP BY source;
 ```
+
+## Sources matrix
+
+`source` differentiates origin + read-policy. CHECK constraint у `025_ai_memories_pgvector.sql` (extended у 028 + 068).
+
+| Source      | Producer                                                                                                | Reader                                                                                   | Isolation                                                                                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat`      | Hub chat user posts                                                                                     | `/recall` API + RAG context-injection                                                    | Per-user; default tier.                                                                                                                                                                                                 |
+| `finyk`     | Mono webhook (server-side)                                                                              | `/recall` + RAG                                                                          | Per-user; behind `MONO_AI_MEMORY_INGEST_ENABLED` (PR-19).                                                                                                                                                               |
+| `fizruk`    | Client-driven (RxDB) ingest                                                                             | `/recall` + RAG                                                                          | Per-user.                                                                                                                                                                                                               |
+| `nutrition` | Client-driven (RxDB) ingest                                                                             | `/recall` + RAG                                                                          | Per-user.                                                                                                                                                                                                               |
+| `routine`   | Client-driven (RxDB) ingest                                                                             | `/recall` + RAG                                                                          | Per-user.                                                                                                                                                                                                               |
+| `journal`   | Client-driven (RxDB) ingest                                                                             | `/recall` + RAG                                                                          | Per-user.                                                                                                                                                                                                               |
+| `digest`    | Weekly digest cron (server-side)                                                                        | `/recall` + RAG                                                                          | Per-user.                                                                                                                                                                                                               |
+| `cofounder` | `pnpm ai-memory:backfill` CLI (PR-22) → backfill API → `tg_topic_archive`                               | OpenClaw `recall_memory` tool (HARDCODED `sources=['cofounder']`, ADR-0031 §3 isolation) | Founder-only namespace. Хардкодинг у tool гарантує що cofounder DM-recall повертає тільки founder-input narrative.                                                                                                      |
+| `product`   | Web `trackEvent` (PR-24) → `POST /api/ai-memory/event-sync` для allowlist (`onboarding_completed` etc.) | `POST /api/ai-memory/recall` з явним `sources=['cofounder','product']` для combined view | НЕ доступний з OpenClaw `recall_memory` tool (зберігає founder-input clean). UI-recall на web-side комбінує. Soft-isolation: server route — session-gated, не INTERNAL_API_KEY; per-user partitioning (як усі sources). |
 
 ## Backfill з `tg_topic_archive` (PR-21 follow-up)
 

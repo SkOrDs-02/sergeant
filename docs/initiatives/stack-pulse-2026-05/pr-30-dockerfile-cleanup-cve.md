@@ -1,7 +1,7 @@
 # PR-30: Dockerfile post-install cleanup CVE-shrink fragility
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Shipped — PR pending
+> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
+> **Status:** Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13); shared base layer + console-side Trivy scan tracked as follow-up.
 
 |                    |                                                                  |
 | ------------------ | ---------------------------------------------------------------- |

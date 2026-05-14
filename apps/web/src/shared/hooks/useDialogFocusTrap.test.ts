@@ -128,6 +128,82 @@ describe("useDialogFocusTrap — focus restoration", () => {
     unmount();
   });
 
+  it("moves initial focus to the first focusable inside the panel on open", () => {
+    // Regression: modals that auto-open without a user-driven trigger
+    // (e.g. the WhatsNew release-notes overlay) used to leave focus on
+    // `<body>` or the skip-link, so Tab walked the page chrome behind
+    // the dialog instead of cycling inside it.
+    const outside = document.createElement("button");
+    outside.textContent = "Outside";
+    document.body.appendChild(outside);
+
+    const panel = document.createElement("div");
+    const first = document.createElement("button");
+    first.textContent = "First";
+    const second = document.createElement("button");
+    second.textContent = "Second";
+    panel.appendChild(first);
+    panel.appendChild(second);
+    document.body.appendChild(panel);
+
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+
+    const { unmount } = renderHook(() => useDialogFocusTrap(true, ref));
+
+    expect(document.activeElement).toBe(first);
+    unmount();
+  });
+
+  it("falls back to focusing the panel itself when it has no focusable children", () => {
+    // Content-only dialogs (e.g. a message with no buttons) still need
+    // focus inside the panel so Escape works and Tab can't escape.
+    const panel = document.createElement("div");
+    const text = document.createElement("p");
+    text.textContent = "Just a message.";
+    panel.appendChild(text);
+    document.body.appendChild(panel);
+
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+
+    const { unmount } = renderHook(() => useDialogFocusTrap(true, ref));
+
+    expect(document.activeElement).toBe(panel);
+    expect(panel.getAttribute("tabindex")).toBe("-1");
+    unmount();
+  });
+
+  it("pulls focus back into the panel when Tab is pressed while focus is outside", () => {
+    // Defence-in-depth: if focus somehow escapes the panel while the
+    // trap is open (e.g. programmatic `.focus()` from a stray effect),
+    // the next Tab keypress must return it to the dialog instead of
+    // continuing through the page.
+    const outside = document.createElement("button");
+    outside.textContent = "Outside";
+    document.body.appendChild(outside);
+
+    const panel = document.createElement("div");
+    const inside = document.createElement("button");
+    inside.textContent = "Inside";
+    panel.appendChild(inside);
+    document.body.appendChild(panel);
+
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+
+    const { unmount } = renderHook(() => useDialogFocusTrap(true, ref));
+
+    // Simulate a stray effect yanking focus outside the dialog.
+    outside.focus();
+    expect(document.activeElement).toBe(outside);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab" }));
+
+    expect(document.activeElement).toBe(inside);
+    unmount();
+  });
+
   it("does not attempt to restore focus to <body>", () => {
     document.body.focus();
     expect(document.activeElement).toBe(document.body);

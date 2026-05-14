@@ -1,9 +1,43 @@
 # Дизайн
 
-> **Last validated:** 2026-05-13 by @andrijvigrav. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, аудити і tooling.
+
+## Живий styleguide
+
+Сторінка [`/design-showcase`](../../apps/web/src/core/DesignShowcase) (внутрішня,
+лише в dev/preview-збірках) — реально живий showcase усіх примітивів:
+
+- сайдбар з 11 розділами (Кольори, Типографіка, Spacing, Elevation, Motion,
+  Форми, Фідбек, Overlays, Theming, A11y, Module Accents);
+- тогли theme (light/dark/hc), density (comfortable/compact), напрямок (LTR/RTL)
+  та reduced-motion override прямо в шапці;
+- у кожному розділі — live demo + копі-паст snippet + Do / Don't таблиця +
+  pinned Hard Rule + ESLint rule badges.
+
+Якщо щось нове додаєш у `@shared/components/ui` — спочатку онови розділ,
+у якому воно живе, а тоді бампай freshness у `design-system.md`.
+
+## Maturity matrix (primitives)
+
+| Розділ         | Maturity   | Showcase якір | Lint                                                                                                   |
+| -------------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| Кольори        | **stable** | `#colors`     | `no-hex-in-classname`, `valid-tailwind-opacity`, `no-low-contrast-text-on-fill`, `no-raw-dark-palette` |
+| Типографіка    | **stable** | `#typography` | `prefer-text-style`, `no-arbitrary-text-size`, `no-eyebrow-drift`, `no-ellipsis-dots`                  |
+| Spacing        | **stable** | `#spacing`    | `no-rounded-lg`                                                                                        |
+| Elevation      | **stable** | `#elevation`  | —                                                                                                      |
+| Motion         | **stable** | `#motion`     | (HR #17 budget — convention only)                                                                      |
+| Форми          | **stable** | `#forms`      | `prefer-focus-visible`, `prefer-data-state`                                                            |
+| Фідбек         | **stable** | `#feedback`   | `no-bare-empty-text`, `no-ellipsis-dots`                                                               |
+| Overlays       | **stable** | `#overlays`   | `prefer-focus-visible`, `prefer-data-state`                                                            |
+| Theming        | **beta**   | `#theming`    | `no-raw-dark-palette`, `no-hex-in-classname`                                                           |
+| A11y           | **stable** | `#a11y`       | `prefer-focus-visible`, `no-low-contrast-text-on-fill`                                                 |
+| Module accents | **stable** | `#accents`    | `no-foreign-module-accent`                                                                             |
+
+`beta` — API ще не зафіксовано (Theming поки що читає лише `useDarkMode`,
+шедулер у роботі); `experimental` — поки що порожньо.
 
 ## Пріоритет документів
 
