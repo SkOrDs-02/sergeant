@@ -117,6 +117,7 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "POST /api/internal/openclaw/snapshot/refresh",
   "POST /api/internal/openclaw/strategy",
   "POST /api/internal/openclaw/telegram",
+  "POST /api/internal/openclaw/whois",
   "POST /api/internal/openclaw/workflow",
   "POST /api/internal/openclaw/write-audit/list",
   "POST /api/internal/openclaw/write-audit/log",
