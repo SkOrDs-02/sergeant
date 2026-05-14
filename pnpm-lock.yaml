@@ -980,6 +980,9 @@ importers:
       '@sentry/node':
         specifier: ^8.55.1
         version: 8.55.2
+      '@sergeant/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1

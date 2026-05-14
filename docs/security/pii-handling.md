@@ -1,19 +1,23 @@
 # PII handling — single source of truth
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (child session, PII roast §P0-S1..S5). **Next review:** 2026-08-11.
 > **Status:** Active.
-> **Scope:** Server logs (Pino), Sentry payloads (server **and** web SDK),
+> **Scope:** Server logs (Pino), Sentry payloads (server, web, **mobile**, **OpenClaw**),
 > Loki/Grafana retention, in-process error captures. Mobile/web log buffers — see
 > [`docs/observability/frontend.md`](../observability/frontend.md).
 >
 > **Canonical implementation (since 2026-05-13):**
 > [`packages/shared/src/lib/pii.ts`](../../packages/shared/src/lib/pii.ts) —
-> `REDACT_KEY_NAMES` + `scrubPII` live there as a DOM-free shared utility
-> consumed by Pino (server logs), `Sentry.beforeSend` (server **and** web
-> SDK) and the OTel attribute denylist. Adding a new redacted field means
-> editing **one** file. Audit
-> [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/2026-05-13-security-observability-roast.md) §P0-S1
-> captures the rationale for the consolidation.
+> `REDACT_KEY_NAMES` + `scrubPII` (structural, key-based) **plus**
+> `PII_STRING_PATTERNS` + `scrubPIIString` (pattern-based for embedded
+> emails / telegram-tokens / JWT / AWS-key / Bearer) **plus**
+> `SENSITIVE_QUERY_PARAM_NAMES` + `redactSensitiveQueryParams` (URL
+> query-string scrubber). All four live in one DOM-free shared module
+> consumed by Pino (server logs), `Sentry.beforeSend` on every surface
+> (server / web / mobile / OpenClaw) and the OTel attribute denylist.
+> Adding a new redacted field means editing **one** file. Audit
+> [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/2026-05-13-security-observability-roast.md) §P0-S1..S5
+> captures the rationale.
 
 ## Чому цей документ існує
 
@@ -51,10 +55,12 @@ sub-processor data sharing з Sentry/Loki/Railway, який не обумовл�
 
 Контракт реалізовано у:
 
-- `packages/shared/src/lib/pii.ts` — `REDACT_KEY_NAMES` + `scrubPII()` (єдине джерело правди, DOM-free).
+- `packages/shared/src/lib/pii.ts` — `REDACT_KEY_NAMES` + `scrubPII()` (структурний, ключ-based) + `PII_STRING_PATTERNS` + `scrubPIIString()` (regex для embedded emails / telegram-tokens / JWT / AWS-key / Bearer) + `SENSITIVE_QUERY_PARAM_NAMES` + `redactSensitiveQueryParams()` (URL query-string scrubber). Єдине джерело правди, DOM-free.
 - `apps/server/src/obs/logger.ts` — `redactPaths` (Pino, path-based) + `redactKeyNames` (back-compat alias на shared).
-- `apps/server/src/sentry.ts` — `scrubPII()` (re-export shared) + `applyBeforeSend` для Sentry SDK на Node.
-- `apps/web/src/core/observability/sentry.ts` — `applyWebBeforeSend()` (browser SDK parity, використовує shared `scrubPII`).
+- `apps/server/src/sentry.ts` — `applyBeforeSend` + `applyBeforeBreadcrumb` + `SENTRY_DENY_URLS` (health-probe noise) для Sentry SDK на Node.
+- `apps/web/src/core/observability/sentry.ts` — `applyWebBeforeSend()` + `WEB_SENTRY_DENY_URLS` (health + browser-extension noise) для browser SDK.
+- `apps/mobile/src/lib/observability.ts` — `applyMobileBeforeSend()` (RN SDK parity, since 2026-05-13).
+- `tools/openclaw/src/obs/sentry.ts` — `applyOpenclawBeforeSend()` + `OPENCLAW_SENTRY_DENY_URLS` (since 2026-05-13).
 - `apps/server/src/obs/sensitiveUrl.ts` — `redactSensitiveUrl()` для path-secrets (C1).
 
 ### Class B — особисті ідентифікатори (replaced with hash or deleted)
@@ -140,6 +146,52 @@ Sergeant поки **не збирає** `dob`, `address`, `geolocation` — як
 нового ключа редагуй **тільки shared** — він автоматично підхопиться в обох
 Sentry SDK; в `redactPaths` додавай відповідні wildcard-рівні тільки якщо
 Pino-side log-и теж потребують цей самий ключ (звичайно потребують).
+
+## Pattern-based scrubbing (string values)
+
+Field-name redaction (`REDACT_KEY_NAMES`) cleans structured payloads —
+headers, `extra`, `contexts`, breadcrumb data. But Sentry also ships
+**string-typed** fields that the structural scrubber deliberately
+skips:
+
+- `event.message` — log-style message attached to the event.
+- `event.exception.values[].value` — exception text (e.g. `Error.message`).
+- `breadcrumb.message` — auto-instrumented xhr/fetch / navigation breadcrumb text.
+- `event.request.url` — query-string params can carry tokens.
+
+`scrubPII()` cannot inspect these — string-walking would create a false-positive minefield over user-entered free text (chat messages, journal entries, AI prompts). Pattern-based scrubbing (`scrubPIIString()`, applied **only** at the Sentry hook layer) closes the gap.
+
+| Pattern            | Replacement                   | Catches                                                      |
+| ------------------ | ----------------------------- | ------------------------------------------------------------ |
+| Email              | `[email redacted]@domain.tld` | `event.message`, `exception.value`, breadcrumb msg           |
+| Telegram bot token | `[telegram-token redacted]`   | OpenClaw bot ops, Function-node `console.error(resp)` traces |
+| JWT (3 base64-url) | `[jwt redacted]`              | Upstream axios/fetch capture (Sergeant itself uses opaque)   |
+| AWS access-key ID  | `[aws-key redacted]`          | `AKIA…` / `ASIA…` / `AROA…` etc. in S3 / Lambda error traces |
+| `Bearer <opaque>`  | `Bearer [redacted]`           | axios `error.response.config.headers.Authorization` echoes   |
+
+URL query-string params with `?token=` / `?api_key=` / `?code=` /
+`?state=` / `?magic_link=` / `?otp=` / `?verification_code=` (etc.)
+are stripped via `redactSensitiveQueryParams()`. Both the top-level
+`event.request.url` and outbound HTTP breadcrumb `data.url` pass
+through this filter.
+
+Patterns are intentionally conservative — see jsdoc in
+[`packages/shared/src/lib/pii.ts`](../../packages/shared/src/lib/pii.ts)
+for false-positive trade-offs.
+
+## Per-surface SDK config
+
+| Surface  | Module                                                                                         | `beforeSend`              | `beforeBreadcrumb`      | `denyUrls`                                       |
+| -------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ----------------------- | ------------------------------------------------ |
+| Server   | [`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts)                                 | `applyBeforeSend`         | `applyBeforeBreadcrumb` | `/api/health`, `/health`, `/favicon.ico`         |
+| Web      | [`apps/web/src/core/observability/sentry.ts`](../../apps/web/src/core/observability/sentry.ts) | `applyWebBeforeSend`      | —                       | `/api/health`, `/health`, browser-extension URLs |
+| Mobile   | [`apps/mobile/src/lib/observability.ts`](../../apps/mobile/src/lib/observability.ts)           | `applyMobileBeforeSend`   | —                       | —                                                |
+| OpenClaw | [`tools/openclaw/src/obs/sentry.ts`](../../tools/openclaw/src/obs/sentry.ts)                   | `applyOpenclawBeforeSend` | —                       | `/api/health`, `/health`                         |
+
+All surfaces set `sendDefaultPii: false`. The shared scrubbers
+(`scrubPII`, `scrubPIIString`, `redactSensitiveQueryParams`) are
+called by every `beforeSend` so adding a new redacted key /
+pattern requires touching exactly **one** file.
 
 ## Як перевірити, що нове логування не вводить регресію
 

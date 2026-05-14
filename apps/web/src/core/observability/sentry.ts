@@ -1,4 +1,10 @@
-import { getPlatform, isCapacitor, scrubPII } from "@sergeant/shared";
+import {
+  getPlatform,
+  isCapacitor,
+  scrubPII,
+  scrubPIIString,
+  redactSensitiveQueryParams,
+} from "@sergeant/shared";
 
 type SentryModule = typeof import("@sentry/react");
 
@@ -18,7 +24,11 @@ export interface WebBeforeSendEvent {
   };
   extra?: unknown;
   contexts?: unknown;
-  breadcrumbs?: Array<{ data?: unknown }>;
+  message?: unknown;
+  exception?: {
+    values?: Array<{ value?: unknown }>;
+  };
+  breadcrumbs?: Array<{ data?: unknown; message?: unknown }>;
   user?: {
     id?: string | number;
     ip_address?: string;
@@ -52,6 +62,13 @@ export function applyWebBeforeSend(
     // back via Sentry.setExtra after explicit scrubbing.
     if ("data" in request) delete request["data"];
     if (request.headers) scrubPII(request.headers);
+    // PII roast 2026-05-13 §P0-S2: scrub `?token=` / `?api_key=` /
+    // `?code=` query params in `request.url`. Browser SDK auto-captures
+    // the current URL on every event — magic-link callbacks and OAuth
+    // returns are the most common leak surfaces.
+    if (typeof request.url === "string") {
+      request.url = redactSensitiveQueryParams(request.url);
+    }
   }
   // Deep recursive scrub of extra / contexts / breadcrumbs.data. The
   // browser SDK also auto-collects `xhr` / `fetch` breadcrumbs whose
@@ -59,9 +76,32 @@ export function applyWebBeforeSend(
   // server contract instead of leaking through.
   if (event.extra) scrubPII(event.extra);
   if (event.contexts) scrubPII(event.contexts);
+  // PII roast §P0-S3: scan strings in `event.message` and every
+  // `exception.values[].value` for embedded emails / tokens / JWT / AWS
+  // keys. The structural scrubber above never inspects string contents
+  // (false-positive minefield on free-text), but error messages and
+  // exception values are machine-generated diagnostics where pattern
+  // hits almost always indicate a real leak.
+  if (typeof event.message === "string") {
+    event.message = scrubPIIString(event.message);
+  }
+  const exceptionValues = event.exception?.values;
+  if (Array.isArray(exceptionValues)) {
+    for (const ex of exceptionValues) {
+      if (ex && typeof ex.value === "string") {
+        ex.value = scrubPIIString(ex.value);
+      }
+    }
+  }
   if (Array.isArray(event.breadcrumbs)) {
     for (const bc of event.breadcrumbs) {
       if (bc && bc.data) scrubPII(bc.data);
+      // Breadcrumb messages from `xhr` / `fetch` auto-instrumentation
+      // often look like `"HTTP 401 Bearer abc..."` — pattern-scrub
+      // those rather than dropping breadcrumbs wholesale.
+      if (bc && typeof bc.message === "string") {
+        bc.message = scrubPIIString(bc.message);
+      }
     }
   }
   // `event.user` can carry `email` / `phone` from `Sentry.setUser({...})`
@@ -230,6 +270,21 @@ export function defaultWebSampleRate(env?: Record<string, unknown>): number {
 }
 
 /**
+ * URL substrings that suppress event capture entirely on the browser
+ * SDK. Browser extensions inject scripts into every page and frequently
+ * throw inside them — those stack traces always point to extension
+ * code we can't fix and would otherwise eat the Sentry error budget.
+ * Health-probe URLs are filtered for parity with the server SDK.
+ */
+export const WEB_SENTRY_DENY_URLS: readonly (string | RegExp)[] = [
+  "/api/health",
+  "/health",
+  /^chrome-extension:\/\//,
+  /^moz-extension:\/\//,
+  /^safari-extension:\/\//,
+];
+
+/**
  * Лениво завантажує `@sentry/react` і ініціалізує Sentry у браузері.
  *
  * Навмисно через динамічний `import()`, щоб SDK (~30–40 KB gzip) не
@@ -275,6 +330,11 @@ export async function initSentry() {
       0,
     ),
     replaysOnErrorSampleRate: 1.0,
+    // PII roast 2026-05-13 §P0-S4: drop noise events from health probes
+    // (Capacitor WebView occasionally fires a `/health` request during
+    // boot) and `chrome-extension://` injections that crash on
+    // browser-extension code we don't control.
+    denyUrls: WEB_SENTRY_DENY_URLS as (string | RegExp)[],
     // PII / secret scrubbing — see `applyWebBeforeSend` above.
     // `WebBeforeSendEvent` is a minimal structural subset of Sentry's
     // `ErrorEvent`, so the SDK's `event` passes through without any cast.
