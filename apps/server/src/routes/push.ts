@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { env } from "../env/env.js";
 import {
   asyncHandler,
   rateLimitExpress,
@@ -84,7 +85,11 @@ export function createPushRouter(): Router {
   r.post(
     "/api/push/send",
     requireInternalIp({
-      entries: process.env["PUSH_INTERNAL_ALLOWED_IPS"] ?? "",
+      // P2-1: читаємо з zod-валідованого env (default "" →
+      // legacy `?? ""` semantic). Парсинг формату (CIDR, IP, comma/ньюлайн)
+      // всередині `requireInternalIp` — невалідний entry не 500-ить
+      // route, fall-through на loopback-defaults.
+      entries: env.PUSH_INTERNAL_ALLOWED_IPS,
       onReject: ({ ip, path }) => {
         logger.warn({
           msg: "push_send_ip_rejected",

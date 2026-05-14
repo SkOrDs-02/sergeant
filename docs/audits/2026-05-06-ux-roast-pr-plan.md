@@ -5,7 +5,7 @@
 
 > **Cross-refs:**
 > [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — джерельна прожарка (P0/P1/P2 + add/change/remove) ·
-> [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній UX execution tracker ·
+> [`2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — попередній UX execution tracker ·
 > [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — sprint registry онбордингу.
 
 **Контекст:** виходимо з документа [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md). Жоден пункт не упущено: усі **17 add (A1–A17)**, **16 change (C1–C16)** та **6 remove (R1–R6)** з §14 покриті. Додатково — пункти з §7 (perf), §11 (privacy), §12 (mobile) і §15 (pricing). Загальна виконавча шкала — **41 PR** у 3 спринтах + 1 enabling-PR (PR-0). Початково було 43; PR-13 і PR-37 закриті як obsolete-by-drift після Stage 7 storage cleanup і dark-mode toggle consolidation (див. розділи нижче).

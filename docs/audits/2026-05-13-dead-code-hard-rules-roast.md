@@ -176,13 +176,15 @@ Unlisted dependencies (38)
 
 [`2026-05-07-app-audit.md` § 1.3](./2026-05-07-app-audit.md) — `apps/mobile-shell` має 5 unused exports (`requestNativeBarcode`, `requestPermissions`, `subscribePushTokens`, `isCapacitorReady`, `getPlatform`). Знесено з нашого `knip.json` cleanup-у (redundant entries), але самі exports все ще unused. Окремий micro-PR — або delete, або wire-up у capacitor-shell entry.
 
-### P1.6 — AuthPage re-decomposition (Hard Rule #18 regression)
+### P1.6 — AuthPage re-decomposition (Hard Rule #18 regression) — ✅ Closed
+
+> **Closed by** `refactor(web): re-wire AuthPage to extracted sibling components (Hard Rule #18)` — re-wire path. AuthPage.tsx 693 → 149 LOC (orchestrator only); 7 sibling helpers active (`LoginForm.tsx` 140, `RegisterForm.tsx` 160, `ForgotPasswordPanel.tsx` 93, `GoogleSignInButton.tsx` 43, `authFormPrimitives.tsx` 76, `authSchemas.ts` 38, `useForgotPassword.ts` 87 LOC) and ported the polished UX from PR #2586 (Icon-based password toggle, `aria-describedby`, autoFocus, 44×44 hit-area). `@scaffolded` markers dropped — these helpers are now canonical implementation, not pending re-wire targets.
 
 Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`LoginForm.tsx` 133 LOC, `RegisterForm.tsx` 152 LOC, `ForgotPasswordPanel.tsx` 85 LOC, `GoogleSignInButton.tsx` 43 LOC, `authFormPrimitives.tsx` 99 LOC, `authSchemas.ts` 38 LOC, `useForgotPassword.ts` 87 LOC = 637 LOC total). [`a53e10b0`](https://github.com/Skords-01/Sergeant/commit/a53e10b0) decomposed `AuthPage.tsx` (694 → <600 LOC) під Hard Rule #18 max-lines budget. [PR #2586](https://github.com/Skords-01/Sergeant/pull/2586) `fix(web): polish AuthPage UX (autocomplete, password toggle, errors)` re-inlined the polish-фіксу і додав 575 рядків — `AuthPage.tsx` now 693 LOC again (over budget), а 7 helper-ів орфановані.
 
 **Дія в цьому PR:** Mark all 7 as `@scaffolded` with `@nextStep` pointing to re-decomposition (preserves canonical implementation для re-wire). Plus `apps/server/src/lib/ragEval/index.ts` (RAG eval barrel from PR-20 — caller `scripts/eval-rag-recall.mjs` not yet wired).
 
-**Дія в наступному PR:** `refactor(web): re-decompose AuthPage.tsx under Hard Rule #18` — re-wire imports у `AuthPage.tsx` на існуючі 7 helper-ів, привести AuthPage.tsx назад <600 LOC. Або, якщо team вирішив, що inlined version is canonical — delete 7 helper-ів (637 LOC dead code).
+**Дія в наступному PR (виконано):** `refactor(web): re-wire AuthPage to extracted sibling components (Hard Rule #18)` — re-wire-нув AuthPage на 7 існуючих siblings, портнув polished UX з PR #2586 в siblings, скинув `@scaffolded` markers. AuthPage.tsx 693 → 149 LOC.
 
 ## P2 — Cosmetic / Watchlist
 
@@ -203,11 +205,12 @@ Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`Log
 - **Side-quest 3** — 2 newly-broken internal links after `tools/console → tools/openclaw` rename ([PR #2573](https://github.com/Skords-01/Sergeant/pull/2573)).
 - **Side-quest 4** — `.agents/skills-lock.json` SHA hash regeneration after `sergeant-start-here` skill body edit on main.
 
-**Закрито у follow-up PR (1 item):**
+**Закрито у follow-up PR (2 items):**
 
 - **P1.2** — `.github/workflows/lighthouse-ci.yml` додано (child Devin session, 2026-05-13). `Lighthouse CI` тепер реальний CI-крок: pull_request на `master` + workflow_dispatch, артефакт `lighthouse-reports` з retention 14 днів. Tightening LCP → `error` 3000 ms залишається baseline-gathered follow-up у T5.
+- **P1.6** — AuthPage re-decomposition: re-wire-нув AuthPage на 7 існуючих siblings, портнув polished UX з PR #2586 в siblings, скинув `@scaffolded` markers. AuthPage.tsx 693 → 149 LOC (Hard Rule #18 compliant). Див. § P1.6 вище.
 
-**Outstanding (≈5 items, виношу у наступну прожарку):** P1.1 (knip deps sweep), P1.3 (77 unused exports + 51 duplicates), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports), P1.6 (AuthPage re-decomposition — re-wire 7 helpers OR delete 637 LOC).
+**Outstanding (≈4 items, виношу у наступну прожарку):** P1.1 (knip deps sweep), P1.3 (77 unused exports + 51 duplicates), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports).
 
 ## Verification matrix
 

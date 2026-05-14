@@ -88,6 +88,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     dbSchema,
     netInfoModule,
     netInfoBridge,
+    { authClient },
   ] = await Promise.all([
     import("@/core/db/sqlite"),
     import("@/api/apiClient"),
@@ -95,12 +96,22 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     import("@sergeant/db-schema/sqlite"),
     import("@react-native-community/netinfo"),
     import("./netInfoEventTarget"),
+    import("@/auth/authClient"),
   ]);
 
   const client = await getSqliteMigrationClient();
   const eventTarget = netInfoBridge.createNetInfoEventTarget(
     netInfoModule.default,
   );
+
+  // Per-tick userId resolver. The runtime itself is user-agnostic; the
+  // drain wrapper closes over `authClient.getSession()` to scope reads
+  // to the currently signed-in user (Hard finding T3#2). When no user
+  // is signed in we return an empty drain — the next tick will retry.
+  const resolveUserId = async (): Promise<string | null> => {
+    const session = await authClient.getSession();
+    return session.data?.user?.id ?? null;
+  };
 
   // Stable per-install device id — same reasoning as web (see
   // `apps/web/src/core/syncEngine/singleton.ts`). Persisted in MMKV
@@ -134,11 +145,15 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
 
   return createSyncEngineWriterRuntime({
     pushDeps: {
-      drain: (drainOptions) =>
-        dbSchema.drainSyncOpOutbox(client, {
+      drain: async (drainOptions) => {
+        const userId = await resolveUserId();
+        if (!userId) return [];
+        return dbSchema.drainSyncOpOutbox(client, {
           ...drainOptions,
+          userId,
           onQuarantine: onOutboxQuarantine,
-        }),
+        });
+      },
       push: (ops, pushOptions) => apiClient.syncV2.pushV2(ops, pushOptions),
       markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
       markRetry: (id, plan) => dbSchema.markOutboxRetry(client, id, plan),

@@ -261,6 +261,81 @@ describe("applyWebBeforeSend (PII scrub)", () => {
     const event = {} as Record<string, never>;
     expect(() => applyWebBeforeSend(event)).not.toThrow();
   });
+
+  // PII roast 2026-05-13 §P0-S2/S3: pattern-based scrubbing of strings in
+  // event.message / exception.values[].value, query-string params in
+  // request.url, and breadcrumb message text. Closes the gap where
+  // structural scrubPII never inspects string contents.
+  it("PII-roast: scrubs email in event.message", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = { message: "fetch failed for leak@example.com" };
+    applyWebBeforeSend(event);
+    expect(event.message).toBe("fetch failed for [email redacted]@example.com");
+  });
+
+  it("PII-roast: scrubs token + api_key from request.url query string", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      request: { url: "/auth/callback?token=abc&api_key=xxx&ok=1" },
+    };
+    applyWebBeforeSend(event);
+    expect(event.request.url).toBe(
+      "/auth/callback?token=[redacted]&api_key=[redacted]&ok=1",
+    );
+  });
+
+  it("PII-roast: scrubs JWT in exception.values[].value", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const jwt = `${"A".repeat(20)}.${"B".repeat(40)}.${"C".repeat(20)}`;
+    const event = {
+      exception: { values: [{ type: "Error", value: `auth failed: ${jwt}` }] },
+    };
+    applyWebBeforeSend(event);
+    expect(event.exception.values[0]!.value).toBe(
+      "auth failed: [jwt redacted]",
+    );
+  });
+
+  it("PII-roast: scrubs Bearer token + email in breadcrumb message", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      breadcrumbs: [
+        {
+          category: "xhr",
+          message:
+            "HTTP 401 from /api/me Bearer eyJhbGciOiJIUzI1NiJ9_abc for u@x.com",
+        },
+      ],
+    };
+    applyWebBeforeSend(event);
+    expect(event.breadcrumbs[0]!.message).toBe(
+      "HTTP 401 from /api/me Bearer [redacted] for [email redacted]@x.com",
+    );
+  });
+});
+
+describe("WEB_SENTRY_DENY_URLS", () => {
+  it("блокує `/api/health` + browser-extension URLs (extension-crash noise)", async () => {
+    const { WEB_SENTRY_DENY_URLS } = await import("./sentry");
+    expect(WEB_SENTRY_DENY_URLS).toContain("/api/health");
+    expect(WEB_SENTRY_DENY_URLS).toContain("/health");
+    // chrome-extension regex matches the prefix.
+    const chromeExtRe = WEB_SENTRY_DENY_URLS.find(
+      (r) => r instanceof RegExp && r.source.includes("chrome-extension"),
+    ) as RegExp | undefined;
+    expect(chromeExtRe).toBeDefined();
+    expect(chromeExtRe!.test("chrome-extension://abcdef/content.js")).toBe(
+      true,
+    );
+  });
+
+  it("is wired into initSentry via denyUrls", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+    const cfg = sentryInit.mock.calls[0]?.[0];
+    expect(Array.isArray(cfg.denyUrls)).toBe(true);
+    expect(cfg.denyUrls).toContain("/api/health");
+  });
 });
 
 describe("pickWebTracesSampleRate", () => {

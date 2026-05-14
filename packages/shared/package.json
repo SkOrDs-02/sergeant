@@ -11,7 +11,8 @@
     "./utils": "./src/utils/index.ts",
     "./types": "./src/types/index.ts",
     "./openapi": "./src/openapi/index.ts",
-    "./test-utils": "./src/test-utils.ts"
+    "./test-utils": "./src/test-utils.ts",
+    "./lib/pii": "./src/lib/pii.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -14,8 +14,10 @@ export function requireGroqKey(): RequestHandler {
   return (req, res, next) => {
     const key = process.env["GROQ_API_KEY"];
     if (!key) {
+      // Не світимо назву env-змінної клієнту: вона потрапляє у formatApiError
+      // і показується юзеру дослівно. Дискримінатор для frontend — `code`.
       res.status(503).json({
-        error: "GROQ_API_KEY не сконфігурований",
+        error: "Голосове введення тимчасово недоступне. Спробуй пізніше.",
         code: "GROQ_KEY_MISSING",
       });
       return;
