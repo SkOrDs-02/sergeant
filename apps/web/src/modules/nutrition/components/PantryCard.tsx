@@ -1,7 +1,12 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { cn } from "@shared/lib/ui/cn";
 import { groupItemsByCategory } from "../lib/foodCategories";
@@ -70,16 +75,18 @@ function ItemRow({
           </span>
         )}
       </button>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="xs"
+        iconOnly
         onClick={() => removeItemAtOrByName(idx, item?.name)}
         disabled={busy}
-        className="w-6 h-6 rounded-xl flex items-center justify-center text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity] text-sm leading-none shrink-0"
         aria-label={`Прибрати ${item?.name || "продукт"}`}
         title="Прибрати"
+        className="shrink-0 text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
       >
         ×
-      </button>
+      </Button>
     </div>
   );
 }
