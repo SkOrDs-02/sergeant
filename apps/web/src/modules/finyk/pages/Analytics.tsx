@@ -18,6 +18,8 @@ import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
+import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type {
   Transaction,
   TxSplitsMap,
@@ -55,6 +57,7 @@ export interface AnalyticsMonoAdapter {
 export interface AnalyticsStorageAdapter {
   excludedTxIds: Set<string> | Iterable<string>;
   txSplits: TxSplitsMap;
+  manualExpenses?: ManualExpense[];
 }
 
 interface AnalyticsProps {
@@ -259,15 +262,50 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     ensureMonth(prevYear, prevMonth, prevKey);
   }, [prevYear, prevMonth, prevKey, ensureMonth]);
 
-  const activeTx = useMemo(() => {
-    if (isCurrentMonth) return mono.realTx || [];
-    return monthCache[monthKey] || [];
-  }, [isCurrentMonth, mono.realTx, monthCache, monthKey]);
+  // Manual expenses for the currently selected month. These live in
+  // storage (localStorage-backed), not in the server tx stream, so they
+  // must be merged into `activeTx` explicitly — otherwise Analytics shows
+  // 0 ₴ even when Transactions clearly lists them. See useTransactionFilters
+  // for the source-of-truth merge pattern.
+  const manualExpenseTxs = useMemo(() => {
+    const list = storage.manualExpenses;
+    if (!list || list.length === 0) return [] as Transaction[];
+    const monthStart = new Date(year, month - 1, 1).getTime();
+    const monthEnd = new Date(year, month, 1).getTime();
+    return list
+      .filter((e) => {
+        const ts = new Date(e.date).getTime();
+        return ts >= monthStart && ts < monthEnd;
+      })
+      .map((e) => manualExpenseToTransaction(e));
+  }, [storage.manualExpenses, year, month]);
 
-  const prevTx = useMemo(
-    () => monthCache[prevKey] || [],
-    [monthCache, prevKey],
-  );
+  const prevManualExpenseTxs = useMemo(() => {
+    const list = storage.manualExpenses;
+    if (!list || list.length === 0) return [] as Transaction[];
+    const monthStart = new Date(prevYear, prevMonth - 1, 1).getTime();
+    const monthEnd = new Date(prevYear, prevMonth, 1).getTime();
+    return list
+      .filter((e) => {
+        const ts = new Date(e.date).getTime();
+        return ts >= monthStart && ts < monthEnd;
+      })
+      .map((e) => manualExpenseToTransaction(e));
+  }, [storage.manualExpenses, prevYear, prevMonth]);
+
+  const activeTx = useMemo(() => {
+    const bankTx = isCurrentMonth
+      ? mono.realTx || []
+      : monthCache[monthKey] || [];
+    if (manualExpenseTxs.length === 0) return bankTx;
+    return [...bankTx, ...manualExpenseTxs];
+  }, [isCurrentMonth, mono.realTx, monthCache, monthKey, manualExpenseTxs]);
+
+  const prevTx = useMemo(() => {
+    const bankTx = monthCache[prevKey] || [];
+    if (prevManualExpenseTxs.length === 0) return bankTx;
+    return [...bankTx, ...prevManualExpenseTxs];
+  }, [monthCache, prevKey, prevManualExpenseTxs]);
 
   const analyticsMono = useMemo(
     () => ({ ...mono, realTx: activeTx, loadingTx: mono.loadingTx || loading }),
