@@ -76,7 +76,12 @@ const authClient = createAuthClient({
   baseURL: getAuthBaseURL(),
   fetchOptions,
 }) as ReturnType<typeof createAuthClient> & {
-  forgetPassword: (args: {
+  // Better Auth 1.6+ renamed the email-password reset endpoint to
+  // `/request-password-reset`; the React client proxy maps the camelCase
+  // method `requestPasswordReset` to that path. The legacy alias
+  // `forgetPassword` is no longer served and silently 404s, so we MUST
+  // use the new name on the wire.
+  requestPasswordReset: (args: {
     email: string;
     redirectTo?: string;
   }) => Promise<AuthResult>;
@@ -120,11 +125,12 @@ type PasswordResetResult = {
 };
 
 // The React auth-client's static TypeScript surface doesn't advertise
-// `forgetPassword` / `resetPassword` — Better Auth resolves them at runtime via
-// a Proxy over the email/password plugin endpoints. We extend the type here so
-// consumers can keep destructuring them; runtime behaviour is unchanged.
+// `requestPasswordReset` / `resetPassword` — Better Auth resolves them at
+// runtime via a Proxy over the email/password plugin endpoints. We extend
+// the type here so consumers can keep destructuring them; runtime
+// behaviour is unchanged.
 const typedAuthClient = authClient as typeof authClient & {
-  forgetPassword: (args: {
+  requestPasswordReset: (args: {
     email: string;
     redirectTo?: string;
   }) => Promise<PasswordResetResult>;
@@ -145,7 +151,7 @@ const {
   signUp,
   signOut: rawSignOut,
   getSession,
-  forgetPassword,
+  requestPasswordReset,
   resetPassword,
   updateUser,
   changePassword,
@@ -181,7 +187,7 @@ export {
   signUp,
   signOut,
   getSession,
-  forgetPassword,
+  requestPasswordReset,
   resetPassword,
   updateUser,
   changePassword,

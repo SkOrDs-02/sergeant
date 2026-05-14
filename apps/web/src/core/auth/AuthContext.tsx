@@ -11,7 +11,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser, apiQueryKeys } from "@sergeant/api-client/react";
 import type { User } from "@sergeant/shared";
-import { signIn, signUp, signOut, forgetPassword } from "./authClient";
+import {
+  signIn,
+  signUp,
+  signOut,
+  requestPasswordReset as requestPasswordResetApi,
+} from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -23,7 +28,7 @@ import { messages } from "../../shared/i18n/uk";
  * Дані про поточного користувача тягнемо через `useUser()` з
  * `@sergeant/api-client/react` (`GET /api/v1/me` + runtime-валідація
  * `MeResponseSchema`). Better Auth лишається тільки як actions-layer
- * (`signIn.email`, `signUp.email`, `signOut`, `forgetPassword`) — після
+ * (`signIn.email`, `signUp.email`, `signOut`, `requestPasswordReset`) — після
  * кожної дії інвалідуємо `apiQueryKeys.me.current()`, щоб наступний
  * рендер побачив свіжий профіль.
  */
@@ -325,7 +330,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthError(null);
     try {
       const redirectTo = `${window.location.origin}/reset-password`;
-      const result = await forgetPassword({ email, redirectTo });
+      const result = await requestPasswordResetApi({ email, redirectTo });
       if (result?.error) {
         setAuthError(
           translateAuthError(
