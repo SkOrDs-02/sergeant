@@ -155,25 +155,30 @@ export function ReceivableForm({
           className="flex-1"
           size="sm"
           onClick={() => {
-            if (newRecv.name && newRecv.amount) {
-              setReceivables((rs) => [
-                ...rs,
-                {
-                  ...newRecv,
-                  id: Date.now().toString(),
-                  amount: Number(newRecv.amount),
-                  linkedTxIds: [],
-                } as Receivable,
-              ]);
-              setNewRecv({
-                name: "",
-                emoji: "\u{1F464}",
-                amount: "",
-                note: "",
-                dueDate: "",
-              });
-              setShowRecvForm(false);
-            }
+            if (!newRecv.name || !newRecv.amount) return;
+            // <input type="number"> accepts negatives + arbitrary precision;
+            // a Receivable («мені винні») must be strictly positive — a
+            // negative receivable corrupts net-worth aggregation and renders
+            // as "−1 000 ₴" on a row that is supposed to be an asset.
+            const parsedAmount = Number(newRecv.amount);
+            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
+            setReceivables((rs) => [
+              ...rs,
+              {
+                ...newRecv,
+                id: Date.now().toString(),
+                amount: parsedAmount,
+                linkedTxIds: [],
+              } as Receivable,
+            ]);
+            setNewRecv({
+              name: "",
+              emoji: "\u{1F464}",
+              amount: "",
+              note: "",
+              dueDate: "",
+            });
+            setShowRecvForm(false);
           }}
         >
           Додати
@@ -251,23 +256,30 @@ export function AssetForm({
           className="flex-1"
           size="sm"
           onClick={() => {
-            if (newAsset.name && newAsset.amount) {
-              setManualAssets((a) => [
-                ...a,
-                {
-                  ...newAsset,
-                  id: Date.now().toString(),
-                  amount: Number(newAsset.amount),
-                } as ManualAsset,
-              ]);
-              setNewAsset({
-                name: "",
-                amount: "",
-                currency: "UAH",
-                emoji: "\u{1F4B0}",
-              });
-              setShowAssetForm(false);
-            }
+            if (!newAsset.name || !newAsset.amount) return;
+            // <input type="number"> accepts negatives + arbitrary precision;
+            // an asset balance must be strictly positive. A negative manual
+            // asset shows up as "−1 000 ₴" inside the assets list, flips the
+            // section header to "Активи +−1 000 ₴" (because the formatter
+            // unconditionally prepends `+`), and pulls Загальний нетворс
+            // negative.
+            const parsedAmount = Number(newAsset.amount);
+            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
+            setManualAssets((a) => [
+              ...a,
+              {
+                ...newAsset,
+                id: Date.now().toString(),
+                amount: parsedAmount,
+              } as ManualAsset,
+            ]);
+            setNewAsset({
+              name: "",
+              amount: "",
+              currency: "UAH",
+              emoji: "\u{1F4B0}",
+            });
+            setShowAssetForm(false);
           }}
         >
           Додати
