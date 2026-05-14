@@ -150,14 +150,15 @@ migration), поза скоупом цієї прожарки.
 
 ## P2 (DX, тести, документація)
 
-### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ❌ Не в цьому PR
+### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ✅ Closed in #2752
 
-- **Files:** [`apps/server/src/modules/push/push.ts:36-49,268-273`](../../apps/server/src/modules/push/push.ts), [`apps/server/src/routes/push.ts:87`](../../apps/server/src/routes/push.ts#L87).
-- **Why виносимо:** module-load-time const-reads (`VAPID_PUBLIC`,
-  `VAPID_PRIVATE`) — будь-яке переписування на `env`-import зачіпає 15+
-  testів, які паттерн-патчать `process.env["VAPID_*"]` між it-блоками.
-  Запропоновано як окрема прожарка (`refactor(server): centralize push
-env reads through env.ts`).
+- **Files:**
+  - [`apps/server/src/env/env.ts:470-515`](../../apps/server/src/env/env.ts#L470) — додано `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`, `PUSH_INTERNAL_ALLOWED_IPS` (зод-валідовані; VAPID-поля вже були).
+  - [`apps/server/src/modules/push/push.ts:37-75,260-270`](../../apps/server/src/modules/push/push.ts) — 6 `process.env[...]`-reads (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `NODE_ENV`, `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`) → `env.*`.
+  - [`apps/server/src/routes/push.ts:87`](../../apps/server/src/routes/push.ts#L87) — `PUSH_INTERNAL_ALLOWED_IPS` → `env.PUSH_INTERNAL_ALLOWED_IPS`.
+  - [`apps/server/src/modules/push/push.test.ts`](../../apps/server/src/modules/push/push.test.ts) — 16+ env-патч-сайтів мігровано на canonical pattern `vi.resetModules() + vi.stubEnv() + dynamic import` (як у `auth.test.ts`). Додано 5 нових unit-тестів на zod-defaults і CIDR-round-trip для нових env-полів.
+  - [`.tech-debt/env-single-source-budget.json`](../../.tech-debt/env-single-source-budget.json) — бюджет 105 → 98 (net −7 reads).
+- **Why P2:** [`2026-05-07-app-audit.md:396`](./2026-05-07-app-audit.md#L396) (P2) і §4 TL;DR цього аудиту. Module-load-time `process.env[...]` обходив startup-assert + zod-валідацію — typo в Railway env (`VAPID_PUBL=...`) тихо вимикав push-сурфейс без alerts. Перенесли на `env.ts` singleton, тести мігрували на vitest-канонічний pattern, щоб майбутні зміни env-shape ловилися type-системою, а не runtime-патчем `process.env`.
 
 ### P2-2. `obs/tracing.ts` `process.env` reads (через дефолтний argument) ❌ Тут не торкаємось
 
@@ -180,15 +181,18 @@ env reads through env.ts`).
 - **Why виносимо:** мінорна документаційна правка, можна закрити одним
   commit-ом будь-якій сесії.
 
-### P2-5. `pool.end()` failure handling під час shutdown ⚠️ Open
+### P2-5. `pool.end()` failure handling під час shutdown ✅ Closed in this PR
 
-- **File:** [`apps/server/src/index.ts:323-331`](../../apps/server/src/index.ts#L323)
-- **Why open:** `try { await pool.end() } catch { /* log */ }` —
-  swallows errors, але якщо pg-pool корумпований (active txn у одному
-  з worker-ів), `pool.end()` зависає до hard-timeout-у (5s) → клієнти
-  отримують ECONNRESET замість graceful 503. Запропонована fix-а: AbortController
-  з `SHUTDOWN_GRACE_MS / 2` для pool drain. Не критично, бо hard-timer
-  все одно ловить.
+- **File:** [`apps/server/src/index.ts`](../../apps/server/src/index.ts)
+- **Дія:** `await pool.end()` тепер обгорнутий у новий helper
+  [`apps/server/src/lib/poolShutdown.ts`](../../apps/server/src/lib/poolShutdown.ts)
+  з `AbortController` і timeout `SHUTDOWN_GRACE_MS / 2`. При abort —
+  `logger.warn({ msg: "pg_pool_end_timeout", timeoutMs, abortedAfterMs })`,
+  shutdown продовжує `disconnectRedis` → `Sentry.flush`; `hardTimer` у
+  `shutdown()` залишається last-resort safety net. Тести: happy-path,
+  hanging `pool.end()` (verifies total shutdown stays ≤ `SHUTDOWN_GRACE_MS`),
+  rejection (helper never throws), already-aborted external signal —
+  у [`apps/server/src/lib/poolShutdown.test.ts`](../../apps/server/src/lib/poolShutdown.test.ts).
 
 ### P2-6. Health-endpoint p95 не алертимо в Grafana ⚠️ Open
 
@@ -231,7 +235,6 @@ env reads through env.ts`).
 - **P2** `obs/tracing.ts` env-injection refactor — обговорюємо, чи лишити DI-pattern.
 - **P2** SQLite `sync_op_outbox` no-such-table fix — Stage 8/9 (інша ініціатива).
 - **P2** Documentation gap у `metrics.md` §6 (AI-token join-pattern) — окремий cosmetic PR.
-- **P2** Shutdown: `pool.end()` AbortController — нерефлексія, hard-timer ловить.
 - **P2** Health p95 Alertmanager rule — observability-PR.
 - **P2** Sentry sampling для `/api/internal/*` — потрібен власний моніторинг.
 

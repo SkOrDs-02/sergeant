@@ -1,7 +1,7 @@
 # PR-19: Workers health-registry + `/api/health/workers` endpoint
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
+> **Status:** Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident.
 
 |                    |                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
@@ -13,7 +13,25 @@
 | **Touches**        | `apps/server/src/lib/jobs/`, `apps/server/src/lib/backgroundQueue.ts`, `apps/server/src/routes/` |
 | **Trigger**        | next stalled-worker incident (вже траплялось у `ftuxDrip` flow історично)                        |
 
-## Контекст
+## Outcome (2026-05 — частково shipped via #1995)
+
+PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) запровадив `/health/workers` endpoint, але обрав **простіший** in-memory підхід замість запропонованої `worker_health` DB-таблиці:
+
+- Handler — `createWorkersHealthHandler(pool)` у [`apps/server/src/http/health.ts`](../../../apps/server/src/http/health.ts).
+- Покриває три worker-и: `aiMemoryIngest` (BullMQ queue stats), `monoEnrichment` (DB-based status), `backgroundQueue` (in-memory queue stats).
+- Status codes: 200 коли всі sample-функції успішні (включно з disabled/fallback states), 503 коли хоч одна повертає `error`.
+- L7 hardening invariants — `version`/`commit`/`sha` не повертаються (паралельно з `/healthz`).
+
+Що **не** зроблено (deferred):
+
+- `worker_health` DB-таблиця + миграція 046 — не створена; sample-функції читають state з worker-instance-ів у memory.
+- `WorkerHealthRegistry` TS клас з `heartbeat()` / `recordSuccess()` / `recordError()` — натомість кожен worker експонує свою `getStats()` / `getStatus()` без common base class.
+- Grafana dashboards + `worker_lag_seconds{worker="..."}` метрика — натомість моніторинг ops-у через ручний `curl /health/workers`.
+- `authMail` + `ftuxDrip` + `connection` workers — НЕ покриті endpoint-ом (тільки три, перелічені вище). Stalled-worker investigation для них досі требує grep-у логів.
+
+Тригер для reactivation цього PR: наступний stalled-worker incident на одному з НЕ-покритих workers (`authMail`, `ftuxDrip`, або `connection`). Тоді `worker_health` table + повний registry стане виправданим — поточний in-memory підхід не масштабується на multi-replica setup (Railway не запускає кілька replica-instance-ів зараз, але це може змінитися).
+
+## Контекст (історично)
 
 Зараз worker-и розкидані по `apps/server/src/lib/jobs/` (`authMail`, `ftuxDrip`, `connection`) + `backgroundQueue.ts` + різні `setInterval`-и в `apps/server/src/index.ts` (e.g., metrics flushing). Кожен має власні Sentry breadcrumbs, але немає **одного місця**, де можна:
 

@@ -141,10 +141,10 @@ function MonthlyPlanCardComponent({
 
               <div className="text-xs text-muted">Дохід</div>
               <div className="text-right text-muted">
-                {planIncome > 0 ? `${fmt(planIncome)} ₴` : "—"}
+                {planIncome > 0 ? fmt(planIncome) : "—"}
               </div>
               <div className="text-right text-success">
-                {factIncome > 0 ? `+${fmt(factIncome)} ₴` : "—"}
+                {factIncome > 0 ? `+${fmt(factIncome)}` : "—"}
               </div>
               <div
                 className={cn(
@@ -161,7 +161,7 @@ function MonthlyPlanCardComponent({
 
               <div className="text-xs text-muted">Витрати</div>
               <div className="text-right text-muted">
-                {planExpense > 0 ? `${fmt(planExpense)} ₴` : "—"}
+                {planExpense > 0 ? fmt(planExpense) : "—"}
               </div>
               <div
                 className={cn(
@@ -169,7 +169,7 @@ function MonthlyPlanCardComponent({
                   isOver ? "text-danger font-semibold" : "text-danger/80",
                 )}
               >
-                −{fmt(totalExpenseFact)} ₴
+                −{fmt(totalExpenseFact)}
               </div>
               <div
                 className={cn(
@@ -186,7 +186,7 @@ function MonthlyPlanCardComponent({
 
               <div className="text-xs text-muted">Накопич.</div>
               <div className="text-right text-muted">
-                {planSavings > 0 ? `${fmt(planSavings)} ₴` : "—"}
+                {planSavings > 0 ? fmt(planSavings) : "—"}
               </div>
               <div
                 className={cn(

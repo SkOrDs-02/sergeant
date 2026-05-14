@@ -351,3 +351,49 @@ Sentry breadcrumbs під category `openclaw.mute`: `mute.help`,
 `openclaw-muted-skip`, `openclaw-muted-override-critical`. Якщо
 founder скаржиться, що пропустив P0 alert — grep Sentry за
 `openclaw-muted-skip` з `severity` ≠ `P0` у `data`-полях.
+
+## Per-user whois — `/openclaw whois`
+
+Founder-only DM debug-команда: повертає аггрегований snapshot per
+Telegram-user (numeric id або `@username`), щоб founder міг швидко
+розібратися «хто це / в allowlist / коли last seen / які tool-и
+найчастіше викликає».
+
+### Usage
+
+```
+/openclaw whois 123456789           # за numeric tg-id
+/openclaw whois @dmytrostakhov      # за @username (Bot API getChat)
+```
+
+### Snapshot
+
+- `User: <id> — <First Last> — @username` (escaped HTML).
+- `Allowlist:` `yes`/`no` — `OPENCLAW_FOUNDER_TG_USER_ID` match (поки
+  що allowlist = single-founder; коли appendwill extend до multi-user
+  whitelist — поле експлуатовно).
+- `Founder:` `yes`/`no`.
+- `Activity:` last-7d invocations count + last-seen (UA relative,
+  Europe/Kyiv).
+- `Mute:` `off` / `active until <ISO>` / `expired` / `n/a` (показуємо
+  тільки для founder — інші юзери mute-state не мають).
+- `Top tools (7d):` top-5 tool-call names by count з
+  `openclaw_invocations.tool_calls` JSONB array.
+
+Якщо Telegram getChat відповідає 403/429 (`@username` не resolved) —
+у hнизу snapshot-а додається `⚠ Telegram: <code>` рядок, інший
+context (allowlist/founder/mute) лишається rendered.
+
+### Internal endpoint
+
+- `POST /api/internal/openclaw/whois` —
+  `{founderUserId, founderTgUserId, tgUserId? | username?, windowDays?, topToolsLimit?}`
+  → `{tgUserId, resolvedFrom, username, firstName, lastName, inAllowlist, isFounder, invocations7d, lastSeenIso, topTools, muteState, telegramError}`.
+
+### Telemetry
+
+Sentry breadcrumb-и під category `openclaw.whois`:
+`whois.start`, `whois.help`, `whois.invalid_arg`, `whois.success`,
+`whois.endpoint_failed`. Audit-row у `openclaw_invocations` з
+`trigger="dm"` + `metadata.slashCommand="/openclaw"` +
+`metadata.subcommand="whois"` + `metadata.argKind="numeric"|"username"`.

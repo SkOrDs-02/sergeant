@@ -12,8 +12,95 @@
  */
 
 import * as Sentry from "@sentry/react-native";
+import {
+  scrubPII,
+  scrubPIIString,
+  redactSensitiveQueryParams,
+} from "@sergeant/shared";
 
 import { getSentryDsn } from "./observability/env";
+
+/**
+ * Minimal structural subset of `Sentry.ErrorEvent` so the
+ * `beforeSend` hook stays unit-testable without bootstrapping the RN
+ * SDK runtime. Mirrors `WebBeforeSendEvent` in
+ * `apps/web/src/core/observability/sentry.ts`.
+ */
+export interface MobileBeforeSendEvent {
+  request?: {
+    cookies?: unknown;
+    data?: unknown;
+    headers?: unknown;
+    url?: unknown;
+  };
+  extra?: unknown;
+  contexts?: unknown;
+  message?: unknown;
+  exception?: {
+    values?: Array<{ value?: unknown }>;
+  };
+  breadcrumbs?: Array<{ data?: unknown; message?: unknown }>;
+  user?: {
+    id?: string | number;
+    ip_address?: string;
+  };
+}
+
+/**
+ * Mobile counterpart of `applyBeforeSend` (`apps/server/src/sentry.ts`)
+ * and `applyWebBeforeSend` (`apps/web/src/core/observability/sentry.ts`).
+ *
+ * Why mobile needs its own hook: the React Native SDK auto-instruments
+ * `fetch` / `XMLHttpRequest` breadcrumbs with response bodies that
+ * occasionally carry Better Auth session tokens or magic-link OTPs.
+ * Pre-2026-05-13 the mobile init was `Sentry.init({ dsn, tracesSampleRate })`
+ * — i.e. the upstream default `sendDefaultPii: true` and no scrubber —
+ * so anything in `event.request.data` / `headers` / breadcrumb-data
+ * went straight to ingest. This hook closes that gap with the same
+ * shared `scrubPII` + `scrubPIIString` used by server / web.
+ */
+export function applyMobileBeforeSend<E extends MobileBeforeSendEvent>(
+  event: E,
+): E {
+  if (event.request?.data) delete event.request.data;
+  if (event.request?.cookies) delete event.request.cookies;
+  if (event.request?.headers) scrubPII(event.request.headers);
+  if (typeof event.request?.url === "string") {
+    event.request.url = redactSensitiveQueryParams(event.request.url);
+  }
+  if (event.extra) scrubPII(event.extra);
+  if (event.contexts) scrubPII(event.contexts);
+  if (typeof event.message === "string") {
+    event.message = scrubPIIString(event.message);
+  }
+  const exceptionValues = event.exception?.values;
+  if (Array.isArray(exceptionValues)) {
+    for (const ex of exceptionValues) {
+      if (ex && typeof ex.value === "string") {
+        ex.value = scrubPIIString(ex.value);
+      }
+    }
+  }
+  if (Array.isArray(event.breadcrumbs)) {
+    for (const bc of event.breadcrumbs) {
+      if (bc && bc.data) scrubPII(bc.data);
+      if (bc && typeof bc.message === "string") {
+        bc.message = scrubPIIString(bc.message);
+      }
+    }
+  }
+  if (event.user) {
+    const safe: { id?: string | number } = {};
+    if (
+      typeof event.user.id === "string" ||
+      typeof event.user.id === "number"
+    ) {
+      safe.id = event.user.id;
+    }
+    event.user = safe;
+  }
+  return event;
+}
 
 /** Module-scope flag flipped the first time `initObservability()`
  *  successfully hands a DSN to `Sentry.init`. Used by `captureError`
@@ -42,6 +129,14 @@ export function initObservability(): void {
     // significant overhead. Bump to 0.1 if mobile APM data is sparse in prod.
     tracesSampleRate: __DEV__ ? 0 : 0.05,
     debug: __DEV__,
+    // PII handling (parity with server / web — audit
+    // `docs/security/pii-handling.md`): never let the SDK ship raw
+    // request bodies / headers / breadcrumb data to ingest. The hook is
+    // exported so unit tests run it against synthetic events.
+    sendDefaultPii: false,
+    beforeSend(event) {
+      return applyMobileBeforeSend(event);
+    },
   });
   initialized = true;
 }

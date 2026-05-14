@@ -3,14 +3,23 @@ import type { Pool, PoolClient } from "pg";
 import type {
   BillingCheckoutResponse,
   BillingPlan,
+  BillingPortalResponse,
   BillingStatusResponse,
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { env } from "../../env/env.js";
 import { capturePostHogEvent } from "../../lib/posthogCapture.js";
 import { logger } from "../../obs/logger.js";
 
 const STRIPE_CHECKOUT_URL = "https://api.stripe.com/v1/checkout/sessions";
+const STRIPE_BILLING_PORTAL_URL =
+  "https://api.stripe.com/v1/billing_portal/sessions";
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
+// Customers in `past_due` haven't churned yet — they should still be able
+// to fix their payment method via the Customer Portal, otherwise the only
+// escape hatch is contacting support. Mirrors the SQL filter in
+// `createCustomerPortalSession`.
+const PORTAL_ELIGIBLE_STATUSES = ["active", "trialing", "past_due"] as const;
 
 interface SessionUser {
   id: string;
@@ -245,16 +254,38 @@ export class BillingConfigurationError extends Error {
   }
 }
 
+/**
+ * Thrown when a user without an active Stripe customer record asks for a
+ * Customer Portal session. The route handler maps this to `409
+ * NO_BILLING_CUSTOMER` so the web client can prompt them to start a
+ * checkout flow instead.
+ */
+export class NoBillingCustomerError extends Error {
+  constructor(message = "User has no billing customer record") {
+    super(message);
+    this.name = "NoBillingCustomerError";
+  }
+}
+
 function getStripeSecretKey(): string {
-  const key = process.env["STRIPE_SECRET_KEY"];
+  const key = env.STRIPE_SECRET_KEY;
   if (!key) throw new BillingConfigurationError("STRIPE_SECRET_KEY is not set");
   return key;
 }
 
 function getPriceId(plan: BillingPlan): string {
+  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): read
+  // from the Zod-validated `env` so the `price_*` format is checked
+  // up-front and `assertStartupEnv` can refuse to boot in production
+  // when billing is wired but the price ID is missing.
   const envName =
-    plan === "plus" ? "STRIPE_PRICE_PLUS_MONTHLY" : "STRIPE_PRICE_PRO_MONTHLY";
-  const priceId = process.env[envName];
+    plan === "plus"
+      ? "STRIPE_PRICE_ID_PLUS_MONTHLY"
+      : "STRIPE_PRICE_ID_PRO_MONTHLY";
+  const priceId =
+    plan === "plus"
+      ? env.STRIPE_PRICE_ID_PLUS_MONTHLY
+      : env.STRIPE_PRICE_ID_PRO_MONTHLY;
   if (!priceId) throw new BillingConfigurationError(`${envName} is not set`);
   return priceId;
 }
@@ -356,6 +387,91 @@ export async function createCheckoutSession(
   // Subscription row is created by the checkout.session.completed webhook (idempotent).
   // No INSERT here — 'incomplete'/'checkout_created' pseudo-status has no place in subscriptions table.
   return { ok: true, mode, sessionId: session.id, url: session.url };
+}
+
+interface StripePortalSession {
+  id: string;
+  url: string;
+}
+
+async function createStripePortalSession({
+  customerId,
+  returnUrl,
+}: {
+  customerId: string;
+  returnUrl: string;
+}): Promise<StripePortalSession> {
+  const secretKey = getStripeSecretKey();
+  const body = new URLSearchParams({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+
+  const response = await fetch(STRIPE_BILLING_PORTAL_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const payload = (await response.json()) as Partial<StripePortalSession> & {
+    error?: { message?: string };
+  };
+  if (!response.ok || !payload.id || !payload.url) {
+    throw new Error(payload.error?.message || "Stripe portal session failed");
+  }
+  return { id: payload.id, url: payload.url };
+}
+
+/**
+ * Look up the most relevant Stripe customer id for `userId` and create a
+ * short-lived Customer Portal session pointed at the app's pricing page.
+ *
+ * Pre-conditions:
+ *   - `STRIPE_SECRET_KEY` must be set (else `BillingConfigurationError`).
+ *   - User must have a `subscriptions` row in
+ *     `(active | trialing | past_due)` carrying a non-null
+ *     `provider_customer_id` (else `NoBillingCustomerError`).
+ *
+ * Return URL goes back to `/settings` so that, after the user closes the
+ * portal, the web app can refetch `billing.status` and reflect any plan
+ * change immediately. Stripe webhooks update DB independently — the return
+ * URL is purely UX glue.
+ */
+export async function createCustomerPortalSession({
+  pool,
+  userId,
+}: {
+  pool: Pool;
+  userId: string;
+}): Promise<BillingPortalResponse> {
+  // Ensure Stripe is configured before we touch the DB — keeps the error
+  // surface symmetric with `createCheckoutSession` and avoids leaking a
+  // 500 from `fetch()` failing on an empty Authorization header.
+  getStripeSecretKey();
+
+  const { rows } = await pool.query<{ provider_customer_id: string | null }>(
+    `SELECT provider_customer_id
+       FROM subscriptions
+      WHERE user_id = $1
+        AND provider = 'stripe'
+        AND status = ANY($2::text[])
+      ORDER BY updated_at DESC
+      LIMIT 1`,
+    [userId, [...PORTAL_ELIGIBLE_STATUSES]],
+  );
+  const customerId = rows[0]?.provider_customer_id;
+  if (!customerId) {
+    throw new NoBillingCustomerError();
+  }
+
+  const baseUrl = getAppBaseUrl();
+  const { url } = await createStripePortalSession({
+    customerId,
+    returnUrl: `${baseUrl}/settings?billing=portal-return`,
+  });
+  return { ok: true, url };
 }
 
 export async function getSubscriptionStatus(

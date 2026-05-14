@@ -78,6 +78,41 @@ describe("trackEvent", () => {
     expect(capturePostHogEvent).toHaveBeenCalledWith("weird_payload", {});
   });
 
+  it("логує `[analytics]` payload з вирізаним PII (audit S2)", async () => {
+    const { trackEvent } = await import("./analytics");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    try {
+      trackEvent("pii_leak_guard", {
+        userId: "abc",
+        email: "leak@example.com",
+        password: "hunter2",
+      });
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const [tag, loggedEvent] = logSpy.mock.calls[0] as [
+        string,
+        { eventName: string; payload: Record<string, unknown> },
+      ];
+      expect(tag).toBe("[analytics]");
+      expect(loggedEvent.eventName).toBe("pii_leak_guard");
+      // PII значення вирізані shared scrubPII (`[redacted]` sentinel).
+      expect(loggedEvent.payload.email).toBe("[redacted]");
+      expect(loggedEvent.payload.password).toBe("[redacted]");
+      expect(loggedEvent.payload.userId).toBe("abc");
+
+      // Оригінальний event (LS ring-buffer) лишається з payload as-is —
+      // PII-scrub застосовується лише до console-клону.
+      const stored = JSON.parse(
+        localStorage.getItem("hub_analytics_log_v1") ?? "[]",
+      ) as Array<{ payload: Record<string, unknown> }>;
+      expect(stored).toHaveLength(1);
+      const [firstStored] = stored;
+      expect(firstStored?.payload.email).toBe("leak@example.com");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
   it("викид із PostHog transport не пропагується у викликача", () => {
     // `trackEvent` контракт у шапці файлу: "ніколи не кидає". Якщо
     // `capturePostHogEvent` чомусь throw-не — onboarding/finyk hooks не

@@ -468,9 +468,51 @@ const envSchema = z.object({
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
 
   // ── Push Notifications ─────────────────────────────────────────────
+  /** VAPID public key (URL-safe base64). Без нього `/api/push/*` → 503. */
   VAPID_PUBLIC_KEY: z.string().optional(),
+  /** VAPID private key (URL-safe base64). Парний до публічного. */
   VAPID_PRIVATE_KEY: z.string().optional(),
+  /**
+   * Контакт-email для `webpush.setVapidDetails`. У production без нього
+   * `resolveVapidEmail()` повертає `null` і кидає `vapid_email_missing` —
+   * push-сервіси відмовляються від запитів без routable контакту.
+   * У dev/test fallback `mailto:admin@example.com`.
+   */
   VAPID_EMAIL: z.string().optional(),
+  /**
+   * **M14** — per-target rate-limit для `/api/push/send`. Default 10/хв/recipient
+   * відповідає
+   * [`docs/security/hardening/M14-internal-push-ip-allowlist.md`](../../../../docs/security/hardening/M14-internal-push-ip-allowlist.md).
+   * Невалідне / `0` / відʼємне значення → silent fallback на default (legacy-семантика).
+   */
+  PUSH_SEND_TARGET_LIMIT: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return 10;
+      const n = Number.parseInt(v, 10);
+      return Number.isFinite(n) && n > 0 ? n : 10;
+    }),
+  /**
+   * **M14** — sliding window для `PUSH_SEND_TARGET_LIMIT` (мс). Default 60_000.
+   * Невалідне / `0` / відʼємне значення → silent fallback на default.
+   */
+  PUSH_SEND_TARGET_WINDOW_MS: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return 60_000;
+      const n = Number.parseInt(v, 10);
+      return Number.isFinite(n) && n > 0 ? n : 60_000;
+    }),
+  /**
+   * **M14** — allowlist для `/api/push/send` (internal-only fan-out).
+   * Comma- / newline-separated CIDR-и та IP-и. На Railway типово
+   * `100.64.0.0/10` + явні IPv4/IPv6 n8n-worker-ів. Loopback завжди
+   * implicit (loopback dev-доступ). Порожньо → fail-open у non-prod,
+   * fail-closed (503) у production. Деталі — `requireInternalIp`.
+   */
+  PUSH_INTERNAL_ALLOWED_IPS: stringWithDefault(""),
   /** Base64-encoded APNs .p8 key file content. */
   APNS_P8_KEY: z.string().optional(),
   APNS_KEY_ID: z.string().optional(),
@@ -580,6 +622,83 @@ const envSchema = z.object({
   /** Публічна базова URL API (Railway) для реєстрації webhook у Monobank. */
   PUBLIC_API_BASE_URL: z.string().optional(),
 
+  // ── Stripe billing ─────────────────────────────────────────────────
+  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): Stripe
+  // price IDs were read directly via `process.env[…]` inside
+  // `apps/server/src/modules/billing/stripe.ts`, so a misspelled or
+  // missing value only surfaced when a user clicked "Upgrade" — and
+  // even then with a generic 503. Pull the price IDs (plus the
+  // related secrets) into the Zod schema so the format is validated
+  // up-front (`price_*`) and `assertStartupEnv` can hard-fail at boot
+  // whenever billing is wired but a price ID is absent.
+  /**
+   * Stripe secret key. `sk_test_*` for test mode (dev / preview) і
+   * `sk_live_*` для production. Відсутність = billing вимкнено
+   * (`/api/billing/checkout` повертає 503 BILLING_UNAVAILABLE). Якщо
+   * виставлено у production — `STRIPE_WEBHOOK_SECRET` стає обов'язковим
+   * (див. assertStartupEnv finding #1).
+   */
+  STRIPE_SECRET_KEY: z
+    .string()
+    .regex(
+      /^sk_(test|live)_[A-Za-z0-9]+$/,
+      "STRIPE_SECRET_KEY must start with sk_test_ or sk_live_",
+    )
+    .optional(),
+  /**
+   * Webhook signing secret from Stripe Dashboard → Developers → Webhooks.
+   * `whsec_*` format. Required in production whenever
+   * `STRIPE_SECRET_KEY` is set — without it `verifyStripeSignature`
+   * always returns `false` and the webhook endpoint cannot mutate
+   * billing state (intentional fail-closed behaviour per T2 audit #1).
+   */
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .regex(
+      /^whsec_[A-Za-z0-9]+$/,
+      "STRIPE_WEBHOOK_SECRET must start with whsec_",
+    )
+    .optional(),
+  /**
+   * Replay-window tolerance for Stripe webhook timestamps (seconds).
+   * Default 300s matches `stripe-node` `constructEvent`. Values
+   * `<= 0` disable the check — NOT recommended.
+   */
+  STRIPE_WEBHOOK_TOLERANCE_SECONDS: intFromEnv(300),
+  /**
+   * Stripe Price ID for the Pro plan (monthly billing). Must match
+   * the `price_*` format Stripe Dashboard issues. Required at boot
+   * in production whenever `STRIPE_SECRET_KEY` is set —
+   * `assertStartupEnv` hard-fails so a misconfigured deploy can't
+   * silently send users to a 503 BILLING_UNAVAILABLE error after they
+   * click "Upgrade".
+   *
+   * Canonical name aligns with the ADR-0051 / monetization-architecture
+   * docs (`STRIPE_PRICE_ID_PRO_MONTHLY`). Earlier code used the
+   * `STRIPE_PRICE_PRO_MONTHLY` spelling without `_ID_` — migrated in
+   * the same PR; Railway env must be updated accordingly.
+   */
+  STRIPE_PRICE_ID_PRO_MONTHLY: z
+    .string()
+    .regex(
+      /^price_[A-Za-z0-9]+$/,
+      "STRIPE_PRICE_ID_PRO_MONTHLY must match Stripe `price_*` format",
+    )
+    .optional(),
+  /**
+   * Stripe Price ID for the (currently unused) Plus tier. Kept in the
+   * schema so the dead `getPriceId("plus")` path validates the
+   * format if anyone wires it back up; absence is non-fatal because
+   * the ADR-0051 pricing v3 is single-tier (Pro only).
+   */
+  STRIPE_PRICE_ID_PLUS_MONTHLY: z
+    .string()
+    .regex(
+      /^price_[A-Za-z0-9]+$/,
+      "STRIPE_PRICE_ID_PLUS_MONTHLY must match Stripe `price_*` format",
+    )
+    .optional(),
+
   // ── Nutrition backups ──────────────────────────────────────────────
   /**
    * Серверний секрет для HMAC-SHA256, що формує ім'я файлу
@@ -605,6 +724,30 @@ const envSchema = z.object({
   // ── Internal / machine-to-machine ──────────────────────────────────
   /** Bearer token for `/api/internal/*` (n8n workflows). */
   INTERNAL_API_KEY: stringWithDefault(""),
+  /**
+   * HMAC-SHA256 shared secret for `/api/internal/*` webhook signing
+   * (PR-48 follow-up). n8n side computes
+   * `hex(hmac_sha256(secret, "<timestamp>.<rawBody>"))` and sends it in
+   * the `X-Signature` header alongside `X-Timestamp` (UNIX seconds).
+   * Server verifies both. Empty string disables the feature (bearer-only).
+   */
+  WEBHOOK_HMAC_SECRET: stringWithDefault(""),
+  /**
+   * Enforce HMAC signatures on `/api/internal/*`. Default `false` ships a
+   * 30-day grace window: server logs `webhook_hmac_mismatch` (warn) but
+   * still accepts the request, so n8n workflows can be rolled out one at
+   * a time. Flip to `true` once the manifest reports `hmac_signed: true`
+   * for all 17 wired workflows.
+   */
+  WEBHOOK_HMAC_REQUIRED: boolFromEnv(false),
+  /**
+   * Replay-window in seconds — requests with `X-Timestamp` older than
+   * (now - WEBHOOK_HMAC_TS_TOLERANCE_SEC) or further in the future
+   * than that window are rejected when WEBHOOK_HMAC_REQUIRED=true (and
+   * warn-logged otherwise). 5min is the OWASP-recommended default and
+   * matches Stripe / GitHub / Slack webhook signatures.
+   */
+  WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
   /** Monobank user-token (legacy single-tenant integration; webhook prefers `/api/mono/connect`). */
   MONO_TOKEN: stringWithDefault(""),
 
@@ -1087,10 +1230,23 @@ export function assertStartupEnv(): void {
   // an open billing-state write endpoint. Hard-fail at boot so the
   // misconfig surfaces immediately instead of silently mutating
   // subscription rows weeks later.
-  if (isProduction && process.env["STRIPE_SECRET_KEY"]) {
-    if (!process.env["STRIPE_WEBHOOK_SECRET"]) {
+  //
+  // P0-7 (2026-05-13 revenue-monetization roast) — same lifecycle for
+  // `STRIPE_PRICE_ID_PRO_MONTHLY`. Without the price ID the checkout
+  // route fails with a runtime `BillingConfigurationError → 503`
+  // after the user clicks Upgrade. Fail at boot so the misconfig
+  // surfaces in deploy logs instead of in the funnel. The zod schema
+  // already enforces the `price_*` format on parse — this branch
+  // only catches the `missing` case for prod-with-billing.
+  if (isProduction && env.STRIPE_SECRET_KEY) {
+    if (!env.STRIPE_WEBHOOK_SECRET) {
       throw new Error(
         "STRIPE_WEBHOOK_SECRET is required in production when STRIPE_SECRET_KEY is set. Without it the Stripe webhook endpoint cannot verify signatures and any caller can mutate billing state. Set the value from Stripe Dashboard → Developers → Webhooks → Signing secret.",
+      );
+    }
+    if (!env.STRIPE_PRICE_ID_PRO_MONTHLY) {
+      throw new Error(
+        "STRIPE_PRICE_ID_PRO_MONTHLY is required in production when STRIPE_SECRET_KEY is set. Without it `/api/billing/checkout` throws BillingConfigurationError → 503 the first time a user clicks Upgrade. Copy the value from Stripe Dashboard → Products → Pro → Pricing (must match `price_*` format).",
       );
     }
   }

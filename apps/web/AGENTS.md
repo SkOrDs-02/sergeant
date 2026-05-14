@@ -48,7 +48,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 ## Lighthouse CI (perf-budget gate)
 
-T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг. Workflow `.github/workflows/lighthouse-ci.yml` — **planned** (T5 still open у тех-боргу). Локальний прогон сьогодні: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
+T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
 
 **Routes audited (3 runs each, median):** `/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition`. `/` is the Hub root — there is no separate `/hub` path (see [`apps/web/src/core/app/router.tsx`](./src/core/app/router.tsx)).
 

@@ -6,6 +6,7 @@ import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { messages } from "@shared/i18n/uk";
+import { translateAuthError } from "../auth/AuthContext";
 import { changePassword } from "../auth/authClient";
 
 /**
@@ -53,7 +54,12 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           newPassword: values.next,
         });
         if (res?.error) {
-          throw new Error(res.error.message ?? "Не вдалося змінити пароль");
+          // Better Auth returns english `message`-s keyed off `code`
+          // (`INVALID_PASSWORD`, `PASSWORD_TOO_SHORT`, ...). Route through
+          // `translateAuthError` so the user sees Ukrainian copy.
+          throw new Error(
+            translateAuthError(res.error, "Не вдалося змінити пароль"),
+          );
         }
         return true as const;
       },

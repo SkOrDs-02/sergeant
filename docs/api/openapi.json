@@ -1990,6 +1990,65 @@
         }
       }
     },
+    "/api/billing/portal": {
+      "post": {
+        "summary": "Стартує Stripe Customer Portal session (self-serve billing)",
+        "description": "Створює short-lived redirect URL у Stripe Customer Portal, де користувач може скасувати підписку, оновити платіжний метод або змінити план. Потребує `provider_customer_id` у `subscriptions` (готується checkout-flow-ом + webhook-ом).",
+        "tags": [
+          "monetization"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portal session готова; клієнт редіректить на `url`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingPortalResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Користувач не має billing customer record-у (ще не платив).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Stripe billing env is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/billing/stripe-webhook": {
       "post": {
         "summary": "Stripe webhook delivery endpoint",
@@ -5378,6 +5437,25 @@
         ],
         "additionalProperties": false,
         "description": "Поточний subscription state користувача, серіалізований з billing_subscriptions."
+      },
+      "BillingPortalResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "ok",
+          "url"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal."
       },
       "TranscribeResponse": {
         "type": "object",
