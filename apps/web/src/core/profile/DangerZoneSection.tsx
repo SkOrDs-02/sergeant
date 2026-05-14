@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { deleteUser, signOut } from "../auth/authClient";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 
@@ -33,7 +34,9 @@ export function DangerZoneSection({
     try {
       const res = await deleteUser({ password: password || undefined });
       if (res.error) {
-        toast.error(res.error.message ?? "Не вдалося видалити акаунт");
+        toast.error(
+          mapApiErrorToUserCopy(res.error, "Не вдалося видалити акаунт"),
+        );
         return;
       }
       toast.success("Акаунт видалено");

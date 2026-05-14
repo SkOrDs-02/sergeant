@@ -54,5 +54,10 @@ artifacts/
 # CI-local caches
 .cache/
 
+# Pre-commit timing log (P1-5 from 2026-05-13-testing-devx-roast.md).
+# Local dev signal only — never a CI gate. Aggregate via
+# `pnpm pre-commit:timings`.
+.husky/.pre-commit-timings.log
+
 # Claude Code agent worktrees (temporary, auto-cleaned)
 .claude/worktrees/

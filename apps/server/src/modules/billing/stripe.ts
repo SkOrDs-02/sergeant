@@ -7,6 +7,7 @@ import type {
   BillingStatusResponse,
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { env } from "../../env/env.js";
 import { capturePostHogEvent } from "../../lib/posthogCapture.js";
 import { logger } from "../../obs/logger.js";
 
@@ -267,15 +268,24 @@ export class NoBillingCustomerError extends Error {
 }
 
 function getStripeSecretKey(): string {
-  const key = process.env["STRIPE_SECRET_KEY"];
+  const key = env.STRIPE_SECRET_KEY;
   if (!key) throw new BillingConfigurationError("STRIPE_SECRET_KEY is not set");
   return key;
 }
 
 function getPriceId(plan: BillingPlan): string {
+  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): read
+  // from the Zod-validated `env` so the `price_*` format is checked
+  // up-front and `assertStartupEnv` can refuse to boot in production
+  // when billing is wired but the price ID is missing.
   const envName =
-    plan === "plus" ? "STRIPE_PRICE_PLUS_MONTHLY" : "STRIPE_PRICE_PRO_MONTHLY";
-  const priceId = process.env[envName];
+    plan === "plus"
+      ? "STRIPE_PRICE_ID_PLUS_MONTHLY"
+      : "STRIPE_PRICE_ID_PRO_MONTHLY";
+  const priceId =
+    plan === "plus"
+      ? env.STRIPE_PRICE_ID_PLUS_MONTHLY
+      : env.STRIPE_PRICE_ID_PRO_MONTHLY;
   if (!priceId) throw new BillingConfigurationError(`${envName} is not set`);
   return priceId;
 }

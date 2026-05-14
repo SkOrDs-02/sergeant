@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import {
   classify,
   escapeHtml,
+  normaliseForCompare,
   renderHtml,
 } from "../generate-freshness-dashboard.mjs";
 
@@ -93,5 +94,60 @@ describe("renderHtml", () => {
     assert.match(html, /docs\/missing\.md/);
     // Sticky header class so downloaders can scroll:
     assert.match(html, /position: sticky/);
+  });
+});
+
+describe("normaliseForCompare", () => {
+  it("ignores daily generated date and relative freshness counters", () => {
+    const a = renderHtml(
+      [
+        {
+          path: "docs/a.md",
+          cadence: 90,
+          status: "present",
+          lastValidated: "2026-02-01",
+          nextReview: "2026-07-28",
+          owner: "@alice",
+          daysUntilOverdue: 90,
+        },
+      ],
+      { today: "2026-04-29" },
+    );
+    const b = renderHtml(
+      [
+        {
+          path: "docs/a.md",
+          cadence: 90,
+          status: "present",
+          lastValidated: "2026-02-01",
+          nextReview: "2026-07-28",
+          owner: "@alice",
+          daysUntilOverdue: 89,
+        },
+      ],
+      { today: "2026-04-30" },
+    );
+
+    assert.equal(normaliseForCompare(a), normaliseForCompare(b));
+  });
+
+  it("keeps row-level document changes visible", () => {
+    const a = renderHtml(
+      [
+        {
+          path: "docs/a.md",
+          cadence: 90,
+          status: "present",
+          lastValidated: "2026-02-01",
+          nextReview: "2026-07-28",
+          owner: "@alice",
+          daysUntilOverdue: 90,
+        },
+      ],
+      { today },
+    );
+    const b = a.replace("docs/a.md", "docs/b.md");
+
+    assert.notEqual(normaliseForCompare(a), normaliseForCompare(b));
   });
 });
