@@ -96,6 +96,34 @@ export const dbSlowPoolConnectsTotal = new client.Counter({
   registers: [register],
 });
 
+// Single labeled gauge that mirrors `db_pool_total` / `db_pool_idle` /
+// `db_pool_waiting` (above) with the `state` label model preferred for
+// new dashboards. We keep both shapes so existing alerts + panels keep
+// working unmodified.
+//
+// `state="active"`  = pool.totalCount - pool.idleCount (checked-out clients)
+// `state="idle"`    = pool.idleCount                    (free connections)
+// `state="waiting"` = pool.waitingCount                 (queued acquires)
+export const dbPoolSizeCurrent = new client.Gauge({
+  name: "db_pool_size_current",
+  help: "PG pool connection count by state (active|idle|waiting)",
+  labelNames: ["state"],
+  registers: [register],
+});
+
+// Histogram of `pool.connect()` acquire latency in seconds. Pairs with
+// `dbSlowPoolConnectsTotal` — the counter catches outliers above
+// `PG_SLOW_CONNECT_MS`, this histogram gives the full p50/p95/p99
+// distribution for dashboards and SLO computation.
+// Buckets chosen for typical Railway / pgBouncer round-trip latencies:
+// sub-ms (warm hit) → second-scale (saturation).
+export const dbPoolAcquireDurationSeconds = new client.Histogram({
+  name: "db_pool_acquire_duration_seconds",
+  help: "Latency of pg pool.connect() acquires in seconds",
+  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+  registers: [register],
+});
+
 // ───────────────────────── Domain ─────────────────────────────
 export const aiTokensTotal = new client.Counter({
   name: "ai_tokens_total",
@@ -1075,9 +1103,18 @@ export function startPoolSampler(
 ): NodeJS.Timeout {
   const sample = () => {
     try {
-      dbPoolTotal.set(pool.totalCount ?? 0);
-      dbPoolIdle.set(pool.idleCount ?? 0);
-      dbPoolWaiting.set(pool.waitingCount ?? 0);
+      const total = pool.totalCount ?? 0;
+      const idle = pool.idleCount ?? 0;
+      const waiting = pool.waitingCount ?? 0;
+      dbPoolTotal.set(total);
+      dbPoolIdle.set(idle);
+      dbPoolWaiting.set(waiting);
+      // Same numbers re-emitted under the labeled gauge for newer
+      // dashboards. `active` = currently checked-out connections.
+      const active = Math.max(0, total - idle);
+      dbPoolSizeCurrent.set({ state: "active" }, active);
+      dbPoolSizeCurrent.set({ state: "idle" }, idle);
+      dbPoolSizeCurrent.set({ state: "waiting" }, waiting);
     } catch {
       /* ignore */
     }

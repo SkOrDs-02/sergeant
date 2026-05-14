@@ -347,6 +347,27 @@ groups:
             `db_query_duration_ms` and `db_slow_queries_total`.
           runbook: "docs/observability/runbook.md#dbpoolsaturated"
 
+      # Queue-depth signal — раніше за `DbPoolSaturated`, але вже не
+      # "хтось щось чекає 5 хв" (як `DbPoolWaitingSustained` — тікет на
+      # будь-який waiting), а саме "stack-up ≥ 5 клієнтів стабільно".
+      # Це diagnostic-grade signal: capacity-planning input для PG_POOL_SIZE.
+      - alert: DbPoolWaitingDeep
+        expr: db_pool_waiting > 5
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Postgres pool queue ≥5 clients deep for 5m"
+          description: |
+            `db_pool_waiting` тримається >5 уже 5 хвилин — це вже не
+            одиничний slow query, а sustained saturation. Перевір
+            `db_pool_acquire_duration_seconds` гістограму (p95/p99
+            повинні скочити одночасно) і `db_pool_size_current{state="idle"}`
+            (зазвичай впав до 0). Якщо рут — слабкий pool size, bump
+            `PG_POOL_SIZE` env var. Якщо leaky transaction — шукай
+            у `db_slow_queries_total{op}`.
+          runbook: "docs/observability/runbook.md#dbpoolsaturated"
+
       - alert: ProgrammerErrorsIncreasing
         expr: increase(app_errors_total{kind="programmer"}[5m]) > 0
         for: 0m

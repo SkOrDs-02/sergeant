@@ -1,10 +1,27 @@
 # Mobile E2E тестування — Detox vs Maestro
 
-> **Last validated:** 2026-05-13. **Next review:** 2026-08-11.
-> **Status:** Рекомендація підготовлена, впровадження не розпочато.
+> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
+> **Status:** Closed (superseded) — Detox adopted instead of Maestro recommendation; documented here for historical decision-record purposes.
 > **Owner:** @Skords-01
 
-## Проблема
+## Outcome (2026-05 — superseded)
+
+Цей документ — оригінальна **research-only** рекомендація написана до фактичного впровадження. Реальний вибір розійшовся з рекомендацією: **Detox** був прийнятий замість **Maestro**. Поточний стан на main:
+
+- E2E suite живе у `apps/mobile/e2e/` (Detox + Jest): `finyk-full`, `finyk-manual-expense`, `finyk-transactions`, `fizruk-full`, `hub-ux-smoke`, `nutrition-full`, `routine-full`, `routine-smoke`.
+- CI runs: `.github/workflows/detox-ios.yml` + `.github/workflows/detox-android.yml` (на push до `main` + pull-requests, обмежено `apps/mobile/**` / `apps/mobile-shell/**` / `packages/api-client/**` / `packages/shared/**` path-triggers).
+- Mock-auth flags (`EXPO_PUBLIC_E2E_USER_EMAIL` / `EXPO_PUBLIC_E2E_USER_PASSWORD`) дозволяють `*-full` suite-ам автентифікуватись без реального backend-у.
+- Maestro **не** використовується; YAML-flows з § "Приклад Maestro тесту" не імплементовані.
+
+Чому Detox переміг попри Maestro-рекомендацію (рішення засновника, не задокументоване окремим ADR):
+
+- Gray-box sync з RN JS-thread → нижчий flakiness rate на real-world flows, що в нашому випадку важило більше за швидкість написання YAML.
+- Native module access (mock GPS / permissions / push notifications) — pre-emptive для майбутніх Fizruk geo-features та push notification flows.
+- Глибша інтеграція з TypeScript codebase: тести шарять `_helpers/assertions.ts`, `_helpers/auth.ts`, `_helpers/nav.ts` з основним типажем.
+
+Нижче — оригінальна research-частина для контексту. **Не використовуй її як guidance — це історичний deliverable**, а не план робіт.
+
+## Проблема (історично)
 
 Зараз у нас є E2E тести тільки для web (Playwright). Mobile app (`apps/mobile` на Expo 52 + React Native 0.76) **не має жодних E2E тестів**. Unit-тести є (Jest + Testing Library), але вони не перевіряють реальну навігацію, жести, native API, push notifications, deep links, та інші речі, які ламаються тільки на реальному пристрої.
 

@@ -1,6 +1,6 @@
 # Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (child session; P2.1 dead-code `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC) closed — pre-flight grep → 0 dynamic imports, single live boundary `apps/mobile/src/core/ModuleErrorBoundary.tsx`). **Next review:** 2026-08-11.
 > **Status:** Active
 > **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../initiatives/0002-mobile-platform-decision.md).
 
@@ -18,7 +18,7 @@
 1. **Mobile `ModuleErrorBoundary` не форвардив помилки у Sentry** (`apps/mobile/src/core/ModuleErrorBoundary.tsx:232` мав `TODO(phase-10)`). Боундарі ловить crash модуля, друкує у console, і все — операторам жодного сигналу. Закрито у цьому PR.
 2. **Stale ESLint allowlist entry для `useRoutineReminders.ts`** (`eslint.config.js:694`). M5 у `mobile.md` зафіксований як done 2026-05-06, але allowlist-рядок усе ще стоїть → код може регрешити назад під `as unknown as Notifications.NotificationTriggerInput` і ESLint це проґавить. Закрито у цьому PR.
 3. **`docs/tech-debt/mobile.md` дрифтить за реальністю на 2 файли + 67 LOC.** Кількість >600 LOC файлів зросла з 2 до 4 (`dualWrite/diff.ts` 633 і `routine/pages/Calendar.tsx` 628 пробили поріг; `adapter.ts` 737 → 804; `PlanCalendar.tsx` 616 → 661). Розділ "TODO/FIXME маркери" згадував 5 маркерів, фактичний quick-grep — 3 (потім 2 після закриття #1). Закрито у цьому PR через refresh.
-4. **Dead-code: `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC).** Жодного імпортера у `apps/mobile/**` — `grep -rn "modules/shared/ModuleErrorBoundary\|shared/ModuleErrorBoundary" apps/mobile` повертає 0. Єдиний живий боундарі — `apps/mobile/src/core/ModuleErrorBoundary.tsx`. Потрібен mini-PR на видалення, але видаляти у цій прожарці страшно без cross-repo grep (може бути dynamic import).
+4. **Dead-code: `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC).** Жодного імпортера у `apps/mobile/**` — `grep -rn "modules/shared/ModuleErrorBoundary\|shared/ModuleErrorBoundary" apps/mobile` повертає 0. Єдиний живий боундарі — `apps/mobile/src/core/ModuleErrorBoundary.tsx`. Закрито follow-up mini-PR-ом з cross-repo grep підтвердженням (жодних dynamic-import / `require.context` патернів).
 5. **Sentry DSN на staging/prod не виставлено.** `apps/mobile/src/lib/observability.ts:34` гейтиться `EXPO_PUBLIC_SENTRY_DSN`; на mobile DSN ще не провіжнено. Без code-зміни цей пункт не закривається — потрібно лише EAS Secret + redeploy.
 6. **Detox e2e (`hub-ux-smoke.e2e.ts`) не прогнаний на актуальній iOS/Android матриці** (див. UX plan §"E2E and device validation: Partial"). Без CI-інтеграції e2e залишаються "існує, але прогінали востаннє давно" — це P2.
 7. **Capacitor shell coverage стара аналітика.** `mobile.md` казав "5 test-файлів" — реально 8 (`auth-storage`, `pushNative`, `index`, `barcodeNative`, `platform`, `parseDeepLink`, `deepLinkBridge`, `boundary`). Категорію вже бампнули на OK, але цифру не оновили. Закрито у цьому PR через `Capacitor coverage` row refresh.
@@ -62,11 +62,15 @@
 
 ## P2 — те, що болить maintainer-у
 
-### P2.1 — Dead-code `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC)
+### P2.1 — Dead-code `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC) — ✅ Closed
 
-- **Файл:** `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx`
+- **Файл:** `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (видалено)
 - **Симптом:** Жодного імпортера у `apps/mobile/**` — `grep -rn "modules/shared/ModuleErrorBoundary\|shared/ModuleErrorBoundary" apps/mobile` → 0. Усі consumer-и (`apps/mobile/app/(tabs)/{finyk,nutrition,routine}/_layout.tsx`, `apps/mobile/src/modules/routine/RoutineApp.tsx`, `apps/mobile/src/modules/nutrition/NutritionApp.tsx`) тягнуть `@/core/ModuleErrorBoundary`, не `modules/shared/`.
-- **Дія:** Remove (mini-PR). Перед видаленням — глобальний grep по dynamic-import-у `require.context`/`import("modules/shared/...")` щоб не зачепити Expo Router file-based проактивну активацію. У цій прожарці тільки **трекнуто** — видалення вимагає окремого фокус-PR.
+- **Дія:** Removed у follow-up mini-PR. Перед видаленням — pre-flight grep:
+  - `grep -rn "modules/shared/ModuleErrorBoundary\|shared/ModuleErrorBoundary" apps/mobile` → 0
+  - `grep -rn 'require\.context\|import(".*ModuleErrorBoundary' apps/mobile` → 0
+  - Cross-repo grep по `shared/ModuleErrorBoundary` показав 2 hit-и поза `apps/mobile/`: коментар у `packages/eslint-plugin-sergeant-design/index.js:1525` (rationale-приклад) і синтетична path-fixture у `__tests__/no-foreign-module-accent.test.mjs:177` (тест використовує `path.resolve`, не `fs.exists` — pattern-only). Обидва — illustrative-only, не блокуючі.
+- **Закрито:** PR delete `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` — єдиним живим боундарі залишається `apps/mobile/src/core/ModuleErrorBoundary.tsx`.
 
 ### P2.2 — Two new >600 LOC offenders (`dualWrite/diff.ts` 633, `routine/pages/Calendar.tsx` 628)
 
@@ -120,23 +124,22 @@
 - ✅ **P1.1** Forward mobile `ModuleErrorBoundary` errors у `captureError` — closes TODO(phase-10) at `apps/mobile/src/core/ModuleErrorBoundary.tsx:232`. Закрито разом з 3 новими Jest-кейсами у `ModuleErrorBoundary.test.tsx`.
 - ✅ **P1.2** Drop stale `useRoutineReminders.ts` entry з `sergeant-design/no-strict-bypass` mobile allowlist у `eslint.config.js`. M5 row у `mobile.md` тепер коректний.
 - ✅ **P1.3** Refresh `docs/tech-debt/mobile.md` — Last validated 2026-05-13, LOC recount (2 → 4 files >600), TODO/FIXME shrink (5 → 2 живих, 1 closed), Capacitor coverage цифра (5 → 8), ModuleErrorBoundary inline-нотатка.
-- 📝 **P2.1** Dead-code `modules/shared/ModuleErrorBoundary.tsx` — track only (видалення потребує крос-grep перевірки на dynamic imports, окремий mini-PR).
+- ✅ **P2.1** Dead-code `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` (206 LOC) — видалено follow-up mini-PR-ом (2026-05-13). Pre-flight grep по `modules/shared/ModuleErrorBoundary` + `require.context` / `import("…ModuleErrorBoundary")` у `apps/mobile` показав 0 хітів; cross-repo згадки — лише illustrative-comment + synthetic-path-fixture у `eslint-plugin-sergeant-design` (rule-pattern only, не залежать від існування файла). Єдиним живим боундарі залишається `apps/mobile/src/core/ModuleErrorBoundary.tsx`.
 - 📝 **P2.2 / P2.3 / P2.4 / P2.5** — track only (>10 файлів змін → окремі follow-up PR).
 - ✅ **P2.2b** Follow-up shipped in #2780 — `apps/mobile/src/modules/routine/pages/Calendar.tsx` (628 LOC) decomposed into a 13-file `pages/Calendar/` folder; `index.tsx` is 183 LOC. Adds 2 new unit-test files (`formatters.test.ts`, `useCalendarAggregates.test.ts`); existing `Calendar.test.tsx` was moved inside the folder and remains green.
 
 ## Outstanding (відкрите після цього PR)
 
-| #         | Surface                  | Дія                                                                                       | Власник | Estimate |
-| --------- | ------------------------ | ----------------------------------------------------------------------------------------- | ------- | -------- |
-| M3        | `apps/mobile/fizruk`     | Domain-shape alignment × 4 (drop 4× `as unknown as` через `toDomain*` converter)          | TBD     | M (3-4h) |
-| M4        | `apps/mobile/finyk`      | Domain-shape alignment × 2 (CategoryChartSection + TransactionsPage snapshot adapter)     | TBD     | S (1-2h) |
-| M7        | Sentry RN DSN            | Provision EAS Secret `EXPO_PUBLIC_SENTRY_DSN`; code already wired (closed 2026-05-13)     | ops     | XS       |
-| M9        | TS 6 bump mobile+console | Чекає Expo SDK 53 (blocked, not actionable)                                               | TBD     | M-L      |
-| P2.1      | Dead-code cleanup        | Remove `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx` after dynamic-import grep | TBD     | XS       |
-| ~~P2.2a~~ | ~~fizruk dualWrite~~     | ~~Decompose `dualWrite/diff.ts` 633 LOC за per-shape diff-helpers~~ — ✅ Closed in #2750  | Devin   | —        |
-| P2.2b     | routine/Calendar.tsx     | ✅ Closed in #2780 — `Calendar.tsx` → `pages/Calendar/` folder (13 sub-files)             | @Devin  | M (3-4h) |
-| P2.2c     | fizruk PlanCalendar.tsx  | Декомпозиція 661 LOC (наростилося +45)                                                    | TBD     | M        |
-| P2.2d     | fizruk adapter.ts        | Декомпозиція 804 LOC (наростилося +67)                                                    | TBD     | M-L      |
-| P2.4      | Detox e2e CI             | Зачепити `hub-ux-smoke.e2e.ts` у CI matrix (iOS sim runner)                               | ops     | M-L      |
-| P2.5      | Shell-tax recount        | Свіжий `report-shell-tax.mjs` друк + quarter trend у `docs/initiatives/0002-...`          | TBD     | S        |
-| UX-A      | A11y full screen-reader  | Sweep усіх screens VoiceOver + TalkBack (UX plan §"Accessibility audit: Partial")         | TBD     | M        |
+| #     | Surface                  | Дія                                                                                   | Власник | Estimate |
+| ----- | ------------------------ | ------------------------------------------------------------------------------------- | ------- | -------- |
+| M3    | `apps/mobile/fizruk`     | Domain-shape alignment × 4 (drop 4× `as unknown as` через `toDomain*` converter)      | TBD     | M (3-4h) |
+| M4    | `apps/mobile/finyk`      | Domain-shape alignment × 2 (CategoryChartSection + TransactionsPage snapshot adapter) | TBD     | S (1-2h) |
+| M7    | Sentry RN DSN            | Provision EAS Secret `EXPO_PUBLIC_SENTRY_DSN`; code already wired (closed 2026-05-13) | ops     | XS       |
+| M9    | TS 6 bump mobile+console | Чекає Expo SDK 53 (blocked, not actionable)                                           | TBD     | M-L      |
+| P2.2a | fizruk dualWrite         | Decompose `dualWrite/diff.ts` 633 LOC за per-shape diff-helpers                       | TBD     | M (3-4h) |
+| P2.2b | routine/Calendar.tsx     | ✅ Closed in #2780 — `Calendar.tsx` → `pages/Calendar/` folder (13 sub-files)         | @Devin  | M (3-4h) |
+| P2.2c | fizruk PlanCalendar.tsx  | Декомпозиція 661 LOC (наростилося +45)                                                | TBD     | M        |
+| P2.2d | fizruk adapter.ts        | Декомпозиція 804 LOC (наростилося +67)                                                | TBD     | M-L      |
+| P2.4  | Detox e2e CI             | Зачепити `hub-ux-smoke.e2e.ts` у CI matrix (iOS sim runner)                           | ops     | M-L      |
+| P2.5  | Shell-tax recount        | Свіжий `report-shell-tax.mjs` друк + quarter trend у `docs/initiatives/0002-...`      | TBD     | S        |
+| UX-A  | A11y full screen-reader  | Sweep усіх screens VoiceOver + TalkBack (UX plan §"Accessibility audit: Partial")     | TBD     | M        |
