@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 
 /**
@@ -15,6 +15,22 @@ import request from "supertest";
  * These tests complement `modules/chat/coach.test.ts` (unit, handler-level)
  * by asserting the full HTTP wiring: setModule → rateLimit → requireSession →
  * requireAnthropicKey → requireAiQuota → asyncHandler.
+ *
+ * AI-CONTEXT: env single-source migration.  `requireAnthropicKey` reads
+ * `env.ANTHROPIC_API_KEY` (validated Zod env, captured at first load of
+ * `apps/server/src/env/env.ts`), not `process.env` directly.  That means
+ * mutating `process.env.ANTHROPIC_API_KEY` after the env module has been
+ * imported is a no-op for the guard.  Tests must therefore use the
+ * canonical vitest pattern from `apps/server/src/auth.test.ts`:
+ *
+ *   vi.resetModules();
+ *   vi.stubEnv("ANTHROPIC_API_KEY", "…");
+ *   const { createApp } = await import("./../app.js");
+ *
+ * `vi.unstubAllEnvs()` + `vi.resetModules()` in `afterEach` keep tests
+ * isolated.  `AI_QUOTA_DISABLED` *is* still read via `process.env` at
+ * runtime (see `modules/chat/aiQuota.ts` JSDoc) and so can use plain
+ * `vi.stubEnv` without re-importing modules.
  */
 
 const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
@@ -91,35 +107,47 @@ vi.mock("./../http/rateLimit.js", async () => {
   };
 });
 
-import { createApp } from "./../app.js";
-
-const SAVED_KEY = process.env["ANTHROPIC_API_KEY"];
-const SAVED_DISABLED = process.env["AI_QUOTA_DISABLED"];
+/**
+ * Re-import `./../app.js` after `vi.stubEnv` so the validated env module
+ * (`apps/server/src/env/env.ts`) re-parses with the test's stubbed values.
+ * The `vi.mock` calls above are hoisted and persist across `vi.resetModules`,
+ * so we do not need to re-register them per test.
+ */
+async function loadCreateApp(): Promise<
+  (typeof import("./../app.js"))["createApp"]
+> {
+  vi.resetModules();
+  const mod = await import("./../app.js");
+  return mod.createApp;
+}
 
 beforeEach(() => {
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue(null);
-  delete process.env["ANTHROPIC_API_KEY"];
-  process.env["AI_QUOTA_DISABLED"] = "1";
+  // Default key-state for every test: no Anthropic key (covers auth-guard
+  // tests and the explicit `key guard` describe-block).  Individual tests
+  // that need a key call `vi.stubEnv("ANTHROPIC_API_KEY", "…")` again.
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("AI_QUOTA_DISABLED", "1");
 });
 
-afterAll(() => {
-  if (SAVED_KEY === undefined) delete process.env["ANTHROPIC_API_KEY"];
-  else process.env["ANTHROPIC_API_KEY"] = SAVED_KEY;
-  if (SAVED_DISABLED === undefined) delete process.env["AI_QUOTA_DISABLED"];
-  else process.env["AI_QUOTA_DISABLED"] = SAVED_DISABLED;
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.resetModules();
 });
 
 describe("coach routes — auth guard (unauthenticated → 401)", () => {
   it("GET /api/coach/memory → 401 без сесії", async () => {
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app).get("/api/coach/memory");
     expect(res.status).toBe(401);
   });
 
   it("POST /api/coach/memory → 401 без сесії", async () => {
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/memory")
@@ -129,6 +157,7 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
   });
 
   it("POST /api/coach/insight → 401 без сесії", async () => {
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/insight")
@@ -141,6 +170,9 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
 describe("coach routes — key guard", () => {
   it("POST /api/coach/insight → 503 з сесією але без ANTHROPIC_API_KEY", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
+    // `beforeEach` already stubs `ANTHROPIC_API_KEY=""`; re-load app so the
+    // empty value lands in the freshly-parsed `env` module.
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/insight")
@@ -157,6 +189,7 @@ describe("coach routes — GET /memory", () => {
     // Перший query — coach_memory SELECT для memory; повертає порожній масив.
     queryMock.mockResolvedValueOnce({ rows: [] });
 
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app).get("/api/coach/memory");
 
@@ -175,6 +208,7 @@ describe("coach routes — GET /memory", () => {
       rows: [{ data: JSON.stringify(memoryData) }],
     });
 
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app).get("/api/coach/memory");
 
@@ -197,6 +231,7 @@ describe("coach routes — POST /memory", () => {
     // UPSERT → success
     queryMock.mockResolvedValueOnce({ rows: [] });
 
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/memory")
@@ -217,6 +252,7 @@ describe("coach routes — POST /memory", () => {
   it("повертає 400 при невалідному body (weeklyDigest без weekKey)", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
 
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/memory")
@@ -231,7 +267,9 @@ describe("coach routes — POST /memory", () => {
 describe("coach routes — POST /insight", () => {
   it("повертає { insight: string } коли ключ є і snapshot валідний", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
-    process.env["ANTHROPIC_API_KEY"] = "test-key";
+    // Stub the key BEFORE `loadCreateApp()` so the env module sees it on
+    // re-parse.  `vi.unstubAllEnvs()` in `afterEach` rolls this back.
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
     // SELECT coach memory
     queryMock.mockResolvedValueOnce({ rows: [] });
     // SELECT ai_quota
@@ -239,11 +277,11 @@ describe("coach routes — POST /insight", () => {
     // SELECT push subscriptions for quiet push
     queryMock.mockResolvedValueOnce({ rows: [] });
 
+    const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/insight")
       .set("X-Requested-With", "XMLHttpRequest")
-      .set("x-anthropic-key", "test-key")
       .send({
         snapshot: {
           finyk: { summary: "5 000 ₴ витрати." },
