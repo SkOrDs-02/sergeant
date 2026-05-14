@@ -41,7 +41,7 @@
 
 **Не закрито в цьому PR (наступні PR-кандидати):**
 
-- **S2** (P0, audit §6.5 carry-over) — ESLint-guard проти `console.log` з email-regex у payload. Потребує власного `eslint-plugin-sergeant-design`-правила + visit-фази для `MemberExpression` / `TaggedTemplateExpression`. Виноситься в окремий PR.
+- **S2** ✅ closed (PR #2754) — додано `sergeant-design/no-console-pii` ESLint-rule (string-literal/template-literal regex + recursive object-key check) + `analytics.ts:56` тепер scrubPII-клонує `event` перед `console.log` (audit S2 + S8 захист у глибину).
 - **S3** (P1) — SRI ESLint-guard на `<script src="https://...">` без `integrity=`. Потребує `parse5`-based парсера в `eslint-plugin-sergeant-design`; великий і самостійний PR.
 - **S4** (P1) — Pino redact-paths wildcard generator до 5 рівнів. Потребує тестового матриксу + узгодження з `docs/security/pii-handling.md`.
 - **S5** (P1) — OTel attribute denylist parity test (`apps/server/src/obs/tracing.ts` ↔ `@sergeant/shared/lib/pii.ts`).
@@ -56,11 +56,13 @@
 - **After:** `apps/web/src/core/observability/sentry.ts:21-59` — `applyWebBeforeSend()` мімікрує сервереий `applyBeforeSend` (`apps/server/src/sentry.ts:154`); shared контракт `scrubPII` живе у `packages/shared/src/lib/pii.ts:91` (DOM-free).
 - **Action:** ✅ landed у цьому PR. Подальші правки (нові ключі) — у `@sergeant/shared/lib/pii.ts` → автоматично підхоплюються обома SDK.
 
-### S2 — ESLint-guard проти `console.log` з PII (audit §6.5, outstanding 2026-05-03)
+### S2 — ESLint-guard проти `console.log` з PII (audit §6.5, outstanding 2026-05-03) ✅ Closed in #2754
 
-- **Add:** `packages/eslint-plugin-sergeant-design/src/rules/no-console-pii.ts` — flag `console.log/error/warn/info` із string literal arg, що містить `/email|phone|password|token/i` або шаблонний literal, де substitution посилається на `event.email` / `user.phone`.
+- **Add:** `sergeant-design/no-console-pii` ESLint-rule у `packages/eslint-plugin-sergeant-design/index.js` (репо-конвенція — усі rule-и тримаються поруч в `index.js`; per-rule extraction — окремий refactor). Flag-ує `console.{log,error,warn,info}(...)` коли arg — string literal/template literal, що match-ить `/email|phone|password|token|secret|auth/i`, або об'єкт-arg (recursively) містить такі ключі.
 - **Why:** довколишній код у `apps/web/src/core/observability/analytics.ts:56` робить `console.log("[analytics]", event)`. Якщо handler PostHog colors, payload з PII — leak у DevTools (screen-share), Sentry breadcrumb (`console`-integration), Logpipe-екстеншни. Audit §6.5 називає це outstanding після PR #1551.
-- **Change:** додати правило у `packages/eslint-plugin-sergeant-design/src/index.ts` і виставити severity `error` у `eslint.config.mjs`.
+- **Change:** правило зареєстровано у `packages/eslint-plugin-sergeant-design/index.js` `plugin.rules` map і ввімкнене у `eslint.config.js` `severity: "error"` для `apps/server/src/**/*.{js,ts}` + `apps/web/src/**/*.{ts,tsx}` (test-файли — ignored, як і у `no-anthropic-key-in-logs`).
+- **Defense-in-depth fix:** `apps/web/src/core/observability/analytics.ts:56` тепер `structuredClone`-ує `event`, прогоняє через shared `scrubPII` і логує клон (audit S8 mini-action). Оригінальний `event` (LS ring-buffer + PostHog transport) не зачеплений.
+- **Tests:** `packages/eslint-plugin-sergeant-design/__tests__/no-console-pii.test.mjs` — 5 BAD (string-літерал з `email`/`password`, template-літерал з `auth token`, об'єкт з `email`/`phone` ключем — top-level і nested) + 3 GOOD (плейн стрінг, об'єкт без PII-ключів, `console.debug` — outside method-list). `apps/web/src/core/observability/analytics.test.ts` — новий тест «логує `[analytics]` payload з вирізаним PII (audit S2)».
 - **Remove:** -
 
 ### S3 — SRI ESLint-guard на сторонні `<script src>` (audit §6.4, outstanding)
