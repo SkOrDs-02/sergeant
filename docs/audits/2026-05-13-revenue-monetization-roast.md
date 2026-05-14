@@ -120,7 +120,7 @@
 
 ## Прогрес виконання (follow-up PR — P1-6)
 
-### P1-6 · Pro plan limits UI in Settings (show plan + manage sub) ✅ Closed in #PR_NUMBER_PLACEHOLDER
+### P1-6 · Pro plan limits UI in Settings (show plan + manage sub) ✅ Closed in #2778
 
 - **Файл:** `apps/web/src/core/settings/PlanSection.tsx` (new, ~155 LOC)
 - **Тест:** `apps/web/src/core/settings/PlanSection.test.tsx` (new, 3 tests — free / pro-active / pro-canceled)
