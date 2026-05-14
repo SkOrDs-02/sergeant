@@ -136,9 +136,13 @@ describe("ChangePasswordSection — submit flow", () => {
     });
   });
 
-  it("показує serverError, коли Better Auth повертає result.error.message", async () => {
+  it("показує serverError, коли Better Auth повертає result.error з code", async () => {
+    // F5 (web-frontend-ergonomics-roast): сирий `error.message` тепер
+    // мапиться через `mapApiErrorToUserCopy(res.error, ...)`. Сервер
+    // повертає `code` (`INVALID_PASSWORD` Better Auth), у UI показуємо
+    // людську UA-копію — саме її і шукаємо у `alert`.
     changePasswordMock.mockResolvedValue({
-      error: { message: "Поточний пароль невірний" },
+      error: { code: "INVALID_PASSWORD", message: "Invalid password" },
     });
 
     render(<ChangePasswordSection online={true} />);
@@ -153,7 +157,7 @@ describe("ChangePasswordSection — submit flow", () => {
       expect(
         screen
           .getAllByRole("alert")
-          .some((el) => el.textContent?.includes("Поточний пароль невірний")),
+          .some((el) => el.textContent?.includes("Невірний поточний пароль.")),
       ).toBe(true);
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();

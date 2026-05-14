@@ -4,6 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
+import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { formatRelativeUk } from "@shared/lib/format/relativeTime.uk";
 import { parseUserAgent } from "@shared/lib/format/userAgent";
 import {
@@ -47,7 +48,7 @@ export function SessionsSection({ online }: { online: boolean }) {
       if (list.data) {
         setSessions(list.data);
       } else if (list.error) {
-        setError(list.error.message ?? COPY.loadFailed);
+        setError(mapApiErrorToUserCopy(list.error, COPY.loadFailed));
       }
     } catch {
       setError(COPY.loadFailed);
@@ -72,7 +73,7 @@ export function SessionsSection({ online }: { online: boolean }) {
       // (already returned by `listSessions`) as the identifier.
       const res = await revokeSession({ token });
       if (res.error) {
-        toast.error(res.error.message ?? COPY.revokeFailed);
+        toast.error(mapApiErrorToUserCopy(res.error, COPY.revokeFailed));
         return;
       }
       toast.success(COPY.revokeSuccess);
