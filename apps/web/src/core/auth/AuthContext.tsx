@@ -94,6 +94,9 @@ export function translateAuthError(
     case "FAILED_TO_CREATE_SESSION":
     case "FAILED_TO_CREATE_USER":
       return messages.auth.sessionFailure;
+    case "INVALID_TOKEN":
+    case "TOKEN_EXPIRED":
+      return messages.auth.invalidToken;
   }
 
   return translateByMessage(message, fallback);
@@ -101,6 +104,11 @@ export function translateAuthError(
 
 function translateByMessage(message: string, fallback: string): string {
   if (!message) return fallback;
+  // Better Auth повертає невалідний / прострочений reset-link як
+  // `code: "INVALID_TOKEN"` + `message: "Invalid token"` (англ.).
+  // На випадок, коли code не доїхав, ловимо message-level patern,
+  // щоб не лишити англомовну "Invalid token" у UI.
+  if (/^invalid token$/i.test(message)) return messages.auth.invalidToken;
   // Перевіряти specific-перед-generic: `"Invalid email or password"`
   // містить підрядок `"Invalid email"`, тож загальна гілка
   // `/invalid email/i` фальш-метчила wrong-password як «Невірний формат

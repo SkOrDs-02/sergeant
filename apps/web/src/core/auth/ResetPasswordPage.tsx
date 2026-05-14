@@ -8,6 +8,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
+import { translateAuthError } from "./AuthContext";
 import { resetPassword } from "./authClient";
 
 /**
@@ -56,10 +57,14 @@ export function ResetPasswordPage() {
   // в один hook. Better Auth повертає помилку через `result.error` поле,
   // а не через `throw`, тому ми штучно кидаємо `Error(message)`, щоб
   // `useApiForm.serverError` його підхопив.
-  const { register, submit, formState, isSubmitting, serverError } = useApiForm<
-    ResetPasswordValues,
-    true
-  >({
+  const {
+    register,
+    submit,
+    formState,
+    isSubmitting,
+    serverError,
+    lastResponse,
+  } = useApiForm<ResetPasswordValues, true>({
     schema: resetPasswordSchema,
     defaultValues: { password: "", confirm: "" },
     onSubmit: async (values) => {
@@ -68,9 +73,14 @@ export function ResetPasswordPage() {
         newPassword: values.password,
       });
       if (result?.error) {
+        // Better Auth returns english messages keyed off `code`
+        // (`INVALID_TOKEN`, `PASSWORD_TOO_SHORT`, ...). Run them
+        // through `translateAuthError` so the user sees Ukrainian.
         throw new Error(
-          result.error.message ||
+          translateAuthError(
+            result.error,
             "Не вдалося скинути пароль. Посилання могло вже бути використане.",
+          ),
         );
       }
       return true as const;
@@ -81,11 +91,14 @@ export function ResetPasswordPage() {
     },
   });
 
-  const status = formState.isSubmitSuccessful
-    ? "done"
-    : isSubmitting
-      ? "sending"
-      : "idle";
+  // `useApiForm` swallows errors thrown from `onSubmit` into
+  // `serverError`, so react-hook-form's `formState.isSubmitSuccessful`
+  // becomes `true` even when the server rejected the submit. Drive
+  // the visual "done" state off `lastResponse` (only set on real
+  // success) so users can retry after an `INVALID_TOKEN` server error
+  // instead of getting stuck on a disabled form.
+  const status =
+    lastResponse !== undefined ? "done" : isSubmitting ? "sending" : "idle";
 
   return (
     <div
