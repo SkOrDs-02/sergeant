@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -142,6 +142,64 @@ id, reason)` — UPDATE `status='rejected'` + `reject_reason` verbatim
   322/322 db-schema suite зелена.
 
 ### Changed
+
+- **Dead-code + hard-rules + backend-perf trio (2026-05-14):
+  [#2835](https://github.com/Skords-01/Sergeant/pull/2835) +
+  [#2836](https://github.com/Skords-01/Sergeant/pull/2836) +
+  [#2840](https://github.com/Skords-01/Sergeant/pull/2840).** Закриті
+  3 заплановані але не імплементовані картки з `docs/planning/`:
+  1. **DC-1 (часткове закриття) — `chore(deps): drop idb-keyval (apps/web)`.**
+     Видалено `idb-keyval` із `apps/web/package.json` (єдиний підтверджено-
+     unused dep із трійки DC-1; `apps/web/src/shared/lib/api/queryClientPersister.ts`
+     уже мав fall-through localStorage-шлях, бо IndexedDB-варіант не був
+     wired через `persistQueryClient` callsite). Дві інші DC-1-deps
+     (`@fontsource-variable/dm-sans` у apps/web, `@sergeant/shared` у
+     packages/openclaw-plugin) лишилися на follow-up — згадані у DC-1b
+     branch у `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md`
+     status block.
+
+  2. **HR-1 — `refactor(server): migrate requireAnthropicKey to env.X +
+canonical vi.stubEnv test-pattern`.** Перевів `apps/server/src/http/requireAnthropicKey.ts`
+     з `process.env["ANTHROPIC_API_KEY"]` на `env.ANTHROPIC_API_KEY`
+     (через `import { env } from "../env.js"` re-export Zod-schema із
+     `env/env.ts`). Refactored `apps/server/src/routes/coach.route.test.ts`:
+     9 mutation-сайтів на `process.env` assignment collapsed у 2
+     `vi.stubEnv("ANTHROPIC_API_KEY", …)` + `vi.stubEnv("AI_QUOTA_DISABLED", "1")`
+     calls plus a `loadCreateApp()` async helper that calls `vi.resetModules()`
+     then dynamically imports `./../app.js` — це необхідно бо `env` із
+     `env/env.ts` парситься 1× на module-load і кешується в top-level
+     const-і, тому щоб тест бачив stubbed value, ми мусимо `vi.resetModules()`
+     перед `import("./../app.js")`. Цей pattern — canonical reference для
+     HR-2 (requireGroqKey) і HR-3 (posthogCapture × 2 reads). Bumped
+     `.tech-debt/env-single-source-budget.json` `98 → 95` (−1 actual migration - 2-read latent headroom collapsed). Verification: `coach.route.test.ts`
+     9/9 green, `pnpm lint:env-single-source` reports
+     `95/95 reads (no headroom; matches baseline)`.
+
+  3. **Backend-perf PR-02 — `refactor(server): drop process.env DI default
+in obs/tracing.ts`.** Видалено 3× `env: NodeJS.ProcessEnv = process.env`
+     default-param із `resolveServiceVersion` / `resolveTracingConfig` /
+     `startTracing` у `apps/server/src/obs/tracing.ts`. Функції тепер
+     вимагають explicit env-object типу `TracingEnv = Partial<Pick<Env,
+OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA
+| GITHUB_SHA>>`. Module-evaluation side-effect (`startTracing()` →
+     `startTracing(defaultEnv)`) передає `env` із `../env.js`. Конвертовано
+     bracket-index reads (`env["OTEL_*"]`) на property reads (`env.OTEL_*`).
+     Додав `GITHUB_SHA: z.string().optional()` у `apps/server/src/env/env.ts`
+     (інші Git-SHA env-vars — RAILWAY/VERCEL — уже були в Zod-схемі). Tests
+     `obs/tracing.test.ts` уже передавали typed object literals — без змін;
+     `Partial<Pick<…>>` тримає літерали `{}` / `{ OTEL_SERVICE_VERSION: "v1" }`
+     assignable. Bumped `.tech-debt/env-single-source-budget.json` `98 → 93`
+     (−3 dropped defaults + 2-read latent headroom collapsed). Acceptance
+     criteria з планинг-документа: `grep "process.env" tracing.ts` → 0
+     code lines (тільки коментар-згадки); tracing.test.ts 9/9 green;
+     typecheck green; lint:env-single-source `93/93 reads (no headroom)`.
+
+  Документація оновлена в тому ж циклі: `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md`
+  § DC-1 + § HR-1 отримали Status-блоки з посиланнями на PR-и;
+  `docs/planning/pr-plan-backend-perf-2026-05.md` § PR-02 отримав
+  Status-блок. Жодного code regression-у; CI gates (env-single-source,
+  typecheck, server lint, server tests крім 2 pre-existing billing.test.ts
+  failures, які існують і на `main`) — зелені.
 
 - **Docs: audit + sprint-розбивка прогавлених PR-серій (#6 / #8 / #15
   burndown + M10/M14/M19 hardening closure).** Систематична перевірка

@@ -102,6 +102,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 ## PR-02 — `refactor(server): drop process.env DI default in obs/tracing.ts`
 
 > **Статус 2026-05-14:** ✅ Закрито в PR #2840. Поточний план лише синхронізує dashboard-стан; код уже на `main`.
+>
+> **Shipped details:** Dropped 3× `env: NodeJS.ProcessEnv = process.env` default-params from `resolveServiceVersion` / `resolveTracingConfig` / `startTracing` у `apps/server/src/obs/tracing.ts`. Functions тепер вимагають explicit env-object типу `TracingEnv = Partial<Pick<Env, OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA | GITHUB_SHA>>`. Module-evaluation `startTracing()` тепер передає `env` із `../env.js` (Zod-validated). Додав `GITHUB_SHA` у `apps/server/src/env/env.ts`. Bracket-index reads (`env["OTEL_*"]`) перейшли на property reads (`env.OTEL_*`). Tests already passed typed object literals — no test churn. Bumped `.tech-debt/env-single-source-budget.json` `98 → 93`. Acceptance: `grep "process.env" tracing.ts` → 0 code lines; tracing.test.ts 9/9 green; typecheck green; lint:env-single-source `93/93 reads (no headroom; matches baseline)`.
 
 **Surface**
 
