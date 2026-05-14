@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -83,7 +87,7 @@ export function RoutineCalendarHero({
             <p className="text-2xl font-black text-text tabular-nums mt-0.5">
               {Math.round(completionRate.rate * 100)}%
             </p>
-            <p className="text-2xs text-subtle tabular-nums">
+            <p className="text-style-caption text-subtle tabular-nums">
               {completionRate.completed}/{completionRate.scheduled}
             </p>
           </div>

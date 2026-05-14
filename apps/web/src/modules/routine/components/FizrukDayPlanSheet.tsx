@@ -185,7 +185,7 @@ export function FizrukDayPlanSheet({
                       >
                         {tpl.name}
                       </p>
-                      <p className="text-2xs text-subtle mt-0.5">
+                      <p className="text-style-caption text-subtle mt-0.5">
                         {exCount}{" "}
                         {exCount === 1
                           ? "вправа"

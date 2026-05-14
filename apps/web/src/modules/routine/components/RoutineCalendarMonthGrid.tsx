@@ -95,7 +95,7 @@ export function RoutineCalendarMonthGrid({
       </div>
 
       <Card as="section" radius="lg" padding="md">
-        <div className="grid grid-cols-7 gap-1 text-center text-2xs font-semibold text-subtle mb-2">
+        <div className="grid grid-cols-7 gap-1 text-center text-style-caption font-semibold text-subtle mb-2">
           {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((d) => (
             <div key={d}>{d}</div>
           ))}
@@ -138,7 +138,7 @@ export function RoutineCalendarMonthGrid({
                   <span className="flex items-center gap-0.5" aria-hidden>
                     <span className={cn("w-1.5 h-1.5 rounded-full", C.dot)} />
                     {n > 1 && (
-                      <span className="text-2xs text-subtle tabular-nums">
+                      <span className="text-style-caption text-subtle tabular-nums">
                         {n}
                       </span>
                     )}
@@ -210,7 +210,7 @@ export function RoutineCalendarMonthGrid({
                   <span className="text-style-label flex-1 min-w-0 text-text truncate">
                     {e.title}
                   </span>
-                  <span className="text-2xs text-subtle shrink-0">
+                  <span className="text-style-caption text-subtle shrink-0">
                     {e.subtitle}
                   </span>
                   {e.habitId && (
@@ -235,7 +235,7 @@ export function RoutineCalendarMonthGrid({
           </div>
         )}
         {flatGroupedItems.length === 0 && (
-          <p className="mt-2 text-2xs text-subtle text-center">
+          <p className="mt-2 text-style-caption text-subtle text-center">
             Подій на цей день немає
           </p>
         )}

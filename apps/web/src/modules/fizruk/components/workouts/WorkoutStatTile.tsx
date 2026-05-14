@@ -1,4 +1,8 @@
 /**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/**
  * `<WorkoutStatTile>` — stat tile for the fizruk workout-summary sheet.
  *
  * Renders an uppercase eyebrow caption above a tabular-numbered value on
@@ -40,14 +44,14 @@ export function WorkoutStatTile({
     >
       {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
           Summary-sheet stat caption on the fizruk hero gradient —
-          `text-teal-600 dark:text-white/60` isn't expressed by the
+          `text-fizruk dark:text-white/60` isn't expressed by the
           SectionHeading tone scale (which targets neutral surfaces). */}
-      <div className="text-2xs uppercase tracking-wide text-teal-600 dark:text-white/60">
+      <div className="text-style-caption uppercase tracking-wide text-fizruk dark:text-white/60">
         {label}
       </div>
       <div
         className={cn(
-          "font-black text-teal-900 dark:text-white tabular-nums",
+          "font-black text-fizruk-strong dark:text-white tabular-nums",
           size === "lg" ? "text-lg" : "text-sm mt-0.5",
         )}
       >

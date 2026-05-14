@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
 import {
@@ -165,7 +169,7 @@ export function AssetsTxPickerView({
               return (
                 <div key={i}>
                   {suggested && !isLinked && (
-                    <div className="text-2xs font-semibold text-success px-1 pt-1">
+                    <div className="text-style-caption font-semibold text-success px-1 pt-1">
                       ↑ Поповнення картки
                     </div>
                   )}

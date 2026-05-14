@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import {
@@ -33,7 +37,7 @@ export function WeeklyVolumeChart({
             Тижневий обʼєм
           </span>
           <span
-            className="text-2xs text-subtle flex items-center gap-1.5"
+            className="text-style-caption text-subtle flex items-center gap-1.5"
             aria-hidden
           >
             <span
@@ -86,7 +90,7 @@ export function WeeklyVolumeChart({
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-text">Тижневий обʼєм</span>
         <span
-          className="text-2xs text-subtle flex items-center gap-1.5"
+          className="text-style-caption text-subtle flex items-center gap-1.5"
           aria-hidden
         >
           <span
@@ -157,7 +161,7 @@ export function WeeklyVolumeChart({
               x={x}
               y={h - 6}
               textAnchor="middle"
-              className="fill-muted text-2xs font-semibold"
+              className="fill-muted text-style-caption font-semibold"
             >
               {lab}
             </text>

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -154,7 +158,7 @@ export function CategoriesSection({
                       {c.emoji ? `${c.emoji} ` : ""}
                       {c.name}
                     </span>
-                    <span className="shrink-0 text-2xs text-subtle bg-panel border border-line rounded-full px-2 py-0.5">
+                    <span className="shrink-0 text-style-caption text-subtle bg-panel border border-line rounded-full px-2 py-0.5">
                       {habitCount}{" "}
                       {habitCount === 1
                         ? "звичка"

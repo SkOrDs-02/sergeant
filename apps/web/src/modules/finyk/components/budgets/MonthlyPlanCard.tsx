@@ -139,9 +139,13 @@ function MonthlyPlanCardComponent({
           {hasPlan ? (
             <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums items-baseline">
               <div />
-              <div className="text-2xs text-subtle text-right">План</div>
-              <div className="text-2xs text-subtle text-right">Факт</div>
-              <div className="text-2xs text-subtle text-right">Δ</div>
+              <div className="text-style-caption text-subtle text-right">
+                План
+              </div>
+              <div className="text-style-caption text-subtle text-right">
+                Факт
+              </div>
+              <div className="text-style-caption text-subtle text-right">Δ</div>
 
               <div className="text-xs text-muted">Дохід</div>
               <div className="text-right text-muted">
@@ -152,7 +156,7 @@ function MonthlyPlanCardComponent({
               </div>
               <div
                 className={cn(
-                  "text-right text-2xs",
+                  "text-right text-style-caption",
                   planIncome === 0
                     ? "text-subtle"
                     : incomeDelta >= 0
@@ -177,7 +181,7 @@ function MonthlyPlanCardComponent({
               </div>
               <div
                 className={cn(
-                  "text-right text-2xs",
+                  "text-right text-style-caption",
                   planExpense === 0
                     ? "text-subtle"
                     : expenseDelta > 0
@@ -202,7 +206,7 @@ function MonthlyPlanCardComponent({
               </div>
               <div
                 className={cn(
-                  "text-right text-2xs",
+                  "text-right text-style-caption",
                   planSavings === 0 && factSavings === 0
                     ? "text-subtle"
                     : savingsDelta >= 0

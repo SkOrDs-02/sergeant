@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { messages } from "@shared/i18n/uk";
 const SIZE = 96;
 const STROKE = 7;
@@ -60,7 +64,7 @@ export function DayProgressRing({
           </span>
         </div>
       </div>
-      <span className="text-2xs text-subtle font-medium group-hover:text-text transition-colors">
+      <span className="text-style-caption text-subtle font-medium group-hover:text-text transition-colors">
         {messages.routine.dayReport}
       </span>
     </button>

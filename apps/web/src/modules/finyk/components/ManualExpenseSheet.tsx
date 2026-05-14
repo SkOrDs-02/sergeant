@@ -453,7 +453,10 @@ export function ManualExpenseSheet({
                 }
               }}
             />
-            <span className="text-2xs text-subtle select-none" aria-hidden>
+            <span
+              className="text-style-caption text-subtle select-none"
+              aria-hidden
+            >
               Сказати
             </span>
           </div>

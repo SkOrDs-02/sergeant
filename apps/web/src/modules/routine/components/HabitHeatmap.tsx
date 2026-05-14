@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -292,7 +296,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
           <div
             role="group"
             aria-label="Легенда заповнення"
-            className="flex items-center gap-2 text-2xs text-subtle/70 select-none"
+            className="flex items-center gap-2 text-style-caption text-subtle/70 select-none"
           >
             <span>менше</span>
             {HEATMAP.levels.map((c, i) => (

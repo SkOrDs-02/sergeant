@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo, type DragEventHandler } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -65,7 +69,7 @@ export const HabitListItem = memo(function HabitListItem({
           <span className="text-style-label">
             {h.emoji} {h.name}
           </span>
-          <p className="text-2xs text-subtle mt-0.5">
+          <p className="text-style-caption text-subtle mt-0.5">
             {recLabel}
             {h.timeOfDay ? ` · ${h.timeOfDay}` : ""}
             {h.startDate ? ` · з ${h.startDate}` : ""}

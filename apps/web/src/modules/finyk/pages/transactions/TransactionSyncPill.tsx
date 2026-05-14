@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 
 export interface TransactionSyncPillProps {
@@ -69,7 +73,7 @@ export function TransactionSyncPill({
     : null;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap text-2xs">
+    <div className="flex items-center gap-2 flex-wrap text-style-caption">
       {syncState?.status !== "idle" && statusLabel && (
         <span
           className={cn(

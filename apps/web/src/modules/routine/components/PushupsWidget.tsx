@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { useRef, useState, useEffect, type ChangeEvent } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -63,7 +67,9 @@ export function PushupsWidget() {
 
         {recentHistory.some((d) => d.total > 0) && (
           <div className="mt-4 pt-3 border-t border-line">
-            <p className="text-2xs text-subtle mb-2">Останні 7 днів</p>
+            <p className="text-style-caption text-subtle mb-2">
+              Останні 7 днів
+            </p>
             <div className="flex items-end gap-1 h-10">
               {recentHistory.map((d) => {
                 const max = Math.max(...recentHistory.map((x) => x.total), 1);
@@ -84,7 +90,7 @@ export function PushupsWidget() {
                       }}
                       title={`${d.date}: ${d.total}`}
                     />
-                    <span className="text-micro text-subtle">
+                    <span className="text-style-caption text-subtle">
                       {new Date(`${d.date}T12:00:00`).toLocaleDateString(
                         "uk-UA",
                         { weekday: "narrow" },

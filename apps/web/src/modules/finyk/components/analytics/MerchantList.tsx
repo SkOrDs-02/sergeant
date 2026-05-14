@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -47,7 +51,7 @@ function MerchantListComponent({
                     style={{ width: `${barPct}%` }}
                   />
                 </div>
-                <span className="text-2xs text-subtle shrink-0">
+                <span className="text-style-caption text-subtle shrink-0">
                   {m.count} разів
                 </span>
               </div>

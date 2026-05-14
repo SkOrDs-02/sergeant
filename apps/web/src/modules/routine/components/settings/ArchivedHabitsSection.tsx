@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -29,7 +33,7 @@ export function ArchivedHabitsSection({
       <SectionHeading as="h2" size="sm">
         Архів
       </SectionHeading>
-      <p className="text-2xs text-subtle">
+      <p className="text-style-caption text-subtle">
         Не показуються в календарі; відмітки збережені.
       </p>
       <ul className="space-y-2">

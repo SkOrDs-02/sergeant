@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
 interface ChecklistItem {
   id: string;
   label: string;
@@ -64,7 +68,7 @@ export function WarmupCooldownChecklist({
       >
         <span>{title}</span>
         <span
-          className={`ml-2 text-2xs font-bold tabular-nums ${doneCount === total ? "text-success" : color.text}`}
+          className={`ml-2 text-style-caption font-bold tabular-nums ${doneCount === total ? "text-success" : color.text}`}
         >
           {doneCount}/{total}
         </span>

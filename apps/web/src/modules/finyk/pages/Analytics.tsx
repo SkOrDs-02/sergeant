@@ -384,19 +384,23 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
           ) : (
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center">
-                <div className="text-2xs text-subtle mb-1">Витрати</div>
+                <div className="text-style-caption text-subtle mb-1">
+                  Витрати
+                </div>
                 <div className="text-sm font-bold tabular-nums text-danger">
                   {summary.spent.toLocaleString("uk-UA")} ₴
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-2xs text-subtle mb-1">Дохід</div>
+                <div className="text-style-caption text-subtle mb-1">Дохід</div>
                 <div className="text-sm font-bold tabular-nums text-success-strong dark:text-success">
                   {summary.income.toLocaleString("uk-UA")} ₴
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-2xs text-subtle mb-1">Баланс</div>
+                <div className="text-style-caption text-subtle mb-1">
+                  Баланс
+                </div>
                 <div
                   className={cn(
                     "text-sm font-bold tabular-nums",
