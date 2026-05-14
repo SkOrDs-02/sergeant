@@ -8,6 +8,7 @@
       "riskTier": "P0",
       "telegramTopic": "revenue",
       "audienceTier": "P0",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_REVENUE",
@@ -26,6 +27,7 @@
       "riskTier": "P0",
       "telegramTopic": "revenue",
       "audienceTier": "P0",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_REVENUE",
@@ -45,6 +47,7 @@
       "riskTier": "P1",
       "telegramTopic": "incidents",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_INCIDENTS",
@@ -60,6 +63,7 @@
       "riskTier": "P1",
       "telegramTopic": "ops",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "RAILWAY_TOKEN",
         "RAILWAY_PROJECT_ID",
@@ -81,6 +85,7 @@
       "riskTier": "P1",
       "telegramTopic": "engineering",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "GITHUB_TOKEN",
         "TELEGRAM_ALERT_CHAT_ID",
@@ -97,6 +102,7 @@
       "riskTier": "P1",
       "telegramTopic": "revenue",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_REVENUE",
@@ -126,6 +132,7 @@
       "riskTier": "P2",
       "telegramTopic": "digest",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_DIGEST",
@@ -173,6 +180,7 @@
       "riskTier": "P2",
       "telegramTopic": "ops|incidents",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_OPS",
@@ -189,6 +197,7 @@
       "riskTier": "P2",
       "telegramTopic": "growth",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "POSTHOG_PROJECT_ID",
         "POSTHOG_API_KEY",
@@ -207,6 +216,7 @@
       "riskTier": "P2",
       "telegramTopic": "engineering",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "GITHUB_PAT",
         "TELEGRAM_ALERT_CHAT_ID",
@@ -223,6 +233,7 @@
       "riskTier": "P1",
       "telegramTopic": "incidents",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "GITHUB_PAT",
         "TELEGRAM_ALERT_CHAT_ID",
@@ -239,6 +250,7 @@
       "riskTier": "P1",
       "telegramTopic": "ops",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_OPS",
@@ -267,6 +279,7 @@
       "riskTier": "P2",
       "telegramTopic": "dm",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -282,6 +295,7 @@
       "riskTier": "P2",
       "telegramTopic": "dm",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -296,6 +310,7 @@
       "riskTier": "P2",
       "telegramTopic": "dm",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -311,6 +326,7 @@
       "riskTier": "P2",
       "telegramTopic": "dm",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -326,6 +342,7 @@
       "riskTier": "P2",
       "telegramTopic": "digest",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_DIGEST",
@@ -345,6 +362,7 @@
       "riskTier": "P2",
       "telegramTopic": "growth",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "POSTHOG_PROJECT_ID",
         "POSTHOG_API_KEY",
@@ -363,6 +381,7 @@
       "riskTier": "P2",
       "telegramTopic": "growth",
       "audienceTier": "P2",
+      "hmacSigned": false,
       "requiredEnv": [
         "POSTHOG_PROJECT_ID",
         "POSTHOG_API_KEY",
@@ -381,6 +400,7 @@
       "riskTier": "P0",
       "telegramTopic": "meta",
       "audienceTier": "P0",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "OPS_ALERT_EMAIL",
@@ -401,6 +421,7 @@
       "riskTier": "P0",
       "telegramTopic": "meta",
       "audienceTier": "P0",
+      "hmacSigned": false,
       "requiredEnv": [
         "TELEGRAM_ALERT_CHAT_ID",
         "OPS_ALERT_EMAIL",
@@ -420,6 +441,7 @@
       "riskTier": "P1",
       "telegramTopic": "dm",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -435,6 +457,7 @@
       "riskTier": "P1",
       "telegramTopic": "incidents",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -449,6 +472,7 @@
       "riskTier": "P1",
       "telegramTopic": "incidents",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
@@ -463,6 +487,7 @@
       "riskTier": "P1",
       "telegramTopic": "—",
       "audienceTier": "P1",
+      "hmacSigned": false,
       "requiredEnv": ["PUBLIC_API_BASE_URL", "INTERNAL_API_KEY"],
       "requiredCredentials": [],
       "notes": "Tier 3 escalation cron — */15 min → POST /api/internal/alerts/pending (olderThanMinutes=120, notYetSentryWarned=true, notSnoozed=true) → for each: POST /alerts/sentry-warn (server-side `Sentry.captureMessage(level=warning, tags.kind=unacked-alert-escalation)` + marks `sentry_warned_at`). No Telegram side-effect — Sentry dashboard + email is the off-channel signal when founder is offline. Migration 063 додає `sentry_warned_at` колонку."

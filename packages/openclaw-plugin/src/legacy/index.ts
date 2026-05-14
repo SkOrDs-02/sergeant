@@ -33,6 +33,7 @@ import {
   createAgentTurnEndHook,
 } from "./audit.js";
 import { createRoutingHook, type RoutingHookOptions } from "./routing-hook.js";
+import { createForgetMemoryTool } from "./tools/forget-memory.js";
 import { createRecallMemoryTool } from "./tools/recall-memory.js";
 import { createReadStrategyDocsTool } from "./tools/read-strategy-docs.js";
 import { createQueryAppDbTool } from "./tools/query-app-db.js";
@@ -231,6 +232,19 @@ export function createOpenClawPlugin(
     createRecallMemoryTool({
       http,
       founderUserId: config.founderUserId,
+    }),
+  );
+
+  // PR-23: /forget slash-команда. `founderTgUserId` обовʼязковий для
+  // server-side audit-row у `openclaw_invocations`. Якщо env-var-у не
+  // задано — використовуємо 0-fallback (server-side приймає, audit row
+  // буде з founderTgUserId=0; запит з DM bot напряму завжди матиме
+  // справжній number).
+  registerToolWithRegistry(
+    createForgetMemoryTool({
+      http,
+      founderUserId: config.founderUserId,
+      founderTgUserId: config.founderTgUserId ?? 0,
     }),
   );
 

@@ -669,6 +669,27 @@ export default [
       "sergeant-design/no-anthropic-key-in-logs": "error",
     },
   },
+  // PII-in-console guardrail (audit S2,
+  // `docs/audits/2026-05-13-security-observability-roast.md`). Forbids
+  // `console.{log,error,warn,info}` with a string / template literal
+  // matching `/email|phone|password|token|secret|auth/i` or an object
+  // literal whose (nested) keys match the same regex. Sentry's `console`
+  // integration, DevTools screen-share, and PostHog session-replay
+  // extensions all consume `console.*`, so PII leaks here propagate
+  // beyond the dev machine. Scoped to server + web production code
+  // (mirrors `no-anthropic-key-in-logs`); test files are exempt.
+  {
+    files: ["apps/server/src/**/*.{js,ts}", "apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/server/src/**/*.test.{js,ts}",
+      "apps/server/src/**/__tests__/**",
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-console-pii": "error",
+    },
+  },
   // Type-safety bypass guardrail — PR-6.E: forbid new `@ts-expect-error`,
   // `@ts-ignore`, `as any`, and `as unknown as X` in production code.
   // These patterns erode type safety and make refactoring dangerous.

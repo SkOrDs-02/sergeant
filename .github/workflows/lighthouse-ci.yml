@@ -1,0 +1,93 @@
+name: Lighthouse CI
+
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Closes T5 у `docs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 Тех-борг
+# та P1.2 у `docs/audits/2026-05-13-dead-code-hard-rules-roast.md` —
+# previously planned-only workflow. Runs `@lhci/cli` autorun against the
+# 5 top-level routes (`/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition`)
+# per `apps/web/lighthouserc.json` — first-pass `warn`-only assertions
+# (LCP ≤ 2000 ms, FCP ≤ 1500 ms, TBT ≤ 200 ms). Tightening LCP to
+# `error` at > 3000 ms is the follow-up tracked in T5 acceptance.
+# Triage: false-positive runs → download the `lighthouse-reports`
+# artifact, eyeball `lhr-*.html` median run; if flaky > 2x/тиждень,
+# bump `numberOfRuns` у `apps/web/lighthouserc.json`.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - ".nvmrc"
+      - ".github/workflows/lighthouse-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # `vite preview` (started by `lhci autorun` через `pnpm preview:lhci`)
+  # serves `apps/web/dist/`. Default `pnpm --filter @sergeant/web build`
+  # outputs to `../server/dist` for unified-mode serving (see
+  # `apps/web/vite.config.js`). VERCEL=1 keeps the bundle in
+  # `apps/web/dist/` so the preview server finds it. Mirrors the local
+  # recipe in `apps/web/AGENTS.md § Lighthouse CI`.
+  VERCEL: "1"
+
+jobs:
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      # Version is read from `packageManager` in root package.json.
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @sergeant/db-schema
+        # Same prebuild used in `ci.yml > critical-flow`,
+        # `extended-e2e.yml`, `visual-regression.yml` — the web bundle
+        # imports `@sergeant/db-schema/sqlite/migrations` (kvStoreBoot,
+        # sqlite preload) and Rolldown fails to resolve without dist/
+        # on disk. Cheap (~5 s, tsc only) and skips on remote-cache hit.
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Build @sergeant/web (VERCEL=1 → apps/web/dist/)
+        run: pnpm --filter @sergeant/web build
+
+      - name: Run Lighthouse CI
+        # `lhci autorun` boots `pnpm preview:lhci` (vite preview on
+        # 127.0.0.1:4173), runs 3 desktop runs per URL across 5 routes,
+        # asserts against `apps/web/lighthouserc.json`, and uploads
+        # HTML reports to `temporary-public-storage`. Output:
+        # `apps/web/.lighthouseci/` (uploaded as artifact below).
+        run: pnpm --filter @sergeant/web lighthouse
+
+      - name: Upload Lighthouse reports
+        if: always()
+        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: lighthouse-reports
+          path: apps/web/.lighthouseci/
+          retention-days: 14
+          if-no-files-found: warn

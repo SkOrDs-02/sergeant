@@ -1,6 +1,6 @@
 # Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (child session — P1.2 closed: `.github/workflows/lighthouse-ci.yml` shipped). **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Скоуп:** knip-результати, unused exports / deps, lifecycle-маркери (Hard
@@ -22,7 +22,7 @@
 1. **`pnpm dead-code:files` — exit 1**: 11 нових unused-файлів **без** lifecycle-маркерів (Hard Rule #10). Майже всі — нові barrel-`index.ts` (cloudSync, profile, log, billing, openclaw-plugin parity, codemod, db-schema/migrate umbrella). Одна з них — **той самий `db-schema/migrate/index.ts` umbrella**, який у [app-audit §1.1](./2026-05-07-app-audit.md) спричинив hard-blocker `node:fs` у клієнтському бандлі. Hotfix у package.json `exports` зняв публічний доступ, але **файл фізично залишився** і досі ловиться knip-ом.
 2. **`pnpm docs:check-links` — exit 1**: 53 broken internal links. **49 з них** — у `docs/audits/archive/**`: класичний archive-move bug (файли переїхали на один рівень глибше, але `../X` / `./X` посилання не бампнули depth). Решта 4 — у активних доках (`apps/web/AGENTS.md`, `docs/initiatives/0006-…md`, `docs/planning/sprint-roadmap-q2q3-2026.md`) — посилаються на ще-не-існуючий `.github/workflows/lighthouse-ci.yml` і на видалений `apps/web/src/shared/hooks/useHashRoute.ts`.
 
-PR закриває **усі 11 unmarked unused-файлів** (3 delete + 7 lifecycle-маркерів + 1 umbrella delete), **усі 53 broken-link-и** (4 active + 49 archive sed-fixes), плюс підчищає `knip.json` від redundant entry/ignoreDependencies (21 hint → 5). Outstanding (P1/P2) — sweep для unused deps + unused exports + missing `.github/workflows/lighthouse-ci.yml` workflow-файл.
+PR закриває **усі 11 unmarked unused-файлів** (3 delete + 7 lifecycle-маркерів + 1 umbrella delete), **усі 53 broken-link-и** (4 active + 49 archive sed-fixes), плюс підчищає `knip.json` від redundant entry/ignoreDependencies (21 hint → 5). Outstanding (P1/P2) — sweep для unused deps + unused exports. P1.2 (missing `.github/workflows/lighthouse-ci.yml`) закрите окремою follow-up прожаркою — див. § P1.2 нижче.
 
 ## P0 — Closed у цьому PR
 
@@ -136,9 +136,22 @@ Unlisted dependencies (38)
 
 **Recommended action:** окремий `chore(deps): knip cleanup` PR — per-workspace перевірити кожен флаг, delete/move у correct workspace. Не змішувати з цим PR — ризик зламати CI matrix без локальної perevarki кожного package.
 
-### P1.2 — `.github/workflows/lighthouse-ci.yml` workflow-файл відсутній
+### P1.2 — `.github/workflows/lighthouse-ci.yml` workflow-файл відсутній — ✅ Closed
 
-Згадуваний у трьох активних доках (`apps/web/AGENTS.md`, `docs/planning/sprint-roadmap-q2q3-2026.md` § T5 і § Acceptance). Локальний `pnpm lighthouse` працює через `@lhci/cli`. CI-кроку немає → T5 gate не fail-stop у CI; documentation описує його як «shipped». В цьому PR посилання знесено в code-mentions; **залишається задача** залендити workflow-файл (треба додати `.github/workflows/lighthouse-ci.yml` з `pull_request` тригером + path-filter `apps/web/**`). Без цього `Lighthouse CI` тільки claim — не reality.
+**Контекст:** Workflow згадувався у трьох активних доках (`apps/web/AGENTS.md`, `docs/planning/sprint-roadmap-q2q3-2026.md` § T5, root `AGENTS.md` § Performance budgets), але файл фізично був відсутній — `Lighthouse CI` був claim без reality, локальний `pnpm --filter @sergeant/web lighthouse` працював лише через `@lhci/cli` як devDep.
+
+**Дія (PR child-session, 2026-05-13):** додано `.github/workflows/lighthouse-ci.yml` з:
+
+- Trigger: `pull_request` на `main` + `workflow_dispatch` (path-filter `apps/web/**`, `packages/**`, `pnpm-lock.yaml`, `.nvmrc`, сам workflow).
+- Runner: `ubuntu-latest`, Node з `.nvmrc` (20.20.2), `pnpm@9.15.1` через `packageManager` поле + `--frozen-lockfile`.
+- Build chain: `pnpm --filter @sergeant/db-schema build` (Rolldown resolve для `kvStoreBoot` / sqlite preload) → `VERCEL=1 pnpm --filter @sergeant/web build` (тримає bundle у `apps/web/dist/` для `vite preview`).
+- LHCI: `pnpm --filter @sergeant/web lighthouse` (autorun читає `apps/web/lighthouserc.json` — 5 routes × 3 runs, warn-only assertions).
+- Artifacts: `apps/web/.lighthouseci/` → `lighthouse-reports` (retention 14 днів).
+- Status check name: `Lighthouse CI` (workflow + job name матчаться).
+
+**Verification:** `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` локально зелені; `pnpm docs:check-links` ловить newly-fixed link references на існуючий workflow-файл.
+
+**Outstanding follow-up (поза скоупом цього item):** baseline tightening — собрати ≥ 2 PR-runs у `temporary-public-storage`, потім підняти LCP `warn` → `error` на 3000 ms (acceptance criterion #2 у sprint-roadmap T5). Branch-protection flip на `required` — manual в settings після tightening PR-а.
 
 ### P1.3 — 77 unused exports + 51 duplicate exports (з 2026-05-05 audit)
 
@@ -190,7 +203,11 @@ Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`Log
 - **Side-quest 3** — 2 newly-broken internal links after `tools/console → tools/openclaw` rename ([PR #2573](https://github.com/Skords-01/Sergeant/pull/2573)).
 - **Side-quest 4** — `.agents/skills-lock.json` SHA hash regeneration after `sergeant-start-here` skill body edit on main.
 
-**Outstanding (≈5 items, виношу у наступну прожарку):** P1.1 (knip deps sweep), P1.2 (lighthouse-ci.yml workflow), P1.3 (77 unused exports + 51 duplicates), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports), P1.6 (AuthPage re-decomposition — re-wire 7 helpers OR delete 637 LOC).
+**Закрито у follow-up PR (1 item):**
+
+- **P1.2** — `.github/workflows/lighthouse-ci.yml` додано (child Devin session, 2026-05-13). `Lighthouse CI` тепер реальний CI-крок: pull_request на `master` + workflow_dispatch, артефакт `lighthouse-reports` з retention 14 днів. Tightening LCP → `error` 3000 ms залишається baseline-gathered follow-up у T5.
+
+**Outstanding (≈5 items, виношу у наступну прожарку):** P1.1 (knip deps sweep), P1.3 (77 unused exports + 51 duplicates), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports), P1.6 (AuthPage re-decomposition — re-wire 7 helpers OR delete 637 LOC).
 
 ## Verification matrix
 

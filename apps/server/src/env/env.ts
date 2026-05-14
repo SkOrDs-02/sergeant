@@ -605,6 +605,30 @@ const envSchema = z.object({
   // ── Internal / machine-to-machine ──────────────────────────────────
   /** Bearer token for `/api/internal/*` (n8n workflows). */
   INTERNAL_API_KEY: stringWithDefault(""),
+  /**
+   * HMAC-SHA256 shared secret for `/api/internal/*` webhook signing
+   * (PR-48 follow-up). n8n side computes
+   * `hex(hmac_sha256(secret, "<timestamp>.<rawBody>"))` and sends it in
+   * the `X-Signature` header alongside `X-Timestamp` (UNIX seconds).
+   * Server verifies both. Empty string disables the feature (bearer-only).
+   */
+  WEBHOOK_HMAC_SECRET: stringWithDefault(""),
+  /**
+   * Enforce HMAC signatures on `/api/internal/*`. Default `false` ships a
+   * 30-day grace window: server logs `webhook_hmac_mismatch` (warn) but
+   * still accepts the request, so n8n workflows can be rolled out one at
+   * a time. Flip to `true` once the manifest reports `hmac_signed: true`
+   * for all 17 wired workflows.
+   */
+  WEBHOOK_HMAC_REQUIRED: boolFromEnv(false),
+  /**
+   * Replay-window in seconds — requests with `X-Timestamp` older than
+   * (now - WEBHOOK_HMAC_TS_TOLERANCE_SEC) or further in the future
+   * than that window are rejected when WEBHOOK_HMAC_REQUIRED=true (and
+   * warn-logged otherwise). 5min is the OWASP-recommended default and
+   * matches Stripe / GitHub / Slack webhook signatures.
+   */
+  WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
   /** Monobank user-token (legacy single-tenant integration; webhook prefers `/api/mono/connect`). */
   MONO_TOKEN: stringWithDefault(""),
 

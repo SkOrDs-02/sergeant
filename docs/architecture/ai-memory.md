@@ -35,6 +35,62 @@ producer-callsite                            BullMQ queue                worker
 
 Worker idempotency: BullMQ jobId = `${userId}:${source}:${sourceRef}`. На повторний enqueue (webhook retry, backfill resume) одна job у Redis-і — duplicate в `ai_memories` запобігається UNIQUE-індексом `(user_id, source, source_ref) WHERE source_ref IS NOT NULL`.
 
+## Retry, DLQ + observability
+
+`ai-memory-ingest` BullMQ-queue має retry-with-exponential-backoff (`AI_MEMORY_INGEST_ATTEMPTS=5`, `backoff.delay=30s`, sumарно ~2.5h coverage для Voyage incident-у 1–2h). [`isRetryableIngestError`](../../apps/server/src/modules/ai-memory/ingestQueue.ts) класифікує:
+
+- **Retryable** — Voyage 429, 5xx, network/abort/timeout. BullMQ scheduling-ить наступну спробу з exponential-backoff.
+- **Non-retryable** — `MissingVoyageApiKeyError` (manual fix), Voyage 4xx (квота/auth). Повторна спроба нічого не змінить.
+
+### Dead-letter queue
+
+Permanent-fail jobs пишуться у [`ai_memory_ingest_failed`](../../apps/server/src/migrations/068_ai_memory_ingest_failed.sql) (migration 068) у двох випадках:
+
+1. **Non-retryable error** — `processMemoryIngestJob` ловить, log + `recordIngestDlq()`.
+2. **Retries-exhausted** — BullMQ emit-ить `failed`-event після `attemptsMade >= AI_MEMORY_INGEST_ATTEMPTS`; worker.on("failed") handler пише у DLQ.
+
+DLQ-row — `(user_id, source, source_ref, payload_json, error_msg, attempts, last_attempt_at, replayed_at, replay_count)`. Partial-UNIQUE `(user_id, source, source_ref) WHERE source_ref IS NOT NULL AND replayed_at IS NULL` гарантує idempotent INSERT — повторне permanent-fail тієї ж job-и bump-ить `attempts/last_attempt_at`, не плодить дублі.
+
+Sentry warning на DLQ-write шле `error_signature='ai-memory-ingest-dlq'` (routing-ключ для n8n alert-dedup, WF-22/WF-98), rate-limited 1 alert/хв per process (anti-spam при Voyage incident-і коли 100s падінь за секунди).
+
+### Replay tooling
+
+Operator workflow після fix-у downstream-bug-у:
+
+```bash
+# 1. Подивитися що у DLQ (read-only)
+pnpm replay:dlq --source=finyk --since='2026-05-13' --list-only
+
+# 2. Dry-run — побачити які rows replay-нуться
+pnpm replay:dlq --source=finyk --since='2026-05-13'
+
+# 3. Execute — actually re-enqueue (повторно проходить gating + budget guard)
+pnpm replay:dlq --source=finyk --since='2026-05-13' --execute
+
+# Або точкове по ID-ах
+pnpm replay:dlq --ids=42,43,44 --execute
+```
+
+API endpoint: `POST /api/internal/ai-memory-dlq/{list,replay}` (bearer-auth, `INTERNAL_API_KEY`). Replay-callsite викликає `enqueueMemoryIngest()` → BullMQ → той самий worker. Тобто replay повторно проходить `AI_MEMORY_ENABLED` / per-source gating / Voyage budget — rate-limit-friendly.
+
+### Metrics
+
+| Signal                                      | Help                             |
+| ------------------------------------------- | -------------------------------- | -------- | -------------- | -------------------- | -------------------------------------------------------------- |
+| `ai_memory_ingest_enqueued_total{mode}`     | `queued                          | fallback | enqueue_error  | disabled             | source_disabled`.                                              |
+| `ai_memory_ingest_processed_total{outcome}` | `ok                              | retry    | permanent_fail | dlq                  | skipped`. `dlq`counted IN ADDITION to`permanent_fail`/`retry`. |
+| `ai_memory_ingest_duration_ms{outcome}`     | Histogram per-job duration (мс). |
+| `ai_memory_ingest_queue_depth{status}`      | Gauge `waiting                   | active   | delayed        | failed`, polled 30s. |
+
+DLQ-row count поки не expose-ється як gauge — operator SQL-ить безпосередньо:
+
+```sql
+SELECT source, COUNT(*) AS active_failures
+  FROM ai_memory_ingest_failed
+ WHERE replayed_at IS NULL
+ GROUP BY source;
+```
+
 ## Backfill з `tg_topic_archive` (PR-21 follow-up)
 
 ### Motivation

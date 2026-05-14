@@ -226,6 +226,26 @@ export async function executeOpenclawStatusCommand(
     };
   }
 
+  if (parsed.subcommand === "whois") {
+    // `/openclaw whois <...>` обробляється окремим runner-ом
+    // (`whois-runner.ts`). Handler-shim має диспетчити до нього раніше
+    // — цей блок — defensive: якщо callsite забув dispatch, повертаємо
+    // help-card замість падіння. Audit ще не відкритий, тому жодних
+    // open/finalize у цьому короткому шляху.
+    emitBreadcrumb({
+      category: "openclaw.status",
+      message: "openclaw.whois.dispatch_miss",
+      level: "warning",
+      data: { rawArgument: parsed.rawArgument },
+    });
+    return {
+      reply: OPENCLAW_HELP_TEXT,
+      subcommand: "help",
+      invocationId: null,
+      ok: false,
+    };
+  }
+
   // === status — main path ============================================
   const userMessage = `/openclaw ${parsed.rawArgument || "status"}`.trim();
 
