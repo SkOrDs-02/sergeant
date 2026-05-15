@@ -65,16 +65,19 @@
 
 | PR | Розмір | Статус | Зміст |
 |---|---|---|---|
-| **PR-0** | XS | ✅ | `--fizruk` hue change `#14b8a6 → #0e7490` (teal-500 → cyan-700) |
-| **PR-1** | M | 🔄 цей PR | Foundation tokens v2 namespace (mesh, shadows, radii, HC overrides) + cyan палітра + governance doc |
-| PR-2 | S | ⏳ | `@fontsource-variable/manrope` + `@fontsource/jetbrains-mono` self-hosted; Tailwind fontFamily |
-| PR-3 | M | ⏳ | Audit & extend Lucide-style Icon registry; emoji → SVG у navigation/headers |
-| PR-4 | M | ⏳ | Card + Button + Badge + FAB — glass treatment, primary → ink-strong invert, FAB module-aware |
-| PR-5 | M | ⏳ | New `MeshBackground.tsx`, HubHeader styling, HubBottomNav floating glass pill |
-| PR-6 | M | ⏳ | Module shells × 4 → wrap у MeshBackground (всередині `ModuleAccentProvider`) |
-| PR-7a | M | ⏳ | `AIPill.tsx` + `InsightCard.tsx` + `useInsightDismissal` hook + типи `Insight` (Zod) |
-| PR-7b | M | ⏳ | `ChatSheet.tsx` як modal-route + insight wiring |
-| PR-8 | M | ⏳ | Per-module page polish (Overview/Analytics/Transactions/Workout) + bundle-size gate |
+| **PR-0** | XS | ✅ [#2902](https://github.com/Skords-01/Sergeant/pull/2902) | `--fizruk` hue change `#14b8a6 → #0e7490` (teal-500 → cyan-700) |
+| **PR-1** | M | ✅ [#2903](https://github.com/Skords-01/Sergeant/pull/2903) | Foundation tokens v2 namespace (mesh, shadows, radii, HC overrides) + cyan палітра + governance doc |
+| PR-2 | S | ✅ [#2904](https://github.com/Skords-01/Sergeant/pull/2904) | `@fontsource-variable/manrope` + `@fontsource-variable/jetbrains-mono` self-hosted; Tailwind fontFamily |
+| PR-3 | M | ✅ [#2905](https://github.com/Skords-01/Sergeant/pull/2905) | Audit & extend Lucide-style Icon registry (22 нових icons) |
+| PR-4 | M | ✅ [#2906](https://github.com/Skords-01/Sergeant/pull/2906) | Card glass + Button primary-ink + FAB v2 gradients (opt-in variants) |
+| PR-5 | M | ✅ [#2907](https://github.com/Skords-01/Sergeant/pull/2907) | New `MeshBackground.tsx`, HubHeader icon-radius, HubBottomNav floating glass pill |
+| PR-6 | M | ✅ [#2908](https://github.com/Skords-01/Sergeant/pull/2908) | Module shells × 4 → wrap у MeshBackground (ModuleShell + 3 *App.tsx) |
+| PR-7a | M | ✅ [#2909](https://github.com/Skords-01/Sergeant/pull/2909) | `AIPill.tsx` + `InsightCard.tsx` + `useInsightDismissal` hook |
+| Hotfix | XS | ✅ [#2910](https://github.com/Skords-01/Sergeant/pull/2910) | PR-7a `@core/*` alias → relative import (Vercel build unblock) |
+| PR-7b | M | 🔍 [#2911](https://github.com/Skords-01/Sergeant/pull/2911) | Wire AIPill into HubHomeView + 4 module shells |
+| **PR-8** | M | 🔄 цей PR | Storybook stories для AIPill/InsightCard + polish backlog doc + status closure |
+
+**Polish backlog** (under-page glass treatments, ChatSheet modal-route, insight backlog wiring, DM Sans retire) — див. [`redesign-v2-backlog.md`](./redesign-v2-backlog.md).
 
 ## HC contract — новий внесок (хендоф не покривав)
 
