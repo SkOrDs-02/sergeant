@@ -21,6 +21,8 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - Якщо змінюється форма відповіді — онови server-серіалізатор, `packages/api-client` і contract-тест в одному PR.
 - Використовуй `Europe/Kyiv` day boundaries; не деривуй day-ключі raw UTC ISO-нарізкою.
 - Better Auth user-id-и — непрозорі рядки.
+- **Білінг (ADR-0051):** якщо endpoint торкається subscription або pricing — `plan: 'free' | 'pro'` тільки. Plus tier видалено зі scope. Enum живе у `apps/server/src/modules/billing/`.
+- **Логування (Hard Rule #21):** нові поверхні логування мають відповідати Pino redaction policy — PII не потрапляє в логи. Перевірка: [`docs/governance/logging-redaction-policy.md`](../../../docs/governance/logging-redaction-policy.md).
 
 ## Розміщення
 

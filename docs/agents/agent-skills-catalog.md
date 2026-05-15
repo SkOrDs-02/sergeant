@@ -29,6 +29,7 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 | [`sergeant-data-and-migrations`](../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety | Generator usage, sequential numbering, two-phase DROP          |
 | [`sergeant-mobile-expo`](../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`        | Expo Router boundaries, NativeWind, MMKV, no DOM leakage       |
 | [`sergeant-hubchat`](../../.agents/skills/sergeant-hubchat/SKILL.md)                                   | HubChat tools and executors               | Tool/executor coordination, prompt cache, risky actions        |
+| [`sergeant-openclaw`](../../.agents/skills/sergeant-openclaw/SKILL.md) | OpenClaw Gateway, console agent, openclaw-plugin | Hard Rule #20, gateway config-as-code, PAT safety |
 | [`sergeant-monorepo-boundaries`](../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                 | App vs package placement, shared logic boundaries              |
 | [`sergeant-deploy-and-observability`](../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n    | Runtime verification, operator docs, release safety            |
 | [`better-auth-best-practices`](../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle    | Better Auth wiring, cross-site cookies, auth env safety        |
@@ -46,6 +47,8 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 | Port a screen from web to Expo           | `sergeant-feature-delivery` + `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` |
 | Change auth or cookies                   | `better-auth-best-practices` and only then the touched surface skill                  |
 | Ship env or deploy changes               | `sergeant-deploy-and-observability`                                                   |
+| OpenClaw Gateway or console agent change | `sergeant-openclaw`                                                                   |
+| OpenClaw + HubChat tool coordination     | `sergeant-openclaw` + `sergeant-hubchat`                                              |
 
 ## Deprecated -> Replacement
 

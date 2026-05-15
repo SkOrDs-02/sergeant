@@ -36,6 +36,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | SQL, схема, дизайн запитів, міграції, Railway DB rollout         | `sergeant-data-and-migrations`     |
 | Expo, React Native, mobile-shell, MMKV, deep-link-и              | `sergeant-mobile-expo`             |
 | HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
+| OpenClaw Gateway, console agent, openclaw-plugin                 | `sergeant-openclaw`                |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Railway/Vercel, n8n     | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |
