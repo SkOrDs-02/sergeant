@@ -1,6 +1,7 @@
 # ADR-0049: Auth vendor risk and migration plan (Better Auth → Auth.js / Lucia fallback)
 
 - **Status:** Accepted
+- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
 - **Supersedes:** —

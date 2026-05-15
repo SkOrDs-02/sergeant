@@ -1,6 +1,7 @@
 # ADR-0028: pgvector + Voyage embeddings for AI semantic memory
 
 - **Status:** Accepted
+- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-01 (PR3 retrieval landed: 2026-05-02)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
