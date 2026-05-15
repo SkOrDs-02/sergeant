@@ -3,13 +3,13 @@
   "version": 1,
   "generated_at": "2026-05-15",
   "counts": {
-    "adr": 56,
+    "adr": 57,
     "audit": 29,
     "hard-rule": 23,
     "initiative": 49,
     "playbook": 50,
     "pr": 213,
-    "skill": 13
+    "skill": 14
   },
   "nodes": [
     {
@@ -631,6 +631,18 @@
       "tier": "core",
       "meta": {
         "number": 59,
+        "last_validated": "2026-05-15"
+      }
+    },
+    {
+      "id": "adr:0060",
+      "type": "adr",
+      "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
+      "path": "docs/adr/0060-architecture-diagrams-automation-scope.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 60,
         "last_validated": "2026-05-15"
       }
     },
@@ -1341,7 +1353,7 @@
       "type": "initiative",
       "title": "0014 — Knowledge graph & auto-generated catalogs",
       "path": "docs/initiatives/0014-knowledge-graph-and-catalogs.md",
-      "status": "In progress (Phases 1–3 shipped; Phase 4–5 pending)",
+      "status": "In progress (Phases 1–4 shipped; Phase 5 pending)",
       "tier": "core",
       "meta": {
         "number": 14,
@@ -4388,6 +4400,16 @@
       }
     },
     {
+      "id": "skill:sergeant-openclaw",
+      "type": "skill",
+      "title": "sergeant-openclaw",
+      "path": ".agents/skills/sergeant-openclaw/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when working on the OpenClaw Gateway service, console agent, @sergeant/openclaw-plugin package, ops/openclaw config, or Telegram bot identity; UA: OpenClaw / gateway / console-agent / openclaw-plugin / Telegram-бот."
+      }
+    },
+    {
       "id": "skill:sergeant-review-and-merge",
       "type": "skill",
       "title": "sergeant-review-and-merge",
@@ -4791,6 +4813,11 @@
     },
     {
       "from": "adr:0059",
+      "to": "initiative:0014",
+      "type": "references"
+    },
+    {
+      "from": "adr:0060",
       "to": "initiative:0014",
       "type": "references"
     },
@@ -6536,6 +6563,16 @@
     },
     {
       "from": "skill:sergeant-deploy-and-observability",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-deploy-and-observability",
+      "to": "hard-rule:23",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-deploy-and-observability",
       "to": "pr:1848",
       "type": "touched-by"
     },
@@ -6543,6 +6580,11 @@
       "from": "skill:sergeant-feature-delivery",
       "to": "pr:1848",
       "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-hubchat",
+      "to": "hard-rule:20",
+      "type": "references"
     },
     {
       "from": "skill:sergeant-hubchat",
@@ -6556,6 +6598,16 @@
     },
     {
       "from": "skill:sergeant-monorepo-boundaries",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-openclaw",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-openclaw",
       "to": "pr:1848",
       "type": "touched-by"
     },
@@ -6586,6 +6638,11 @@
     },
     {
       "from": "skill:sergeant-server-api",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-server-api",
       "to": "pr:1848",
       "type": "touched-by"
     },
@@ -6593,6 +6650,11 @@
       "from": "skill:sergeant-start-here",
       "to": "pr:1848",
       "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-web-ui",
+      "to": "hard-rule:16",
+      "type": "references"
     },
     {
       "from": "skill:sergeant-web-ui",

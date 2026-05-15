@@ -1,7 +1,7 @@
 # 0014 — Knowledge graph & auto-generated catalogs
 
 > **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
-> **Status:** In progress (Phases 1–3 shipped; Phase 4–5 pending)
+> **Status:** In progress (Phases 1–4 shipped; Phase 5 pending)
 > **Priority:** P2
 > **Owner:** `@Skords-01`
 > **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
@@ -89,13 +89,26 @@
 
 **DoD:** обидва `--check` gates green; markdown coverage validates every workspace + surface.
 
-### Phase 4 — Living architecture diagrams (M)
+### Phase 4 — Workspace dependency diagram (S) — **shipped**
 
-**Files:** `scripts/docs/generate-architecture-diagrams.mjs`, `docs/architecture/diagrams/c3-*.md` (converted to auto-gen), `docs/architecture/diagrams/c4-*.md` (new), `docs/adr/0060-c4-diagram-automation-boundary.md`. C1/C2 без змін окрім lifecycle markers.
+**Deviation from original plan.** Initially planned full C3 + C4 automation. При підготовці імплементації виявилось:
 
-**Boundary:** C1 (system context) та C2 (containers) — human-narrative; C3 (component-per-service) — auto з turbo workspace edges + service-catalog; C4 (code-level) — auto з symbol catalog cross-refs.
-**Reuse:** `pnpm turbo run build --graph=<file>` JSON output (no new dep); symbol catalog з Phase 2.
-**DoD:** C3/C4 діаграми оновлюються при змінах import graph; `--check` валідує diff.
+1. Існуючі `c3-cloudsync.md` і `c3-chat-tool-use.md` — це **feature-flow діаграми з editorial narrative** (контракт tool_use, prompt-cache, тестування, дані-залежності), не component-per-service.
+2. `docs/architecture/diagrams/README.md` explicitly відкидає C4: «Не додавайте C4 рівень (Code) — TS типи й тестові снепшоти його замінюють».
+3. Жодна з existing діаграм не показує `@sergeant/*` workspace import-graph — це найочевидніший candidate для auto-gen.
+
+Переключились на single auto-gen artifact: **workspace dependency graph** як новий C3-level діаграму. Зберігаємо editorial value existing feature-flow діаграм, поважаємо «no C4» policy. ADR-0060 документує scope.
+
+**Files shipped:**
+
+- `scripts/docs/generate-architecture-diagrams.mjs` — читає `docs/governance/symbol-index.json` (Phase 2) → group `usedBy[]` file paths by workspace prefix → cross-workspace edges
+- `docs/architecture/diagrams/c3-workspaces.md` (auto-gen) — Mermaid LR-граф із node per workspace + edges; top-5 most-imported workspaces stats
+- `docs/adr/0060-architecture-diagrams-automation-scope.md` — rationale
+- `pnpm docs:check-architecture-diagrams` wired у lint chain
+
+**Existing C1/C2/C3-feature/flow діаграми untouched.**
+
+**DoD:** `--check` gate green; c3-workspaces.md показує current package graph + drift-detection при додаванні workspace.
 
 ### Phase 5 — Bidirectional PR ↔ doc backlinks (M)
 
