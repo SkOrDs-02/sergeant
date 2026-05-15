@@ -62,6 +62,18 @@ exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (e
     "50": "#fefdfb",
     "500": "#e4ccab",
   },
+  "cyan": {
+    "100": "#cffafe",
+    "200": "#a5f3fc",
+    "300": "#67e8f9",
+    "400": "#22d3ee",
+    "50": "#ecfeff",
+    "500": "#06b6d4",
+    "600": "#0891b2",
+    "700": "#0e7490",
+    "800": "#155e75",
+    "900": "#164e63",
+  },
   "emerald": {
     "100": "#d1fae5",
     "200": "#a7f3d0",
@@ -176,7 +188,7 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
   },
   "fizruk": {
     "default": "14 116 144",
-    "strong": "15 118 110",
+    "strong": "21 94 117",
   },
   "nutrition": {
     "default": "146 204 23",

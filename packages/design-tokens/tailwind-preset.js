@@ -152,6 +152,10 @@ const preset = {
           ...brandColors.emerald,
         },
         teal: brandColors.teal,
+        // Sergeant v2 fizruk accent palette (introduced 2026-05 redesign).
+        // Use `cyan-700` / `cyan-800` instead of `teal-500` / `teal-700`
+        // for fizruk module surfaces — see docs/design/redesign-v2.md.
+        cyan: brandColors.cyan,
         cream: brandColors.cream,
         coral: brandColors.coral,
         lime: brandColors.lime,
@@ -195,7 +199,7 @@ const preset = {
         // Each maps to its module's -strong tier so bars read ≥ 5:1 against
         // cream bg-bg. No new hex: reuses the -strong values declared above.
         "chart-finyk": "rgb(4 120 87 / <alpha-value>)", // emerald-700 — 5.23:1
-        "chart-fizruk": "rgb(15 118 110 / <alpha-value>)", // teal-700    — 5.22:1
+        "chart-fizruk": "rgb(21 94 117 / <alpha-value>)", // cyan-800     — 7.5:1 (v2 redesign: was teal-700 5.22:1)
         "chart-routine": "rgb(194 58 58 / <alpha-value>)", // coral-700   — 5.06:1
         "chart-nutrition": "rgb(70 98 18 / <alpha-value>)", // lime-800    — 6.64:1
 
@@ -222,15 +226,15 @@ const preset = {
           "soft-hover": "rgb(var(--c-finyk-soft-hover) / <alpha-value>)",
         },
 
-        /** Фізрук — Teal fitness tracker */
+        /** Фізрук — Cyan fitness tracker (v2 redesign 2026-05; was teal). */
         fizruk: {
           DEFAULT: moduleColors.fizruk.primary,
           secondary: moduleColors.fizruk.secondary,
           surface: moduleColors.fizruk.surface,
           accent: moduleColors.fizruk.accent,
-          hover: brandColors.teal[600],
-          strong: brandColors.teal[700],
-          ring: brandColors.teal[200],
+          hover: brandColors.cyan[600],
+          strong: brandColors.cyan[800],
+          ring: brandColors.cyan[200],
           // Theme-adaptive soft tint trio (Wave 1b).
           soft: "rgb(var(--c-fizruk-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-fizruk-soft-border) / <alpha-value>)",
@@ -321,6 +325,45 @@ const preset = {
         celebration: "rgb(var(--c-celebration) / <alpha-value>)",
         "streak-glow": "rgb(var(--c-streak-glow) / <alpha-value>)",
         xp: "rgb(var(--c-xp) / <alpha-value>)",
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SERGEANT v2 REDESIGN TOKENS (introduced 2026-05)
+        //
+        // Coexists with the legacy `bg` / `panel` / `text` / `muted` / `line`
+        // semantic tokens above. The v2 set introduces:
+        //
+        //   `ink`, `ink-strong`     — display & body ink tokens for the v2
+        //                             type ramp (Manrope-bound in PR-2).
+        //   `surface-glass*`        — translucent floating-glass surfaces
+        //                             used by v2 Card / Sheet / nav. Alpha
+        //                             is baked in by design intent; these
+        //                             utilities do NOT support the opacity
+        //                             modifier syntax (Hard Rule #8 — alpha
+        //                             must be on the registered scale).
+        //   `line-v2`, `line-strong-v2` — hairline / divider tokens tuned
+        //                             for the glass surfaces.
+        //
+        // Backed by CSS variables in `apps/web/src/styles/theme.css` (light
+        // + dark + HC) — see docs/design/redesign-v2.md.
+        // ═══════════════════════════════════════════════════════════════════
+        // Solid v2 ink tokens — triplets, support opacity modifier
+        // (`text-ink/80`, `bg-ink-strong`, etc.).
+        ink: "rgb(var(--c-ink) / <alpha-value>)",
+        "ink-strong": "rgb(var(--c-ink-strong) / <alpha-value>)",
+        "muted-v2": "rgb(var(--c-muted-v2) / <alpha-value>)",
+        "subtle-v2": "rgb(var(--c-subtle-v2) / <alpha-value>)",
+        // Background base — v2 mesh-gradient surface uses this as fallback.
+        "bg-base": "rgb(var(--c-bg-base) / <alpha-value>)",
+        // Alpha-baked tokens — glass surfaces & hairlines. These do NOT
+        // support the Tailwind opacity modifier (e.g. `bg-surface-glass/95`
+        // is invalid). Alpha is encoded in the CSS variable itself, tuned
+        // per theme (light glass = 0.82, dark glass = 0.06, HC = 1.0).
+        "surface-glass": "var(--surface-glass)",
+        "surface-strong-glass": "var(--surface-strong-glass)",
+        "surface-soft-glass": "var(--surface-soft-glass)",
+        "surface-line": "var(--surface-line)",
+        "line-v2": "var(--line-v2)",
+        "line-strong-v2": "var(--line-strong-v2)",
       },
 
       // ═══════════════════════════════════════════════════════════════════
@@ -368,6 +411,18 @@ const preset = {
         "4xl": "32px",
         "5xl": "40px",
         full: "9999px",
+        // Sergeant v2 redesign radius scale (2026-05). Distinct keys to
+        // avoid colliding with the existing CONTROL/CARD/HERO contract
+        // (where `2xl=16` / `3xl=24`). Use `rounded-r-{lg,xl,2xl}` on v2
+        // surfaces — see docs/design/redesign-v2.md § Radius.
+        //   r-md  (12px) — alias of CONTROL
+        //   r-lg  (14px) — primary cards (v2 spec)
+        //   r-xl  (18px) — metric cards
+        //   r-2xl (24px) — hero cards, sheets
+        "r-md": "12px",
+        "r-lg": "14px",
+        "r-xl": "18px",
+        "r-2xl": "24px",
       },
 
       // ═══════════════════════════════════════════════════════════════════
@@ -421,6 +476,27 @@ const preset = {
         // Enhanced focus ring
         "focus-ring":
           "0 0 0 var(--focus-ring-width, 3px) var(--focus-ring-color, rgba(16, 185, 129, 0.4))",
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SERGEANT v2 REDESIGN SHADOWS (introduced 2026-05)
+        //
+        // Glass-surface shadow recipes — paired with `surface-glass*`
+        // colors above. Each adds an inset top highlight (so the surface
+        // reads as a translucent floating element) plus an outer drop
+        // shadow tuned for the v2 ambient mesh background.
+        //
+        //   card-v2 — default v2 Card / panel
+        //   pill    — AIPill, floating tags, pill-shaped chips
+        //   nav     — HubBottomNav glass pill, AIPill backdrop
+        //   fab     — module FAB (per-module accent glow baked in)
+        //
+        // Backed by CSS variables in `apps/web/src/styles/theme.css` (light
+        // + dark + HC overrides). See docs/design/redesign-v2.md § Shadows.
+        // ═══════════════════════════════════════════════════════════════════
+        "card-v2": "var(--shadow-card-v2)",
+        pill: "var(--shadow-pill)",
+        nav: "var(--shadow-nav)",
+        fab: "var(--shadow-fab)",
       },
 
       // ═══════════════════════════════════════════════════════════════════
