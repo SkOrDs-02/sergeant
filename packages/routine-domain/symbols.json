@@ -1,0 +1,21 @@
+{
+  "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "package": "@sergeant/routine-domain",
+  "entryFile": "packages/routine-domain/src/index.ts",
+  "stats": {
+    "exportCount": 1,
+    "totalImporters": 49,
+    "deadExports": 0
+  },
+  "exports": [
+    {
+      "name": "*",
+      "kind": "re-export-star",
+      "fromFile": "./types.js",
+      "usedBy": [],
+      "usageCount": 0
+    }
+  ]
+}

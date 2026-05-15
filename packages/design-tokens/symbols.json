@@ -1,0 +1,163 @@
+{
+  "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "package": "@sergeant/design-tokens",
+  "entryFile": "packages/design-tokens/index.d.ts",
+  "stats": {
+    "exportCount": 21,
+    "totalImporters": 19,
+    "deadExports": 19
+  },
+  "exports": [
+    {
+      "name": "ModuleAccent",
+      "kind": "type",
+      "usedBy": [
+        "apps/web/src/core/hooks/useHubNavigation.ts",
+        "apps/web/src/core/hub/dashboard/moduleConfigs.tsx",
+        "apps/web/src/core/hub/search/searchTypes.ts",
+        "apps/web/src/core/lib/chatActions/types.cross.ts",
+        "apps/web/src/shared/components/layout/ModuleAccentProvider.tsx",
+        "apps/web/src/shared/components/layout/ModuleHeader.tsx",
+        "apps/web/src/shared/components/layout/ModuleShell.tsx",
+        "apps/web/src/shared/components/ui/Button.tsx",
+        "apps/web/src/shared/components/ui/EmptyState.tsx",
+        "apps/web/src/shared/components/ui/Skeleton.tsx",
+        "apps/web/src/shared/components/ui/Tabs.tsx",
+        "apps/web/src/shared/lib/api/queryKeys.ts",
+        "apps/web/src/shared/lib/modules/hubNav.ts",
+        "apps/web/src/shared/lib/modules/moduleLabels.ts",
+        "packages/insights/src/recommendations/types.ts",
+        "packages/shared/src/lib/recommendations.ts"
+      ],
+      "usageCount": 16
+    },
+    {
+      "name": "ModuleSoftAccent",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "StatusColor",
+      "kind": "type",
+      "usedBy": [
+        "apps/mobile/src/components/ui/Banner.tsx",
+        "apps/web/src/core/insights/TodayFocusCard.tsx",
+        "apps/web/src/shared/components/ui/Banner.tsx",
+        "packages/insights/src/recommendations/types.ts",
+        "packages/shared/src/lib/recommendations.ts"
+      ],
+      "usageCount": 5
+    },
+    {
+      "name": "SemanticTone",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "SemanticOrModuleTone",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "BrandColor",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "brandColors",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "chartPalette",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "chartPaletteList",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "moduleColors",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ModuleAccentRgb",
+      "kind": "interface",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "moduleAccentRgb",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "statusColors",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "statusHex",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ChartHexKey",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "chartHex",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ElevationLevel",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ElevationStep",
+      "kind": "interface",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "elevation",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ZTier",
+      "kind": "type",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "zTier",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    }
+  ]
+}

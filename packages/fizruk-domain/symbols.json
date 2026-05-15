@@ -1,0 +1,21 @@
+{
+  "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "package": "@sergeant/fizruk-domain",
+  "entryFile": "packages/fizruk-domain/src/index.ts",
+  "stats": {
+    "exportCount": 1,
+    "totalImporters": 58,
+    "deadExports": 0
+  },
+  "exports": [
+    {
+      "name": "*",
+      "kind": "re-export-star",
+      "fromFile": "./constants.js",
+      "usedBy": [],
+      "usageCount": 0
+    }
+  ]
+}

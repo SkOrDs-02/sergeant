@@ -1,0 +1,206 @@
+{
+  "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "package": "eslint-plugin-sergeant-design",
+  "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
+  "stats": {
+    "exportCount": 32,
+    "totalImporters": 0,
+    "deadExports": 31
+  },
+  "exports": [
+    {
+      "name": "TRACKED_STORAGE_KEY_NAMES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "TRACKED_STORAGE_KEY_VALUES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RAW_TRACKED_STORAGE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RAW_LOCAL_STORAGE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ALLOWED_TAILWIND_OPACITY_STEPS",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "TAILWIND_OPACITY_UTILITIES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "STRONG_BG_FAMILIES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "DEFAULT_NUMERIC_COLUMNS",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RQ_KEYS_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "DEFAULT_FACTORY_PATH",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_ANTHROPIC_KEY_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_CONSOLE_PII_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_STRICT_BYPASS_MESSAGES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "DEFAULT_FORBID_PATTERNS",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RAW_DARK_PALETTE_FAMILIES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RAW_DARK_PALETTE_UTILITIES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RAW_DARK_PALETTE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "FOCUS_COLOR_UTILITIES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "FOCUS_OUTLINE_ALLOWED_TAILS",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "PREFER_FOCUS_VISIBLE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_ROUNDED_LG_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_BARE_EMPTY_TEXT_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_CYRILLIC_JSX_LITERAL_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "PREFER_TEXT_STYLE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "TEXT_STYLE_MAPPINGS",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_ARBITRARY_TEXT_SIZE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_FLAT_SHARED_LIB_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_FLAT_SHARED_LIB_ALLOWED_TOP",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_HASH_ROUTER_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "NO_BARE_FIXED_INSET_MODAL_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "default",
+      "kind": "default-export",
+      "usedBy": [],
+      "usageCount": 0
+    }
+  ]
+}

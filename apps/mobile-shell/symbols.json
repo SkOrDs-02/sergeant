@@ -1,0 +1,62 @@
+{
+  "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "package": "@sergeant/mobile-shell",
+  "entryFile": "apps/mobile-shell/src/index.ts",
+  "stats": {
+    "exportCount": 8,
+    "totalImporters": 0,
+    "deadExports": 8
+  },
+  "exports": [
+    {
+      "name": "BACK_TO_EXIT_WINDOW_MS",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "SHELL_BACK_HINT_EVENT",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ALLOWED_DEEP_LINK_PATH_PREFIXES",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "isSafeShellPath",
+      "kind": "function",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "DEEP_LINK_HTTPS_HOSTS",
+      "kind": "const",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "InitNativeShellOptions",
+      "kind": "interface",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "parseDeepLink",
+      "kind": "function",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "initNativeShell",
+      "kind": "function",
+      "usedBy": [],
+      "usageCount": 0
+    }
+  ]
+}
