@@ -75,3 +75,39 @@ export interface WorkoutSummary {
   durationSec: number | null;
   isFinished: boolean;
 }
+
+/**
+ * Minimum-shape input for the strength/duration aggregators in
+ * `journal.ts`. Both the strict domain `Workout` and partial mobile
+ * shapes (e.g. `apps/mobile/src/modules/fizruk/hooks/useFizrukWorkouts.ts`
+ * `FizrukWorkout` with optional `exerciseId`/`nameUk`) are structurally
+ * assignable — the selectors only read `items[].type` and
+ * `items[].sets[].{weightKg,reps}`. Exported so consumers can type
+ * adapters explicitly instead of reaching for `as unknown as Workout`.
+ */
+export interface WorkoutSetLike {
+  weightKg?: unknown;
+  reps?: unknown;
+}
+
+export interface WorkoutItemLike {
+  type?: string;
+  sets?: ReadonlyArray<WorkoutSetLike | null | undefined>;
+}
+
+export interface WorkoutSummaryInput {
+  startedAt?: string;
+  endedAt?: string | null;
+  items?: ReadonlyArray<WorkoutItemLike | null | undefined>;
+}
+
+/**
+ * Minimum-shape input for `buildWorkoutJournalSections` (and the
+ * private grouping helpers it calls). Pass-through generic — the
+ * caller's wider workout type is preserved on the way out so that
+ * mobile render code keeps its concrete `FizrukWorkout` shape.
+ */
+export interface WorkoutForJournal {
+  id: string;
+  startedAt: string;
+}
