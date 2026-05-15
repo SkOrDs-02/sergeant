@@ -5,6 +5,8 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 @layer base {
+  /* DM Sans fallback — kept during v2 rollout. Retire decision in PR-8
+     once `pnpm size-limit` confirms Manrope alone fits the bundle budget. */
   @font-face {
     font-family: "DM Sans Fallback";
     src: local("Arial");
@@ -12,6 +14,20 @@
     descent-override: 26%;
     line-gap-override: 0%;
     size-adjust: 104%;
+  }
+
+  /* Manrope fallback — Sergeant v2 redesign (introduced 2026-05).
+     Metrics tuned via Capsize to match Manrope's x-height + cap-height
+     against `local("Arial")`, suppressing CLS during the font swap
+     window. `font-display: swap` is baked into the fontsource
+     `@font-face` blocks themselves. */
+  @font-face {
+    font-family: "Manrope Fallback";
+    src: local("Arial");
+    ascent-override: 99.42%;
+    descent-override: 31.31%;
+    line-gap-override: 0%;
+    size-adjust: 100.71%;
   }
 }
 

@@ -25,7 +25,15 @@ const preset = {
   theme: {
     extend: {
       fontFamily: {
+        // Sergeant v2 redesign (2026-05) — Manrope as primary; DM Sans
+        // Variable retained as fallback during PR-2..PR-8 rollout. The
+        // PR-8 polish pass decides whether to retire DM Sans entirely
+        // based on `pnpm size-limit` measurement. Fallback metrics live
+        // in `apps/web/src/styles/theme.css` (Manrope Fallback @font-face).
         sans: [
+          '"Manrope Variable"',
+          '"Manrope"',
+          '"Manrope Fallback"',
           '"DM Sans Variable"',
           '"DM Sans"',
           "system-ui",
@@ -33,13 +41,31 @@ const preset = {
           '"Segoe UI"',
           "sans-serif",
         ],
+        // Display ramp — same family, semantically used for hero/H1/H2
+        // stacks (weight 800 in v2 type ramp).
         display: [
+          '"Manrope Variable"',
+          '"Manrope"',
+          '"Manrope Fallback"',
           '"DM Sans Variable"',
           '"DM Sans"',
           "system-ui",
           "-apple-system",
           '"Segoe UI"',
           "sans-serif",
+        ],
+        // Mono — JetBrains Mono Variable for technical values (large
+        // hero numbers, money, code blocks). Variable so a single woff2
+        // covers weight 100..800 without per-weight files.
+        mono: [
+          '"JetBrains Mono Variable"',
+          '"JetBrains Mono"',
+          "ui-monospace",
+          "SFMono-Regular",
+          '"SF Mono"',
+          "Menlo",
+          "Consolas",
+          "monospace",
         ],
       },
       colors: {

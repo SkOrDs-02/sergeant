@@ -20,14 +20,22 @@
    `@import` statements MUST precede all other rules (CSS spec). The
    `@config` directive is a Tailwind-only hook processed away by PostCSS.
    ═══════════════════════════════════════════════════════════════════════ */
-/* DM Sans Variable — self-hosted, `font-display: swap` is baked into the
+/* Self-hosted variable fonts — `font-display: swap` is baked into the
    fontsource `@font-face` blocks, so there is no FOIT. Fonts are bundled
    into the Vite build at hashed paths and served from same-origin: no
-   external preconnect required, and a `<link rel="preload">` in
-   `apps/web/index.html` would have to know the hashed URL, which Vite
-   resolves only at build time. Fallback metrics for DM Sans live in
-   `styles/theme.css` → `@font-face "DM Sans Fallback"` (size-adjust +
+   external preconnect required.
+
+   Sergeant v2 redesign (introduced 2026-05) — Manrope is the primary
+   sans + display family; JetBrains Mono Variable is used for technical
+   values (hero numbers, code, monospace stats). DM Sans Variable is
+   retained during PR-2..PR-8 rollout as the fallback; PR-8 polish
+   decides whether to retire it based on `pnpm size-limit` measurement.
+
+   Fallback metrics for both DM Sans and Manrope live in
+   `styles/theme.css` → `@font-face "*Fallback"` (size-adjust +
    ascent/descent overrides) to suppress CLS during the swap window. */
+@import "@fontsource-variable/manrope" layer(base);
+@import "@fontsource-variable/jetbrains-mono" layer(base);
 @import "@fontsource-variable/dm-sans" layer(base);
 @import "./styles/animations.css" layer(base);
 @import "./styles/background.css" layer(base);
