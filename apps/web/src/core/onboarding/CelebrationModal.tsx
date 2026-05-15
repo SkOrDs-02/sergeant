@@ -106,10 +106,20 @@ export function CelebrationModal({
       if (navigator.vibrate) {
         navigator.vibrate([50, 30, 50]);
       }
+      // Капчуємо фактично-render-нуті `nextStepTip` + `primaryCtaLabel` у
+      // payload-і — щоб PostHog dashboard ловив silent-copy-regression
+      // (FTUX roast §2.9 → pr-plan-ftux PR-A). Розрахунок повторюється у
+      // render-фазі (`getFirstEntryCelebrationCopy(moduleId)` нижче) — це
+      // pure-функція над замороженим catalog-ом, тож додаткові алокації
+      // мізерні і відбуваються тільки на open-edge.
+      const { nextStepTip, primaryCtaLabel } =
+        getFirstEntryCelebrationCopy(moduleId);
       trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {
         ttvMs,
         source: "first_entry",
         moduleId,
+        tipVariant: nextStepTip,
+        ctaLabel: primaryCtaLabel,
       });
     }
   }, [open, ttvMs, moduleId]);
