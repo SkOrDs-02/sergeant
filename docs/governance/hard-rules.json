@@ -604,6 +604,127 @@
           "ref": "#23"
         }
       ]
+    },
+    {
+      "id": 24,
+      "title": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator",
+      "scope": [
+        "docs/governance/*.auto.json",
+        "docs/governance/symbol-index.json",
+        "docs/governance/knowledge-graph.json"
+      ],
+      "severity": "blocker",
+      "category": "lint-enforced-convention",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-graph"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-symbols"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-repo-map"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-service-catalog"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-architecture-diagrams"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-pr-ledger"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/adr/0058-knowledge-graph-schema.md"
+        },
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/0014-knowledge-graph-and-catalogs.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#24"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker",
+      "scope": [
+        "docs/governance/knowledge-graph.html",
+        "docs/governance/symbol-index.html",
+        "docs/architecture/diagrams/c3-workspaces.md",
+        "docs/open-work.md",
+        "docs/initiatives/follow-ups.md",
+        "docs/playbooks/INDEX.md"
+      ],
+      "severity": "blocker",
+      "category": "lint-enforced-convention",
+      "enforced_by": [
+        {
+          "kind": "convention",
+          "ref": "Every auto-gen artifact emits the AUTO-GENERATED marker; per-generator `--check` flags re-render and fail on diff."
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/adr/0058-knowledge-graph-schema.md"
+        },
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/0014-knowledge-graph-and-catalogs.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#25"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "title": "Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`",
+      "scope": [
+        "docs/adr/*.md",
+        "docs/initiatives/*.md",
+        "docs/playbooks/*.md",
+        "docs/governance/rules/*.md"
+      ],
+      "severity": "blocker",
+      "category": "lint-enforced-convention",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": ".github/workflows/pr-backlinks.yml (post-merge follow-up PR)"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-pr-ledger"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/adr/0061-pr-backlink-storage.md"
+        },
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/0014-knowledge-graph-and-catalogs.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#26"
+        }
+      ]
     }
   ]
 }

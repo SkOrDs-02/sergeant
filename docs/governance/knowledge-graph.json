@@ -5,7 +5,7 @@
   "counts": {
     "adr": 58,
     "audit": 31,
-    "hard-rule": 23,
+    "hard-rule": 26,
     "initiative": 49,
     "playbook": 50,
     "pr": 227,
@@ -1188,6 +1188,61 @@
         "category": "lint-enforced-convention",
         "scope": [
           "docs/**/archive/**/*.md"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:24",
+      "type": "hard-rule",
+      "title": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator",
+      "path": "docs/governance/hard-rules.json#24",
+      "tier": "core",
+      "meta": {
+        "number": 24,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "docs/governance/*.auto.json",
+          "docs/governance/symbol-index.json",
+          "docs/governance/knowledge-graph.json"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:25",
+      "type": "hard-rule",
+      "title": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker",
+      "path": "docs/governance/hard-rules.json#25",
+      "tier": "core",
+      "meta": {
+        "number": 25,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "docs/governance/knowledge-graph.html",
+          "docs/governance/symbol-index.html",
+          "docs/architecture/diagrams/c3-workspaces.md",
+          "docs/open-work.md",
+          "docs/initiatives/follow-ups.md",
+          "docs/playbooks/INDEX.md"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:26",
+      "type": "hard-rule",
+      "title": "Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`",
+      "path": "docs/governance/hard-rules.json#26",
+      "tier": "core",
+      "meta": {
+        "number": 26,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "docs/adr/*.md",
+          "docs/initiatives/*.md",
+          "docs/playbooks/*.md",
+          "docs/governance/rules/*.md"
         ]
       }
     },
@@ -4974,6 +5029,11 @@
     {
       "from": "adr:0058",
       "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0058",
+      "to": "hard-rule:24",
       "type": "references"
     },
     {

@@ -28,9 +28,10 @@
 <h1>Sergeant — Knowledge Graph</h1>
 <p class="auto-gen">Generated 2026-05-15 · schema v1 · do not edit by hand — regenerate via <code>pnpm docs:gen-graph</code>.</p>
 <div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>23</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>50</b></span> <span class="chip chip-pr">pr: <b>227</b></span> <span class="chip chip-skill">skill: <b>14</b></span></div>
+<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>26</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>50</b></span> <span class="chip chip-pr">pr: <b>222</b></span> <span class="chip chip-skill">skill: <b>14</b></span></div>
 
 <details open>
-<summary>Nodes (225 core)</summary>
+<summary>Nodes (228 core)</summary>
 <table>
 <thead><tr><th>Type</th><th>Id</th><th>Title</th><th>Status</th><th>Meta</th></tr></thead>
 <tbody>
@@ -139,6 +140,9 @@
 <tr><td>hard-rule</td><td><code>hard-rule:21</code></td><td><a href="../../docs/governance/hard-rules.json#21">Pino redaction policy enforced</a></td><td></td><td>number=21 · severity=blocker · category=blocker-invariant · scope=[&quot;apps/server/src/obs/logger.ts&quot;,&quot;apps/server/src/**&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:22</code></td><td><a href="../../docs/governance/hard-rules.json#22">Skill body security scan — no injection/exfiltration patterns in SKILL.md</a></td><td></td><td>number=22 · severity=blocker · category=lint-enforced-convention · scope=[&quot;.agents/skills/*/SKILL.md&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:23</code></td><td><a href="../../docs/governance/hard-rules.json#23">Archive-move depth integrity — no broken `../X` links in docs archives</a></td><td></td><td>number=23 · severity=blocker · category=lint-enforced-convention · scope=[&quot;docs/**/archive/**/*.md&quot;]</td></tr>
+<tr><td>hard-rule</td><td><code>hard-rule:24</code></td><td><a href="../../docs/governance/hard-rules.json#24">Catalogs registered in `knowledge-graph.json` must have a `--check` generator</a></td><td></td><td>number=24 · severity=blocker · category=lint-enforced-convention · scope=[&quot;docs/governance/*.auto.json&quot;,&quot;docs/governance/symbol-index.json&quot;,&quot;docs/governance/knowledge-graph.json&quot;]</td></tr>
+<tr><td>hard-rule</td><td><code>hard-rule:25</code></td><td><a href="../../docs/governance/hard-rules.json#25">Auto-generated docs must start with `&lt;!-- AUTO-GENERATED --&gt;` marker</a></td><td></td><td>number=25 · severity=blocker · category=lint-enforced-convention · scope=[&quot;docs/governance/knowledge-graph.html&quot;,&quot;docs/governance/symbol-index.html&quot;,&quot;docs/architecture/diagrams/c3-workspaces.md&quot;,&quot;docs/open-work.md&quot;,&quot;docs/initiatives/follow-ups.md&quot;,&quot;docs/playbooks/INDEX.md&quot;]</td></tr>
+<tr><td>hard-rule</td><td><code>hard-rule:26</code></td><td><a href="../../docs/governance/hard-rules.json#26">Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`</a></td><td></td><td>number=26 · severity=blocker · category=lint-enforced-convention · scope=[&quot;docs/adr/*.md&quot;,&quot;docs/initiatives/*.md&quot;,&quot;docs/playbooks/*.md&quot;,&quot;docs/governance/rules/*.md&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:3</code></td><td><a href="../../docs/governance/hard-rules.json#3">API contract: server response shape ↔ `api-client` types ↔ test</a></td><td></td><td>number=3 · severity=blocker · category=blocker-invariant · scope=[&quot;apps/server/src/modules/**&quot;,&quot;packages/api-client/src/**&quot;,&quot;apps/server/src/modules/**/*.test.ts&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:4</code></td><td><a href="../../docs/governance/hard-rules.json#4">SQL migrations: sequential, no gaps, two-phase for DROP</a></td><td></td><td>number=4 · severity=blocker · category=blocker-invariant · scope=[&quot;apps/server/src/migrations/**&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:5</code></td><td><a href="../../docs/governance/hard-rules.json#5">Conventional Commits: explicit scope enum</a></td><td></td><td>number=5 · severity=blocker · category=lint-enforced-convention · scope=[&quot;**/*&quot;]</td></tr>
@@ -265,6 +269,7 @@
 
 <details>
 <summary>Edges (466 total, first 500 core-to-core)</summary>
+<summary>Edges (458 total, first 500 core-to-core)</summary>
 <table>
 <thead><tr><th>From</th><th>Edge</th><th>To</th></tr></thead>
 <tbody>
@@ -283,6 +288,7 @@
 <tr><td><code>adr:0054</code></td><td>references</td><td><code>initiative:0006</code></td></tr>
 <tr><td><code>adr:0055</code></td><td>references</td><td><code>hard-rule:20</code></td></tr>
 <tr><td><code>adr:0058</code></td><td>references</td><td><code>hard-rule:18</code></td></tr>
+<tr><td><code>adr:0058</code></td><td>references</td><td><code>hard-rule:24</code></td></tr>
 <tr><td><code>adr:0058</code></td><td>references</td><td><code>initiative:0010</code></td></tr>
 <tr><td><code>adr:0058</code></td><td>references</td><td><code>initiative:0014</code></td></tr>
 <tr><td><code>adr:0059</code></td><td>references</td><td><code>initiative:0014</code></td></tr>

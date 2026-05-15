@@ -204,6 +204,9 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 21. **Pino redaction policy enforced**
 22. **Skill body security scan — no injection/exfiltration patterns in SKILL.md**
 23. **Archive-move depth integrity — no broken `../X` links in docs archives**
+24. **Catalogs registered in `knowledge-graph.json` must have a `--check` generator**
+25. **Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker**
+26. **Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`**
 
 Джерела істини:
 
