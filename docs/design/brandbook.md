@@ -60,9 +60,19 @@ Teal 100: #ccfbf1
 Teal 200: #99f6e4
 Teal 300: #5eead4
 Teal 400: #2dd4bf
-Teal 500: #14b8a6  (Fizruk primary)
+Teal 500: #14b8a6  (legacy Fizruk primary, retired у v2 redesign 2026-05)
 Teal 600: #0d9488
 Teal 700: #0f766e
+```
+
+Sergeant v2 редизайн (2026-05) виокремив окрему **Cyan**-палітру для
+Fizruk-модуля, аби disambiguate його від finyk-emerald spectrum:
+
+```text
+Cyan 50:  #ecfeff
+Cyan 200: #a5f3fc  (fizruk-soft v2)
+Cyan 700: #0e7490  (Fizruk primary — v2)
+Cyan 800: #155e75  (fizruk-strong v2 — WCAG AA companion)
 ```
 
 ### Кольори модулів
@@ -70,7 +80,7 @@ Teal 700: #0f766e
 | Модуль    | Primary | Surface | Сфера      |
 | --------- | ------- | ------- | ---------- |
 | Finyk     | #10b981 | #ecfdf5 | Фінанси    |
-| Fizruk    | #14b8a6 | #f0fdfa | Фітнес     |
+| Fizruk    | #0e7490 | #ecfeff | Фітнес     |
 | Routine   | #f97066 | #fff5f3 | Звички     |
 | Nutrition | #92cc17 | #f8fee7 | Харчування |
 
@@ -83,7 +93,7 @@ Bar-чарти у `HubReports` та майбутніх дашбордах вик
 | Токен             | Utility              | Hex       | Contrast vs `bg-bg` |
 | ----------------- | -------------------- | --------- | ------------------- |
 | `chart-finyk`     | `bg-chart-finyk`     | `#047857` | 5.23 : 1            |
-| `chart-fizruk`    | `bg-chart-fizruk`    | `#0f766e` | 5.22 : 1            |
+| `chart-fizruk`    | `bg-chart-fizruk`    | `#155e75` | 7.50 : 1            |
 | `chart-routine`   | `bg-chart-routine`   | `#c23a3a` | 5.06 : 1            |
 | `chart-nutrition` | `bg-chart-nutrition` | `#466212` | 6.64 : 1            |
 
@@ -112,7 +122,7 @@ Info:     #0ea5e9 (Sky 500)
 | danger    | `#ef4444`          | `bg-danger-strong` / `text-danger-strong` (red-700)        | `#b91c1c` | 6.17 : 1            | 6.47 : 1                 |
 | info      | `#0ea5e9`          | `bg-info-strong` / `text-info-strong` (sky-700)            | `#0369a1` | 5.66 : 1            | 5.93 : 1                 |
 | finyk     | `#10b981`          | `bg-finyk-strong` / `text-finyk-strong` (emerald-700)      | `#047857` | 5.23 : 1            | 5.48 : 1                 |
-| fizruk    | `#14b8a6`          | `bg-fizruk-strong` / `text-fizruk-strong` (teal-700)       | `#0f766e` | 5.22 : 1            | 5.47 : 1                 |
+| fizruk    | `#0e7490`          | `bg-fizruk-strong` / `text-fizruk-strong` (cyan-800)       | `#155e75` | 7.50 : 1            | 7.78 : 1                 |
 | routine   | `#f97066`          | `bg-routine-strong` / `text-routine-strong` (coral-700)    | `#c23a3a` | 5.06 : 1            | 5.30 : 1                 |
 | nutrition | `#92cc17`          | `bg-nutrition-strong` / `text-nutrition-strong` (lime-800) | `#466212` | 6.64 : 1            | 6.96 : 1                 |
 

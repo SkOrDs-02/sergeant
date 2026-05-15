@@ -14,7 +14,7 @@
 </ModuleShell>
 ```
 
-- `bg-module-accent` → активний module-колір (`finyk`=emerald-500, `fizruk`=teal-500, `routine`=coral-500, `nutrition`=lime-500).
+- `bg-module-accent` → активний module-колір (`finyk`=emerald-500, `fizruk`=cyan-700, `routine`=coral-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05) щоб disambiguate від finyk-emerald spectrum — див. [`redesign-v2.md`](./redesign-v2.md).
 - `bg-module-accent-strong` → WCAG-AA `-strong`-companion для фонів під `text-white` (clears 4.5 : 1).
 - Використовується у спільних компонентах, які живуть у 4 модулях — без hardcoded `bg-finyk` / `bg-fizruk`-лукапів.
 
@@ -25,7 +25,7 @@
 │  packages/design-tokens/tokens.js  (single source)     │
 │  └─ moduleAccentRgb = {                                │
 │       finyk:     { default: "16 185 129", strong: …}   │
-│       fizruk:    { default: "20 184 166", strong: …}   │
+│       fizruk:    { default: "14 116 144", strong: "21 94 117" }  │  ← cyan-700 / cyan-800 (v2 2026-05)
 │       routine:   { default: "249 112 102", strong: …}  │
 │       nutrition: { default: "146 204 23", strong: …}   │
 │     }                                                   │

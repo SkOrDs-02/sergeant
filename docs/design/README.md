@@ -1,9 +1,20 @@
 # Дизайн
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, аудити і tooling.
+
+## v2 redesign (травень 2026)
+
+Sergeant v2 редизайн (foundation merged 2026-05) додав parallel v2 token
+namespace (glass surfaces, mesh background, ink-strong, Manrope шрифт,
+22 нові Lucide icons, AIPill / InsightCard AI surfaces). Legacy `--c-*`
+токени лишилися активні — нічого не зламано. Документи:
+
+- [`redesign-v2.md`](./redesign-v2.md) — governance, adapter strategy, PR sequence (PR-0..PR-8)
+- [`redesign-v2-migration.md`](./redesign-v2-migration.md) — BEFORE/AFTER патерни для engineers
+- [`redesign-v2-backlog.md`](./redesign-v2-backlog.md) — under-page polish follow-ups + insights backlog
 
 ## Живий styleguide
 
