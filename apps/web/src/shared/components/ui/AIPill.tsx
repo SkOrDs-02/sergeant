@@ -52,7 +52,13 @@
 import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { Icon } from "@shared/components/ui/Icon";
-import { CHAT_PATH } from "@core/app/appPaths";
+// Relative import — tsconfig.json `paths` has no `@core/*` alias
+// (existing aliases: @shared/*, @assets/*, @finyk/*, @fizruk/*,
+// @routine/*, @nutrition/*). The PR-7a build broke prod because
+// `@core/app/appPaths` was an aspirational alias that doesn't exist;
+// using a relative path matches the established pattern (HubHomeView
+// itself imports `./appPaths`).
+import { CHAT_PATH } from "../../../core/app/appPaths";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
