@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { AnalyzePhotoSchema } from "../../http/schemas.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import {
@@ -46,9 +46,10 @@ export default async function handler(
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-  const parsed = validateBody(AnalyzePhotoSchema, req, res);
-  if (!parsed.ok) return;
-  const { image_base64, mime_type, locale } = parsed.data;
+  const { image_base64, mime_type, locale } = parseBody(
+    AnalyzePhotoSchema,
+    req,
+  );
 
   const b64 = image_base64.trim();
 
