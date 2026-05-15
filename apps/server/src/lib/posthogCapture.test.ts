@@ -5,6 +5,17 @@ import {
   externalHttpDurationMs,
 } from "../obs/metrics.js";
 
+// HR-3 (env-single-source Phase 2 burn-down, slídує HR-1 #2836 canonical
+// pattern). `posthogCapture.ts` тепер читає `env.POSTHOG_PROJECT_API_KEY`
+// та `env.POSTHOG_HOST` (Zod-validated, з `apps/server/src/env/env.ts`),
+// не raw `process.env`. Тести покладаються на те, що `env.ts` парсить
+// `process.env` при першому module-eval; у CI / стандартному dev shell
+// POSTHOG_* змінні не виставлені, тому `env.POSTHOG_PROJECT_API_KEY ===
+// undefined` → `outcome: "skipped"` path працює природньо. Pattern
+// `delete process.env["POSTHOG_*"]` у beforeEach колись був defensive
+// cleanup, але після міграції на `env.X` він став no-op (env.ts уже
+// закешував значення), тож прибраний.
+
 function makeFetch(
   impl: (url: string, init?: RequestInit) => Promise<Response>,
 ) {
@@ -26,8 +37,6 @@ describe("capturePostHogEvent — happy path", () => {
   beforeEach(() => {
     externalHttpRequestsTotal.reset();
     externalHttpDurationMs.reset();
-    delete process.env["POSTHOG_PROJECT_API_KEY"];
-    delete process.env["POSTHOG_HOST"];
   });
 
   it("POSTs JSON body to /capture/ with api_key, event, distinct_id, properties", async () => {
@@ -118,7 +127,6 @@ describe("capturePostHogEvent — outcome classification", () => {
   beforeEach(() => {
     externalHttpRequestsTotal.reset();
     externalHttpDurationMs.reset();
-    delete process.env["POSTHOG_PROJECT_API_KEY"];
   });
 
   it("returns skipped when POSTHOG_PROJECT_API_KEY is not configured", async () => {
