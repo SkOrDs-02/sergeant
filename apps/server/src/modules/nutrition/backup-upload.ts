@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Request, Response } from "express";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { BackupUploadSchema } from "../../http/schemas.js";
 import { safeBackupKeyFromToken } from "../../lib/backupKey.js";
 import { env } from "../../env/env.js";
@@ -35,9 +35,7 @@ export default async function handler(
     });
   }
 
-  const parsed = validateBody(BackupUploadSchema, req, res);
-  if (!parsed.ok) return;
-  const { blob } = parsed.data;
+  const { blob } = parseBody(BackupUploadSchema, req);
 
   // Keep it small-ish; this is encrypted client-side anyway. `z.object`
   // не міряє JSON.stringify-байти, тому розмір перевіряємо тут.
@@ -53,6 +51,9 @@ export default async function handler(
   await fs.mkdir(dir, { recursive: true });
   const key = safeBackupKeyFromToken(userId, req.headers["x-token"], secret);
   const file = path.join(dir, `nutrition-backup-${key}.json`);
+  // `key` — HMAC(userId, token, secret) у base64url, тому шлях детермінований
+  // і не дозволяє path-traversal; `dir` пінується у `.data`.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.writeFile(file, raw, "utf8");
 
   res.status(200).json({ ok: true, savedAt: Date.now() });

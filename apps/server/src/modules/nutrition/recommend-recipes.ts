@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { RecommendRecipesSchema } from "../../http/schemas.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import {
@@ -48,9 +48,10 @@ export default async function handler(
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-  const parsed = validateBody(RecommendRecipesSchema, req, res);
-  if (!parsed.ok) return;
-  const { pantry: pantryIn, preferences } = parsed.data;
+  const { pantry: pantryIn, preferences } = parseBody(
+    RecommendRecipesSchema,
+    req,
+  );
 
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");

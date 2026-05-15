@@ -183,16 +183,16 @@ describe("nutrition day-plan handler", () => {
     expect(plan["meals"]).toHaveLength(6);
   });
 
-  it("returns a validation response and skips Anthropic for invalid args", async () => {
-    const res = makeRes();
-
-    await handler(
-      makeReq({ regenerateMealType: "brunch", locale: "uk-UA" }),
-      res,
-    );
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toMatchObject({ error: "Некоректні дані запиту" });
+  it("throws ValidationError and skips Anthropic for invalid args", async () => {
+    await expect(
+      handler(
+        makeReq({ regenerateMealType: "brunch", locale: "uk-UA" }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 

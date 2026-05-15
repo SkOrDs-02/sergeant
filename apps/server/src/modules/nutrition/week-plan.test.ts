@@ -147,16 +147,16 @@ describe("week-plan handler", () => {
     });
   });
 
-  it("returns 400 for invalid pantry item without calling Anthropic", async () => {
-    const res = makeRes();
-
-    await handler(
-      makeReq({ pantry: [{ name: "x", qty: {} }], locale: "uk-UA" }),
-      res,
-    );
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toMatchObject({ error: "Некоректні дані запиту" });
+  it("throws ValidationError for invalid pantry item without calling Anthropic", async () => {
+    await expect(
+      handler(
+        makeReq({ pantry: [{ name: "x", qty: {} }], locale: "uk-UA" }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 

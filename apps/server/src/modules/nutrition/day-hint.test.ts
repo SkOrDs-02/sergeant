@@ -113,13 +113,13 @@ describe("nutrition day-hint handler", () => {
     expect(res.body).toEqual({ hint: "Не вдалося сформувати підказку." });
   });
 
-  it("returns a validation response and skips Anthropic for invalid args", async () => {
-    const res = makeRes();
-
-    await handler(makeReq({ locale: "u" }), res);
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toMatchObject({ error: "Некоректні дані запиту" });
+  it("throws ValidationError and skips Anthropic for invalid args", async () => {
+    await expect(
+      handler(makeReq({ locale: "u" }), makeRes()),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 

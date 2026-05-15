@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { ParsePantrySchema } from "../../http/schemas.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import {
@@ -45,9 +45,7 @@ export default async function handler(
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-  const parsed = validateBody(ParsePantrySchema, req, res);
-  if (!parsed.ok) return;
-  const { text: raw, locale } = parsed.data;
+  const { text: raw, locale } = parseBody(ParsePantrySchema, req);
 
   const payload = {
     model: "claude-sonnet-4-6",

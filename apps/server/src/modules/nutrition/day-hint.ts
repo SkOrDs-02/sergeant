@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { DayHintSchema } from "../../http/schemas.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import {
@@ -32,10 +32,8 @@ export default async function handler(
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-  const parsed = validateBody(DayHintSchema, req, res);
-  if (!parsed.ok) return;
   const { macros, targets, locale, hasMeals, hasAnyMacros, macroSources } =
-    parsed.data;
+    parseBody(DayHintSchema, req);
 
   const mRaw = macros || {};
   const m = {

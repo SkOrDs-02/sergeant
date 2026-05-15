@@ -199,21 +199,21 @@ describe("shopping-list handler", () => {
     });
   });
 
-  it("returns 400 for invalid oversized recipe payload", async () => {
-    const res = makeRes();
-
-    await handler(
-      makeReq({
-        recipes: [
-          { title: "x", ingredients: Array.from({ length: 51 }, () => "x") },
-        ],
-        locale: "uk-UA",
-      }),
-      res,
-    );
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toMatchObject({ error: "Некоректні дані запиту" });
+  it("throws ValidationError for invalid oversized recipe payload", async () => {
+    await expect(
+      handler(
+        makeReq({
+          recipes: [
+            { title: "x", ingredients: Array.from({ length: 51 }, () => "x") },
+          ],
+          locale: "uk-UA",
+        }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 

@@ -164,13 +164,13 @@ describe("recommend-recipes handler", () => {
     expect(res.body).toEqual({ recipes: [], rawText: "не json відповідь" });
   });
 
-  it("returns 400 for invalid request body without calling Anthropic", async () => {
-    const res = makeRes();
-
-    await handler(makeReq({ count: 999, locale: "uk-UA" }), res);
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toMatchObject({ error: "Некоректні дані запиту" });
+  it("throws ValidationError for invalid request body without calling Anthropic", async () => {
+    await expect(
+      handler(makeReq({ count: 999, locale: "uk-UA" }), makeRes()),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 
