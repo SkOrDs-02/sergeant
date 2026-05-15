@@ -37,7 +37,13 @@ export type ButtonVariant =
   | "finyk-soft"
   | "fizruk-soft"
   | "routine-soft"
-  | "nutrition-soft";
+  | "nutrition-soft"
+  // Sergeant v2 redesign (2026-05, PR-4). Inverted primary: `--ink-strong`
+  // fill (emerald-900 in light, white in dark) with `--c-bg-base` text.
+  // The v2 design intent — primary CTAs read as "pen ink on paper" rather
+  // than the saturated emerald that competes with module accents. Opt-in;
+  // existing `primary` callers unchanged.
+  | "primary-ink";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -78,6 +84,13 @@ const variants: Record<ButtonVariant, string> = {
     "bg-routine-surface text-routine-strong dark:bg-routine/15 dark:text-routine border border-routine-ring/50 dark:border-routine/30 hover:bg-coral-100 dark:hover:bg-routine/25 active:scale-[0.98]",
   "nutrition-soft":
     "bg-nutrition-soft text-nutrition-strong dark:bg-nutrition/15 dark:text-nutrition border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25 active:scale-[0.98]",
+
+  // Sergeant v2 inverted primary — see `ButtonVariant` JSDoc above.
+  // `bg-ink-strong` is emerald-900 in light + white in dark (HC: pure
+  // #000 / #fff). `text-bg-base` is the corresponding warm-cream / dark
+  // base, so the contrast inverts cleanly with the theme.
+  "primary-ink":
+    "bg-ink-strong text-bg-base shadow-sm hover:opacity-90 hover:shadow-glow active:opacity-80 active:scale-[0.98]",
 };
 
 // RADIUS — every Button size lives in the CONTROL tier (12 px, rounded-xl)
