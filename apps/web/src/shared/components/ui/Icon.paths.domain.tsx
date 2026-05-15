@@ -151,4 +151,65 @@ export const DOMAIN_PATHS: Record<string, ReactNode> = {
       <polyline points="14 17 21 17 21 10" />
     </>
   ),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SERGEANT v2 REDESIGN ICONS (2026-05, PR-3).
+  // Domain glyphs for transaction categories (briefcase/truck/coffee),
+  // fitness actions (run, play/pause), nutrition (egg), tools (pen, scanner).
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // `briefcase` — work / business transaction category.
+  briefcase: (
+    <>
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </>
+  ),
+  // `truck` — delivery / shipping category.
+  truck: (
+    <>
+      <path d="M8 6v6M15 6v6M2 12h19.6M18 18h3s.5-1.7.8-2.8.2-.8.2-1.2-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" />
+      <circle cx="7" cy="18" r="2" />
+      <path d="M9 18h5" />
+      <circle cx="16" cy="18" r="2" />
+    </>
+  ),
+  // `coffee` — coffee/cafe transaction category. Insights flag heavy
+  // coffee spend with this glyph.
+  coffee: (
+    <>
+      <path d="M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
+      <line x1="6" y1="1" x2="6" y2="4" />
+      <line x1="10" y1="1" x2="10" y2="4" />
+      <line x1="14" y1="1" x2="14" y2="4" />
+    </>
+  ),
+  // `run` — fitness / running activity (Fizruk module).
+  run: (
+    <>
+      <circle cx="14" cy="5" r="2" />
+      <path d="M6 20l3-5 4 1 2-4 4 3M9 9l2-2 3 1 2 3" />
+    </>
+  ),
+  // `pen` — edit / annotate (alternative to Lucide `edit-2`).
+  pen: <path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />,
+  // `egg` — nutrition: dairy/protein category.
+  egg: <path d="M12 3c-4 0-7 6-7 11a7 7 0 0 0 14 0c0-5-3-11-7-11z" />,
+  // `scanner` — barcode / photo scanner trigger (Nutrition module).
+  scanner: (
+    <>
+      <rect x="2" y="6" width="20" height="14" rx="3" />
+      <circle cx="12" cy="13" r="4" />
+      <path d="M9 6V3h6v3" />
+    </>
+  ),
+  // `play` — start workout / playback action (Fizruk module).
+  play: <polygon points="5 3 19 12 5 21 5 3" />,
+  // `pause` — pause workout / playback action (Fizruk module).
+  pause: (
+    <>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </>
+  ),
 };

@@ -108,4 +108,17 @@ export const CONTENT_PATHS: Record<string, ReactNode> = {
       <path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </>
   ),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SERGEANT v2 REDESIGN ICONS (2026-05, PR-3).
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // `book` — generic publication / journal / docs glyph. Used by Routine
+  // module (habit tracking) and educational content tiles.
+  book: (
+    <>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </>
+  ),
 };
