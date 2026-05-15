@@ -62,7 +62,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 > - **`lint-enforced-convention`** — стилістичне/процесне правило з механічним enforcement (ESLint, commitlint, governance-sync, freshness). Severity blocker, але enforcement — лінтер, не ран-тайм.
 > - **`active-initiative`** — правило з allowlist + дедлайном (див. лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; винятки трекаються окремо.
 >
-> Поточний розподіл (23 rule): 8 `blocker-invariant`, 13 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/governance/rules/`](./docs/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
+> Поточний розподіл (26 rule): 8 `blocker-invariant`, 16 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/governance/rules/`](./docs/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
 
 | #   | Rule                                                                                  | Category                   | Per-rule file                                                                                                          |
 | --- | ------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -83,6 +83,9 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | 21  | Pino redaction policy enforced                                                        | `blocker-invariant`        | [`21-pino-redaction-policy.md`](./docs/governance/rules/21-pino-redaction-policy.md)                                   |
 | 22  | Skill body security scan — no injection/exfiltration patterns in SKILL.md             | `lint-enforced-convention` | [`22-skill-body-security-scan.md`](./docs/governance/rules/22-skill-body-security-scan.md)                             |
 | 23  | Archive-move depth integrity — no broken `../X` links in docs archives                | `lint-enforced-convention` | [`23-archive-move-depth.md`](./docs/governance/rules/23-archive-move-depth.md)                                         |
+| 24  | Catalogs registered in `knowledge-graph.json` must have a `--check` generator         | `lint-enforced-convention` | [`24-catalog-check-generator.md`](./docs/governance/rules/24-catalog-check-generator.md)                               |
+| 25  | Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker                  | `lint-enforced-convention` | [`25-auto-generated-marker.md`](./docs/governance/rules/25-auto-generated-marker.md)                                   |
+| 26  | Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`            | `lint-enforced-convention` | [`26-pr-ledger-update-on-merge.md`](./docs/governance/rules/26-pr-ledger-update-on-merge.md)                           |
 
 ## Lint-enforced design conventions
 
