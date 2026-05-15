@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 49,
     "playbook": 50,
-    "pr": 222,
+    "pr": 227,
     "skill": 14
   },
   "nodes": [
@@ -3945,6 +3945,16 @@
       }
     },
     {
+      "id": "pr:2876",
+      "type": "pr",
+      "title": "PR #2876",
+      "tier": "extended",
+      "meta": {
+        "number": 2876,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2876"
+      }
+    },
+    {
       "id": "pr:2877",
       "type": "pr",
       "title": "PR #2877",
@@ -3952,6 +3962,16 @@
       "meta": {
         "number": 2877,
         "url": "https://github.com/Skords-01/Sergeant/pull/2877"
+      }
+    },
+    {
+      "id": "pr:2889",
+      "type": "pr",
+      "title": "PR #2889",
+      "tier": "extended",
+      "meta": {
+        "number": 2889,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2889"
       }
     },
     {
@@ -4002,6 +4022,36 @@
       "meta": {
         "number": 2895,
         "url": "https://github.com/Skords-01/Sergeant/pull/2895"
+      }
+    },
+    {
+      "id": "pr:2896",
+      "type": "pr",
+      "title": "PR #2896",
+      "tier": "extended",
+      "meta": {
+        "number": 2896,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2896"
+      }
+    },
+    {
+      "id": "pr:2898",
+      "type": "pr",
+      "title": "PR #2898",
+      "tier": "extended",
+      "meta": {
+        "number": 2898,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2898"
+      }
+    },
+    {
+      "id": "pr:2899",
+      "type": "pr",
+      "title": "PR #2899",
+      "tier": "extended",
+      "meta": {
+        "number": 2899,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2899"
       }
     },
     {
@@ -4992,14 +5042,34 @@
       "type": "references"
     },
     {
+      "from": "adr:0058",
+      "to": "initiative:0014",
+      "type": "references"
+    },
+    {
+      "from": "adr:0058",
+      "to": "pr:2876",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0059",
       "to": "initiative:0014",
       "type": "references"
     },
     {
+      "from": "adr:0059",
+      "to": "pr:2889",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0060",
       "to": "initiative:0014",
       "type": "references"
+    },
+    {
+      "from": "adr:0060",
+      "to": "pr:2898",
+      "type": "touched-by"
     },
     {
       "from": "adr:0061",
@@ -5025,6 +5095,11 @@
       "from": "adr:0061",
       "to": "initiative:0014",
       "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "pr:2899",
+      "type": "touched-by"
     },
     {
       "from": "audit:2026-05-02-doc-hygiene-audit",
@@ -6420,6 +6495,26 @@
       "from": "initiative:0014",
       "to": "hard-rule:6",
       "type": "references"
+    },
+    {
+      "from": "initiative:0014",
+      "to": "pr:2876",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0014",
+      "to": "pr:2896",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0014",
+      "to": "pr:2898",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0014",
+      "to": "pr:2899",
+      "type": "touched-by"
     },
     {
       "from": "initiative:stack-pulse-2026-05/00-overview",

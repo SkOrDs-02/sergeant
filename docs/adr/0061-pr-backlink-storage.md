@@ -106,3 +106,13 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 
 - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 5
 - [`docs/governance/schemas/pr-ledger.schema.json`](../governance/schemas/pr-ledger.schema.json)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+## Recent PRs
+
+| PR | Title | Merged |
+| --- | --- | --- |
+| [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) | 2026-05-15 |
+
+_Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

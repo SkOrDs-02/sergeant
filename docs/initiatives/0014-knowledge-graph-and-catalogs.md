@@ -176,3 +176,16 @@
 5. Diagram semantic diff: auto-gen C3 vs archived hand-drawn — semantic diff (ноди + ребра).
 6. Full `pnpm lint` має бути зелений з усіма 4 новими gates.
 7. Performance: `pnpm docs:gen-symbols` на cold cache < 60 s; warm < 5 s.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+## Recent PRs
+
+| PR | Title | Merged |
+| --- | --- | --- |
+| [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) | 2026-05-15 |
+| [#2898](https://github.com/Skords-01/Sergeant/pull/2898) | feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4) | 2026-05-15 |
+| [#2896](https://github.com/Skords-01/Sergeant/pull/2896) | feat(docs): auto-derived repo-map + service-catalog (Initiative 0014 Phase 3) | 2026-05-15 |
+| [#2876](https://github.com/Skords-01/Sergeant/pull/2876) | feat(docs): knowledge graph generator (Initiative 0014 Phase 1) | 2026-05-15 |
+
+_Auto-derived from `docs/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
