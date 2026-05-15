@@ -44,6 +44,7 @@ import type { Transaction } from "@sergeant/finyk-domain/domain";
 import { CategoryPickerSheet } from "@/modules/finyk/components/CategoryPickerSheet";
 import {
   ManualExpenseSheet,
+  upgradeCategory,
   type ManualExpensePayload,
 } from "@/modules/finyk/components/ManualExpenseSheet";
 import { useToast } from "@/components/ui/Toast";
@@ -113,13 +114,17 @@ export function TransactionsPage({
       const snapshot = manualExpenses.find((e) => e.id === id);
       if (!snapshot) return;
       removeManualExpense(id);
+      const payload: ManualExpensePayload = {
+        id: snapshot.id,
+        description: snapshot.description,
+        amount: snapshot.amount,
+        category: upgradeCategory(snapshot.category),
+        date: snapshot.date,
+      };
       showUndoToast(toast, {
         msg: `Транзакцію видалено`,
         onUndo: () => {
-          // ManualExpenseRecord використовує `string` для category, але
-          // payload очікує літеральний union — за допомогою snapshot це
-          // безпечно, бо значення вже валідне (записано раніше).
-          addManualExpense(snapshot as unknown as ManualExpensePayload);
+          addManualExpense(payload);
         },
       });
     },

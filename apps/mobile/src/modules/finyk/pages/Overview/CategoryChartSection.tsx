@@ -32,7 +32,7 @@ export interface CategoryChartSectionProps {
   onCategoryClick?: (catId: string) => void;
 }
 
-const COLORS = chartPaletteList as unknown as string[];
+const COLORS: readonly string[] = chartPaletteList;
 
 function fmt(n: number): string {
   return n.toLocaleString("uk-UA");
