@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-05-15",
   "counts": {
-    "adr": 57,
+    "adr": 58,
     "audit": 29,
     "hard-rule": 23,
     "initiative": 49,
@@ -643,6 +643,18 @@
       "tier": "core",
       "meta": {
         "number": 60,
+        "last_validated": "2026-05-15"
+      }
+    },
+    {
+      "id": "adr:0061",
+      "type": "adr",
+      "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
+      "path": "docs/adr/0061-pr-backlink-storage.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 61,
         "last_validated": "2026-05-15"
       }
     },
@@ -1353,7 +1365,7 @@
       "type": "initiative",
       "title": "0014 — Knowledge graph & auto-generated catalogs",
       "path": "docs/initiatives/0014-knowledge-graph-and-catalogs.md",
-      "status": "In progress (Phases 1–4 shipped; Phase 5 pending)",
+      "status": "Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)",
       "tier": "core",
       "meta": {
         "number": 14,
@@ -4818,6 +4830,31 @@
     },
     {
       "from": "adr:0060",
+      "to": "initiative:0014",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "hard-rule:6",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "hard-rule:7",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "initiative:0010",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
       "to": "initiative:0014",
       "type": "references"
     },

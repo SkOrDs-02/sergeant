@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Skords-01/Sergeant/blob/main/docs/governance/schemas/pr-ledger.schema.json",
+  "title": "Sergeant PR Ledger",
+  "description": "Canonical reverse-index of merged PRs that touched canonical governance docs (ADR / initiative / playbook / hard-rule). Generated/updated by scripts/ci/update-pr-backlinks.mjs from GitHub merge events. Drives the `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` block at the end of each canonical doc.",
+  "type": "object",
+  "required": ["version", "generated_at", "prs"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "generated_at": { "type": "string", "format": "date" },
+    "prs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/prEntry" }
+    }
+  },
+  "definitions": {
+    "prEntry": {
+      "type": "object",
+      "required": ["number", "title", "merged_at", "author", "touchedDocs"],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "GitHub PR number."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "merged_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 timestamp when GitHub recorded the merge."
+        },
+        "author": {
+          "type": "string",
+          "pattern": "^@[\\w-]+$",
+          "description": "GitHub handle in `@login` form."
+        },
+        "touchedDocs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Repo-relative paths of canonical docs (ADR / initiative / playbook / hard-rule) that this PR modified. Sorted alphabetically."
+        }
+      }
+    }
+  }
+}
