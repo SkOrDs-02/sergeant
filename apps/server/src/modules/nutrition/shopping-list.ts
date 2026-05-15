@@ -8,6 +8,7 @@ import {
   extractAnthropicText,
 } from "../../lib/anthropic.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
+import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -126,7 +127,7 @@ ${ingredientsList}
   };
 
   const { response, data } = await anthropicMessages(apiKey, payload, {
-    timeoutMs: 25000,
+    timeoutMs: NUTRITION_AI_TIMEOUTS_MS.shoppingList,
     endpoint: "shopping-list",
   });
   if (!response || !response.ok) {

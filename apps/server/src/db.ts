@@ -12,6 +12,7 @@ import {
   dbSlowPoolConnectsTotal,
   dbSlowQueriesTotal,
 } from "./obs/metrics.js";
+import { sleep } from "./lib/timing.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -212,10 +213,6 @@ const RETRYABLE_PG_CODES = new Set([
 function isRetryableError(err: unknown): boolean {
   const code = pgErr(err).code;
   return !!code && RETRYABLE_PG_CODES.has(code);
-}
-
-async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

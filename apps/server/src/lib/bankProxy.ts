@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { logger } from "../obs/logger.js";
 import { recordExternalHttp } from "./externalHttp.js";
 import { ExternalServiceError } from "../obs/errors.js";
+import { sleep } from "./timing.js";
 
 /**
  * Спільний transport-шар для банківських upstream-проксі (Monobank, PrivatBank).
@@ -90,10 +91,6 @@ const state: BankProxyMutableState = {
   breakers: new Map(),
   cache: new Map(),
 };
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 function isRetryableStatus(s: number): boolean {
   return s >= 500 && s <= 599;

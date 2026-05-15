@@ -31,3 +31,17 @@ export function isAbortError(e: unknown): boolean {
       (e as { name?: string }).name === "TimeoutError")
   );
 }
+
+/**
+ * Promisified `setTimeout` for retry/backoff loops.
+ *
+ * Consolidates 6 identical local copies that used to live in
+ * `db.ts`, `lib/anthropic.ts`, `lib/bankProxy.ts`, `lib/webpushSend.ts`,
+ * `modules/ai-memory/embeddings.ts` and `push/send.ts`.
+ *
+ * @param ms - Delay in milliseconds. Negative or non-finite values are
+ *   handled by `setTimeout` itself (clamped to 0 in Node).
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

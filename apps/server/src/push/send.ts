@@ -1,6 +1,7 @@
 import apn from "@parse/node-apn";
 import pool from "../db.js";
 import { sendWebPush } from "../lib/webpushSend.js";
+import { sleep } from "../lib/timing.js";
 import { logger } from "../obs/logger.js";
 import { pushSendsTotal } from "../obs/metrics.js";
 import { apnsBundleId, getApnsProvider } from "./apnsClient.js";
@@ -30,10 +31,6 @@ export type { PushPayload, SendToUserResult } from "./types.js";
 // що дає ~4.2 с worst-case на один токен до повернення failed.
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS: readonly number[] = [200, 1000, 3000];
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 // ─────────────────────────── Metrics ───────────────────────────────
 /**

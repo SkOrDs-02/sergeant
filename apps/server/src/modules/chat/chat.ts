@@ -27,6 +27,13 @@ import { buildRagContext } from "../ai-memory/ragContext.js";
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
 /**
+ * Timeout budget for Anthropic chat tool-result + chat completion calls.
+ * Aligned with the longest expected tool-aided round-trip; covers both the
+ * `chat-tool-result` continuation and the main `chat` endpoint.
+ */
+const CHAT_TOOL_TIMEOUT_MS = 30_000;
+
+/**
  * Anthropic prompt-caching, дві кажові точки (cache breakpoints):
  *
  * 1. **SYSTEM_PREFIX** як окремий `text`-блок з `cache_control`. Сьогодні сам префікс
@@ -449,7 +456,7 @@ export default async function handler(
         apiKey,
         payload,
         {
-          timeoutMs: 30000,
+          timeoutMs: CHAT_TOOL_TIMEOUT_MS,
           endpoint: "chat-tool-result",
           signal: clientAbort.signal,
           promptVersion: SYSTEM_PROMPT_VERSION,
@@ -507,7 +514,7 @@ export default async function handler(
         messages: cleaned,
       },
       {
-        timeoutMs: 30000,
+        timeoutMs: CHAT_TOOL_TIMEOUT_MS,
         endpoint: "chat",
         signal: clientAbort.signal,
         promptVersion: SYSTEM_PROMPT_VERSION,

@@ -10,6 +10,7 @@ import {
 import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
 import { estimateAnthropicCostUsd, pickAnthropicPricing } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
+import { sleep } from "./timing.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
@@ -547,8 +548,4 @@ function isAbortError(e: unknown): boolean {
   if (!e || typeof e !== "object") return false;
   const err = e as { name?: string; message?: string };
   return err.name === "AbortError" || /abort/i.test(String(err.message || ""));
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
 }

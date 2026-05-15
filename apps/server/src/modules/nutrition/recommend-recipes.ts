@@ -9,6 +9,7 @@ import {
 } from "../../lib/anthropic.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { normalizeRecipes } from "../../lib/nutritionResponse.js";
+import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -87,7 +88,7 @@ ${pantrySec}
   };
 
   const { response, data } = await anthropicMessages(apiKey, payload, {
-    timeoutMs: 45000,
+    timeoutMs: NUTRITION_AI_TIMEOUTS_MS.recommendRecipes,
     endpoint: "recommend-recipes",
   });
   if (!response || !response.ok) {

@@ -2,6 +2,7 @@ import webpush, { WebPushError } from "web-push";
 import type { PushSubscription } from "web-push";
 import { logger } from "../obs/logger.js";
 import { recordExternalHttp } from "./externalHttp.js";
+import { sleep } from "./timing.js";
 
 /**
  * Transport-шар для `webpush.sendNotification`. Додає:
@@ -86,10 +87,6 @@ export interface WebPushSendResult {
   durationMs: number;
   /** Скільки разів реально викликали webpush.sendNotification. */
   attempts: number;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
 }
 
 function jitteredDelay(base: number): number {

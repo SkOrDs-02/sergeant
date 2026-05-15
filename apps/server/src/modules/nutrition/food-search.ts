@@ -11,6 +11,7 @@ import {
   type OFFSearchProduct,
   type USDASearchFood,
 } from "../../lib/normalizers/index.js";
+import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 const OFF_SEARCH = "https://world.openfoodfacts.org/api/v2/search";
 const OFF_FIELDS =
@@ -222,7 +223,7 @@ export default async function handler(
   if (!parsed.ok) return;
   const { q: query, limit } = parsed.data;
 
-  const signal = AbortSignal.timeout(8000);
+  const signal = AbortSignal.timeout(NUTRITION_AI_TIMEOUTS_MS.foodSearch);
 
   try {
     const enTerm = translateFirstToken(query);

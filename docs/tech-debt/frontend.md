@@ -5,6 +5,8 @@
 
 Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
 
+> **Оновлено 2026-05-15.** Code-debt audit annex (Claude Opus 4.7 external session, monorepo-wide scan, code-debt category only). **New items для трекера:** (a) `apps/web/src/shared/components/ui/AIPill.tsx:105` — `TODO(PR-8): wire Whisper voice input` (infra-готова: `voice/useGroqVoiceInput.ts` + `voice/PendingVoiceChip.tsx` декомпозовані у попередньому циклі; залишилось wire-up у AIPill); (b) `apps/web/tests/smoke/navigation-offline-sw.spec.ts:103` + `apps/web/tests/a11y/sw-smoke.spec.ts:66` — 2 SW smoke `test.skip(true, 'SW smoke skipped: ...')` без issue link — потрібен re-enable plan; (c) `apps/web/src/core/NotFoundPage.tsx` — JSDoc `@status Deprecated` без явного migration target. **Out-of-scope для quick-wins PR (винесено як follow-up):** Web UI timeout magic-numbers (≈6 sites — `core/ErrorBoundary.tsx:83` 1500ms, `core/app/useIosInstallBanner.ts:30` 3000ms, `core/auth/ResetPasswordPage.tsx:94` 1500ms, `modules/finyk/pages/budgets/Budgets.tsx:244` 3000ms, `modules/nutrition/hooks/usePantryBarcodeScan.ts:70` 4000ms, `shared/components/ui/SwipeToAction.tsx:66` 4000ms) — потребують окремої category-карти (notification fade vs redirect vs hint), окремий PR.
+
 > **Оновлено 2026-05-13.** Sync з реальним станом коду після Stage 7 / 9 storage-roadmap-у та подальших decomposition-ів:
 > Розділ 2 (localStorage burndown) — production-allowlist у `eslint.config.js` **обнулено**
 > (PR #054 final, 2026-05-06). `webKVStore` фізично переключено на SQLite-backed

@@ -16,6 +16,7 @@ import { logger } from "../../obs/logger.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { aiCostEstimateUsd, aiTokensTotal } from "../../obs/metrics.js";
 import { CircuitBreaker, CircuitOpenError } from "../../lib/circuitBreaker.js";
+import { sleep } from "../../lib/timing.js";
 import type {
   EmbedBatchOptions,
   EmbeddingMetadata,
@@ -181,10 +182,6 @@ function isRetryableStatus(status: number): boolean {
   // 408 (Request Timeout), 429 (Rate Limit), 5xx — все retryable.
   // 4xx (крім 408/429) — клієнтська помилка, не ретраїмо.
   return status === 408 || status === 429 || status >= 500;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 interface CreateVoyageEmbeddingsOptions {
