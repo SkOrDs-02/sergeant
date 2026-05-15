@@ -16,6 +16,7 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Banner } from "@shared/components/ui/Banner";
+import { AIPill } from "@shared/components/ui/AIPill";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -543,6 +544,9 @@ export default function NutritionApp({
         applyRestorePayload={applyRestorePayload}
         onRequestMealPhoto={handleRequestMealPhoto}
       />
+
+      {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
+      <AIPill module="nutrition" />
       </MeshBackground>
     </ModuleAccentProvider>
   );

@@ -17,6 +17,7 @@
  * adding a new behaviour means editing the matching shard above.
  */
 
+import { AIPill } from "@shared/components/ui/AIPill";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -99,6 +100,9 @@ export default function RoutineApp({
           onOpenQuickAddHabit={openQuickAddHabit}
           onCloseQuickAddHabit={closeQuickAddHabit}
         />
+
+        {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
+        <AIPill module="routine" />
       </MeshBackground>
     </ModuleAccentProvider>
   );

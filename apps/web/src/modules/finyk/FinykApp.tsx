@@ -7,6 +7,7 @@ import { useStorage } from "./hooks/useStorage";
 import { readRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+import { AIPill } from "@shared/components/ui/AIPill";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -616,6 +617,12 @@ export default function App({
         onChange={navigate}
         module="finyk"
       />
+
+      {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance over the
+          module bottom-nav. `bottom={84}` lifts the pill above the
+          60 px ModuleBottomNav + safe-area-inset; `right-[4.5rem]` (baked
+          into AIPill) leaves space for any future quick-add FAB. */}
+      <AIPill module="finyk" />
 
       {showLoginOverlay && (
         <div

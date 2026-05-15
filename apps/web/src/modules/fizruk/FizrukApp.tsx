@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
+import { AIPill } from "@shared/components/ui/AIPill";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { useFizrukRoute } from "./hooks/useFizrukRoute";
@@ -159,6 +160,12 @@ export default function FizrukApp({
         onStartProgramWorkout={(session) => handleStartProgramWorkout(session)}
         onOpenModule={onOpenModule}
       />
+
+      {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance.
+          Rendered inside ModuleShell children; AIPill is `fixed`
+          positioned so it escapes the surrounding flex column and
+          anchors to the viewport. */}
+      <AIPill module="fizruk" />
     </ModuleShell>
   );
 }

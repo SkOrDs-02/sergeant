@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { type User } from "@sergeant/shared";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { AIPill } from "@shared/components/ui/AIPill";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
-import { CHAT_PATH } from "./appPaths";
 import { HubBottomNav } from "./HubBottomNav";
 import { HubHeader } from "./HubHeader";
 import { HubMainContent } from "./HubMainContent";
@@ -18,7 +16,6 @@ import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { WhatsNewModal, useWhatsNew } from "../whatsNew";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
-import { messages } from "@shared/i18n/uk";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 
 export interface HubHomeViewProps {
@@ -60,8 +57,6 @@ export function HubHomeView(props: HubHomeViewProps) {
     shortcutsOpen,
     onCloseShortcuts,
   } = props;
-
-  const navigate = useNavigate();
 
   // FTUX session = the window between the splash and the user's first
   // real (non-demo) entry. During this window we intentionally
@@ -153,28 +148,16 @@ export function HubHomeView(props: HubHomeViewProps) {
         onCtaClick={whatsNew.onCtaClick}
       />
 
-      {/* Floating AI-assistant entry. Shown only on the dashboard tab so
-          it does not occlude reports / profile content; hidden during
-          the FTUX splash window so the first-action signal stays the
-          single CTA on screen. Replaces the sparkle icon that briefly
-          lived in HubHeader (#1507) — bringing back the original FAB
-          chrome the team had pre-#1357 keeps the assistant a one-tap
-          target without crowding the header.
-
-          The `bottom-[…]` override lifts the FAB above `HubBottomNav`
-          (60 px / 64 px on coarse pointer + safe-area-pb). Without it
-          the default `bottom: 1.5rem` lands the FAB on top of the
-          «Налаштування» tab. Offset mirrors `ActiveWorkoutBanner`
-          (5.25rem + safe-area-inset-bottom) so all hub-level floating
-          chrome rises in lockstep above the same nav rail. */}
+      {/* Sergeant v2 redesign (2026-05, PR-7b) — persistent AI-assistant
+          pill replaces the previous sparkle FAB. Shown only on the
+          dashboard tab + hidden during FTUX so the first-action signal
+          stays the single CTA. `bottom={96}` lifts the pill above the
+          floating glass HubBottomNav (which sits at `mb-3` with ~60px
+          inner height). `module={null}` selects the hub-level
+          placeholder copy ("Запитай Sergeant…"). AIPill itself owns the
+          navigate(CHAT_PATH) handler — caller doesn't need to plumb it. */}
       {ui.hubView === "dashboard" && !inFtuxSession && (
-        <FloatingActionButton
-          icon="sparkle"
-          onClick={() => navigate(CHAT_PATH)}
-          aria-label={messages.nav.openAssistant}
-          hideOnScroll
-          className="bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))]"
-        />
+        <AIPill module={null} bottom={96} />
       )}
     </MeshBackground>
   );
