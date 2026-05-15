@@ -52,12 +52,22 @@ const SHELL_PATHSPEC = "apps/mobile-shell/";
 const TOP_FILES_LIMIT = 15;
 const DEFAULT_SINCE_DAYS = 90;
 
+const TREND_WINDOWS_DAYS = [30, 60, 90];
+
 function parseArgs(argv) {
-  const out = { since: `${DEFAULT_SINCE_DAYS}.days.ago`, json: false };
+  const out = {
+    since: `${DEFAULT_SINCE_DAYS}.days.ago`,
+    json: false,
+    trend: false,
+  };
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--json") {
       out.json = true;
+      continue;
+    }
+    if (arg === "--trend") {
+      out.trend = true;
       continue;
     }
     if (arg === "--since") {
@@ -76,10 +86,16 @@ function parseArgs(argv) {
           "report-shell-tax — quantify maintenance cost of apps/mobile-shell.",
           "",
           "Usage:",
-          "  report-shell-tax [--since <DAYS|git-since-spec>] [--json]",
+          "  report-shell-tax [--since <DAYS|git-since-spec>] [--trend] [--json]",
           "",
           "Defaults:",
           `  --since ${DEFAULT_SINCE_DAYS}    (~last quarter)`,
+          "",
+          "Flags:",
+          "  --trend   print 30/60/90-day moving snapshot for quarterly review",
+          "            (overrides --since; see docs/initiatives/0002 trend table).",
+          "  --json    machine-readable output; pairs with --trend to emit a",
+          "            `windows[]` array instead of the default single window.",
           "",
           "See docs/initiatives/0002-mobile-platform-decision.md and",
           "docs/adr/0010-mobile-dual-track-capacitor-expo.md § Sunset schedule.",
@@ -212,12 +228,84 @@ function formatHumanReport({ since, summary, shallow }) {
   return lines.join("\n");
 }
 
+function formatTrendReport({ windows, shallow }) {
+  const lines = [];
+  lines.push(`# Shell tax trend (${SHELL_PATHSPEC})`);
+  lines.push("");
+  if (shallow) {
+    lines.push(
+      "Note: shallow clone detected — counts are a *lower bound*. Run `git fetch --unshallow` for full history.",
+    );
+    lines.push("");
+  }
+  // Aligned ascii table; widths fixed для діффабельності weekly cron-у.
+  lines.push("window  | commits | files | authors");
+  lines.push("--------|---------|-------|--------");
+  for (const w of windows) {
+    lines.push(
+      `${String(`${w.days}d`).padEnd(7)} | ${String(w.shell_commits).padStart(7)} | ${String(w.shell_files).padStart(5)} | ${String(w.shell_authors).padStart(7)}`,
+    );
+  }
+  lines.push("");
+  lines.push(
+    "Context: ADR-0010 § Sunset schedule (T₀ 2026-09-01 / T₁ 2026-11-30 / T₂ 2026-12-30).",
+  );
+  lines.push(
+    "Source initiative: docs/initiatives/0002-mobile-platform-decision.md § Shell-tax trend.",
+  );
+  return lines.join("\n");
+}
+
+function runTrend(shallow) {
+  // Collect each window independently — `git log --since` is cheap on
+  // a regular clone and we want pure window-of-days semantics (not a
+  // sliding-average over a single fetched superset, which would skew
+  // the 30d bucket high when the larger window is dense).
+  const windows = TREND_WINDOWS_DAYS.map((days) => {
+    const sinceSpec = `${days}.days.ago`;
+    const records = collectShellTouches(sinceSpec);
+    const summary = summarize(records);
+    return { days, since: sinceSpec, ...summary };
+  });
+  return { windows, shallow };
+}
+
 function main() {
   const args = parseArgs(process.argv);
   let shallow = false;
-  let records;
   try {
     shallow = isShallowClone();
+  } catch (err) {
+    process.stderr.write(
+      `git rev-parse failed: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    process.exit(2);
+  }
+  if (args.trend) {
+    let trend;
+    try {
+      trend = runTrend(shallow);
+    } catch (err) {
+      process.stderr.write(
+        `git log failed: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+      process.exit(2);
+    }
+    if (args.json) {
+      const payload = {
+        pathspec: SHELL_PATHSPEC,
+        shallow,
+        windows: trend.windows,
+        generated_at: new Date().toISOString(),
+      };
+      process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+      return;
+    }
+    process.stdout.write(`${formatTrendReport(trend)}\n`);
+    return;
+  }
+  let records;
+  try {
     records = collectShellTouches(args.since);
   } catch (err) {
     process.stderr.write(

@@ -1,6 +1,6 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-15 by Claude Opus 4.7 (external session — PR-10 `--trend` flag shipped; Shell-tax trend table seeded with первим recount-снапшотом 30/60/90d). **Next review:** 2026-08-13.
 > **Status:** In progress (Phase 1/2 shipped; sunset schedule superseded — see Update below)
 >
 > **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
@@ -179,6 +179,28 @@ top_files:     README.md (16), package.json (13), AndroidManifest.xml (6), …
 
 Це 30-денна вибірка (90-денну зробимо у наступному `report-shell-tax` cron-запуску
 після PR `ci-shell-tax-report`, який зараз в плані Phase 2).
+
+### Shell-tax trend (quarterly recount)
+
+PR-10 з [`docs/planning/pr-plan-mobile-reliability-2026-05.md`](../planning/pr-plan-mobile-reliability-2026-05.md)
+додав `--trend` flag — друкує 30/60/90-day snapshot за один виклик, щоб
+quarterly review мав один table-source-of-truth замість трьох ручних
+`--since`. Cadence: запускати на 1-му тижні кожного кварталу
+(2026-02/05/08/11) і додавати рядок до таблиці нижче.
+
+Команда: `node scripts/report-shell-tax.mjs --trend` (humans),
+`--trend --json` (machine).
+
+| Recount-дата | window | commits | files | authors | Notes                                                                                                                                  |
+| ------------ | ------ | ------- | ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-03   | 30d    | n/a     | n/a   | n/a     | Baseline `--trend` ще не існував — Phase 1 ішов з ручного `--since 30`. Перший повний trend-снапшот — 2026-05-15.                      |
+| 2026-05-15   | 30d    | 47      | 79    | 4       | Перший trend-recount після PR-10. 30 ≈ 60 ≈ 90 — ostpoint після Stage 8/9 storage-roadmap merge-у; cron-режим не активувався у вікні. |
+| 2026-05-15   | 60d    | 47      | 79    | 4       | Те саме записи в усіх 3 вікнах — git history у [0..90d] вкладається в 30d-вікно, тобто Q2 churn закінчився після 2026-04-15 hot-batch.  |
+| 2026-05-15   | 90d    | 47      | 79    | 4       | Те ж. Очікуємо розшаровувати з наступним recount-ом, коли почнеться T₀ pre-freeze (2026-08).                                            |
+| 2026-08      | …      | …       | …     | …       | TODO — quarterly recount після `report-shell-tax-report.yml` weekly cron baseline.                                                     |
+
+Якщо feature-parity ≥18/22 у `docs/architecture/platforms.md` — окремий
+ADR-trigger PR для активації sunset-треку (поза скоупом цього recount-у).
 
 Метрики Phase 1 (Phase 2+ ще попереду):
 
