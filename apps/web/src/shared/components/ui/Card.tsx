@@ -64,7 +64,14 @@ export type CardProminence =
   | "ghost"
   | "hero"
   | "soft"
-  | "tinted";
+  | "tinted"
+  // Sergeant v2 redesign (2026-05, PR-4) — translucent floating-glass
+  // surface. Uses `--surface-glass` + `backdrop-blur(12px)` + inset
+  // highlight + module-untinted hairline. Opt-in; existing
+  // `default`/`interactive`/`flat`/`elevated` surfaces unchanged so
+  // 80+ existing call sites keep their look. New v2 module shells +
+  // AIPill + InsightCard pick this up explicitly.
+  | "glass";
 
 /**
  * @deprecated Prefer the orthogonal `module` + `prominence` props.
@@ -82,12 +89,17 @@ export type CardVariant =
 
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 
-export type CardRadius = "md" | "lg" | "xl";
+export type CardRadius = "md" | "lg" | "xl" | "r-lg" | "r-xl" | "r-2xl";
 
 const radii: Record<CardRadius, string> = {
-  md: "rounded-xl",
-  lg: "rounded-2xl",
-  xl: "rounded-3xl",
+  md: "rounded-xl", // 12px — CONTROL tier (legacy)
+  lg: "rounded-2xl", // 16px — CARD tier (legacy)
+  xl: "rounded-3xl", // 24px — HERO tier (legacy)
+  // Sergeant v2 redesign radii (parallel namespace introduced in PR-1).
+  // Use these on v2 glass surfaces — see docs/design/redesign-v2.md.
+  "r-lg": "rounded-r-lg", // 14px — primary v2 card
+  "r-xl": "rounded-r-xl", // 18px — metric / sub-hero card
+  "r-2xl": "rounded-r-2xl", // 24px — hero / sheet
 };
 
 const paddings: Record<CardPadding, string> = {
@@ -118,6 +130,13 @@ const NON_MODULE_PROMINENCE: Record<
   flat: "bg-panel border border-line",
   elevated: "bg-panel border border-line shadow-e3",
   ghost: "bg-transparent border border-transparent",
+  // Sergeant v2 glass — translucent floating surface. `bg-surface-glass`
+  // is alpha-baked (0.82 light / 0.06 dark / 1.0 HC); `surface-line` is
+  // the inset hairline. `shadow-card-v2` includes an inset top-highlight
+  // recipe tuned for the glass look. Auto-degrades when `html.hc` strips
+  // mesh + alpha (see theme.css § High-Contrast v2 overrides).
+  glass:
+    "bg-surface-glass backdrop-blur-md border border-surface-line shadow-card-v2",
 };
 
 // ─── Module-branded surfaces ───────────────────────────────────────────
@@ -257,7 +276,13 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
  * `prominence`) always honour the `radius` prop with the standard
  * `xl` default.
  */
-function defaultRadius(variant: CardVariant | undefined): CardRadius {
+function defaultRadius(
+  variant: CardVariant | undefined,
+  prominence: CardProminence | undefined,
+): CardRadius {
+  // v2 glass surfaces default to the v2 `r-lg` (14px) radius — matches
+  // the handoff spec for primary cards.
+  if (prominence === "glass") return "r-lg";
   if (variant && SOFT_VARIANT_RE.test(variant)) return "lg";
   return "xl";
 }
@@ -277,7 +302,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   ref,
 ) {
   const resolved = resolveVariant(variant, module, prominence);
-  const effectiveRadius = radius ?? defaultRadius(variant);
+  const effectiveRadius = radius ?? defaultRadius(variant, resolved.prominence);
   return (
     <Component
       ref={ref}

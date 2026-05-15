@@ -45,7 +45,19 @@ export type FABVariant =
   | "finyk"
   | "fizruk"
   | "routine"
-  | "nutrition";
+  | "nutrition"
+  // Sergeant v2 redesign (2026-05, PR-4) — module-aware FAB gradients.
+  // Each v2 variant uses a bright top-left → darker bottom-right gradient
+  // tuned per module (handoff `02-component-map.md § FAB`):
+  //   v2-finyk     emerald-400 → teal-700  (cross-family green-teal)
+  //   v2-fizruk    cyan-400    → cyan-700
+  //   v2-routine   coral-400   → coral-700
+  //   v2-nutrition lime-400    → lime-600
+  // Paired with `shadow-fab` (teal-tinted glow from theme.css).
+  | "v2-finyk"
+  | "v2-fizruk"
+  | "v2-routine"
+  | "v2-nutrition";
 export type FABSize = "md" | "lg";
 
 export interface FABAction {
@@ -64,6 +76,16 @@ const variantStyles: Record<FABVariant, string> = {
     "bg-routine-strong text-white shadow-routine/30 hover:brightness-110",
   nutrition:
     "bg-nutrition-strong text-white shadow-nutrition/30 hover:brightness-110",
+  // v2 redesign — gradient backgrounds with `shadow-fab` glow (v2 token).
+  // Hover bumps brightness so motion feels alive without changing hue.
+  "v2-finyk":
+    "bg-gradient-to-br from-brand-400 to-teal-700 text-white shadow-fab hover:brightness-110",
+  "v2-fizruk":
+    "bg-gradient-to-br from-cyan-400 to-cyan-700 text-white shadow-fab hover:brightness-110",
+  "v2-routine":
+    "bg-gradient-to-br from-coral-400 to-coral-700 text-white shadow-fab hover:brightness-110",
+  "v2-nutrition":
+    "bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-fab hover:brightness-110",
 };
 
 const sizeStyles: Record<FABSize, { button: string; icon: number }> = {
