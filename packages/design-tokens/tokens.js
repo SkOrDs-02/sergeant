@@ -40,6 +40,22 @@ export const brandColors = {
     800: "#115e59",
     900: "#134e4a",
   },
+  // Cyan — Sergeant v2 fizruk accent (introduced 2026-05 redesign).
+  // Disambiguates fizruk module from finyk emerald. `cyan[700]` (#0e7490)
+  // is the canonical fizruk primary; `cyan[800]` (#155e75) is the
+  // WCAG-AA companion for solid fills behind `text-white`.
+  cyan: {
+    50: "#ecfeff",
+    100: "#cffafe",
+    200: "#a5f3fc",
+    300: "#67e8f9",
+    400: "#22d3ee",
+    500: "#06b6d4",
+    600: "#0891b2",
+    700: "#0e7490",
+    800: "#155e75",
+    900: "#164e63",
+  },
   // Warm cream backgrounds (replacing cold blue-gray)
   cream: {
     50: "#fefdfb",
@@ -144,7 +160,7 @@ export const moduleColors = {
  */
 export const moduleAccentRgb = {
   finyk: { default: "16 185 129", strong: "4 120 87" }, // emerald-500 / -700
-  fizruk: { default: "14 116 144", strong: "15 118 110" }, // cyan-700 / teal-700 — `default` migrated to cyan-700 to disambiguate from finyk emerald (was teal-500). `strong` stays on teal-700 to match `bg-fizruk-strong` Tailwind utility (`brandColors.teal[700]`); will migrate to cyan-800 in PR-1 alongside the cyan palette addition.
+  fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
   routine: { default: "249 112 102", strong: "194 58 58" }, // coral-500 / -700
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
 };

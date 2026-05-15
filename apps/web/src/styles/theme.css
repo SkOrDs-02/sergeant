@@ -619,4 +619,212 @@
     --c-nutrition-soft: 86 124 15; /* lime-700 */
     --c-nutrition-soft-border: 176 230 54;
   }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SERGEANT v2 REDESIGN TOKENS — introduced 2026-05.
+     @lifecycle: experimental (promoted to active after PR-8).
+
+     Adds a parallel v2 namespace next to the legacy `--c-bg` / `--c-panel`
+     / `--c-text` / `--c-muted` / `--c-line` semantic tokens (kept untouched
+     for back-compat). The v2 set introduces:
+
+       Solid ink     — `--c-ink`, `--c-ink-strong`, `--c-muted-v2`,
+                       `--c-subtle-v2` (triplets, opacity-modifier OK).
+       Glass surface — `--surface-glass`, `--surface-strong-glass`,
+                       `--surface-soft-glass` (rgba strings, alpha
+                       baked in by design intent; no opacity modifier).
+       Hairlines     — `--line-v2`, `--line-strong-v2` (rgba strings).
+       Mesh corners  — `--bg-mesh-1..4` (rgba strings for the four
+                       corner glows in the MeshBackground component).
+       Shadows       — `--shadow-card-v2`, `--shadow-pill`, `--shadow-nav`,
+                       `--shadow-fab` (glass-tuned, with inset highlight).
+       Hero gradient — `--hero-grad-{module}` (linear gradients per module).
+
+     Light + dark + HC variants are all authored here. See
+     `docs/design/redesign-v2.md` for the full token contract.
+     ═══════════════════════════════════════════════════════════════════════ */
+  :root {
+    /* Background base — warm cream (handoff `--bg-base`). */
+    --c-bg-base: 240 233 216; /* #f0e9d8 */
+
+    /* Ink (text) — body + display tiers. */
+    --c-ink: 14 28 23; /* #0e1c17 — body text */
+    --c-ink-strong: 6 78 59; /* #064e3b — display / headings (emerald-900) */
+    --c-muted-v2: 107 107 102; /* #6b6b66 — meta, captions */
+    --c-subtle-v2: 138 138 130; /* #8a8a82 — hints */
+
+    /* Glass surfaces — alpha BAKED IN by design intent. Do not use
+       Tailwind opacity modifiers on these tokens. */
+    --surface-glass: rgba(255, 255, 255, 0.82); /* default card */
+    --surface-strong-glass: rgba(255, 255, 255, 0.92); /* navs, pills */
+    --surface-soft-glass: rgba(255, 255, 255, 0.5); /* tinted backgrounds */
+    --surface-line: rgba(255, 255, 255, 0.55); /* card hairline (inset) */
+
+    /* Hairlines — soft + strong dividers tuned for glass surfaces. */
+    --line-v2: rgba(0, 0, 0, 0.06);
+    --line-strong-v2: rgba(0, 0, 0, 0.1);
+
+    /* Mesh background — four corner radial gradients composited over
+       --c-bg-base. Tuned to surface coral / teal / lime / emerald glows
+       that hint at the four Sergeant modules without dominating. */
+    --bg-mesh-1: rgba(255, 180, 166, 0.32); /* coral glow — top-left */
+    --bg-mesh-2: rgba(20, 184, 166, 0.22); /* teal glow — top-right */
+    --bg-mesh-3: rgba(146, 204, 23, 0.22); /* lime glow — bottom-right */
+    --bg-mesh-4: rgba(16, 185, 129, 0.2); /* emerald glow — bottom-left */
+
+    /* Shadows — glass-surface recipes (inset highlight + outer drop). */
+    --shadow-card-v2:
+      0 1px 0 rgba(255, 255, 255, 0.5) inset,
+      0 4px 14px rgba(20, 40, 30, 0.05);
+    --shadow-pill:
+      0 1px 0 rgba(255, 255, 255, 0.8) inset,
+      0 10px 26px rgba(20, 40, 30, 0.12);
+    --shadow-nav:
+      0 1px 0 rgba(255, 255, 255, 0.8) inset,
+      0 12px 32px rgba(20, 40, 30, 0.12);
+    --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45);
+
+    /* Hero gradients — bright module-tinted linear gradients for
+       hero cards (Finyk balance, Fizruk overview, etc.). */
+    --hero-grad-finyk: linear-gradient(135deg, #0f766e, #14b8a6); /* teal-700 → teal-500 (legacy emerald-teal mix kept for finyk balance card) */
+    --hero-grad-fizruk: linear-gradient(135deg, #0e7490, #14b8a6); /* cyan-700 → teal-500 — v2 spec; cyan primary with teal accent stop */
+    --hero-grad-routine: linear-gradient(135deg, #ff8c78, #c23a3a); /* coral-400 → coral-700 */
+    --hero-grad-nutrition: linear-gradient(135deg, #b0e636, #71a30d); /* lime-400 → lime-600 */
+  }
+
+  .dark {
+    /* Dark base — deep warm charcoal (handoff `--bg-base` dark). */
+    --c-bg-base: 14 22 20; /* #0e1614 */
+
+    /* Inverted ink scale. */
+    --c-ink: 240 233 216; /* #f0e9d8 — warm white body */
+    --c-ink-strong: 255 255 255; /* pure white headings */
+    --c-muted-v2: 138 144 136; /* #8a9088 — meta */
+    --c-subtle-v2: 106 112 104; /* #6a7068 — hints */
+
+    /* Dark glass — much lower alpha so surface reads as "lifted from"
+       the dark base, not solid panels. */
+    --surface-glass: rgba(255, 255, 255, 0.06);
+    --surface-strong-glass: rgba(255, 255, 255, 0.1);
+    --surface-soft-glass: rgba(255, 255, 255, 0.04);
+    --surface-line: rgba(255, 255, 255, 0.08);
+
+    --line-v2: rgba(255, 255, 255, 0.08);
+    --line-strong-v2: rgba(255, 255, 255, 0.14);
+
+    /* Mesh dark — alphas tuned for dark base. */
+    --bg-mesh-1: rgba(249, 112, 102, 0.18); /* coral */
+    --bg-mesh-2: rgba(20, 184, 166, 0.2); /* teal */
+    --bg-mesh-3: rgba(146, 204, 23, 0.15); /* lime */
+    --bg-mesh-4: rgba(16, 185, 129, 0.22); /* emerald */
+
+    /* Shadows dark — much stronger outer drops + faint bright inset. */
+    --shadow-card-v2:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 4px 14px rgba(0, 0, 0, 0.3);
+    --shadow-pill:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 10px 26px rgba(0, 0, 0, 0.4);
+    --shadow-nav:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 12px 32px rgba(0, 0, 0, 0.4);
+    --shadow-fab: 0 8px 22px rgba(52, 211, 153, 0.4);
+
+    /* Hero gradients unchanged — same hex pairs read fine on dark. */
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     HIGH-CONTRAST v2 overrides — AAA-leaning. Mesh & glass alpha are
+     visual nuance that hurts AAA readability for low-vision users, so HC:
+       - Mesh OFF (zero alpha on all 4 corners → background = solid bg-base)
+       - Glass surfaces flip to opaque (alpha 1.0) so card text contrast
+         depends only on `--c-ink` vs surface RGB, not on the layer below.
+       - Hairlines bump from 0.06 / 0.10 → 0.35 / 0.60 for visible separators.
+       - Shadows degrade to solid 2px borders (HC ignores depth cues).
+       - Hero gradients flip to solid module-strong tints.
+     See docs/design/redesign-v2.md § HC contract.
+     ═══════════════════════════════════════════════════════════════════════ */
+  html.hc {
+    /* Solid bg-base — no mesh. */
+    --bg-mesh-1: rgba(0, 0, 0, 0);
+    --bg-mesh-2: rgba(0, 0, 0, 0);
+    --bg-mesh-3: rgba(0, 0, 0, 0);
+    --bg-mesh-4: rgba(0, 0, 0, 0);
+
+    /* Glass → opaque. */
+    --surface-glass: rgba(255, 255, 255, 1);
+    --surface-strong-glass: rgba(255, 255, 255, 1);
+    --surface-soft-glass: rgba(255, 255, 255, 0.95);
+    --surface-line: rgba(0, 0, 0, 0.6);
+
+    /* Ink-strong → max contrast (#000). */
+    --c-ink-strong: 0 0 0;
+
+    /* Visible hairlines. */
+    --line-v2: rgba(0, 0, 0, 0.35);
+    --line-strong-v2: rgba(0, 0, 0, 0.6);
+
+    /* Shadows → solid borders. HC ignores depth — uses outlines. */
+    --shadow-card-v2: 0 0 0 2px rgba(0, 0, 0, 0.6);
+    --shadow-pill: 0 0 0 2px rgba(0, 0, 0, 0.7);
+    --shadow-nav: 0 0 0 2px rgba(0, 0, 0, 0.7);
+    --shadow-fab: 0 0 0 3px rgba(15, 118, 110, 1);
+
+    /* Hero → solid module color. */
+    --hero-grad-finyk: #047857; /* emerald-700 */
+    --hero-grad-fizruk: #155e75; /* cyan-800 */
+    --hero-grad-routine: #c23a3a; /* coral-700 */
+    --hero-grad-nutrition: #466212; /* lime-800 */
+  }
+
+  html.hc.dark {
+    /* Dark HC — same mesh OFF + opaque glass strategy, dark colours. */
+    --surface-glass: rgba(32, 28, 25, 1); /* matches --c-panel */
+    --surface-strong-glass: rgba(48, 42, 37, 1); /* matches --c-panel-hi */
+    --surface-soft-glass: rgba(32, 28, 25, 0.95);
+    --surface-line: rgba(255, 255, 255, 0.7);
+
+    --c-ink-strong: 255 255 255;
+
+    --line-v2: rgba(255, 255, 255, 0.45);
+    --line-strong-v2: rgba(255, 255, 255, 0.7);
+
+    --shadow-card-v2: 0 0 0 2px rgba(255, 255, 255, 0.7);
+    --shadow-pill: 0 0 0 2px rgba(255, 255, 255, 0.8);
+    --shadow-nav: 0 0 0 2px rgba(255, 255, 255, 0.8);
+    --shadow-fab: 0 0 0 3px rgba(52, 211, 153, 1);
+
+    --hero-grad-finyk: #10b981; /* emerald-500 — brighter on dark HC */
+    --hero-grad-fizruk: #06b6d4; /* cyan-500 */
+    --hero-grad-routine: #ff8c78; /* coral-400 */
+    --hero-grad-nutrition: #b0e636; /* lime-400 */
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MESH BACKGROUND UTILITY — `.bg-mesh` class consumed by
+   `MeshBackground.tsx` component (PR-5). Composites four corner radial
+   gradients (`--bg-mesh-1..4`) over `--c-bg-base`. Uses
+   `background-attachment: fixed` for an infinite-scroll feel; iOS
+   Safari has a known bug here, so Capacitor preview should verify.
+
+   Disabled automatically by:
+     - `html.hc` (HC mode — all four mesh alphas → 0)
+     - `prefers-reduced-motion: reduce` (Hard Rule #17 AMBIENT motion)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.bg-mesh {
+  background:
+    radial-gradient(at 12% 14%, var(--bg-mesh-1) 0px, transparent 50%),
+    radial-gradient(at 88% 8%, var(--bg-mesh-2) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, var(--bg-mesh-3) 0px, transparent 50%),
+    radial-gradient(at 0% 95%, var(--bg-mesh-4) 0px, transparent 50%),
+    rgb(var(--c-bg-base));
+  background-attachment: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-mesh {
+    background: rgb(var(--c-bg-base));
+    background-attachment: initial;
+  }
 }
