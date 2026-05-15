@@ -414,8 +414,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 >
 > Plan-card originally estimated L (~700 LOC). Actual audit показав **24 файли, 128 callsites** (з них `routes/internal/openclaw.ts` сам — 56). Розбито на 2 PR-и за surface boundary:
 >
-> - **PR-10a (поточний PR, modules/):** 14 файлів — `modules/sync/{syncV2,syncV2Stream}.ts`, `modules/chat/{chat,coach}.ts`, `modules/ai-memory/{ingestRoute,recallRoute,eventSyncRoute}.ts`, `modules/digest/weekly-digest.ts`, `modules/transcribe/transcribe.ts`, `modules/mono/{privat,read}.ts`, `modules/push/push.ts`, `modules/nutrition/{barcode,food-search}.ts` (validateQuery leftover з PR-09). ~36 callsites.
-> - **PR-10b (наступний, routes/):** 10 файлів — `routes/{billing,waitlist}.ts` + `routes/internal/*.ts` (8 файлів, включно з 56-callsite `openclaw.ts`). ~92 callsites. (Зауваж: `routes/push.ts` не має `validateBody`/`Query` — push-handler-и живуть у `modules/push/push.ts`, мігровано у PR-10a.)
+> - **PR-10a ✅ merged (#2921, modules/):** 14 файлів — `modules/sync/{syncV2,syncV2Stream}.ts`, `modules/chat/{chat,coach}.ts`, `modules/ai-memory/{ingestRoute,recallRoute,eventSyncRoute}.ts`, `modules/digest/weekly-digest.ts`, `modules/transcribe/transcribe.ts`, `modules/mono/{privat,read}.ts`, `modules/push/push.ts`, `modules/nutrition/{barcode,food-search}.ts` (validateQuery leftover з PR-09). ~36 callsites.
+> - **PR-10b (поточний PR, routes/):** 10 файлів — `routes/{billing,waitlist}.ts` + `routes/internal/*.ts` (8 файлів, включно з 56-callsite `openclaw.ts`). ~92 callsites. (Зауваж: `routes/push.ts` не має `validateBody`/`Query` — push-handler-и живуть у `modules/push/push.ts`, мігровано у PR-10a.)
 >
 > Special handling у PR-10a:
 >

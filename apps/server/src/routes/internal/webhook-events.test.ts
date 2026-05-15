@@ -65,6 +65,8 @@ async function makeApp(): Promise<express.Express> {
       pool: { query: vi.fn().mockResolvedValue({ rows: [] }) } as never,
     }),
   );
+  const { errorHandler } = await import("../../http/errorHandler.js");
+  app.use(errorHandler);
   return app;
 }
 

@@ -35,7 +35,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { activateKillSwitch } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -153,9 +153,8 @@ export function createEvalRagInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/eval/rag-weekly",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SummaryBody, req, res);
-      if (!parsed.ok) return;
-      const summary = parsed.data;
+      const parsed = parseBody(SummaryBody, req);
+      const summary = parsed;
 
       // ── 1. INSERT у n8n_failure_events ──
       // `error_message` — human-friendly status (dedup-friendly).

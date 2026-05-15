@@ -48,18 +48,8 @@ async function makeApp(pool = makePool()) {
   const app = express();
   app.use(express.json());
   app.use(createInternalRouter({ pool: pool as never }));
-  app.use(
-    (
-      err: unknown,
-      _req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction,
-    ) => {
-      res.status(500).json({
-        error: err instanceof Error ? err.message : String(err),
-      });
-    },
-  );
+  const { errorHandler } = await import("../../http/errorHandler.js");
+  app.use(errorHandler);
   return { app, pool };
 }
 

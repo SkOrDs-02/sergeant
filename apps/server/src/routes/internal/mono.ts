@@ -10,7 +10,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
 import { rotateStaleMonoWebhookSecrets } from "../../modules/mono/rotateSecret.js";
@@ -63,17 +63,16 @@ export function createMonoInternalRouter(_args: { pool: Pool }): Router {
         return;
       }
 
-      const parsed = validateBody(RotateBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(RotateBody, req);
 
       try {
         const result = await rotateStaleMonoWebhookSecrets({
           encKey: env.MONO_TOKEN_ENC_KEY,
           publicApiBaseUrl: env.PUBLIC_API_BASE_URL,
-          olderThanDays: parsed.data.olderThanDays,
-          alertAfterDays: parsed.data.alertAfterDays,
-          limit: parsed.data.limit,
-          dryRun: parsed.data.dryRun,
+          olderThanDays: parsed.olderThanDays,
+          alertAfterDays: parsed.alertAfterDays,
+          limit: parsed.limit,
+          dryRun: parsed.dryRun,
           query: dbQuery,
         });
         res.status(200).json({

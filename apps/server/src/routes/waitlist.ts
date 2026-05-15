@@ -9,7 +9,7 @@ import {
   asyncHandler,
   rateLimitExpress,
   setModule,
-  validateBody,
+  parseBody,
 } from "../http/index.js";
 import { getSessionUser } from "../auth.js";
 import pool from "../db.js";
@@ -41,8 +41,7 @@ export function createWaitlistRouter(): Router {
   r.use("/api/waitlist", setModule("waitlist"));
 
   const handler = asyncHandler(async (req: Request, res: Response) => {
-    const parsed = validateBody(WaitlistSubmitSchema, req, res);
-    if (!parsed.ok) return;
+    const parsed = parseBody(WaitlistSubmitSchema, req);
 
     // Опційне привʼязування до сесії, якщо користувач залогінений. Не
     // вимагаємо сесію — це pricing-page CTA для анонімів так само.
@@ -62,10 +61,10 @@ export function createWaitlistRouter(): Router {
         : null;
 
     const result = await submitWaitlistEntry(pool, {
-      email: parsed.data.email,
-      tier_interest: parsed.data.tier_interest,
-      source: parsed.data.source,
-      locale: parsed.data.locale,
+      email: parsed.email,
+      tier_interest: parsed.tier_interest,
+      source: parsed.source,
+      locale: parsed.locale,
       user_id: userId,
       user_agent: userAgent,
     });

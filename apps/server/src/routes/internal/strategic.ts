@@ -28,7 +28,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import {
   carryGoalToNextWeek,
   createGoal,
@@ -113,14 +113,13 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/weekly-checkin",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(WeeklyCheckinBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(WeeklyCheckinBody, req);
       const goalText =
-        parsed.data.goalText ?? "Weekly strategic kickoff (placeholder)";
+        parsed.goalText ?? "Weekly strategic kickoff (placeholder)";
       const created = await createGoal(pool, {
-        persona: parsed.data.persona,
-        founderUserId: parsed.data.founderUserId,
-        weekStart: parsed.data.weekStart,
+        persona: parsed.persona,
+        founderUserId: parsed.founderUserId,
+        weekStart: parsed.weekStart,
         goalText,
       });
       if (created === null) {
@@ -134,16 +133,13 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/goals",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(CreateGoalBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(CreateGoalBody, req);
       const created = await createGoal(pool, {
-        persona: parsed.data.persona,
-        founderUserId: parsed.data.founderUserId,
-        weekStart: parsed.data.weekStart,
-        goalText: parsed.data.goalText,
-        ...(parsed.data.status !== undefined
-          ? { status: parsed.data.status }
-          : {}),
+        persona: parsed.persona,
+        founderUserId: parsed.founderUserId,
+        weekStart: parsed.weekStart,
+        goalText: parsed.goalText,
+        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
       });
       if (created === null) {
         res.status(200).json({ ok: false, error: "create_failed" });
@@ -156,19 +152,14 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/goals/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ListGoalsBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ListGoalsBody, req);
       const goals = await listGoalsForWeek(pool, {
-        weekStart: parsed.data.weekStart,
-        ...(parsed.data.persona !== undefined
-          ? { persona: parsed.data.persona }
+        weekStart: parsed.weekStart,
+        ...(parsed.persona !== undefined ? { persona: parsed.persona } : {}),
+        ...(parsed.founderUserId !== undefined
+          ? { founderUserId: parsed.founderUserId }
           : {}),
-        ...(parsed.data.founderUserId !== undefined
-          ? { founderUserId: parsed.data.founderUserId }
-          : {}),
-        ...(parsed.data.status !== undefined
-          ? { status: parsed.data.status }
-          : {}),
+        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
       });
       res.json({ ok: true, goals });
     }),
@@ -182,21 +173,14 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ListBody, req);
       const goals = await listGoals(pool, {
-        ...(parsed.data.founderUserId !== undefined
-          ? { founderUserId: parsed.data.founderUserId }
+        ...(parsed.founderUserId !== undefined
+          ? { founderUserId: parsed.founderUserId }
           : {}),
-        ...(parsed.data.persona !== undefined
-          ? { persona: parsed.data.persona }
-          : {}),
-        ...(parsed.data.status !== undefined
-          ? { status: parsed.data.status }
-          : {}),
-        ...(parsed.data.limit !== undefined
-          ? { limit: parsed.data.limit }
-          : {}),
+        ...(parsed.persona !== undefined ? { persona: parsed.persona } : {}),
+        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+        ...(parsed.limit !== undefined ? { limit: parsed.limit } : {}),
       });
       res.json({ ok: true, goals });
     }),
@@ -211,9 +195,8 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/goal",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(CarryGoalBody, req, res);
-      if (!parsed.ok) return;
-      const goal = await getGoalById(pool, parsed.data.id);
+      const parsed = parseBody(CarryGoalBody, req);
+      const goal = await getGoalById(pool, parsed.id);
       if (goal === null) {
         res.status(200).json({ ok: false, error: "not_found" });
         return;
@@ -225,13 +208,8 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/goals/status",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(UpdateStatusBody, req, res);
-      if (!parsed.ok) return;
-      const updated = await updateGoalStatus(
-        pool,
-        parsed.data.id,
-        parsed.data.status,
-      );
+      const parsed = parseBody(UpdateStatusBody, req);
+      const updated = await updateGoalStatus(pool, parsed.id, parsed.status);
       if (updated === null) {
         res.status(200).json({ ok: false, error: "update_failed" });
         return;
@@ -249,9 +227,8 @@ export function createStrategicInternalRouter({
   r.post(
     "/api/internal/strategic/goals/carry",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(CarryGoalBody, req, res);
-      if (!parsed.ok) return;
-      const carried = await carryGoalToNextWeek(pool, parsed.data.id);
+      const parsed = parseBody(CarryGoalBody, req);
+      const carried = await carryGoalToNextWeek(pool, parsed.id);
       if (carried === null) {
         res.status(200).json({ ok: false, error: "carry_failed" });
         return;

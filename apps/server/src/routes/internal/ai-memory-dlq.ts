@@ -30,7 +30,7 @@ import type { Pool } from "pg";
 import { z } from "zod";
 
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import {
   listDlqRows,
   markDlqRowReplayed,
@@ -104,18 +104,15 @@ export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
   r.post(
     "/api/internal/ai-memory-dlq/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ListBody, req);
 
       const rows = await listDlqRows({
-        ...(parsed.data.source !== undefined
-          ? { source: parsed.data.source }
+        ...(parsed.source !== undefined ? { source: parsed.source } : {}),
+        ...(parsed.since !== undefined
+          ? { since: new Date(parsed.since) }
           : {}),
-        ...(parsed.data.since !== undefined
-          ? { since: new Date(parsed.data.since) }
-          : {}),
-        limit: parsed.data.limit ?? 100,
-        includeReplayed: parsed.data.includeReplayed,
+        limit: parsed.limit ?? 100,
+        includeReplayed: parsed.includeReplayed,
       });
 
       res.json({
@@ -133,10 +130,9 @@ export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
   r.post(
     "/api/internal/ai-memory-dlq/replay",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ReplayBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ReplayBody, req);
 
-      const data = parsed.data;
+      const data = parsed;
       const dryRun = data.dryRun;
 
       const rows = await listDlqRows({

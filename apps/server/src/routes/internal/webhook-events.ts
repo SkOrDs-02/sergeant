@@ -28,7 +28,7 @@ import type { Pool } from "pg";
 import { z } from "zod";
 import { env } from "../../env.js";
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
   n8nWebhookReplayAttemptsTotal,
@@ -109,16 +109,13 @@ export function createWebhookEventsInternalRouter({
   r.post(
     "/api/internal/webhook-events/record",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(RecordBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(RecordBody, req);
       try {
         const result = await recordWebhookEvent(pool, {
-          workflowId: parsed.data.workflowId,
-          source: parsed.data.source,
-          payload: parsed.data.payload,
-          ...(parsed.data.headers !== undefined
-            ? { headers: parsed.data.headers }
-            : {}),
+          workflowId: parsed.workflowId,
+          source: parsed.source,
+          payload: parsed.payload,
+          ...(parsed.headers !== undefined ? { headers: parsed.headers } : {}),
         });
         res.json({
           ok: true,
@@ -132,8 +129,8 @@ export function createWebhookEventsInternalRouter({
         ) {
           logger.warn({
             msg: "webhook_events_record_rejected_too_large",
-            workflowId: parsed.data.workflowId,
-            source: parsed.data.source,
+            workflowId: parsed.workflowId,
+            source: parsed.source,
             err: err.message,
             code: err.code,
           });
@@ -148,10 +145,9 @@ export function createWebhookEventsInternalRouter({
   r.post(
     "/api/internal/webhook-events/replay",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ReplayBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ReplayBody, req);
 
-      const { workflowId, eventIds, since, limit, dryRun } = parsed.data;
+      const { workflowId, eventIds, since, limit, dryRun } = parsed;
 
       // Fail-fast якщо n8n webhook host не сконфігуровано — execute-режим
       // не зможе зробити жодного запиту. Dry-run все одно дозволяємо

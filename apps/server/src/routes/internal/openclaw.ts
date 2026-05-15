@@ -29,7 +29,7 @@ import type { Pool } from "pg";
 import { z } from "zod";
 import { env } from "../../env.js";
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
   cancelForget,
@@ -688,11 +688,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/recall",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(RecallBody, req, res);
-      if (!parsed.ok) return;
-      const result = await recallCofounderMemory(parsed.data.founderUserId, {
-        query: parsed.data.query,
-        topK: parsed.data.topK,
+      const parsed = parseBody(RecallBody, req);
+      const result = await recallCofounderMemory(parsed.founderUserId, {
+        query: parsed.query,
+        topK: parsed.topK,
       });
       res.json(result);
     }),
@@ -708,9 +707,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/forget",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ForgetBody, req, res);
-      if (!parsed.ok) return;
-      const body = parsed.data;
+      const parsed = parseBody(ForgetBody, req);
+      const body = parsed;
       try {
         if (body.mode === "byId") {
           const result = await forgetById(pool, {
@@ -769,14 +767,13 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/forget/confirm",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ForgetConfirmBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ForgetConfirmBody, req);
       try {
         const result = await confirmForget(pool, {
-          founderUserId: parsed.data.founderUserId,
-          founderTgUserId: parsed.data.founderTgUserId,
-          rawCommand: parsed.data.rawCommand,
-          token: parsed.data.token,
+          founderUserId: parsed.founderUserId,
+          founderTgUserId: parsed.founderTgUserId,
+          rawCommand: parsed.rawCommand,
+          token: parsed.token,
         });
         res.json(result);
       } catch (err) {
@@ -805,12 +802,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/forget/cancel",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ForgetCancelBody, req, res);
-      if (!parsed.ok) return;
-      const cancelled = cancelForget(
-        parsed.data.token,
-        parsed.data.founderUserId,
-      );
+      const parsed = parseBody(ForgetCancelBody, req);
+      const cancelled = cancelForget(parsed.token, parsed.founderUserId);
       res.json({ cancelled });
     }),
   );
@@ -819,10 +812,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/strategy",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(StrategyBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(StrategyBody, req);
       try {
-        const result = await readStrategyDoc({ path: parsed.data.path });
+        const result = await readStrategyDoc({ path: parsed.path });
         res.json(result);
       } catch (err) {
         if (err instanceof OpenClawAllowlistError) {
@@ -840,13 +832,12 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/query",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(QueryBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(QueryBody, req);
       try {
         const result = await queryAppDb(pool, {
-          sql: parsed.data.sql,
-          params: parsed.data.params,
-          limit: parsed.data.limit,
+          sql: parsed.sql,
+          params: parsed.params,
+          limit: parsed.limit,
         });
         res.json(result);
       } catch (err) {
@@ -865,15 +856,14 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/github",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(GithubBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(GithubBody, req);
       try {
         const result = await readGithub({
-          repo: parsed.data.repo,
-          mode: parsed.data.mode,
-          filePath: parsed.data.filePath,
-          ref: parsed.data.ref,
-          number: parsed.data.number,
+          repo: parsed.repo,
+          mode: parsed.mode,
+          filePath: parsed.filePath,
+          ref: parsed.ref,
+          number: parsed.number,
         });
         res.json(result);
       } catch (err) {
@@ -887,10 +877,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/workflow",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(WorkflowBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(WorkflowBody, req);
       try {
-        const result = await readWorkflowLogs(parsed.data);
+        const result = await readWorkflowLogs(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -903,9 +892,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/telegram",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(TelegramBody, req, res);
-      if (!parsed.ok) return;
-      const result = await readTelegramTopicHistory(pool, parsed.data);
+      const parsed = parseBody(TelegramBody, req);
+      const result = await readTelegramTopicHistory(pool, parsed);
       res.json(result);
     }),
   );
@@ -914,9 +902,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/decision",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(DecisionBody, req, res);
-      if (!parsed.ok) return;
-      const result = await recordDecision(pool, parsed.data);
+      const parsed = parseBody(DecisionBody, req);
+      const result = await recordDecision(pool, parsed);
       res.json(result);
     }),
   );
@@ -925,12 +912,11 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/decisions/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ListBody, req);
       const result = await listRecentDecisions(
         pool,
-        parsed.data.founderUserId,
-        parsed.data.limit ?? 20,
+        parsed.founderUserId,
+        parsed.limit ?? 20,
       );
       res.json({ decisions: result });
     }),
@@ -955,14 +941,13 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         });
         return;
       }
-      const parsed = validateBody(ClassifyBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ClassifyBody, req);
       try {
         const classification = await classifyMessage(
           {
-            userMessage: parsed.data.userMessage,
-            ...(parsed.data.systemPrompt
-              ? { systemPrompt: parsed.data.systemPrompt }
+            userMessage: parsed.userMessage,
+            ...(parsed.systemPrompt
+              ? { systemPrompt: parsed.systemPrompt }
               : {}),
           },
           apiKey,
@@ -980,12 +965,11 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/budget",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(BudgetBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(BudgetBody, req);
       const result = await checkDailyBudget(
         pool,
-        parsed.data.founderUserId,
-        parsed.data.tzName,
+        parsed.founderUserId,
+        parsed.tzName,
       );
       res.json(result);
     }),
@@ -1007,16 +991,15 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/ai-cost-summary",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(AiCostSummaryBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(AiCostSummaryBody, req);
       const summary = await buildAiCostSummary({
         pool,
         budget: {
           anthropicMonthlyBudgetUsd: env.ANTHROPIC_MONTHLY_BUDGET_USD,
           voyageMonthlyBudgetUsd: env.VOYAGE_MONTHLY_BUDGET_USD,
         },
-        ...(parsed.data.trendDays !== undefined
-          ? { trendDays: parsed.data.trendDays }
+        ...(parsed.trendDays !== undefined
+          ? { trendDays: parsed.trendDays }
           : {}),
       });
       res.json(summary);
@@ -1056,9 +1039,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/invocations/open",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(OpenInvocationBody, req, res);
-      if (!parsed.ok) return;
-      const id = await openInvocation(pool, parsed.data);
+      const parsed = parseBody(OpenInvocationBody, req);
+      const id = await openInvocation(pool, parsed);
       res.json({ invocationId: id });
     }),
   );
@@ -1067,19 +1049,18 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/invocations/finalize",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(FinalizeInvocationBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(FinalizeInvocationBody, req);
       await finalizeInvocation(pool, {
-        invocationId: parsed.data.invocationId,
-        status: parsed.data.status as OpenClawStatus,
-        assistantResponse: parsed.data.assistantResponse,
-        toolCalls: parsed.data.toolCalls as OpenClawToolCall[] | undefined,
-        costUsd: parsed.data.costUsd,
-        durationMs: parsed.data.durationMs,
-        iterations: parsed.data.iterations,
-        errorMessage: parsed.data.errorMessage,
-        toneMode: parsed.data.toneMode as OpenClawToneMode | null | undefined,
-        metadataPatch: parsed.data.metadataPatch,
+        invocationId: parsed.invocationId,
+        status: parsed.status as OpenClawStatus,
+        assistantResponse: parsed.assistantResponse,
+        toolCalls: parsed.toolCalls as OpenClawToolCall[] | undefined,
+        costUsd: parsed.costUsd,
+        durationMs: parsed.durationMs,
+        iterations: parsed.iterations,
+        errorMessage: parsed.errorMessage,
+        toneMode: parsed.toneMode as OpenClawToneMode | null | undefined,
+        metadataPatch: parsed.metadataPatch,
       });
       res.json({ ok: true });
     }),
@@ -1089,9 +1070,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/metrics/stripe",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(StripeMetricsBody, req, res);
-      if (!parsed.ok) return;
-      const result = await getStripeMetrics({ days: parsed.data.days });
+      const parsed = parseBody(StripeMetricsBody, req);
+      const result = await getStripeMetrics({ days: parsed.days });
       res.json(result);
     }),
   );
@@ -1100,11 +1080,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/metrics/sentry",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SentryIssuesBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SentryIssuesBody, req);
       const result = await getSentryIssues({
-        level: parsed.data.level,
-        limit: parsed.data.limit,
+        level: parsed.level,
+        limit: parsed.limit,
       });
       res.json(result);
     }),
@@ -1114,8 +1093,7 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/metrics/server",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ServerStatsBody, req, res);
-      if (!parsed.ok) return;
+      parseBody(ServerStatsBody, req);
       const result = await getServerStats();
       res.json(result);
     }),
@@ -1125,9 +1103,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/metrics/posthog",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(PostHogStatsBody, req, res);
-      if (!parsed.ok) return;
-      const result = await getPostHogStats({ days: parsed.data.days });
+      const parsed = parseBody(PostHogStatsBody, req);
+      const result = await getPostHogStats({ days: parsed.days });
       res.json(result);
     }),
   );
@@ -1136,11 +1113,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/github/releases",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(GithubReleasesBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(GithubReleasesBody, req);
       const result = await getGithubReleases({
-        limit: parsed.data.limit,
-        repo: parsed.data.repo,
+        limit: parsed.limit,
+        repo: parsed.repo,
       });
       res.json(result);
     }),
@@ -1158,27 +1134,23 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/briefing/morning",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MorningBriefingBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(MorningBriefingBody, req);
       const input: Parameters<typeof assembleMorningBriefing>[0] = {};
-      if (parsed.data.windowDays !== undefined)
-        input.windowDays = parsed.data.windowDays;
-      if (parsed.data.githubRepo !== undefined)
-        input.githubRepo = parsed.data.githubRepo;
-      if (parsed.data.sentryLimit !== undefined)
-        input.sentryLimit = parsed.data.sentryLimit;
-      if (parsed.data.prLimit !== undefined)
-        input.prLimit = parsed.data.prLimit;
-      if (parsed.data.includeProposals !== undefined)
-        input.includeProposals = parsed.data.includeProposals;
+      if (parsed.windowDays !== undefined) input.windowDays = parsed.windowDays;
+      if (parsed.githubRepo !== undefined) input.githubRepo = parsed.githubRepo;
+      if (parsed.sentryLimit !== undefined)
+        input.sentryLimit = parsed.sentryLimit;
+      if (parsed.prLimit !== undefined) input.prLimit = parsed.prLimit;
+      if (parsed.includeProposals !== undefined)
+        input.includeProposals = parsed.includeProposals;
       const result = await assembleMorningBriefing(input);
       // PR /mute (Phase 5b): augment response з mute-state коли caller
       // передав founderUserId. n8n WF-25 cron консумер читає `mute.muted`
       // і short-circuit-ує `sendMessage`. Briefing markdown усе одно
       // зберігається (cost-free аудит).
-      if (parsed.data.founderUserId) {
+      if (parsed.founderUserId) {
         const mute = await isFounderMuted(pool, {
-          founderUserId: parsed.data.founderUserId,
+          founderUserId: parsed.founderUserId,
         });
         res.json({ ...result, mute });
         return;
@@ -1199,19 +1171,14 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/ritual/weekly",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(WeeklyReviewBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(WeeklyReviewBody, req);
       const input: Parameters<typeof assembleWeeklyReview>[0] = {};
-      if (parsed.data.windowDays !== undefined)
-        input.windowDays = parsed.data.windowDays;
-      if (parsed.data.staleDays !== undefined)
-        input.staleDays = parsed.data.staleDays;
-      if (parsed.data.githubRepo !== undefined)
-        input.githubRepo = parsed.data.githubRepo;
-      if (parsed.data.sentryLimit !== undefined)
-        input.sentryLimit = parsed.data.sentryLimit;
-      if (parsed.data.prLimit !== undefined)
-        input.prLimit = parsed.data.prLimit;
+      if (parsed.windowDays !== undefined) input.windowDays = parsed.windowDays;
+      if (parsed.staleDays !== undefined) input.staleDays = parsed.staleDays;
+      if (parsed.githubRepo !== undefined) input.githubRepo = parsed.githubRepo;
+      if (parsed.sentryLimit !== undefined)
+        input.sentryLimit = parsed.sentryLimit;
+      if (parsed.prLimit !== undefined) input.prLimit = parsed.prLimit;
       const result = await assembleWeeklyReview(input);
       res.json(result);
     }),
@@ -1227,17 +1194,13 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/ritual/monthly",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MonthlyOkrReviewBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(MonthlyOkrReviewBody, req);
       const input: Parameters<typeof assembleMonthlyOkrReview>[0] = {};
-      if (parsed.data.githubRepo !== undefined)
-        input.githubRepo = parsed.data.githubRepo;
-      if (parsed.data.prLimit !== undefined)
-        input.prLimit = parsed.data.prLimit;
-      if (parsed.data.staleDays !== undefined)
-        input.staleDays = parsed.data.staleDays;
-      if (parsed.data.sentryLevel !== undefined)
-        input.sentryLevel = parsed.data.sentryLevel;
+      if (parsed.githubRepo !== undefined) input.githubRepo = parsed.githubRepo;
+      if (parsed.prLimit !== undefined) input.prLimit = parsed.prLimit;
+      if (parsed.staleDays !== undefined) input.staleDays = parsed.staleDays;
+      if (parsed.sentryLevel !== undefined)
+        input.sentryLevel = parsed.sentryLevel;
       const result = await assembleMonthlyOkrReview(input);
       res.json(result);
     }),
@@ -1255,20 +1218,19 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write/strategy-doc",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(CommitStrategyDocBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(CommitStrategyDocBody, req);
       try {
         // T2 audit #3 — enforce the repo allowlist at the request
         // boundary so an LLM-supplied `repo` is rejected with 400
         // BEFORE we mint a GitHub App installation token. The same
         // assert runs again inside `commitToStrategyDoc` as a defense
         // in depth, so direct internal callers can't bypass it.
-        assertOpenClawRepoAllowed(parsed.data.repo);
+        assertOpenClawRepoAllowed(parsed.repo);
         const result = await commitToStrategyDoc({
-          path: parsed.data.path,
-          content: parsed.data.content,
-          message: parsed.data.message,
-          repo: parsed.data.repo,
+          path: parsed.path,
+          content: parsed.content,
+          message: parsed.message,
+          repo: parsed.repo,
         });
         res.json(result);
       } catch (err) {
@@ -1287,16 +1249,15 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write/github-issue",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(CreateGithubIssueBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(CreateGithubIssueBody, req);
       try {
         // T2 audit #3 — see write/strategy-doc for rationale.
-        assertOpenClawRepoAllowed(parsed.data.repo);
+        assertOpenClawRepoAllowed(parsed.repo);
         const result = await createGithubIssue({
-          title: parsed.data.title,
-          body: parsed.data.body,
-          labels: parsed.data.labels,
-          repo: parsed.data.repo,
+          title: parsed.title,
+          body: parsed.body,
+          labels: parsed.labels,
+          repo: parsed.repo,
         });
         res.json(result);
       } catch (err) {
@@ -1312,12 +1273,11 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write/post-to-topic",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(PostToTopicBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(PostToTopicBody, req);
       try {
         const result = await postToTopic({
-          topic: parsed.data.topic,
-          text: parsed.data.text,
+          topic: parsed.topic,
+          text: parsed.text,
         });
         // Mirror successful posts into `tg_topic_archive` so
         // `read_telegram_topic_history` can surface them later
@@ -1326,8 +1286,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         // post, so the archive must not pretend otherwise.
         if (result.status === "posted") {
           await recordTopicMessage(pool, {
-            topic: parsed.data.topic,
-            text: parsed.data.text,
+            topic: parsed.topic,
+            text: parsed.text,
             source: "post_to_topic",
             messageId: result.messageId ?? null,
             // No stable dedupe key — manual posts can repeat verbatim
@@ -1352,11 +1312,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write/pause-workflow",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(PauseWorkflowBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(PauseWorkflowBody, req);
       const result = await pauseWorkflow({
-        workflowId: parsed.data.workflowId,
-        reason: parsed.data.reason,
+        workflowId: parsed.workflowId,
+        reason: parsed.reason,
       });
       res.json(result);
     }),
@@ -1366,11 +1325,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write/mute-alert",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MuteAlertBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(MuteAlertBody, req);
       const result = await muteSentryAlert({
-        issueId: parsed.data.issueId,
-        untilIso: parsed.data.untilIso,
+        issueId: parsed.issueId,
+        untilIso: parsed.untilIso,
       });
       res.json(result);
     }),
@@ -1386,21 +1344,20 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write-audit/log",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(WriteAuditLogBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(WriteAuditLogBody, req);
       const id = await recordWriteAudit(pool, {
-        approvalId: parsed.data.approvalId,
-        tool: parsed.data.tool,
-        founderUserId: parsed.data.founderUserId,
-        founderTgUserId: parsed.data.founderTgUserId,
-        invocationId: parsed.data.invocationId ?? null,
-        action: parsed.data.action,
-        input: parsed.data.input,
-        httpStatus: parsed.data.httpStatus ?? null,
-        ok: parsed.data.ok ?? null,
-        responseExcerpt: parsed.data.responseExcerpt ?? null,
-        persona: parsed.data.persona ?? null,
-        metadata: parsed.data.metadata,
+        approvalId: parsed.approvalId,
+        tool: parsed.tool,
+        founderUserId: parsed.founderUserId,
+        founderTgUserId: parsed.founderTgUserId,
+        invocationId: parsed.invocationId ?? null,
+        action: parsed.action,
+        input: parsed.input,
+        httpStatus: parsed.httpStatus ?? null,
+        ok: parsed.ok ?? null,
+        responseExcerpt: parsed.responseExcerpt ?? null,
+        persona: parsed.persona ?? null,
+        metadata: parsed.metadata,
       });
       res.json({ ok: true, id });
     }),
@@ -1410,19 +1367,18 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/write-audit/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(WriteAuditListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(WriteAuditListBody, req);
       // Zod's `.datetime({ offset: true })` validator already rejects any
       // non-ISO input with 400 above, so `new Date(...)` is safe to call
       // unguarded here. Coerce inline to keep this branch shallow.
       const audits = await listRecentWriteAudits(pool, {
-        founderUserId: parsed.data.founderUserId,
-        limit: parsed.data.limit,
-        tool: parsed.data.tool,
-        action: parsed.data.action,
-        persona: parsed.data.persona,
-        recordedAfter: parsed.data.recordedAfterIso
-          ? new Date(parsed.data.recordedAfterIso)
+        founderUserId: parsed.founderUserId,
+        limit: parsed.limit,
+        tool: parsed.tool,
+        action: parsed.action,
+        persona: parsed.persona,
+        recordedAfter: parsed.recordedAfterIso
+          ? new Date(parsed.recordedAfterIso)
           : undefined,
       });
       res.json({ audits });
@@ -1441,11 +1397,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/n8n/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(N8nListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(N8nListBody, req);
       const result = await listN8nWorkflows({
-        tiers: parsed.data.tiers,
-        limit: parsed.data.limit,
+        tiers: parsed.tiers,
+        limit: parsed.limit,
       });
       res.json(result);
     }),
@@ -1455,10 +1410,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/n8n/describe",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(N8nWorkflowIdBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(N8nWorkflowIdBody, req);
       const result = await describeN8nWorkflow({
-        workflowId: parsed.data.workflowId,
+        workflowId: parsed.workflowId,
       });
       res.json(result);
     }),
@@ -1468,11 +1422,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/n8n/trigger",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(N8nWorkflowIdBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(N8nWorkflowIdBody, req);
       try {
         const result = await triggerN8nWorkflow({
-          workflowId: parsed.data.workflowId,
+          workflowId: parsed.workflowId,
         });
         res.json(result);
       } catch (err) {
@@ -1488,12 +1441,11 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/n8n/activate",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(N8nActivateBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(N8nActivateBody, req);
       try {
         const result = await activateN8nWorkflow({
-          workflowId: parsed.data.workflowId,
-          active: parsed.data.active,
+          workflowId: parsed.workflowId,
+          active: parsed.active,
         });
         res.json(result);
       } catch (err) {
@@ -1509,10 +1461,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/snapshot/refresh",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SnapshotRefreshBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SnapshotRefreshBody, req);
       const result = await refreshBusinessSnapshot({
-        workflowIds: parsed.data.workflowIds,
+        workflowIds: parsed.workflowIds,
       });
       res.json(result);
     }),
@@ -1522,12 +1473,11 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/invocations/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ListBody, req);
       const result = await listRecentInvocations(
         pool,
-        parsed.data.founderUserId,
-        parsed.data.limit ?? 50,
+        parsed.founderUserId,
+        parsed.limit ?? 50,
       );
       res.json({ invocations: result });
     }),
@@ -1550,15 +1500,14 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/mute/set",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MuteSetBody, req, res);
-      if (!parsed.ok) return;
-      const mutedUntil = parsed.data.mutedUntilIso
-        ? new Date(parsed.data.mutedUntilIso)
+      const parsed = parseBody(MuteSetBody, req);
+      const mutedUntil = parsed.mutedUntilIso
+        ? new Date(parsed.mutedUntilIso)
         : null;
       const state = await setFounderMute(pool, {
-        founderUserId: parsed.data.founderUserId,
+        founderUserId: parsed.founderUserId,
         mutedUntil,
-        reason: parsed.data.reason ?? null,
+        reason: parsed.reason ?? null,
       });
       res.json(state);
     }),
@@ -1568,10 +1517,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/mute/clear",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MuteFounderBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(MuteFounderBody, req);
       const state = await clearFounderMute(pool, {
-        founderUserId: parsed.data.founderUserId,
+        founderUserId: parsed.founderUserId,
       });
       res.json(state);
     }),
@@ -1581,10 +1529,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/mute/status",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MuteFounderBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(MuteFounderBody, req);
       const state = await getFounderMute(pool, {
-        founderUserId: parsed.data.founderUserId,
+        founderUserId: parsed.founderUserId,
       });
       res.json({ state });
     }),
@@ -1594,10 +1541,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/mute/check",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(MuteFounderBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(MuteFounderBody, req);
       const result = await isFounderMuted(pool, {
-        founderUserId: parsed.data.founderUserId,
+        founderUserId: parsed.founderUserId,
       });
       res.json(result);
     }),
@@ -1614,24 +1560,19 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/whois",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(WhoisLookupBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(WhoisLookupBody, req);
       const token = env.SERGEANT_ALERT_BOT_TOKEN;
       const telegramClient = token ? createTelegramBotClient({ token }) : null;
       const result = await lookupWhois(pool, {
-        founderUserId: parsed.data.founderUserId,
-        founderTgUserId: parsed.data.founderTgUserId,
-        ...(parsed.data.tgUserId !== undefined
-          ? { tgUserId: parsed.data.tgUserId }
+        founderUserId: parsed.founderUserId,
+        founderTgUserId: parsed.founderTgUserId,
+        ...(parsed.tgUserId !== undefined ? { tgUserId: parsed.tgUserId } : {}),
+        ...(parsed.username !== undefined ? { username: parsed.username } : {}),
+        ...(parsed.windowDays !== undefined
+          ? { windowDays: parsed.windowDays }
           : {}),
-        ...(parsed.data.username !== undefined
-          ? { username: parsed.data.username }
-          : {}),
-        ...(parsed.data.windowDays !== undefined
-          ? { windowDays: parsed.data.windowDays }
-          : {}),
-        ...(parsed.data.topToolsLimit !== undefined
-          ? { topToolsLimit: parsed.data.topToolsLimit }
+        ...(parsed.topToolsLimit !== undefined
+          ? { topToolsLimit: parsed.topToolsLimit }
           : {}),
         telegramClient,
       });
@@ -1645,10 +1586,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/github/search",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(GithubSearchBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(GithubSearchBody, req);
       try {
-        const result = await githubSearch(parsed.data);
+        const result = await githubSearch(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1661,10 +1601,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/github/tree",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(GithubTreeBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(GithubTreeBody, req);
       try {
-        const result = await githubTree(parsed.data);
+        const result = await githubTree(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1677,10 +1616,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/github/diff",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(GithubDiffBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(GithubDiffBody, req);
       try {
-        const result = await githubDiff(parsed.data);
+        const result = await githubDiff(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1693,10 +1631,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/github/prs",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(GithubPrsBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(GithubPrsBody, req);
       try {
-        const result = await githubPrs(parsed.data);
+        const result = await githubPrs(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1711,10 +1648,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/seo/gsc",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SeoGscQueryBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SeoGscQueryBody, req);
       try {
-        const result = await seoGscQuery(parsed.data);
+        const result = await seoGscQuery(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1727,10 +1663,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/seo/lighthouse",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SeoPsiAuditBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SeoPsiAuditBody, req);
       try {
-        const result = await seoPsiAudit(parsed.data);
+        const result = await seoPsiAudit(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1743,10 +1678,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/seo/serp",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SeoSerpLookupBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SeoSerpLookupBody, req);
       try {
-        const result = await seoSerpLookup(parsed.data);
+        const result = await seoSerpLookup(parsed);
         res.json(result);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -1761,10 +1695,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/reminders/set",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SetReminderBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SetReminderBody, req);
       try {
-        const reminder = await setReminder(pool, parsed.data);
+        const reminder = await setReminder(pool, parsed);
         res.json({ reminder });
       } catch (err) {
         if (err instanceof ReminderValidationError) {
@@ -1779,11 +1712,10 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/reminders/list-due",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ListDueRemindersBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ListDueRemindersBody, req);
       const opts: { limit?: number; nowIso?: string } = {};
-      if (parsed.data.limit !== undefined) opts.limit = parsed.data.limit;
-      if (parsed.data.nowIso !== undefined) opts.nowIso = parsed.data.nowIso;
+      if (parsed.limit !== undefined) opts.limit = parsed.limit;
+      if (parsed.nowIso !== undefined) opts.nowIso = parsed.nowIso;
       const reminders = await listDueReminders(pool, opts);
       res.json({ reminders });
     }),
@@ -1793,15 +1725,12 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/reminders/mark-sent",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ReminderMarkBody, req, res);
-      if (!parsed.ok) return;
-      const reminder = await markReminderSent(pool, parsed.data.reminderId);
+      const parsed = parseBody(ReminderMarkBody, req);
+      const reminder = await markReminderSent(pool, parsed.reminderId);
       if (!reminder) {
         return asNotFound(
           res,
-          new Error(
-            `reminder ${parsed.data.reminderId} not in 'pending' state`,
-          ),
+          new Error(`reminder ${parsed.reminderId} not in 'pending' state`),
         );
       }
       res.json({ reminder });
@@ -1812,19 +1741,16 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/reminders/mark-failed",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ReminderMarkBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(ReminderMarkBody, req);
       const reminder = await markReminderFailed(
         pool,
-        parsed.data.reminderId,
-        parsed.data.reason,
+        parsed.reminderId,
+        parsed.reason,
       );
       if (!reminder) {
         return asNotFound(
           res,
-          new Error(
-            `reminder ${parsed.data.reminderId} not in 'pending' state`,
-          ),
+          new Error(`reminder ${parsed.reminderId} not in 'pending' state`),
         );
       }
       res.json({ reminder });
@@ -1835,9 +1761,8 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/reminders/cancel",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(ReminderMarkBody, req, res);
-      if (!parsed.ok) return;
-      const founderUserId = parsed.data.founderUserId;
+      const parsed = parseBody(ReminderMarkBody, req);
+      const founderUserId = parsed.founderUserId;
       if (!founderUserId) {
         return asSchemaFailure(
           res,
@@ -1846,14 +1771,14 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       }
       const reminder = await markReminderCancelled(
         pool,
-        parsed.data.reminderId,
+        parsed.reminderId,
         founderUserId,
       );
       if (!reminder) {
         return asNotFound(
           res,
           new Error(
-            `reminder ${parsed.data.reminderId} not cancellable (not pending or not owned)`,
+            `reminder ${parsed.reminderId} not cancellable (not pending or not owned)`,
           ),
         );
       }
@@ -1865,14 +1790,11 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/openclaw/reminders/list",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(RemindersListBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(RemindersListBody, req);
       const reminders = await listFounderReminders(pool, {
-        founderUserId: parsed.data.founderUserId,
-        statuses: parsed.data.statuses,
-        ...(parsed.data.limit !== undefined
-          ? { limit: parsed.data.limit }
-          : {}),
+        founderUserId: parsed.founderUserId,
+        statuses: parsed.statuses,
+        ...(parsed.limit !== undefined ? { limit: parsed.limit } : {}),
       });
       res.json({ reminders });
     }),

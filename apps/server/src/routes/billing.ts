@@ -12,7 +12,7 @@ import {
   rateLimitExpress,
   requireSession,
   setModule,
-  validateBody,
+  parseBody,
 } from "../http/index.js";
 import {
   BillingConfigurationError,
@@ -47,8 +47,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60 * 60 * 1000,
     }),
     asyncHandler(async (req: AuthedRequest, res: Response) => {
-      const parsed = validateBody(BillingCheckoutRequestSchema, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(BillingCheckoutRequestSchema, req);
 
       try {
         const payload = BillingCheckoutResponseSchema.parse(
@@ -58,7 +57,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
               id: req.user!.id,
               email: req.user!.email ?? null,
             },
-            plan: parsed.data.plan,
+            plan: parsed.plan,
           }),
         );
         res.json(payload);

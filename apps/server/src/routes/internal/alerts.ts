@@ -29,7 +29,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import { Sentry } from "../../sentry.js";
 import {
@@ -212,14 +212,13 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/post",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(PostBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(PostBody, req);
       const result = await recordAlertPost(pool, {
-        alertId: parsed.data.alertId,
-        topic: parsed.data.topic,
-        severity: parsed.data.severity,
-        summary: parsed.data.summary ?? null,
-        metadata: parsed.data.metadata,
+        alertId: parsed.alertId,
+        topic: parsed.topic,
+        severity: parsed.severity,
+        summary: parsed.summary ?? null,
+        metadata: parsed.metadata,
       });
       // Mirror the alert into `tg_topic_archive` so
       // `read_telegram_topic_history` can surface it (OpenClaw roadmap
@@ -227,15 +226,15 @@ export function createAlertsInternalRouter({
       // empty rows are useless to the LLM. Skip on retry path
       // (`alreadyPosted`) — the archive write is idempotent on its own
       // dedupe key but we'd waste a roundtrip.
-      if (parsed.data.summary && !result.alreadyPosted) {
+      if (parsed.summary && !result.alreadyPosted) {
         await recordTopicMessage(pool, {
-          topic: parsed.data.topic,
-          text: parsed.data.summary,
+          topic: parsed.topic,
+          text: parsed.summary,
           source: "alert",
-          dedupeKey: parsed.data.alertId,
+          dedupeKey: parsed.alertId,
           metadata: {
-            severity: parsed.data.severity,
-            ...(parsed.data.metadata ?? {}),
+            severity: parsed.severity,
+            ...(parsed.metadata ?? {}),
           },
         });
       }
@@ -251,12 +250,11 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/ack",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(AckBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(AckBody, req);
       const result = await recordAlertAck(pool, {
-        alertId: parsed.data.alertId,
-        ackByTgUserId: parsed.data.ackByTgUserId,
-        ackAction: parsed.data.ackAction,
+        alertId: parsed.alertId,
+        ackByTgUserId: parsed.ackByTgUserId,
+        ackAction: parsed.ackAction,
       });
       if (result.notFound) {
         res.status(404).json({ error: "alert_not_found" });
@@ -273,14 +271,13 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/pending",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(PendingBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(PendingBody, req);
       const alerts = await listPendingAlerts(pool, {
-        topic: parsed.data.topic,
-        severity: parsed.data.severity,
-        olderThanMinutes: parsed.data.olderThanMinutes,
-        notYetEscalated: parsed.data.notYetEscalated,
-        limit: parsed.data.limit,
+        topic: parsed.topic,
+        severity: parsed.severity,
+        olderThanMinutes: parsed.olderThanMinutes,
+        notYetEscalated: parsed.notYetEscalated,
+        limit: parsed.limit,
       });
       res.json({ alerts });
     }),
@@ -290,11 +287,10 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/history",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(HistoryBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(HistoryBody, req);
       const result = await getAlertHistoryStats(pool, {
-        ...(parsed.data.days != null ? { daysBack: parsed.data.days } : {}),
-        ...(parsed.data.limit != null ? { limit: parsed.data.limit } : {}),
+        ...(parsed.days != null ? { daysBack: parsed.days } : {}),
+        ...(parsed.limit != null ? { limit: parsed.limit } : {}),
       });
       res.json(result);
     }),
@@ -304,8 +300,7 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/send",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SendBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SendBody, req);
 
       const client = telegramClient ?? defaultAlertBotTelegramClient();
       if (!client) {
@@ -322,20 +317,20 @@ export function createAlertsInternalRouter({
       // escalation, SAB direct-to-founder). Topic-channel-и
       // (ops/eng/incidents) skip-ають це поле — їх mute не торкається.
       // P0 (critical) bypass-ить mute з breadcrumb-ом для audit-trail.
-      if (parsed.data.founderUserId) {
+      if (parsed.founderUserId) {
         const muteGuard = await isFounderMuted(pool, {
-          founderUserId: parsed.data.founderUserId,
+          founderUserId: parsed.founderUserId,
         });
         if (muteGuard.muted) {
-          if (parsed.data.severity === "P0") {
+          if (parsed.severity === "P0") {
             Sentry.addBreadcrumb({
               category: "openclaw.mute",
               message: "openclaw-muted-override-critical",
               level: "warning",
               data: {
-                alertId: parsed.data.alertId,
-                topic: parsed.data.topic,
-                severity: parsed.data.severity,
+                alertId: parsed.alertId,
+                topic: parsed.topic,
+                severity: parsed.severity,
                 mutedUntilIso: muteGuard.mutedUntilIso,
               },
             });
@@ -345,21 +340,21 @@ export function createAlertsInternalRouter({
               message: "openclaw-muted-skip",
               level: "info",
               data: {
-                alertId: parsed.data.alertId,
-                topic: parsed.data.topic,
-                severity: parsed.data.severity,
+                alertId: parsed.alertId,
+                topic: parsed.topic,
+                severity: parsed.severity,
                 mutedUntilIso: muteGuard.mutedUntilIso,
               },
             });
             logger.info({
               msg: "alerts_send_skipped_muted",
-              alertId: parsed.data.alertId,
-              severity: parsed.data.severity,
+              alertId: parsed.alertId,
+              severity: parsed.severity,
               mutedUntilIso: muteGuard.mutedUntilIso,
             });
             res.status(200).json({
               action: "skipped_muted",
-              alertId: parsed.data.alertId,
+              alertId: parsed.alertId,
               mutedUntilIso: muteGuard.mutedUntilIso,
             });
             return;
@@ -368,35 +363,31 @@ export function createAlertsInternalRouter({
       }
 
       const result = await postOrEditDedupedAlert(pool, client, {
-        alertId: parsed.data.alertId,
-        topic: parsed.data.topic,
-        severity: parsed.data.severity,
-        summary: parsed.data.summary ?? null,
-        metadata: parsed.data.metadata,
-        dedupSignature: parsed.data.dedupSignature ?? null,
-        chatId: parsed.data.chatId,
-        messageThreadId: parsed.data.messageThreadId,
-        text: parsed.data.text,
-        disableNotification: parsed.data.disableNotification,
-        windowMs: parsed.data.windowMs ?? DEFAULT_DEDUP_WINDOW_MS,
+        alertId: parsed.alertId,
+        topic: parsed.topic,
+        severity: parsed.severity,
+        summary: parsed.summary ?? null,
+        metadata: parsed.metadata,
+        dedupSignature: parsed.dedupSignature ?? null,
+        chatId: parsed.chatId,
+        messageThreadId: parsed.messageThreadId,
+        text: parsed.text,
+        disableNotification: parsed.disableNotification,
+        windowMs: parsed.windowMs ?? DEFAULT_DEDUP_WINDOW_MS,
       });
 
       // Дзеркаляться в archive тільки при першому відправленні (аналог логіки
       // в `/alerts/post`). `edited`/`sent_after_edit_failure`/етц. — вже
       // відомі алерти, archive-рядок вже є.
-      if (
-        result.action === "sent" &&
-        !result.alreadyPosted &&
-        parsed.data.summary
-      ) {
+      if (result.action === "sent" && !result.alreadyPosted && parsed.summary) {
         await recordTopicMessage(pool, {
-          topic: parsed.data.topic,
-          text: parsed.data.summary,
+          topic: parsed.topic,
+          text: parsed.summary,
           source: "alert",
-          dedupeKey: parsed.data.alertId,
+          dedupeKey: parsed.alertId,
           metadata: {
-            severity: parsed.data.severity,
-            ...(parsed.data.metadata ?? {}),
+            severity: parsed.severity,
+            ...(parsed.metadata ?? {}),
           },
         });
       }
@@ -409,9 +400,8 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/escalate",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(EscalateBody, req, res);
-      if (!parsed.ok) return;
-      const result = await markAlertEscalated(pool, parsed.data.alertId);
+      const parsed = parseBody(EscalateBody, req);
+      const result = await markAlertEscalated(pool, parsed.alertId);
       if (result.notFound) {
         res.status(404).json({ error: "alert_not_found" });
         return;
@@ -427,9 +417,8 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/repeat",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(RepeatBody, req, res);
-      if (!parsed.ok) return;
-      const result = await markAlertRepeated(pool, parsed.data.alertId);
+      const parsed = parseBody(RepeatBody, req);
+      const result = await markAlertRepeated(pool, parsed.alertId);
       if (result.notFound) {
         res.status(404).json({ error: "alert_not_found" });
         return;
@@ -445,9 +434,8 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/sentry-warn",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SentryWarnBody, req, res);
-      if (!parsed.ok) return;
-      const result = await markAlertSentryWarned(pool, parsed.data.alertId);
+      const parsed = parseBody(SentryWarnBody, req);
+      const result = await markAlertSentryWarned(pool, parsed.alertId);
       if (result.notFound) {
         res.status(404).json({ error: "alert_not_found" });
         return;
@@ -458,23 +446,20 @@ export function createAlertsInternalRouter({
       // prior successful response.
       if (!result.alreadySentryWarned) {
         try {
-          Sentry.captureMessage(
-            `unacked-alert-escalation: ${parsed.data.alertId}`,
-            {
-              level: "warning",
-              tags: {
-                kind: "unacked-alert-escalation",
-                alertId: parsed.data.alertId,
-              },
+          Sentry.captureMessage(`unacked-alert-escalation: ${parsed.alertId}`, {
+            level: "warning",
+            tags: {
+              kind: "unacked-alert-escalation",
+              alertId: parsed.alertId,
             },
-          );
+          });
         } catch (err) {
           // Capture failure must NOT block the DB transition — the row is
           // already stamped, so the cron will not retry. Log so opsfolk
           // can spot Sentry-side outages.
           logger.warn({
             msg: "alert_sentry_warn_capture_failed",
-            alertId: parsed.data.alertId,
+            alertId: parsed.alertId,
             err: (err as Error)?.message,
           });
         }
@@ -490,13 +475,12 @@ export function createAlertsInternalRouter({
   r.post(
     "/api/internal/alerts/snooze",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(SnoozeBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(SnoozeBody, req);
       const snoozedUntilAt = new Date(
-        Date.now() + parsed.data.durationMinutes * 60_000,
+        Date.now() + parsed.durationMinutes * 60_000,
       );
       const result = await markAlertSnoozed(pool, {
-        alertId: parsed.data.alertId,
+        alertId: parsed.alertId,
         snoozedUntilAt,
       });
       if (result.notFound) {

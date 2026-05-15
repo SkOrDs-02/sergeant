@@ -23,7 +23,7 @@ import type { Pool } from "pg";
 import { z } from "zod";
 
 import { asyncHandler } from "../../http/index.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import {
   finalizeBackfill,
   runBackfillBatch,
@@ -75,16 +75,15 @@ export function createAiMemoryInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/ai-memory/backfill/start",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(StartBackfillBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(StartBackfillBody, req);
       const out = await startBackfill(pool, {
-        founderUserId: parsed.data.founderUserId,
-        daysWindow: parsed.data.daysWindow,
-        sourceMode: parsed.data.sourceMode,
-        batchSize: parsed.data.batchSize,
-        dryRun: parsed.data.dryRun,
-        ...(parsed.data.topicFilter !== undefined
-          ? { topicFilter: parsed.data.topicFilter }
+        founderUserId: parsed.founderUserId,
+        daysWindow: parsed.daysWindow,
+        sourceMode: parsed.sourceMode,
+        batchSize: parsed.batchSize,
+        dryRun: parsed.dryRun,
+        ...(parsed.topicFilter !== undefined
+          ? { topicFilter: parsed.topicFilter }
           : {}),
       });
       res.json({ ok: true, ...out });
@@ -101,11 +100,10 @@ export function createAiMemoryInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/ai-memory/backfill/batch",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(RunBatchBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(RunBatchBody, req);
       const out = await runBackfillBatch(pool, {
-        stateId: parsed.data.stateId,
-        founderUserId: parsed.data.founderUserId,
+        stateId: parsed.stateId,
+        founderUserId: parsed.founderUserId,
       });
       res.json({ ok: true, ...out });
     }),
@@ -119,15 +117,12 @@ export function createAiMemoryInternalRouter({ pool }: { pool: Pool }): Router {
   r.post(
     "/api/internal/ai-memory/backfill/finalize",
     asyncHandler(async (req, res) => {
-      const parsed = validateBody(FinalizeBody, req, res);
-      if (!parsed.ok) return;
+      const parsed = parseBody(FinalizeBody, req);
       await finalizeBackfill(pool, {
-        stateId: parsed.data.stateId,
-        founderUserId: parsed.data.founderUserId,
-        status: parsed.data.status,
-        ...(parsed.data.error !== undefined
-          ? { error: parsed.data.error }
-          : {}),
+        stateId: parsed.stateId,
+        founderUserId: parsed.founderUserId,
+        status: parsed.status,
+        ...(parsed.error !== undefined ? { error: parsed.error } : {}),
       });
       res.json({ ok: true });
     }),
