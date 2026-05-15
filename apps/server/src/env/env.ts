@@ -1259,6 +1259,25 @@ export function assertStartupEnv(): void {
     }
   }
 
+  // D3 (2026-05-15 deep-audit): mirror the Stripe wired-without-secret
+  // guard for AI memory. Якщо master `AI_MEMORY_ENABLED=true`, але
+  // `VOYAGE_API_KEY=""` — embedding-провайдер кидає `MissingVoyageApiKeyError`
+  // на першому виклику (→ HTTP 503 у recall / BullMQ-skip у ingest). Це
+  // silent failure для оператора: фічу вмикнули, але юзер бачить 503
+  // тільки після першого запиту. Hard-fail у production переносить
+  // помилку у boot-логи; у dev/staging — warning, щоб локальний
+  // toggle-тест без key не зривав сервер.
+  if (env.AI_MEMORY_ENABLED && !env.VOYAGE_API_KEY) {
+    if (isProduction) {
+      throw new Error(
+        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/launch/tech/ai-memory-activation.md.",
+      );
+    }
+    warnings.push(
+      "AI_MEMORY_ENABLED=true but VOYAGE_API_KEY is not set — embedding calls will throw MissingVoyageApiKeyError on the first request. Set VOYAGE_API_KEY or disable AI_MEMORY_ENABLED.",
+    );
+  }
+
   // H9: AI_QUOTA_DISABLED is a billing kill-switch — fine in CI/test where e2e
   // hammers real Anthropic without burning user quota, catastrophic in
   // production where it disables every per-user / per-IP cap. The advisory

@@ -400,3 +400,82 @@ describe("assertStartupEnv — HTTPS scheme hard-fail (T2 audit #6)", () => {
     expect(() => assertStartupEnv()).not.toThrow();
   });
 });
+
+describe("assertStartupEnv — AI_MEMORY_ENABLED requires VOYAGE_API_KEY (D3)", () => {
+  // Mirror of the Stripe-wired-without-secret guard: if the master flag
+  // `AI_MEMORY_ENABLED=true` is on but `VOYAGE_API_KEY` is empty, the
+  // first embedding call throws MissingVoyageApiKeyError → 503 у recall,
+  // BullMQ-skip у ingest. Boot-time guard surfaces this misconfig у
+  // deploy logs замість тихого 503-флоу.
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("throws у production коли AI_MEMORY_ENABLED=true і VOYAGE_API_KEY порожній", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      AI_MEMORY_ENABLED: "true",
+      VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).toThrow(/VOYAGE_API_KEY/);
+    expect(() => assertStartupEnv()).toThrow(/AI_MEMORY_ENABLED/);
+  });
+
+  it("throws коли AI_MEMORY_ENABLED=1 (legacy spelling)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      AI_MEMORY_ENABLED: "1",
+      VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).toThrow(/VOYAGE_API_KEY/);
+  });
+
+  it("throws під Railway prod без NODE_ENV=production", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      NODE_ENV: "test",
+      RAILWAY_ENVIRONMENT: "production",
+      AI_MEMORY_ENABLED: "true",
+      VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).toThrow(/VOYAGE_API_KEY/);
+  });
+
+  it("does NOT throw у production коли AI_MEMORY_ENABLED=false (master off)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      AI_MEMORY_ENABLED: "false",
+      VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw у production коли AI_MEMORY_ENABLED=true і VOYAGE_API_KEY заповнений", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      AI_MEMORY_ENABLED: "true",
+      VOYAGE_API_KEY: "pa-test-1234567890abcdef",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw у NODE_ENV=development з AI_MEMORY_ENABLED=true і пустим VOYAGE_API_KEY (warning only)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      AI_MEMORY_ENABLED: "true",
+      VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw у NODE_ENV=test (CI без Voyage key)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "test",
+      AI_MEMORY_ENABLED: "true",
+      VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
