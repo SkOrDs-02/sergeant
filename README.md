@@ -14,9 +14,9 @@
 
 > **AI coding agent or tool?** Read [`AGENTS.md`](./AGENTS.md) — repo policy, hard rules, and the agent operating system (skills, playbooks). Sub-tree quick references: [`apps/web/AGENTS.md`](./apps/web/AGENTS.md), [`apps/server/AGENTS.md`](./apps/server/AGENTS.md), [`apps/mobile/AGENTS.md`](./apps/mobile/AGENTS.md).
 
-<!-- Hero asset slot: replace this comment with `<img src="docs/assets/sergeant-hero.png" alt="Sergeant dashboard preview" width="1280" />` after PR-02b lands the asset (see docs/assets/README.md). -->
+<!-- Hero asset slot: replace this comment with `<img src="docs/assets/sergeant-hero.png" alt="Sergeant dashboard preview" width="1280" />` once the screenshot is captured (see docs/assets/README.md § "Як викапчити hero"). The slot stays as a comment, not a broken image link, so the README renders cleanly until the file lands. -->
 
-<p align="center"><em>(Hero screenshot pending — see <a href="./docs/assets/README.md">docs/assets/</a> capture instructions; PR-02b adds the actual file.)</em></p>
+<p align="center"><em>Hero screenshot pending — capture-інструкції в <a href="./docs/assets/README.md">docs/assets/</a>. Виконавець може закрити цей пункт у follow-up PR через 1280×720 PNG з cold-start dashboard-у.</em></p>
 
 ## Що це?
 

@@ -1,6 +1,6 @@
 # Deep audit — state of repo (2026-05-15)
 
-> **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session). **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-15 by Claude Opus 4.7 (external session — closeout snapshot for second-pass executor; D1/D3/D4 та planning-card-и оновлено посиланнями на конкретні merged/open PR-и). **Next review:** 2026-08-13.
 > **Status:** Active
 
 > **Скоуп:** зовнішній двопрохідний аудит на запит власника (повний repo: документи, мертвий код, архітектура, ризики). Цей файл — synthesis-запис стану на 2026-05-15, який крос-валідує знахідки з активною серією прожарок 2026-05-13 і підтверджує, що **переважна більшість виявлених P0/P1 пунктів уже закрита** в існуючому процесі планування. Outstanding-list — короткий, focused.
@@ -158,6 +158,29 @@ pnpm docs:check-links
 # 3. Перевірити, що commit-scope правильний
 # Очікуваний commit: docs(docs): add 2026-05-15 state-of-repo synthesis
 ```
+
+## Update 2026-05-15 — second-pass executor closeout
+
+Окремий runner (Claude Opus 4.7) пройшов по open-tracker-ах паралельно з synthesis-аудитом і відкрив пакет PR-ів, що закривають конкретні pr-plan-card-и + cleanup-items з §[Truly outstanding](#truly-outstanding):
+
+| Tracker | Scope | PR |
+| --- | --- | --- |
+| `pr-plan-mobile-reliability-2026-05.md` PR-02 — M4 finyk × 2 | drop `as unknown as` у `CategoryChartSection.tsx` + `TransactionsPage.tsx`, 2 allowlist rows | merged via [#2877](https://github.com/Skords-01/Sergeant/pull/2877) |
+| `pr-plan-mobile-reliability-2026-05.md` PR-03 — M3 fizruk × 4 | journal selectors widened (`WorkoutSummaryInput`/`WorkoutForJournal`), `lib/toDomain.ts` adapter, 4 allowlist rows | open [#2891](https://github.com/Skords-01/Sergeant/pull/2891) |
+| `pr-plan-ftux-2026-05.md` PR-A — celebration_shown payload | додано `tipVariant` + `ctaLabel` keys у PostHog event + 2 vitest scenarios | open [#2892](https://github.com/Skords-01/Sergeant/pull/2892) |
+| `pr-plan-mobile-reliability-2026-05.md` PR-10 — shell-tax `--trend` | 30/60/90d quarterly table + initiative 0002 recount row | open [#2893](https://github.com/Skords-01/Sergeant/pull/2893) |
+| README hero placeholder | neutralized `PR-02b` posthumous reference | open [#2894](https://github.com/Skords-01/Sergeant/pull/2894) |
+| `pr-plan-backend-perf-2026-05.md` PR-12 — audit stubs | `2026-08-XX-sync-engine-roast.md` + `2026-08-XX-openclaw-internal-roast.md` + index | open [#2895](https://github.com/Skords-01/Sergeant/pull/2895) |
+| §[Truly outstanding](#truly-outstanding) D1 — Stripe webhook e2e | route-level supertest + 8 scenarios | open ([#2872](https://github.com/Skords-01/Sergeant/pull/2872) — попередній прохід) |
+| §[Truly outstanding](#truly-outstanding) D3 — `VOYAGE_API_KEY` fail-loud | startup guard + 7 tests у `assertStartupEnv` | open ([#2873](https://github.com/Skords-01/Sergeant/pull/2873) — попередній прохід) |
+| §[Truly outstanding](#truly-outstanding) D4 — ADR freshness backfill | codemod + 43 ADR з `Last validated` markers | open ([#2874](https://github.com/Skords-01/Sergeant/pull/2874) — попередній прохід) |
+
+**Що залишається у §[Truly outstanding](#truly-outstanding):**
+
+- D2 (Stryker removal decision-record) — підтверджено як **already-closed** під час другого проходу. `docs/testing/README.md:12` + `2026-05-05-tests-review.md:40` + ADR-0020:235 уже містять explicit decision. Drop з outstanding-list — наступний синтез-прохід.
+- D1/D3/D4 — PR-и open; чекають merge. Перебудувати таблицю на наступному циклі.
+
+**Cleanup item (synthesis non-tracked):** CONTRIBUTING.md Monobank fallback note — **false positive** (README не позначає Monobank webhook як deprecated; CONTRIBUTING.md не має згадок взагалі — нема чого додавати).
 
 ## Authorship
 

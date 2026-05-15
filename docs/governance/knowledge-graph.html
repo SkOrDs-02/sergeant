@@ -27,10 +27,10 @@
 <body>
 <h1>Sergeant — Knowledge Graph</h1>
 <p class="auto-gen">Generated 2026-05-15 · schema v1 · do not edit by hand — regenerate via <code>pnpm docs:gen-graph</code>.</p>
-<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>29</b></span> <span class="chip chip-hard-rule">hard-rule: <b>23</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>50</b></span> <span class="chip chip-pr">pr: <b>213</b></span> <span class="chip chip-skill">skill: <b>14</b></span></div>
+<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>23</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>50</b></span> <span class="chip chip-pr">pr: <b>222</b></span> <span class="chip chip-skill">skill: <b>14</b></span></div>
 
 <details open>
-<summary>Nodes (223 core)</summary>
+<summary>Nodes (225 core)</summary>
 <table>
 <thead><tr><th>Type</th><th>Id</th><th>Title</th><th>Status</th><th>Meta</th></tr></thead>
 <tbody>
@@ -121,6 +121,8 @@
 <tr><td>audit</td><td><code>audit:2026-05-13-web-architecture-state-roast</code></td><td><a href="../../docs/audits/2026-05-13-web-architecture-state-roast.md">Web Architecture &amp; State Roast — 2026-05-13 (Прожарка #3/10)</a></td><td></td><td></td></tr>
 <tr><td>audit</td><td><code>audit:2026-05-13-web-frontend-ergonomics-roast</code></td><td><a href="../../docs/audits/2026-05-13-web-frontend-ergonomics-roast.md">Прожарка #2/10: Web Frontend Ergonomics</a></td><td>Active</td><td></td></tr>
 <tr><td>audit</td><td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td><td><a href="../../docs/audits/2026-05-15-deep-audit-state-of-repo.md">Deep audit — state of repo (2026-05-15)</a></td><td>Active</td><td></td></tr>
+<tr><td>audit</td><td><code>audit:2026-08-XX-openclaw-internal-roast</code></td><td><a href="../../docs/audits/2026-08-XX-openclaw-internal-roast.md">OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` (stub)</a></td><td>Draft</td><td></td></tr>
+<tr><td>audit</td><td><code>audit:2026-08-XX-sync-engine-roast</code></td><td><a href="../../docs/audits/2026-08-XX-sync-engine-roast.md">Sync Engine Deep Roast — `apps/server/src/routes/syncV2.ts` (stub)</a></td><td>Draft</td><td></td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:1</code></td><td><a href="../../docs/governance/hard-rules.json#1">DB types: coerce `bigint` to `number` in serializers</a></td><td></td><td>number=1 · severity=blocker · category=blocker-invariant · scope=[&quot;apps/server/src/modules/**&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:10</code></td><td><a href="../../docs/governance/hard-rules.json#10">Lifecycle markers — every file/doc declares its status</a></td><td></td><td>number=10 · severity=blocker · category=lint-enforced-convention · scope=[&quot;apps/**/*.{ts,tsx,js,jsx,mjs,cjs}&quot;,&quot;packages/**/*.{ts,tsx,js,jsx,mjs,cjs}&quot;,&quot;docs/**/*.md&quot;,&quot;scripts/**/*.{mjs,js}&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:11</code></td><td><a href="../../docs/governance/hard-rules.json#11">No arbitrary hex colors in `className`</a></td><td></td><td>number=11 · severity=blocker · category=lint-enforced-convention · scope=[&quot;apps/web/src/**&quot;,&quot;apps/mobile/src/**&quot;]</td></tr>
@@ -262,7 +264,7 @@
 </details>
 
 <details>
-<summary>Edges (446 total, first 500 core-to-core)</summary>
+<summary>Edges (457 total, first 500 core-to-core)</summary>
 <table>
 <thead><tr><th>From</th><th>Edge</th><th>To</th></tr></thead>
 <tbody>
@@ -384,6 +386,7 @@
 <tr><td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td><td>references</td><td><code>hard-rule:10</code></td></tr>
 <tr><td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td><td>references</td><td><code>hard-rule:2</code></td></tr>
 <tr><td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td><td>references</td><td><code>hard-rule:5</code></td></tr>
+<tr><td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td><td>references</td><td><code>initiative:0002</code></td></tr>
 <tr><td><code>initiative:0003</code></td><td>references</td><td><code>hard-rule:4</code></td></tr>
 <tr><td><code>initiative:0011</code></td><td>references</td><td><code>hard-rule:15</code></td></tr>
 <tr><td><code>initiative:0013</code></td><td>references</td><td><code>hard-rule:18</code></td></tr>
