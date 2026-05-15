@@ -1,0 +1,2344 @@
+{
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "summary": {
+    "packages": 17,
+    "totalExports": 278,
+    "totalDeadExports": 179
+  },
+  "packages": [
+    {
+      "name": "@sergeant/api-client",
+      "path": "packages/api-client",
+      "entryFile": "packages/api-client/src/index.ts",
+      "stats": {
+        "exportCount": 190,
+        "totalImporters": 34,
+        "deadExports": 102
+      },
+      "exports": [
+        {
+          "name": "createApiClient",
+          "kind": "re-export",
+          "fromFile": "./createApiClient",
+          "usedBy": [
+            "apps/mobile/src/api/apiClient.ts",
+            "apps/mobile/src/modules/finyk/FinykApp.test.tsx",
+            "apps/mobile/src/modules/finyk/pages/Budgets/BudgetsPage.test.tsx",
+            "apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.test.tsx",
+            "apps/mobile/src/modules/nutrition/NutritionApp.test.tsx",
+            "apps/mobile/src/modules/routine/RoutineApp.test.tsx",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 7
+        },
+        {
+          "name": "ApiClient",
+          "kind": "re-export",
+          "fromFile": "./createApiClient",
+          "usedBy": [
+            "apps/mobile/src/api/apiClient.ts",
+            "apps/mobile/src/core/dashboard/useCoachInsight.ts",
+            "apps/mobile/src/features/push/registerPush.ts",
+            "apps/mobile/src/modules/nutrition/lib/shoppingGenerateApi.ts",
+            "apps/web/src/shared/api/index.ts",
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
+          ],
+          "usageCount": 6
+        },
+        {
+          "name": "ApiClientConfig",
+          "kind": "re-export",
+          "fromFile": "./createApiClient",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createHttpClient",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts",
+            "apps/web/src/test/contract/barcode.contract.test.ts",
+            "apps/web/src/test/contract/me.contract.test.ts"
+          ],
+          "usageCount": 3
+        },
+        {
+          "name": "applyApiPrefix",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DEFAULT_API_PREFIX",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "parseRetryAfterMs",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "HttpClient",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "HttpClientConfig",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "TokenProvider",
+          "kind": "re-export",
+          "fromFile": "./httpClient",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "ApiError",
+          "kind": "re-export",
+          "fromFile": "./ApiError",
+          "usedBy": [
+            "apps/mobile/src/core/hub/search/useInlineAiRail.ts",
+            "apps/mobile/src/core/hub/useChatSend.ts",
+            "apps/mobile/src/modules/nutrition/hooks/useBarcodeProductLookup.ts",
+            "apps/web/src/core/pricing/WaitlistForm.test.tsx",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 5
+        },
+        {
+          "name": "isApiError",
+          "kind": "re-export",
+          "fromFile": "./ApiError",
+          "usedBy": [
+            "apps/mobile/src/core/dashboard/useCoachInsight.ts",
+            "apps/mobile/src/core/dashboard/useWeeklyDigest.ts",
+            "apps/mobile/src/core/hub/search/useInlineAiRail.ts",
+            "apps/mobile/src/core/hub/useChatSend.ts",
+            "apps/mobile/src/modules/nutrition/components/AddMealSheet.tsx",
+            "apps/mobile/src/modules/nutrition/components/NutritionBarcodeScanScreen.tsx",
+            "apps/mobile/src/modules/nutrition/hooks/useBarcodeProductLookup.ts",
+            "apps/mobile/src/modules/nutrition/pages/Pantry.tsx",
+            "apps/mobile/src/modules/nutrition/pages/Shopping.tsx",
+            "apps/web/src/core/pricing/WaitlistForm.tsx",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 11
+        },
+        {
+          "name": "ApiErrorInit",
+          "kind": "re-export",
+          "fromFile": "./ApiError",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "ApiErrorKind",
+          "kind": "re-export",
+          "fromFile": "./ApiError",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "HttpMethod",
+          "kind": "re-export",
+          "fromFile": "./types",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "ParseMode",
+          "kind": "re-export",
+          "fromFile": "./types",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "QueryValue",
+          "kind": "re-export",
+          "fromFile": "./types",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "RequestOptions",
+          "kind": "re-export",
+          "fromFile": "./types",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createMeEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [
+            "apps/web/src/test/contract/me.contract.test.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MeEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MeResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [
+            "apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "User",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createSyncV2Endpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2Endpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2OpKind",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2OpResult",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2OpResultStatus",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PullOp",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PullOptions",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PullResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PushOp",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PushOptions",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PushResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "buildSyncV2IncrementOp",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "isIncrementOpSupported",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "INCREMENT_DELTA_MAX_ABS",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "INCREMENT_OP_SUPPORTED_TABLES",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BuildSyncV2IncrementOpInput",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BuildSyncV2IncrementOpReason",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BuildSyncV2IncrementOpResult",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "IncrementOpTable",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "mapSyncV2IncrementOpToOutboxInput",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.outboxEnqueue",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OutboxIncrementInputShape",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.outboxEnqueue",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2IncrementPushOp",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.outboxEnqueue",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "submitSyncV2IncrementOp",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.submit",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SubmitSyncV2IncrementOpEnqueued",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.submit",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SubmitSyncV2IncrementOpFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.submit",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SubmitSyncV2IncrementOpRejected",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.submit",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SubmitSyncV2IncrementOpResult",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.increment.submit",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "runSyncEnginePushOnce",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "mapDrainedRowToSyncV2PushOp",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "describePushError",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DrainSyncOpOutboxFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DrainedOutboxRowShape",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MarkOutboxRejectedFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MarkOutboxRetryFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MarkOutboxSuccessFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PlanRetryFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncEnginePushDeps",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "SyncEnginePushOptions",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncEnginePushResult",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.test.ts",
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.test.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 4
+        },
+        {
+          "name": "SyncOpRetryPlanShape",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncV2PushFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushLoop",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createSyncEnginePushScheduler",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushScheduler",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "SyncEngineClearIntervalFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushScheduler",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncEnginePushScheduler",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushScheduler",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "SyncEnginePushSchedulerDeps",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushScheduler",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "SyncEnginePushSchedulerOptions",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushScheduler",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "SyncEngineSetIntervalFn",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.pushScheduler",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createSyncEngineFlushOnReconnect",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.flushOnReconnect",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "SyncEngineEventTarget",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.flushOnReconnect",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/netInfoEventTarget.ts",
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 3
+        },
+        {
+          "name": "SyncEngineFlushOnReconnect",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.flushOnReconnect",
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.test.ts",
+            "apps/mobile/src/core/syncEngine/syncEngineWriter.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.test.ts",
+            "apps/web/src/core/syncEngine/syncEngineWriter.ts"
+          ],
+          "usageCount": 4
+        },
+        {
+          "name": "SyncEngineFlushOnReconnectDeps",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.flushOnReconnect",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncEngineFlushOnReconnectOptions",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.flushOnReconnect",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SyncEngineFlushTriggerKind",
+          "kind": "re-export",
+          "fromFile": "./endpoints/syncV2.flushOnReconnect",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createCoachEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/coach",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "CoachEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/coach",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "CoachInsightPayload",
+          "kind": "re-export",
+          "fromFile": "./endpoints/coach",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createChatEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/chat",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ChatCallOpts",
+          "kind": "re-export",
+          "fromFile": "./endpoints/chat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "ChatEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/chat",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ChatMessage",
+          "kind": "re-export",
+          "fromFile": "./endpoints/chat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "ChatRequestPayload",
+          "kind": "re-export",
+          "fromFile": "./endpoints/chat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "ChatResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/chat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createPushEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushRegisterRequestSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PushRegisterResponseSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushTestRequestSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushTestResponseSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushUnregisterRequestSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PushUnregisterResponseSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushPlatform",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushRegisterRequest",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx",
+            "apps/web/src/shared/hooks/usePushNotifications.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "PushRegisterResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PushTestRequest",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushTestResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PushUnregisterRequest",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PushUnregisterResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/push",
+          "usedBy": [
+            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createNutritionEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NutritionBackupDownloadResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionBackupUploadResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionDayHintResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionDayMeal",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionDayPlan",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionDayPlanResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NutritionMacros",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionMealType",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionPantryItem",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionParsePantryResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionPhotoIngredient",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionPhotoPortion",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionPhotoResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionPhotoResult",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/mobile/src/modules/nutrition/components/AddMealSheet.tsx",
+            "apps/mobile/src/modules/nutrition/lib/photoResultToMealForm.ts",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 3
+        },
+        {
+          "name": "NutritionRecipe",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionRecipesResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionShoppingCategory",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionShoppingItem",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionShoppingListResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/mobile/src/modules/nutrition/lib/shoppingGenerateApi.ts",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "NutritionWeekDay",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionWeekPlan",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "NutritionWeekPlanResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/nutrition",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createBarcodeEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/barcode",
+          "usedBy": [
+            "apps/web/src/test/contract/barcode.contract.test.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "BarcodeEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/barcode",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BarcodeLookupResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/barcode",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "BarcodeProduct",
+          "kind": "re-export",
+          "fromFile": "./endpoints/barcode",
+          "usedBy": [
+            "apps/mobile/src/modules/nutrition/components/NutritionBarcodeScanScreen.tsx",
+            "apps/mobile/src/modules/nutrition/hooks/useBarcodeProductLookup.ts",
+            "apps/mobile/src/modules/nutrition/lib/applyBarcodeProduct.ts",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 4
+        },
+        {
+          "name": "createFoodSearchEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/foodSearch",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "FoodSearchEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/foodSearch",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "FoodSearchProduct",
+          "kind": "re-export",
+          "fromFile": "./endpoints/foodSearch",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "FoodSearchResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/foodSearch",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createMonoWebhookEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MonoAccount",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoAccountDto",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoBackfillProgress",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoBackfillResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoCashbackType",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoClientInfo",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoConnectResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MonoConnectionStatus",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoDisconnectResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "MonoJar",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoSyncState",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoTransactionDto",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoTransactionsPage",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "MonoWebhookEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createPrivatEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PrivatBalanceFinalResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PrivatBalanceRecord",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PrivatCredentials",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PrivatEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PrivatStatementEntry",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "PrivatStatementsResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/privat",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createWaitlistEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/waitlist",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WaitlistSubmitRequestSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/waitlist",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WaitlistSubmitResponseSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/waitlist",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WaitlistEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/waitlist",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WaitlistSubmitRequest",
+          "kind": "re-export",
+          "fromFile": "./endpoints/waitlist",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WaitlistSubmitResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/waitlist",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createBillingEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BillingCheckoutRequestBodySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BillingCheckoutResponseBodySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BillingPortalResponseBodySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BillingStatusResponseBodySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BillingCheckoutRequest",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "BillingCheckoutResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [
+            "apps/web/src/core/PricingPage.tsx",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "BillingEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "BillingPortalResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BillingStatusResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/billing",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createWeeklyDigestEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/weeklyDigest",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WeeklyDigestEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/weeklyDigest",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WeeklyDigestPayload",
+          "kind": "re-export",
+          "fromFile": "./endpoints/weeklyDigest",
+          "usedBy": [
+            "apps/mobile/src/core/dashboard/weeklyDigestAggregates.ts",
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 2
+        },
+        {
+          "name": "WeeklyDigestReport",
+          "kind": "re-export",
+          "fromFile": "./endpoints/weeklyDigest",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "WeeklyDigestResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/weeklyDigest",
+          "usedBy": [
+            "apps/web/src/shared/api/index.ts"
+          ],
+          "usageCount": 1
+        },
+        {
+          "name": "createTranscribeEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeQuerySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeResponseSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeBody",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeOutcome",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeQuery",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TranscribeResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/transcribe",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createWebVitalsEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/webVitals",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WebVitalsPayloadSchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/webVitals",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WebVitalsEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/webVitals",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "WebVitalsPayload",
+          "kind": "re-export",
+          "fromFile": "./endpoints/webVitals",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OpenApiPaths",
+          "kind": "re-export",
+          "fromFile": "./generated/openapi",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OpenApiComponents",
+          "kind": "re-export",
+          "fromFile": "./generated/openapi",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OpenApiOperations",
+          "kind": "re-export",
+          "fromFile": "./generated/openapi",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OpenApiWebhooks",
+          "kind": "re-export",
+          "fromFile": "./generated/openapi",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/config",
+      "path": "packages/config",
+      "entryFile": null,
+      "stats": {
+        "exportCount": 0,
+        "totalImporters": 0,
+        "deadExports": 0
+      },
+      "exports": []
+    },
+    {
+      "name": "@sergeant/db-schema",
+      "path": "packages/db-schema",
+      "entryFile": "packages/db-schema/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 0,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./shared/index.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/design-tokens",
+      "path": "packages/design-tokens",
+      "entryFile": "packages/design-tokens/index.d.ts",
+      "stats": {
+        "exportCount": 21,
+        "totalImporters": 19,
+        "deadExports": 19
+      },
+      "exports": [
+        {
+          "name": "ModuleAccent",
+          "kind": "type",
+          "usedBy": [
+            "apps/web/src/core/hooks/useHubNavigation.ts",
+            "apps/web/src/core/hub/dashboard/moduleConfigs.tsx",
+            "apps/web/src/core/hub/search/searchTypes.ts",
+            "apps/web/src/core/lib/chatActions/types.cross.ts",
+            "apps/web/src/shared/components/layout/ModuleAccentProvider.tsx",
+            "apps/web/src/shared/components/layout/ModuleHeader.tsx",
+            "apps/web/src/shared/components/layout/ModuleShell.tsx",
+            "apps/web/src/shared/components/ui/Button.tsx",
+            "apps/web/src/shared/components/ui/EmptyState.tsx",
+            "apps/web/src/shared/components/ui/Skeleton.tsx",
+            "apps/web/src/shared/components/ui/Tabs.tsx",
+            "apps/web/src/shared/lib/api/queryKeys.ts",
+            "apps/web/src/shared/lib/modules/hubNav.ts",
+            "apps/web/src/shared/lib/modules/moduleLabels.ts",
+            "packages/insights/src/recommendations/types.ts",
+            "packages/shared/src/lib/recommendations.ts"
+          ],
+          "usageCount": 16
+        },
+        {
+          "name": "ModuleSoftAccent",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "StatusColor",
+          "kind": "type",
+          "usedBy": [
+            "apps/mobile/src/components/ui/Banner.tsx",
+            "apps/web/src/core/insights/TodayFocusCard.tsx",
+            "apps/web/src/shared/components/ui/Banner.tsx",
+            "packages/insights/src/recommendations/types.ts",
+            "packages/shared/src/lib/recommendations.ts"
+          ],
+          "usageCount": 5
+        },
+        {
+          "name": "SemanticTone",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SemanticOrModuleTone",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "BrandColor",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "brandColors",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "chartPalette",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "chartPaletteList",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "moduleColors",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ModuleAccentRgb",
+          "kind": "interface",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "moduleAccentRgb",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "statusColors",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "statusHex",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ChartHexKey",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "chartHex",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ElevationLevel",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ElevationStep",
+          "kind": "interface",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "elevation",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ZTier",
+          "kind": "type",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "zTier",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/finyk-domain",
+      "path": "packages/finyk-domain",
+      "entryFile": "packages/finyk-domain/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 11,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./constants.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/fizruk-domain",
+      "path": "packages/fizruk-domain",
+      "entryFile": "packages/fizruk-domain/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 58,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./constants.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/insights",
+      "path": "packages/insights",
+      "entryFile": "packages/insights/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 7,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./search/index.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/mobile",
+      "path": "apps/mobile",
+      "entryFile": null,
+      "stats": {
+        "exportCount": 0,
+        "totalImporters": 0,
+        "deadExports": 0
+      },
+      "exports": []
+    },
+    {
+      "name": "@sergeant/mobile-shell",
+      "path": "apps/mobile-shell",
+      "entryFile": "apps/mobile-shell/src/index.ts",
+      "stats": {
+        "exportCount": 8,
+        "totalImporters": 0,
+        "deadExports": 8
+      },
+      "exports": [
+        {
+          "name": "BACK_TO_EXIT_WINDOW_MS",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SHELL_BACK_HINT_EVENT",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ALLOWED_DEEP_LINK_PATH_PREFIXES",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "isSafeShellPath",
+          "kind": "function",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DEEP_LINK_HTTPS_HOSTS",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "InitNativeShellOptions",
+          "kind": "interface",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "parseDeepLink",
+          "kind": "function",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "initNativeShell",
+          "kind": "function",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/nutrition-domain",
+      "path": "packages/nutrition-domain",
+      "entryFile": "packages/nutrition-domain/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 66,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./mealTypes.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/openclaw",
+      "path": "tools/openclaw",
+      "entryFile": "tools/openclaw/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 0,
+        "deadExports": 1
+      },
+      "exports": [
+        {
+          "name": "HELP_TEXT",
+          "kind": "re-export",
+          "fromFile": "./help-text.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/openclaw-plugin",
+      "path": "packages/openclaw-plugin",
+      "entryFile": "packages/openclaw-plugin/src/index.ts",
+      "stats": {
+        "exportCount": 19,
+        "totalImporters": 0,
+        "deadExports": 18
+      },
+      "exports": [
+        {
+          "name": "default",
+          "kind": "default-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OpenClawHttpClient",
+          "kind": "re-export",
+          "fromFile": "./http-client.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "OpenClawHttpError",
+          "kind": "re-export",
+          "fromFile": "./http-client.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "HttpClientOptions",
+          "kind": "re-export",
+          "fromFile": "./http-client.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "parsePluginConfig",
+          "kind": "re-export",
+          "fromFile": "./config.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PluginConfigSchema",
+          "kind": "re-export",
+          "fromFile": "./config.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PluginConfig",
+          "kind": "re-export",
+          "fromFile": "./config.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ESCALATE_PREFIX",
+          "kind": "re-export",
+          "fromFile": "./hooks/shortcut-router.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "createShortcutRouterHook",
+          "kind": "re-export",
+          "fromFile": "./hooks/shortcut-router.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ShortcutRouter",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/router.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "extractText",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/router.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ShortcutDefinition",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ShortcutMatchResult",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ShortcutParams",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ShortcutToolCall",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TemplateRenderer",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ToolExecutor",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ToolResult",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/types.js",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ALL_SHORTCUTS",
+          "kind": "re-export",
+          "fromFile": "./shortcuts/index.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/routine-domain",
+      "path": "packages/routine-domain",
+      "entryFile": "packages/routine-domain/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 49,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./types.js",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/server",
+      "path": "apps/server",
+      "entryFile": "apps/server/src/index.ts",
+      "stats": {
+        "exportCount": 0,
+        "totalImporters": 0,
+        "deadExports": 0
+      },
+      "exports": []
+    },
+    {
+      "name": "@sergeant/shared",
+      "path": "packages/shared",
+      "entryFile": "packages/shared/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 293,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./schemas",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/web",
+      "path": "apps/web",
+      "entryFile": null,
+      "stats": {
+        "exportCount": 0,
+        "totalImporters": 0,
+        "deadExports": 0
+      },
+      "exports": []
+    },
+    {
+      "name": "eslint-plugin-sergeant-design",
+      "path": "packages/eslint-plugin-sergeant-design",
+      "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
+      "stats": {
+        "exportCount": 32,
+        "totalImporters": 0,
+        "deadExports": 31
+      },
+      "exports": [
+        {
+          "name": "TRACKED_STORAGE_KEY_NAMES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TRACKED_STORAGE_KEY_VALUES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_TRACKED_STORAGE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_LOCAL_STORAGE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ALLOWED_TAILWIND_OPACITY_STEPS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TAILWIND_OPACITY_UTILITIES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "STRONG_BG_FAMILIES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DEFAULT_NUMERIC_COLUMNS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RQ_KEYS_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DEFAULT_FACTORY_PATH",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_ANTHROPIC_KEY_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_CONSOLE_PII_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_STRICT_BYPASS_MESSAGES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "DEFAULT_FORBID_PATTERNS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_DARK_PALETTE_FAMILIES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_DARK_PALETTE_UTILITIES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_DARK_PALETTE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "FOCUS_COLOR_UTILITIES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "FOCUS_OUTLINE_ALLOWED_TAILS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PREFER_FOCUS_VISIBLE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_ROUNDED_LG_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_BARE_EMPTY_TEXT_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_CYRILLIC_JSX_LITERAL_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PREFER_TEXT_STYLE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TEXT_STYLE_MAPPINGS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_ARBITRARY_TEXT_SIZE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_FLAT_SHARED_LIB_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_FLAT_SHARED_LIB_ALLOWED_TOP",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_HASH_ROUTER_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_BARE_FIXED_INSET_MODAL_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "default",
+          "kind": "default-export",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    }
+  ]
+}
