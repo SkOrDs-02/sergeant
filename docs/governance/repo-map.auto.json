@@ -1,0 +1,494 @@
+{
+  "$schema": "./schemas/repo-map.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-15",
+  "toolchain": {
+    "node": "20.x",
+    "pnpm": "pnpm@9.15.1",
+    "typescript": "^6.0.3",
+    "turbo": "^2.9.8"
+  },
+  "workspaces": [
+    {
+      "name": "@sergeant/mobile",
+      "path": "apps/mobile",
+      "category": "app",
+      "private": true,
+      "version": "0.1.0",
+      "frameworkDeps": [
+        {
+          "name": "@tanstack/react-query",
+          "version": "^5.99.2"
+        },
+        {
+          "name": "better-auth",
+          "version": "^1.6.4"
+        },
+        {
+          "name": "expo",
+          "version": "~52.0.0"
+        },
+        {
+          "name": "jest",
+          "version": "^29"
+        },
+        {
+          "name": "nativewind",
+          "version": "^4.1.23"
+        },
+        {
+          "name": "react",
+          "version": "18.3.1"
+        },
+        {
+          "name": "react-dom",
+          "version": "18.3.1"
+        },
+        {
+          "name": "react-native",
+          "version": "0.76.9"
+        },
+        {
+          "name": "tailwindcss",
+          "version": "^4.2.4"
+        },
+        {
+          "name": "typescript",
+          "version": "~6.0.3"
+        }
+      ],
+      "testRunner": "jest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/mobile-shell",
+      "path": "apps/mobile-shell",
+      "category": "app",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "@capacitor/cli",
+          "version": "^7.6.2"
+        },
+        {
+          "name": "@capacitor/core",
+          "version": "^7.6.2"
+        },
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/server",
+      "path": "apps/server",
+      "category": "app",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "@sentry/node",
+          "version": "^8.55.1"
+        },
+        {
+          "name": "better-auth",
+          "version": "^1.6.4"
+        },
+        {
+          "name": "drizzle-orm",
+          "version": "^0.45.2"
+        },
+        {
+          "name": "express",
+          "version": "^4.22.1"
+        },
+        {
+          "name": "pg",
+          "version": "^8.20.0"
+        },
+        {
+          "name": "pino",
+          "version": "^10.3.1"
+        },
+        {
+          "name": "prom-client",
+          "version": "^15.1.3"
+        },
+        {
+          "name": "tsx",
+          "version": "^4.21.0"
+        },
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        },
+        {
+          "name": "zod",
+          "version": "^4.3.6"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/web",
+      "path": "apps/web",
+      "category": "app",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "@playwright/test",
+          "version": "^1.59.1"
+        },
+        {
+          "name": "@sentry/react",
+          "version": "^8.55.1"
+        },
+        {
+          "name": "@tanstack/react-query",
+          "version": "^5.99.0"
+        },
+        {
+          "name": "better-auth",
+          "version": "^1.6.4"
+        },
+        {
+          "name": "drizzle-orm",
+          "version": "^0.45.2"
+        },
+        {
+          "name": "msw",
+          "version": "^2.14.2"
+        },
+        {
+          "name": "react",
+          "version": "^18.3.0"
+        },
+        {
+          "name": "react-dom",
+          "version": "^18.3.0"
+        },
+        {
+          "name": "tailwindcss",
+          "version": "^4.2.4"
+        },
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vite",
+          "version": "^8.0.10"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        },
+        {
+          "name": "zod",
+          "version": "^4.3.6"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/openclaw",
+      "path": "tools/openclaw",
+      "category": "tool",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "@anthropic-ai/sdk",
+          "version": "^0.95.2"
+        },
+        {
+          "name": "@sentry/node",
+          "version": "^8.55.1"
+        },
+        {
+          "name": "grammy",
+          "version": "^1.31.0"
+        },
+        {
+          "name": "tsx",
+          "version": "^4.19.2"
+        },
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": null
+    },
+    {
+      "name": "@sergeant/api-client",
+      "path": "packages/api-client",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "@tanstack/react-query",
+          "version": "^5.0.0"
+        },
+        {
+          "name": "react",
+          "version": "^18.0.0 || ^19.0.0"
+        },
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/config",
+      "path": "packages/config",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [],
+      "testRunner": null,
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/db-schema",
+      "path": "packages/db-schema",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "drizzle-kit",
+          "version": "^0.31.10"
+        },
+        {
+          "name": "drizzle-orm",
+          "version": "^0.45.2"
+        },
+        {
+          "name": "pg",
+          "version": "^8.20.0"
+        },
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/design-tokens",
+      "path": "packages/design-tokens",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/finyk-domain",
+      "path": "packages/finyk-domain",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/fizruk-domain",
+      "path": "packages/fizruk-domain",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/insights",
+      "path": "packages/insights",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/nutrition-domain",
+      "path": "packages/nutrition-domain",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/openclaw-plugin",
+      "path": "packages/openclaw-plugin",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        },
+        {
+          "name": "zod",
+          "version": "^4.3.6"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/routine-domain",
+      "path": "packages/routine-domain",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "@sergeant/shared",
+      "path": "packages/shared",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.5"
+        },
+        {
+          "name": "zod",
+          "version": "^4.3.6"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": "@Skords-01"
+    },
+    {
+      "name": "eslint-plugin-sergeant-design",
+      "path": "packages/eslint-plugin-sergeant-design",
+      "category": "package",
+      "private": true,
+      "version": "0.0.1",
+      "type": "module",
+      "frameworkDeps": [],
+      "testRunner": null,
+      "owner": "@Skords-01"
+    }
+  ]
+}

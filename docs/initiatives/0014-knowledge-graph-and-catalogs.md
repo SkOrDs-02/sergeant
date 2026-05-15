@@ -1,7 +1,7 @@
 # 0014 — Knowledge graph & auto-generated catalogs
 
 > **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
-> **Status:** In progress (Phase 1 scaffolding)
+> **Status:** In progress (Phases 1–3 shipped; Phase 4–5 pending)
 > **Priority:** P2
 > **Owner:** `@Skords-01`
 > **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
@@ -74,12 +74,20 @@
 **Performance:** per-package incremental cache keyed на source mtime; CI запускає лише touched packages (`turbo --filter=...[HEAD^1]`).
 **DoD:** кожен workspace має свіжий `symbols.json`; cross-ref index показує `usedBy[]`; dead-export count експонований.
 
-### Phase 3 — Auto-gen service-catalog + repo-map (S)
+### Phase 3 — Drift-detector for service-catalog + repo-map (S) — **shipped**
 
-**Files:** `scripts/docs/generate-service-catalog.mjs`, `scripts/docs/generate-repo-map.mjs`, `docs/architecture/service-catalog.md` (header → AUTO-GENERATED, старий вміст → `docs/_archive/service-catalog-pre-0014.md`), `docs/architecture/repo-map.md` (same).
+**Deviation from original plan.** Initially planned full-replacement (`docs/architecture/service-catalog.md` і `repo-map.md` → AUTO-GENERATED, hand content в `docs/_archive/`). При імплементації стало ясно, що editorial columns ці markdown-ів (runbook / alerts / rollback / data-sensitivity для service-catalog; Purpose / Test stacks / Build outputs narrative для repo-map) **не похідні з коду** — full-replacement стер би operational знання.
 
-**Integration:** обидва генератори feed-ять Phase 1 граф як додаткові node sources (services, packages).
-**DoD:** обидва файли починаються з `<!-- AUTO-GENERATED -->` marker; `--check` gate; старий hand content переміщено у `_archive/` з link forward.
+Переключились на **drift-detector**: hand-maintained markdown зберігається; додатковий machine-readable mirror (`docs/governance/{service-catalog,repo-map}.auto.json`) генерується з Dockerfile / railway.toml / pnpm-workspace.yaml / CODEOWNERS, з `--check` gate що валідує coverage (кожен workspace/surface у JSON мусить бути згаданий у markdown). Це catches drift без втрати editorial value.
+
+**Files shipped:**
+
+- `scripts/docs/generate-repo-map.mjs` + `docs/governance/repo-map.auto.json` + `docs/governance/schemas/repo-map.schema.json`
+- `scripts/docs/generate-service-catalog.mjs` + `docs/governance/service-catalog.auto.json` + `docs/governance/schemas/service-catalog.schema.json`
+- Banner у `docs/architecture/service-catalog.md` і `docs/architecture/repo-map.md` що посилається на machine-readable mirror
+- `pnpm docs:check-repo-map` + `pnpm docs:check-service-catalog` wired у lint chain (також restored `pnpm docs:check-symbols` що було пропущено у Phase 2 merge)
+
+**DoD:** обидва `--check` gates green; markdown coverage validates every workspace + surface.
 
 ### Phase 4 — Living architecture diagrams (M)
 

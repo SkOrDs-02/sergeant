@@ -1,7 +1,9 @@
 # Repo map — apps, packages, and tooling
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
 > **Status:** Active
+
+> **Machine-readable mirror:** [`docs/governance/repo-map.auto.json`](../governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
 
 > Deep tech-stack inventory for Sergeant. Compact summary lives in [`AGENTS.md § Repo overview`](../../AGENTS.md#repo-overview); this file holds the full per-app + per-package matrix that AGENTS.md used to inline before initiative 0009 PR 3.2. Cross-reference with [`service-catalog.md`](./service-catalog.md) for runtime targets / healthchecks and with [`platforms.md`](./platforms.md) for the web ↔ mobile feature-parity view.
 

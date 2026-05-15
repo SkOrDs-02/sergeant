@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-05-14",
+  "generated_at": "2026-05-15",
   "counts": {
-    "adr": 55,
-    "audit": 28,
+    "adr": 56,
+    "audit": 29,
     "hard-rule": 23,
     "initiative": 49,
     "playbook": 50,
-    "pr": 211,
+    "pr": 213,
     "skill": 13
   },
   "nodes": [
@@ -623,6 +623,18 @@
       }
     },
     {
+      "id": "adr:0059",
+      "type": "adr",
+      "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
+      "path": "docs/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 59,
+        "last_validated": "2026-05-15"
+      }
+    },
+    {
       "id": "audit:2026-05-02-doc-hygiene-audit",
       "type": "audit",
       "title": "Sergeant — doc-hygiene аудит (2026-05-02)",
@@ -869,6 +881,15 @@
       "type": "audit",
       "title": "Прожарка #2/10: Web Frontend Ergonomics",
       "path": "docs/audits/2026-05-13-web-frontend-ergonomics-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-15-deep-audit-state-of-repo",
+      "type": "audit",
+      "title": "Deep audit — state of repo (2026-05-15)",
+      "path": "docs/audits/2026-05-15-deep-audit-state-of-repo.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1320,7 +1341,7 @@
       "type": "initiative",
       "title": "0014 — Knowledge graph & auto-generated catalogs",
       "path": "docs/initiatives/0014-knowledge-graph-and-catalogs.md",
-      "status": "In progress (Phase 1 scaffolding)",
+      "status": "In progress (Phases 1–3 shipped; Phase 4–5 pending)",
       "tier": "core",
       "meta": {
         "number": 14,
@@ -2784,6 +2805,26 @@
       "meta": {
         "number": 1848,
         "url": "https://github.com/Skords-01/Sergeant/pull/1848"
+      }
+    },
+    {
+      "id": "pr:1929",
+      "type": "pr",
+      "title": "PR #1929",
+      "tier": "extended",
+      "meta": {
+        "number": 1929,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1929"
+      }
+    },
+    {
+      "id": "pr:1941",
+      "type": "pr",
+      "title": "PR #1941",
+      "tier": "extended",
+      "meta": {
+        "number": 1941,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1941"
       }
     },
     {
@@ -4749,6 +4790,11 @@
       "type": "references"
     },
     {
+      "from": "adr:0059",
+      "to": "initiative:0014",
+      "type": "references"
+    },
+    {
       "from": "audit:2026-05-02-doc-hygiene-audit",
       "to": "hard-rule:10",
       "type": "references"
@@ -5736,6 +5782,36 @@
     {
       "from": "audit:2026-05-13-web-frontend-ergonomics-roast",
       "to": "pr:2743",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "hard-rule:5",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:1929",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:1941",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:52",
       "type": "touched-by"
     },
     {

@@ -1,7 +1,9 @@
 # Service Catalog
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
 > **Status:** Active
+
+> **Machine-readable mirror:** [`docs/governance/service-catalog.auto.json`](../governance/service-catalog.auto.json) (auto-gen via `pnpm docs:gen-service-catalog`; CI gate `pnpm docs:check-service-catalog` enforces that every surface listed here is mentioned in this file). Editorial columns (runbook, alerts, rollback, data-sensitivity) stay hand-maintained — the auto-mirror only covers fields derivable from Dockerfile / railway.toml / workspace folder.
 
 Runtime-oriented inventory for the production surfaces that Sergeant operates today. Use this document to answer four questions fast:
 
