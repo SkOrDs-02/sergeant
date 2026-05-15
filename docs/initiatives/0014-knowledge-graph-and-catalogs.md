@@ -1,7 +1,7 @@
 # 0014 — Knowledge graph & auto-generated catalogs
 
 > **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
-> **Status:** In progress (Phases 1–4 shipped; Phase 5 pending)
+> **Status:** Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)
 > **Priority:** P2
 > **Owner:** `@Skords-01`
 > **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
@@ -110,13 +110,26 @@
 
 **DoD:** `--check` gate green; c3-workspaces.md показує current package graph + drift-detection при додаванні workspace.
 
-### Phase 5 — Bidirectional PR ↔ doc backlinks (M)
+### Phase 5 — Bidirectional PR ↔ doc backlinks (M) — **shipped**
 
-**Files:** `.github/workflows/pr-backlinks.yml` (`pull_request: closed` + `merged=true`), `scripts/ci/update-pr-backlinks.mjs`, `docs/pr-ledger/index.json` (canonical registry), AUTO-GEN блок `## Recent PRs` (≤5 latest) appended у touched docs, `docs/adr/0061-pr-backlink-storage.md`.
+**Files shipped:**
 
-**Storage decision:** hybrid — JSON ledger канонічний (без N-file noise), in-doc блок показує останні 5 (UX). Відхилено: per-PR markdown files.
-**Workflow strategy:** action **відкриває follow-up PR** замість push-на-main (Hard Rule #6); debounce — батчинг N merges per scheduled run.
-**Reuse:** scope extraction з `commitlint.config.js`, path-match з `check-codeowners-coverage.mjs`, PR-mention regex з `generate-open-work.mjs`.
+- `.github/workflows/pr-backlinks.yml` — `pull_request_target: closed` + `merged == true`; loop-guard skips `head_ref` що починається з `docs/pr-backlinks-`
+- `scripts/ci/update-pr-backlinks.mjs` — три режими: `--pr <N>` (CI), `--rebuild-blocks` (manual after ledger edit), `--check` (CI gate)
+- `docs/pr-ledger/index.json` — canonical reverse registry; valid за `docs/governance/schemas/pr-ledger.schema.json` (JSON Schema draft-07)
+- `docs/pr-ledger/README.md` — operator guide (whitelist, manual ops, limitations)
+- `docs/adr/0061-pr-backlink-storage.md` — hybrid storage rationale
+- `pnpm docs:check-pr-ledger` + `pnpm docs:gen-pr-backlinks` wired у lint chain
+
+**Storage:** hybrid — JSON ledger канонічний (без N-file noise) + AUTO-GEN block `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` у тілі кожного canonical doc (топ-5 latest). Marker detection — line-anchored regex (дозволяє literal згадки в backticks всередині ADR-0061 body).
+
+**Workflow strategy:** action **відкриває follow-up PR** `docs/pr-backlinks-NNNN` замість push-на-main (Hard Rule #6).
+
+**Canonical doc whitelist:** `docs/adr/*.md`, `docs/initiatives/*.md`, `docs/playbooks/*.md`, `docs/governance/rules/*.md` (з винятками README/TEMPLATE/`_`-prefix).
+
+**Deferred to follow-up PR:** HR-24 (all catalogs must have `--check` generator), HR-25 (auto-gen marker enforcement), HR-26 (merged docs-PRs must update ledger). Hard-rules registry update вимагає 3-way sync (`hard-rules.json` ↔ AGENTS.md ↔ per-rule files) — окремий focused PR.
+
+**DoD:** `--check` gate green на порожньому ledger; workflow деплоїться; перший real merge auto-create follow-up PR з backlinks.
 **DoD:** merge doc-touching PR → ledger + in-doc блок оновлені в межах одного workflow run; graph (Phase 1) re-renders `touched-by` edges.
 
 ## Dependencies / Ordering

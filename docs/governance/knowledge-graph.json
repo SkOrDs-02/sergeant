@@ -3,12 +3,12 @@
   "version": 1,
   "generated_at": "2026-05-15",
   "counts": {
-    "adr": 57,
-    "audit": 29,
+    "adr": 58,
+    "audit": 31,
     "hard-rule": 23,
     "initiative": 49,
     "playbook": 50,
-    "pr": 213,
+    "pr": 222,
     "skill": 14
   },
   "nodes": [
@@ -647,6 +647,18 @@
       }
     },
     {
+      "id": "adr:0061",
+      "type": "adr",
+      "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
+      "path": "docs/adr/0061-pr-backlink-storage.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 61,
+        "last_validated": "2026-05-15"
+      }
+    },
+    {
       "id": "audit:2026-05-02-doc-hygiene-audit",
       "type": "audit",
       "title": "Sergeant — doc-hygiene аудит (2026-05-02)",
@@ -903,6 +915,24 @@
       "title": "Deep audit — state of repo (2026-05-15)",
       "path": "docs/audits/2026-05-15-deep-audit-state-of-repo.md",
       "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-08-XX-openclaw-internal-roast",
+      "type": "audit",
+      "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` (stub)",
+      "path": "docs/audits/2026-08-XX-openclaw-internal-roast.md",
+      "status": "Draft",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-08-XX-sync-engine-roast",
+      "type": "audit",
+      "title": "Sync Engine Deep Roast — `apps/server/src/routes/syncV2.ts` (stub)",
+      "path": "docs/audits/2026-08-XX-sync-engine-roast.md",
+      "status": "Draft",
       "tier": "core",
       "meta": {}
     },
@@ -1353,7 +1383,7 @@
       "type": "initiative",
       "title": "0014 — Knowledge graph & auto-generated catalogs",
       "path": "docs/initiatives/0014-knowledge-graph-and-catalogs.md",
-      "status": "In progress (Phases 1–4 shipped; Phase 5 pending)",
+      "status": "Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)",
       "tier": "core",
       "meta": {
         "number": 14,
@@ -3830,6 +3860,96 @@
       }
     },
     {
+      "id": "pr:2872",
+      "type": "pr",
+      "title": "PR #2872",
+      "tier": "extended",
+      "meta": {
+        "number": 2872,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2872"
+      }
+    },
+    {
+      "id": "pr:2873",
+      "type": "pr",
+      "title": "PR #2873",
+      "tier": "extended",
+      "meta": {
+        "number": 2873,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2873"
+      }
+    },
+    {
+      "id": "pr:2874",
+      "type": "pr",
+      "title": "PR #2874",
+      "tier": "extended",
+      "meta": {
+        "number": 2874,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2874"
+      }
+    },
+    {
+      "id": "pr:2877",
+      "type": "pr",
+      "title": "PR #2877",
+      "tier": "extended",
+      "meta": {
+        "number": 2877,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2877"
+      }
+    },
+    {
+      "id": "pr:2891",
+      "type": "pr",
+      "title": "PR #2891",
+      "tier": "extended",
+      "meta": {
+        "number": 2891,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2891"
+      }
+    },
+    {
+      "id": "pr:2892",
+      "type": "pr",
+      "title": "PR #2892",
+      "tier": "extended",
+      "meta": {
+        "number": 2892,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2892"
+      }
+    },
+    {
+      "id": "pr:2893",
+      "type": "pr",
+      "title": "PR #2893",
+      "tier": "extended",
+      "meta": {
+        "number": 2893,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2893"
+      }
+    },
+    {
+      "id": "pr:2894",
+      "type": "pr",
+      "title": "PR #2894",
+      "tier": "extended",
+      "meta": {
+        "number": 2894,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2894"
+      }
+    },
+    {
+      "id": "pr:2895",
+      "type": "pr",
+      "title": "PR #2895",
+      "tier": "extended",
+      "meta": {
+        "number": 2895,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2895"
+      }
+    },
+    {
       "id": "pr:30",
       "type": "pr",
       "title": "PR #30",
@@ -4818,6 +4938,31 @@
     },
     {
       "from": "adr:0060",
+      "to": "initiative:0014",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "hard-rule:6",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "hard-rule:7",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
+      "to": "initiative:0010",
+      "type": "references"
+    },
+    {
+      "from": "adr:0061",
       "to": "initiative:0014",
       "type": "references"
     },
@@ -5828,6 +5973,11 @@
     },
     {
       "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "initiative:0002",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
       "to": "pr:1929",
       "type": "touched-by"
     },
@@ -5838,7 +5988,57 @@
     },
     {
       "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2872",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2873",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2874",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2877",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2891",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2892",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2893",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2894",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2895",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
       "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-08-XX-sync-engine-roast",
+      "to": "pr:2877",
       "type": "touched-by"
     },
     {
