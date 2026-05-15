@@ -4538,6 +4538,15 @@
           "error": {
             "type": "string"
           },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
           "details": {
             "type": "array",
             "items": {
@@ -4559,10 +4568,12 @@
           }
         },
         "required": [
-          "error"
+          "error",
+          "message",
+          "code"
         ],
         "additionalProperties": false,
-        "description": "Стандартна shape 400-помилки після `validateBody`."
+        "description": "Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію)."
       },
       "RecallMemoryResponse": {
         "type": "object",

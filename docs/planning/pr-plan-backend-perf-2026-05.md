@@ -351,6 +351,14 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-09 — `refactor(server): migrate validateBody→parseBody (batch 1 — nutrition)`
 
+> **Rollout 2026-05-15 (3 sub-PR-и):**
+>
+> - **Phase 1 pilot ✅ merged (#2917):** 2 файли — `analyze-photo.ts`, `refine-photo.ts`. Розширило існуючий ApiError schema/emission drift на 2 nutrition routes; знято при наступному фіксі.
+> - **Prerequisite ✅ merged (#TBD — поточний PR):** `fix(api): align ApiError schema з errorHandler canonical emission`. `packages/shared/src/openapi/registry.ts:246` тепер віддає `{error, message, code, requestId?, details?}` замість `{error, details?}` — match-ить `apps/server/src/http/errorHandler.ts:107-113`. Drift існував pre-pilot (auth-401, rate-limit-429, всі AppError-routes), знятий централізовано.
+> - **Phase 2 (наступний):** решта 7 nutrition handlers — `day-hint`, `recommend-recipes`, `parse-pantry`, `backup-upload`, `week-plan`, `day-plan`, `shopping-list`.
+>
+> ⚠️ Acceptance criterion **"response shape не змінилась"** (рядок нижче) виявився хибним: shape МІНЯЄТЬСЯ з `{error, details?}` (validateBody sentinel) на `{error, message, code, requestId?, details?}` (errorHandler canonical). У phase 1+2 правильна перевірка — `response shape match-ить ApiError schema у registry.ts ПІСЛЯ prerequisite-фіксу`.
+
 **Surface**
 
 - `apps/server/src/modules/nutrition/*.ts` (11 файлів — `analyze-photo`, `backup-upload`, `barcode`, `day-hint`, `day-plan`, `food-search`, `parse-pantry`, `recommend-recipes`, `refine-photo`, `shopping-list`, `week-plan`). Усі по 2 callsites = ~22 заміни.
@@ -388,7 +396,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 - [ ] `grep -c "validateBody\|validateQuery" apps/server/src/modules/nutrition/*.ts` → 0.
 - [ ] Усі nutrition route-и обгорнуті `asyncHandler` (якщо не були).
 - [ ] `pnpm --filter @sergeant/server test nutrition` зелений.
-- [ ] `pnpm api:check-openapi-types` зелений (response shape не змінилась).
+- [ ] `pnpm api:check-openapi-types` зелений (ApiError schema у registry.ts уже match-ить errorHandler canonical emission після prerequisite-фіксу — див. блок rollout).
 - [ ] Sample request у production → response body має ту саму форму (manual smoke у staging — рекомендовано).
 
 **Risks / mitigations**

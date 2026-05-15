@@ -242,17 +242,37 @@ const WebVitalsPayload = schemas.WebVitalsPayloadSchema.meta({
     "POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS).",
 });
 
-/** Стандартна 400-помилка для validateBody. */
+/**
+ * Канонічний shape body-помилки, який віддає `apps/server/src/http/errorHandler.ts`
+ * на всі 4xx/5xx відповіді через `AppError`-ієрархію (parseBody/parseQuery, auth,
+ * rate-limit, generic operational/programmer errors).
+ *
+ * Поля:
+ *  - `error` / `message` — людинозчитуваний текст. Дублюються свідомо: прямі
+ *    `fetch`-споживачі історично читають `error`, better-fetch (Better Auth
+ *    клієнт) читає `message`. Збігаються за значенням (див. errorHandler.ts:101).
+ *  - `code` — стабільний machine-readable код (`VALIDATION`, `RATE_LIMIT`,
+ *    `BAD_REQUEST`, `INTERNAL`, …).
+ *  - `requestId` — кореляційний ID, опційний (можлива відсутність до того, як
+ *    request-id middleware відпрацював; JSON.stringify пропускає `undefined`).
+ *  - `details` — surfaced лише для operational помилок із `cause: { details }`
+ *    (типовий шлях `parseBody`/`parseQuery`). На 5xx відсутній за політикою
+ *    no-cause-leak (errorHandler.ts:106).
+ */
 const ApiError = z
   .object({
     error: z.string(),
+    message: z.string(),
+    code: z.string(),
+    requestId: z.string().optional(),
     details: z
       .array(z.object({ path: z.string(), message: z.string() }))
       .optional(),
   })
   .meta({
     id: "ApiError",
-    description: "Стандартна shape 400-помилки після `validateBody`.",
+    description:
+      "Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію).",
   });
 
 /**

@@ -2908,9 +2908,12 @@ export interface components {
                 createdAt: string | null;
             };
         };
-        /** @description Стандартна shape 400-помилки після `validateBody`. */
+        /** @description Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію). */
         ApiError: {
             error: string;
+            message: string;
+            code: string;
+            requestId?: string;
             details?: {
                 path: string;
                 message: string;
