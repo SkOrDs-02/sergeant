@@ -96,3 +96,13 @@ Hybrid не обираємо — entry-AST + cross-package regex вже є де-
 ## Links
 
 - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 2
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+## Recent PRs
+
+| PR | Title | Merged |
+| --- | --- | --- |
+| [#2889](https://github.com/Skords-01/Sergeant/pull/2889) | feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) | 2026-05-15 |
+
+_Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

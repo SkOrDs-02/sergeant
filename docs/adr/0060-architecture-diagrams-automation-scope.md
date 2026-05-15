@@ -95,3 +95,13 @@ Initiative 0014 §Phase 4 спочатку планував auto-gen C3 і C4 а
 ## Links
 
 - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 4
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+## Recent PRs
+
+| PR | Title | Merged |
+| --- | --- | --- |
+| [#2898](https://github.com/Skords-01/Sergeant/pull/2898) | feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4) | 2026-05-15 |
+
+_Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

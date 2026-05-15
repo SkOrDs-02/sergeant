@@ -87,3 +87,13 @@ Sergeant має 7 розрізнених каталогів артефактів
 ## Links
 
 - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+## Recent PRs
+
+| PR | Title | Merged |
+| --- | --- | --- |
+| [#2876](https://github.com/Skords-01/Sergeant/pull/2876) | feat(docs): knowledge graph generator (Initiative 0014 Phase 1) | 2026-05-15 |
+
+_Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

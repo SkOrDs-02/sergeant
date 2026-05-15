@@ -48,6 +48,14 @@ Other doc directories (`docs/audits/`, `docs/architecture/`, `docs/launch/`, etc
 
 ## Limitations
 
-- Ledger starts empty at Phase 5 ship; historical PRs are **not** backfilled. To populate retroactively, run the backfill command for each PR you care about.
 - The workflow runs on `pull_request_target: closed` with `merged == true`. PRs closed without merging do not appear in the ledger.
 - Loop prevention: the workflow skips PRs whose `head_ref` starts with `docs/pr-backlinks-` — these are auto-generated follow-up PRs themselves and shouldn't re-trigger the action.
+
+## Repo setting required for automatic PR creation
+
+The post-merge workflow opens a follow-up PR via `gh pr create`. This call fails with `GraphQL: GitHub Actions is not permitted to create or approve pull requests` unless **one** of these is in place:
+
+- **Option A (recommended):** Settings → Actions → General → Workflow permissions → ✅ _Allow GitHub Actions to create and approve pull requests_. One-time toggle; no secrets to rotate.
+- **Option B:** swap `secrets.GITHUB_TOKEN` in [`.github/workflows/pr-backlinks.yml`](../../.github/workflows/pr-backlinks.yml) for a Personal Access Token (PAT) with `repo` scope, stored as a repo secret.
+
+If neither is set, the workflow still pushes the `docs/pr-backlinks-<NNNN>` branch (so the ledger update is preserved) but exits 1 with a `::warning::` line directing the operator to open the PR manually. Backfill via `node scripts/ci/update-pr-backlinks.mjs --pr <NUMBER>` does **not** hit this limitation — it runs from a developer machine where `gh auth login` uses an interactive token with PR-create scope.
