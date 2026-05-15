@@ -17,8 +17,13 @@ import type { User } from "@sergeant/shared";
 // (палець, без хіт-зони курсору) робимо 48 пкс; ≥sm — 44 пкс достатньо.
 // Focus-ring: суцільний brand-500 (без /45 альфи), щоб гарантовано холдити
 // ≥3:1 контраст до bg в dark-mode (alpha на panelHi-підкладках просідала).
+// Sergeant v2 redesign (2026-05, PR-5) — icon button radius tightened
+// `rounded-2xl` (16 px) → `rounded-xl` (12 px) per handoff spec. The
+// 12 px CONTROL tier matches Button/Badge sizing and aligns the header
+// chrome with the new floating-glass HubBottomNav pill (which uses
+// `rounded-r-2xl` on the outer container).
 const ICON_BUTTON_CLS =
-  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-2xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 const GREETINGS: Record<string, string> = {
   morning: "Доброго ранку",

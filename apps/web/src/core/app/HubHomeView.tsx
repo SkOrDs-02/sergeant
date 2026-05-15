@@ -3,6 +3,7 @@ import { type User } from "@sergeant/shared";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { CHAT_PATH } from "./appPaths";
 import { HubBottomNav } from "./HubBottomNav";
@@ -83,7 +84,12 @@ export function HubHomeView(props: HubHomeViewProps) {
   });
 
   return (
-    <div className="h-dvh bg-bg flex flex-col overflow-hidden safe-area-pt page-enter">
+    // Sergeant v2 redesign (2026-05, PR-5) — wraps the hub shell in
+    // <MeshBackground> so the mesh-gradient surface (`.bg-mesh` utility
+    // from theme.css) renders behind all hub content. `h-dvh flex flex-col
+    // overflow-hidden` is baked into MeshBackground; the remaining
+    // `safe-area-pt page-enter` slot through as className.
+    <MeshBackground className="safe-area-pt page-enter">
       <SkipLink />
       <HintsOrchestrator
         inFtuxSession={inFtuxSession}
@@ -170,6 +176,6 @@ export function HubHomeView(props: HubHomeViewProps) {
           className="bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))]"
         />
       )}
-    </div>
+    </MeshBackground>
   );
 }

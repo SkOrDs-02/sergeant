@@ -87,20 +87,22 @@ function HubBottomNavTab({
       // accessible name (`label`), і тести з `name: /Звіти/` падали б.
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex flex-col items-center justify-center gap-1",
+        // `z-10` ставить кнопку поверх absolutely-positioned active-tab
+        // background pill (added in PR-5 v2 redesign).
+        "relative z-10 flex-1 flex flex-col items-center justify-center gap-1",
         "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
-        "active:scale-95 pointer-coarse:active:bg-panelHi/50",
+        "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-        active ? "text-text" : "text-muted hover:text-text/70",
+        // v2 redesign: active tab reads on the ink-strong background pill
+        // → text inverts to `bg-base` (warm cream in light, dark in dark);
+        // inactive stays muted on the glass surface.
+        active ? "text-bg-base" : "text-muted hover:text-text/70",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}
     >
       <span
-        className={cn(
-          "relative transition-all duration-200 w-10 h-7 flex items-center justify-center rounded-xl",
-          active ? "text-brand-strong bg-brand-500/10" : "",
-        )}
+        className="relative transition-all duration-200 w-10 h-7 flex items-center justify-center"
         aria-hidden
       >
         <Icon name={iconName} size={20} strokeWidth={2} />
@@ -242,48 +244,62 @@ export function HubBottomNav({
   const activeIndex = tabs.findIndex((tab) => tab.active);
 
   return (
-    <nav
-      aria-label={messages.nav.hubSections}
-      className={cn(
-        "shrink-0 relative z-30 safe-area-pb",
-        "bg-panel/95 backdrop-blur-xl",
-        "border-t border-line",
-      )}
+    // Sergeant v2 redesign (2026-05, PR-5) — transformed from flat
+    // `border-t` panel to a floating glass pill (`mx-3 mb-3`,
+    // `rounded-r-2xl`, `shadow-nav`). The outer wrapper preserves
+    // `safe-area-pb` so iOS home-indicator clears; the inner `<nav>`
+    // becomes the visible pill. Active indicator changed from a top
+    // 1-px stripe to a full-cell `bg-ink-strong` background pill
+    // sitting BEHIND the active tab content.
+    <div
+      className="shrink-0 relative z-30 safe-area-pb"
+      aria-hidden={false}
     >
-      <div
-        role="tablist"
-        className="relative flex h-[60px] pointer-coarse:h-[64px]"
-      >
-        {activeIndex >= 0 && (
-          <span
-            data-testid="hub-bottom-nav-active-indicator"
-            className={cn(
-              "absolute top-0 h-1 w-10 rounded-full shadow-sm pointer-events-none",
-              "transition-[left] duration-200 ease-out",
-              // Brand accent (hub is module-agnostic — never module-colored).
-              "bg-linear-to-r from-brand-400 to-brand-500",
-            )}
-            style={{
-              left: `calc(${activeIndex} * (100% / ${tabs.length}) + (100% / ${tabs.length} - 2.5rem) / 2)`,
-            }}
-            aria-hidden
-          />
+      <nav
+        aria-label={messages.nav.hubSections}
+        className={cn(
+          "mx-3 mb-3",
+          "bg-surface-strong-glass backdrop-blur-md",
+          "border border-line",
+          "rounded-r-2xl",
+          "shadow-nav",
         )}
+      >
+        <div
+          role="tablist"
+          className="relative flex h-[60px] pointer-coarse:h-[64px] p-1"
+        >
+          {activeIndex >= 0 && (
+            <span
+              data-testid="hub-bottom-nav-active-indicator"
+              className={cn(
+                "absolute inset-y-1 pointer-events-none",
+                "rounded-xl bg-ink-strong",
+                "transition-[left] duration-200 ease-out",
+              )}
+              style={{
+                left: `calc(${activeIndex} * (100% / ${tabs.length}) + 0.25rem)`,
+                width: `calc(100% / ${tabs.length} - 0.5rem)`,
+              }}
+              aria-hidden
+            />
+          )}
 
-        {tabs.map((tab) => (
-          <HubBottomNavTab
-            key={tab.key}
-            id={tab.id}
-            panelId={tab.panelId}
-            active={tab.active}
-            onClick={tab.onClick}
-            iconName={tab.iconName}
-            label={tab.label}
-            className={tab.className}
-            hiddenSlot={tab.hiddenSlot}
-          />
-        ))}
-      </div>
-    </nav>
+          {tabs.map((tab) => (
+            <HubBottomNavTab
+              key={tab.key}
+              id={tab.id}
+              panelId={tab.panelId}
+              active={tab.active}
+              onClick={tab.onClick}
+              iconName={tab.iconName}
+              label={tab.label}
+              className={tab.className}
+              hiddenSlot={tab.hiddenSlot}
+            />
+          ))}
+        </div>
+      </nav>
+    </div>
   );
 }

@@ -33,3 +33,9 @@ export type { ModuleSettingsDrawerProps } from "./ModuleSettingsDrawer";
 
 export { StorageErrorBanner } from "./StorageErrorBanner";
 export type { StorageErrorBannerProps } from "./StorageErrorBanner";
+
+// Sergeant v2 redesign (2026-05, PR-5) — mesh-gradient surface used by
+// HubHomeView + 4 module shells (PR-6). Auto-degrades to solid base
+// on `html.hc` + `prefers-reduced-motion: reduce`.
+export { MeshBackground } from "./MeshBackground";
+export type { MeshBackgroundProps } from "./MeshBackground";
