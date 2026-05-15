@@ -8,6 +8,7 @@ import { readRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import {
+  MeshBackground,
   ModuleAccentProvider,
   ModuleHeader,
   ModuleHeaderAssistantButton,
@@ -252,8 +253,16 @@ export default function App({
 
   // ── Main app ──────────────────────────────────────────────────────────
   return (
-    <ModuleAccentProvider module="finyk" asShellRoot>
-      <ModuleHeader
+    // Sergeant v2 redesign (2026-05, PR-6) — module shell wraps content
+    // in <MeshBackground> so the mesh-gradient surface (`.bg-mesh`)
+    // renders behind the entire Finyk view. ModuleAccentProvider drops
+    // `asShellRoot` so MeshBackground takes the shell role
+    // (`h-dvh flex flex-col overflow-hidden` is baked in); Provider
+    // stays as a transparent context provider (Hard Rule #12 — accent
+    // published BEFORE mesh overlay, but mesh DOM element is inside).
+    <ModuleAccentProvider module="finyk">
+      <MeshBackground>
+        <ModuleHeader
         module="finyk"
         left={
           typeof onBackToHub === "function" ? (
@@ -635,6 +644,7 @@ export default function App({
           />
         </div>
       )}
+      </MeshBackground>
     </ModuleAccentProvider>
   );
 }

@@ -17,7 +17,10 @@
  * adding a new behaviour means editing the matching shard above.
  */
 
-import { ModuleAccentProvider } from "@shared/components/layout";
+import {
+  MeshBackground,
+  ModuleAccentProvider,
+} from "@shared/components/layout";
 import { RoutineActions } from "./RoutineActions";
 import { RoutineHeader } from "./RoutineHeader";
 import { RoutineTimeline } from "./RoutineTimeline";
@@ -60,37 +63,43 @@ export default function RoutineApp({
   } = useRoutineAppState({ pwaAction, onPwaActionConsumed, onOpenModule });
 
   return (
-    <ModuleAccentProvider module="routine" asShellRoot>
-      <RoutineHeader
-        onBackToHub={onBackToHub}
-        onOpenSettings={onOpenSettings}
-      />
+    // Sergeant v2 redesign (2026-05, PR-6) — Routine shell wraps content
+    // in MeshBackground (shell-root role). ModuleAccentProvider drops
+    // asShellRoot so MeshBackground owns h-dvh + bg-mesh; Provider stays
+    // as transparent accent context (Hard Rule #12).
+    <ModuleAccentProvider module="routine">
+      <MeshBackground>
+        <RoutineHeader
+          onBackToHub={onBackToHub}
+          onOpenSettings={onOpenSettings}
+        />
 
-      <RoutineTimeline
-        storageErrorMsg={storageErrorMsg}
-        onDismissStorageError={() => setStorageErrorMsg(null)}
-        calendarData={calendarData}
-        calendarActions={calendarActions}
-        isHabitPending={isHabitPending}
-        mainTab={mainTab}
-        routine={routine}
-        streakMax={streakMax}
-        onPullRefresh={handlePullRefresh}
-        onPullRefreshError={handlePullRefreshError}
-      />
+        <RoutineTimeline
+          storageErrorMsg={storageErrorMsg}
+          onDismissStorageError={() => setStorageErrorMsg(null)}
+          calendarData={calendarData}
+          calendarActions={calendarActions}
+          isHabitPending={isHabitPending}
+          mainTab={mainTab}
+          routine={routine}
+          streakMax={streakMax}
+          onPullRefresh={handlePullRefresh}
+          onPullRefreshError={handlePullRefreshError}
+        />
 
-      <RoutineActions
-        mainTab={mainTab}
-        setMainTab={setMainTab}
-        routine={routine}
-        setRoutine={setRoutine}
-        quickAddHabitOpen={quickAddHabitOpen}
-        quickAddFocusTick={quickAddFocusTick}
-        quickAddFirstRunHint={quickAddFirstRunHint}
-        onDismissQuickAddFirstRunHint={dismissQuickAddFirstRunHint}
-        onOpenQuickAddHabit={openQuickAddHabit}
-        onCloseQuickAddHabit={closeQuickAddHabit}
-      />
+        <RoutineActions
+          mainTab={mainTab}
+          setMainTab={setMainTab}
+          routine={routine}
+          setRoutine={setRoutine}
+          quickAddHabitOpen={quickAddHabitOpen}
+          quickAddFocusTick={quickAddFocusTick}
+          quickAddFirstRunHint={quickAddFirstRunHint}
+          onDismissQuickAddFirstRunHint={dismissQuickAddFirstRunHint}
+          onOpenQuickAddHabit={openQuickAddHabit}
+          onCloseQuickAddHabit={closeQuickAddHabit}
+        />
+      </MeshBackground>
     </ModuleAccentProvider>
   );
 }
