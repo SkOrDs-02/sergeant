@@ -11,13 +11,13 @@ import { useMemo } from "react";
 import {
   computeRecoveryBy,
   computeWellbeingMultiplier,
-  type Workout,
   type DailyLogEntry,
 } from "@sergeant/fizruk-domain";
 
 import { useExerciseCatalog } from "./useExerciseCatalog";
 import { useFizrukWorkouts } from "./useFizrukWorkouts";
 import { useDailyLog } from "./useDailyLog";
+import { toDomainWorkouts } from "../lib/toDomain";
 
 export function useRecovery() {
   const { musclesUk } = useExerciseCatalog();
@@ -29,7 +29,7 @@ export function useRecovery() {
       dailyLogEntries as Partial<DailyLogEntry>[],
     );
     const by = computeRecoveryBy(
-      workouts as unknown as Partial<Workout>[],
+      toDomainWorkouts(workouts).slice(),
       musclesUk,
       Date.now(),
       dailyLogEntries as Partial<DailyLogEntry>[],

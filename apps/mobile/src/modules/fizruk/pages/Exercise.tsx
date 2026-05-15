@@ -27,7 +27,6 @@ import {
   computeExerciseWeeklyTrend,
   exerciseDisplayName,
   suggestExerciseNextSet,
-  type Workout as DomainWorkout,
   type WorkoutExerciseCatalogEntry,
 } from "@sergeant/fizruk-domain/domain";
 import { EXERCISES, MUSCLES_UK } from "@sergeant/fizruk-domain/data";
@@ -55,6 +54,7 @@ import {
   useFizrukWorkouts,
   type FizrukWorkout,
 } from "../hooks/useFizrukWorkouts";
+import { toDomainWorkouts } from "../lib/toDomain";
 import { fizrukRouteFor } from "../shell/fizrukRoute";
 
 export interface ExerciseProps {
@@ -128,11 +128,7 @@ export function Exercise({
   );
 
   const history = useMemo(
-    () =>
-      collectExerciseHistory(
-        workouts as unknown as readonly DomainWorkout[],
-        exerciseId ?? "",
-      ),
+    () => collectExerciseHistory(toDomainWorkouts(workouts), exerciseId ?? ""),
     [workouts, exerciseId],
   );
 

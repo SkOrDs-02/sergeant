@@ -8,7 +8,12 @@
  * lets both platforms share the same counting rules.
  */
 
-import type { Workout, WorkoutsByDate, WorkoutSummary } from "./types.js";
+import type {
+  Workout,
+  WorkoutForJournal,
+  WorkoutSummary,
+  WorkoutSummaryInput,
+} from "./types.js";
 
 /**
  * Local-date bucket key for a workout in `YYYY-MM-DD` form. Returns
@@ -27,9 +32,13 @@ export function workoutDateKey(w: Pick<Workout, "startedAt">): string | null {
 /**
  * Newest-first comparator. Workouts without a parseable `startedAt`
  * sink to the bottom so a single malformed entry never hides valid
- * rows.
+ * rows. Generic over `W extends WorkoutForJournal` so mobile shape
+ * variants pass through without `as unknown as Workout` casts.
  */
-export function compareWorkoutsByStartedAtDesc(a: Workout, b: Workout): number {
+export function compareWorkoutsByStartedAtDesc<W extends WorkoutForJournal>(
+  a: W,
+  b: W,
+): number {
   const at = a?.startedAt ? Date.parse(a.startedAt) : NaN;
   const bt = b?.startedAt ? Date.parse(b.startedAt) : NaN;
   const aOk = Number.isFinite(at);
@@ -41,9 +50,9 @@ export function compareWorkoutsByStartedAtDesc(a: Workout, b: Workout): number {
 }
 
 /** Newest-first sort. Does not mutate `workouts`. */
-export function sortWorkoutsByStartedAtDesc(
-  workouts: readonly Workout[],
-): Workout[] {
+export function sortWorkoutsByStartedAtDesc<W extends WorkoutForJournal>(
+  workouts: readonly W[],
+): W[] {
   const arr = workouts.slice();
   arr.sort(compareWorkoutsByStartedAtDesc);
   return arr;
@@ -54,10 +63,10 @@ export function sortWorkoutsByStartedAtDesc(
  * inbound ordering inside each bucket so callers can pre-sort once
  * and trust the result.
  */
-export function groupWorkoutsByDate(
-  workouts: readonly Workout[],
-): WorkoutsByDate {
-  const out: WorkoutsByDate = {};
+export function groupWorkoutsByDate<W extends WorkoutForJournal>(
+  workouts: readonly W[],
+): Record<string, W[]> {
+  const out: Record<string, W[]> = {};
   for (const w of workouts) {
     const key = workoutDateKey(w) ?? "";
     const bucket = out[key] ?? [];
@@ -70,11 +79,12 @@ export function groupWorkoutsByDate(
 /**
  * Ordered (newest-first) list of `[dateKey, workouts[]]` buckets for
  * the journal `SectionList`. Empty-key ("Без дати") bucket, if any,
- * is appended last.
+ * is appended last. Generic so the caller's wider workout type
+ * survives the round-trip.
  */
-export function buildWorkoutJournalSections(
-  workouts: readonly Workout[],
-): { dateKey: string; workouts: Workout[] }[] {
+export function buildWorkoutJournalSections<W extends WorkoutForJournal>(
+  workouts: readonly W[],
+): { dateKey: string; workouts: W[] }[] {
   const sorted = sortWorkoutsByStartedAtDesc(workouts);
   const byKey = groupWorkoutsByDate(sorted);
   const keys = Object.keys(byKey).filter((k) => k !== "");
@@ -92,7 +102,7 @@ export function buildWorkoutJournalSections(
  * Total barbell tonnage (kg × reps, strength items only). Non-finite
  * / negative entries contribute `0`.
  */
-export function computeWorkoutTonnageKg(w: Workout | null | undefined): number {
+export function computeWorkoutTonnageKg(w: WorkoutSummaryInput | null | undefined): number {
   if (!w) return 0;
   let total = 0;
   for (const it of w.items || []) {
@@ -112,7 +122,7 @@ export function computeWorkoutTonnageKg(w: Workout | null | undefined): number {
  * Total logged sets across strength items (non-zero reps OR weight
  * counted). Used by the journal row pill "N підходів".
  */
-export function computeWorkoutSetCount(w: Workout | null | undefined): number {
+export function computeWorkoutSetCount(w: WorkoutSummaryInput | null | undefined): number {
   if (!w) return 0;
   let n = 0;
   for (const it of w.items || []) {
@@ -132,7 +142,7 @@ export function computeWorkoutSetCount(w: Workout | null | undefined): number {
  * timestamps are malformed so UI formatters never emit `NaN`.
  */
 export function computeWorkoutDurationSec(
-  w: Workout | null | undefined,
+  w: WorkoutSummaryInput | null | undefined,
 ): number | null {
   if (!w?.startedAt) return null;
   const start = Date.parse(w.startedAt);
@@ -145,7 +155,7 @@ export function computeWorkoutDurationSec(
 
 /** Journal-row aggregate. Pure, cheap, safe on incomplete entries. */
 export function computeWorkoutSummary(
-  w: Workout | null | undefined,
+  w: WorkoutSummaryInput | null | undefined,
 ): WorkoutSummary {
   return {
     itemCount: (w?.items || []).length,

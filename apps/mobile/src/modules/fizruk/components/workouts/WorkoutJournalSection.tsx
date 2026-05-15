@@ -11,7 +11,6 @@ import {
   buildWorkoutJournalSections,
   computeWorkoutSummary,
   formatWorkoutDateLabel,
-  type Workout as DomainWorkout,
 } from "@sergeant/fizruk-domain/domain";
 import { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -72,10 +71,7 @@ function WorkoutRow<W extends WorkoutLike>({
   onPress?: () => void;
   testID: string;
 }) {
-  const summary = useMemo(
-    () => computeWorkoutSummary(workout as unknown as DomainWorkout),
-    [workout],
-  );
+  const summary = useMemo(() => computeWorkoutSummary(workout), [workout]);
   const duration = formatDurationLabel(summary.durationSec);
   const parts: string[] = [];
   if (summary.itemCount > 0) parts.push(`${summary.itemCount} вправ`);
@@ -130,10 +126,7 @@ export const WorkoutJournalSection = memo(function WorkoutJournalSection<
   testID = "fizruk-workouts-journal",
 }: WorkoutJournalSectionProps<W>) {
   const sections = useMemo(
-    () =>
-      buildWorkoutJournalSections(
-        workouts as unknown as DomainWorkout[],
-      ) as unknown as { dateKey: string; workouts: W[] }[],
+    () => buildWorkoutJournalSections(workouts),
     [workouts],
   );
 

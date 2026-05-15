@@ -764,10 +764,15 @@ export default [
       // dropped 2026-05-15: M4 (mobile.md roadmap) done — palette uses
       // `readonly string[]` from `chartPaletteList`, manual-expense undo
       // path routes the persisted record through `upgradeCategory()`.
-      "apps/mobile/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx",
-      "apps/mobile/src/modules/fizruk/hooks/useCustomExercises.ts",
-      "apps/mobile/src/modules/fizruk/hooks/useRecovery.ts",
-      "apps/mobile/src/modules/fizruk/pages/Exercise.tsx",
+      // Fizruk × 4 allowlist entries (WorkoutJournalSection.tsx,
+      // useCustomExercises.ts, useRecovery.ts, Exercise.tsx) dropped
+      // 2026-05-15: M3 (mobile.md roadmap) done — journal selectors
+      // widened to `WorkoutSummaryInput`/`WorkoutForJournal` in
+      // `@sergeant/fizruk-domain/domain/workouts/journal.ts`, and the
+      // remaining FizrukWorkout → DomainWorkout conversions route
+      // through the new `apps/mobile/src/modules/fizruk/lib/toDomain.ts`
+      // adapter. `useCustomExercises.add` constructs the literal per
+      // known field so the index signature does not widen via spread.
       // Notifications API allowlist entry for `useRoutineReminders.ts`
       // was dropped on 2026-05-13: M5 (mobile.md roadmap) is done and the
       // hook now builds a typed `WeeklyTriggerInput` inline. Re-adding it

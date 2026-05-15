@@ -138,14 +138,25 @@ export function useCustomExercises(): UseCustomExercisesResult {
 
   const add = useCallback<UseCustomExercisesResult["add"]>(
     (draft) => {
-      // The `[extra: string]: unknown` index signature on
-      // `CustomExercise` widens spread-result property types to
-      // `unknown`. Cast through `unknown` so TS treats the literal as
-      // a fresh `CustomExercise` rather than re-typing every field.
+      // Construct CustomExercise explicitly per known field so the
+      // `[extra: string]: unknown` index signature does not widen
+      // spread-result property types. Mirrors the `update` branch
+      // which spreads two CustomExercise-shaped inputs cleanly.
       const entry: CustomExercise = {
-        ...draft,
         id: draft.id || uid(),
-      } as unknown as CustomExercise;
+        nameUk: draft.nameUk,
+        ...(draft.primaryGroup !== undefined && {
+          primaryGroup: draft.primaryGroup,
+        }),
+        ...(draft.musclesPrimary !== undefined && {
+          musclesPrimary: draft.musclesPrimary,
+        }),
+        ...(draft.musclesSecondary !== undefined && {
+          musclesSecondary: draft.musclesSecondary,
+        }),
+        ...(draft.type !== undefined && { type: draft.type }),
+        ...(draft.notes !== undefined && { notes: draft.notes }),
+      };
       persist((prev) => [entry, ...prev]);
       return entry;
     },
