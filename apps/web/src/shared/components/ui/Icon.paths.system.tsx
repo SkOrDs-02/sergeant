@@ -171,4 +171,70 @@ export const SYSTEM_PATHS: Record<string, ReactNode> = {
       <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
     </>
   ),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SERGEANT v2 REDESIGN ICONS (2026-05, PR-3).
+  // Lucide-style strokes 2px, rounded line caps. Added to support the v2
+  // navigation, AIPill, FTUX, and module-header chrome — see
+  // docs/design/redesign-v2.md § Icons.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // `x` — close glyph, alias of `close`. Handoff uses bare `x`; keep both
+  // names to avoid breaking existing call sites.
+  x: (
+    <>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </>
+  ),
+  // `more` — three horizontal dots, alias of `more-horizontal`. Handoff
+  // canonical name is `more`.
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
+    </>
+  ),
+  // `arrow-up` / `arrow-down` — vertical pointers for trending / numeric
+  // change indicators. Lucide spec.
+  "arrow-up": (
+    <>
+      <line x1="12" y1="19" x2="12" y2="5" />
+      <polyline points="5 12 12 5 19 12" />
+    </>
+  ),
+  "arrow-down": (
+    <>
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <polyline points="19 12 12 19 5 12" />
+    </>
+  ),
+  // `shield` — privacy / safety indicator (Sergeant HubHeader).
+  shield: <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z" />,
+  // `mic` — voice-input glyph inside AIPill.
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="12" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <line x1="12" y1="18" x2="12" y2="21" />
+    </>
+  ),
+  // `filter` — filter chip / sort affordance in lists.
+  filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
+  // `link` — generic hyperlink / connection glyph.
+  link: (
+    <>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
+  // `log-in` — counterpart to existing `log-out`, used on auth screens.
+  "log-in": (
+    <>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <polyline points="10 17 15 12 10 7" />
+      <line x1="15" y1="12" x2="3" y2="12" />
+    </>
+  ),
 };
