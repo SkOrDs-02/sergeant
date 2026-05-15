@@ -16,7 +16,10 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Banner } from "@shared/components/ui/Banner";
-import { ModuleAccentProvider } from "@shared/components/layout";
+import {
+  MeshBackground,
+  ModuleAccentProvider,
+} from "@shared/components/layout";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
@@ -400,12 +403,17 @@ export default function NutritionApp({
   );
 
   return (
-    <ModuleAccentProvider module="nutrition" asShellRoot>
-      <NutritionHeader
-        busy={busy}
-        onBackToHub={onBackToHub}
-        onOpenSettings={onOpenSettings}
-      />
+    // Sergeant v2 redesign (2026-05, PR-6) — Nutrition shell wraps content
+    // in MeshBackground. ModuleAccentProvider drops asShellRoot; shell-root
+    // role moves to MeshBackground (Hard Rule #12 — accent published
+    // first, mesh DOM element inside).
+    <ModuleAccentProvider module="nutrition">
+      <MeshBackground>
+        <NutritionHeader
+          busy={busy}
+          onBackToHub={onBackToHub}
+          onOpenSettings={onOpenSettings}
+        />
 
       <PullToRefresh
         onRefresh={handlePullRefresh}
@@ -535,6 +543,7 @@ export default function NutritionApp({
         applyRestorePayload={applyRestorePayload}
         onRequestMealPhoto={handleRequestMealPhoto}
       />
+      </MeshBackground>
     </ModuleAccentProvider>
   );
 }
