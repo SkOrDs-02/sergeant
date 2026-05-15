@@ -15,6 +15,14 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 - `apps/mobile-shell/**`
 - shared domain-packages, коли зміна mobile-driven
 
+## Мобільна стратегія (ADR-0052)
+
+**Capacitor = primary production path. Expo = parallel path без дати sunset.**
+
+- PR не повинен ламати жоден із шляхів.
+- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18/22 matrix rows. Цього немає зараз — **не планувати sunset**.
+- `forbid-shell-only-feature` lint rule активний: legitimate shell-glue PRs дозволені; feature-only в shell без відповідного Expo PR — ні.
+
 ## Жорсткі правила
 
 - Трактуй NativeWind і Tailwind як споріднені, але не взаємозамінні.
@@ -33,6 +41,7 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 - Прогон найближчого Jest-покриття для зачепленої mobile-поверхні.
 - Якщо змінилися навігація чи deep-link-и — перевір відповідні доки у `docs/mobile/`.
 - Якщо зміна — це порт web-фічі, підтверди, які частини лишаються спільними, а які — platform-specific.
+- Перевір, що зміна не ламає Capacitor-шлях (якщо relevant).
 
 ## Playbooks
 

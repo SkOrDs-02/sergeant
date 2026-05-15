@@ -49,3 +49,12 @@
 3. Check which env vars, health checks, or docs are part of the contract.
 4. Verify runtime behavior, not just compile success.
 5. Update deploy or observability docs in the same change when operator behavior moves.
+
+## 6. OpenClaw Gateway Change
+
+1. Start with `sergeant-start-here`.
+2. Load `sergeant-openclaw`.
+3. If the change also modifies HubChat tool defs or executors → also load `sergeant-hubchat`.
+4. If the change requires Railway env vars or health verification → also load `sergeant-deploy-and-observability`.
+5. `pnpm --filter @sergeant/openclaw-plugin build` locally before pushing.
+6. After deploy: verify `sergeant-openclaw-gateway` Railway service health + test `@OpenClaw_sergeant_v2_bot` responds.

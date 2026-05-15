@@ -19,7 +19,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "7fda3ded95e4ebda34250eefc5fd3871d6541034780bf5ef71f624d4ae896739"
+      "computedHash": "cd24e6b11ac065e9b6851a6062786c26759db63f350e3dcf36c2875642dcd19c"
     },
     "sergeant-feature-delivery": {
       "source": "local",
@@ -29,12 +29,12 @@
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "612e6929a969a30a3dc88f4e94feb7055609a0b4c49a66feb866c26370b4d632"
+      "computedHash": "b92e9ce90ae91d0586cf3c3a1eb62db4acb9b95d0bbf193ecd23efca8d7a69f1"
     },
     "sergeant-mobile-expo": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e20ccce47fe980de5db502172c4c32c25ee10c3a388b197c488af3c2b34e78dd"
+      "computedHash": "dff5c92842c16c9c170fdeefc692f86813f2cdcf8000e848fb961e72291c0b4e"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",
@@ -49,22 +49,27 @@
     "sergeant-server-api": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "fdf4e1c2bea698a703f29bdd45b44ba8498c301931741f8eb328f83bdd0b4790"
+      "computedHash": "6936c34cfa5d44b704e85cc5018d501bc479280cc407f7977bdf8bbe7650eb9d"
     },
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "ac56e77b7926cfe25f323ca4c3e531a7b5e6ec47b20580b5fabc30e727bc8979"
+      "computedHash": "4a9ec9dc8b3fb06dd0c3028210725b48bec3f8646644a8f7c107320ad317b295"
     },
     "sergeant-web-ui": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "d4578839bec3d7e4f43c7b118645903c8b9c184318dccb0941baf52febc95124"
+      "computedHash": "321ea023832a70567827169e384ec47a9c1cd3481bcaf781ef27fca110c285c4"
     },
     "sergeant-writing-skills": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "abb9cefe7b53cee6a2548f7c95216d7f4a1df9e9f9b7bd6922e40a7b26c068f0"
+    },
+    "sergeant-openclaw": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "7e926637854357ab11c2dd1aa51e31cf3038132723a355eb2c6559c54d163ee3"
     }
   }
 }
