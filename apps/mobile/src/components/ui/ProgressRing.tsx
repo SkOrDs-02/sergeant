@@ -53,7 +53,7 @@ const variantColors: Record<ProgressRingVariant, string> = {
   danger: "#ef4444", // red-500
   info: "#0ea5e9", // sky-500
   finyk: "#10b981", // emerald-500
-  fizruk: "#14b8a6", // teal-500
+  fizruk: "#0e7490", // cyan-700 — mirrors moduleColors.fizruk.primary
   routine: "#f97066", // coral-500
   nutrition: "#92cc17", // lime-500
   kcal: "#f97316", // orange-500

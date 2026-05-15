@@ -175,7 +175,7 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
     "strong": "4 120 87",
   },
   "fizruk": {
-    "default": "20 184 166",
+    "default": "14 116 144",
     "strong": "15 118 110",
   },
   "nutrition": {
@@ -199,7 +199,7 @@ exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical f
   },
   "fizruk": {
     "accent": "#c8f264",
-    "primary": "#14b8a6",
+    "primary": "#0e7490",
     "secondary": "#0d9488",
     "surface": "#f0fdfa",
   },
