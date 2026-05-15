@@ -1,0 +1,6532 @@
+{
+  "$schema": "./schemas/knowledge-graph.schema.json",
+  "version": 1,
+  "generated_at": "2026-05-14",
+  "counts": {
+    "adr": 55,
+    "audit": 28,
+    "hard-rule": 23,
+    "initiative": 49,
+    "playbook": 50,
+    "pr": 211,
+    "skill": 13
+  },
+  "nodes": [
+    {
+      "id": "adr:0001",
+      "type": "adr",
+      "title": "ADR-0001: Monetization architecture (16 рішень перед стартом)",
+      "path": "docs/adr/0001-monetization-architecture.md",
+      "status": "proposed",
+      "tier": "core",
+      "meta": {
+        "number": 1
+      }
+    },
+    {
+      "id": "adr:0002",
+      "type": "adr",
+      "title": "ADR-0002: AI tool lifecycle (proposal → safety review → rollout → KPIs)",
+      "path": "docs/adr/0002-tool-lifecycle.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 2
+      }
+    },
+    {
+      "id": "adr:0003",
+      "type": "adr",
+      "title": "ADR-0003: Refund and dispute handling",
+      "path": "docs/adr/0003-refund-and-dispute-handling.md",
+      "status": "proposed",
+      "tier": "core",
+      "meta": {
+        "number": 3
+      }
+    },
+    {
+      "id": "adr:0004",
+      "type": "adr",
+      "title": "ADR-0004: CloudSync — LWW conflict resolution",
+      "path": "docs/adr/0004-cloudsync-lww-conflict-resolution.md",
+      "status": "superseded by [ADR-0047](./0047-cloudsync-v1-410-gone.md) (CloudSync v1 → 410 Gone, T₀ executed 2026-05-06)",
+      "tier": "core",
+      "meta": {
+        "number": 4
+      }
+    },
+    {
+      "id": "adr:0005",
+      "type": "adr",
+      "title": "ADR-0005: Anthropic model selection + prompt caching",
+      "path": "docs/adr/0005-anthropic-model-selection-and-prompt-caching.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 5
+      }
+    },
+    {
+      "id": "adr:0006",
+      "type": "adr",
+      "title": "ADR-0006: React Query keys via centralized factory (no inline tuples)",
+      "path": "docs/adr/0006-rq-keys-factory.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 6
+      }
+    },
+    {
+      "id": "adr:0007",
+      "type": "adr",
+      "title": "ADR-0007: Tailwind colour-opacity scale + WCAG-AA `-strong` tier",
+      "path": "docs/adr/0007-tailwind-opacity-and-strong-tier.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 7
+      }
+    },
+    {
+      "id": "adr:0008",
+      "type": "adr",
+      "title": "ADR-0008: Feature flags — client-only registry over typedStore",
+      "path": "docs/adr/0008-feature-flags.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 8
+      }
+    },
+    {
+      "id": "adr:0009",
+      "type": "adr",
+      "title": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)",
+      "path": "docs/adr/0009-hosting-split-railway-vercel.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 9
+      }
+    },
+    {
+      "id": "adr:0010",
+      "type": "adr",
+      "title": "ADR-0010: Mobile dual-track — Capacitor shell + Expo native",
+      "path": "docs/adr/0010-mobile-dual-track-capacitor-expo.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 10
+      }
+    },
+    {
+      "id": "adr:0011",
+      "type": "adr",
+      "title": "ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор",
+      "path": "docs/adr/0011-local-first-storage.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 11,
+        "last_validated": "2026-05-13"
+      }
+    },
+    {
+      "id": "adr:0012",
+      "type": "adr",
+      "title": "ADR-0012: RLS як authz boundary — цільова модель, наразі app-enforced",
+      "path": "docs/adr/0012-rls-as-authz-boundary.md",
+      "status": "proposed",
+      "tier": "core",
+      "meta": {
+        "number": 12
+      }
+    },
+    {
+      "id": "adr:0013",
+      "type": "adr",
+      "title": "ADR-0013: DB migrations conventions — sequential, forward-only, two-phase DROP",
+      "path": "docs/adr/0013-db-migrations-conventions.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 13
+      }
+    },
+    {
+      "id": "adr:0014",
+      "type": "adr",
+      "title": "ADR-0014: `bigint` → `number` coercion у API-серіалізаторах",
+      "path": "docs/adr/0014-bigint-to-number-policy.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 14
+      }
+    },
+    {
+      "id": "adr:0015",
+      "type": "adr",
+      "title": "ADR-0015: Observability stack — Pino + Prometheus + Sentry",
+      "path": "docs/adr/0015-observability-stack.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 15
+      }
+    },
+    {
+      "id": "adr:0016",
+      "type": "adr",
+      "title": "ADR-0016: User deletion and PII handling",
+      "path": "docs/adr/0016-user-deletion-and-pii-handling.md",
+      "status": "proposed",
+      "tier": "core",
+      "meta": {
+        "number": 16
+      }
+    },
+    {
+      "id": "adr:0017",
+      "type": "adr",
+      "title": "ADR-0017: Better Auth choice and session model",
+      "path": "docs/adr/0017-better-auth-choice-and-session-model.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 17
+      }
+    },
+    {
+      "id": "adr:0018",
+      "type": "adr",
+      "title": "ADR-0018: API versioning policy (`/api/v1`)",
+      "path": "docs/adr/0018-api-versioning-policy.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 18
+      }
+    },
+    {
+      "id": "adr:0019",
+      "type": "adr",
+      "title": "ADR-0019: Push notifications — server-driven fan-out (web + APNs + FCM)",
+      "path": "docs/adr/0019-push-notifications.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 19
+      }
+    },
+    {
+      "id": "adr:0020",
+      "type": "adr",
+      "title": "ADR-0020: Testing pyramid — unit / integration / a11y / smoke-e2e",
+      "path": "docs/adr/0020-testing-pyramid.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 20
+      }
+    },
+    {
+      "id": "adr:0021",
+      "type": "adr",
+      "title": "ADR-0021: Memory Bank — local-first AI user-fact store",
+      "path": "docs/adr/0021-memory-bank.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 21
+      }
+    },
+    {
+      "id": "adr:0022",
+      "type": "adr",
+      "title": "ADR-0022: Atomic SQL daily quotas — `INSERT ... ON CONFLICT DO UPDATE WHERE`",
+      "path": "docs/adr/0022-atomic-sql-quotas.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 22
+      }
+    },
+    {
+      "id": "adr:0023",
+      "type": "adr",
+      "title": "ADR-0023: Turborepo as monorepo task runner",
+      "path": "docs/adr/0023-turbo-monorepo-runner.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 23
+      }
+    },
+    {
+      "id": "adr:0024",
+      "type": "adr",
+      "title": "ADR-0024: Monorepo split — `apps/*` (deployables) + `packages/*` (libraries)",
+      "path": "docs/adr/0024-monorepo-apps-packages-split.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 24
+      }
+    },
+    {
+      "id": "adr:0025",
+      "type": "adr",
+      "title": "ADR-0025: OpenAPI 3.1 spec — generated from canonical zod-schemas",
+      "path": "docs/adr/0025-openapi-generation.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 25
+      }
+    },
+    {
+      "id": "adr:0026",
+      "type": "adr",
+      "title": "ADR-0026: n8n — джерело істини для воркфлоу",
+      "path": "docs/adr/0026-n8n-workflow-source-of-truth.md",
+      "tier": "core",
+      "meta": {
+        "number": 26
+      }
+    },
+    {
+      "id": "adr:0027",
+      "type": "adr",
+      "title": "ADR-0027: політика OpenClaw, Console та MCP",
+      "path": "docs/adr/0027-openclaw-console-mcp-policy.md",
+      "tier": "core",
+      "meta": {
+        "number": 27
+      }
+    },
+    {
+      "id": "adr:0028",
+      "type": "adr",
+      "title": "ADR-0028: pgvector + Voyage embeddings for AI semantic memory",
+      "path": "docs/adr/0028-pgvector-ai-memory.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 28
+      }
+    },
+    {
+      "id": "adr:0030",
+      "type": "adr",
+      "title": "ADR-0030: Структура Telegram-каналів для n8n reporting",
+      "path": "docs/adr/0030-telegram-reporting-channel-structure.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 30
+      }
+    },
+    {
+      "id": "adr:0031",
+      "type": "adr",
+      "title": "ADR-0031: OpenClaw v0 — Telegram-only co-founder bot",
+      "path": "docs/adr/0031-openclaw-v0-telegram-cofounder.md",
+      "status": "Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)",
+      "tier": "core",
+      "meta": {
+        "number": 31
+      }
+    },
+    {
+      "id": "adr:0032",
+      "type": "adr",
+      "title": "ADR-0032: Sergeant Console зливається в OpenClaw bot",
+      "path": "docs/adr/0032-console-consolidated-into-openclaw.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 32
+      }
+    },
+    {
+      "id": "adr:0033",
+      "type": "adr",
+      "title": "ADR-0033: OpenClaw multi-personas + `/council` round-table",
+      "path": "docs/adr/0033-openclaw-multi-personas-and-council.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 33
+      }
+    },
+    {
+      "id": "adr:0034",
+      "type": "adr",
+      "title": "ADR-0034: Visual regression testing via Argos + Playwright",
+      "path": "docs/adr/0034-visual-regression-testing.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 34
+      }
+    },
+    {
+      "id": "adr:0035",
+      "type": "adr",
+      "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
+      "path": "docs/adr/0035-distributed-tracing-opentelemetry.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 35
+      }
+    },
+    {
+      "id": "adr:0036",
+      "type": "adr",
+      "title": "ADR-0036: OpenClaw write-tools with founder-approval flow",
+      "path": "docs/adr/0036-openclaw-write-tools-with-approval.md",
+      "status": "Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)",
+      "tier": "core",
+      "meta": {
+        "number": 36
+      }
+    },
+    {
+      "id": "adr:0037",
+      "type": "adr",
+      "title": "ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log",
+      "path": "docs/adr/0037-openclaw-write-audit-persistence.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 37
+      }
+    },
+    {
+      "id": "adr:0038",
+      "type": "adr",
+      "title": "ADR-0038: Telegram alert acknowledgement + 15-min escalation",
+      "path": "docs/adr/0038-tg-alert-acks-and-escalation.md",
+      "status": "Active. **Added:** 2026-05-13 (Sprint 6 / alert-escalation-tiers).",
+      "tier": "core",
+      "meta": {
+        "number": 38
+      }
+    },
+    {
+      "id": "adr:0039",
+      "type": "adr",
+      "title": "ADR-0039: Anthropic prompt-cache breakpoint policy",
+      "path": "docs/adr/0039-anthropic-prompt-cache-policy.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 39
+      }
+    },
+    {
+      "id": "adr:0041",
+      "type": "adr",
+      "title": "ADR-0041: OpenClaw Telegram delivery via webhook",
+      "path": "docs/adr/0041-openclaw-telegram-webhook.md",
+      "status": "Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)",
+      "tier": "core",
+      "meta": {
+        "number": 41
+      }
+    },
+    {
+      "id": "adr:0042",
+      "type": "adr",
+      "title": "ADR-0042: Password hashing strategy — scrypt (Better Auth default), `MAX_PASSWORD_LENGTH=256`",
+      "path": "docs/adr/0042-password-hashing-strategy.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 42
+      }
+    },
+    {
+      "id": "adr:0043",
+      "type": "adr",
+      "title": "ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout",
+      "path": "docs/adr/0043-cloudsync-v1-sunset.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 43
+      }
+    },
+    {
+      "id": "adr:0044",
+      "type": "adr",
+      "title": "ADR-0044: Renovate as the primary dep-update tool, Dependabot as security-only fallback",
+      "path": "docs/adr/0044-renovate-vs-dependabot.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 44
+      }
+    },
+    {
+      "id": "adr:0045",
+      "type": "adr",
+      "title": "ADR-0045: Hard Rules taxonomy — blocker-invariant / lint-enforced-convention / active-initiative",
+      "path": "docs/adr/0045-hard-rules-taxonomy.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 45
+      }
+    },
+    {
+      "id": "adr:0046",
+      "type": "adr",
+      "title": "ADR-0046: Storybook visual regression scope",
+      "path": "docs/adr/0046-storybook-vrt-scope.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 46
+      }
+    },
+    {
+      "id": "adr:0047",
+      "type": "adr",
+      "title": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone)",
+      "path": "docs/adr/0047-cloudsync-v1-410-gone.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 47,
+        "last_validated": "2026-05-13"
+      }
+    },
+    {
+      "id": "adr:0048",
+      "type": "adr",
+      "title": "ADR-0048: APNs provider library",
+      "path": "docs/adr/0048-apns-provider-library.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 48,
+        "last_validated": "2026-05-13"
+      }
+    },
+    {
+      "id": "adr:0049",
+      "type": "adr",
+      "title": "ADR-0049: Auth vendor risk and migration plan (Better Auth → Auth.js / Lucia fallback)",
+      "path": "docs/adr/0049-auth-vendor-risk.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 49
+      }
+    },
+    {
+      "id": "adr:0050",
+      "type": "adr",
+      "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
+      "path": "docs/adr/0050-typescript-major-version-policy.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 50,
+        "last_validated": "2026-05-13"
+      }
+    },
+    {
+      "id": "adr:0051",
+      "type": "adr",
+      "title": "ADR-0051: Pricing v3 — Free + Pro, single paid tier",
+      "path": "docs/adr/0051-pricing-v3-single-tier.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 51
+      }
+    },
+    {
+      "id": "adr:0052",
+      "type": "adr",
+      "title": "ADR-0052: Mobile strategy — Capacitor primary, Expo parallel (no deprecation)",
+      "path": "docs/adr/0052-mobile-strategy-capacitor-primary.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 52
+      }
+    },
+    {
+      "id": "adr:0053",
+      "type": "adr",
+      "title": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror",
+      "path": "docs/adr/0053-api-versioning-policy.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 53,
+        "last_validated": "2026-05-13"
+      }
+    },
+    {
+      "id": "adr:0054",
+      "type": "adr",
+      "title": "ADR-0054: UX-Roast 2026-Q2 — рішення з §1–§13",
+      "path": "docs/adr/0054-ux-roast-2026-q2.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 54
+      }
+    },
+    {
+      "id": "adr:0055",
+      "type": "adr",
+      "title": "ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover",
+      "path": "docs/adr/0055-openclaw-external-gateway.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 55,
+        "last_validated": "2026-05-11"
+      }
+    },
+    {
+      "id": "adr:0057",
+      "type": "adr",
+      "title": "ADR-0057: Upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x у tools/console",
+      "path": "docs/adr/0057-anthropic-sdk-v1-upgrade.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 57
+      }
+    },
+    {
+      "id": "adr:0058",
+      "type": "adr",
+      "title": "ADR-0058: Knowledge graph schema and storage format",
+      "path": "docs/adr/0058-knowledge-graph-schema.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 58,
+        "last_validated": "2026-05-15"
+      }
+    },
+    {
+      "id": "audit:2026-05-02-doc-hygiene-audit",
+      "type": "audit",
+      "title": "Sergeant — doc-hygiene аудит (2026-05-02)",
+      "path": "docs/audits/2026-05-02-doc-hygiene-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-03-readme-gap-analysis",
+      "type": "audit",
+      "title": "Аналіз README: чого не вистачає та повний гайд по проєкту",
+      "path": "docs/audits/2026-05-03-readme-gap-analysis.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-04-revenue-and-marketing-roast",
+      "type": "audit",
+      "title": "Sergeant — жорстка прожарка: маркетинг, монетизація, цінність продукту, growth",
+      "path": "docs/audits/2026-05-04-revenue-and-marketing-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-05-dead-code-and-stale-links-audit",
+      "type": "audit",
+      "title": "Sergeant — dead-code & stale-links аудит (2026-05-05)",
+      "path": "docs/audits/2026-05-05-dead-code-and-stale-links-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-06-ux-roast",
+      "type": "audit",
+      "title": "Sergeant — UX-прожарка для перших користувачів (post-onboarding, 2026-05-06)",
+      "path": "docs/audits/2026-05-06-ux-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-06-ux-roast-pr-plan",
+      "type": "audit",
+      "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
+      "path": "docs/audits/2026-05-06-ux-roast-pr-plan.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-07-app-audit",
+      "type": "audit",
+      "title": "Sergeant — повний аудит застосунку (2026-05-07)",
+      "path": "docs/audits/2026-05-07-app-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-07-full-app-regression-ux-audit",
+      "type": "audit",
+      "title": "Sergeant — full regression + UX audit (2026-05-07/08)",
+      "path": "docs/audits/2026-05-07-full-app-regression-ux-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-backend-performance-roast",
+      "type": "audit",
+      "title": "Прожарка #4/10: Backend & Performance (2026-05-13)",
+      "path": "docs/audits/2026-05-13-backend-performance-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-consolidated-page-audit",
+      "type": "audit",
+      "title": "Consolidated Page Audit — 2026-05-13",
+      "path": "docs/audits/2026-05-13-consolidated-page-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "type": "audit",
+      "title": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)",
+      "path": "docs/audits/2026-05-13-dead-code-hard-rules-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-documentation-hygiene-roast",
+      "type": "audit",
+      "title": "Doc-hygiene roast — 2026-05-13",
+      "path": "docs/audits/2026-05-13-documentation-hygiene-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-ftux-onboarding-roast",
+      "type": "audit",
+      "title": "FTUX onboarding roast — Day 0-7 (2026-05-13)",
+      "path": "docs/audits/2026-05-13-ftux-onboarding-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "type": "audit",
+      "title": "Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)",
+      "path": "docs/audits/2026-05-13-mobile-reliability-ux-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "type": "audit",
+      "title": "Page Audit — Auth & Onboarding pages",
+      "path": "docs/audits/2026-05-13-page-audit-01-auth-onboarding.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "type": "audit",
+      "title": "Page Audit — Hub Dashboard, Modules Grid & App shell",
+      "path": "docs/audits/2026-05-13-page-audit-02-hub-dashboard.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-03-hub-chat-search",
+      "type": "audit",
+      "title": "Page Audit — Hub Chat, Search & Backup panel",
+      "path": "docs/audits/2026-05-13-page-audit-03-hub-chat-search.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-05-finyk",
+      "type": "audit",
+      "title": "Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets)",
+      "path": "docs/audits/2026-05-13-page-audit-05-finyk.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "type": "audit",
+      "title": "Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise)",
+      "path": "docs/audits/2026-05-13-page-audit-06-fizruk-part1.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "type": "audit",
+      "title": "Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)",
+      "path": "docs/audits/2026-05-13-page-audit-07-fizruk-part2.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-08-nutrition",
+      "type": "audit",
+      "title": "Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)",
+      "path": "docs/audits/2026-05-13-page-audit-08-nutrition.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "type": "audit",
+      "title": "Page Audit — Routine module + Strategy page",
+      "path": "docs/audits/2026-05-13-page-audit-09-routine-strategy.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
+      "type": "audit",
+      "title": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing",
+      "path": "docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-revenue-monetization-roast",
+      "type": "audit",
+      "title": "Revenue, Monetization & Marketing Roast (2026-05-13)",
+      "path": "docs/audits/2026-05-13-revenue-monetization-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-security-observability-roast",
+      "type": "audit",
+      "title": "Sergeant — Security & Observability прожарка (2026-05-13)",
+      "path": "docs/audits/2026-05-13-security-observability-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-testing-devx-roast",
+      "type": "audit",
+      "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
+      "path": "docs/audits/2026-05-13-testing-devx-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-web-architecture-state-roast",
+      "type": "audit",
+      "title": "Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10)",
+      "path": "docs/audits/2026-05-13-web-architecture-state-roast.md",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-05-13-web-frontend-ergonomics-roast",
+      "type": "audit",
+      "title": "Прожарка #2/10: Web Frontend Ergonomics",
+      "path": "docs/audits/2026-05-13-web-frontend-ergonomics-roast.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "hard-rule:1",
+      "type": "hard-rule",
+      "title": "DB types: coerce `bigint` to `number` in serializers",
+      "path": "docs/governance/hard-rules.json#1",
+      "tier": "core",
+      "meta": {
+        "number": 1,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "apps/server/src/modules/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:10",
+      "type": "hard-rule",
+      "title": "Lifecycle markers — every file/doc declares its status",
+      "path": "docs/governance/hard-rules.json#10",
+      "tier": "core",
+      "meta": {
+        "number": 10,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/**/*.{ts,tsx,js,jsx,mjs,cjs}",
+          "packages/**/*.{ts,tsx,js,jsx,mjs,cjs}",
+          "docs/**/*.md",
+          "scripts/**/*.{mjs,js}"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:11",
+      "type": "hard-rule",
+      "title": "No arbitrary hex colors in `className`",
+      "path": "docs/governance/hard-rules.json#11",
+      "tier": "core",
+      "meta": {
+        "number": 11,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**",
+          "apps/mobile/src/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:12",
+      "type": "hard-rule",
+      "title": "Module-accent containment — no foreign accents inside a module subtree",
+      "path": "docs/governance/hard-rules.json#12",
+      "tier": "core",
+      "meta": {
+        "number": 12,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/modules/finyk/**",
+          "apps/web/src/modules/fizruk/**",
+          "apps/web/src/modules/nutrition/**",
+          "apps/web/src/modules/routine/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:13",
+      "type": "hard-rule",
+      "title": "No raw-palette light/dark `className` pairs",
+      "path": "docs/governance/hard-rules.json#13",
+      "tier": "core",
+      "meta": {
+        "number": 13,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**",
+          "apps/mobile/src/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:14",
+      "type": "hard-rule",
+      "title": "Visible focus indicators must use `focus-visible:`, not `focus:`",
+      "path": "docs/governance/hard-rules.json#14",
+      "tier": "core",
+      "meta": {
+        "number": 14,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:15",
+      "type": "hard-rule",
+      "title": "Read governance before coding; update docs alongside code; internal docs in Ukrainian",
+      "path": "docs/governance/hard-rules.json#15",
+      "tier": "core",
+      "meta": {
+        "number": 15,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "**/*"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:16",
+      "type": "hard-rule",
+      "title": "Typography scale — semantic styles + 12px floor",
+      "path": "docs/governance/hard-rules.json#16",
+      "tier": "core",
+      "meta": {
+        "number": 16,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**",
+          "packages/design-tokens/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:17",
+      "type": "hard-rule",
+      "title": "Animation budget — max 2 concurrent, 3 tiers",
+      "path": "docs/governance/hard-rules.json#17",
+      "tier": "core",
+      "meta": {
+        "number": 17,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**",
+          "packages/design-tokens/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:18",
+      "type": "hard-rule",
+      "title": "Module-size discipline — `max-lines: 600` for web TS/TSX",
+      "path": "docs/governance/hard-rules.json#18",
+      "tier": "core",
+      "meta": {
+        "number": 18,
+        "severity": "blocker",
+        "category": "active-initiative",
+        "scope": [
+          "apps/web/src/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:19",
+      "type": "hard-rule",
+      "title": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo",
+      "path": "docs/governance/hard-rules.json#19",
+      "tier": "core",
+      "meta": {
+        "number": 19,
+        "severity": "blocker",
+        "category": "active-initiative",
+        "scope": [
+          "apps/**/tsconfig.json",
+          "packages/**/tsconfig.json"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:2",
+      "type": "hard-rule",
+      "title": "RQ keys: only via centralized factories",
+      "path": "docs/governance/hard-rules.json#2",
+      "tier": "core",
+      "meta": {
+        "number": 2,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "apps/web/src/**",
+          "apps/mobile/src/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:20",
+      "type": "hard-rule",
+      "title": "No OpenClaw PATs in production",
+      "path": "docs/governance/hard-rules.json#20",
+      "tier": "core",
+      "meta": {
+        "number": 20,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "apps/server/src/env.ts",
+          "apps/server/src/env/env.ts",
+          "apps/server/src/modules/openclaw/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:21",
+      "type": "hard-rule",
+      "title": "Pino redaction policy enforced",
+      "path": "docs/governance/hard-rules.json#21",
+      "tier": "core",
+      "meta": {
+        "number": 21,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "apps/server/src/obs/logger.ts",
+          "apps/server/src/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:22",
+      "type": "hard-rule",
+      "title": "Skill body security scan — no injection/exfiltration patterns in SKILL.md",
+      "path": "docs/governance/hard-rules.json#22",
+      "tier": "core",
+      "meta": {
+        "number": 22,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          ".agents/skills/*/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:23",
+      "type": "hard-rule",
+      "title": "Archive-move depth integrity — no broken `../X` links in docs archives",
+      "path": "docs/governance/hard-rules.json#23",
+      "tier": "core",
+      "meta": {
+        "number": 23,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "docs/**/archive/**/*.md"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:3",
+      "type": "hard-rule",
+      "title": "API contract: server response shape ↔ `api-client` types ↔ test",
+      "path": "docs/governance/hard-rules.json#3",
+      "tier": "core",
+      "meta": {
+        "number": 3,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "apps/server/src/modules/**",
+          "packages/api-client/src/**",
+          "apps/server/src/modules/**/*.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:4",
+      "type": "hard-rule",
+      "title": "SQL migrations: sequential, no gaps, two-phase for DROP",
+      "path": "docs/governance/hard-rules.json#4",
+      "tier": "core",
+      "meta": {
+        "number": 4,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "apps/server/src/migrations/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:5",
+      "type": "hard-rule",
+      "title": "Conventional Commits: explicit scope enum",
+      "path": "docs/governance/hard-rules.json#5",
+      "tier": "core",
+      "meta": {
+        "number": 5,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "**/*"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:6",
+      "type": "hard-rule",
+      "title": "No force push to main/master",
+      "path": "docs/governance/hard-rules.json#6",
+      "tier": "core",
+      "meta": {
+        "number": 6,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "main",
+          "master"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:7",
+      "type": "hard-rule",
+      "title": "Pre-commit hooks via Husky — do not skip",
+      "path": "docs/governance/hard-rules.json#7",
+      "tier": "core",
+      "meta": {
+        "number": 7,
+        "severity": "blocker",
+        "category": "blocker-invariant",
+        "scope": [
+          "**/*"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:8",
+      "type": "hard-rule",
+      "title": "Tailwind colour-opacity steps must be on the registered scale",
+      "path": "docs/governance/hard-rules.json#8",
+      "tier": "core",
+      "meta": {
+        "number": 8,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**",
+          "packages/design-tokens/**"
+        ]
+      }
+    },
+    {
+      "id": "hard-rule:9",
+      "type": "hard-rule",
+      "title": "Saturated brand fills behind `text-white` must use the `-strong` companion",
+      "path": "docs/governance/hard-rules.json#9",
+      "tier": "core",
+      "meta": {
+        "number": 9,
+        "severity": "blocker",
+        "category": "lint-enforced-convention",
+        "scope": [
+          "apps/web/src/**"
+        ]
+      }
+    },
+    {
+      "id": "initiative:0002",
+      "type": "initiative",
+      "title": "0002 — Mobile platform decision: lock the deprecation deadline",
+      "path": "docs/initiatives/0002-mobile-platform-decision.md",
+      "status": "In progress (Phase 1/2 shipped; sunset schedule superseded — see Update below)",
+      "tier": "core",
+      "meta": {
+        "number": 2,
+        "owner": "@Skords-01",
+        "priority": "P0 (Sprint 1)"
+      }
+    },
+    {
+      "id": "initiative:0003",
+      "type": "initiative",
+      "title": "0003 — Sync v2 rollout & v1 sunset",
+      "path": "docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
+      "status": "In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)",
+      "tier": "core",
+      "meta": {
+        "number": 3,
+        "owner": "@Skords-01",
+        "priority": "P0 (Sprint 1–2)"
+      }
+    },
+    {
+      "id": "initiative:0006",
+      "type": "initiative",
+      "title": "0006 — Frontend routing migration + route-based code-split",
+      "path": "docs/initiatives/0006-frontend-routing-and-code-split.md",
+      "status": "In progress — Phases 0+1+2.a+2.b shipped ([#1657](https://github.com/Skords-01/Sergeant/pull/1657), [#2100](https://github.com/Skords-01/Sergeant/pull/2100), [#2104](https://github.com/Skords-01/Sergeant/pull/2104), [#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Phase 2 next: fizruk + routine. Phases 3–5 pending.",
+      "tier": "core",
+      "meta": {
+        "number": 6,
+        "owner": "@Skords-01",
+        "priority": "P1 (Sprint 2)"
+      }
+    },
+    {
+      "id": "initiative:0010",
+      "type": "initiative",
+      "title": "0010 — Revenue-first launch: ship paid, focus wedge",
+      "path": "docs/initiatives/0010-revenue-first-launch.md",
+      "status": "In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)",
+      "tier": "core",
+      "meta": {
+        "number": 10,
+        "owner": "@Skords-01",
+        "priority": "P0 (Sprint 1–4)"
+      }
+    },
+    {
+      "id": "initiative:0011",
+      "type": "initiative",
+      "title": "0011 — Foundation adoption + process discipline (post-launch sweep)",
+      "path": "docs/initiatives/0011-foundation-adoption-and-process-discipline.md",
+      "status": "In progress — **Phases 1 + 2 complete; Phase 4 closed через handoff у 0007**. **Phase 1** (4/4): [#1688](https://github.com/Skords-01/Sergeant/pull/1688) `validate-pr-body.mjs` Hard Rule #15 strict 3-of-3, [#1691](https://github.com/Skords-01/Sergeant/pull/1691) cross-branch migration-collision guard, [#1697](https://github.com/Skords-01/Sergeant/pull/1697) deploy-config staging-verification gate, [#1699](https://github.com/Skords-01/Sergeant/pull/1699) CSP_DISABLE retrospective audit (5 operational action items A1–A5 на @Skords-01 — due `2026-05-11`, див. § Carry-over). **Phase 2** (DataState consumer adoption + form-engine consolidation): 2.1 ManualExpenseSheet round-13 (commit-у-існуючому-PR), 2.2 ResetPasswordPage merged [#1696](https://github.com/Skords-01/Sergeant/pull/1696), 2.3 `useFormValidation` deprecation закрита round-11 фізичним видаленням 0-споживачевого хука; 2.4 finyk merged [#1703](https://github.com/Skords-01/Sergeant/pull/1703), 2.5 fizruk merged [#1709](https://github.com/Skords-01/Sergeant/pull/1709), 2.6 nutrition merged [#1713](https://github.com/Skords-01/Sergeant/pull/1713), 2.7 routine merged [#1714](https://github.com/Skords-01/Sergeant/pull/1714), 2.8 hubchat/coach/digest merged [#1726](https://github.com/Skords-01/Sergeant/pull/1726); 2.9 prefer-data-state ESLint canary merged [#1823](https://github.com/Skords-01/Sergeant/pull/1823) 2026-05-05 (warn-only, 0 hits across 174 модульних файлів) — **Phase 2.9 finalize: severity-promote `warn → error` DONE 2026-05-10** (carry-over `2026-06-30` закрита заздалегідь). **Phase 4 closed 2026-05-05** через 0007 round-10 handoff (37/37 `shared/ui` stories non-allowlisted, module-level stories, ADR-0046, `sergeant-design/require-stories-for-ui-components` severity = `error` [#1812](https://github.com/Skords-01/Sergeant/pull/1812)). **Phase 3** (hardening verification + email-verification sweep) — пост-0010-launch ≥ 2026-06-02.",
+      "tier": "core",
+      "meta": {
+        "number": 11,
+        "owner": "@Skords-01",
+        "priority": "P1 (subordinate to 0010-revenue-first-launch scope-freeze)"
+      }
+    },
+    {
+      "id": "initiative:0013",
+      "type": "initiative",
+      "title": "0013 — Module decomposition round 2 (`apps/web` allowlist drain)",
+      "path": "docs/initiatives/0013-module-decomposition-round-2.md",
+      "status": "In progress (Sprint 1 done, Sprint 2 частково: `Workouts.tsx` 744→213 ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)), `LogCard.tsx` 736→216 ([PR #2530](https://github.com/Skords-01/Sergeant/pull/2530)), `Overview.tsx` ~750→139 ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f))).",
+      "tier": "core",
+      "meta": {
+        "number": 13,
+        "owner": "@Skords-01",
+        "priority": "P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)"
+      }
+    },
+    {
+      "id": "initiative:0014",
+      "type": "initiative",
+      "title": "0014 — Knowledge graph & auto-generated catalogs",
+      "path": "docs/initiatives/0014-knowledge-graph-and-catalogs.md",
+      "status": "In progress (Phase 1 scaffolding)",
+      "tier": "core",
+      "meta": {
+        "number": 14,
+        "owner": "@Skords-01",
+        "priority": "P2"
+      }
+    },
+    {
+      "id": "initiative:follow-ups",
+      "type": "initiative",
+      "title": "Initiative follow-ups",
+      "path": "docs/initiatives/follow-ups.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/00-overview",
+      "type": "initiative",
+      "title": "Overview — stack pulse 2026-05",
+      "path": "docs/initiatives/stack-pulse-2026-05/00-overview.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
+      "type": "initiative",
+      "title": "Session log — 2026-05-03 stack-pulse follow-through",
+      "path": "docs/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-01-unify-env-modules",
+      "type": "initiative",
+      "title": "PR-01: Уніфікувати env-модулі сервера",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md",
+      "status": "Closed — merged ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)). `apps/server/src/env.ts` зведено до 19-рядкового re-export shim над `apps/server/src/env/env.ts` (єдиний Zod-schema джерело правди + `assertStartupEnv()`); CI-guard `scripts/check-env-single-source.mjs` блокує `process.env`-доступ поза дозволеним списком. `env/betterAuthEnv.ts` лишено навмисно — викликається з auth lifecycle до повного startup.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-02-rate-limit-fail-closed",
+      "type": "initiative",
+      "title": "PR-02: Rate-limit fail-closed на `/api/auth/*`",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md",
+      "status": "Closed — merged [#1552](https://github.com/Skords-01/Sergeant/pull/1552)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-03-bcrypt-password-limit",
+      "type": "initiative",
+      "title": "PR-03: password length policy — scrypt premise correction",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md",
+      "status": "Closed — merged [#1550](https://github.com/Skords-01/Sergeant/pull/1550)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners",
+      "type": "initiative",
+      "title": "PR-04: Secondary owners + knowledge-transfer plan",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
+      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-05-typescript-types-node-downgrade",
+      "type": "initiative",
+      "title": "PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md",
+      "status": "Closed — merged (ADR-0050, @types/node pinned to ^20.19.0, pnpm.overrides + renovate rule)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-06-openclaw-github-app",
+      "type": "initiative",
+      "title": "PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md",
+      "status": "Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) — in review (current PR)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-07-body-size-declarative-policy",
+      "type": "initiative",
+      "title": "PR-07: Declarative body-size policy",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-07-body-size-declarative-policy.md",
+      "status": "Closed — merged [#2081](https://github.com/Skords-01/Sergeant/pull/2081)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-08-api-versioning-consolidation",
+      "type": "initiative",
+      "title": "PR-08: API versioning consolidation (видалити v1-rewrite-shim)",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md",
+      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../notes/spikes/2026-05-api-v1-usage.md))",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-09-apns-library-adr",
+      "type": "initiative",
+      "title": "PR-09: `@parse/node-apn` review (ADR-only)",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md",
+      "status": "Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../adr/0048-apns-provider-library.md))",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-10-better-auth-security-review",
+      "type": "initiative",
+      "title": "PR-10: Better Auth security review + Safari/Webkit E2E",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md",
+      "status": "Implemented (PR-48 / pr-plan-2026-05 §Security & supply chain row #48)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci",
+      "type": "initiative",
+      "title": "PR-11: Drizzle schema ↔ SQL drift CI gate",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci.md",
+      "status": "Closed — drift CI gate landed (`scripts/check-schema-drift.mjs` + `packages/db-schema/src/__tests__/drift.test.ts`); ROOT-path fix in [#2089](https://github.com/Skords-01/Sergeant/pull/2089)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-12-sentry-traces-sampler",
+      "type": "initiative",
+      "title": "PR-12: Sentry tracesSampler dynamic per-route",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md",
+      "status": "Closed — merged [#2086](https://github.com/Skords-01/Sergeant/pull/2086)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-13-postgres-pool-sizing",
+      "type": "initiative",
+      "title": "PR-13: PG pool sizing + monitoring + alerts",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md",
+      "status": "Closed — implementation merged. Observability стек уже мав",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-14-vercel-coep-review",
+      "type": "initiative",
+      "title": "PR-14: Vercel COEP review (require-corp)",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-14-vercel-coep-review.md",
+      "status": "Closed (2026-05-05, doc-only) — resolved by M21 compatibility matrix",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock",
+      "type": "initiative",
+      "title": "PR-15: `AI_QUOTA_DISABLED=1` hard-block у production",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md",
+      "status": "Closed — merged [#1567](https://github.com/Skords-01/Sergeant/pull/1567) (production-throw у `env.ts` + tests landed in `main`)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy",
+      "type": "initiative",
+      "title": "PR-16: Pino redaction policy + ESLint guard",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md",
+      "status": "Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md) зареєстровані.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle",
+      "type": "initiative",
+      "title": "PR-17: 80+ env-vars → DB feature-flag toggle",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md",
+      "status": "Planned",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-18-detox-server-shape-trigger",
+      "type": "initiative",
+      "title": "PR-18: Detox path-trigger пропускає server-shape changes",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md",
+      "status": "In progress — Detox iOS + Android `paths` extended to include `apps/server/src/routes/**` + `apps/server/src/migrations/**` (the actual server layout — there is no `apps/server/src/modules/**/*.routes.ts` tree as the original card assumed). CONTRIBUTING.md updated. The `scripts/check-api-client-coverage.mjs` drift detector + `lint:api-client` CI gate are deferred to a follow-up: response Zod schemas live in `@sergeant/shared` and are imported into the per-domain routers in `apps/server/src/routes/*.ts`, not exported from a uniform `<X>.routes.ts` module — designing the drift detector against the real shape needs a separate ADR.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-19-workers-health-registry",
+      "type": "initiative",
+      "title": "PR-19: Workers health-registry + `/api/health/workers` endpoint",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md",
+      "status": "Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-20-patches-readme",
+      "type": "initiative",
+      "title": "PR-20: `patches/` debt без README",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md",
+      "status": "Closed — `patches/README.md` schema + `scripts/check-patches-doc.mjs` + `pnpm lint:patches` CI gate landed in [#2193](https://github.com/Skords-01/Sergeant/pull/2193) (`fix(docs): restore patches/README Status badge + prettier --write 33 stale docs`). All 4 DoD items shipped: README table з 1 row на `@expo__cli@0.22.28.patch`, `scripts/check-patches-doc.mjs` (10 KB), 6-fixture node:test у `scripts/__tests__/check-patches-doc.test.mjs`, та `lint:patches` step у `.github/workflows/ci.yml` (line 130) — закриває M4 у `00-overview.md`.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update",
+      "type": "initiative",
+      "title": "PR-21: SW `prompt`-mode auto-update on inactivity",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md",
+      "status": "Shipped — SW prompt-mode auto-update wired in [PR-21 stack-pulse 2026-05](#); `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts` + `apps/server/src/http/buildIdHeader.ts` issues `X-Server-Build-Id` on every response.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-22-mobile-expo-sdk-53",
+      "type": "initiative",
+      "title": "PR-22: Mobile Expo SDK 52 → 53 upgrade",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md",
+      "status": "Planned",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests",
+      "type": "initiative",
+      "title": "PR-23: OpenAPI spec contract-tested vs runtime",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
+      "status": "Active — Phase 1 (generation + freshness gate) shipped; ADR-0056 + contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction",
+      "type": "initiative",
+      "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
+      "status": "Planned",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-25-two-production-origins",
+      "type": "initiative",
+      "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
+      "status": "Planned",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-26-csp-report-uri",
+      "type": "initiative",
+      "title": "PR-26: CSP `report-uri` / `report-to` endpoint",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md",
+      "status": "Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-27-internal-api-key-rotation",
+      "type": "initiative",
+      "title": "PR-27: `INTERNAL_API_KEY` rotation мechanism",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md",
+      "status": "Planned",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta",
+      "type": "initiative",
+      "title": "PR-28: `__SW_BUILD_ID__` global → `import.meta.env.VITE_BUILD_ID`",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md",
+      "status": "Closed — merged [#2309](https://github.com/Skords-01/Sergeant/pull/2309) (commit `e8ada9f2`). Migration covers всі два ambient global-и (`__SW_BUILD_ID__` у SW + `__APP_BUILD_ID__` у React Query persister), які ділили той самий build-id; після цього PR-у вони живуть як single `import.meta.env.VITE_BUILD_ID` з типами у `apps/web/src/vite-env.d.ts`.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
+      "type": "initiative",
+      "title": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
+      "status": "Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` лишається як backward-compat alias до PR-2 у serpni 2026)",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve",
+      "type": "initiative",
+      "title": "PR-30: Dockerfile post-install cleanup CVE-shrink fragility",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md",
+      "status": "Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13); shared base layer + console-side Trivy scan tracked as follow-up.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-31-eslint-config-split",
+      "type": "initiative",
+      "title": "PR-31: ESLint config 1073 рядки → split per-app",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
+      "status": "Phase 1 shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). Phase 2 deferred: per-surface extracts (apps/web, apps/server, apps/mobile, apps/mobile-shell, tools/openclaw, packages/\\*\\*) tracked separately — потребує diff-test scaffolding (`scripts/eslint-print-config-diff.mjs`) перед extraction.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup",
+      "type": "initiative",
+      "title": "PR-32: `pnpm.overrides` quarterly cleanup",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md",
+      "status": "Closed (PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423))",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization",
+      "type": "initiative",
+      "title": "PR-33: 21 hard rules — categorize",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md",
+      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate",
+      "type": "initiative",
+      "title": "PR-34: `runDemoSeedFromUrl` / `runDemoCleanupOnce` on every load",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md",
+      "status": "Closed (PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec))",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
+      "type": "initiative",
+      "title": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md",
+      "status": "Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger).",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard",
+      "type": "initiative",
+      "title": "PR-36: `lazyImport` chunk-reload no-infinite-loop guard",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md",
+      "status": "Closed — merged [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (commit `9bfa006d`). Код живе не у `lazyImport.ts` (як писалось у плані на 2026-05-07), а у `apps/web/src/core/lib/chunkReload.ts` — reload-recovery вже був рефакторений у окремий модуль з cooldown-гардом. Цей PR додав counter-window guard (`MAX_RELOADS = 3`, sliding `RESET_AFTER_MS = 5min`) поверх існуючого 10s cooldown-у.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-37-postgres-image-sha-pin",
+      "type": "initiative",
+      "title": "PR-37: Postgres image SHA-pinning",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md",
+      "status": "Closed — merged [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (commit `348f5773`). CI workflows (`ci.yml:410`, `extended-e2e.yml:57`, `visual-regression.yml:40`, `db-backup-verify.yml:34`) already pin `pgvector/pgvector:pg16@sha256:7d400e34…` (landed earlier under M21 / supply-chain hardening). Цей PR закрив останнє drift-місце — `docker-compose.yml` (local dev) — і додав Renovate `pinDigests` rule + setup runbook.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-38-pwa-precache-first-party",
+      "type": "initiative",
+      "title": "PR-38: PWA precache 1st-party verify",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md",
+      "status": "Closed — merged [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (commit `e227f2b6`). Скрипт живе не у `apps/web/scripts/` (як писалось у плані на 2026-05-07), а у кореневій `scripts/` — всі інші freshness/процес-гейти репо живуть там (`check-patches-doc.mjs`, `check-tech-debt-freshness.mjs`, ін.). Скрипт використовує `apps/server/dist/sw.js` (`apps/web` білдить сюди через `outDir`).",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk",
+      "type": "initiative",
+      "title": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest",
+      "path": "docs/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md",
+      "status": "Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:access-governance",
+      "type": "playbook",
+      "title": "Управління привілейованим доступом (access governance)",
+      "path": "docs/playbooks/access-governance.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-api-endpoint",
+      "type": "playbook",
+      "title": "Add API Endpoint",
+      "path": "docs/playbooks/add-api-endpoint.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-feature-flag",
+      "type": "playbook",
+      "title": "Додати feature flag",
+      "path": "docs/playbooks/add-feature-flag.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-hard-rule",
+      "type": "playbook",
+      "title": "Додати Hard Rule",
+      "path": "docs/playbooks/add-hard-rule.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-hubchat-tool",
+      "type": "playbook",
+      "title": "Додати HubChat Tool",
+      "path": "docs/playbooks/add-hubchat-tool.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-monobank-event-handler",
+      "type": "playbook",
+      "title": "Add Monobank Event Handler",
+      "path": "docs/playbooks/add-monobank-event-handler.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-new-page-route",
+      "type": "playbook",
+      "title": "Add New Page Route",
+      "path": "docs/playbooks/add-new-page-route.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-onboarding-step",
+      "type": "playbook",
+      "title": "Add Onboarding Step",
+      "path": "docs/playbooks/add-onboarding-step.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-push-notification",
+      "type": "playbook",
+      "title": "Add Push Notification",
+      "path": "docs/playbooks/add-push-notification.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-react-query-hook",
+      "type": "playbook",
+      "title": "Add React Query Hook",
+      "path": "docs/playbooks/add-react-query-hook.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:add-sql-migration",
+      "type": "playbook",
+      "title": "Add SQL Migration",
+      "path": "docs/playbooks/add-sql-migration.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:bump-dep-safely",
+      "type": "playbook",
+      "title": "Bump Dependency Safely",
+      "path": "docs/playbooks/bump-dep-safely.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:cleanup-dead-code",
+      "type": "playbook",
+      "title": "Прибирання dead code",
+      "path": "docs/playbooks/cleanup-dead-code.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:cutover-openclaw-gateway",
+      "type": "playbook",
+      "title": "Cutover OpenClaw на зовнішній Gateway (Stage 7)",
+      "path": "docs/playbooks/cutover-openclaw-gateway.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:debug-chat-tool",
+      "type": "playbook",
+      "title": "Debug HubChat Tool",
+      "path": "docs/playbooks/debug-chat-tool.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:declare-incident",
+      "type": "playbook",
+      "title": "Оголошення інциденту",
+      "path": "docs/playbooks/declare-incident.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:deploy-config-change",
+      "type": "playbook",
+      "title": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)",
+      "path": "docs/playbooks/deploy-config-change.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:enable-prompt-caching",
+      "type": "playbook",
+      "title": "Enable Anthropic Prompt Caching",
+      "path": "docs/playbooks/enable-prompt-caching.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:fix-exhaustive-deps",
+      "type": "playbook",
+      "title": "Fix Exhaustive Deps Warnings",
+      "path": "docs/playbooks/fix-exhaustive-deps.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:fix-failing-ci",
+      "type": "playbook",
+      "title": "Fix Failing CI on a PR",
+      "path": "docs/playbooks/fix-failing-ci.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:grant-privileged-access",
+      "type": "playbook",
+      "title": "Grant Privileged Access",
+      "path": "docs/playbooks/grant-privileged-access.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:hotfix-prod-regression",
+      "type": "playbook",
+      "title": "Hotfix Production Regression",
+      "path": "docs/playbooks/hotfix-prod-regression.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:investigate-alert",
+      "type": "playbook",
+      "title": "Розслідування alert-у",
+      "path": "docs/playbooks/investigate-alert.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:migrate-localstorage-to-typedstore",
+      "type": "playbook",
+      "title": "Migrate localStorage to typedStore",
+      "path": "docs/playbooks/migrate-localstorage-to-typedstore.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:modify-console-agent",
+      "type": "playbook",
+      "title": "Зміна або додавання console-агента",
+      "path": "docs/playbooks/modify-console-agent.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:modify-n8n-workflow",
+      "type": "playbook",
+      "title": "Зміна або додавання n8n-воркфлоу",
+      "path": "docs/playbooks/modify-n8n-workflow.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:onboard-external-api",
+      "type": "playbook",
+      "title": "Onboard External API",
+      "path": "docs/playbooks/onboard-external-api.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:operational-continuity",
+      "type": "playbook",
+      "title": "Operational continuity",
+      "path": "docs/playbooks/operational-continuity.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:playbook-catalog",
+      "type": "playbook",
+      "title": "Playbook Catalog",
+      "path": "docs/playbooks/playbook-catalog.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:port-web-screen-to-mobile",
+      "type": "playbook",
+      "title": "Порт web-екрану в mobile",
+      "path": "docs/playbooks/port-web-screen-to-mobile.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:pre-merge-migration-checklist",
+      "type": "playbook",
+      "title": "Pre-Merge Migration Checklist",
+      "path": "docs/playbooks/pre-merge-migration-checklist.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:prettier-pass-on-docs",
+      "type": "playbook",
+      "title": "Prettier Pass on `docs/`",
+      "path": "docs/playbooks/prettier-pass-on-docs.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:release",
+      "type": "playbook",
+      "title": "Реліз",
+      "path": "docs/playbooks/release.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:release-expo-mobile",
+      "type": "playbook",
+      "title": "Release Expo Mobile",
+      "path": "docs/playbooks/release-expo-mobile.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:release-mobile-shell",
+      "type": "playbook",
+      "title": "Release Mobile Shell",
+      "path": "docs/playbooks/release-mobile-shell.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:release-web-and-api",
+      "type": "playbook",
+      "title": "Release Web and API",
+      "path": "docs/playbooks/release-web-and-api.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:respond-to-suspected-account-compromise",
+      "type": "playbook",
+      "title": "Respond to Suspected Account Compromise",
+      "path": "docs/playbooks/respond-to-suspected-account-compromise.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:restore-from-backup",
+      "type": "playbook",
+      "title": "Restore from Backup",
+      "path": "docs/playbooks/restore-from-backup.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:retire-feature-flag",
+      "type": "playbook",
+      "title": "Retire Feature Flag",
+      "path": "docs/playbooks/retire-feature-flag.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:revoke-privileged-access",
+      "type": "playbook",
+      "title": "Revoke Privileged Access",
+      "path": "docs/playbooks/revoke-privileged-access.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:rotate-openclaw-credentials",
+      "type": "playbook",
+      "title": "Ротація OpenClaw GitHub credentials",
+      "path": "docs/playbooks/rotate-openclaw-credentials.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:rotate-secrets",
+      "type": "playbook",
+      "title": "Rotate Secrets",
+      "path": "docs/playbooks/rotate-secrets.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:run-access-review",
+      "type": "playbook",
+      "title": "Run Access Review",
+      "path": "docs/playbooks/run-access-review.md",
+      "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:run-weekly-operator-digest",
+      "type": "playbook",
+      "title": "Тижневий operator-дайджест",
+      "path": "docs/playbooks/run-weekly-operator-digest.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:security-pen-test-checklist",
+      "type": "playbook",
+      "title": "Security pen-test checklist for closed hardening cards",
+      "path": "docs/playbooks/security-pen-test-checklist.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:stabilize-flaky-test",
+      "type": "playbook",
+      "title": "Stabilize Flaky Test",
+      "path": "docs/playbooks/stabilize-flaky-test.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:sync-rn-migration-progress",
+      "type": "playbook",
+      "title": "Sync RN Migration Progress",
+      "path": "docs/playbooks/sync-rn-migration-progress.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:test-backup-restore",
+      "type": "playbook",
+      "title": "Тестове відновлення бекапу",
+      "path": "docs/playbooks/test-backup-restore.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:tune-system-prompt",
+      "type": "playbook",
+      "title": "Tune System Prompt",
+      "path": "docs/playbooks/tune-system-prompt.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:write-postmortem",
+      "type": "playbook",
+      "title": "Postmortem після інциденту",
+      "path": "docs/playbooks/write-postmortem.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "pr:1143",
+      "type": "pr",
+      "title": "PR #1143",
+      "tier": "extended",
+      "meta": {
+        "number": 1143,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1143"
+      }
+    },
+    {
+      "id": "pr:1144",
+      "type": "pr",
+      "title": "PR #1144",
+      "tier": "extended",
+      "meta": {
+        "number": 1144,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1144"
+      }
+    },
+    {
+      "id": "pr:1146",
+      "type": "pr",
+      "title": "PR #1146",
+      "tier": "extended",
+      "meta": {
+        "number": 1146,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1146"
+      }
+    },
+    {
+      "id": "pr:1230",
+      "type": "pr",
+      "title": "PR #1230",
+      "tier": "extended",
+      "meta": {
+        "number": 1230,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1230"
+      }
+    },
+    {
+      "id": "pr:1234",
+      "type": "pr",
+      "title": "PR #1234",
+      "tier": "extended",
+      "meta": {
+        "number": 1234,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1234"
+      }
+    },
+    {
+      "id": "pr:128",
+      "type": "pr",
+      "title": "PR #128",
+      "tier": "extended",
+      "meta": {
+        "number": 128,
+        "url": "https://github.com/Skords-01/Sergeant/pull/128"
+      }
+    },
+    {
+      "id": "pr:13",
+      "type": "pr",
+      "title": "PR #13",
+      "tier": "extended",
+      "meta": {
+        "number": 13,
+        "url": "https://github.com/Skords-01/Sergeant/pull/13"
+      }
+    },
+    {
+      "id": "pr:1364",
+      "type": "pr",
+      "title": "PR #1364",
+      "tier": "extended",
+      "meta": {
+        "number": 1364,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1364"
+      }
+    },
+    {
+      "id": "pr:1378",
+      "type": "pr",
+      "title": "PR #1378",
+      "tier": "extended",
+      "meta": {
+        "number": 1378,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1378"
+      }
+    },
+    {
+      "id": "pr:1414",
+      "type": "pr",
+      "title": "PR #1414",
+      "tier": "extended",
+      "meta": {
+        "number": 1414,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1414"
+      }
+    },
+    {
+      "id": "pr:1415",
+      "type": "pr",
+      "title": "PR #1415",
+      "tier": "extended",
+      "meta": {
+        "number": 1415,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1415"
+      }
+    },
+    {
+      "id": "pr:1473",
+      "type": "pr",
+      "title": "PR #1473",
+      "tier": "extended",
+      "meta": {
+        "number": 1473,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1473"
+      }
+    },
+    {
+      "id": "pr:1480",
+      "type": "pr",
+      "title": "PR #1480",
+      "tier": "extended",
+      "meta": {
+        "number": 1480,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1480"
+      }
+    },
+    {
+      "id": "pr:1496",
+      "type": "pr",
+      "title": "PR #1496",
+      "tier": "extended",
+      "meta": {
+        "number": 1496,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1496"
+      }
+    },
+    {
+      "id": "pr:1503",
+      "type": "pr",
+      "title": "PR #1503",
+      "tier": "extended",
+      "meta": {
+        "number": 1503,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1503"
+      }
+    },
+    {
+      "id": "pr:1533",
+      "type": "pr",
+      "title": "PR #1533",
+      "tier": "extended",
+      "meta": {
+        "number": 1533,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1533"
+      }
+    },
+    {
+      "id": "pr:1550",
+      "type": "pr",
+      "title": "PR #1550",
+      "tier": "extended",
+      "meta": {
+        "number": 1550,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1550"
+      }
+    },
+    {
+      "id": "pr:1551",
+      "type": "pr",
+      "title": "PR #1551",
+      "tier": "extended",
+      "meta": {
+        "number": 1551,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1551"
+      }
+    },
+    {
+      "id": "pr:1552",
+      "type": "pr",
+      "title": "PR #1552",
+      "tier": "extended",
+      "meta": {
+        "number": 1552,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1552"
+      }
+    },
+    {
+      "id": "pr:1556",
+      "type": "pr",
+      "title": "PR #1556",
+      "tier": "extended",
+      "meta": {
+        "number": 1556,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1556"
+      }
+    },
+    {
+      "id": "pr:1564",
+      "type": "pr",
+      "title": "PR #1564",
+      "tier": "extended",
+      "meta": {
+        "number": 1564,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1564"
+      }
+    },
+    {
+      "id": "pr:1567",
+      "type": "pr",
+      "title": "PR #1567",
+      "tier": "extended",
+      "meta": {
+        "number": 1567,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1567"
+      }
+    },
+    {
+      "id": "pr:1571",
+      "type": "pr",
+      "title": "PR #1571",
+      "tier": "extended",
+      "meta": {
+        "number": 1571,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1571"
+      }
+    },
+    {
+      "id": "pr:1588",
+      "type": "pr",
+      "title": "PR #1588",
+      "tier": "extended",
+      "meta": {
+        "number": 1588,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1588"
+      }
+    },
+    {
+      "id": "pr:1595",
+      "type": "pr",
+      "title": "PR #1595",
+      "tier": "extended",
+      "meta": {
+        "number": 1595,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1595"
+      }
+    },
+    {
+      "id": "pr:1600",
+      "type": "pr",
+      "title": "PR #1600",
+      "tier": "extended",
+      "meta": {
+        "number": 1600,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1600"
+      }
+    },
+    {
+      "id": "pr:1601",
+      "type": "pr",
+      "title": "PR #1601",
+      "tier": "extended",
+      "meta": {
+        "number": 1601,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1601"
+      }
+    },
+    {
+      "id": "pr:1602",
+      "type": "pr",
+      "title": "PR #1602",
+      "tier": "extended",
+      "meta": {
+        "number": 1602,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1602"
+      }
+    },
+    {
+      "id": "pr:1604",
+      "type": "pr",
+      "title": "PR #1604",
+      "tier": "extended",
+      "meta": {
+        "number": 1604,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1604"
+      }
+    },
+    {
+      "id": "pr:1606",
+      "type": "pr",
+      "title": "PR #1606",
+      "tier": "extended",
+      "meta": {
+        "number": 1606,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1606"
+      }
+    },
+    {
+      "id": "pr:1607",
+      "type": "pr",
+      "title": "PR #1607",
+      "tier": "extended",
+      "meta": {
+        "number": 1607,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1607"
+      }
+    },
+    {
+      "id": "pr:1608",
+      "type": "pr",
+      "title": "PR #1608",
+      "tier": "extended",
+      "meta": {
+        "number": 1608,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1608"
+      }
+    },
+    {
+      "id": "pr:1613",
+      "type": "pr",
+      "title": "PR #1613",
+      "tier": "extended",
+      "meta": {
+        "number": 1613,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1613"
+      }
+    },
+    {
+      "id": "pr:1614",
+      "type": "pr",
+      "title": "PR #1614",
+      "tier": "extended",
+      "meta": {
+        "number": 1614,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1614"
+      }
+    },
+    {
+      "id": "pr:1621",
+      "type": "pr",
+      "title": "PR #1621",
+      "tier": "extended",
+      "meta": {
+        "number": 1621,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1621"
+      }
+    },
+    {
+      "id": "pr:1629",
+      "type": "pr",
+      "title": "PR #1629",
+      "tier": "extended",
+      "meta": {
+        "number": 1629,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1629"
+      }
+    },
+    {
+      "id": "pr:1631",
+      "type": "pr",
+      "title": "PR #1631",
+      "tier": "extended",
+      "meta": {
+        "number": 1631,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1631"
+      }
+    },
+    {
+      "id": "pr:1633",
+      "type": "pr",
+      "title": "PR #1633",
+      "tier": "extended",
+      "meta": {
+        "number": 1633,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1633"
+      }
+    },
+    {
+      "id": "pr:1647",
+      "type": "pr",
+      "title": "PR #1647",
+      "tier": "extended",
+      "meta": {
+        "number": 1647,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1647"
+      }
+    },
+    {
+      "id": "pr:1652",
+      "type": "pr",
+      "title": "PR #1652",
+      "tier": "extended",
+      "meta": {
+        "number": 1652,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1652"
+      }
+    },
+    {
+      "id": "pr:1657",
+      "type": "pr",
+      "title": "PR #1657",
+      "tier": "extended",
+      "meta": {
+        "number": 1657,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1657"
+      }
+    },
+    {
+      "id": "pr:1659",
+      "type": "pr",
+      "title": "PR #1659",
+      "tier": "extended",
+      "meta": {
+        "number": 1659,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1659"
+      }
+    },
+    {
+      "id": "pr:1660",
+      "type": "pr",
+      "title": "PR #1660",
+      "tier": "extended",
+      "meta": {
+        "number": 1660,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1660"
+      }
+    },
+    {
+      "id": "pr:1664",
+      "type": "pr",
+      "title": "PR #1664",
+      "tier": "extended",
+      "meta": {
+        "number": 1664,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1664"
+      }
+    },
+    {
+      "id": "pr:1678",
+      "type": "pr",
+      "title": "PR #1678",
+      "tier": "extended",
+      "meta": {
+        "number": 1678,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1678"
+      }
+    },
+    {
+      "id": "pr:1688",
+      "type": "pr",
+      "title": "PR #1688",
+      "tier": "extended",
+      "meta": {
+        "number": 1688,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1688"
+      }
+    },
+    {
+      "id": "pr:1691",
+      "type": "pr",
+      "title": "PR #1691",
+      "tier": "extended",
+      "meta": {
+        "number": 1691,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1691"
+      }
+    },
+    {
+      "id": "pr:1695",
+      "type": "pr",
+      "title": "PR #1695",
+      "tier": "extended",
+      "meta": {
+        "number": 1695,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1695"
+      }
+    },
+    {
+      "id": "pr:1696",
+      "type": "pr",
+      "title": "PR #1696",
+      "tier": "extended",
+      "meta": {
+        "number": 1696,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1696"
+      }
+    },
+    {
+      "id": "pr:1697",
+      "type": "pr",
+      "title": "PR #1697",
+      "tier": "extended",
+      "meta": {
+        "number": 1697,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1697"
+      }
+    },
+    {
+      "id": "pr:1699",
+      "type": "pr",
+      "title": "PR #1699",
+      "tier": "extended",
+      "meta": {
+        "number": 1699,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1699"
+      }
+    },
+    {
+      "id": "pr:1703",
+      "type": "pr",
+      "title": "PR #1703",
+      "tier": "extended",
+      "meta": {
+        "number": 1703,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1703"
+      }
+    },
+    {
+      "id": "pr:1709",
+      "type": "pr",
+      "title": "PR #1709",
+      "tier": "extended",
+      "meta": {
+        "number": 1709,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1709"
+      }
+    },
+    {
+      "id": "pr:1713",
+      "type": "pr",
+      "title": "PR #1713",
+      "tier": "extended",
+      "meta": {
+        "number": 1713,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1713"
+      }
+    },
+    {
+      "id": "pr:1714",
+      "type": "pr",
+      "title": "PR #1714",
+      "tier": "extended",
+      "meta": {
+        "number": 1714,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1714"
+      }
+    },
+    {
+      "id": "pr:1726",
+      "type": "pr",
+      "title": "PR #1726",
+      "tier": "extended",
+      "meta": {
+        "number": 1726,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1726"
+      }
+    },
+    {
+      "id": "pr:1732",
+      "type": "pr",
+      "title": "PR #1732",
+      "tier": "extended",
+      "meta": {
+        "number": 1732,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1732"
+      }
+    },
+    {
+      "id": "pr:1792",
+      "type": "pr",
+      "title": "PR #1792",
+      "tier": "extended",
+      "meta": {
+        "number": 1792,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1792"
+      }
+    },
+    {
+      "id": "pr:1796",
+      "type": "pr",
+      "title": "PR #1796",
+      "tier": "extended",
+      "meta": {
+        "number": 1796,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1796"
+      }
+    },
+    {
+      "id": "pr:1812",
+      "type": "pr",
+      "title": "PR #1812",
+      "tier": "extended",
+      "meta": {
+        "number": 1812,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1812"
+      }
+    },
+    {
+      "id": "pr:1816",
+      "type": "pr",
+      "title": "PR #1816",
+      "tier": "extended",
+      "meta": {
+        "number": 1816,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1816"
+      }
+    },
+    {
+      "id": "pr:1823",
+      "type": "pr",
+      "title": "PR #1823",
+      "tier": "extended",
+      "meta": {
+        "number": 1823,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1823"
+      }
+    },
+    {
+      "id": "pr:1848",
+      "type": "pr",
+      "title": "PR #1848",
+      "tier": "extended",
+      "meta": {
+        "number": 1848,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1848"
+      }
+    },
+    {
+      "id": "pr:1953",
+      "type": "pr",
+      "title": "PR #1953",
+      "tier": "extended",
+      "meta": {
+        "number": 1953,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1953"
+      }
+    },
+    {
+      "id": "pr:1968",
+      "type": "pr",
+      "title": "PR #1968",
+      "tier": "extended",
+      "meta": {
+        "number": 1968,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1968"
+      }
+    },
+    {
+      "id": "pr:1971",
+      "type": "pr",
+      "title": "PR #1971",
+      "tier": "extended",
+      "meta": {
+        "number": 1971,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1971"
+      }
+    },
+    {
+      "id": "pr:1992",
+      "type": "pr",
+      "title": "PR #1992",
+      "tier": "extended",
+      "meta": {
+        "number": 1992,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1992"
+      }
+    },
+    {
+      "id": "pr:1995",
+      "type": "pr",
+      "title": "PR #1995",
+      "tier": "extended",
+      "meta": {
+        "number": 1995,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1995"
+      }
+    },
+    {
+      "id": "pr:2000",
+      "type": "pr",
+      "title": "PR #2000",
+      "tier": "extended",
+      "meta": {
+        "number": 2000,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2000"
+      }
+    },
+    {
+      "id": "pr:2002",
+      "type": "pr",
+      "title": "PR #2002",
+      "tier": "extended",
+      "meta": {
+        "number": 2002,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2002"
+      }
+    },
+    {
+      "id": "pr:2012",
+      "type": "pr",
+      "title": "PR #2012",
+      "tier": "extended",
+      "meta": {
+        "number": 2012,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2012"
+      }
+    },
+    {
+      "id": "pr:2014",
+      "type": "pr",
+      "title": "PR #2014",
+      "tier": "extended",
+      "meta": {
+        "number": 2014,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2014"
+      }
+    },
+    {
+      "id": "pr:2022",
+      "type": "pr",
+      "title": "PR #2022",
+      "tier": "extended",
+      "meta": {
+        "number": 2022,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2022"
+      }
+    },
+    {
+      "id": "pr:2046",
+      "type": "pr",
+      "title": "PR #2046",
+      "tier": "extended",
+      "meta": {
+        "number": 2046,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2046"
+      }
+    },
+    {
+      "id": "pr:2080",
+      "type": "pr",
+      "title": "PR #2080",
+      "tier": "extended",
+      "meta": {
+        "number": 2080,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2080"
+      }
+    },
+    {
+      "id": "pr:2081",
+      "type": "pr",
+      "title": "PR #2081",
+      "tier": "extended",
+      "meta": {
+        "number": 2081,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2081"
+      }
+    },
+    {
+      "id": "pr:2086",
+      "type": "pr",
+      "title": "PR #2086",
+      "tier": "extended",
+      "meta": {
+        "number": 2086,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2086"
+      }
+    },
+    {
+      "id": "pr:2089",
+      "type": "pr",
+      "title": "PR #2089",
+      "tier": "extended",
+      "meta": {
+        "number": 2089,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2089"
+      }
+    },
+    {
+      "id": "pr:21",
+      "type": "pr",
+      "title": "PR #21",
+      "tier": "extended",
+      "meta": {
+        "number": 21,
+        "url": "https://github.com/Skords-01/Sergeant/pull/21"
+      }
+    },
+    {
+      "id": "pr:2100",
+      "type": "pr",
+      "title": "PR #2100",
+      "tier": "extended",
+      "meta": {
+        "number": 2100,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2100"
+      }
+    },
+    {
+      "id": "pr:2102",
+      "type": "pr",
+      "title": "PR #2102",
+      "tier": "extended",
+      "meta": {
+        "number": 2102,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2102"
+      }
+    },
+    {
+      "id": "pr:2103",
+      "type": "pr",
+      "title": "PR #2103",
+      "tier": "extended",
+      "meta": {
+        "number": 2103,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2103"
+      }
+    },
+    {
+      "id": "pr:2104",
+      "type": "pr",
+      "title": "PR #2104",
+      "tier": "extended",
+      "meta": {
+        "number": 2104,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2104"
+      }
+    },
+    {
+      "id": "pr:2105",
+      "type": "pr",
+      "title": "PR #2105",
+      "tier": "extended",
+      "meta": {
+        "number": 2105,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2105"
+      }
+    },
+    {
+      "id": "pr:2106",
+      "type": "pr",
+      "title": "PR #2106",
+      "tier": "extended",
+      "meta": {
+        "number": 2106,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2106"
+      }
+    },
+    {
+      "id": "pr:2108",
+      "type": "pr",
+      "title": "PR #2108",
+      "tier": "extended",
+      "meta": {
+        "number": 2108,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2108"
+      }
+    },
+    {
+      "id": "pr:2111",
+      "type": "pr",
+      "title": "PR #2111",
+      "tier": "extended",
+      "meta": {
+        "number": 2111,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2111"
+      }
+    },
+    {
+      "id": "pr:2114",
+      "type": "pr",
+      "title": "PR #2114",
+      "tier": "extended",
+      "meta": {
+        "number": 2114,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2114"
+      }
+    },
+    {
+      "id": "pr:2115",
+      "type": "pr",
+      "title": "PR #2115",
+      "tier": "extended",
+      "meta": {
+        "number": 2115,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2115"
+      }
+    },
+    {
+      "id": "pr:2116",
+      "type": "pr",
+      "title": "PR #2116",
+      "tier": "extended",
+      "meta": {
+        "number": 2116,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2116"
+      }
+    },
+    {
+      "id": "pr:2119",
+      "type": "pr",
+      "title": "PR #2119",
+      "tier": "extended",
+      "meta": {
+        "number": 2119,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2119"
+      }
+    },
+    {
+      "id": "pr:2122",
+      "type": "pr",
+      "title": "PR #2122",
+      "tier": "extended",
+      "meta": {
+        "number": 2122,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2122"
+      }
+    },
+    {
+      "id": "pr:2124",
+      "type": "pr",
+      "title": "PR #2124",
+      "tier": "extended",
+      "meta": {
+        "number": 2124,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2124"
+      }
+    },
+    {
+      "id": "pr:2125",
+      "type": "pr",
+      "title": "PR #2125",
+      "tier": "extended",
+      "meta": {
+        "number": 2125,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2125"
+      }
+    },
+    {
+      "id": "pr:2128",
+      "type": "pr",
+      "title": "PR #2128",
+      "tier": "extended",
+      "meta": {
+        "number": 2128,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2128"
+      }
+    },
+    {
+      "id": "pr:2153",
+      "type": "pr",
+      "title": "PR #2153",
+      "tier": "extended",
+      "meta": {
+        "number": 2153,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2153"
+      }
+    },
+    {
+      "id": "pr:2154",
+      "type": "pr",
+      "title": "PR #2154",
+      "tier": "extended",
+      "meta": {
+        "number": 2154,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2154"
+      }
+    },
+    {
+      "id": "pr:2156",
+      "type": "pr",
+      "title": "PR #2156",
+      "tier": "extended",
+      "meta": {
+        "number": 2156,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2156"
+      }
+    },
+    {
+      "id": "pr:2158",
+      "type": "pr",
+      "title": "PR #2158",
+      "tier": "extended",
+      "meta": {
+        "number": 2158,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2158"
+      }
+    },
+    {
+      "id": "pr:2159",
+      "type": "pr",
+      "title": "PR #2159",
+      "tier": "extended",
+      "meta": {
+        "number": 2159,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2159"
+      }
+    },
+    {
+      "id": "pr:2160",
+      "type": "pr",
+      "title": "PR #2160",
+      "tier": "extended",
+      "meta": {
+        "number": 2160,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2160"
+      }
+    },
+    {
+      "id": "pr:2183",
+      "type": "pr",
+      "title": "PR #2183",
+      "tier": "extended",
+      "meta": {
+        "number": 2183,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2183"
+      }
+    },
+    {
+      "id": "pr:2184",
+      "type": "pr",
+      "title": "PR #2184",
+      "tier": "extended",
+      "meta": {
+        "number": 2184,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2184"
+      }
+    },
+    {
+      "id": "pr:2185",
+      "type": "pr",
+      "title": "PR #2185",
+      "tier": "extended",
+      "meta": {
+        "number": 2185,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2185"
+      }
+    },
+    {
+      "id": "pr:2186",
+      "type": "pr",
+      "title": "PR #2186",
+      "tier": "extended",
+      "meta": {
+        "number": 2186,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2186"
+      }
+    },
+    {
+      "id": "pr:2187",
+      "type": "pr",
+      "title": "PR #2187",
+      "tier": "extended",
+      "meta": {
+        "number": 2187,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2187"
+      }
+    },
+    {
+      "id": "pr:2191",
+      "type": "pr",
+      "title": "PR #2191",
+      "tier": "extended",
+      "meta": {
+        "number": 2191,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2191"
+      }
+    },
+    {
+      "id": "pr:2192",
+      "type": "pr",
+      "title": "PR #2192",
+      "tier": "extended",
+      "meta": {
+        "number": 2192,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2192"
+      }
+    },
+    {
+      "id": "pr:2193",
+      "type": "pr",
+      "title": "PR #2193",
+      "tier": "extended",
+      "meta": {
+        "number": 2193,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2193"
+      }
+    },
+    {
+      "id": "pr:2196",
+      "type": "pr",
+      "title": "PR #2196",
+      "tier": "extended",
+      "meta": {
+        "number": 2196,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2196"
+      }
+    },
+    {
+      "id": "pr:2199",
+      "type": "pr",
+      "title": "PR #2199",
+      "tier": "extended",
+      "meta": {
+        "number": 2199,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2199"
+      }
+    },
+    {
+      "id": "pr:2214",
+      "type": "pr",
+      "title": "PR #2214",
+      "tier": "extended",
+      "meta": {
+        "number": 2214,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2214"
+      }
+    },
+    {
+      "id": "pr:2215",
+      "type": "pr",
+      "title": "PR #2215",
+      "tier": "extended",
+      "meta": {
+        "number": 2215,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2215"
+      }
+    },
+    {
+      "id": "pr:2216",
+      "type": "pr",
+      "title": "PR #2216",
+      "tier": "extended",
+      "meta": {
+        "number": 2216,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2216"
+      }
+    },
+    {
+      "id": "pr:2218",
+      "type": "pr",
+      "title": "PR #2218",
+      "tier": "extended",
+      "meta": {
+        "number": 2218,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2218"
+      }
+    },
+    {
+      "id": "pr:2308",
+      "type": "pr",
+      "title": "PR #2308",
+      "tier": "extended",
+      "meta": {
+        "number": 2308,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2308"
+      }
+    },
+    {
+      "id": "pr:2309",
+      "type": "pr",
+      "title": "PR #2309",
+      "tier": "extended",
+      "meta": {
+        "number": 2309,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2309"
+      }
+    },
+    {
+      "id": "pr:2311",
+      "type": "pr",
+      "title": "PR #2311",
+      "tier": "extended",
+      "meta": {
+        "number": 2311,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2311"
+      }
+    },
+    {
+      "id": "pr:2312",
+      "type": "pr",
+      "title": "PR #2312",
+      "tier": "extended",
+      "meta": {
+        "number": 2312,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2312"
+      }
+    },
+    {
+      "id": "pr:2382",
+      "type": "pr",
+      "title": "PR #2382",
+      "tier": "extended",
+      "meta": {
+        "number": 2382,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2382"
+      }
+    },
+    {
+      "id": "pr:2385",
+      "type": "pr",
+      "title": "PR #2385",
+      "tier": "extended",
+      "meta": {
+        "number": 2385,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2385"
+      }
+    },
+    {
+      "id": "pr:2419",
+      "type": "pr",
+      "title": "PR #2419",
+      "tier": "extended",
+      "meta": {
+        "number": 2419,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2419"
+      }
+    },
+    {
+      "id": "pr:2423",
+      "type": "pr",
+      "title": "PR #2423",
+      "tier": "extended",
+      "meta": {
+        "number": 2423,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2423"
+      }
+    },
+    {
+      "id": "pr:2526",
+      "type": "pr",
+      "title": "PR #2526",
+      "tier": "extended",
+      "meta": {
+        "number": 2526,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2526"
+      }
+    },
+    {
+      "id": "pr:2527",
+      "type": "pr",
+      "title": "PR #2527",
+      "tier": "extended",
+      "meta": {
+        "number": 2527,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2527"
+      }
+    },
+    {
+      "id": "pr:2530",
+      "type": "pr",
+      "title": "PR #2530",
+      "tier": "extended",
+      "meta": {
+        "number": 2530,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2530"
+      }
+    },
+    {
+      "id": "pr:2541",
+      "type": "pr",
+      "title": "PR #2541",
+      "tier": "extended",
+      "meta": {
+        "number": 2541,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2541"
+      }
+    },
+    {
+      "id": "pr:2543",
+      "type": "pr",
+      "title": "PR #2543",
+      "tier": "extended",
+      "meta": {
+        "number": 2543,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2543"
+      }
+    },
+    {
+      "id": "pr:2545",
+      "type": "pr",
+      "title": "PR #2545",
+      "tier": "extended",
+      "meta": {
+        "number": 2545,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2545"
+      }
+    },
+    {
+      "id": "pr:2547",
+      "type": "pr",
+      "title": "PR #2547",
+      "tier": "extended",
+      "meta": {
+        "number": 2547,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2547"
+      }
+    },
+    {
+      "id": "pr:2549",
+      "type": "pr",
+      "title": "PR #2549",
+      "tier": "extended",
+      "meta": {
+        "number": 2549,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2549"
+      }
+    },
+    {
+      "id": "pr:2551",
+      "type": "pr",
+      "title": "PR #2551",
+      "tier": "extended",
+      "meta": {
+        "number": 2551,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2551"
+      }
+    },
+    {
+      "id": "pr:2553",
+      "type": "pr",
+      "title": "PR #2553",
+      "tier": "extended",
+      "meta": {
+        "number": 2553,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2553"
+      }
+    },
+    {
+      "id": "pr:2570",
+      "type": "pr",
+      "title": "PR #2570",
+      "tier": "extended",
+      "meta": {
+        "number": 2570,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2570"
+      }
+    },
+    {
+      "id": "pr:2573",
+      "type": "pr",
+      "title": "PR #2573",
+      "tier": "extended",
+      "meta": {
+        "number": 2573,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2573"
+      }
+    },
+    {
+      "id": "pr:2586",
+      "type": "pr",
+      "title": "PR #2586",
+      "tier": "extended",
+      "meta": {
+        "number": 2586,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2586"
+      }
+    },
+    {
+      "id": "pr:2599",
+      "type": "pr",
+      "title": "PR #2599",
+      "tier": "extended",
+      "meta": {
+        "number": 2599,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2599"
+      }
+    },
+    {
+      "id": "pr:26",
+      "type": "pr",
+      "title": "PR #26",
+      "tier": "extended",
+      "meta": {
+        "number": 26,
+        "url": "https://github.com/Skords-01/Sergeant/pull/26"
+      }
+    },
+    {
+      "id": "pr:2607",
+      "type": "pr",
+      "title": "PR #2607",
+      "tier": "extended",
+      "meta": {
+        "number": 2607,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2607"
+      }
+    },
+    {
+      "id": "pr:2726",
+      "type": "pr",
+      "title": "PR #2726",
+      "tier": "extended",
+      "meta": {
+        "number": 2726,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2726"
+      }
+    },
+    {
+      "id": "pr:2741",
+      "type": "pr",
+      "title": "PR #2741",
+      "tier": "extended",
+      "meta": {
+        "number": 2741,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2741"
+      }
+    },
+    {
+      "id": "pr:2743",
+      "type": "pr",
+      "title": "PR #2743",
+      "tier": "extended",
+      "meta": {
+        "number": 2743,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2743"
+      }
+    },
+    {
+      "id": "pr:2744",
+      "type": "pr",
+      "title": "PR #2744",
+      "tier": "extended",
+      "meta": {
+        "number": 2744,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2744"
+      }
+    },
+    {
+      "id": "pr:2747",
+      "type": "pr",
+      "title": "PR #2747",
+      "tier": "extended",
+      "meta": {
+        "number": 2747,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2747"
+      }
+    },
+    {
+      "id": "pr:2748",
+      "type": "pr",
+      "title": "PR #2748",
+      "tier": "extended",
+      "meta": {
+        "number": 2748,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2748"
+      }
+    },
+    {
+      "id": "pr:2749",
+      "type": "pr",
+      "title": "PR #2749",
+      "tier": "extended",
+      "meta": {
+        "number": 2749,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2749"
+      }
+    },
+    {
+      "id": "pr:2750",
+      "type": "pr",
+      "title": "PR #2750",
+      "tier": "extended",
+      "meta": {
+        "number": 2750,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2750"
+      }
+    },
+    {
+      "id": "pr:2752",
+      "type": "pr",
+      "title": "PR #2752",
+      "tier": "extended",
+      "meta": {
+        "number": 2752,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2752"
+      }
+    },
+    {
+      "id": "pr:2754",
+      "type": "pr",
+      "title": "PR #2754",
+      "tier": "extended",
+      "meta": {
+        "number": 2754,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2754"
+      }
+    },
+    {
+      "id": "pr:2760",
+      "type": "pr",
+      "title": "PR #2760",
+      "tier": "extended",
+      "meta": {
+        "number": 2760,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2760"
+      }
+    },
+    {
+      "id": "pr:2763",
+      "type": "pr",
+      "title": "PR #2763",
+      "tier": "extended",
+      "meta": {
+        "number": 2763,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2763"
+      }
+    },
+    {
+      "id": "pr:2767",
+      "type": "pr",
+      "title": "PR #2767",
+      "tier": "extended",
+      "meta": {
+        "number": 2767,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2767"
+      }
+    },
+    {
+      "id": "pr:2768",
+      "type": "pr",
+      "title": "PR #2768",
+      "tier": "extended",
+      "meta": {
+        "number": 2768,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2768"
+      }
+    },
+    {
+      "id": "pr:2774",
+      "type": "pr",
+      "title": "PR #2774",
+      "tier": "extended",
+      "meta": {
+        "number": 2774,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2774"
+      }
+    },
+    {
+      "id": "pr:2778",
+      "type": "pr",
+      "title": "PR #2778",
+      "tier": "extended",
+      "meta": {
+        "number": 2778,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2778"
+      }
+    },
+    {
+      "id": "pr:2780",
+      "type": "pr",
+      "title": "PR #2780",
+      "tier": "extended",
+      "meta": {
+        "number": 2780,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2780"
+      }
+    },
+    {
+      "id": "pr:2781",
+      "type": "pr",
+      "title": "PR #2781",
+      "tier": "extended",
+      "meta": {
+        "number": 2781,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2781"
+      }
+    },
+    {
+      "id": "pr:2793",
+      "type": "pr",
+      "title": "PR #2793",
+      "tier": "extended",
+      "meta": {
+        "number": 2793,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2793"
+      }
+    },
+    {
+      "id": "pr:2797",
+      "type": "pr",
+      "title": "PR #2797",
+      "tier": "extended",
+      "meta": {
+        "number": 2797,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2797"
+      }
+    },
+    {
+      "id": "pr:2798",
+      "type": "pr",
+      "title": "PR #2798",
+      "tier": "extended",
+      "meta": {
+        "number": 2798,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2798"
+      }
+    },
+    {
+      "id": "pr:2799",
+      "type": "pr",
+      "title": "PR #2799",
+      "tier": "extended",
+      "meta": {
+        "number": 2799,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2799"
+      }
+    },
+    {
+      "id": "pr:28",
+      "type": "pr",
+      "title": "PR #28",
+      "tier": "extended",
+      "meta": {
+        "number": 28,
+        "url": "https://github.com/Skords-01/Sergeant/pull/28"
+      }
+    },
+    {
+      "id": "pr:30",
+      "type": "pr",
+      "title": "PR #30",
+      "tier": "extended",
+      "meta": {
+        "number": 30,
+        "url": "https://github.com/Skords-01/Sergeant/pull/30"
+      }
+    },
+    {
+      "id": "pr:34",
+      "type": "pr",
+      "title": "PR #34",
+      "tier": "extended",
+      "meta": {
+        "number": 34,
+        "url": "https://github.com/Skords-01/Sergeant/pull/34"
+      }
+    },
+    {
+      "id": "pr:345",
+      "type": "pr",
+      "title": "PR #345",
+      "tier": "extended",
+      "meta": {
+        "number": 345,
+        "url": "https://github.com/Skords-01/Sergeant/pull/345"
+      }
+    },
+    {
+      "id": "pr:369",
+      "type": "pr",
+      "title": "PR #369",
+      "tier": "extended",
+      "meta": {
+        "number": 369,
+        "url": "https://github.com/Skords-01/Sergeant/pull/369"
+      }
+    },
+    {
+      "id": "pr:39",
+      "type": "pr",
+      "title": "PR #39",
+      "tier": "extended",
+      "meta": {
+        "number": 39,
+        "url": "https://github.com/Skords-01/Sergeant/pull/39"
+      }
+    },
+    {
+      "id": "pr:40",
+      "type": "pr",
+      "title": "PR #40",
+      "tier": "extended",
+      "meta": {
+        "number": 40,
+        "url": "https://github.com/Skords-01/Sergeant/pull/40"
+      }
+    },
+    {
+      "id": "pr:443",
+      "type": "pr",
+      "title": "PR #443",
+      "tier": "extended",
+      "meta": {
+        "number": 443,
+        "url": "https://github.com/Skords-01/Sergeant/pull/443"
+      }
+    },
+    {
+      "id": "pr:444",
+      "type": "pr",
+      "title": "PR #444",
+      "tier": "extended",
+      "meta": {
+        "number": 444,
+        "url": "https://github.com/Skords-01/Sergeant/pull/444"
+      }
+    },
+    {
+      "id": "pr:445",
+      "type": "pr",
+      "title": "PR #445",
+      "tier": "extended",
+      "meta": {
+        "number": 445,
+        "url": "https://github.com/Skords-01/Sergeant/pull/445"
+      }
+    },
+    {
+      "id": "pr:447",
+      "type": "pr",
+      "title": "PR #447",
+      "tier": "extended",
+      "meta": {
+        "number": 447,
+        "url": "https://github.com/Skords-01/Sergeant/pull/447"
+      }
+    },
+    {
+      "id": "pr:46",
+      "type": "pr",
+      "title": "PR #46",
+      "tier": "extended",
+      "meta": {
+        "number": 46,
+        "url": "https://github.com/Skords-01/Sergeant/pull/46"
+      }
+    },
+    {
+      "id": "pr:47",
+      "type": "pr",
+      "title": "PR #47",
+      "tier": "extended",
+      "meta": {
+        "number": 47,
+        "url": "https://github.com/Skords-01/Sergeant/pull/47"
+      }
+    },
+    {
+      "id": "pr:5",
+      "type": "pr",
+      "title": "PR #5",
+      "tier": "extended",
+      "meta": {
+        "number": 5,
+        "url": "https://github.com/Skords-01/Sergeant/pull/5"
+      }
+    },
+    {
+      "id": "pr:51",
+      "type": "pr",
+      "title": "PR #51",
+      "tier": "extended",
+      "meta": {
+        "number": 51,
+        "url": "https://github.com/Skords-01/Sergeant/pull/51"
+      }
+    },
+    {
+      "id": "pr:52",
+      "type": "pr",
+      "title": "PR #52",
+      "tier": "extended",
+      "meta": {
+        "number": 52,
+        "url": "https://github.com/Skords-01/Sergeant/pull/52"
+      }
+    },
+    {
+      "id": "pr:53",
+      "type": "pr",
+      "title": "PR #53",
+      "tier": "extended",
+      "meta": {
+        "number": 53,
+        "url": "https://github.com/Skords-01/Sergeant/pull/53"
+      }
+    },
+    {
+      "id": "pr:54",
+      "type": "pr",
+      "title": "PR #54",
+      "tier": "extended",
+      "meta": {
+        "number": 54,
+        "url": "https://github.com/Skords-01/Sergeant/pull/54"
+      }
+    },
+    {
+      "id": "pr:6",
+      "type": "pr",
+      "title": "PR #6",
+      "tier": "extended",
+      "meta": {
+        "number": 6,
+        "url": "https://github.com/Skords-01/Sergeant/pull/6"
+      }
+    },
+    {
+      "id": "pr:62",
+      "type": "pr",
+      "title": "PR #62",
+      "tier": "extended",
+      "meta": {
+        "number": 62,
+        "url": "https://github.com/Skords-01/Sergeant/pull/62"
+      }
+    },
+    {
+      "id": "pr:63",
+      "type": "pr",
+      "title": "PR #63",
+      "tier": "extended",
+      "meta": {
+        "number": 63,
+        "url": "https://github.com/Skords-01/Sergeant/pull/63"
+      }
+    },
+    {
+      "id": "pr:64",
+      "type": "pr",
+      "title": "PR #64",
+      "tier": "extended",
+      "meta": {
+        "number": 64,
+        "url": "https://github.com/Skords-01/Sergeant/pull/64"
+      }
+    },
+    {
+      "id": "pr:65",
+      "type": "pr",
+      "title": "PR #65",
+      "tier": "extended",
+      "meta": {
+        "number": 65,
+        "url": "https://github.com/Skords-01/Sergeant/pull/65"
+      }
+    },
+    {
+      "id": "pr:704",
+      "type": "pr",
+      "title": "PR #704",
+      "tier": "extended",
+      "meta": {
+        "number": 704,
+        "url": "https://github.com/Skords-01/Sergeant/pull/704"
+      }
+    },
+    {
+      "id": "pr:708",
+      "type": "pr",
+      "title": "PR #708",
+      "tier": "extended",
+      "meta": {
+        "number": 708,
+        "url": "https://github.com/Skords-01/Sergeant/pull/708"
+      }
+    },
+    {
+      "id": "pr:717",
+      "type": "pr",
+      "title": "PR #717",
+      "tier": "extended",
+      "meta": {
+        "number": 717,
+        "url": "https://github.com/Skords-01/Sergeant/pull/717"
+      }
+    },
+    {
+      "id": "pr:718",
+      "type": "pr",
+      "title": "PR #718",
+      "tier": "extended",
+      "meta": {
+        "number": 718,
+        "url": "https://github.com/Skords-01/Sergeant/pull/718"
+      }
+    },
+    {
+      "id": "pr:728",
+      "type": "pr",
+      "title": "PR #728",
+      "tier": "extended",
+      "meta": {
+        "number": 728,
+        "url": "https://github.com/Skords-01/Sergeant/pull/728"
+      }
+    },
+    {
+      "id": "pr:729",
+      "type": "pr",
+      "title": "PR #729",
+      "tier": "extended",
+      "meta": {
+        "number": 729,
+        "url": "https://github.com/Skords-01/Sergeant/pull/729"
+      }
+    },
+    {
+      "id": "pr:743",
+      "type": "pr",
+      "title": "PR #743",
+      "tier": "extended",
+      "meta": {
+        "number": 743,
+        "url": "https://github.com/Skords-01/Sergeant/pull/743"
+      }
+    },
+    {
+      "id": "pr:76",
+      "type": "pr",
+      "title": "PR #76",
+      "tier": "extended",
+      "meta": {
+        "number": 76,
+        "url": "https://github.com/Skords-01/Sergeant/pull/76"
+      }
+    },
+    {
+      "id": "pr:760",
+      "type": "pr",
+      "title": "PR #760",
+      "tier": "extended",
+      "meta": {
+        "number": 760,
+        "url": "https://github.com/Skords-01/Sergeant/pull/760"
+      }
+    },
+    {
+      "id": "pr:77",
+      "type": "pr",
+      "title": "PR #77",
+      "tier": "extended",
+      "meta": {
+        "number": 77,
+        "url": "https://github.com/Skords-01/Sergeant/pull/77"
+      }
+    },
+    {
+      "id": "pr:774",
+      "type": "pr",
+      "title": "PR #774",
+      "tier": "extended",
+      "meta": {
+        "number": 774,
+        "url": "https://github.com/Skords-01/Sergeant/pull/774"
+      }
+    },
+    {
+      "id": "pr:788",
+      "type": "pr",
+      "title": "PR #788",
+      "tier": "extended",
+      "meta": {
+        "number": 788,
+        "url": "https://github.com/Skords-01/Sergeant/pull/788"
+      }
+    },
+    {
+      "id": "pr:79",
+      "type": "pr",
+      "title": "PR #79",
+      "tier": "extended",
+      "meta": {
+        "number": 79,
+        "url": "https://github.com/Skords-01/Sergeant/pull/79"
+      }
+    },
+    {
+      "id": "pr:790",
+      "type": "pr",
+      "title": "PR #790",
+      "tier": "extended",
+      "meta": {
+        "number": 790,
+        "url": "https://github.com/Skords-01/Sergeant/pull/790"
+      }
+    },
+    {
+      "id": "pr:8",
+      "type": "pr",
+      "title": "PR #8",
+      "tier": "extended",
+      "meta": {
+        "number": 8,
+        "url": "https://github.com/Skords-01/Sergeant/pull/8"
+      }
+    },
+    {
+      "id": "pr:814",
+      "type": "pr",
+      "title": "PR #814",
+      "tier": "extended",
+      "meta": {
+        "number": 814,
+        "url": "https://github.com/Skords-01/Sergeant/pull/814"
+      }
+    },
+    {
+      "id": "pr:854",
+      "type": "pr",
+      "title": "PR #854",
+      "tier": "extended",
+      "meta": {
+        "number": 854,
+        "url": "https://github.com/Skords-01/Sergeant/pull/854"
+      }
+    },
+    {
+      "id": "pr:855",
+      "type": "pr",
+      "title": "PR #855",
+      "tier": "extended",
+      "meta": {
+        "number": 855,
+        "url": "https://github.com/Skords-01/Sergeant/pull/855"
+      }
+    },
+    {
+      "id": "pr:857",
+      "type": "pr",
+      "title": "PR #857",
+      "tier": "extended",
+      "meta": {
+        "number": 857,
+        "url": "https://github.com/Skords-01/Sergeant/pull/857"
+      }
+    },
+    {
+      "id": "pr:864",
+      "type": "pr",
+      "title": "PR #864",
+      "tier": "extended",
+      "meta": {
+        "number": 864,
+        "url": "https://github.com/Skords-01/Sergeant/pull/864"
+      }
+    },
+    {
+      "id": "pr:869",
+      "type": "pr",
+      "title": "PR #869",
+      "tier": "extended",
+      "meta": {
+        "number": 869,
+        "url": "https://github.com/Skords-01/Sergeant/pull/869"
+      }
+    },
+    {
+      "id": "pr:872",
+      "type": "pr",
+      "title": "PR #872",
+      "tier": "extended",
+      "meta": {
+        "number": 872,
+        "url": "https://github.com/Skords-01/Sergeant/pull/872"
+      }
+    },
+    {
+      "id": "pr:885",
+      "type": "pr",
+      "title": "PR #885",
+      "tier": "extended",
+      "meta": {
+        "number": 885,
+        "url": "https://github.com/Skords-01/Sergeant/pull/885"
+      }
+    },
+    {
+      "id": "pr:9",
+      "type": "pr",
+      "title": "PR #9",
+      "tier": "extended",
+      "meta": {
+        "number": 9,
+        "url": "https://github.com/Skords-01/Sergeant/pull/9"
+      }
+    },
+    {
+      "id": "pr:918",
+      "type": "pr",
+      "title": "PR #918",
+      "tier": "extended",
+      "meta": {
+        "number": 918,
+        "url": "https://github.com/Skords-01/Sergeant/pull/918"
+      }
+    },
+    {
+      "id": "pr:924",
+      "type": "pr",
+      "title": "PR #924",
+      "tier": "extended",
+      "meta": {
+        "number": 924,
+        "url": "https://github.com/Skords-01/Sergeant/pull/924"
+      }
+    },
+    {
+      "id": "pr:995",
+      "type": "pr",
+      "title": "PR #995",
+      "tier": "extended",
+      "meta": {
+        "number": 995,
+        "url": "https://github.com/Skords-01/Sergeant/pull/995"
+      }
+    },
+    {
+      "id": "skill:better-auth-best-practices",
+      "type": "skill",
+      "title": "better-auth-best-practices",
+      "path": ".agents/skills/better-auth-best-practices/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію."
+      }
+    },
+    {
+      "id": "skill:sergeant-bugfix-and-regression",
+      "type": "skill",
+      "title": "sergeant-bugfix-and-regression",
+      "path": ".agents/skills/sergeant-bugfix-and-regression/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue — even if the fix seems obvious, always reproduce first; UA: фіксиш баг, регресію, флакі-тест, зламаний деплой."
+      }
+    },
+    {
+      "id": "skill:sergeant-data-and-migrations",
+      "type": "skill",
+      "title": "sergeant-data-and-migrations",
+      "path": ".agents/skills/sergeant-data-and-migrations/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних."
+      }
+    },
+    {
+      "id": "skill:sergeant-deploy-and-observability",
+      "type": "skill",
+      "title": "sergeant-deploy-and-observability",
+      "path": ".agents/skills/sergeant-deploy-and-observability/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n."
+      }
+    },
+    {
+      "id": "skill:sergeant-feature-delivery",
+      "type": "skill",
+      "title": "sergeant-feature-delivery",
+      "path": ".agents/skills/sergeant-feature-delivery/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change needing design, planning, tests, docs, and verification — even if scope looks small; UA: робиш нову фічу/екран/endpoint."
+      }
+    },
+    {
+      "id": "skill:sergeant-hubchat",
+      "type": "skill",
+      "title": "sergeant-hubchat",
+      "path": ".agents/skills/sergeant-hubchat/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when creating, modifying, reviewing, or debugging Sergeant HubChat tool defs, executors, action cards, or chat side effects; also when editing AI prompts or stream; UA: правиш HubChat tool/executor/action card/chat."
+      }
+    },
+    {
+      "id": "skill:sergeant-mobile-expo",
+      "type": "skill",
+      "title": "sergeant-mobile-expo",
+      "path": ".agents/skills/sergeant-mobile-expo/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when editing Sergeant Expo screens, React Native, mobile navigation, MMKV flows, Capacitor shell, or web→mobile ports; also for platform-specific bugs; UA: правиш Expo/RN/MMKV/Capacitor/mobile-shell."
+      }
+    },
+    {
+      "id": "skill:sergeant-monorepo-boundaries",
+      "type": "skill",
+      "title": "sergeant-monorepo-boundaries",
+      "path": ".agents/skills/sergeant-monorepo-boundaries/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when a Sergeant change spans multiple apps/packages, extracts shared logic, or import boundaries are unclear — even if the change seems isolated to one app; UA: межі між app/package, спільна логіка в монорепо."
+      }
+    },
+    {
+      "id": "skill:sergeant-review-and-merge",
+      "type": "skill",
+      "title": "sergeant-review-and-merge",
+      "path": ".agents/skills/sergeant-review-and-merge/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; also for rollback safety checks; UA: ревʼю PR і мердж."
+      }
+    },
+    {
+      "id": "skill:sergeant-server-api",
+      "type": "skill",
+      "title": "sergeant-server-api",
+      "path": ".agents/skills/sergeant-server-api/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when editing Sergeant server routes, serializers, modules, api-client types, React Query server hooks, or time-sensitive logic; also for middleware or env changes; UA: правиш роути/серіалізатори/RQ-хуки."
+      }
+    },
+    {
+      "id": "skill:sergeant-start-here",
+      "type": "skill",
+      "title": "sergeant-start-here",
+      "path": ".agents/skills/sergeant-start-here/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant."
+      }
+    },
+    {
+      "id": "skill:sergeant-web-ui",
+      "type": "skill",
+      "title": "sergeant-web-ui",
+      "path": ".agents/skills/sergeant-web-ui/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; also for design tokens or theme; UA: правиш веб-UI/PWA/Tailwind."
+      }
+    },
+    {
+      "id": "skill:sergeant-writing-skills",
+      "type": "skill",
+      "title": "sergeant-writing-skills",
+      "path": ".agents/skills/sergeant-writing-skills/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when creating, editing, or pressure-testing a `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill content; UA: пишеш або редагуєш SKILL.md."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "adr:0002",
+      "to": "pr:788",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0002",
+      "to": "pr:864",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0002",
+      "to": "pr:885",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0002",
+      "to": "pr:924",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0004",
+      "to": "pr:51",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0004",
+      "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0005",
+      "to": "pr:864",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0006",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "adr:0006",
+      "to": "pr:869",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0007",
+      "to": "pr:369",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0007",
+      "to": "pr:814",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0007",
+      "to": "pr:854",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0007",
+      "to": "pr:855",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0007",
+      "to": "pr:857",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0010",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:26",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:30",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:34",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:39",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:51",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:53",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0011",
+      "to": "pr:9",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0012",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "adr:0012",
+      "to": "pr:704",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0012",
+      "to": "pr:788",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0013",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "adr:0013",
+      "to": "pr:704",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0014",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "adr:0014",
+      "to": "pr:708",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0019",
+      "to": "pr:5",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0020",
+      "to": "pr:717",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0020",
+      "to": "pr:718",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0020",
+      "to": "pr:728",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0020",
+      "to": "pr:729",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0020",
+      "to": "pr:788",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0020",
+      "to": "pr:872",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0021",
+      "to": "pr:885",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0022",
+      "to": "pr:760",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0022",
+      "to": "pr:774",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0024",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "adr:0030",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "adr:0031",
+      "to": "pr:1364",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0034",
+      "to": "pr:1230",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0034",
+      "to": "pr:1414",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0034",
+      "to": "pr:995",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0037",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "adr:0037",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "adr:0038",
+      "to": "pr:1473",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0038",
+      "to": "pr:1480",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0038",
+      "to": "pr:1496",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0038",
+      "to": "pr:1503",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0043",
+      "to": "initiative:0003",
+      "type": "references"
+    },
+    {
+      "from": "adr:0043",
+      "to": "pr:1621",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0043",
+      "to": "pr:21",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "adr:0047",
+      "to": "initiative:0003",
+      "type": "references"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:1953",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:51",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:76",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0052",
+      "to": "pr:1633",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0054",
+      "to": "initiative:0006",
+      "type": "references"
+    },
+    {
+      "from": "adr:0054",
+      "to": "pr:2103",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0055",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "adr:0055",
+      "to": "pr:2382",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0055",
+      "to": "pr:2385",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0055",
+      "to": "pr:2419",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0058",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0058",
+      "to": "initiative:0010",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-02-doc-hygiene-audit",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-02-doc-hygiene-audit",
+      "to": "pr:1143",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-03-readme-gap-analysis",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-03-readme-gap-analysis",
+      "to": "hard-rule:16",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-05-dead-code-and-stale-links-audit",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-05-dead-code-and-stale-links-audit",
+      "to": "pr:13",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-05-dead-code-and-stale-links-audit",
+      "to": "pr:53",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-05-dead-code-and-stale-links-audit",
+      "to": "pr:6",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-05-dead-code-and-stale-links-audit",
+      "to": "pr:8",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast",
+      "to": "pr:2102",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast",
+      "to": "pr:2103",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast",
+      "to": "pr:2105",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast",
+      "to": "pr:2106",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "initiative:0006",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2046",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2102",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2103",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2105",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2106",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2111",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2114",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2115",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2116",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2119",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2124",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2153",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2154",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2156",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2158",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2160",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2183",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2184",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2185",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2186",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2187",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:51",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:1378",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:2159",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:2191",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:28",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:40",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:62",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:63",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-app-audit",
+      "to": "pr:64",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2192",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2196",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2199",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2214",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2215",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2216",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-07-full-app-regression-ux-audit",
+      "to": "pr:2218",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-backend-performance-roast",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-backend-performance-roast",
+      "to": "hard-rule:6",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-backend-performance-roast",
+      "to": "hard-rule:7",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-backend-performance-roast",
+      "to": "pr:2752",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "hard-rule:9",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2744",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2747",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2748",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2763",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2767",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2774",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2797",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2798",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:2799",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "hard-rule:23",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "pr:2573",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "pr:2586",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "pr:2599",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-documentation-hygiene-roast",
+      "to": "pr:13",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-documentation-hygiene-roast",
+      "to": "pr:2726",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-ftux-onboarding-roast",
+      "to": "pr:2014",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-ftux-onboarding-roast",
+      "to": "pr:2599",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-ftux-onboarding-roast",
+      "to": "pr:2768",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-ftux-onboarding-roast",
+      "to": "pr:2781",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "initiative:0002",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "pr:1415",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "pr:2192",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "pr:2199",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "pr:2215",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "pr:2750",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
+      "to": "pr:2780",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "to": "pr:2586",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:13",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:14",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
+      "to": "hard-rule:9",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
+      "to": "hard-rule:14",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
+      "to": "hard-rule:17",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:14",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:8",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-05-finyk",
+      "to": "hard-rule:9",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:13",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:16",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
+      "to": "hard-rule:9",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:14",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:16",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:17",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-07-fizruk-part2",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:13",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:17",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-08-nutrition",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:13",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:9",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-revenue-monetization-roast",
+      "to": "hard-rule:11",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-revenue-monetization-roast",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-revenue-monetization-roast",
+      "to": "initiative:0010",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-revenue-monetization-roast",
+      "to": "pr:2760",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-revenue-monetization-roast",
+      "to": "pr:2778",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-revenue-monetization-roast",
+      "to": "pr:2793",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1551",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1602",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1631",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1647",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1678",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1695",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:1732",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:2741",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:2749",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-security-observability-roast",
+      "to": "pr:2754",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "hard-rule:7",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:1971",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:1992",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:2012",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:2022",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:2191",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:2215",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:2216",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:2218",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "initiative:0006",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "initiative:0013",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:1601",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:1607",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:1968",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2607",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:53",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:54",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:63",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:64",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:65",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-frontend-ergonomics-roast",
+      "to": "pr:1796",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-frontend-ergonomics-roast",
+      "to": "pr:2743",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0002",
+      "to": "pr:1633",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:1621",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:1953",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:21",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:40",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:51",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:52",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:53",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:76",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:77",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0003",
+      "to": "pr:79",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:1657",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2100",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2104",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2108",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2541",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2545",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2549",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2551",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2553",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0006",
+      "to": "pr:2570",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0010",
+      "to": "pr:1792",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0010",
+      "to": "pr:2080",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:128",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1564",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1567",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1571",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1588",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1595",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1600",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1604",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1606",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1608",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1613",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1614",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1629",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1631",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1647",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1652",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1659",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1660",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1664",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1688",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1691",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1696",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1697",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1699",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1703",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1709",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1713",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1714",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1726",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1812",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:1823",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0011",
+      "to": "pr:345",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0013",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0013",
+      "to": "pr:2002",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0013",
+      "to": "pr:2128",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0013",
+      "to": "pr:2530",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0013",
+      "to": "pr:2547",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0014",
+      "to": "hard-rule:5",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0014",
+      "to": "hard-rule:6",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:1550",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:1552",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:1567",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:1816",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2081",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2086",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2089",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2122",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2125",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2193",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2308",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2309",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2311",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2312",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2526",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/00-overview",
+      "to": "pr:2527",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
+      "to": "pr:1533",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
+      "to": "pr:1550",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
+      "to": "pr:1552",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
+      "to": "pr:1556",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
+      "to": "pr:1567",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-01-unify-env-modules",
+      "to": "pr:2122",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-02-rate-limit-fail-closed",
+      "to": "pr:1552",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-03-bcrypt-password-limit",
+      "to": "pr:1550",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners",
+      "to": "pr:2000",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-06-openclaw-github-app",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-06-openclaw-github-app",
+      "to": "pr:1816",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-07-body-size-declarative-policy",
+      "to": "pr:2081",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci",
+      "to": "pr:2089",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-12-sentry-traces-sampler",
+      "to": "pr:2086",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-13-postgres-pool-sizing",
+      "to": "pr:46",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-13-postgres-pool-sizing",
+      "to": "pr:47",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock",
+      "to": "pr:1567",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy",
+      "to": "pr:2125",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle",
+      "to": "pr:2122",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-19-workers-health-registry",
+      "to": "pr:1995",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-20-patches-readme",
+      "to": "pr:2193",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update",
+      "to": "pr:2309",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta",
+      "to": "pr:2309",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve",
+      "to": "pr:2543",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup",
+      "to": "pr:2423",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate",
+      "to": "pr:2423",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
+      "to": "pr:2423",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard",
+      "to": "pr:2311",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-37-postgres-image-sha-pin",
+      "to": "pr:2308",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-38-pwa-precache-first-party",
+      "to": "pr:2312",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk",
+      "to": "pr:2573",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:add-hard-rule",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "playbook:add-hard-rule",
+      "to": "pr:1144",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:add-hard-rule",
+      "to": "pr:1146",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:add-hard-rule",
+      "to": "pr:1234",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:add-hard-rule",
+      "to": "pr:1660",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:add-monobank-event-handler",
+      "to": "pr:708",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:add-react-query-hook",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "playbook:add-react-query-hook",
+      "to": "pr:729",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:cleanup-dead-code",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "playbook:cleanup-dead-code",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "playbook:cleanup-dead-code",
+      "to": "pr:1143",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:cutover-openclaw-gateway",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "playbook:deploy-config-change",
+      "to": "pr:1595",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:deploy-config-change",
+      "to": "pr:1600",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:enable-prompt-caching",
+      "to": "pr:790",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:modify-n8n-workflow",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "playbook:playbook-catalog",
+      "to": "pr:447",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:pre-merge-migration-checklist",
+      "to": "pr:918",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:prettier-pass-on-docs",
+      "to": "pr:447",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:release",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "playbook:rotate-openclaw-credentials",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "playbook:stabilize-flaky-test",
+      "to": "pr:743",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:sync-rn-migration-progress",
+      "to": "pr:443",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:sync-rn-migration-progress",
+      "to": "pr:444",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:sync-rn-migration-progress",
+      "to": "pr:445",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:better-auth-best-practices",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-bugfix-and-regression",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-data-and-migrations",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-deploy-and-observability",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-feature-delivery",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-hubchat",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-mobile-expo",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-monorepo-boundaries",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-review-and-merge",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-review-and-merge",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-review-and-merge",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-review-and-merge",
+      "to": "hard-rule:5",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-review-and-merge",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-server-api",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-start-here",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-web-ui",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-writing-skills",
+      "to": "hard-rule:22",
+      "type": "references"
+    }
+  ]
+}

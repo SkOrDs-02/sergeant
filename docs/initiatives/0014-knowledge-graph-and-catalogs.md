@@ -1,0 +1,144 @@
+# 0014 — Knowledge graph & auto-generated catalogs
+
+> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Status:** In progress (Phase 1 scaffolding)
+> **Priority:** P2
+> **Owner:** `@Skords-01`
+> **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
+> **Sources:** [`docs/architecture/repo-map.md`](../architecture/repo-map.md), [`docs/architecture/service-catalog.md`](../architecture/service-catalog.md), [`docs/architecture/diagrams/`](../architecture/diagrams/), [`docs/governance/freshness-dashboard.html`](../governance/freshness-dashboard.html), [`AGENTS.md`](../../AGENTS.md) Hard Rules #10 / #15.
+
+## TL;DR
+
+Об'єднуємо ADR / playbook / skills / hard-rules / open-work / initiatives / audits у єдиний knowledge graph (`docs/governance/knowledge-graph.{json,html}`). Додаємо post-merge GitHub Action для bidirectional PR ↔ doc backlinks (`docs/pr-ledger/index.json` + AUTO-GEN блок «Recent PRs»). Генеруємо `service-catalog.md`, `repo-map.md`, per-package symbol catalog (`packages/*/symbols.json`) і архітектурні діаграми C3/C4 безпосередньо з коду (workspaces, server routes, turbo graph, TS AST через ts-morph). 5 hand-maintained артефактів → auto-gen з `--check` gates у `pnpm lint`. C1/C2 діаграми лишаються human-narrative.
+
+## Чому зараз
+
+- Freshness dashboard уже флагає `service-catalog`/`repo-map` як stale — drift підтверджений. `dev-stack-roadmap.md` ribbon stale-marker з-за ручних оновлень.
+- 7 каталогів (ADR / initiative / playbook / skill / hard-rule / audit / launch) живуть у silo — `open-work.md` тільки агрегує `Status:` хедери, не зв'язки. Немає одного запитуваного джерела «що торкається `apps/server/sync`?».
+- Conventional Commits + scope enum уже є (Hard Rule #5), але після merge інформація PR → doc втрачається. Зворотний напрямок (`open-work.md` витягує PR-згадки **з** docs) асиметричний.
+- Symbol catalog розблоковує точніший dead-code detection (краще за `knip` без AST) і convention-drift detection (PR-плани з `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md`).
+- C3/C4 Mermaid діаграми ручні → завжди відстають від реального import graph; `c3-*.md` стейл найдовше.
+
+## Скоуп
+
+**In:**
+
+- `docs/governance/knowledge-graph.{json,html}` — unified graph (nodes + typed edges) + HTML viewer (inline CSS, Mermaid sub-графи).
+- `docs/governance/schemas/knowledge-graph.schema.json` — canonical schema (JSON Schema draft-07).
+- `.github/workflows/pr-backlinks.yml` + `scripts/ci/update-pr-backlinks.mjs` + `docs/pr-ledger/index.json` + AUTO-GEN блок `## Recent PRs` (≤5 latest) у touched ADR/initiative/playbook/rule файлах.
+- Auto-gen `docs/architecture/service-catalog.md`, `docs/architecture/repo-map.md` зі скан-инпутів (`pnpm-workspace.yaml`, `package.json` per workspace, `Dockerfile.*`, `railway.*.toml`, server route registrations, CODEOWNERS).
+- Per-package `symbols.json` (auto-gen через ts-morph) + `docs/governance/symbol-index.{json,html}` з cross-package usage counts.
+- Auto-gen Mermaid для C3 (component-per-service з turbo task graph + service-catalog) і C4 (code-level з symbol catalog cross-refs).
+- 4 нових `--check` gates у `pnpm lint`: `docs:check-graph`, `docs:check-symbols`, `docs:check-service-catalog` + `docs:check-repo-map`, `docs:check-architecture-diagrams`.
+- 4 ADRs: graph schema, ts-morph rationale, C4 automation boundary, PR backlink storage.
+- 3 нові hard rules (HR-24/25/26) у `hard-rules.json` + per-rule canonical files у `docs/governance/rules/`.
+
+**Out (v1):**
+
+- Slack/email notifications на stale graph nodes.
+- Інтерактивний D3/vis.js viewer — лише статичний HTML+Mermaid.
+- Refactor існуючих 7 генераторів читати з графа (graph — additive aggregator).
+- Cross-repo links.
+- Backfill PR-ledger історії до merge цієї ініціативи.
+- `dev-stack-roadmap.md` auto-gen (лежить у `docs/planning/`, не `docs/architecture/`; залишається hand-maintained).
+
+## План змін
+
+Детальний план файлів та DoD по фазах — `C:\Users\dmytr\.claude\plans\deep-waddling-blum.md` (approved 2026-05-15).
+
+### Phase 1 — Graph schema + aggregator (M)
+
+**Goal:** Single JSON source-of-truth, що об'єднує всі існуючі каталоги.
+
+**Files:**
+
+- `scripts/docs/generate-knowledge-graph.mjs` (new)
+- `docs/governance/knowledge-graph.json` (auto-gen)
+- `docs/governance/knowledge-graph.html` (auto-gen, inline CSS, Mermaid sub-graphs)
+- `docs/governance/schemas/knowledge-graph.schema.json` (new)
+- `package.json` — `docs:gen-graph`, `docs:check-graph` у lint chain
+- `docs/adr/0058-knowledge-graph-schema.md` (new)
+
+**Nodes:** `adr`, `initiative`, `playbook`, `skill`, `hard-rule`, `audit`, `service`, `package`, `file`, `pr`.
+**Edges (typed):** `supersedes`, `references`, `enforces`, `documents`, `owned-by`, `touched-by`.
+
+**DoD:** граф містить ноди для всіх existing ADR / initiative / playbook / skill / rule / audit; edges типізовані за schema; HTML viewer рендерить Mermaid sub-графи по типу ноди; `pnpm docs:check-graph` green; JSON Schema validates.
+
+### Phase 2 — Symbol catalog (M)
+
+**Goal:** Per-package JSON експортованих символів + cross-package usage counts.
+
+**Files:** `scripts/docs/generate-symbol-catalog.mjs`, `packages/*/symbols.json` + `apps/*/symbols.json`, `docs/governance/symbol-index.{json,html}`, `docs/adr/0059-symbol-extraction-via-ts-morph.md`.
+
+**Implementation decision:** ts-morph (rejected raw `tsc` API — boilerplate; `tsx` introspection — втрачає type info, side-effects).
+**Performance:** per-package incremental cache keyed на source mtime; CI запускає лише touched packages (`turbo --filter=...[HEAD^1]`).
+**DoD:** кожен workspace має свіжий `symbols.json`; cross-ref index показує `usedBy[]`; dead-export count експонований.
+
+### Phase 3 — Auto-gen service-catalog + repo-map (S)
+
+**Files:** `scripts/docs/generate-service-catalog.mjs`, `scripts/docs/generate-repo-map.mjs`, `docs/architecture/service-catalog.md` (header → AUTO-GENERATED, старий вміст → `docs/_archive/service-catalog-pre-0014.md`), `docs/architecture/repo-map.md` (same).
+
+**Integration:** обидва генератори feed-ять Phase 1 граф як додаткові node sources (services, packages).
+**DoD:** обидва файли починаються з `<!-- AUTO-GENERATED -->` marker; `--check` gate; старий hand content переміщено у `_archive/` з link forward.
+
+### Phase 4 — Living architecture diagrams (M)
+
+**Files:** `scripts/docs/generate-architecture-diagrams.mjs`, `docs/architecture/diagrams/c3-*.md` (converted to auto-gen), `docs/architecture/diagrams/c4-*.md` (new), `docs/adr/0060-c4-diagram-automation-boundary.md`. C1/C2 без змін окрім lifecycle markers.
+
+**Boundary:** C1 (system context) та C2 (containers) — human-narrative; C3 (component-per-service) — auto з turbo workspace edges + service-catalog; C4 (code-level) — auto з symbol catalog cross-refs.
+**Reuse:** `pnpm turbo run build --graph=<file>` JSON output (no new dep); symbol catalog з Phase 2.
+**DoD:** C3/C4 діаграми оновлюються при змінах import graph; `--check` валідує diff.
+
+### Phase 5 — Bidirectional PR ↔ doc backlinks (M)
+
+**Files:** `.github/workflows/pr-backlinks.yml` (`pull_request: closed` + `merged=true`), `scripts/ci/update-pr-backlinks.mjs`, `docs/pr-ledger/index.json` (canonical registry), AUTO-GEN блок `## Recent PRs` (≤5 latest) appended у touched docs, `docs/adr/0061-pr-backlink-storage.md`.
+
+**Storage decision:** hybrid — JSON ledger канонічний (без N-file noise), in-doc блок показує останні 5 (UX). Відхилено: per-PR markdown files.
+**Workflow strategy:** action **відкриває follow-up PR** замість push-на-main (Hard Rule #6); debounce — батчинг N merges per scheduled run.
+**Reuse:** scope extraction з `commitlint.config.js`, path-match з `check-codeowners-coverage.mjs`, PR-mention regex з `generate-open-work.mjs`.
+**DoD:** merge doc-touching PR → ledger + in-doc блок оновлені в межах одного workflow run; graph (Phase 1) re-renders `touched-by` edges.
+
+## Dependencies / Ordering
+
+1. **Phase 1 first** — schema, у яку всі інші пишуть.
+2. **Phase 2 перед Phase 4** — symbol data feed-ить C4 diagrams.
+3. **Phase 3 незалежна** від Phase 2, але легша після Phase 1.
+4. **Phase 5 last** — потребує stable doc structure для безпечного back-writing; всі AUTO-GEN блоки мають бути idempotent перед Phase 5.
+
+## ADRs to open
+
+1. **ADR-0058** — Knowledge graph schema and storage format (single JSON aggregator).
+2. **ADR-0059** — Symbol extraction via ts-morph.
+3. **ADR-0060** — C4 diagram automation boundary (C1/C2 human, C3/C4 auto).
+4. **ADR-0061** — PR backlink storage strategy (hybrid ledger + in-doc block).
+
+## New hard rules
+
+- **HR-24:** All catalogs у `knowledge-graph.json` MUST мати `--check` generator wired у `pnpm lint` (category: `lint-enforced-convention`).
+- **HR-25:** Auto-generated docs MUST починатись з `<!-- AUTO-GENERATED -->` marker; CI rejects hand edits нижче marker (category: `lint-enforced-convention`).
+- **HR-26:** Merged PRs, що torchat `docs/**`, MUST оновити `pr-ledger/index.json` (category: `lint-enforced-convention`, Phase 5).
+
+## Критерії DONE
+
+- ✅ 5 hand-maintained артефактів (service-catalog, repo-map, 2× C3 diagrams, 1× C4 diagram) замінено на auto-gen з зеленим `--check`.
+- ✅ `knowledge-graph.json` містить ≥ всі поточні ADRs / initiatives / playbooks / skills / rules / audits / services / symbols.
+- ✅ Кожен merged doc-touching PR з'являється у `pr-ledger/index.json` протягом одного workflow run.
+- ✅ `pnpm lint` chain містить 4 нові `--check` invocations.
+- ✅ Freshness dashboard показує нуль stale auto-gen артефактів.
+- ✅ 4 ADRs Accepted; 3 нові hard rules у `hard-rules.json` + per-rule files + matrix.
+
+## Ризики
+
+1. **Graph size explosion** (10k+ symbol nodes стискають HTML viewer) → tier nodes (`core` / `extended`); HTML рендерить core за замовчуванням; symbol-level окремий `symbol-index.json` lazy-loaded.
+2. **Post-merge workflow flakes або churn на main** → workflow **відкриває follow-up PR** замість push-на-main (Hard Rule #6); debounce — батчинг.
+3. **ts-morph повільний на повному monorepo** (cold full-scan) → per-package incremental cache keyed на source mtime; CI запускає лише changed packages.
+
+## Verification plan
+
+1. Per-generator round-trip: `--check` на clean tree → exit 0. Мутувати source → re-run → diff matches expectation.
+2. Golden fixtures: snapshot `knowledge-graph.json` для frozen subset репо (10 ADRs + 5 initiatives + 3 playbooks); CI порівнює.
+3. PR backlinks E2E: `workflow_dispatch` на recent merged PR → перевірити ledger + in-doc блок.
+4. HTML dashboards: відкрити `knowledge-graph.html` і `symbol-index.html` у браузері; Mermaid рендериться, links resolve.
+5. Diagram semantic diff: auto-gen C3 vs archived hand-drawn — semantic diff (ноди + ребра).
+6. Full `pnpm lint` має бути зелений з усіма 4 новими gates.
+7. Performance: `pnpm docs:gen-symbols` на cold cache < 60 s; warm < 5 s.
