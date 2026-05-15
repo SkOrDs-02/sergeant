@@ -44,7 +44,7 @@ export interface PullToRefreshProps {
 const variantColors: Record<RefreshVariant, string> = {
   default: "#10b981",
   finyk: "#10b981",
-  fizruk: "#14b8a6",
+  fizruk: "#0e7490", // cyan-700 — mirrors moduleColors.fizruk.primary
   routine: "#f97066",
   nutrition: "#84cc16",
 };

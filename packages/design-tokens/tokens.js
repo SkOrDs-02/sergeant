@@ -105,8 +105,8 @@ export const moduleColors = {
     surfaceAlt: "#f0fdfa", // teal-50
   },
   fizruk: {
-    primary: "#14b8a6", // teal-500
-    secondary: "#0d9488", // teal-600
+    primary: "#0e7490", // cyan-700 — disambiguates from finyk emerald (was teal-500 #14b8a6)
+    secondary: "#0d9488", // teal-600 — retained as accent for hero gradients
     surface: "#f0fdfa", // teal-50
     accent: "#c8f264", // lime-300 (CTA highlight)
   },
@@ -144,7 +144,7 @@ export const moduleColors = {
  */
 export const moduleAccentRgb = {
   finyk: { default: "16 185 129", strong: "4 120 87" }, // emerald-500 / -700
-  fizruk: { default: "20 184 166", strong: "15 118 110" }, // teal-500 / -700
+  fizruk: { default: "14 116 144", strong: "15 118 110" }, // cyan-700 / teal-700 — `default` migrated to cyan-700 to disambiguate from finyk emerald (was teal-500). `strong` stays on teal-700 to match `bg-fizruk-strong` Tailwind utility (`brandColors.teal[700]`); will migrate to cyan-800 in PR-1 alongside the cyan palette addition.
   routine: { default: "249 112 102", strong: "194 58 58" }, // coral-500 / -700
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
 };

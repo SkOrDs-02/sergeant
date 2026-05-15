@@ -449,8 +449,8 @@
        ─────────────────────────────────────────────────────────────────── */
     --c-finyk-surface-dark: 16 185 129; /* emerald-500 */
     --c-finyk-border-dark: 16 185 129; /* emerald-500 */
-    --c-fizruk-surface-dark: 20 184 166; /* teal-500 */
-    --c-fizruk-border-dark: 20 184 166; /* teal-500 */
+    --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
+    --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-routine-surface-dark: 249 112 102; /* coral-500 */
     --c-routine-border-dark: 249 112 102; /* coral-500 */
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
