@@ -760,8 +760,10 @@ export default [
       // routine,nutrition}-domain` shapes that mobile RN partial views /
       // chart palettes don't yet match precisely. Migrate by aligning the
       // local view-model type to the domain shape.
-      "apps/mobile/src/modules/finyk/pages/Overview/CategoryChartSection.tsx",
-      "apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx",
+      // Finyk allowlist entries (CategoryChartSection.tsx, TransactionsPage.tsx)
+      // dropped 2026-05-15: M4 (mobile.md roadmap) done — palette uses
+      // `readonly string[]` from `chartPaletteList`, manual-expense undo
+      // path routes the persisted record through `upgradeCategory()`.
       "apps/mobile/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx",
       "apps/mobile/src/modules/fizruk/hooks/useCustomExercises.ts",
       "apps/mobile/src/modules/fizruk/hooks/useRecovery.ts",
