@@ -381,13 +381,10 @@ describe("food-search handler", () => {
     ]);
   });
 
-  it("validates query args before calling upstreams", async () => {
-    const res = mockRes();
-
-    await handler(asReq({ q: "x", limit: "3" }), res);
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toMatchObject({ error: "Некоректні параметри запиту" });
+  it("throws ValidationError before calling upstreams", async () => {
+    await expect(
+      handler(asReq({ q: "x", limit: "3" }), mockRes()),
+    ).rejects.toMatchObject({ name: "ValidationError" });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 

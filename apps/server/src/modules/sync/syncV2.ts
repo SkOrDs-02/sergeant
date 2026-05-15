@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import type { PoolClient } from "pg";
 import pool from "../../db.js";
-import { validateBody, validateQuery } from "../../http/validate.js";
+import { parseBody, parseQuery } from "../../http/validate.js";
 import {
   SyncV2PullSchema,
   SyncV2PushSchema,
@@ -2687,15 +2687,16 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   const user = (req as WithSessionUser).user!;
   const originDeviceId = readOriginDeviceId(req);
 
-  const parsed = validateBody(SyncV2PushSchema, req, res);
-  if (!parsed.ok) {
+  let ops: SyncV2Op[];
+  try {
+    ({ ops } = parseBody(SyncV2PushSchema, req));
+  } catch (err) {
     recordSyncV2("v2_push", "invalid", {
       ms: elapsedMs(start),
       userId: user.id,
     });
-    return;
+    throw err;
   }
-  const { ops } = parsed.data;
 
   // Telemetry: clients that fail to forward `X-Origin-Device-Id` write
   // rows into `sync_op_log` with `origin_device_id = NULL`, which the
@@ -2993,15 +2994,17 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
   const start = process.hrtime.bigint();
   const user = (req as WithSessionUser).user!;
 
-  const parsed = validateQuery(SyncV2PullSchema, req, res);
-  if (!parsed.ok) {
+  let since: number;
+  let limit: number;
+  try {
+    ({ since, limit } = parseQuery(SyncV2PullSchema, req));
+  } catch (err) {
     recordSyncV2("v2_pull", "invalid", {
       ms: elapsedMs(start),
       userId: user.id,
     });
-    return;
+    throw err;
   }
-  const { since, limit } = parsed.data;
   const originDeviceId = readOriginDeviceId(req);
 
   try {

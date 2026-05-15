@@ -6,7 +6,7 @@ import {
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { BarcodeQuerySchema } from "../../http/schemas.js";
-import { validateQuery } from "../../http/validate.js";
+import { parseQuery } from "../../http/validate.js";
 import { barcodeLookupsTotal } from "../../obs/metrics.js";
 import {
   normalizeOFFBarcode,
@@ -333,9 +333,10 @@ export default async function handler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const parsed = validateQuery(BarcodeQuerySchema, req, res);
-  if (!parsed.ok) return;
-  const barcode = parsed.data.barcode.replace(/\D/g, "");
+  const barcode = parseQuery(BarcodeQuerySchema, req).barcode.replace(
+    /\D/g,
+    "",
+  );
   if (!/^\d{8,14}$/.test(barcode)) {
     res.status(400).json({ error: "Невірний штрихкод (8–14 цифр)" });
     return;

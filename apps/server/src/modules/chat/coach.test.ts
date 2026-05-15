@@ -125,16 +125,16 @@ describe("coachMemoryPost blob-size guard", () => {
     expect(insertCall[1][0]).toBe("user_1");
   });
 
-  it("невалідне body (weeklyDigest без weekKey) → 400 з issues", async () => {
+  it("невалідне body (weeklyDigest без weekKey) → ValidationError з cause.details", async () => {
     const req = {
       user: { id: "user_1" },
       body: { weeklyDigest: { weekRange: "no key here" } },
     };
-    const res = makeRes();
-    await coachMemoryPost(asReq(req), res);
-    expect(res.statusCode).toBe(400);
-    expect(res.body!.error).toBe("Некоректні дані запиту");
-    expect(res.body!.details).toBeInstanceOf(Array);
+    await expect(coachMemoryPost(asReq(req), makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+      cause: { details: expect.any(Array) },
+    });
     expect(pool.query).not.toHaveBeenCalled();
   });
 });
@@ -217,16 +217,18 @@ describe("coachInsight", () => {
     expect(user).toContain("5000");
   });
 
-  it("invalid body (snapshot.finyk з неправильним типом) → 400", async () => {
-    const res = makeRes();
-    await coachInsight(
-      makeReq({
-        snapshot: { finyk: { totalSpent: "не число" } },
-      }),
-      res,
-    );
-    expect(res.statusCode).toBe(400);
-    expect(res.body!.error).toBe("Некоректні дані запиту");
+  it("invalid body (snapshot.finyk з неправильним типом) → ValidationError", async () => {
+    await expect(
+      coachInsight(
+        makeReq({
+          snapshot: { finyk: { totalSpent: "не число" } },
+        }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 

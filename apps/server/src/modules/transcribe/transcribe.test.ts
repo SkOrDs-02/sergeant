@@ -143,14 +143,14 @@ describe("transcribeHandler", () => {
     expect(res.body?.code).toBe("PAYLOAD_TOO_LARGE");
   });
 
-  it("400 на занадто довгий prompt", async () => {
+  it("ValidationError на занадто довгий prompt", async () => {
     const req = makeReq({
       body: Buffer.from("x"),
       query: { prompt: "a".repeat(2000) },
     });
-    const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(transcribeHandler(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+    });
   });
 
   it("happy path: повертає text + durationSec", async () => {

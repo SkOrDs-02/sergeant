@@ -23,7 +23,7 @@ import type { Pool } from "pg";
 import { z } from "zod";
 
 import { env } from "../../env.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import {
   isProductMemoryEvent,
@@ -62,9 +62,7 @@ export function buildEventSyncHandler(pool: Pool) {
       return;
     }
 
-    const parsed = validateBody(buildEventSyncSchema(), req, res);
-    if (!parsed.ok) return;
-    const { eventName, payload } = parsed.data;
+    const { eventName, payload } = parseBody(buildEventSyncSchema(), req);
 
     if (!isProductMemoryEvent(eventName)) {
       // Не 4xx — web sync-shim дзвонить безумовно; відмова з 4xx

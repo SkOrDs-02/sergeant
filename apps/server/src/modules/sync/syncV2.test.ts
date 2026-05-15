@@ -168,23 +168,23 @@ describe("INCREMENT_OP_SUPPORTED_TABLES / SYNC_V2_SUPPORTED_TABLES", () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe("syncV2Push · validation gate", () => {
-  it("400 на порожній body → pool.connect не викликається", async () => {
+  it("ValidationError на порожній body → pool.connect не викликається", async () => {
     const req = makeReq({ body: {} });
-    const res = makeRes();
-    await syncV2Push(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(syncV2Push(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
-  it("400 на пустий ops-масив (schema min(1))", async () => {
+  it("ValidationError на пустий ops-масив (schema min(1))", async () => {
     const req = makeReq({ body: { ops: [] } });
-    const res = makeRes();
-    await syncV2Push(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(syncV2Push(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
-  it("400 на op без обов'язкового поля", async () => {
+  it("ValidationError на op без обов'язкового поля", async () => {
     const req = makeReq({
       body: {
         ops: [
@@ -198,9 +198,9 @@ describe("syncV2Push · validation gate", () => {
         ],
       },
     });
-    const res = makeRes();
-    await syncV2Push(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(syncV2Push(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 });
@@ -312,19 +312,19 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe("syncV2Pull · validation", () => {
-  it("400 на нечислове since → pool.query не викликається", async () => {
+  it("ValidationError на нечислове since → pool.query не викликається", async () => {
     const req = makeReq({ query: { since: "garbage" } });
-    const res = makeRes();
-    await syncV2Pull(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(syncV2Pull(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+    });
     expect(pool.query).not.toHaveBeenCalled();
   });
 
-  it("400 на limit > MAX_LIMIT (500)", async () => {
+  it("ValidationError на limit > MAX_LIMIT (500)", async () => {
     const req = makeReq({ query: { limit: "9999" } });
-    const res = makeRes();
-    await syncV2Pull(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(syncV2Pull(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+    });
     expect(pool.query).not.toHaveBeenCalled();
   });
 });

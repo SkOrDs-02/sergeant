@@ -25,7 +25,7 @@ import {
 } from "@sergeant/shared";
 
 import { env } from "../../env.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import { getAiMemory } from "./bootstrap.js";
 import {
@@ -43,7 +43,7 @@ type WithSessionUser = Request & { user?: { id: string } };
  *
  * Status codes:
  *   - 200 + `{ memories: [...] }` — happy path; масив може бути порожнім.
- *   - 400 — schema validation fail (validateBody).
+ *   - 400 — schema validation fail (parseBody → ValidationError).
  *   - 401 — без сесії (router middleware `requireSession`).
  *   - 503 — `AI_MEMORY_ENABLED=false` АБО провайдер недоступний (Voyage 5xx /
  *           circuit open / missing API key). Семантика "тимчасово недоступний"
@@ -63,9 +63,7 @@ export async function recallMemoryHandler(
     return;
   }
 
-  const parsed = validateBody(RecallMemoryRequestSchema, req, res);
-  if (!parsed.ok) return;
-  const { query, topK, sources } = parsed.data;
+  const { query, topK, sources } = parseBody(RecallMemoryRequestSchema, req);
 
   const userId = (req as WithSessionUser).user!.id;
 

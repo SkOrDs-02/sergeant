@@ -29,7 +29,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 
 import { env } from "../../env.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import { enqueueMemoryIngest } from "./ingestQueue.js";
 import type { MemorySource } from "./types.js";
@@ -135,9 +135,10 @@ export async function ingestMemoryHandler(
     return;
   }
 
-  const parsed = validateBody(buildIngestRequestSchema(), req, res);
-  if (!parsed.ok) return;
-  const { source, sourceRef, content, metadata } = parsed.data;
+  const { source, sourceRef, content, metadata } = parseBody(
+    buildIngestRequestSchema(),
+    req,
+  );
 
   if (!checkMetadataSize(metadata, res)) return;
 

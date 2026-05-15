@@ -5,7 +5,7 @@ import {
   extractAnthropicText,
 } from "../../lib/anthropic.js";
 import { sendToUserQuietly } from "../../push/send.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import {
   CoachInsightSchema,
   CoachMemoryPostSchema,
@@ -225,9 +225,7 @@ export async function coachMemoryPost(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const parsed = validateBody(CoachMemoryPostSchema, req, res);
-  if (!parsed.ok) return;
-  const incoming = parsed.data as IncomingMemory;
+  const incoming = parseBody(CoachMemoryPostSchema, req) as IncomingMemory;
   const userId = (req as WithSessionUser).user!.id;
   const existing = await getMemory(userId);
   const merged = mergeMemory(existing, incoming);
@@ -249,9 +247,7 @@ export async function coachMemoryPost(
  */
 export async function coachInsight(req: Request, res: Response): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const parsed = validateBody(CoachInsightSchema, req, res);
-  if (!parsed.ok) return;
-  const { snapshot, memory } = parsed.data as {
+  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
     snapshot: {
       dateContext?: {
         todayKey?: string;

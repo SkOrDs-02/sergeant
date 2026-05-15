@@ -114,21 +114,18 @@ function buildHandler(
 }
 
 describe("weekly-digest handler · validation", () => {
-  it("400 коли body не валідне (заборонене поле або неправильний тип)", async () => {
+  it("ValidationError коли body не валідне (заборонене поле або неправильний тип)", async () => {
     const { handler, provider } = buildHandler();
     const req = asReq({
       anthropicKey: "k",
       body: { weekRange: 1 as unknown as string },
     });
-    const res = makeRes();
 
-    await handler(req, res);
-
-    expect(res.statusCode).toBe(400);
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Некоректні дані запиту",
+    });
     expect(provider.calls).toHaveLength(0);
-    expect((res.body as { error: string }).error).toBe(
-      "Некоректні дані запиту",
-    );
   });
 
   it("ValidationError якщо немає жодної секції (порожній звіт)", async () => {

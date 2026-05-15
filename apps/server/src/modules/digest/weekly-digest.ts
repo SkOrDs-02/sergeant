@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import {
   WeeklyDigestSchema,
   WeeklyDigestReportSchema,
@@ -185,9 +185,8 @@ export function createWeeklyDigestHandler(
   return async function handler(req: Request, res: Response): Promise<void> {
     const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-    const parsed = validateBody(WeeklyDigestSchema, req, res);
-    if (!parsed.ok) return;
-    const { weekRange, finyk, fizruk, nutrition, routine } = parsed.data;
+    const parsed = parseBody(WeeklyDigestSchema, req);
+    const { weekRange, finyk, fizruk, nutrition, routine } = parsed;
 
     const sections: string[] = [];
 
@@ -295,7 +294,7 @@ ${dataContext}`;
 
     // PR-25: template-report заздалегідь — як stubResponse для StubProvider,
     // так і як автоматичний fallback на Anthropic-помилку.
-    const templateReport = buildTemplateReport(parsed.data);
+    const templateReport = buildTemplateReport(parsed);
     const fallbackOnError =
       options.fallbackOnError ?? env.LLM_DIGEST_FALLBACK_ON_ERROR;
 

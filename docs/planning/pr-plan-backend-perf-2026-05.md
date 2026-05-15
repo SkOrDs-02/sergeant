@@ -410,6 +410,19 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-10 — `refactor(server): migrate validateBody→parseBody (batch 2 — sync/chat/internal/решта)`
 
+> **Rollout 2026-05-15 (split 2a + 2b):**
+>
+> Plan-card originally estimated L (~700 LOC). Actual audit показав **24 файли, 128 callsites** (з них `routes/internal/openclaw.ts` сам — 56). Розбито на 2 PR-и за surface boundary:
+>
+> - **PR-10a (поточний PR, modules/):** 14 файлів — `modules/sync/{syncV2,syncV2Stream}.ts`, `modules/chat/{chat,coach}.ts`, `modules/ai-memory/{ingestRoute,recallRoute,eventSyncRoute}.ts`, `modules/digest/weekly-digest.ts`, `modules/transcribe/transcribe.ts`, `modules/mono/{privat,read}.ts`, `modules/push/push.ts`, `modules/nutrition/{barcode,food-search}.ts` (validateQuery leftover з PR-09). ~36 callsites.
+> - **PR-10b (наступний, routes/):** 10 файлів — `routes/{billing,push,waitlist}.ts` + `routes/internal/*.ts` (8 файлів, включно з 56-callsite `openclaw.ts`). ~92 callsites.
+>
+> Special handling у PR-10a:
+>
+> - `sync/syncV2.{ts,Stream.ts}` — обгорнули `parseQuery/parseBody` у try/catch для збереження `recordSyncV2("..", "invalid", ...)` / `syncOperationsTotal{outcome: "invalid"}` метрик (інакше errorHandler не знає про сінк-семантику).
+> - `chat.ts` — `parseBody` throws BEFORE будь-якого `res.write()`/SSE-handshake, тому stream-handle leak неможливий (verified — validation на лінії 355, streaming setup лінії 754+).
+> - 12 validation-тестів адаптовано на `await expect(...).rejects.toMatchObject({name: "ValidationError"})` (PR-09 phase 2 pattern).
+
 **Surface**
 
 - `apps/server/src/modules/sync/{syncV2,syncV2Stream}.ts`.

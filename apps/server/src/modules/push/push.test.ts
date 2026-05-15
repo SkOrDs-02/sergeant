@@ -209,14 +209,15 @@ describe("push handler VAPID readiness gating", () => {
     vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
 
     const { subscribe } = await import("./push.js");
-    const res = makeRes();
-    // Порожнє body завалить `validateBody` → 400, але ВАЖЛИВО для цього
-    // тесту лише те, що gate-503 не виставився: код != 503.
-    await subscribe(
-      { body: {}, user: { id: "u_test" } } as never,
-      res as never,
-    );
-    expect(res.statusCode).not.toBe(503);
+    // Порожнє body завалить `parseBody` → ValidationError throws, але ВАЖЛИВО
+    // для цього тесту лише те, що 503-gate НЕ виставився: handler дійшов
+    // до body-валідації, тобто vapid-gate (raise 503) пройшов.
+    await expect(
+      subscribe(
+        { body: {}, user: { id: "u_test" } } as never,
+        makeRes() as never,
+      ),
+    ).rejects.toMatchObject({ name: "ValidationError" });
   });
 
   // Edge case — додано в P2-1: `env.VAPID_EMAIL` отримує whitespace.

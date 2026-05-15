@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { bankProxyFetch } from "../../lib/bankProxy.js";
-import { validateQuery } from "../../http/validate.js";
+import { parseQuery } from "../../http/validate.js";
 import { PrivatQuerySchema } from "../../http/schemas.js";
 
 /**
@@ -23,9 +23,8 @@ export default async function handler(
     return;
   }
 
-  const parsedQ = validateQuery(PrivatQuerySchema, req, res);
-  if (!parsedQ.ok) return;
-  const path = String(parsedQ.data.path || "/statements/balance/final");
+  const parsedQ = parseQuery(PrivatQuerySchema, req);
+  const path = String(parsedQ.path || "/statements/balance/final");
 
   const pathAllowed = ALLOWED_PATHS.some(
     (p) => path === p || path.startsWith(p + "/"),

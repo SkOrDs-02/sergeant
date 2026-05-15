@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { TranscribeQuerySchema } from "@sergeant/shared";
-import { validateQuery } from "../../http/validate.js";
+import { parseQuery } from "../../http/validate.js";
 import { transcribeAudio, GroqTranscribeError } from "../../lib/groq.js";
 import { logger } from "../../obs/logger.js";
 import { assertTranscribeUsdCap, recordTranscribeUsdSpend } from "./usdCap.js";
@@ -136,9 +136,7 @@ export default async function transcribeHandler(
     return;
   }
 
-  const parsed = validateQuery(TranscribeQuerySchema, req, res);
-  if (!parsed.ok) return;
-  const { language, prompt } = parsed.data;
+  const { language, prompt } = parseQuery(TranscribeQuerySchema, req);
 
   // M4 — `GROQ_MODEL` is resolved + allowlist-validated at module load,
   // not per request, so a bad env-var fails the boot rather than every

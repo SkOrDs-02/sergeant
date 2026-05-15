@@ -5,7 +5,7 @@ import type { Request, Response } from "express";
 // підставляє Express-type у віддалені від HTTP-ендпоінту місця.
 type FetchResponse = globalThis.Response;
 import { env } from "../../env.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { ChatRequestSchema } from "../../http/schemas.js";
 import {
   anthropicMessages,
@@ -352,16 +352,13 @@ export default async function handler(
     });
   }
 
-  const parsed = validateBody(ChatRequestSchema, req, res);
-  if (!parsed.ok) return;
-
   const {
     context = "",
     messages = [],
     tool_results,
     tool_calls_raw,
     stream,
-  } = parsed.data;
+  } = parseBody(ChatRequestSchema, req);
 
   // Другий крок: клієнт виконав tool calls і повертає результати
   if (tool_results && tool_calls_raw) {

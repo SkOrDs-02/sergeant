@@ -4,7 +4,7 @@ import {
   type FoodSearchProduct,
 } from "@sergeant/shared/schemas";
 import { FoodSearchQuerySchema } from "../../http/schemas.js";
-import { validateQuery } from "../../http/validate.js";
+import { parseQuery } from "../../http/validate.js";
 import {
   normalizeOFFSearch,
   normalizeUSDASearch,
@@ -219,9 +219,7 @@ export default async function handler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const parsed = validateQuery(FoodSearchQuerySchema, req, res);
-  if (!parsed.ok) return;
-  const { q: query, limit } = parsed.data;
+  const { q: query, limit } = parseQuery(FoodSearchQuerySchema, req);
 
   const signal = AbortSignal.timeout(NUTRITION_AI_TIMEOUTS_MS.foodSearch);
 

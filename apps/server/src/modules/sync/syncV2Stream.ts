@@ -1,7 +1,7 @@
 import EventEmitter from "node:events";
 import type { Request, Response } from "express";
 import pool from "../../db.js";
-import { validateQuery } from "../../http/validate.js";
+import { parseQuery } from "../../http/validate.js";
 import { SyncV2PullSchema } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -208,8 +208,10 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
   const start = process.hrtime.bigint();
   const user = (req as WithSessionUser).user!;
 
-  const parsed = validateQuery(SyncV2PullSchema, req, res);
-  if (!parsed.ok) {
+  let parsed: { since: number; limit: number };
+  try {
+    parsed = parseQuery(SyncV2PullSchema, req);
+  } catch (err) {
     try {
       syncOperationsTotal.inc({
         op: "v2_stream",
@@ -223,10 +225,10 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
     } catch {
       /* metrics must never break a request */
     }
-    return;
+    throw err;
   }
   const lastEventId = readLastEventId(req);
-  const since = lastEventId != null ? lastEventId : parsed.data.since;
+  const since = lastEventId != null ? lastEventId : parsed.since;
   const originDeviceId = readOriginDeviceId(req);
 
   // SSE handshake. `flushHeaders` важливий — без нього Node не вишле

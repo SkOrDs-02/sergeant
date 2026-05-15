@@ -6,7 +6,7 @@ import { sendWebPush } from "../../lib/webpushSend.js";
 import { logger } from "../../obs/logger.js";
 import { pushSendsTotal } from "../../obs/metrics.js";
 import { sendToUser } from "../../push/send.js";
-import { validateBody } from "../../http/validate.js";
+import { parseBody } from "../../http/validate.js";
 import { getIp, getPerTargetRateLimit } from "../../http/rateLimit.js";
 import {
   PushRegisterSchema,
@@ -103,9 +103,7 @@ export async function subscribe(req: Request, res: Response): Promise<void> {
   }
 
   const user = (req as WithSessionUser).user!;
-  const parsed = validateBody(PushSubscribeSchema, req, res);
-  if (!parsed.ok) return;
-  const { endpoint, keys } = parsed.data;
+  const { endpoint, keys } = parseBody(PushSubscribeSchema, req);
 
   logger.warn({
     msg: "push_deprecation",
@@ -146,9 +144,7 @@ export async function subscribe(req: Request, res: Response): Promise<void> {
  */
 export async function register(req: Request, res: Response): Promise<void> {
   const user = (req as WithSessionUser).user!;
-  const parsed = validateBody(PushRegisterSchema, req, res);
-  if (!parsed.ok) return;
-  const data = parsed.data;
+  const data = parseBody(PushRegisterSchema, req);
 
   if (data.platform === "web") {
     if (!vapidReady) {
@@ -190,9 +186,7 @@ export async function register(req: Request, res: Response): Promise<void> {
  */
 export async function unsubscribe(req: Request, res: Response): Promise<void> {
   const user = (req as WithSessionUser).user!;
-  const parsed = validateBody(PushUnsubscribeSchema, req, res);
-  if (!parsed.ok) return;
-  const { endpoint } = parsed.data;
+  const { endpoint } = parseBody(PushUnsubscribeSchema, req);
 
   logger.warn({
     msg: "push_deprecation",
@@ -229,9 +223,7 @@ export async function unsubscribe(req: Request, res: Response): Promise<void> {
  */
 export async function unregister(req: Request, res: Response): Promise<void> {
   const user = (req as WithSessionUser).user!;
-  const parsed = validateBody(PushUnregisterSchema, req, res);
-  if (!parsed.ok) return;
-  const data = parsed.data;
+  const data = parseBody(PushUnregisterSchema, req);
 
   if (data.platform === "web") {
     await pool.query(
@@ -303,9 +295,13 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const parsed = validateBody(PushSendSchema, req, res);
-  if (!parsed.ok) return;
-  const { userId, title, body, module: mod, tag } = parsed.data;
+  const {
+    userId,
+    title,
+    body,
+    module: mod,
+    tag,
+  } = parseBody(PushSendSchema, req);
 
   // Per-target rate-limit BEFORE the DB read so a flooder cannot still
   // probe `push_subscriptions` shape via repeated 429s; the bucket key
@@ -429,9 +425,7 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
  */
 export async function pushTest(req: Request, res: Response): Promise<void> {
   const user = (req as WithSessionUser).user!;
-  const parsed = validateBody(PushTestRequestSchema, req, res);
-  if (!parsed.ok) return;
-  const payload = parsed.data;
+  const payload = parseBody(PushTestRequestSchema, req);
 
   const summary = await sendToUser(user.id, {
     title: payload.title,

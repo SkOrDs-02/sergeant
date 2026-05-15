@@ -117,11 +117,11 @@ describe("barcode handler", () => {
   });
 
   describe("validation", () => {
-    it("повертає 400 коли barcode параметр відсутній", async () => {
+    it("throws ValidationError коли barcode параметр відсутній", async () => {
       const req = asReq({});
-      const res = mockRes();
-      await handler(req, res);
-      expect(res.statusCode).toBe(400);
+      await expect(handler(req, mockRes())).rejects.toMatchObject({
+        name: "ValidationError",
+      });
       expect(global.fetch).not.toHaveBeenCalled();
     });
 

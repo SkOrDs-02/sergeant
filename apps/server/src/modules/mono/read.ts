@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { query } from "../../db.js";
-import { validateQuery } from "../../http/validate.js";
+import { parseQuery } from "../../http/validate.js";
 import {
   MonoAccountsResponseSchema,
   MonoTransactionsPageSchema,
@@ -83,10 +83,10 @@ export async function transactionsHandler(
     return;
   }
 
-  const parsed = validateQuery(MonoTransactionsQuerySchema, req, res);
-  if (!parsed.ok) return;
-
-  const { from, to, accountId, limit, cursor } = parsed.data;
+  const { from, to, accountId, limit, cursor } = parseQuery(
+    MonoTransactionsQuerySchema,
+    req,
+  );
 
   // `t.deleted_at IS NULL` — soft-delete фільтр (міграція 024). Активні
   // рядки лежать у partial-індексі `mono_transaction_active_idx`, тому
