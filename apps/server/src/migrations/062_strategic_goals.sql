@@ -33,7 +33,7 @@
 --   * `created_at` + `updated_at` — обидва TIMESTAMPTZ DEFAULT now() для
 --     audit-trail; `updated_at` оновлюється trigger-ом нижче.
 
-CREATE TABLE strategic_goals (
+CREATE TABLE IF NOT EXISTS strategic_goals (
   id              BIGSERIAL    PRIMARY KEY,
   persona         TEXT         NOT NULL,
   founder_user_id TEXT         NOT NULL,
@@ -48,13 +48,13 @@ CREATE TABLE strategic_goals (
 -- Per-persona-week lookup: typical query — "що у мене у `finyk` на цей тиждень?"
 -- Composite index match-ить `WHERE persona = $1 AND week_start = $2` (а також
 -- `WHERE persona = $1 AND week_start BETWEEN …` для PR-35+ history view).
-CREATE INDEX strategic_goals_persona_week_idx
+CREATE INDEX IF NOT EXISTS strategic_goals_persona_week_idx
   ON strategic_goals (persona, week_start);
 
 -- Per-founder lookup: для UI "усі мої goals" (cross-persona).
 -- Окремий index, бо для founder з 4-ма personas × N week-ів cardinality
 -- розрахункова — composite index по persona недостатньо selective.
-CREATE INDEX strategic_goals_founder_week_idx
+CREATE INDEX IF NOT EXISTS strategic_goals_founder_week_idx
   ON strategic_goals (founder_user_id, week_start DESC);
 
 -- Trigger функція — оновлення `updated_at` при будь-якому UPDATE-і.
@@ -68,6 +68,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- PG не підтримує `CREATE TRIGGER IF NOT EXISTS`, тому drop+create —
+-- idempotent pattern. Функція `strategic_goals_set_updated_at()` уже
+-- через `CREATE OR REPLACE` (вище), тож re-run у dev — no-op.
+DROP TRIGGER IF EXISTS strategic_goals_updated_at_trigger ON strategic_goals;
 CREATE TRIGGER strategic_goals_updated_at_trigger
   BEFORE UPDATE ON strategic_goals
   FOR EACH ROW
