@@ -58,10 +58,23 @@ import App from "../App";
  * чутливий UI, зобов'язана викликати `const { status } = useAuth()` і
  * повернути редирект/заглушку при `status !== "authenticated"`.
  * Джерело правди: `apps/web/src/core/auth/AuthContext.tsx`.
+ *
+ * `Component: App` (а не `element: <App />`) — продовження mixed-shape фіксу,
+ * описаного вище. Live-перевірка preview-деплою collapse-route фіксу
+ * показала, що сам по собі catch-all з `element: <App />` все одно лишає
+ * route-match у form `{ hasComponent: false, hasElement: true, hasLazy: false }`.
+ * Через `<App />` як готовий JSX-vnode, створений ОДИН РАЗ at module load,
+ * React reconciler reuse-ить його identity, а location-context subscription
+ * залишається на тому самому fiber-вузлі — `useLocation()` усередині `App`
+ * віддає stale pathname на in-app `navigate()`. `Component: App` змушує
+ * React Router рендерити `<App />` як component, тобто **створювати свіжий
+ * JSX-element при кожному match** із актуальним RouterContext. Це закриває
+ * частину bug-у, яку collapse-route фікс пропустив (підтверджено DOM-side
+ * fiber probe: URL міняється, але hub view не unmount-ить без цього фіксу).
  */
 export const router = createBrowserRouter([
   {
     path: "*",
-    element: <App />,
+    Component: App,
   },
 ]);
