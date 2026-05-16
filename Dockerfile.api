@@ -27,6 +27,17 @@
 # виконати `wget`/`curl`. Railway моніторить через external HTTP-probe
 # на `/health` (service-level config), тому Dockerfile HEALTHCHECK
 # опущено — Railway автоматично рестартить unhealthy container незалежно.
+#
+# Railway Pre-Deploy винятки: Railway виконує `preDeployCommand`
+# (`node dist-server/migrate.js`) через `/bin/sh -c "<cmd>"` всередині
+# того ж runtime-образу. Distroless шела не має, тому pre-deploy
+# мовчки фейлиться (deploy-логи порожні, контейнер не встигає нічого
+# написати). Щоб не ламати release-stage міграцій, у runtime-стейдж
+# нижче запікаємо `busybox` (~1 MB) з alpine-білдера й симлінкуємо
+# його як `/bin/sh`. Це мінімальна додача поверх distroless: жодного
+# package manager-а / coreutils-у не з'являється, а Trivy attack
+# surface зростає тільки на один статичний binary, який і так
+# поставляється з alpine-base-у.
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 1: builder — full dev deps + pnpm build
@@ -115,10 +126,22 @@ RUN find node_modules -maxdepth 3 -type d \
       -prune -exec rm -rf {} +
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Stage 3: runtime — distroless. Жодного shell-у, жодного package manager-у,
-# жодного `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
+# Stage 3: runtime — distroless. Жодного package manager-у, жодного
+# `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
+#
+# Єдиний shell-binary — busybox (див. коментар на початку файлу). Потрібен
+# виключно тому, що Railway виконує `preDeployCommand` через
+# `/bin/sh -c "..."`; без нього release-stage міграцій падає мовчки ще до
+# того, як `node dist-server/migrate.js` встигне щось вивести.
 FROM --platform=linux/amd64 gcr.io/distroless/nodejs20-debian12:nonroot AS runtime
 WORKDIR /app
+
+# Запікаємо busybox як `/bin/sh`. У alpine `/bin/sh` — це симлінк на
+# `/bin/busybox`, але `COPY` Docker-а резолвить симлінки і копіює сам
+# binary, тому файл вийде самодостатній (~1 MB, статично злінкований).
+# Власник `root:root`, права `0755` — наш runtime user `nonroot` (uid
+# 65532) виконує його через PATH-lookup, write-доступ йому не потрібен.
+COPY --from=builder /bin/busybox /bin/sh
 
 ENV NODE_ENV=production
 
