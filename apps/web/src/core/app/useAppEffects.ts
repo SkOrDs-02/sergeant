@@ -22,6 +22,7 @@ type AuthUser = ReturnType<typeof useAuth>["user"];
 
 export interface AppEffectsDeps {
   user: AuthUser;
+  authLoading: boolean;
   ui: HubUIState;
   openModule: HubNavigation["openModule"];
   navigate: NavigateFunction;
@@ -34,7 +35,16 @@ export interface AppEffectsDeps {
 // CustomEvent) into the React tree. Grouped into a single hook so
 // `App.tsx` stays a thin composition shell.
 export function useAppEffects(deps: AppEffectsDeps): void {
-  const { user, ui, openModule, navigate, setPwaAction, validActions } = deps;
+  const {
+    user,
+    authLoading,
+    ui,
+    openModule,
+    navigate,
+    setPwaAction,
+    validActions,
+  } = deps;
+  const { hubView, setHubView } = ui;
 
   // Prefetch critical module chunks once the main thread is free.
   // Previously hard-coded to `setTimeout(2000)`, which over-paid on fast
@@ -61,11 +71,23 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // hub back to the dashboard — the tab itself disappears from the
   // bottom nav (gated on `user`), and without this the main content
   // area would render nothing for the `profile` view.
+  //
+  // BUG FIX (#2935 follow-up): we MUST wait for `authLoading` to settle
+  // before bouncing. Otherwise a deep-link / refresh on `/?tab=profile`
+  // hits cold-start with `user === null` (because `meQuery` hasn't
+  // resolved yet) and the effect fires immediately — flipping the URL
+  // back to `/` and rendering the dashboard while the user is in fact
+  // signed in. Reported symptom: «сторінка профіль не перемикається».
+  // Also: depend on `hubView` + `setHubView` directly, not the entire
+  // `ui` object — `useHubUIState` returns a fresh object every render,
+  // so `[user, ui]` re-runs the effect on every parent render and
+  // amplifies the race.
   useEffect(() => {
-    if (!user && ui.hubView === "profile") {
-      ui.setHubView("dashboard");
+    if (authLoading) return;
+    if (!user && hubView === "profile") {
+      setHubView("dashboard");
     }
-  }, [user, ui]);
+  }, [authLoading, user, hubView, setHubView]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {

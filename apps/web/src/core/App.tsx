@@ -143,6 +143,7 @@ function AppInner() {
 
   useAppEffects({
     user,
+    authLoading,
     ui,
     openModule,
     navigate,
