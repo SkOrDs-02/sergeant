@@ -53,3 +53,13 @@ If you skip step 2 or 3 the new catalog is unenforced and the rule is violated.
 
 - Initiative — [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../../initiatives/0014-knowledge-graph-and-catalogs.md).
 - ADR-0058 — [`docs/adr/0058-knowledge-graph-schema.md`](../../adr/0058-knowledge-graph-schema.md).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+## Recent PRs
+
+| PR | Title | Merged |
+| --- | --- | --- |
+| [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
+
+_Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,15 +1,15 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-05-15",
+  "generated_at": "2026-05-16",
   "counts": {
     "adr": 58,
     "audit": 31,
     "hard-rule": 26,
     "initiative": 49,
-    "playbook": 50,
+    "playbook": 53,
     "pr": 227,
-    "skill": 14
+    "skill": 20
   },
   "nodes": [
     {
@@ -930,7 +930,7 @@
     {
       "id": "audit:2026-08-XX-sync-engine-roast",
       "type": "audit",
-      "title": "Sync Engine Deep Roast — `apps/server/src/routes/syncV2.ts` (stub)",
+      "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "path": "docs/audits/2026-08-XX-sync-engine-roast.md",
       "status": "Draft",
       "tier": "core",
@@ -2208,6 +2208,33 @@
       "title": "Run Access Review",
       "path": "docs/playbooks/run-access-review.md",
       "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:run-squad-deliver",
+      "type": "playbook",
+      "title": "Squad deliver — sequential cross-surface feature delivery",
+      "path": "docs/playbooks/run-squad-deliver.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:run-squad-qa",
+      "type": "playbook",
+      "title": "Squad QA — паралельний QA по всіх surfaces",
+      "path": "docs/playbooks/run-squad-qa.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:run-squad-review",
+      "type": "playbook",
+      "title": "Squad review — паралельний PR review через 4 lens-агентів",
+      "path": "docs/playbooks/run-squad-review.md",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },
@@ -4575,6 +4602,16 @@
       }
     },
     {
+      "id": "skill:sergeant-deliver-squad",
+      "type": "skill",
+      "title": "sergeant-deliver-squad",
+      "path": ".agents/skills/sergeant-deliver-squad/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when implementing a Sergeant feature across 2+ surfaces with contract dependencies (DB + server + api-client + web/mobile) — sequential subagent handoffs prevent bigint and triplet gaps; UA: фіча через 2+ surfaces."
+      }
+    },
+    {
       "id": "skill:sergeant-deploy-and-observability",
       "type": "skill",
       "title": "sergeant-deploy-and-observability",
@@ -4582,6 +4619,16 @@
       "tier": "core",
       "meta": {
         "description": "Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n."
+      }
+    },
+    {
+      "id": "skill:sergeant-e2e-testing",
+      "type": "skill",
+      "title": "sergeant-e2e-testing",
+      "path": ".agents/skills/sergeant-e2e-testing/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when writing, reviewing, or debugging Playwright E2E tests in apps/web; for auth fixtures, network mocking, trace debugging, or CI retry config; UA: Playwright, E2E тести, e2e, smoke test."
       }
     },
     {
@@ -4635,6 +4682,16 @@
       }
     },
     {
+      "id": "skill:sergeant-qa-squad",
+      "type": "skill",
+      "title": "sergeant-qa-squad",
+      "path": ".agents/skills/sergeant-qa-squad/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web, qa-mobile, qa-openclaw as Agent Team in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces."
+      }
+    },
+    {
       "id": "skill:sergeant-review-and-merge",
       "type": "skill",
       "title": "sergeant-review-and-merge",
@@ -4642,6 +4699,26 @@
       "tier": "core",
       "meta": {
         "description": "Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; also for rollback safety checks; UA: ревʼю PR і мердж."
+      }
+    },
+    {
+      "id": "skill:sergeant-review-squad",
+      "type": "skill",
+      "title": "sergeant-review-squad",
+      "path": ".agents/skills/sergeant-review-squad/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use for Sergeant PR review touching 3+ governed surfaces — spawns 4 Agent Team reviewers (contract, design, security, docs) in parallel then synthesizes; UA: ревʼю PR через 3+ governed surfaces паралельно."
+      }
+    },
+    {
+      "id": "skill:sergeant-security-audit",
+      "type": "skill",
+      "title": "sergeant-security-audit",
+      "path": ".agents/skills/sergeant-security-audit/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when running a security review of Sergeant code or API, auditing deps with pnpm audit, or checking PAT/credential safety; before any auth or user-data surface ships; UA: security review, перевірка безпеки, аудит."
       }
     },
     {
@@ -4662,6 +4739,16 @@
       "tier": "core",
       "meta": {
         "description": "Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant."
+      }
+    },
+    {
+      "id": "skill:sergeant-tech-debt",
+      "type": "skill",
+      "title": "sergeant-tech-debt",
+      "path": ".agents/skills/sergeant-tech-debt/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when reducing technical debt, cleaning dead code with Knip, lowering ESLint baseline violations, or tackling Hard Rule #18 (module-size) refactor sprints in Sergeant; UA: технічний борг, dead code, рефакторинг."
       }
     },
     {
@@ -6917,6 +7004,16 @@
       "type": "touched-by"
     },
     {
+      "from": "skill:sergeant-deliver-squad",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-deliver-squad",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
       "from": "skill:sergeant-deploy-and-observability",
       "to": "hard-rule:21",
       "type": "references"
@@ -6967,6 +7064,11 @@
       "type": "touched-by"
     },
     {
+      "from": "skill:sergeant-qa-squad",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
       "from": "skill:sergeant-review-and-merge",
       "to": "hard-rule:10",
       "type": "references"
@@ -6992,6 +7094,31 @@
       "type": "touched-by"
     },
     {
+      "from": "skill:sergeant-review-squad",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-security-audit",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-security-audit",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-security-audit",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-security-audit",
+      "to": "hard-rule:22",
+      "type": "references"
+    },
+    {
       "from": "skill:sergeant-server-api",
       "to": "hard-rule:21",
       "type": "references"
@@ -7005,6 +7132,21 @@
       "from": "skill:sergeant-start-here",
       "to": "pr:1848",
       "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-tech-debt",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-tech-debt",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-tech-debt",
+      "to": "hard-rule:19",
+      "type": "references"
     },
     {
       "from": "skill:sergeant-web-ui",

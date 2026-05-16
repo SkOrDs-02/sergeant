@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8" />
-<title>Sergeant — Knowledge Graph (2026-05-15)</title>
+<title>Sergeant — Knowledge Graph (2026-05-16)</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; color: #111; }
   h1 { margin-top: 0; }
@@ -26,12 +26,11 @@
 </head>
 <body>
 <h1>Sergeant — Knowledge Graph</h1>
-<p class="auto-gen">Generated 2026-05-15 · schema v1 · do not edit by hand — regenerate via <code>pnpm docs:gen-graph</code>.</p>
-<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>23</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>50</b></span> <span class="chip chip-pr">pr: <b>227</b></span> <span class="chip chip-skill">skill: <b>14</b></span></div>
-<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>26</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>50</b></span> <span class="chip chip-pr">pr: <b>222</b></span> <span class="chip chip-skill">skill: <b>14</b></span></div>
+<p class="auto-gen">Generated 2026-05-16 · schema v1 · do not edit by hand — regenerate via <code>pnpm docs:gen-graph</code>.</p>
+<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>26</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>53</b></span> <span class="chip chip-pr">pr: <b>227</b></span> <span class="chip chip-skill">skill: <b>20</b></span></div>
 
 <details open>
-<summary>Nodes (228 core)</summary>
+<summary>Nodes (237 core)</summary>
 <table>
 <thead><tr><th>Type</th><th>Id</th><th>Title</th><th>Status</th><th>Meta</th></tr></thead>
 <tbody>
@@ -123,7 +122,7 @@
 <tr><td>audit</td><td><code>audit:2026-05-13-web-frontend-ergonomics-roast</code></td><td><a href="../../docs/audits/2026-05-13-web-frontend-ergonomics-roast.md">Прожарка #2/10: Web Frontend Ergonomics</a></td><td>Active</td><td></td></tr>
 <tr><td>audit</td><td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td><td><a href="../../docs/audits/2026-05-15-deep-audit-state-of-repo.md">Deep audit — state of repo (2026-05-15)</a></td><td>Active</td><td></td></tr>
 <tr><td>audit</td><td><code>audit:2026-08-XX-openclaw-internal-roast</code></td><td><a href="../../docs/audits/2026-08-XX-openclaw-internal-roast.md">OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` (stub)</a></td><td>Draft</td><td></td></tr>
-<tr><td>audit</td><td><code>audit:2026-08-XX-sync-engine-roast</code></td><td><a href="../../docs/audits/2026-08-XX-sync-engine-roast.md">Sync Engine Deep Roast — `apps/server/src/routes/syncV2.ts` (stub)</a></td><td>Draft</td><td></td></tr>
+<tr><td>audit</td><td><code>audit:2026-08-XX-sync-engine-roast</code></td><td><a href="../../docs/audits/2026-08-XX-sync-engine-roast.md">Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)</a></td><td>Draft</td><td></td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:1</code></td><td><a href="../../docs/governance/hard-rules.json#1">DB types: coerce `bigint` to `number` in serializers</a></td><td></td><td>number=1 · severity=blocker · category=blocker-invariant · scope=[&quot;apps/server/src/modules/**&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:10</code></td><td><a href="../../docs/governance/hard-rules.json#10">Lifecycle markers — every file/doc declares its status</a></td><td></td><td>number=10 · severity=blocker · category=lint-enforced-convention · scope=[&quot;apps/**/*.{ts,tsx,js,jsx,mjs,cjs}&quot;,&quot;packages/**/*.{ts,tsx,js,jsx,mjs,cjs}&quot;,&quot;docs/**/*.md&quot;,&quot;scripts/**/*.{mjs,js}&quot;]</td></tr>
 <tr><td>hard-rule</td><td><code>hard-rule:11</code></td><td><a href="../../docs/governance/hard-rules.json#11">No arbitrary hex colors in `className`</a></td><td></td><td>number=11 · severity=blocker · category=lint-enforced-convention · scope=[&quot;apps/web/src/**&quot;,&quot;apps/mobile/src/**&quot;]</td></tr>
@@ -242,6 +241,9 @@
 <tr><td>playbook</td><td><code>playbook:rotate-openclaw-credentials</code></td><td><a href="../../docs/playbooks/rotate-openclaw-credentials.md">Ротація OpenClaw GitHub credentials</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:rotate-secrets</code></td><td><a href="../../docs/playbooks/rotate-secrets.md">Rotate Secrets</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:run-access-review</code></td><td><a href="../../docs/playbooks/run-access-review.md">Run Access Review</a></td><td>Deprecated</td><td></td></tr>
+<tr><td>playbook</td><td><code>playbook:run-squad-deliver</code></td><td><a href="../../docs/playbooks/run-squad-deliver.md">Squad deliver — sequential cross-surface feature delivery</a></td><td>Active</td><td></td></tr>
+<tr><td>playbook</td><td><code>playbook:run-squad-qa</code></td><td><a href="../../docs/playbooks/run-squad-qa.md">Squad QA — паралельний QA по всіх surfaces</a></td><td>Active</td><td></td></tr>
+<tr><td>playbook</td><td><code>playbook:run-squad-review</code></td><td><a href="../../docs/playbooks/run-squad-review.md">Squad review — паралельний PR review через 4 lens-агентів</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:run-weekly-operator-digest</code></td><td><a href="../../docs/playbooks/run-weekly-operator-digest.md">Тижневий operator-дайджест</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:security-pen-test-checklist</code></td><td><a href="../../docs/playbooks/security-pen-test-checklist.md">Security pen-test checklist for closed hardening cards</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:stabilize-flaky-test</code></td><td><a href="../../docs/playbooks/stabilize-flaky-test.md">Stabilize Flaky Test</a></td><td>Active</td><td></td></tr>
@@ -252,15 +254,21 @@
 <tr><td>skill</td><td><code>skill:better-auth-best-practices</code></td><td><a href="../../.agents/skills/better-auth-best-practices/SKILL.md">better-auth-best-practices</a></td><td></td><td>description=Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-bugfix-and-regression</code></td><td><a href="../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md">sergeant-bugfix-and-regression</a></td><td></td><td>description=Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue — even if the fix seems obvious, always reproduce first; UA: фіксиш баг, регресію, флакі-тест, зламаний деплой.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-data-and-migrations</code></td><td><a href="../../.agents/skills/sergeant-data-and-migrations/SKILL.md">sergeant-data-and-migrations</a></td><td></td><td>description=Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-deliver-squad</code></td><td><a href="../../.agents/skills/sergeant-deliver-squad/SKILL.md">sergeant-deliver-squad</a></td><td></td><td>description=Use when implementing a Sergeant feature across 2+ surfaces with contract dependencies (DB + server + api-client + web/mobile) — sequential subagent handoffs prevent bigint and triplet gaps; UA: фіча через 2+ surfaces.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-deploy-and-observability</code></td><td><a href="../../.agents/skills/sergeant-deploy-and-observability/SKILL.md">sergeant-deploy-and-observability</a></td><td></td><td>description=Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-e2e-testing</code></td><td><a href="../../.agents/skills/sergeant-e2e-testing/SKILL.md">sergeant-e2e-testing</a></td><td></td><td>description=Use when writing, reviewing, or debugging Playwright E2E tests in apps/web; for auth fixtures, network mocking, trace debugging, or CI retry config; UA: Playwright, E2E тести, e2e, smoke test.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-feature-delivery</code></td><td><a href="../../.agents/skills/sergeant-feature-delivery/SKILL.md">sergeant-feature-delivery</a></td><td></td><td>description=Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change needing design, planning, tests, docs, and verification — even if scope looks small; UA: робиш нову фічу/екран/endpoint.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-hubchat</code></td><td><a href="../../.agents/skills/sergeant-hubchat/SKILL.md">sergeant-hubchat</a></td><td></td><td>description=Use when creating, modifying, reviewing, or debugging Sergeant HubChat tool defs, executors, action cards, or chat side effects; also when editing AI prompts or stream; UA: правиш HubChat tool/executor/action card/chat.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-mobile-expo</code></td><td><a href="../../.agents/skills/sergeant-mobile-expo/SKILL.md">sergeant-mobile-expo</a></td><td></td><td>description=Use when editing Sergeant Expo screens, React Native, mobile navigation, MMKV flows, Capacitor shell, or web→mobile ports; also for platform-specific bugs; UA: правиш Expo/RN/MMKV/Capacitor/mobile-shell.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-monorepo-boundaries</code></td><td><a href="../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md">sergeant-monorepo-boundaries</a></td><td></td><td>description=Use when a Sergeant change spans multiple apps/packages, extracts shared logic, or import boundaries are unclear — even if the change seems isolated to one app; UA: межі між app/package, спільна логіка в монорепо.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-openclaw</code></td><td><a href="../../.agents/skills/sergeant-openclaw/SKILL.md">sergeant-openclaw</a></td><td></td><td>description=Use when working on the OpenClaw Gateway service, console agent, @sergeant/openclaw-plugin package, ops/openclaw config, or Telegram bot identity; UA: OpenClaw / gateway / console-agent / openclaw-plugin / Telegram-бот.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-qa-squad</code></td><td><a href="../../.agents/skills/sergeant-qa-squad/SKILL.md">sergeant-qa-squad</a></td><td></td><td>description=Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web, qa-mobile, qa-openclaw as Agent Team in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-review-and-merge</code></td><td><a href="../../.agents/skills/sergeant-review-and-merge/SKILL.md">sergeant-review-and-merge</a></td><td></td><td>description=Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; also for rollback safety checks; UA: ревʼю PR і мердж.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-review-squad</code></td><td><a href="../../.agents/skills/sergeant-review-squad/SKILL.md">sergeant-review-squad</a></td><td></td><td>description=Use for Sergeant PR review touching 3+ governed surfaces — spawns 4 Agent Team reviewers (contract, design, security, docs) in parallel then synthesizes; UA: ревʼю PR через 3+ governed surfaces паралельно.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-security-audit</code></td><td><a href="../../.agents/skills/sergeant-security-audit/SKILL.md">sergeant-security-audit</a></td><td></td><td>description=Use when running a security review of Sergeant code or API, auditing deps with pnpm audit, or checking PAT/credential safety; before any auth or user-data surface ships; UA: security review, перевірка безпеки, аудит.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-server-api</code></td><td><a href="../../.agents/skills/sergeant-server-api/SKILL.md">sergeant-server-api</a></td><td></td><td>description=Use when editing Sergeant server routes, serializers, modules, api-client types, React Query server hooks, or time-sensitive logic; also for middleware or env changes; UA: правиш роути/серіалізатори/RQ-хуки.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-start-here</code></td><td><a href="../../.agents/skills/sergeant-start-here/SKILL.md">sergeant-start-here</a></td><td></td><td>description=Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-tech-debt</code></td><td><a href="../../.agents/skills/sergeant-tech-debt/SKILL.md">sergeant-tech-debt</a></td><td></td><td>description=Use when reducing technical debt, cleaning dead code with Knip, lowering ESLint baseline violations, or tackling Hard Rule #18 (module-size) refactor sprints in Sergeant; UA: технічний борг, dead code, рефакторинг.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-web-ui</code></td><td><a href="../../.agents/skills/sergeant-web-ui/SKILL.md">sergeant-web-ui</a></td><td></td><td>description=Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; also for design tokens or theme; UA: правиш веб-UI/PWA/Tailwind.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-writing-skills</code></td><td><a href="../../.agents/skills/sergeant-writing-skills/SKILL.md">sergeant-writing-skills</a></td><td></td><td>description=Use when creating, editing, or pressure-testing a `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill content; UA: пишеш або редагуєш SKILL.md.</td></tr>
 </tbody>
@@ -268,8 +276,7 @@
 </details>
 
 <details>
-<summary>Edges (466 total, first 500 core-to-core)</summary>
-<summary>Edges (458 total, first 500 core-to-core)</summary>
+<summary>Edges (478 total, first 500 core-to-core)</summary>
 <table>
 <thead><tr><th>From</th><th>Edge</th><th>To</th></tr></thead>
 <tbody>
@@ -413,6 +420,7 @@
 <tr><td><code>playbook:modify-n8n-workflow</code></td><td>references</td><td><code>hard-rule:15</code></td></tr>
 <tr><td><code>playbook:release</code></td><td>references</td><td><code>hard-rule:4</code></td></tr>
 <tr><td><code>playbook:rotate-openclaw-credentials</code></td><td>references</td><td><code>hard-rule:20</code></td></tr>
+<tr><td><code>skill:sergeant-deliver-squad</code></td><td>references</td><td><code>hard-rule:4</code></td></tr>
 <tr><td><code>skill:sergeant-deploy-and-observability</code></td><td>references</td><td><code>hard-rule:21</code></td></tr>
 <tr><td><code>skill:sergeant-deploy-and-observability</code></td><td>references</td><td><code>hard-rule:23</code></td></tr>
 <tr><td><code>skill:sergeant-hubchat</code></td><td>references</td><td><code>hard-rule:20</code></td></tr>
@@ -421,7 +429,14 @@
 <tr><td><code>skill:sergeant-review-and-merge</code></td><td>references</td><td><code>hard-rule:3</code></td></tr>
 <tr><td><code>skill:sergeant-review-and-merge</code></td><td>references</td><td><code>hard-rule:4</code></td></tr>
 <tr><td><code>skill:sergeant-review-and-merge</code></td><td>references</td><td><code>hard-rule:5</code></td></tr>
+<tr><td><code>skill:sergeant-security-audit</code></td><td>references</td><td><code>hard-rule:1</code></td></tr>
+<tr><td><code>skill:sergeant-security-audit</code></td><td>references</td><td><code>hard-rule:20</code></td></tr>
+<tr><td><code>skill:sergeant-security-audit</code></td><td>references</td><td><code>hard-rule:21</code></td></tr>
+<tr><td><code>skill:sergeant-security-audit</code></td><td>references</td><td><code>hard-rule:22</code></td></tr>
 <tr><td><code>skill:sergeant-server-api</code></td><td>references</td><td><code>hard-rule:21</code></td></tr>
+<tr><td><code>skill:sergeant-tech-debt</code></td><td>references</td><td><code>hard-rule:10</code></td></tr>
+<tr><td><code>skill:sergeant-tech-debt</code></td><td>references</td><td><code>hard-rule:18</code></td></tr>
+<tr><td><code>skill:sergeant-tech-debt</code></td><td>references</td><td><code>hard-rule:19</code></td></tr>
 <tr><td><code>skill:sergeant-web-ui</code></td><td>references</td><td><code>hard-rule:16</code></td></tr>
 <tr><td><code>skill:sergeant-writing-skills</code></td><td>references</td><td><code>hard-rule:22</code></td></tr>
 </tbody>

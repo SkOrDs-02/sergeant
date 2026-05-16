@@ -44,6 +44,9 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | Security review, аудит вразливостей, pnpm audit, PAT safety       | `sergeant-security-audit`          |
 | Технічний борг, dead code, ESLint baseline, module-size refactor  | `sergeant-tech-debt`               |
 | Створення / редагування `.agents/skills/**/SKILL.md`             | `sergeant-writing-skills`          |
+| PR review що торкається 3+ governed surfaces                     | `sergeant-review-squad`            |
+| Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |
+| Повний QA по всіх surfaces паралельно                            | `sergeant-qa-squad`                |
 
 ## Політика generic-skill-ів
 

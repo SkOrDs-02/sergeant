@@ -50,6 +50,38 @@
 4. Verify runtime behavior, not just compile success.
 5. Update deploy or observability docs in the same change when operator behavior moves.
 
+## 7. Squad Review (PR touches 3+ governed surfaces)
+
+1. Start with `sergeant-start-here`.
+2. Load `sergeant-review-and-merge`; complete Stage 1 (spec compliance) first.
+3. Load `sergeant-review-squad`.
+4. Create Agent Team with 4 teammates: `contract-reviewer`, `design-reviewer`, `security-reviewer`, `docs-reviewer`.
+5. Give each teammate the PR diff and their Hard Rule scope.
+6. Wait for all 4 reports before synthesizing.
+7. Synthesize findings ordered by production risk: BLOCKER → WARNING → INFO.
+8. Apply Stage 2 (code quality) only after all BLOCKER findings are resolved.
+
+## 8. Squad Deliver (cross-surface feature, 2+ surfaces with contract dependencies)
+
+1. Start with `sergeant-start-here`.
+2. Load `sergeant-feature-delivery` for overall delivery discipline.
+3. Load `sergeant-deliver-squad` for multi-surface coordination.
+4. Sequential: run `migration-agent` if schema changes needed.
+5. Sequential: run `server-agent` with migration report as context.
+6. Sequential: run `api-client-agent` with server response shape as context.
+7. Parallel (if both surfaces touched): spawn `web-agent` + `mobile-agent` as Agent Team.
+8. Run `pnpm typecheck && pnpm test` after all agents complete.
+
+## 9. Squad QA (full cross-surface test validation)
+
+1. Start with `sergeant-start-here`.
+2. Load `sergeant-qa-squad`.
+3. Create Agent Team with 4 teammates: `qa-server`, `qa-web`, `qa-mobile`, `qa-openclaw`.
+4. All 4 run independently in parallel.
+5. Wait for all 4 reports before synthesizing.
+6. Synthesize: overall status + per-surface table + failure details.
+7. For any failures: load `sergeant-bugfix-and-regression` + `fix-failing-ci.md`.
+
 ## 6. OpenClaw Gateway Change
 
 1. Start with `sergeant-start-here`.
