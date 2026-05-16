@@ -16,6 +16,8 @@
     "apps/mobile": {
       "entry": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
       "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+      "ignore": ["metro.config.js"],
+      "metro": false,
       "ignoreDependencies": [
         "sucrase",
         "@babel/preset-typescript",

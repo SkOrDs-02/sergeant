@@ -1,11 +1,14 @@
 /**
- * @status Active
+ * @scaffolded
  * @owner @Skords-01
+ * @nextStep Register the `/offline` path in `StandaloneRoutes.tsx`
+ *           (`apps/web/src/core/app/StandaloneRoutes.tsx`) and add the
+ *           offline navigation-fallback to `apps/web/src/sw.ts` precache
+ *           strategy. Once mounted, drop the tag.
  *
- * Canonical `/offline` surface. Shown by the service worker when the
- * browser can't reach the network and no cached page is available (the
- * "offline navigation-fallback" in the `sw.ts` precache strategy). Also
- * mountable as a standalone route by `StandaloneRoutes`. Uses the
+ * Canonical `/offline` surface. Intended to be shown by the service worker
+ * when the browser can't reach the network and no cached page is available,
+ * and mountable as a standalone route by `StandaloneRoutes`. Uses the
  * `<EmptyState>` primitive + `OfflineIllustration` so the page inherits
  * the design system's a11y, motion, and dark-mode recolouring contracts.
  *
