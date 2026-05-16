@@ -1,10 +1,14 @@
 /**
- * @status Active
+ * @scaffolded
  * @owner @Skords-01
+ * @nextStep Mount inside the top-level error boundary
+ *           (`apps/web/src/core/App.tsx`) as the fallback for unrecoverable
+ *           render-time exceptions, and register `/500` in
+ *           `StandaloneRoutes.tsx`. Once a consumer renders it, drop the tag.
  *
  * Canonical `/500` (server-error) surface. Composed from the design-system
  * `<EmptyState>` primitive + `ServerErrorIllustration`, the same a11y and
- * motion guarantees ship here for free. Mounted by the top-level error
+ * motion guarantees ship here for free. Intended for the top-level error
  * boundary when an unrecoverable render-time exception happens inside the
  * app shell. The primary CTA reloads the current page instead of
  * navigating — a server 500 is often transient, and reloading is the
