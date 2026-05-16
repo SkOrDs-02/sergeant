@@ -87,15 +87,15 @@
 
 **Закрито у follow-up PR** — рядок `2026-05-03-readme-gap-analysis.md` у `docs/audits/README.md` пересинхронізовано з `0/8 ≈ / 8 ≈` на `13/15 ≈ / 2`. `Last validated` у `docs/audits/README.md` бампнуто з посиланням на цей audit § P1-1. Деталі дії перенесено у §Прогрес виконання нижче.
 
-### P1-2. `docs/audits/archive/2026-04-28-ux-ui-audit.md` 3-date canonicalization
+### P1-2. `docs/audits/archive/2026-04-28-ux-ui-audit.md` 3-date canonicalization ✅ Closed (non-actionable)
 
-Файл досі містить 3 окремі дати:
+**Status:** Closed 2026-05-16 as Non-actionable per audit's own recommended action. Файл `Archived` → залишається як-є (read-only historical record). Якщо у майбутньому unarchive — спочатку канонікалізувати у `Last validated` + `Initial audit date` (no third date).
+
+**Original observation:** Файл містить 3 окремі дати:
 
 - `Last validated: 2026-05-13` (header — bump-last-validated.mjs точка істини)
 - `Initial audit date: 2026-04-28` (sub-header — історичний context)
 - `Дата аудиту: 2026-04-28` / `Дата оновлення: ...` (in-content — НЕ дрейфує, але дублює `Initial audit date`)
-
-**Дія (рекомендована):** Файл Archived → залишити як-є (read-only historical record). Якщо у майбутньому unarchive — спочатку канонікалізувати у `Last validated` + `Initial audit date` (no third date).
 
 ### P1-3. `.github/workflows/lighthouse-ci.yml` follow-up
 

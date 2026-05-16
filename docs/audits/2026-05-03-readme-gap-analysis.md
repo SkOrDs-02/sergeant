@@ -1,6 +1,6 @@
 # Аналіз README: чого не вистачає та повний гайд по проєкту
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-11-09.
+> **Last validated:** 2026-05-16 by @claude. **Next review:** 2026-08-14.
 > **Status:** Active
 
 Цей документ робить дві речі:
@@ -580,3 +580,25 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 - [ ] Секція **"Troubleshooting"** — типові проблеми
 - [ ] Секція **"License"**
 - [ ] Посилання на **Feature Flags**, **Observability**, **Roadmap**
+
+> **2026-05-16 closure note (historical snapshot).** Усі 15 пунктів цього чек-листа де-факто покриті у поточному `README.md`. Бокси залишаються `[ ]` свідомо — `2026-05-03-readme-gap-analysis.md` трактується як історичний знімок (status snapshot станом на 2026-05-03), не live tracker. Поточний live-стан і per-section покриття трекаються через лічильник у [`docs/audits/README.md`](./README.md) (рядок `2026-05-03-readme-gap-analysis.md` → `15/15 ¹` / `0 outstanding`).
+>
+> **Per-item mapping до `README.md`:**
+>
+> | Чек-лист item                           | Локація у `README.md`                                                    |
+> | --------------------------------------- | ------------------------------------------------------------------------ |
+> | Modules                                 | `## What is in the repo` → `### Apps` (L63-71) — таблиця apps з модулями |
+> | Tech Stack                              | `## Tech Stack` (L45-60)                                                 |
+> | Prerequisites                           | `## Prerequisites` (L126-130)                                            |
+> | Packages                                | `## What is in the repo` → `### Packages` (L73-93) — повна таблиця       |
+> | Environment Variables                   | `## Quickstart` → `#### 2. Configure environment variables` (L167-182)   |
+> | Quickstart expansion                    | `## Quickstart` → `### Fast path` + `### Manual fallback` (L132-225)     |
+> | Running Mobile                          | `## Quickstart` → `#### 5. (Optional) Mobile app` (L209-217)             |
+> | Running Console Bot                     | `## Quickstart` → `#### 6. (Optional) Telegram bot` (L219-225)           |
+> | Testing                                 | `## Testing` (L252-273)                                                  |
+> | Deployment                              | `## Deployment` (L275-282)                                               |
+> | Architecture                            | `## Architecture` (L94-124) — текстова діаграма у code-block             |
+> | Integrations                            | `## Integrations` (L284-298)                                             |
+> | Troubleshooting                         | `## Troubleshooting` (L300-311)                                          |
+> | License                                 | `## License` (L353)                                                      |
+> | Feature Flags / Observability / Roadmap | `## Feature flags`, `## Observability`, `## Documentation map` (L313+)   |

@@ -230,6 +230,7 @@
   "apps/web/src/shared/components/ui/DropdownMenu.stories.tsx",
   "apps/web/src/shared/components/ui/EmptyState.tsx",
   "apps/web/src/shared/components/ui/FormField.tsx",
+  "apps/web/src/shared/components/ui/InsightCard.tsx",
   "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
   "apps/web/src/shared/components/ui/StreakCelebration.tsx",
   "apps/web/src/shared/components/ui/StreakProtection.tsx",

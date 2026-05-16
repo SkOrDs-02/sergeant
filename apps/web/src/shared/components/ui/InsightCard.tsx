@@ -39,8 +39,8 @@ import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
-import { useInsightDismissal } from "@shared/lib/insights";
-import type { InsightId } from "@shared/lib/insights";
+import { useInsightDismissal } from "@shared/lib/insights/useInsightDismissal";
+import type { InsightId } from "@shared/lib/insights/types";
 
 export interface InsightCardProps {
   /** Stable id for dismissal tracking (e.g. "finyk-coffee-limit-2026-05"). */
@@ -109,7 +109,7 @@ export function InsightCard({
         className={cn(
           "w-8 h-8 rounded-xl shrink-0",
           "flex items-center justify-center",
-          "bg-celebration/22 text-celebration",
+          "bg-celebration/20 text-celebration",
         )}
       >
         <Icon name="sparkle" size={16} strokeWidth={2} />
@@ -121,7 +121,7 @@ export function InsightCard({
         onClick={handleActivate}
         className={cn(
           "flex-1 text-left min-w-0",
-          "focus:outline-none focus-visible:rounded-lg",
+          "focus:outline-none focus-visible:rounded-xl",
           "focus-visible:ring-2 focus-visible:ring-celebration/45",
           "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         )}
@@ -143,9 +143,9 @@ export function InsightCard({
         onClick={handleDismiss}
         aria-label="Закрити пропозицію"
         className={cn(
-          "text-[18px] font-bold text-celebration shrink-0 px-2 -my-1",
+          "text-style-title text-celebration shrink-0 px-2 -my-1",
           "hover:opacity-80 transition-opacity",
-          "focus:outline-none focus-visible:rounded-lg",
+          "focus:outline-none focus-visible:rounded-xl",
           "focus-visible:ring-2 focus-visible:ring-celebration/45",
         )}
       >

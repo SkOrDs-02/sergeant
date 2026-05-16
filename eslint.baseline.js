@@ -146,12 +146,25 @@ export const baseline = [
       //   2. `pnpm lint` keeps a clean signal for genuine regressions.
       // Promote back to "error" after the cleanup PR has migrated the
       // last call-site (mirrors the WCAG-`-strong` policy below).
+      //
+      // Current scoreboard (2026-05-16 sweep across apps/web, apps/mobile,
+      // apps/mobile-shell, apps/server, tools/openclaw):
+      //   static-components            — 0 ✅ promoted to "error" below
+      //   use-memo                     — 4 (apps/web)
+      //   immutability                 — 7 (web 3 + mobile 4)
+      //   preserve-manual-memoization  — 9 (web 7 + mobile 2)
+      //   purity                       — 17 (apps/web)
+      //   refs                         — 37 (apps/web)
+      //   set-state-in-effect          — 78 (apps/web)
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/purity": "off",
       "react-hooks/refs": "off",
       "react-hooks/immutability": "off",
-      "react-hooks/static-components": "off",
+      // `static-components` cleared the monorepo — no component is defined
+      // inside the body of another component. Promoted from "off" to
+      // "error" so the baseline holds; next regression fails lint loudly.
+      "react-hooks/static-components": "error",
       "react-hooks/use-memo": "off",
       // Design-system guardrail — the canonical eyebrow label must go
       // through <SectionHeading> (or <Label>) so tone/size changes stay

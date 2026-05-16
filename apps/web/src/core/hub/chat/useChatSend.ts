@@ -6,6 +6,7 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,
@@ -42,31 +43,23 @@ function kyivDayKey(date = new Date()): string {
   }).format(date);
 }
 
-function readDailyChatCount(): { day: string; count: number } {
-  if (typeof localStorage === "undefined") {
-    return { day: kyivDayKey(), count: 0 };
-  }
+type DailyChatCounter = { day: string; count: number };
+
+function readDailyChatCount(): DailyChatCounter {
   const today = kyivDayKey();
-  try {
-    const parsed = JSON.parse(
-      localStorage.getItem(DAILY_CHAT_COUNT_KEY) || "null",
-    ) as { day?: unknown; count?: unknown } | null;
-    if (parsed?.day === today && typeof parsed.count === "number") {
-      return { day: today, count: Math.max(0, parsed.count) };
-    }
-  } catch {
-    /* corrupt local counter — reset below */
+  const parsed = safeReadLS<DailyChatCounter>(DAILY_CHAT_COUNT_KEY);
+  if (parsed?.day === today && typeof parsed.count === "number") {
+    return { day: today, count: Math.max(0, parsed.count) };
   }
   return { day: today, count: 0 };
 }
 
 function incrementDailyChatCount(): void {
-  if (typeof localStorage === "undefined") return;
   const current = readDailyChatCount();
-  localStorage.setItem(
-    DAILY_CHAT_COUNT_KEY,
-    JSON.stringify({ day: current.day, count: current.count + 1 }),
-  );
+  safeWriteLS(DAILY_CHAT_COUNT_KEY, {
+    day: current.day,
+    count: current.count + 1,
+  });
 }
 
 export interface UseChatSendOptions {
