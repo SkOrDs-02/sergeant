@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useBrowserLocation } from "../../../core/hooks/useBrowserLocation";
 import {
   fizrukRoutePath,
   parseFizrukSegments,
@@ -58,7 +59,8 @@ function pathnameToSegments(pathname: string): string[] {
 export function useFizrukRoute(
   defaultPage: FizrukPage = "dashboard",
 ): UseFizrukRouteResult {
-  const location = useLocation();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
   const navigateRR = useNavigate();
 
   const parsed = useMemo(() => {

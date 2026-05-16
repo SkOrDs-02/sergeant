@@ -32,7 +32,7 @@ function ensureHistoryPatch(): void {
 }
 
 function getSnapshot(): string {
-  if (typeof window === "undefined") return "/";
+  if (typeof window === "undefined") return "0\n/";
   return `${browserLocationChangeCount}\n${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useBrowserLocation } from "../../../core/hooks/useBrowserLocation";
 import {
   finykRoutePath,
   parseFinykSegments,
@@ -27,7 +28,8 @@ import {
 export function useFinykRoute(
   defaultPage: FinykPage = "overview",
 ): [FinykPage, (p: FinykPage | string) => void] {
-  const location = useLocation();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
   const navigate = useNavigate();
 
   const page = useMemo(() => {
@@ -84,7 +86,9 @@ export function useFinykRoute(
  * time this hook reads the value the param lives in the canonical place.
  */
 export function useFinykQueryParam(name: string): string | null {
-  const [searchParams] = useSearchParams();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
+  const searchParams = new URLSearchParams(location.search);
   return searchParams.get(name);
 }
 

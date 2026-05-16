@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useBrowserLocation } from "../../../core/hooks/useBrowserLocation";
 import {
   parseLegacyRoutineHash,
   parseRoutineSegments,
@@ -31,7 +32,8 @@ export interface UseRoutineRouteResult {
 export function useRoutineRoute(
   defaultPage: RoutinePage = "calendar",
 ): UseRoutineRouteResult {
-  const location = useLocation();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
   const navigateRR = useNavigate();
 
   const page = useMemo<RoutinePage>(() => {

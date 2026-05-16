@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useBrowserLocation } from "../../../core/hooks/useBrowserLocation";
 import {
   buildNutritionPath,
   nutritionRoutePath,
@@ -50,7 +51,8 @@ function pathnameToSegments(pathname: string): string[] {
 }
 
 export function useNutritionRoute(): UseNutritionRouteResult {
-  const location = useLocation();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
   const navigate = useNavigate();
 
   const parsed = useMemo(
