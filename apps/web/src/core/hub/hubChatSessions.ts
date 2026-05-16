@@ -4,6 +4,7 @@ import {
   safeRemoveLS,
   safeWriteLS,
 } from "@shared/lib/storage/storage";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
 
 export const SESSIONS_STORAGE_KEY = "hub_chat_sessions_v1";
@@ -41,11 +42,13 @@ export function deriveSessionTitle(
     const text = firstUser.text.trim().replace(/\s+/g, " ");
     return text.length > 40 ? `${text.slice(0, 40)}…` : text;
   }
-  const date = new Date(createdAt);
-  const dd = String(date.getDate()).padStart(2, "0");
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const min = String(date.getMinutes()).padStart(2, "0");
+  // Kyiv-local parts so session titles read consistently regardless of
+  // the host device timezone (consolidated page-audit § Theme 1 — 03 F1).
+  const { day, month, hour, minute } = getKyivDateParts(createdAt);
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+  const hh = String(hour).padStart(2, "0");
+  const min = String(minute).padStart(2, "0");
   return `Бесіда ${dd}.${mm} ${hh}:${min}`;
 }
 

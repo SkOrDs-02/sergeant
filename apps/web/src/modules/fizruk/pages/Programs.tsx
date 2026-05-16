@@ -6,6 +6,7 @@ import { useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
+import { getKyivMondayIndex } from "@shared/lib/time/kyivTime";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import {
   BUILTIN_PROGRAMS,
@@ -40,7 +41,10 @@ export function Programs({
   const { exercises } = useExerciseCatalog();
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
 
-  const todayDayIndex = (new Date().getDay() + 6) % 7;
+  // Monday-anchored "today" index in Kyiv local time so the "Розпочати
+  // сьогодні" CTA matches the user's actual day (consolidated page-audit
+  // § Theme 1 — 07 F2).
+  const todayDayIndex = getKyivMondayIndex();
 
   return (
     <div className="flex-1 overflow-y-auto">

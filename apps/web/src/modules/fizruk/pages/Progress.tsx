@@ -17,13 +17,13 @@ import { epley1rm, weeklyVolumeSeriesNow } from "@sergeant/fizruk-domain";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
+import { getKyivWeekStart } from "@shared/lib/time/kyivTime";
 
 function weekStartMs(d: number | string | Date) {
-  const x = new Date(d);
-  const day = (x.getDay() + 6) % 7;
-  x.setHours(0, 0, 0, 0);
-  x.setDate(x.getDate() - day);
-  return x.getTime();
+  // Domain-correct (Kyiv) week boundary so weekly-volume bars don't
+  // shift when the user roams (consolidated page-audit § Theme 1 — 07 F1).
+  const ts = typeof d === "number" ? d : new Date(d).getTime();
+  return getKyivWeekStart(ts).getTime();
 }
 
 interface ProgressProps {

@@ -31,6 +31,7 @@ import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useRoutineRoute } from "./hooks/useRoutineRoute";
 import { useFinykHubPreview } from "../../core/hub/useFinykHubPreview";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
@@ -254,7 +255,11 @@ export function useRoutineAppState({
     try {
       const params = new URLSearchParams(window.location.search);
       const q = params.get("routineDay");
-      if (q && /^\d{4}-\d{2}-\d{2}$/.test(q)) {
+      // Validate the calendar date itself, not just the regex shape, so
+      // `?routineDay=2026-02-30` is rejected (consolidated page-audit
+      // § Theme 1 — 09 F6). `parseKyivDate` returns `null` for bad
+      // calendar dates without throwing.
+      if (q && parseKyivDate(q)) {
         time.deepLinkDay(q);
         // Видаляємо параметр після застосування, щоб back-навігація чи
         // рефреш не запускали стрибок у "day"-режим повторно. Йдемо

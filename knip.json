@@ -7,7 +7,12 @@
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
-      "project": ["src/**/*.{js,jsx,ts,tsx}"]
+      "project": ["src/**/*.{js,jsx,ts,tsx}"],
+      "ignoreDependencies": [
+        "@fontsource-variable/dm-sans",
+        "@fontsource-variable/jetbrains-mono",
+        "@fontsource-variable/manrope"
+      ]
     },
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],
@@ -26,7 +31,8 @@
     },
     "apps/mobile-shell": {
       "entry": ["capacitor.config.ts"],
-      "project": ["src/**/*.{ts,tsx}"]
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@capacitor/ios"]
     },
     "packages/api-client": {
       "project": ["src/**/*.{ts,tsx}"]

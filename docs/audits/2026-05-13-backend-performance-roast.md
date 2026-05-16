@@ -175,11 +175,9 @@ migration), поза скоупом цієї прожарки.
   у наступній мобільно-фокусній прожарці (#5/10 — Mobile App, або
   #6/10 — Data Layer).
 
-### P2-4. Documentation gap: per-model AI-token join-pattern ❌ Низький impact
+### P2-4. Documentation gap: per-model AI-token join-pattern ✅ Closed
 
-- **File:** [`docs/observability/metrics.md`](../observability/metrics.md) §6
-- **Why виносимо:** мінорна документаційна правка, можна закрити одним
-  commit-ом будь-якій сесії.
+- **Status:** Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)). `docs/observability/metrics.md §6` had a stray copy-paste leftover at L216-225 — an orphan `* on(instance) group_left(release) app_build_info` followed by duplicate Voyage tokens/USD blocks that already appeared earlier in the section. Cleaned up; the section now ends cleanly after the cheap-tier breakdown. The canonical per-model join-pattern documentation (Anthropic + Voyage + cheap-tier USD breakdowns + the "unknown-model drift" PromQL idiom via `app_build_info`, cross-referenced to §15a) is intact.
 
 ### P2-5. `pool.end()` failure handling під час shutdown ✅ Closed in this PR
 

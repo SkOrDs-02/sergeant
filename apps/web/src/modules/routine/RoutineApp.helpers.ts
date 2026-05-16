@@ -8,6 +8,7 @@
  * mounting a component tree.
  */
 
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   dateKeyFromDate,
   FIZRUK_GROUP_LABEL,
@@ -36,9 +37,13 @@ export const GROUP_ORDER = [
 ];
 
 export function todayDate(): Date {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  return d;
+  // Returns a `Date` whose **local** year/month/day match Kyiv's, set at
+  // local noon to keep `dateKeyFromDate()` (which uses local-TZ getters
+  // by routine-domain contract) anchored on the correct calendar day for
+  // users whose host clock is not in Europe/Kyiv (consolidated page-audit
+  // § Theme 1 — 09 F3).
+  const { year, month, day } = getKyivDateParts();
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
 export function monthBounds(y: number, m0: number): DateRange {

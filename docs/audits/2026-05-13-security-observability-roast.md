@@ -82,10 +82,10 @@
 
 **Зроблено:** `apps/server/src/obs/logger.ts` тепер експонує `redactKeysRecursively` (non-mutating, cycle-safe `WeakSet`) як `formatters.log`-хук; він ходить по всіх рівнях merged-лог-обʼєкта і маскує ключі з `REDACT_KEY_NAMES` (case-insensitive) незалежно від глибини (3+ рівні `req.body.nested.user.password` більше не витікають). Старі статичні варіанти (`*.password`, `*.*.password`, `*.email`, `*.*.email`, `*.*.password`, `req.body.email`, `res.body.email`, ...) видалено — вони були редундантні до рекурсивного walker-а. `logger.test.ts` розширено новим `S4 — recursive redactor (deep nesting)` describe-блоком: happy-path acceptance criteria (3-level password, substring `'x'` не їсть в stringify-output) + edge case-и (4-level email, sensitive-keys в масивах, case-insensitive `Password`/`AUTHORIZATION`, object-valued sensitive keys в `null`, cycle-safety).
 
-### S5 — OTel denylist parity test
+### S5 — OTel denylist parity test ✅ Closed
 
-- **Add:** `apps/server/src/obs/tracing.test.ts` (новий) — інстансіювати NodeSDK у dryRun-mode, створити span з атрибутом-ключем з `REDACT_KEY_NAMES`, переконатися, що exporter не бачить значення.
-- **Why:** Зараз denylist у `tracing.ts` — статичний список у коментарі. Drift між `@sergeant/shared/lib/pii.ts` і OTel-config-ом ловиться тільки code-review-ом.
+- **Status:** Already covered. `apps/server/src/obs/tracing.test.ts:115-127` describe-block `OTel PII denylist parity` iterates over every `REDACT_KEY_NAMES` entry (1st `it`) and over every `HEADER_DENYLIST` entry (2nd `it`), asserting both sets are contained in `OTEL_ATTRIBUTE_DENYLIST`. Drift between `@sergeant/shared/lib/pii.ts` and the OTel config is caught by the test, not just review.
+- **Implementation:** `apps/server/src/obs/tracing.ts:114-117` constructs `OTEL_ATTRIBUTE_DENYLIST` as the union of lowercased `REDACT_KEY_NAMES` and `HEADER_DENYLIST` — the test consumes the same constants the runtime uses, so any new redact key automatically lands in the denylist.
 
 ### S6 (closed у цьому PR) — PBKDF2 ramp-up (200k → 600k iterations) ✅ Closed in #2741
 
@@ -117,9 +117,9 @@
 - **Change:** `apps/web/src/core/observability/sentry.ts:163` — після `setTag('platform', ...)` додати `setTag('cspMode', cspReportOnly ? 'report-only' : 'enforce')` (читати з `import.meta.env.VITE_CSP_REPORT_ONLY`).
 - **Why:** Sentry search `cspMode:enforce AND directive:script-src` дозволяє за хвилину побачити, чи CSP-tightening регресував. Без тегу — треба фільтрувати руками.
 
-### S10 — pii-handling.md drift guard
+### S10 — pii-handling.md drift guard ✅ Closed
 
-- **Already done у цьому PR:** оновлено посилання на `@sergeant/shared/lib/pii.ts` як single source. Запропоновано подальший lint: якщо у `apps/server/src/obs/logger.ts` хтось додає новий рядок до колишнього `redactKeyNames`-літералу — fail. Зараз це лише back-compat-alias, тож додати треба у shared.
+- **Status:** Verified 2026-05-16. `apps/server/src/obs/logger.ts:3` imports `REDACT_KEY_NAMES` directly from `@sergeant/shared` — there is no back-compat `redactKeyNames` literal in `logger.ts` to drift. The shared package is the single source; both Pino redact paths (`apps/server/src/obs/logger.ts:97-198`) and OTel attribute denylist (`apps/server/src/obs/tracing.ts:114-117`) consume the same constant. A dedicated lint is unnecessary — drift would require touching the import line itself, which is reviewer-visible by convention.
 
 ### S11 — CSP `<meta>` ↔ `vercel.json` parity test
 

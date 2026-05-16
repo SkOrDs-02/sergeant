@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   dateKeyFromDate,
   parseDateKey,
@@ -22,9 +23,12 @@ import {
 import type { Habit, RoutineState } from "../lib/types";
 
 function todayKey(): string {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  return dateKeyFromDate(d);
+  // Kyiv-anchored "today" so completion stats don't shift around the
+  // user's host TZ (consolidated page-audit § Theme 1 — 09 F3). `dateKeyFromDate`
+  // reads local-TZ getters, so the constructed Date uses Kyiv parts at
+  // local noon to make those getters return Kyiv values regardless of host.
+  const { year, month, day } = getKyivDateParts();
+  return dateKeyFromDate(new Date(year, month - 1, day, 12, 0, 0, 0));
 }
 
 function monthGrid(y: number, m: number): Array<number | null> {
@@ -87,10 +91,12 @@ export function HabitDetailSheet({
   );
   const tk = todayKey();
 
-  const now = new Date();
+  // Kyiv "current month" for the calendar cursor so it matches the
+  // user's domain calendar (consolidated page-audit § Theme 1 — 09 F3).
+  const nowKyiv = getKyivDateParts();
   const [calMonth, setCalMonth] = useState<MonthCursor>({
-    y: now.getFullYear(),
-    m: now.getMonth(),
+    y: nowKyiv.year,
+    m: nowKyiv.month - 1,
   });
 
   const tag = useMemo<string[]>(() => {

@@ -9,6 +9,7 @@ import type {
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { getCategory, getIncomeCategory } from "../../utils";
 import {
@@ -20,7 +21,18 @@ import {
   writeDayCollapse,
 } from "./transactionsLib";
 
-const now = new Date();
+/**
+ * Current Kyiv-local `{ year, month0 }` (month is 0-indexed to match the
+ * legacy `Date#getMonth()` shape consumed by `selMonth` state). Called
+ * fresh on every read so the comparison stays correct when the user
+ * keeps the tab open across midnight / month boundaries. Previously this
+ * was `const now = new Date()` at module load, which froze the "current
+ * month" at import time (consolidated page-audit § Theme 1 — 05 F6).
+ */
+function kyivNowMonth(): { year: number; month: number } {
+  const parts = getKyivDateParts();
+  return { year: parts.year, month: parts.month - 1 };
+}
 
 export interface UseTransactionFiltersParams {
   /** Real Monobank transactions for the current month. */
@@ -76,10 +88,7 @@ export function useTransactionFilters({
 }: UseTransactionFiltersParams) {
   const [filter, setFilter] = useState("all");
   const [showHidden, setShowHidden] = useState(false);
-  const [selMonth, setSelMonth] = useState(() => ({
-    year: now.getFullYear(),
-    month: now.getMonth(),
-  }));
+  const [selMonth, setSelMonth] = useState(() => kyivNowMonth());
 
   useEffect(() => {
     if (categoryFilter) {
@@ -88,8 +97,9 @@ export function useTransactionFilters({
     }
   }, [categoryFilter, onClearCategoryFilter]);
 
+  const { year: kyivNowY, month: kyivNowM } = kyivNowMonth();
   const isCurrentMonth =
-    selMonth.year === now.getFullYear() && selMonth.month === now.getMonth();
+    selMonth.year === kyivNowY && selMonth.month === kyivNowM;
 
   const manualExpenseTxs = useMemo(() => {
     const monthStart = new Date(selMonth.year, selMonth.month, 1).getTime();
@@ -123,7 +133,8 @@ export function useTransactionFilters({
           m = 0;
           y++;
         }
-        if (!(y === now.getFullYear() && m === now.getMonth()))
+        const todayKyiv = kyivNowMonth();
+        if (!(y === todayKyiv.year && m === todayKyiv.month))
           // Fire-and-forget: `fetchMonth` may reject (e.g. when monobank
           // is disconnected). The page degrades gracefully to its empty
           // state, so we just swallow the rejection here to keep the

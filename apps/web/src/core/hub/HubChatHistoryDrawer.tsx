@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { getKyivDateParts, isSameKyivDay } from "@shared/lib/time/kyivTime";
 import type { HubChatSession } from "./hubChatSessions";
 
 interface HubChatHistoryDrawerProps {
@@ -20,17 +21,14 @@ interface HubChatHistoryDrawerProps {
 }
 
 function formatStamp(ts: number): string {
-  const d = new Date(ts);
-  const today = new Date();
-  const sameDay =
-    d.getFullYear() === today.getFullYear() &&
-    d.getMonth() === today.getMonth() &&
-    d.getDate() === today.getDate();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  if (sameDay) return `${hh}:${mm}`;
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  // "Today" / "older" decision in Kyiv local time so users abroad don't
+  // see drawer entries jump days (consolidated page-audit § Theme 1 — 03 F2).
+  const parts = getKyivDateParts(ts);
+  const hh = String(parts.hour).padStart(2, "0");
+  const mm = String(parts.minute).padStart(2, "0");
+  if (isSameKyivDay(ts)) return `${hh}:${mm}`;
+  const dd = String(parts.day).padStart(2, "0");
+  const mo = String(parts.month).padStart(2, "0");
   return `${dd}.${mo} ${hh}:${mm}`;
 }
 

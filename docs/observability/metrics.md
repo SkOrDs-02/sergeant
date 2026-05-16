@@ -213,16 +213,6 @@ sum by (release) (
   increase(ai_cost_estimate_usd_total{provider="voyage",model="voyage-3.5-lite"}[24h])
   * on() group_left(release) app_build_info
 )                                                                                          # Voyage cheap-tier USD/24h split-нуті за release
-  * on(instance) group_left(release) app_build_info
-)                                                                                          # Anthropic USD/24h per model+release
-sum by (model, release) (
-  increase(ai_tokens_total{provider="voyage", endpoint="embed"}[24h])
-  * on(instance) group_left(release) app_build_info
-)                                                                                          # Voyage embedding input tokens/24h per model+release
-sum by (model, release) (
-  increase(ai_cost_estimate_usd_total{provider="voyage", endpoint="embed"}[24h])
-  * on(instance) group_left(release) app_build_info
-)                                                                                          # Voyage USD/24h per model+release
 ```
 
 Join-pattern із `app_build_info` (один gauge=1 на інстанс із лейблом `release`) дає per-release breakdown без копіювання `release` у кожен emitter — повний контракт цієї серії і ще приклади для `http_*` метрик див. [§15a](#15a-buildrelease-identity-app_build_info).

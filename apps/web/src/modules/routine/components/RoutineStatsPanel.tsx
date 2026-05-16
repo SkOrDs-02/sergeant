@@ -8,6 +8,7 @@ import { HabitHeatmap } from "./HabitHeatmap";
 import { HabitLeadersBlock } from "./HabitLeadersBlock";
 import { completionRateForRange, maxStreakAllTime } from "../lib/streaks";
 import { dateKeyFromDate, parseDateKey } from "../lib/hubCalendarAggregate";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import type { RoutineState } from "../lib/types";
 
@@ -29,7 +30,9 @@ export function RoutineStatsPanel({
   currentStreak,
   hidden,
 }: RoutineStatsPanelProps) {
-  const todayKey = dateKeyFromDate(new Date());
+  // Kyiv-anchored "today" so day-aggregated stats don't shift around
+  // host TZ (consolidated page-audit § Theme 1 — 09 F3).
+  const todayKey = getKyivDayKey();
 
   const summary = useMemo(() => {
     const habits = routine.habits || [];

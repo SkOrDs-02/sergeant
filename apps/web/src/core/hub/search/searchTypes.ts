@@ -1,5 +1,6 @@
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import type { AssistantCapability } from "@sergeant/shared";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { HubModuleAction, HubModuleId } from "@shared/lib/modules/hubNav";
 import { scoreMatch } from "../hubSearchEngine";
 
@@ -57,7 +58,12 @@ export function pushScored(
   return acc.length >= limit;
 }
 
-/** YYYY-MM-DD in local time. Shared by every per-module source. */
-export function localDateKey(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/**
+ * `YYYY-MM-DD` day key in Kyiv local time. Shared by every per-module
+ * source. Domain timezone is fixed (Sergeant ships Ukraine-only for the
+ * launch window) — host TZ would scatter day-grouped results across the
+ * boundary when the user roams (consolidated page-audit § Theme 1 — 03 F8).
+ */
+export function localDateKey(d: Date | number = new Date()): string {
+  return getKyivDayKey(d);
 }

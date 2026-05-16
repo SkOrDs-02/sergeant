@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { chartHeatmap } from "@shared/charts/chartTheme";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Habit, RoutineState } from "../lib/types";
 
 const WEEKS = 53;
@@ -76,8 +77,13 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   );
 
   const { weeks, monthMarkers } = useMemo(() => {
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
+    // Anchor "today" on Kyiv local calendar so the heatmap's "today" cell
+    // doesn't drift to a different square when the user roams
+    // (consolidated page-audit § Theme 1 — 09 F3). Construct as local-noon
+    // of Kyiv-Y/M/D so the subsequent local-TZ getters preserve the
+    // calendar day across host TZ.
+    const { year, month, day } = getKyivDateParts();
+    const today = new Date(year, month - 1, day, 12, 0, 0, 0);
     const todayKey = localDateKey(today);
 
     const dow = (today.getDay() + 6) % 7;
