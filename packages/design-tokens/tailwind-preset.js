@@ -572,6 +572,13 @@ const preset = {
         "card-routine-dark": "var(--gradient-card-routine-dark)",
         "card-nutrition-dark": "var(--gradient-card-nutrition-dark)",
 
+        // Module hero gradients — CSS vars defined in theme.css:705-708.
+        // Used by PR-E..PR-H module page headers (bg-hero-grad-* utility).
+        "hero-grad-finyk": "var(--hero-grad-finyk)",
+        "hero-grad-fizruk": "var(--hero-grad-fizruk)",
+        "hero-grad-routine": "var(--hero-grad-routine)",
+        "hero-grad-nutrition": "var(--hero-grad-nutrition)",
+
         hero: "linear-gradient(150deg, #fdf9f3 0%, #fefdfb 100%)",
         "hero-g": "linear-gradient(150deg, #f0fdfa 0%, #ffffff 100%)",
         "routine-hero":
