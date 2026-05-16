@@ -37,6 +37,9 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 | [`sergeant-security-audit`](../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain |
 | [`sergeant-tech-debt`](../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline     | Knip, eslint-baseline.js, module-size #18, noUncheckedIndexedAccess #19 |
 | [`sergeant-writing-skills`](../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`   | TDD-for-skills, frontmatter shape, lock SHA-256, security scan |
+| [`sergeant-review-squad`](../../.agents/skills/sergeant-review-squad/SKILL.md)                         | PR review across 3+ governed surfaces via Agent Team | Parallel lens coverage (contract, design, security, docs) |
+| [`sergeant-deliver-squad`](../../.agents/skills/sergeant-deliver-squad/SKILL.md)                       | Cross-surface feature delivery (DB→server→api-client→web/mobile) | Sequential handoff order, bigint coercion chain, contract triplet |
+| [`sergeant-qa-squad`](../../.agents/skills/sergeant-qa-squad/SKILL.md)                                 | Full QA across all surfaces in parallel  | Per-surface test + typecheck, all 4 surfaces before synthesis  |
 
 ## Preferred Routing by Scenario
 

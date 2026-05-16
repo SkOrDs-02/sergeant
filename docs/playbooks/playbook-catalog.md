@@ -27,6 +27,9 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Modify or add an n8n workflow          | [`modify-n8n-workflow.md`](./modify-n8n-workflow.md)                     | `sergeant-deploy-and-observability`                     | Human + agent |
 | Cutover OpenClaw to external Gateway   | [`cutover-openclaw-gateway.md`](./cutover-openclaw-gateway.md)           | `sergeant-deploy-and-observability`                     | Human + agent |
 | Review / merge gate                    | [`../governance/review-checklist.md`](../governance/review-checklist.md) | `sergeant-review-and-merge`                             | Human + agent |
+| PR review across 3+ governed surfaces  | [`run-squad-review.md`](./run-squad-review.md)                           | `sergeant-review-squad`                                 | Human + agent |
+| Cross-surface feature delivery (DB→server→web) | [`run-squad-deliver.md`](./run-squad-deliver.md)                 | `sergeant-deliver-squad`                                | Human + agent |
+| Full QA across all surfaces in parallel | [`run-squad-qa.md`](./run-squad-qa.md)                                  | `sergeant-qa-squad`                                     | Human + agent |
 
 ## Повний inventory
 
