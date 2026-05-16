@@ -23,7 +23,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 Визначай склад на основі типу питання:
 
-```
+```text
 Стратегія / напрямок / «що робити»   → product + ux + growth + critic
 Технічне / реалізація / «як зробити» → tech + product + critic (+ ux якщо є UI)
 Маркетинг / зріст / просування       → growth + ux + product + critic
@@ -43,7 +43,7 @@ UX / юзер-досвід / зручність         → ux + product + criti
 
 ## Як запустити
 
-```
+```text
 Create an agent team to advise on: [опис ситуації/питання]
 Spawn [N] teammates based on the question type:
 1. council-product-strategist — оцінює продуктову цінність і пріоритети

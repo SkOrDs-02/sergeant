@@ -53,6 +53,18 @@ Give each teammate the PR diff. Ask each to send findings to the lead when done.
 
 Після вирішення всіх BLOCKER findings — виконай Stage 2 із `sergeant-review-and-merge`.
 
+## Owner surface
+
+- Primary surface: будь-яка з governed surfaces що зачіпає PR (server, web, mobile, migrations)
+- Coupled surface: `packages/api-client` — contract triplet перевіряється contract-reviewer
+- Governing skill: `sergeant-review-squad`
+
+## Verification
+
+- [ ] Всі 4 reviewer-агенти (contract, design, security, docs) завершили і надіслали findings
+- [ ] Немає BLOCKERs — або вони задокументовані і вирішені перед merge
+- [ ] Consolidated review comment виведено за рівнями ризику (BLOCKER → WARNING → INFO)
+
 ## Common mistakes
 
 - Запускати lens-review замість Stage 1 (spec-compliance) — lens не замінює Stage 1

@@ -47,6 +47,18 @@ All run independently. Report to the lead when done.
 
 Якщо є failures — завантаж `sergeant-bugfix-and-regression` і `fix-failing-ci.md` playbook для кожної зламаної surface.
 
+## Owner surface
+
+- Primary surface: `apps/server`, `apps/web`, `apps/mobile`, `tools/openclaw`
+- Coupled surface: n/a — паралельна перевірка незалежних surfaces
+- Governing skill: `sergeant-qa-squad`
+
+## Verification
+
+- [ ] Всі 4 qa-агенти (server, web, mobile, openclaw) завершили і надіслали звіт
+- [ ] Synthesis містить per-surface таблицю Tests / Typecheck / Failures
+- [ ] Зелений статус (`🟢 All surfaces green`) або failures передані до `sergeant-bugfix-and-regression`
+
 ## Коли НЕ використовувати
 
 - Для звичайного pre-PR check — `pnpm check` достатньо і швидше

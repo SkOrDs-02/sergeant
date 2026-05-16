@@ -616,6 +616,7 @@ function renderHTML(graph) {
   );
 
   return `<!doctype html>
+<!-- AUTO-GENERATED -->
 <html lang="uk">
 <head>
 <meta charset="utf-8" />

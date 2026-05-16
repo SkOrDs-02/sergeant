@@ -70,6 +70,19 @@ Context for both: [api-client звіт — import paths, type names]
 pnpm check
 ```
 
+## Owner surface
+
+- Primary surface: `apps/server`, `packages/api-client`, `apps/web`, `apps/mobile`
+- Coupled surface: `apps/server/src/migrations/` — sequential handoff chain
+- Governing skill: `sergeant-deliver-squad`
+
+## Verification
+
+- [ ] Migration файл пронумеровано послідовно і bigint поля задекларовано
+- [ ] Server-серіалізатор coerce-ить bigint → number
+- [ ] `packages/api-client` типи відповідають JSON response shape
+- [ ] `pnpm check` проходить на всіх зачеплених surfaces
+
 ## Common mistakes
 
 - Запускати server-agent до завершення migration-agent — serializer не знає bigint fields
