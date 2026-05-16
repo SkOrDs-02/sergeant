@@ -216,6 +216,23 @@ Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`Log
 
 **Outstanding (≈4 items, виношу у наступну прожарку):** P1.1 (knip deps sweep), P1.3 (77 unused exports + 51 duplicates), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports).
 
+## Follow-up 2026-05-16 — `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933))
+
+**Knip ERROR-loaders unblocked + `dead-code:files` gate green:**
+
+- `apps/web/vite.config.js` — `__dirname` derived from `import.meta.url` (ESM-safe). Vite shim-ить runtime, але knip / ts-morph evaluated це як plain ESM і падали з `__dirname is not defined`.
+- `knip.json` — disabled metro plugin for `apps/mobile` (`"metro": false`). Він transitively `require("nativewind/metro")`, а NativeWind 4.2.3 hard-rejects Tailwind v4 at import time (окремий tech-debt, не related до knip — див. §P2 watchlist).
+- 4 unmarked unused files отримали `@scaffolded` + `@nextStep` (Hard Rule #10): `apps/web/src/core/billing/index.ts`, `core/errors/index.ts`, `core/errors/OfflinePage.tsx`, `core/errors/ServerErrorPage.tsx`. `pnpm dead-code:files` тепер репортує `No unmarked unused files ✓`.
+
+**Прогрес по `pnpm knip`** (sanity vs. цього audit-у baseline):
+
+- Configuration hints 21 → **10** (post-fix run; зменшилось далі на 10 через metro plugin disable + `ignore`).
+- Unused files 18 (all marked) → 24 (включно з 20 із valid lifecycle markers). Gate проходить.
+- Unused deps **unchanged** (4 — `@capacitor/ios`, 3× `@fontsource-variable/*`). Sweep tracked у §P1.1 — ще open.
+- ERROR-level loader failures **2 → 0** (нова метрика).
+
+**Status:** sub-точка «P0.3 knip.json cleanup» (line 204) розширена закриттям loader-failure-ів — не нові items, а доповнення вже-existing closure.
+
 ## Verification matrix
 
 ```bash
