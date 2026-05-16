@@ -40,6 +40,7 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 | [`sergeant-review-squad`](../../.agents/skills/sergeant-review-squad/SKILL.md)                         | PR review across 3+ governed surfaces via Agent Team | Parallel lens coverage (contract, design, security, docs) |
 | [`sergeant-deliver-squad`](../../.agents/skills/sergeant-deliver-squad/SKILL.md)                       | Cross-surface feature delivery (DB→server→api-client→web/mobile) | Sequential handoff order, bigint coercion chain, contract triplet |
 | [`sergeant-qa-squad`](../../.agents/skills/sergeant-qa-squad/SKILL.md)                                 | Full QA across all surfaces in parallel  | Per-surface test + typecheck, all 4 surfaces before synthesis  |
+| [`sergeant-council`](../../.agents/skills/sergeant-council/SKILL.md)                                   | Advisory board for product/strategy/UX decisions | Dynamic specialist roster, parallel Agent Team, synthesis format |
 
 ## Preferred Routing by Scenario
 

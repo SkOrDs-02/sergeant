@@ -47,6 +47,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | PR review що торкається 3+ governed surfaces                     | `sergeant-review-squad`            |
 | Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |
 | Повний QA по всіх surfaces паралельно                            | `sergeant-qa-squad`                |
+| Валідація ідеї / рішення з кількох точок зору, «гублюсь»        | `sergeant-council`                 |
 
 ## Політика generic-skill-ів
 

@@ -30,6 +30,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | PR review across 3+ governed surfaces  | [`run-squad-review.md`](./run-squad-review.md)                           | `sergeant-review-squad`                                 | Human + agent |
 | Cross-surface feature delivery (DB→server→web) | [`run-squad-deliver.md`](./run-squad-deliver.md)                 | `sergeant-deliver-squad`                                | Human + agent |
 | Full QA across all surfaces in parallel | [`run-squad-qa.md`](./run-squad-qa.md)                                  | `sergeant-qa-squad`                                     | Human + agent |
+| Validate idea / decision from multiple angles | [`run-council.md`](./run-council.md)                              | `sergeant-council`                                      | Human + agent |
 
 ## Повний inventory
 
