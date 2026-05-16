@@ -25,6 +25,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useToast } from "@shared/hooks/useToast";
@@ -196,6 +197,7 @@ export function useRoutineAppState({
   );
 
   const time = useRoutineTimeState();
+  const navigate = useNavigate();
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [listQuery, setListQuery] = useState<string>("");
 
@@ -255,11 +257,22 @@ export function useRoutineAppState({
       if (q && /^\d{4}-\d{2}-\d{2}$/.test(q)) {
         time.deepLinkDay(q);
         // Видаляємо параметр після застосування, щоб back-навігація чи
-        // рефреш не запускали стрибок у "day"-режим повторно.
+        // рефреш не запускали стрибок у "day"-режим повторно. Йдемо
+        // через `navigate({ replace: true })`, а не `history.replaceState`
+        // — інакше дата-роутер `createBrowserRouter` не побачить зміну URL
+        // і `useLocation()` у решті дерева повертатиме застарілий search,
+        // через що `?routineDay=` міг би повторно застосовуватись на
+        // наступному рендері.
         params.delete("routineDay");
         const qs = params.toString();
-        const next = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
-        window.history.replaceState(null, "", next);
+        navigate(
+          {
+            pathname: window.location.pathname,
+            search: qs ? `?${qs}` : "",
+            hash: window.location.hash,
+          },
+          { replace: true },
+        );
       }
     } catch {
       /* noop */

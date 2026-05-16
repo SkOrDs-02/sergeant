@@ -2,14 +2,23 @@
 import type { ReactNode } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { HubSettingsPage } from "./HubSettingsPage";
 
 // `DashboardSection` and `PWASection` consume `useToast`, which throws
 // outside a `ToastProvider`. The other sections are mocked above; these
 // two render in-tree because the test exercises their anchor wiring.
+// `HubSettingsPage` uses `useNavigate`/`useLocation` for `?group=…`
+// mirroring, so wrap in `MemoryRouter` seeded with `window.location` so
+// the test still exercises the `readSettingsGroupParam()` mount path.
 function renderWithToast(ui: ReactNode) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
+  const initial = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  return render(
+    <MemoryRouter initialEntries={[initial]}>
+      <ToastProvider>{ui}</ToastProvider>
+    </MemoryRouter>,
+  );
 }
 
 vi.mock("../settings/AIDigestSection", () => ({

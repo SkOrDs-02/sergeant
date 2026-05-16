@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -86,31 +87,47 @@ function readSettingsGroupParam(): string | null {
   return null;
 }
 
-/**
- * Mirror the active inner-tab to `?group=…` via `history.replaceState` so
- * a reload / share keeps the user on the same group. We strip the param
- * for the default group (`general`) to keep the canonical URL clean for
- * the common case. `replaceState` (not `pushState`) is intentional —
- * clicking a tab strip shouldn't grow the browser history stack.
- */
-function writeSettingsGroupParam(groupId: string) {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  if (groupId === "general") {
-    url.searchParams.delete("group");
-  } else {
-    url.searchParams.set("group", groupId);
-  }
-  if (url.toString() !== window.location.href) {
-    window.history.replaceState(null, "", url.toString());
-  }
-}
-
 export interface HubSettingsPageProps {
   user: User | null;
 }
 
 export function HubSettingsPage({ user }: HubSettingsPageProps) {
+  // Mirror the active inner-tab to `?group=…` so a reload / share keeps the
+  // user on the same group. Strip the param for the default group (`general`)
+  // to keep the canonical URL clean. `replace: true` matches the prior
+  // `replaceState` semantics — clicking a tab strip shouldn't grow history.
+  // MUST go through react-router `navigate` (not `window.history.replaceState`)
+  // so the data-router's internal location stays in sync with the URL —
+  // otherwise `useLocation()` consumers across the app start reading stale
+  // pathname/search and in-app navigation silently no-ops.
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locationRef = useRef(location);
+  locationRef.current = location;
+  const writeSettingsGroupParam = useCallback(
+    (groupId: string) => {
+      const current = locationRef.current;
+      const params = new URLSearchParams(current.search);
+      if (groupId === "general") {
+        params.delete("group");
+      } else {
+        params.set("group", groupId);
+      }
+      const qs = params.toString();
+      const nextSearch = qs ? `?${qs}` : "";
+      if (nextSearch === current.search) return;
+      navigate(
+        {
+          pathname: current.pathname,
+          search: nextSearch,
+          hash: current.hash,
+        },
+        { replace: true },
+      );
+    },
+    [navigate],
+  );
+
   // Resolution order on mount: explicit `?group=…` wins (shareable
   // deep-links) → hash-section's parent group (existing legacy path
   // from Bento `Налаштування` deep-links) → "general" default.
@@ -120,10 +137,13 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
     const sectionId = readSettingsSectionHash();
     return groupForSection(sectionId)?.id ?? "general";
   });
-  const setTab = (next: string) => {
-    setTabRaw(next);
-    writeSettingsGroupParam(next);
-  };
+  const setTab = useCallback(
+    (next: string) => {
+      setTabRaw(next);
+      writeSettingsGroupParam(next);
+    },
+    [writeSettingsGroupParam],
+  );
   const [query, setQuery] = useState("");
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
   const [hashSectionId, setHashSectionId] = useState<string | null>(
@@ -260,7 +280,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
     syncHash();
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, []);
+  }, [setTab]);
 
   useEffect(() => {
     if (!hashSectionId) return;
@@ -272,7 +292,10 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
       {/* Search and tabs header */}
-      <div className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3" style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))" }}>
+      <div
+        className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3"
+        style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))" }}
+      >
         <label className="relative block">
           <span className="sr-only">Пошук по налаштуваннях</span>
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
