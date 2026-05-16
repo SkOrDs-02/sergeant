@@ -7,6 +7,10 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
+import {
+  getPagePrefetchProps,
+  type PageKey,
+} from "../lib/useRoutePrefetch";
 import { messages } from "@shared/i18n/uk";
 
 /**
@@ -48,6 +52,7 @@ interface HubBottomNavTabProps {
   className?: string;
   panelId: string;
   id: string;
+  prefetchPage?: PageKey;
   /**
    * Слот рендериться у DOM, але приховується від користувача й AT.
    * Використовується для збереження геометрії tab-strip-у в момент,
@@ -70,8 +75,12 @@ function HubBottomNavTab({
   className,
   panelId,
   id,
+  prefetchPage,
   hiddenSlot = false,
 }: HubBottomNavTabProps) {
+  const prefetchProps =
+    !hiddenSlot && prefetchPage ? getPagePrefetchProps(prefetchPage) : {};
+
   return (
     <button
       type="button"
@@ -81,6 +90,7 @@ function HubBottomNavTab({
       aria-controls={panelId}
       tabIndex={hiddenSlot ? -1 : active ? 0 : -1}
       onClick={hiddenSlot ? undefined : onClick}
+      {...prefetchProps}
       // `visibility: hidden` (а не `aria-hidden`) — щоб accessibility-tree
       // ховала слот за computed-стилем, але RTL міг знайти його через
       // `getByRole(..., { hidden: true })`. `aria-hidden` стер би
@@ -204,6 +214,7 @@ export function HubBottomNav({
     active: showReports && hubView === "reports",
     onClick: () => onChange("reports"),
     iconName: "bar-chart",
+    prefetchPage: "reports",
     label: "Звіти",
     hiddenSlot: !showReports,
     className: animateReveal ? "animate-bounce-in" : undefined,
@@ -217,6 +228,7 @@ export function HubBottomNav({
       active: hubView === "profile",
       onClick: () => onChange("profile"),
       iconName: "user",
+      prefetchPage: "profile",
       label: "Профіль",
     });
   } else if (onShowAuth) {
@@ -227,6 +239,7 @@ export function HubBottomNav({
       active: false,
       onClick: onShowAuth,
       iconName: "user",
+      prefetchPage: "auth",
       label: "Увійти",
     });
   }
@@ -238,6 +251,7 @@ export function HubBottomNav({
     active: hubView === "settings",
     onClick: () => onChange("settings"),
     iconName: "settings",
+    prefetchPage: "settings",
     label: "Налаштування",
   });
 
@@ -295,6 +309,7 @@ export function HubBottomNav({
               iconName={tab.iconName}
               label={tab.label}
               className={tab.className}
+              prefetchPage={tab.prefetchPage}
               hiddenSlot={tab.hiddenSlot}
             />
           ))}

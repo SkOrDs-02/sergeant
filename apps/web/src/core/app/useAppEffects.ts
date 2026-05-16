@@ -15,7 +15,10 @@ import type { PwaAction } from "../hooks/usePwaActions";
 import type { HubUIState } from "../hooks/useHubUIState";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { useAuth } from "../auth/AuthContext";
-import { prefetchCriticalModules } from "../lib/useRoutePrefetch";
+import {
+  prefetchCriticalModules,
+  prefetchHubNavigationPages,
+} from "../lib/useRoutePrefetch";
 import { CHAT_PATH } from "./appPaths";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
@@ -56,13 +59,18 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // 2 s fallback for it.
   useEffect(() => {
     if ("requestIdleCallback" in window) {
-      const id = requestIdleCallback(() => prefetchCriticalModules(), {
-        timeout: 4000,
-      });
+      const id = requestIdleCallback(
+        () => {
+          prefetchCriticalModules();
+          prefetchHubNavigationPages();
+        },
+        { timeout: 4000 },
+      );
       return () => cancelIdleCallback(id);
     }
     const timer = setTimeout(() => {
       prefetchCriticalModules();
+      prefetchHubNavigationPages();
     }, 2000);
     return () => clearTimeout(timer);
   }, []);

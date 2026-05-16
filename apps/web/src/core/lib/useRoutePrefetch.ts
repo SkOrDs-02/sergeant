@@ -31,9 +31,11 @@ import { setModulePrefetcher } from "./intentPrefetch";
 import { getRecentModules } from "./recentModules";
 
 type ModuleKey = "finyk" | "fizruk" | "routine" | "nutrition";
-type PageKey =
+export type PageKey =
   | "auth"
   | "profile"
+  | "reports"
+  | "settings"
   | "pricing"
   | "assistant"
   | "resetPassword"
@@ -50,6 +52,8 @@ const moduleImports: Record<ModuleKey, () => Promise<unknown>> = {
 const pageImports: Record<PageKey, () => Promise<unknown>> = {
   auth: () => import("../auth/AuthPage"),
   profile: () => import("../profile/ProfilePage"),
+  reports: () => import("../hub/HubReports"),
+  settings: () => import("../hub/HubSettingsPage"),
   pricing: () => import("../PricingPage"),
   assistant: () => import("../AssistantCataloguePage"),
   resetPassword: () => import("../auth/ResetPasswordPage"),
@@ -101,7 +105,7 @@ export function prefetchModule(module: ModuleKey): void {
  * Prefetch a page chunk by key. Skips on Save-Data / 2G sessions
  * (see {@link shouldPrefetchOnConnection}).
  */
-export function prefetchPage(page: PageKey): void {
+function importPageChunk(page: PageKey): void {
   if (prefetchedChunks.has(`page:${page}`)) return;
   if (!shouldPrefetchOnConnection()) return;
 
@@ -110,22 +114,31 @@ export function prefetchPage(page: PageKey): void {
 
   prefetchedChunks.add(`page:${page}`);
 
+  importFn().catch(() => {
+    prefetchedChunks.delete(`page:${page}`);
+  });
+}
+
+export function prefetchPage(page: PageKey): void {
+  if (prefetchedChunks.has(`page:${page}`)) return;
+  if (!shouldPrefetchOnConnection()) return;
+
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
-        importFn().catch(() => {
-          prefetchedChunks.delete(`page:${page}`);
-        });
+        importPageChunk(page);
       },
       { timeout: 2000 },
     );
   } else {
     setTimeout(() => {
-      importFn().catch(() => {
-        prefetchedChunks.delete(`page:${page}`);
-      });
+      importPageChunk(page);
     }, 100);
   }
+}
+
+export function prefetchPageOnIntent(page: PageKey): void {
+  importPageChunk(page);
 }
 
 /**
@@ -197,6 +210,22 @@ export function prefetchCriticalModules(): void {
   });
 }
 
+const HUB_NAVIGATION_PAGES: readonly PageKey[] = ["reports", "settings"];
+
+export function prefetchHubNavigationPages(): void {
+  if (!shouldPrefetchOnConnection()) return;
+
+  if ("requestIdleCallback" in window) {
+    HUB_NAVIGATION_PAGES.forEach((page) => {
+      requestIdleCallback(() => prefetchPage(page), { timeout: 3000 });
+    });
+    return;
+  }
+  HUB_NAVIGATION_PAGES.forEach((page, index) => {
+    setTimeout(() => prefetchPage(page), index * 100);
+  });
+}
+
 /**
  * Register the intent-prefetch dispatcher so hover/focus handlers in
  * `intentPrefetch.ts` can reach `prefetchModule` without taking a
@@ -208,8 +237,9 @@ setModulePrefetcher((module) => prefetchModule(module));
 
 export function getPagePrefetchProps(page: PageKey) {
   return {
-    onMouseEnter: () => prefetchPage(page),
-    onFocus: () => prefetchPage(page),
+    onMouseEnter: () => prefetchPageOnIntent(page),
+    onFocus: () => prefetchPageOnIntent(page),
+    onPointerDown: () => prefetchPageOnIntent(page),
   };
 }
 
