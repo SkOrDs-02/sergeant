@@ -233,6 +233,20 @@ if (
   !isCapacitor() &&
   "serviceWorker" in navigator
 ) {
+  // Hard-reload one time when the SW controller changes. SW `install`
+  // тепер unconditional-но робить `skipWaiting()`, тож новий worker
+  // активується одразу і `clients.claim()` у `activate` тригерить
+  // `controllerchange` у всіх відкритих вкладках. Без reload-у
+  // dynamic-import-и старих hash-named chunks падають у 404, бо
+  // workbox-precache новij ге́нерації не містить їх. Guard `refreshing`
+  // блокує цикл, якщо SW з якоїсь причини активувався двічі підряд.
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   import("virtual:pwa-register").then(async ({ registerSW }) => {
     const updateSW = registerSW({
       onNeedRefresh() {

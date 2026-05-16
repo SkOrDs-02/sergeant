@@ -18,7 +18,6 @@
 
 import { setupCacheRoutes, listStaleCaches } from "./sw/cache";
 import { CACHE_NAMES } from "./sw/version";
-import { getDebugEnabled } from "./sw/debug";
 import { handleSwMessage } from "./sw/messages";
 import { recordNotified } from "./sw/notifiedKeys";
 
@@ -27,10 +26,15 @@ declare const self: ServiceWorkerGlobalScope;
 setupCacheRoutes();
 
 self.addEventListener("install", (event) => {
-  // If a client explicitly asks for it, we can activate immediately.
-  if (getDebugEnabled()) {
-    event.waitUntil(self.skipWaiting());
-  }
+  // Activate the freshly installed SW immediately. Without this, the
+  // previous SW keeps controlling open tabs / standalone PWA sessions
+  // and continues to serve stale precached chunks indefinitely (на iOS
+  // PWA «закриття» не вбиває worker — тому стара версія може жити
+  // тижнями). `clients.claim()` у `activate` потім забирає контроль над
+  // усіма вкладками, а `controllerchange` у `main.tsx` робить один
+  // hard-reload, щоб JS-граф у пам'яті синхронізувався з новим
+  // precache-манифестом.
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("message", handleSwMessage);
