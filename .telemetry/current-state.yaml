@@ -1,0 +1,280 @@
+# Current State: reverse-engineered from codebase
+# Scanned: 2026-05-17
+# SDK: PostHog (posthog-js@^1.372.3 web, custom HTTP transport mobile, posthog-node-style direct API server)
+
+meta:
+  source_of_truth: packages/shared/src/lib/analyticsEvents.ts
+  catalog_size: 94                # event constants defined in ANALYTICS_EVENTS
+  live_count: 94                  # all defined events have at least one non-test callsite
+  orphaned_count: 0
+  platforms: [web, mobile, server]
+  destinations: [posthog]
+
+sdks:
+  web:
+    package: posthog-js
+    version_range: ^1.372.3
+    init: apps/web/src/core/observability/posthog.ts:81
+    init_strategy: lazy via requestIdleCallback; buffers up to 100 events pre-init
+    autocapture: disabled (custom PageviewTracker — see apps/web/src/core/observability/PageviewTracker.tsx)
+    capture_pageview: false       # custom tracker to avoid SPA double-fires
+    env_keys: [VITE_POSTHOG_KEY, VITE_POSTHOG_HOST]
+  mobile:
+    package: custom-http-transport
+    transport: fetch → ${host}/capture/
+    init: apps/mobile/src/lib/observability/posthog.ts (initPostHog)
+    distinct_id_persistence: MMKV key "sergeant.mobile.posthog.distinct_id.v1"
+    queue_max: 100
+    env_keys: [EXPO_PUBLIC_POSTHOG_KEY, EXPO_PUBLIC_POSTHOG_HOST]
+  server:
+    package: direct-capture
+    transport: POST ${host}/capture/ (apps/server/src/lib/posthogCapture.ts)
+    fail_open: true               # skips if POSTHOG_PROJECT_API_KEY missing
+    timeout_ms: 5000
+    delete_helper: apps/server/src/lib/posthog.ts (GDPR delete-person via personal API key)
+    env_keys: [POSTHOG_PROJECT_API_KEY, POSTHOG_API_KEY, POSTHOG_HOST]
+
+identity:
+  identify_calls:
+    - location: apps/web/src/core/auth/AuthContext.tsx:307
+      wrapper: identifyPostHogUser
+      trigger: AuthContext transitions to authenticated
+      traits_set: [vibe, plan, locale, signup_date]
+    - location: apps/mobile/src/features/analytics/AnalyticsIdentityBridge.tsx:46
+      wrapper: identifyPostHogUser
+      trigger: useUser hook detects user.id change
+      traits_set: [vibe, plan, locale, signup_date]
+      notes: lastIdentifiedRef cache prevents duplicate calls
+    - location: apps/mobile/src/observability/IdentityBridge.tsx:43
+      wrapper: identifyPostHogUser
+      trigger: secondary mobile bridge (possible duplicate of AnalyticsIdentityBridge)
+      traits_set: [vibe, plan, locale, signup_date]
+  reset_calls:
+    - location: AuthContext (web) + AnalyticsIdentityBridge (mobile)
+      wrapper: resetPostHog
+      trigger: logout; mobile re-rolls distinctId (new UUID), clears traits
+  group_calls: []                  # no posthog.group() / groupIdentify() found in app code
+  alias_calls: []                  # relies on PostHog auto-merge via $anon_distinct_id
+
+traits:
+  schema: apps/web/src/core/observability/identifyTraits.ts (IdentifyTraits interface)
+  fields:
+    - name: vibe
+      type: HubModuleId[]
+      source: localStorage onboarding vibe-picks
+    - name: plan
+      type: '"free" | "pro"'
+      source: hard-coded "free" (billing not live)
+    - name: locale
+      type: string (≤16 chars)
+      source: navigator.language (or undefined in non-DOM)
+    - name: signup_date
+      type: 'YYYY-MM-DD UTC'
+      source: user.createdAt
+
+pageviews:
+  custom_tracker: apps/web/src/core/observability/PageviewTracker.tsx
+  reason: PostHog autocapture pageview double-fires on SPA route changes
+  mobile_screens: not_implemented   # no screen() calls; mobile uses Expo router
+
+sentry_linkage:
+  web:
+    init: apps/web/src/core/observability/sentry.ts:1
+    set_user: not_set               # no Sentry.setUser found on web
+    user_context_in_events: id-only via beforeSend
+  server:
+    init: apps/server/src/sentry.ts:1
+    set_user: apps/server/src/auth.ts:517 (Sentry.getCurrentScope?.().setUser({ id: user.id }))
+    user_context_in_events: yes (id-only)
+  mobile:
+    init: not_present               # @sentry/react-native installed but no init file found
+    set_user: not_present
+
+events:
+  # 94 events total — all LIVE. Grouped by domain comments in
+  # packages/shared/src/lib/analyticsEvents.ts. `locations` is the
+  # primary fire-site; secondary references exist for some events
+  # (e.g. CROSS_MODULE_PREVIEW_* fires from both web and mobile).
+
+  # Onboarding wizard (multi-step v2)
+  - { name: onboarding_started,                  status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_completed,                status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_vibe_picked,              status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_step_viewed,              status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_step_completed,           status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_goal_set,                 status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_skipped,                  status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+
+  # Onboarding replay (read-only re-run)
+  - { name: onboarding_replay_viewed,            status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+  - { name: onboarding_replay_dismissed,         status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/onboarding/useOnboardingWizardState.ts] }
+
+  # Finyk / activation
+  - { name: expense_added,                       status: LIVE, category: core_value, source: frontend, locations: [apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:61], properties: [source, amount_kop, category] }
+  - { name: expense_deleted,                     status: LIVE, category: core_value, source: frontend, locations: [apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:82], properties: [source] }
+  - { name: budget_set,                          status: LIVE, category: core_value, source: frontend, locations: [apps/web/src/modules/finyk/pages/budgets/Budgets.tsx:279] }
+  - { name: analytics_opened,                    status: LIVE, category: engagement, source: frontend, locations: [apps/web/src/modules/finyk/pages/Analytics.tsx:198], properties: [module] }
+  - { name: bank_connect_started,                status: LIVE, category: integration, source: frontend, locations: [apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts:388] }
+  - { name: bank_connect_success,                status: LIVE, category: integration, source: frontend, locations: [apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts:408] }
+  - { name: mono_token_migrated,                 status: LIVE, category: integration, source: frontend, locations: [apps/web/src/modules/finyk/hooks/useMonoTokenMigration.ts:89] }
+  - { name: paywall_viewed,                      status: LIVE, category: monetization, source: frontend, locations: [apps/web/src/core/billing/PaywallModal.tsx:70], properties: [surface] }
+  - { name: first_expense_added,                 status: LIVE, category: activation, source: frontend, locations: [apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:73] }
+  - { name: first_insight_seen,                  status: LIVE, category: activation, source: frontend, locations: [apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:191] }
+
+  # FTUX: first action → preset → first real entry
+  - { name: onboarding_first_action_shown,       status: LIVE, category: ftux, source: frontend, locations: [apps/web/src/core/onboarding/FirstActionSheet.tsx] }
+  - { name: onboarding_first_action_picked,      status: LIVE, category: ftux, source: frontend, locations: [apps/web/src/core/onboarding/FirstActionSheet.tsx] }
+  - { name: ftux_preset_sheet_shown,             status: LIVE, category: ftux, source: frontend, locations: [apps/web/src/core/onboarding/PresetSheet.tsx] }
+  - { name: ftux_preset_picked,                  status: LIVE, category: ftux, source: frontend, locations: [apps/web/src/core/onboarding/PresetSheet.tsx] }
+  - { name: ftux_preset_custom,                  status: LIVE, category: ftux, source: frontend, locations: [apps/web/src/core/onboarding/PresetSheet.tsx] }
+  - { name: first_real_entry,                    status: LIVE, category: activation, source: frontend, locations: [packages/shared/src/lib/firstRealEntry.ts:309] }
+  - { name: ftux_time_to_value,                  status: LIVE, category: activation, source: frontend, locations: [packages/shared/src/lib/firstRealEntry.ts:310] }
+  - { name: first_action_completed,              status: LIVE, category: activation, source: frontend, locations: [packages/shared/src/lib/firstRealEntry.ts:392], properties: [module] }
+
+  # Soft auth (post-value)
+  - { name: auth_prompt_shown,                   status: LIVE, category: auth, source: frontend, locations: [apps/web/src/core/onboarding/SoftAuthPromptCard.tsx] }
+  - { name: auth_prompt_dismissed,               status: LIVE, category: auth, source: frontend, locations: [apps/web/src/core/onboarding/SoftAuthPromptCard.tsx] }
+  - { name: auth_after_value,                    status: LIVE, category: auth, source: frontend, locations: [apps/web/src/core/onboarding/SoftAuthPromptCard.tsx] }
+
+  # A/B exposure
+  - { name: experiment_exposed,                  status: LIVE, category: experiment, source: frontend, properties: [experiment_id, variant], locations: [apps/web/src/core/onboarding/*] }
+
+  # Module checklists
+  - { name: module_checklist_shown,              status: LIVE, category: activation, source: frontend, locations: [apps/web/src/core/onboarding/ModuleChecklist.tsx, apps/mobile/src/core/onboarding/ModuleChecklist.tsx] }
+  - { name: module_checklist_step_done,          status: LIVE, category: activation, source: frontend, locations: [apps/web/src/core/onboarding/ModuleChecklist.tsx, apps/mobile/src/core/onboarding/ModuleChecklist.tsx] }
+  - { name: module_checklist_dismissed,          status: LIVE, category: activation, source: frontend, locations: [apps/web/src/core/onboarding/ModuleChecklist.tsx, apps/mobile/src/core/onboarding/ModuleChecklist.tsx] }
+
+  # Permissions (contextual)
+  - { name: permission_requested,                status: LIVE, category: permissions, source: frontend, locations: [apps/web/src/core/onboarding/PermissionsPrompt.tsx] }
+  - { name: permission_granted,                  status: LIVE, category: permissions, source: frontend, locations: [apps/web/src/core/onboarding/PermissionsPrompt.tsx] }
+  - { name: permission_denied,                   status: LIVE, category: permissions, source: frontend, locations: [apps/web/src/core/onboarding/PermissionsPrompt.tsx] }
+
+  # Celebrations
+  - { name: celebration_shown,                   status: LIVE, category: engagement, source: frontend, locations: [apps/web/src/core/onboarding/CelebrationModal.tsx] }
+
+  # Streak milestones
+  - { name: streak_milestone_reached,            status: LIVE, category: engagement, source: frontend, properties: [days, type] }
+
+  # Daily nudges
+  - { name: daily_nudge_shown,                   status: LIVE, category: retention, source: frontend, locations: [apps/web/src/core/onboarding/DailyNudge.tsx], properties: [day, nudgeId] }
+  - { name: daily_nudge_action,                  status: LIVE, category: retention, source: frontend, locations: [apps/web/src/core/onboarding/DailyNudge.tsx], properties: [day, nudgeId, type, snoozeDays] }
+
+  # Re-engagement
+  - { name: reengagement_shown,                  status: LIVE, category: retention, source: frontend, locations: [apps/web/src/core/onboarding/ReEngagementCard.tsx] }
+  - { name: reengagement_clicked,                status: LIVE, category: retention, source: frontend, locations: [apps/web/src/core/onboarding/ReEngagementCard.tsx] }
+
+  # Cross-module preview (S6.4 one-shot)
+  - { name: cross_module_preview_seen,           status: LIVE, category: cross_sell, source: frontend, locations: [apps/web/src/core/hub/CrossModulePreview.tsx, apps/mobile/src/core/dashboard/CrossModulePreview.tsx], properties: [source_module, partner_module] }
+  - { name: cross_module_preview_clicked,        status: LIVE, category: cross_sell, source: frontend, locations: [apps/web/src/core/hub/CrossModulePreview.tsx, apps/mobile/src/core/dashboard/CrossModulePreview.tsx], properties: [source_module, partner_module] }
+  - { name: cross_module_preview_dismissed,      status: LIVE, category: cross_sell, source: frontend, locations: [apps/web/src/core/hub/CrossModulePreview.tsx, apps/mobile/src/core/dashboard/CrossModulePreview.tsx], properties: [source_module, partner_module] }
+
+  # Hints / tips
+  - { name: hint_shown,                          status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/hints/HintsOrchestrator.tsx] }
+  - { name: hint_clicked,                        status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/hints/HintsOrchestrator.tsx] }
+  - { name: hint_dismissed,                      status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/hints/HintsOrchestrator.tsx] }
+  - { name: hint_completed,                      status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/hints/HintsOrchestrator.tsx] }
+
+  # HubChat — counts only, no message bodies
+  - { name: hubchat_message_sent,                status: LIVE, category: ai, source: frontend, properties: [length, fromVoice, hasQuickAction, module] }
+  - { name: hubchat_tool_invoked,                status: LIVE, category: ai, source: frontend, properties: [tool, module, success, latency_ms] }
+  - { name: hubchat_error,                       status: LIVE, category: ai, source: frontend, properties: [kind, status] }
+
+  # CloudSync
+  - { name: sync_started,                        status: LIVE, category: sync, source: frontend, properties: [trigger] }
+  - { name: sync_succeeded,                      status: LIVE, category: sync, source: frontend, properties: [duration_ms, modules] }
+  - { name: sync_failed,                         status: LIVE, category: sync, source: frontend, properties: [error_type, retryable, duration_ms] }
+  - { name: sync_conflict_resolved,              status: LIVE, category: sync, source: frontend, properties: [kind, modules] }
+
+  # Acquisition
+  - { name: signup_completed,                    status: LIVE, category: lifecycle, source: frontend, locations: [apps/web/src/core/auth/AuthContext.tsx], properties: [method] }
+  - { name: signup_provider_selected,            status: LIVE, category: lifecycle, source: frontend, properties: [provider, surface] }
+
+  # Subscription / billing (server-side via Stripe webhook)
+  - { name: subscription_started,                status: LIVE, category: monetization, source: backend, locations: [apps/server/src/modules/billing/stripe.ts:205], properties: [plan, source, price_cents, currency] }
+  - { name: subscription_canceled,               status: LIVE, category: monetization, source: backend, locations: [apps/server/src/modules/billing/stripe.ts:237], properties: [plan, reason] }
+  - { name: subscription_renewed,                status: LIVE, category: monetization, source: backend, locations: [apps/server/src/modules/billing/stripe.ts:217], properties: [plan, period] }
+
+  # Pricing / waitlist
+  - { name: pricing_viewed,                      status: LIVE, category: monetization, source: frontend, locations: [apps/web/src/core/PricingPage.tsx:71], properties: [source] }
+  - { name: pricing_cta_clicked,                 status: LIVE, category: monetization, source: frontend, locations: [apps/web/src/core/PricingPage.tsx:107], properties: [tier, cta] }
+  - { name: checkout_opened,                     status: LIVE, category: monetization, source: frontend, locations: [apps/web/src/core/PricingPage.tsx:118], properties: [plan, mode] }
+  - { name: waitlist_submitted,                  status: LIVE, category: monetization, source: frontend, locations: [apps/web/src/core/pricing/WaitlistForm.tsx], properties: [tier_interest, source, created] }
+
+  # Activation v2 (idempotent flip)
+  - { name: activation_v2_hit,                   status: LIVE, category: activation, source: frontend, locations: [apps/web/src/core/activation/useActivationV2.ts:97], properties: [time_to_activate_hours, mono_connected, transactions_categorized, budgets_set, variant] }
+
+  # Landing
+  - { name: landing_viewed,                      status: LIVE, category: acquisition, source: frontend, locations: [apps/web/src/core/LandingPage.tsx:71], properties: [path, referrer, locale] }
+  - { name: landing_email_captured,              status: LIVE, category: acquisition, source: frontend, locations: [apps/web/src/core/LandingPage.tsx:218], properties: [source, locale] }
+
+  # App Lock
+  - { name: app_lock_setup_started,              status: LIVE, category: security, source: frontend, locations: [apps/web/src/core/security/useAppLock.ts] }
+  - { name: app_lock_setup_completed,            status: LIVE, category: security, source: frontend, locations: [apps/web/src/core/security/useAppLock.ts], properties: [method] }
+  - { name: app_lock_unlock_success,             status: LIVE, category: security, source: frontend, locations: [apps/web/src/core/security/useAppLock.ts], properties: [method] }
+  - { name: app_lock_unlock_failed,              status: LIVE, category: security, source: frontend, locations: [apps/web/src/core/security/useAppLock.ts], properties: [method, attempt] }
+  - { name: biometric_setup_completed,           status: LIVE, category: security, source: frontend, properties: [kind] }
+  - { name: biometric_auth_success,              status: LIVE, category: security, source: frontend, properties: [kind] }
+  - { name: biometric_auth_failed_fallback_pin,  status: LIVE, category: security, source: frontend }
+
+  # Module nav
+  - { name: module_settings_opened_from_module,  status: LIVE, category: navigation, source: frontend, properties: [module] }
+  - { name: module_landing_tab_clicked,          status: LIVE, category: navigation, source: frontend, properties: [module, tab_key] }
+
+  # Error recovery
+  - { name: error_boundary_request_id_copied,    status: LIVE, category: error_recovery, source: frontend, properties: [scope, request_id] }
+  - { name: error_boundary_retried,              status: LIVE, category: error_recovery, source: frontend, properties: [scope] }
+
+  # Permissions overview
+  - { name: permissions_settings_opened,         status: LIVE, category: permissions, source: frontend }
+  - { name: permission_status_changed,           status: LIVE, category: permissions, source: frontend, properties: [type, status] }
+
+  # Demo
+  - { name: demo_started,                        status: LIVE, category: demo, source: frontend, locations: [apps/web/src/core/onboarding/seedDemoData.ts, apps/web/src/core/app/WelcomeScreen.tsx], properties: [source] }
+  - { name: demo_dismissed,                      status: LIVE, category: demo, source: frontend, locations: [apps/web/src/core/onboarding/DemoModeBanner.tsx] }
+  - { name: demo_to_wizard_confirmed,            status: LIVE, category: demo, source: frontend, locations: [apps/web/src/core/onboarding/DemoModeBanner.tsx] }
+
+  # PWA install
+  - { name: pwa_install_prompted,                status: LIVE, category: install, source: frontend, locations: [apps/web/src/core/app/usePwaInstall.ts, apps/web/src/core/app/useIosInstallBanner.ts], properties: [surface] }
+  - { name: pwa_install_accepted,                status: LIVE, category: install, source: frontend, locations: [apps/web/src/core/app/usePwaInstall.ts] }
+  - { name: pwa_install_dismissed,               status: LIVE, category: install, source: frontend, locations: [apps/web/src/core/app/usePwaInstall.ts, apps/web/src/core/app/useIosInstallBanner.ts], properties: [surface, via] }
+  - { name: pwa_installed,                       status: LIVE, category: install, source: frontend, locations: [apps/web/src/core/app/usePwaInstall.ts] }
+
+  # What's new modal
+  - { name: whats_new_shown,                     status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/whatsNew/useWhatsNew.ts:58], properties: [id, release_date] }
+  - { name: whats_new_dismissed,                 status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/whatsNew/useWhatsNew.ts:78], properties: [id, via] }
+  - { name: whats_new_cta_clicked,               status: LIVE, category: education, source: frontend, locations: [apps/web/src/core/whatsNew/useWhatsNew.ts], properties: [id, href] }
+
+  # Goal-first wizard A/B
+  - { name: onboarding_goal_first_shown,         status: LIVE, category: experiment, source: frontend, locations: [apps/web/src/core/onboarding/GoalFirstScreen.tsx], properties: [variant] }
+  - { name: onboarding_goal_first_picked,        status: LIVE, category: experiment, source: frontend, locations: [apps/web/src/core/onboarding/GoalFirstScreen.tsx], properties: [outcome, module] }
+
+patterns:
+  naming_style: snake_case
+  naming_format: noun_verb (e.g. expense_added, paywall_viewed) and verb_noun for lifecycle (signup_completed, onboarding_started); occasional verb_in_past_tense (sync_succeeded). Mixed.
+  centralized:
+    event_names: true              # all callsites reference ANALYTICS_EVENTS.* — no inline strings
+    transport: true                # single trackEvent wrapper per platform (analytics.ts)
+  dual_write:
+    - apps/web/src/core/observability/dualWriteTelemetry.ts
+    - apps/mobile/src/lib/observability/dualWriteTelemetry.ts
+    - notes: ring-buffer in localStorage/MMKV (200/100 events) + AI-memory sync sink in addition to PostHog
+  product_memory_sync: apps/web/src/core/observability/productMemorySync.ts (forwards subset of events to /recall endpoint)
+  error_handling:
+    style: fire_and_forget
+    catches: try/catch around posthog.capture in wrapper; queue-flushing on init
+    blocking: false                # no awaited capture calls on critical paths
+  shutdown_flush: not_explicit     # browser unload not flushed; server has no shutdown hook on posthogCapture
+  contracts: inline_comments       # payload contracts documented as JSDoc-style comments in analyticsEvents.ts only
+
+hygiene_observations:
+  - "Mobile has two identity bridges in different paths: apps/mobile/src/features/analytics/AnalyticsIdentityBridge.tsx and apps/mobile/src/observability/IdentityBridge.tsx — both call identifyPostHogUser with the same trait shape."
+  - "Event naming style is mixed: snake_case for all names, but format alternates between subject_verb (expense_added, paywall_viewed), action_object (auth_after_value), and past-tense status (sync_succeeded, signup_completed). No single canonical pattern documented."
+  - "Subscription events fire only from server (Stripe webhook handler at apps/server/src/modules/billing/stripe.ts). Web frontend never calls SUBSCRIPTION_STARTED — relies on server emission. Documented intent matches behavior."
+  - "Three subscription events have placeholder payload contracts in analyticsEvents.ts comments (SUBSCRIPTION_STARTED, SUBSCRIPTION_CANCELED, SUBSCRIPTION_RENEWED); actual fire-sites in stripe.ts pass a different shape (Stripe object → ANALYTICS_EVENTS payload via captureLifecycle)."
+  - "No posthog.group() / groupIdentify() calls anywhere. Better Auth organization scope (if present) is not surfaced to PostHog as a group dimension."
+  - "Sentry.setUser called only on server (apps/server/src/auth.ts:517). Web and mobile rely on beforeSend id-only mapping; explicit setUser absent."
+  - "Mobile @sentry/react-native is declared in apps/mobile/package.json but no init file (apps/mobile/**/sentry*) found."
+  - "Server-side posthogCapture fails open if POSTHOG_PROJECT_API_KEY is missing — silent skip with no log."
+  - "Dual-write telemetry (localStorage/MMKV ring buffer + product-memory sync) is parallel to PostHog and has its own consumers (AI memory at /recall). Event volume in PostHog ≠ total instrumented event volume."
+  - "Custom PageviewTracker (apps/web/src/core/observability/PageviewTracker.tsx) replaces autocapture pageview to avoid SPA double-fires; mobile has no screen() equivalent."
+  - "Payload contracts live as freeform JSDoc-style comments in analyticsEvents.ts; not enforced by types at callsites (trackEvent payload type is Record<string, unknown>)."
