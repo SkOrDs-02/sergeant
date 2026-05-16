@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "4a9ec9dc8b3fb06dd0c3028210725b48bec3f8646644a8f7c107320ad317b295"
+      "computedHash": "10e5f868b7c17998de63c782dab6a9e09811d258b43e8850d0798650050843d3"
     },
     "sergeant-web-ui": {
       "source": "local",
@@ -70,6 +70,21 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "3a585bc29ba2677659508b5cff7b4d3b337744f70224c3d3b8219f92437a4fcc"
+    },
+    "sergeant-security-audit": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "fa866ad140b5ea5293dcf8f526ca256562defbde9a289f7b2a6129849eb53dec"
+    },
+    "sergeant-e2e-testing": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "0fbebb860a243a2811895ab9f1ed065ec1a17977cc6a93f95591b11e4d76873a"
+    },
+    "sergeant-tech-debt": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "064447cafcb37da37f9cc82e09ef0e7c2925c7f69d7ee729b0b1b66b4df33202"
     }
   }
 }

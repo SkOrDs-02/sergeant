@@ -146,7 +146,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 4 — `sergeant-e2e-testing` skill (≈2 дні, M)
+### PR 4 — `sergeant-e2e-testing` skill (≈2 дні, M) ✅ (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
 
 **Проблема.** Sergeant використовує Playwright для E2E (див. `apps/web` test-stack), але немає specialist-skill-у про Playwright-discipline. `sergeant-web-ui` згадує a11y і design tokens, але golden-rules для Playwright (web-first assertions, fixtures over globals, traces='on-first-retry', retries=2-in-CI/0-locally, ніколи `page.waitForTimeout()`) — розкидані по PR-описах і не enforce-ні.
 
@@ -342,6 +342,64 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
+### PR 10 — `sergeant-security-audit` skill (≈1 день, M) 🔄 (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
+
+**Проблема.** Sergeant має Hard Rules #20 (PAT safety), #21 (Pino redaction), #22 (skill security scan) і playbook `security-pen-test-checklist.md`, але немає specialist-skill-у, що веде агента через security review. Агент без цього skill-у системно пропускає Sergeant-specific вектори: перевірку `REDACT_KEY_NAMES` у `@sergeant/shared/lib/pii.ts`, Drizzle `sql\`...\`` injection, `pnpm audit` (не `npm audit`) для workspace-монорепо.
+
+**Скоуп.**
+
+- Створити `.agents/skills/sergeant-security-audit/SKILL.md`.
+- Покрити: Hard Rules #20/#21/#22, Pino redaction walker у `apps/server/src/obs/logger.ts`, Drizzle ORM SQL injection vector, pnpm audit, Better Auth session enforcement, frontend TypedStore, mobile MMKV, severity triage.
+- Оновити `agent-skills-catalog.md` і routing у `sergeant-start-here`.
+
+**Acceptance criteria.**
+
+- `pnpm lint:skills` зелений (shape + SHA-256 + security scan).
+- Routing-рядок у `sergeant-start-here` для "Security review, pnpm audit, PAT safety".
+- Кожна секція посилається на конкретний шлях у репо або команду.
+
+**Files touched.**
+
+- `.agents/skills/sergeant-security-audit/SKILL.md`.
+- `.agents/skills/sergeant-start-here/SKILL.md` (routing-таблиця).
+- `.agents/skills-lock.json`.
+- `docs/agents/agent-skills-catalog.md`.
+
+**References.**
+
+- aitmpl.com: `security/security-auditor`, `security/api-security-audit`, `security/supply-chain-security` — натхнення для структури, адаптовано під Sergeant-specific hard rules.
+
+---
+
+### PR 11 — `sergeant-tech-debt` skill (≈1 день, M) 🔄 (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
+
+**Проблема.** 26 hard rules визначають taxonomy технічного боргу, але немає specialist-skill-у, що систематично веде агента через `eslint-baseline.js`, Knip, Hard Rule #18 (module-size), Hard Rule #19 (noUncheckedIndexedAccess). Агент без цього skill-у міксує різні класи боргу в один PR або видаляє код без перевірки lifecycle markers.
+
+**Скоуп.**
+
+- Створити `.agents/skills/sergeant-tech-debt/SKILL.md`.
+- Покрити: eslint-baseline.js (25 rules, 9 disabled react-hooks v7), Knip lifecycle marker guards, module-size decomposition strategy (Hard Rule #18), noUncheckedIndexedAccess guards (Hard Rule #19), prioritization matrix, "окремі PRs для різних класів боргу" правило.
+- Оновити `agent-skills-catalog.md` і routing у `sergeant-start-here`.
+
+**Acceptance criteria.**
+
+- `pnpm lint:skills` зелений.
+- Routing-рядок у `sergeant-start-here` для "Технічний борг, dead code, ESLint baseline".
+- Чітке правило: не змішувати dead-code deletion, baseline reduction і module decomposition в одному PR.
+
+**Files touched.**
+
+- `.agents/skills/sergeant-tech-debt/SKILL.md`.
+- `.agents/skills/sergeant-start-here/SKILL.md` (routing-таблиця).
+- `.agents/skills-lock.json`.
+- `docs/agents/agent-skills-catalog.md`.
+
+**References.**
+
+- aitmpl.com: `development-tools/technical-debt-manager` — натхнення для структури аудиту; адаптовано під Sergeant's eslint-baseline.js і Knip замість generic complexity-метрик.
+
+---
+
 ## Priority matrix
 
 | #   | PR                                | Effort | Value-per-hour | Dependencies        | Status   |
@@ -349,12 +407,14 @@ PR проходить у roadmap, якщо він задовольняє всі 
 | 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374 |
 | 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373 |
 | 3   | Postgres references               | M      | High           | (no hard dep)       |          |
-| 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       |          |
+| 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       | 🔄 in progress |
 | 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2378 |
 | 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |          |
 | 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |          |
 | 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |          |
 | 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375 |
+| 10  | `sergeant-security-audit` skill   | M      | High           | none                | 🔄 in progress |
+| 11  | `sergeant-tech-debt` skill        | M      | High           | none                | 🔄 in progress |
 
 **Recommended starting order:** PR 2 → PR 1 → PR 5 → PR 9 → PR 3 → PR 6 → PR 4 → PR 7 → PR 8.
 
