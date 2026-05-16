@@ -187,7 +187,14 @@ describe("applyStrictModeToAll (масив)", () => {
   });
 });
 
-describe("TOOLS (агрегований Anthropic-payload)", () => {
+// INCIDENT 2026-05-16: strict-mode на агрегованому TOOLS вимкнено, бо
+// Anthropic API має ліміт 20 strict tools на запит, а в нас 66 — щохвилини
+// падало 400 `Too many strict tools (66)`. Інваріанти strict-режиму на
+// TOOLS не виконуються до того моменту, як ми переробимо стратегію
+// (opt-in на ≤20 high-value tools). Сам декоратор `applyStrictMode` і
+// його одиничні тести вище лишилися активні — інфра готова до повторної
+// активації, але вже точково.
+describe.skip("TOOLS (агрегований Anthropic-payload)", () => {
   it("є непорожній", () => {
     expect(TOOLS.length).toBeGreaterThan(0);
   });
@@ -229,6 +236,30 @@ describe("TOOLS (агрегований Anthropic-payload)", () => {
   it("input_schema root `type` завжди `object`", () => {
     for (const tool of TOOLS) {
       expect(tool.input_schema["type"]).toBe("object");
+    }
+  });
+});
+
+describe("TOOLS (агрегований Anthropic-payload — post-incident invariants)", () => {
+  it("є непорожній", () => {
+    expect(TOOLS.length).toBeGreaterThan(0);
+  });
+
+  it("input_schema root `type` завжди `object`", () => {
+    for (const tool of TOOLS) {
+      expect(tool.input_schema["type"]).toBe("object");
+    }
+  });
+
+  // Strict mode тимчасово знятий — Anthropic ліміт 20 strict tools на запит,
+  // а в нас 66. Інваріант: жоден tool НЕ повинен мати strict, поки не буде
+  // селективної активації. Це guard від випадкового реверту інциденту.
+  it("жоден tool не має strict-режиму (Anthropic 20-tool cap)", () => {
+    for (const tool of TOOLS) {
+      expect(
+        tool.strict,
+        `tool "${tool.name}" не повинен мати strict до селективної активації`,
+      ).not.toBe(true);
     }
   });
 });
