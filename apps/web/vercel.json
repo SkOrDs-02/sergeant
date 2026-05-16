@@ -37,11 +37,11 @@
       ]
     },
     {
-      "source": "/index.html",
+      "source": "/((?!api/|assets/|_vercel/|\\.well-known/).*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "public, max-age=0, must-revalidate, s-maxage=0"
         }
       ]
     },
