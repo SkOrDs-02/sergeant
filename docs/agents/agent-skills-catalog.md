@@ -33,6 +33,9 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 | [`sergeant-monorepo-boundaries`](../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                 | App vs package placement, shared logic boundaries              |
 | [`sergeant-deploy-and-observability`](../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n    | Runtime verification, operator docs, release safety            |
 | [`better-auth-best-practices`](../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle    | Better Auth wiring, cross-site cookies, auth env safety        |
+| [`sergeant-e2e-testing`](../../.agents/skills/sergeant-e2e-testing/SKILL.md)                           | Playwright E2E tests, smoke tests, a11y   | 8 golden rules, seedFTUX, no waitForTimeout, role selectors    |
+| [`sergeant-security-audit`](../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain |
+| [`sergeant-tech-debt`](../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline     | Knip, eslint-baseline.js, module-size #18, noUncheckedIndexedAccess #19 |
 | [`sergeant-writing-skills`](../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`   | TDD-for-skills, frontmatter shape, lock SHA-256, security scan |
 
 ## Preferred Routing by Scenario
@@ -44,6 +47,9 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 | Add a DB column safely                   | `sergeant-feature-delivery` + `sergeant-data-and-migrations`                          |
 | Review PR touching server + `api-client` | `sergeant-review-and-merge` + `sergeant-server-api`                                   |
 | Add or change a HubChat tool             | `sergeant-feature-delivery` + `sergeant-hubchat`                                      |
+| Write or debug a Playwright E2E test     | `sergeant-e2e-testing`                                                                |
+| Run a security review or pnpm audit      | `sergeant-security-audit`                                                             |
+| Reduce tech debt, dead code, ESLint baseline | `sergeant-tech-debt`                                                              |
 | Port a screen from web to Expo           | `sergeant-feature-delivery` + `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` |
 | Change auth or cookies                   | `better-auth-best-practices` and only then the touched surface skill                  |
 | Ship env or deploy changes               | `sergeant-deploy-and-observability`                                                   |
