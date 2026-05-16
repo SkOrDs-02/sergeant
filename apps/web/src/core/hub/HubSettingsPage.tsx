@@ -272,7 +272,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
       {/* Search and tabs header */}
-      <div className="flex flex-col gap-3 sticky top-0 z-10 bg-bg/95 backdrop-blur-sm -mx-4 px-4 py-2 -mt-3">
+      <div className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3" style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))" }}>
         <label className="relative block">
           <span className="sr-only">Пошук по налаштуваннях</span>
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
@@ -283,7 +283,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук налаштувань…"
-            className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panel border border-line rounded-2xl text-base md:text-sm text-text placeholder:text-muted shadow-soft"
+            className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-surface-soft-glass border border-surface-line rounded-r-lg text-base md:text-sm text-ink placeholder:text-muted-v2"
           />
           {query && (
             <Button
@@ -308,7 +308,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
             items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
             value={tab}
             onChange={(v) => setTab(v)}
-            className="overflow-x-auto border border-line shadow-soft"
+            className="overflow-x-auto border border-surface-line bg-surface-soft-glass rounded-r-lg"
           />
         )}
       </div>
@@ -317,7 +317,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
       <div className="flex flex-col gap-4">
         {visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="w-12 h-12 rounded-full bg-panelHi flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-surface-soft-glass border border-surface-line flex items-center justify-center">
               <Icon name="search" size={24} className="text-muted" />
             </div>
             <p className="text-sm text-muted text-center">

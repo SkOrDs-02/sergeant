@@ -23,9 +23,34 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
   );
 }
 
+/** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
+type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
+
+/** Scoped bg-class for the icon badge — avoids global accent-rgb emission
+ *  (Hard Rule #12). Each module has a registered `-soft` / `-soft-border`
+ *  pair in the design token contract. */
+const MODULE_ICON_BG: Record<SettingsModule, string> = {
+  finyk: "bg-finyk-soft border-finyk-soft-border text-finyk",
+  fizruk: "bg-fizruk-soft border-fizruk-soft-border text-fizruk",
+  routine: "bg-routine-soft border-routine-soft-border text-routine",
+  nutrition: "bg-nutrition-soft border-nutrition-soft-border text-nutrition",
+};
+
 export interface SettingsGroupProps {
   title: string;
+  /**
+   * Optional icon name (Lucide icon string). Replaces the deprecated
+   * `emoji` prop. When combined with `module`, the icon badge uses the
+   * module's soft-surface palette.
+   */
+  icon?: string;
+  /**
+   * @deprecated Use `icon` instead. Kept for call-site back-compat;
+   * when both are provided `icon` wins.
+   */
   emoji?: string;
+  /** Module accent for the icon badge. Requires `icon` to be set. */
+  module?: SettingsModule;
   children: ReactNode;
   defaultOpen?: boolean;
   /**
@@ -46,7 +71,9 @@ function matchesHash(anchorId: string | undefined): boolean {
 
 export function SettingsGroup({
   title,
+  icon,
   emoji,
+  module,
   children,
   defaultOpen = false,
   anchorId,
@@ -62,22 +89,41 @@ export function SettingsGroup({
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [anchorId]);
+
+  // `icon` wins over the deprecated `emoji` prop.
+  const resolvedIcon = icon ?? undefined;
+  const resolvedEmoji = !resolvedIcon ? emoji : undefined;
+
+  // Scoped module bg class — uses registered token pair, never raw RGB
+  // (Hard Rule #12). Guard with ?. so noUncheckedIndexedAccess is satisfied.
+  const moduleBg = module != null ? (MODULE_ICON_BG[module] ?? "") : "";
+
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden shadow-soft">
+    <Card prominence="glass" radius="r-lg" padding="none" className="overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={cn(
           "w-full px-4 py-4 flex items-center justify-between gap-3",
-          "hover:bg-panelHi/60 active:bg-panelHi transition-colors",
-          open && "bg-panelHi/30",
+          "hover:bg-surface-strong-glass active:bg-surface-soft-glass transition-colors",
+          open && "bg-surface-soft-glass",
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {emoji && (
+          {resolvedIcon && (
+            <span
+              className={cn(
+                "rounded-r-md p-1.5 border flex items-center justify-center shrink-0",
+                moduleBg || "bg-surface-soft-glass border-surface-line text-muted-v2",
+              )}
+            >
+              <Icon name={resolvedIcon} size={18} />
+            </span>
+          )}
+          {resolvedEmoji && (
             <span className="text-lg w-7 h-7 flex items-center justify-center rounded-xl bg-bg">
-              {emoji}
+              {resolvedEmoji}
             </span>
           )}
           <span className="text-base font-semibold text-text">{title}</span>
@@ -113,13 +159,13 @@ export function SettingsSubGroup({
 }: SettingsSubGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
-    <div className="rounded-xl bg-bg/50 border border-line/40 overflow-hidden">
+    <div className="rounded-xl bg-surface-soft-glass border border-surface-line overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2 w-full text-left group px-3 py-2.5",
-          "hover:bg-panelHi/40 transition-colors",
+          "flex items-center gap-2 w-full text-left group px-3 py-3",
+          "hover:bg-surface-strong-glass transition-colors",
         )}
       >
         <ChevronIcon expanded={open} />
@@ -166,8 +212,8 @@ export function ToggleRow({
       // hover/active-стейтом, по всій ширині.
       className={cn(
         "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
-        "p-3 rounded-2xl border border-line/60 bg-panel/60 shadow-soft",
-        "hover:border-brand/40 hover:bg-panelHi/60 active:bg-panelHi",
+        "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
+        "hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass",
         "transition-[background-color,border-color]",
       )}
     >
@@ -227,7 +273,14 @@ export function ConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
-        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-float p-6 z-10 motion-safe:animate-scale-in"
+        className={cn(
+          "relative w-full max-w-sm p-6 z-10 motion-safe:animate-scale-in",
+          // v2 glass surface — auto-upgrades to opaque in HC (theme.css
+          // §HC v2 overrides: --surface-glass → rgba(255,255,255,1) /
+          // rgba(32,28,25,1) dark-HC). No separate `html.hc &` needed.
+          "bg-surface-glass backdrop-blur-xl border border-surface-line",
+          "rounded-r-2xl shadow-card-v2",
+        )}
       >
         <h2
           id="confirm-modal-title"
@@ -241,7 +294,7 @@ export function ConfirmModal({
         <div className="flex gap-3 mt-6">
           <button
             type="button"
-            className="text-style-label flex-1 py-3.5 rounded-xl border border-line text-muted hover:bg-panelHi hover:text-text transition-colors"
+            className="text-style-label flex-1 py-3.5 rounded-xl border border-line text-muted hover:bg-surface-strong-glass hover:text-text transition-colors"
             onClick={onCancel}
           >
             {messages.actions.cancel}
@@ -251,8 +304,8 @@ export function ConfirmModal({
             className={cn(
               "text-style-label flex-1 py-3.5 rounded-xl text-white transition-colors shadow-soft",
               danger
-                ? "bg-danger hover:bg-danger/90 active:bg-danger/80"
-                : "bg-brand hover:bg-brand/90 active:bg-brand/80",
+                ? "bg-danger-strong hover:bg-danger/90 active:bg-danger/80"
+                : "bg-brand-strong hover:bg-brand/90 active:bg-brand/80",
             )}
             onClick={onConfirm}
           >
