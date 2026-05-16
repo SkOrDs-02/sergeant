@@ -19,7 +19,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "cd24e6b11ac065e9b6851a6062786c26759db63f350e3dcf36c2875642dcd19c"
+      "computedHash": "6ad58ceda725e7d9b9693a695d9b4ac22b6ea39ef0049b8bd0cba5ca922752ed"
     },
     "sergeant-feature-delivery": {
       "source": "local",
@@ -29,7 +29,7 @@
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b92e9ce90ae91d0586cf3c3a1eb62db4acb9b95d0bbf193ecd23efca8d7a69f1"
+      "computedHash": "0986305b78ca528dff6ec67c3490438afc0f159530f708c5b3ed225ee8ed8881"
     },
     "sergeant-mobile-expo": {
       "source": "local",
@@ -69,7 +69,7 @@
     "sergeant-openclaw": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "7e926637854357ab11c2dd1aa51e31cf3038132723a355eb2c6559c54d163ee3"
+      "computedHash": "3a585bc29ba2677659508b5cff7b4d3b337744f70224c3d3b8219f92437a4fcc"
     }
   }
 }

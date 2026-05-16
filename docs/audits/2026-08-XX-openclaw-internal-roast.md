@@ -46,7 +46,7 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 
 - **Code:** [`apps/server/src/routes/internal/openclaw.ts`](../../apps/server/src/routes/internal/openclaw.ts) (1781 LOC).
 - **Policy ADR:** [`docs/adr/0027-openclaw-console-mcp-policy.md`](../adr/0027-openclaw-console-mcp-policy.md) (allowlist + audit + approval).
-- **Gateway ADR:** [`docs/adr/0055-openclaw-gateway-migration.md`](../adr/0055-openclaw-gateway-migration.md) (external bot identity + plugin architecture).
+- **Gateway ADR:** [`docs/adr/0055-openclaw-external-gateway.md`](../adr/0055-openclaw-external-gateway.md) (external bot identity + plugin architecture).
 - **Strategic modes ADR:** [`docs/adr/0033-openclaw-multi-personas-and-council.md`](../adr/0033-openclaw-multi-personas-and-council.md) (council + approval-gate model).
 - **Webhook ADR:** [`docs/adr/0041-openclaw-telegram-webhook.md`](../adr/0041-openclaw-telegram-webhook.md) (token-rotation + idempotency).
 - **PR plan:** [`docs/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).

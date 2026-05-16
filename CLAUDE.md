@@ -18,7 +18,7 @@
 - Для browser smoke tests віддавай перевагу локальному / in-app browser workflow.
 - Не дублюй repo policy у відповіді, якщо вона вже описана в `AGENTS.md` або playbook — посилайся.
 - Для review/merge tasks звіряйся з [docs/governance/review-checklist.md](./docs/governance/review-checklist.md).
-- **OpenClaw Gateway:** якщо задача торкається Telegram-бота, console agent або `@sergeant/openclaw-plugin` — завантажуй `sergeant-openclaw` скіл (не `sergeant-hubchat`). Дивись [docs/adr/0055-openclaw-gateway-migration.md](./docs/adr/0055-openclaw-gateway-migration.md).
+- **OpenClaw Gateway:** якщо задача торкається Telegram-бота, console agent або `@sergeant/openclaw-plugin` — завантажуй `sergeant-openclaw` скіл (не `sergeant-hubchat`). Дивись [docs/adr/0055-openclaw-external-gateway.md](./docs/adr/0055-openclaw-external-gateway.md).
 - **Перед будь-якою зміною SKILL.md** — прочитай `sergeant-writing-skills` скіл. Після змін обов'язково: `pnpm lint:skills && pnpm skills:lock`. CI падає без оновленого lock.
 - **ADR directory:** `docs/adr/` містить 23+ ADR-ів (останній — 0057, 2026-05-11). Читай перед зміною infrastructure, auth або billing.
 - **TypeScript:** `noUncheckedIndexedAccess: true` активний — враховуй при генерації коду з index-доступом до масивів/об'єктів.
