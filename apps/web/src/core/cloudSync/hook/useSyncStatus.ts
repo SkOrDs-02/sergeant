@@ -27,7 +27,19 @@ import { getSyncEngineWriter } from "../../syncEngine/singleton";
  *   - On `online`/`offline` transitions we invalidate the query so
  *     the next read is fresh (`enabled` stays `true`, but
  *     `refetchInterval` flips off when offline so we don't
- *     pointlessly hammer SQLite in airplane mode).
+ *     pointlessly hammer SQLite in airplane mode). The invalidation
+ *     runs in a `useEffect` with deps `[queryClient]` and is wired
+ *     directly to the `window` `online`/`offline` events — not to the
+ *     `isOnline` React state value. Coupling the invalidate-effect to
+ *     `[isOnline, queryClient]` (as in the original design) re-ran the
+ *     effect on mount and on every `isOnline`-driven re-render of
+ *     surfaces that also subscribe to `isOnline` (the Welcome route,
+ *     `OfflineBanner`), and with `staleTime: 0` + `networkMode: "always"`
+ *     the resulting invalidate → refetch → React Query observer notify
+ *     → consumer re-render chain could latch into an infinite render
+ *     loop on `/welcome` (see PR description). Listening to the window
+ *     events directly fires only on the actual transitions, which is
+ *     the only thing the invalidate was meant to react to.
  *   - Window focus also triggers a refetch, matching React Query's
  *     defaults — useful for users who keep the tab in the background.
  *   - Hard Rule #2 — the key lives in `syncKeys.status()` factory in
@@ -91,8 +103,16 @@ export function useSyncStatus(): SyncStatusState {
   });
 
   useEffect(() => {
-    void queryClient.invalidateQueries({ queryKey: syncKeys.status() });
-  }, [isOnline, queryClient]);
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: syncKeys.status() });
+    };
+    window.addEventListener("online", invalidate);
+    window.addEventListener("offline", invalidate);
+    return () => {
+      window.removeEventListener("online", invalidate);
+      window.removeEventListener("offline", invalidate);
+    };
+  }, [queryClient]);
 
   const counts = data ?? EMPTY_COUNTS;
 
