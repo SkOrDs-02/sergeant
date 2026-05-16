@@ -31,7 +31,7 @@
 -- (analogous to ReminderPoller) DELETE-ить рядки старше за threshold. PR-29
 -- replay-CLI читає тільки `received_at > now() - retention`.
 
-CREATE TABLE n8n_webhook_events (
+CREATE TABLE IF NOT EXISTS n8n_webhook_events (
   id           BIGSERIAL    PRIMARY KEY,
   workflow_id  TEXT         NOT NULL,
   source       TEXT         NOT NULL,
@@ -43,12 +43,12 @@ CREATE TABLE n8n_webhook_events (
 );
 
 -- Replay lookup: most-recent події per-workflow ('заостанні 24h по WF-06').
-CREATE INDEX n8n_webhook_events_workflow_received_at_idx
+CREATE INDEX IF NOT EXISTS n8n_webhook_events_workflow_received_at_idx
   ON n8n_webhook_events (workflow_id, received_at DESC);
 
 -- Pending-queue lookup: «що зависло» (processed_at IS NULL) — partial index
 -- щоб не платити за processed-події.
-CREATE INDEX n8n_webhook_events_pending_idx
+CREATE INDEX IF NOT EXISTS n8n_webhook_events_pending_idx
   ON n8n_webhook_events (received_at)
   WHERE processed_at IS NULL;
 
