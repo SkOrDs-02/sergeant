@@ -10,28 +10,45 @@ import App from "../App";
  * як і було при `<BrowserRouter>`. Поточний `App.tsx` містить вбудовану FSM
  * (`useHubNavigation` + `?module=<id>` + hash), яка обробляє legacy URL.
  *
- * Phase 2 (поетапно, по PR на модуль): додаємо top-level routes
- * (`/nutrition/*`, `/finyk/*`, …) **перед** catch-all-ом. v7 trie-резолвер
- * віддає пріоритет більш специфічним маршрутам, тому `/nutrition/...`
- * матчиться першим, а решта (`/`, `/welcome`, `/sign-in`, …) лишається в
- * catch-all → `<App />`. На цьому етапі element обох гілок — той самий
- * `<App />`, бо Hub FSM (`useHubNavigation`) тепер читає `pathname` і
- * виставляє `activeModule = "nutrition"` коли URL = `/nutrition[/...]`.
- * Це означає, що провайдери (`ToastProvider`, `AuthProvider`, …) у `<App />`
- * mount-яться рівно один раз і не перемонтовуються при переходах
- * `/` → `/nutrition` → `/finyk` (RouteProvider бачить той самий element-ref
- * у RouteObject-ах і утримує DOM-mount).
+ * Phase 2 history (revisited 2026-05-16): попередня версія цього файлу
+ * додавала окремі lazy routes для кожного модуля
+ * (`/nutrition/*`, `/finyk/*`, `/fizruk/*`, `/routine/*`) перед catch-all-ом.
+ * Кожен з них резолвив через `lazy()` до `{Component: App}` — тобто рендерив
+ * РІВНО ТОЙ САМИЙ `<App />` компонент, як і catch-all. Це створювало
+ * непомітну, але руйнівну патологію у React Router 7-му:
  *
- * Phase 5 (cleanup): провайдери будуть підняті у спільний parent-route
- * (`element: <RootLayout />` з `<Outlet />`), а `apps/web/src/modules/<mod>/route.tsx`
- * замінять `element: <App />` на `<Lazy>`-обгортку конкретного `<XxxApp />`.
- * Тоді chunk-розщеплення піде через сам route (а не через `lazyDefault` у
- * `ActiveModuleView`), і `<App />` перестане бути shell-ом для модульних шляхів.
+ *   • При in-app `navigate("/sign-in")` з module-pathname (`/fizruk`,
+ *     `/finyk/transactions` тощо) router міняв matched route з module-id (2)
+ *     на catch-all-id (4). Component той самий → React reconciler reuse-ить
+ *     `<App />` instance. Але route-level lazy-resolve у попередньому маршруті
+ *     встиг конвертувати `{Component: App}` у внутрішній `element: <App />`
+ *     (підтверджено через `router.state.matches[0].route` —
+ *     `hasComponent: false, hasLazy: false, hasElement: true`). Через цей
+ *     mixed-shape match-обʼєкт **`location`-context оновлюється у data-router-і,
+ *     але не propagate-иться у дереві під element-only routes** — `useLocation()`
+ *     у будь-якого consumer-а (`StandaloneRoutes`, `useHubNavigation`,
+ *     `useFizrukRoute`, `useFinykRoute`, `HubBottomNav` через `onChange`)
+ *     повертає stale pathname. URL у адресній стрічці змінюється, контент
+ *     залишається старим. Сторінки модулів і `/sign-in` тоді «не відкриваються».
  *
- * Чому окремий файл, а не inline у `main.tsx`: data-router API очікує
- * config-tree (масив `RouteObject`-ів). Зберігаємо config-tree у власному
- * файлі, щоб per-domain `route.tsx`-и могли посилатись на ту саму
- * RouteObject-shape без циклів.
+ *   • Code-splitting через ці lazy-обгортки нічого не давав — справжній
+ *     модульний chunk-split іде через `lazyDefault(() => import(
+ *     "../../modules/<id>/<X>App"))` у `ActiveModuleView.tsx`. Дублююча
+ *     route-level lazy-layer-а додавала тільки race-condition без виграшу.
+ *
+ * Тому повертаємо до Phase-1 shape — один catch-all → `<App />` для будь-якого
+ * pathname. `useHubNavigation` усе ще читає pathname і коректно встановлює
+ * `activeModule` для `/fizruk[/...]`, `/finyk[/...]` etc. (його логіка
+ * `parsePathnameModule` не змінюється — модульні URL-и працюють як раніше,
+ * просто без зайвої route-level lazy-обгортки). `StandaloneRoutes` так само
+ * матчить `/sign-in`, `/welcome`, `/pricing` тощо.
+ *
+ * Phase 5 (cleanup, перенесено) — після того як провайдери будуть підняті
+ * у спільний parent-route (`element: <RootLayout />` з `<Outlet />`),
+ * модульні маршрути можуть повернутися як справжні nested routes з
+ * `<Outlet>`-композицією. Поки що цього робити не варто — той самий
+ * `<App />` має лишатися mount-ом для авторизованого і неавторизованого
+ * стану (sign-in, welcome, app), і RouterProvider-у достатньо одного entry.
  *
  * Auth contract: немає guard-компонента на рівні роутера — це навмисно.
  * Підняти `<AuthProvider>` вище за router і обгорнути всі маршрути в один
@@ -41,37 +58,8 @@ import App from "../App";
  * чутливий UI, зобов'язана викликати `const { status } = useAuth()` і
  * повернути редирект/заглушку при `status !== "authenticated"`.
  * Джерело правди: `apps/web/src/core/auth/AuthContext.tsx`.
- * Phase 5 (cleanup, вище) знімає цей обмеження — тоді guard переїде сюди.
  */
 export const router = createBrowserRouter([
-  {
-    path: "/nutrition/*",
-    lazy: async () => {
-      const m = await import("../../modules/nutrition/route");
-      return m.route;
-    },
-  },
-  {
-    path: "/finyk/*",
-    lazy: async () => {
-      const m = await import("../../modules/finyk/route");
-      return m.route;
-    },
-  },
-  {
-    path: "/fizruk/*",
-    lazy: async () => {
-      const m = await import("../../modules/fizruk/route");
-      return m.route;
-    },
-  },
-  {
-    path: "/routine/*",
-    lazy: async () => {
-      const m = await import("../../modules/routine/route");
-      return m.route;
-    },
-  },
   {
     path: "*",
     element: <App />,
