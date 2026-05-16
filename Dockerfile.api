@@ -33,11 +33,17 @@
 # того ж runtime-образу. Distroless шела не має, тому pre-deploy
 # мовчки фейлиться (deploy-логи порожні, контейнер не встигає нічого
 # написати). Щоб не ламати release-stage міграцій, у runtime-стейдж
-# нижче запікаємо `busybox` (~1 MB) з alpine-білдера й симлінкуємо
-# його як `/bin/sh`. Це мінімальна додача поверх distroless: жодного
-# package manager-а / coreutils-у не з'являється, а Trivy attack
-# surface зростає тільки на один статичний binary, який і так
-# поставляється з alpine-base-у.
+# нижче запікаємо `busybox` (~800 KB) з official `busybox:stable-musl`
+# (static-pie ELF, без жодних .so-залежностей) як `/bin/sh`, і додаємо
+# `/nodejs/bin` у PATH, щоб `sh -c "node ..."` міг його зарезолвити.
+#
+# Чому НЕ alpine-busybox: у alpine `/bin/busybox` dynamically linked
+# проти musl-libc (`/lib/ld-musl-x86_64.so.1`), якої немає у
+# distroless-debian (там glibc, `/lib/x86_64-linux-gnu`). Kernel не
+# знаходить інтерпретатор і повертає мовчазне `exec /bin/sh: no such
+# file or directory` ще до того, як user-space код встигне щось вивести.
+# Static `busybox:stable-musl` цю проблему обходить — у нього INTERP
+# відсутній, NEEDED порожній.
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 1: builder — full dev deps + pnpm build
@@ -129,19 +135,32 @@ RUN find node_modules -maxdepth 3 -type d \
 # Stage 3: runtime — distroless. Жодного package manager-у, жодного
 # `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
 #
-# Єдиний shell-binary — busybox (див. коментар на початку файлу). Потрібен
-# виключно тому, що Railway виконує `preDeployCommand` через
-# `/bin/sh -c "..."`; без нього release-stage міграцій падає мовчки ще до
-# того, як `node dist-server/migrate.js` встигне щось вивести.
+# Єдиний shell-binary — busybox з `busybox:stable-musl` (static-pie,
+# self-contained ~800 KB). Потрібен виключно тому, що Railway виконує
+# `preDeployCommand` через `/bin/sh -c "..."`; без нього release-stage
+# міграцій падає мовчки ще до того, як `node dist-server/migrate.js`
+# встигне щось вивести.
 FROM --platform=linux/amd64 gcr.io/distroless/nodejs20-debian12:nonroot AS runtime
 WORKDIR /app
 
-# Запікаємо busybox як `/bin/sh`. У alpine `/bin/sh` — це симлінк на
-# `/bin/busybox`, але `COPY` Docker-а резолвить симлінки і копіює сам
-# binary, тому файл вийде самодостатній (~1 MB, статично злінкований).
-# Власник `root:root`, права `0755` — наш runtime user `nonroot` (uid
+# Запікаємо static busybox як `/bin/sh`. ВАЖЛИВО взяти його саме з
+# `busybox:stable-musl` (static-pie ELF, без INTERP / NEEDED), а НЕ з
+# `node:*-alpine /bin/busybox`: alpine-овий busybox dynamically linked
+# проти `/lib/ld-musl-x86_64.so.1`, якого немає у distroless-debian, і
+# kernel мовчки повертає `exec /bin/sh: no such file or directory` ще
+# до user-space — Railway pre-deploy не отримує жодного логу.
+# Власник `root:root`, права `0755` — runtime user `nonroot` (uid
 # 65532) виконує його через PATH-lookup, write-доступ йому не потрібен.
-COPY --from=builder /bin/busybox /bin/sh
+COPY --from=busybox:stable-musl /bin/busybox /bin/sh
+
+# Railway виконує `preDeployCommand` через `/bin/sh -c "<cmd>"`. Default
+# PATH у distroless — `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
+# `node` живе у `/nodejs/bin/node` і у цьому списку відсутній. Без
+# наступного override-у sh не знаходить `node` і pre-deploy валиться
+# на 127 (`node: not found`). Runtime entrypoint (`/nodejs/bin/node …
+# dist-server/index.js`) PATH-lookup не використовує — отже зміна
+# впливає виключно на shell-обгорнуті команди.
+ENV PATH="/nodejs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 ENV NODE_ENV=production
 
