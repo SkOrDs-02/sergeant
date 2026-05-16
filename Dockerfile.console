@@ -37,14 +37,21 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
 COPY tools/openclaw/package.json ./tools/openclaw/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/openclaw... \
-      --filter @sergeant/config...
+      --filter @sergeant/config... \
+      --filter @sergeant/shared...
 
 # --- Джерела ---
+# `packages/shared` потрібен у builder-стейджі, бо `tools/openclaw/src/obs/sentry.ts`
+# імпортує `@sergeant/shared/lib/pii` (PII scrubbing parity з server-Sentry).
+# `build.mjs` бандлить shared у `dist/index.js` через esbuild
+# `packages: "bundle"`, тож runtime-стейджу source-и shared НЕ потрібні.
 COPY packages/config ./packages/config
+COPY packages/shared ./packages/shared
 COPY tools/openclaw ./tools/openclaw
 
 WORKDIR /app/tools/openclaw
