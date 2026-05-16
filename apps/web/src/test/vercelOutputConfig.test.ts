@@ -18,4 +18,25 @@ describe("Vercel output configuration", () => {
     const repoRootConfigPath = resolve(process.cwd(), "../../vercel.json");
     expect(existsSync(repoRootConfigPath)).toBe(false);
   });
+
+  it("serves SPA route HTML with edge no-cache headers", () => {
+    const webRootConfig = readJson(resolve(process.cwd(), "vercel.json")) as {
+      headers?: Array<{
+        source: string;
+        headers: Array<{ key: string; value: string }>;
+      }>;
+    };
+
+    const spaHtmlHeaders = webRootConfig.headers?.find(
+      (entry) =>
+        entry.source === "/((?!api/|assets/|_vercel/|\\.well-known/).*)",
+    );
+    const cacheControl = spaHtmlHeaders?.headers.find(
+      (header) => header.key.toLowerCase() === "cache-control",
+    );
+
+    expect(cacheControl?.value).toBe(
+      "public, max-age=0, must-revalidate, s-maxage=0",
+    );
+  });
 });

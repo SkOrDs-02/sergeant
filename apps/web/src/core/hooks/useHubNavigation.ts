@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { recordModuleOpen } from "../lib/recentModules";
 import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
+import { useBrowserLocation } from "./useBrowserLocation";
 
 const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
@@ -62,8 +63,9 @@ function parsePathnameModule(pathname: string): HubModuleId | null {
 
 export function useHubNavigation(): HubNavigation {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
+  const searchParams = new URLSearchParams(location.search);
 
   // Pathname wins over `?module=` — once a domain has migrated, the
   // path is the canonical contract and we don't want a stale
@@ -160,7 +162,7 @@ export function useHubNavigation(): HubNavigation {
     }
     // `activeModule` is read but also set — adding it would loop.
     // Setters (`setActiveModule`, `setModuleAnimClass`) are stable.
-  }, [location.pathname, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     activeModule,

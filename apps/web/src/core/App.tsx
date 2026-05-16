@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
@@ -21,6 +21,7 @@ import { usePwaInstall } from "./app/usePwaInstall";
 import { useSWUpdate } from "./app/useSWUpdate";
 import { SIGN_IN_PATH, WELCOME_PATH } from "./app/appPaths";
 import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
+import { useBrowserLocation } from "./hooks/useBrowserLocation";
 import { useHubNavigation } from "./hooks/useHubNavigation";
 import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions } from "./hooks/usePwaActions";
@@ -62,8 +63,8 @@ function AppInnerWithLock() {
 }
 
 function AppInner() {
-  const [searchParams] = useSearchParams();
   const location = useLocation();
+  const browserLocation = useBrowserLocation(location);
   const navigate = useNavigate();
 
   const openAuth = useCallback(() => {
@@ -107,6 +108,7 @@ function AppInner() {
     moduleAnimClass,
   } = useHubNavigation();
   const ui = useHubUIState();
+  const searchParams = new URLSearchParams(browserLocation.search);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setShortcutsOpen(false), []);
   const { pwaAction, setPwaAction, clearPwaAction, validActions } =
@@ -178,7 +180,7 @@ function AppInner() {
   // /welcome, 404). When `null` is returned, no standalone route
   // matched and we fall through to the hub home / active-module shell.
   const standalone = renderStandaloneRoute({
-    pathname: location.pathname,
+    pathname: browserLocation.pathname,
     user,
     authLoading,
     onLeaveAuth: leaveAuth,

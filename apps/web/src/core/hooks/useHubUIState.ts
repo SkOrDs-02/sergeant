@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useBrowserLocation } from "./useBrowserLocation";
 
 export type HubView = "dashboard" | "reports" | "profile" | "settings";
 
@@ -34,7 +35,8 @@ export interface HubUIState {
 
 export function useHubUIState(): HubUIState {
   const [searchOpen, setSearchOpen] = useState(false);
-  const location = useLocation();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
   const navigate = useNavigate();
   const [hubView, setHubViewRaw] = useState<HubView>(() =>
     readViewFromSearch(location.search),
