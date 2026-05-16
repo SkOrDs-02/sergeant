@@ -53,6 +53,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md) | Ротація OpenClaw GitHub credentials | ротація будь-якого OpenClaw GitHub credential — |
 | [`rotate-secrets.md`](./rotate-secrets.md) | Rotate Secrets | "Secret leaked" / планова ротація / security audit / підозріла активність. |
 | [`run-access-review.md`](./run-access-review.md) | Run Access Review | historical anchor — open [access-governance.md § Periodic access review](./access-governance.md#3-periodic-access-review) instead. |
+| [`run-council.md`](./run-council.md) | Council — рада директорів для product рішень | Засновник губиться, не знає що робити далі, або хоче валідувати ідею/рішення з кількох точок зору одночасно. |
 | [`run-squad-deliver.md`](./run-squad-deliver.md) | Squad deliver — sequential cross-surface feature delivery | Фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI. |
 | [`run-squad-qa.md`](./run-squad-qa.md) | Squad QA — паралельний QA по всіх surfaces | Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail). |
 | [`run-squad-review.md`](./run-squad-review.md) | Squad review — паралельний PR review через 4 lens-агентів | PR торкається ≥3 governed surfaces одночасно: SQL migrations, server serializers, web UI, mobile UI, SKILL.md, або HubChat tool defs. |

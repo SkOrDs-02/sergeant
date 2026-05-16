@@ -7,9 +7,9 @@
     "audit": 31,
     "hard-rule": 26,
     "initiative": 49,
-    "playbook": 53,
+    "playbook": 54,
     "pr": 227,
-    "skill": 20
+    "skill": 21
   },
   "nodes": [
     {
@@ -2208,6 +2208,15 @@
       "title": "Run Access Review",
       "path": "docs/playbooks/run-access-review.md",
       "status": "Deprecated",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:run-council",
+      "type": "playbook",
+      "title": "Council — рада директорів для product рішень",
+      "path": "docs/playbooks/run-council.md",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },
@@ -4589,6 +4598,16 @@
       "tier": "core",
       "meta": {
         "description": "Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue — even if the fix seems obvious, always reproduce first; UA: фіксиш баг, регресію, флакі-тест, зламаний деплой."
+      }
+    },
+    {
+      "id": "skill:sergeant-council",
+      "type": "skill",
+      "title": "sergeant-council",
+      "path": ".agents/skills/sergeant-council/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when the founder needs a multi-perspective advisory board — spawns council specialists in parallel (product, ux, growth, tech, critic) and synthesizes recommendations; UA: скликай раду / порадься з командою."
       }
     },
     {
@@ -6995,6 +7014,11 @@
     },
     {
       "from": "skill:sergeant-bugfix-and-regression",
+      "to": "pr:1848",
+      "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-council",
       "to": "pr:1848",
       "type": "touched-by"
     },

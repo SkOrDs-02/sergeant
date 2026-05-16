@@ -27,10 +27,10 @@
 <body>
 <h1>Sergeant — Knowledge Graph</h1>
 <p class="auto-gen">Generated 2026-05-16 · schema v1 · do not edit by hand — regenerate via <code>pnpm docs:gen-graph</code>.</p>
-<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>26</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>53</b></span> <span class="chip chip-pr">pr: <b>227</b></span> <span class="chip chip-skill">skill: <b>20</b></span></div>
+<div class="summary"><span class="chip chip-adr">adr: <b>58</b></span> <span class="chip chip-audit">audit: <b>31</b></span> <span class="chip chip-hard-rule">hard-rule: <b>26</b></span> <span class="chip chip-initiative">initiative: <b>49</b></span> <span class="chip chip-playbook">playbook: <b>54</b></span> <span class="chip chip-pr">pr: <b>227</b></span> <span class="chip chip-skill">skill: <b>21</b></span></div>
 
 <details open>
-<summary>Nodes (237 core)</summary>
+<summary>Nodes (239 core)</summary>
 <table>
 <thead><tr><th>Type</th><th>Id</th><th>Title</th><th>Status</th><th>Meta</th></tr></thead>
 <tbody>
@@ -241,6 +241,7 @@
 <tr><td>playbook</td><td><code>playbook:rotate-openclaw-credentials</code></td><td><a href="../../docs/playbooks/rotate-openclaw-credentials.md">Ротація OpenClaw GitHub credentials</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:rotate-secrets</code></td><td><a href="../../docs/playbooks/rotate-secrets.md">Rotate Secrets</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:run-access-review</code></td><td><a href="../../docs/playbooks/run-access-review.md">Run Access Review</a></td><td>Deprecated</td><td></td></tr>
+<tr><td>playbook</td><td><code>playbook:run-council</code></td><td><a href="../../docs/playbooks/run-council.md">Council — рада директорів для product рішень</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:run-squad-deliver</code></td><td><a href="../../docs/playbooks/run-squad-deliver.md">Squad deliver — sequential cross-surface feature delivery</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:run-squad-qa</code></td><td><a href="../../docs/playbooks/run-squad-qa.md">Squad QA — паралельний QA по всіх surfaces</a></td><td>Active</td><td></td></tr>
 <tr><td>playbook</td><td><code>playbook:run-squad-review</code></td><td><a href="../../docs/playbooks/run-squad-review.md">Squad review — паралельний PR review через 4 lens-агентів</a></td><td>Active</td><td></td></tr>
@@ -253,6 +254,7 @@
 <tr><td>playbook</td><td><code>playbook:write-postmortem</code></td><td><a href="../../docs/playbooks/write-postmortem.md">Postmortem після інциденту</a></td><td>Active</td><td></td></tr>
 <tr><td>skill</td><td><code>skill:better-auth-best-practices</code></td><td><a href="../../.agents/skills/better-auth-best-practices/SKILL.md">better-auth-best-practices</a></td><td></td><td>description=Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-bugfix-and-regression</code></td><td><a href="../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md">sergeant-bugfix-and-regression</a></td><td></td><td>description=Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue — even if the fix seems obvious, always reproduce first; UA: фіксиш баг, регресію, флакі-тест, зламаний деплой.</td></tr>
+<tr><td>skill</td><td><code>skill:sergeant-council</code></td><td><a href="../../.agents/skills/sergeant-council/SKILL.md">sergeant-council</a></td><td></td><td>description=Use when the founder needs a multi-perspective advisory board — spawns council specialists in parallel (product, ux, growth, tech, critic) and synthesizes recommendations; UA: скликай раду / порадься з командою.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-data-and-migrations</code></td><td><a href="../../.agents/skills/sergeant-data-and-migrations/SKILL.md">sergeant-data-and-migrations</a></td><td></td><td>description=Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-deliver-squad</code></td><td><a href="../../.agents/skills/sergeant-deliver-squad/SKILL.md">sergeant-deliver-squad</a></td><td></td><td>description=Use when implementing a Sergeant feature across 2+ surfaces with contract dependencies (DB + server + api-client + web/mobile) — sequential subagent handoffs prevent bigint and triplet gaps; UA: фіча через 2+ surfaces.</td></tr>
 <tr><td>skill</td><td><code>skill:sergeant-deploy-and-observability</code></td><td><a href="../../.agents/skills/sergeant-deploy-and-observability/SKILL.md">sergeant-deploy-and-observability</a></td><td></td><td>description=Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n.</td></tr>
@@ -276,7 +278,7 @@
 </details>
 
 <details>
-<summary>Edges (478 total, first 500 core-to-core)</summary>
+<summary>Edges (479 total, first 500 core-to-core)</summary>
 <table>
 <thead><tr><th>From</th><th>Edge</th><th>To</th></tr></thead>
 <tbody>
