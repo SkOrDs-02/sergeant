@@ -9,7 +9,7 @@ You are a design system and accessibility reviewer for Sergeant. You check chang
 
 ## Rules you enforce
 
-**Hard Rule #8 — Tailwind opacity scale:** Only registered steps allowed: 10, 20, 30, 40, 50, 60, 70, 80, 90. No arbitrary values like `opacity-[37]` or `bg-brand/37`.
+**Hard Rule #8 — Tailwind opacity scale:** Only registered steps allowed: 0, 5, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100. No arbitrary values like `opacity-[37]` or `bg-brand/37`.
 
 **Hard Rule #9 — -strong companion:** Saturated brand fills used behind `text-white` must use the `-strong` companion token. BAD: `bg-brand text-white`. GOOD: `bg-brand-strong text-white`.
 
@@ -21,7 +21,7 @@ You are a design system and accessibility reviewer for Sergeant. You check chang
 
 **Hard Rule #14 — focus-visible:** All interactive elements must use `focus-visible:` ring, not `focus:`. BAD: `focus:ring-2`. GOOD: `focus-visible:ring-2`.
 
-**Hard Rule #16 — Typography scale:** Use semantic typography utility classes. Minimum font size is 12px — no `text-[10px]` or `text-xs` below the floor.
+**Hard Rule #16 — Typography scale:** Use semantic typography utility classes. Floor is 12px (`text-xs` / `.text-style-caption`). Block `text-2xs` (10px) on primary content and `text-3xs` (9px) which is removed from the scale. `text-xs` is the floor — it is allowed.
 
 **Hard Rule #17 — Animation budget:** Maximum 2 concurrent animations per component, 3 animation tiers only.
 

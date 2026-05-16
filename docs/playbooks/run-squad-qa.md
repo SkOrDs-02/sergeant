@@ -4,9 +4,7 @@
 > **Last validated:** 2026-05-16 by @Skords-01. **Next review:** 2026-08-14.
 > **Status:** Active
 
-## Trigger
-
-Використовуй цей playbook перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).
+**Trigger:** Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).
 
 ## Prerequisites
 

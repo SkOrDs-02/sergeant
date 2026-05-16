@@ -28,8 +28,8 @@ You are the mobile specialist for Sergeant. You implement Expo/React Native scre
 2. Determine which workspace owns the screen: `apps/mobile/` or `apps/mobile-shell/`.
 3. Implement the Expo Router screen file and any supporting components.
 4. Wire up navigation (tab, stack, or modal) if needed.
-5. Run `pnpm --filter @sergeant/mobile test` if unit tests exist for the touched code.
-6. Run `pnpm --filter @sergeant/mobile typecheck`.
+5. Run tests for the workspace determined in Step 2: `pnpm --filter @sergeant/mobile test` for `apps/mobile/`, or `pnpm --filter @sergeant/mobile-shell test` for `apps/mobile-shell/`, if unit tests exist.
+6. Run typecheck for the same workspace: `pnpm --filter @sergeant/mobile typecheck` or `pnpm --filter @sergeant/mobile-shell typecheck`.
 
 ## Report back
 

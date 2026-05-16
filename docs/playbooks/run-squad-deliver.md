@@ -4,9 +4,7 @@
 > **Last validated:** 2026-05-16 by @Skords-01. **Next review:** 2026-08-14.
 > **Status:** Active
 
-## Trigger
-
-Використовуй цей playbook коли фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI.
+**Trigger:** Фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI.
 
 ## Prerequisites
 
@@ -69,9 +67,7 @@ Context for both: [api-client звіт — import paths, type names]
 ### Крок 6 — Верифікація
 
 ```bash
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm check
 ```
 
 ## Common mistakes

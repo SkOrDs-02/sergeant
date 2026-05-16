@@ -4,9 +4,7 @@
 > **Last validated:** 2026-05-16 by @Skords-01. **Next review:** 2026-08-14.
 > **Status:** Active
 
-## Trigger
-
-Використовуй цей playbook коли PR торкається ≥3 governed surfaces: SQL migrations, server serializers, web UI, mobile UI, SKILL.md файли, або HubChat tool defs — одночасно.
+**Trigger:** PR торкається ≥3 governed surfaces одночасно: SQL migrations, server serializers, web UI, mobile UI, SKILL.md, або HubChat tool defs.
 
 ## Prerequisites
 
