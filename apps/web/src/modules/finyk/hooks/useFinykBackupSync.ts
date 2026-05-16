@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import {
   normalizeFinykBackup,
@@ -37,6 +38,7 @@ export function useFinykBackupSync(
   slots: FinykStorageSlots,
   toast: BackupToast | undefined,
 ) {
+  const navigate = useNavigate();
   const {
     budgets,
     setBudgets,
@@ -169,7 +171,14 @@ export function useFinykBackupSync(
       const raw = JSON.parse(decodeURIComponent(atob(encoded)));
       const normalized = normalizeFinykSyncPayload(raw);
       applyData(normalized);
-      window.history.replaceState({}, "", window.location.pathname);
+      // Clear `?sync=…` із URL через `navigate({ replace: true })`, а не
+      // `history.replaceState` — інакше data-router `createBrowserRouter`
+      // не дізнається про зміну search-string-у і `useLocation()`
+      // консьюмери лишаться зі застарілим URL у пам'яті.
+      navigate(
+        { pathname: window.location.pathname, search: "", hash: "" },
+        { replace: true },
+      );
       return true;
     } catch (err) {
       reportSilentError("load sync from url", err);
