@@ -4,7 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+
+// `apps/web/package.json` has `"type": "module"`, so the CJS `__dirname`
+// global isn't available. Vite itself shims it at runtime, but static
+// loaders (knip, ts-morph, etc.) evaluate this file as plain ESM and
+// blow up. Derive the directory from `import.meta.url` so the config is
+// portable across both worlds.
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
