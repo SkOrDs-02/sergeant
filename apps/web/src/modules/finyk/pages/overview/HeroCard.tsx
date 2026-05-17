@@ -1,5 +1,8 @@
 import { memo } from "react";
+
+import { Card } from "@shared/components/ui/Card";
 import { cn } from "@shared/lib/ui/cn";
+
 import { computePulseStyle } from "./pulseStyle";
 
 interface HeroCardProps {
@@ -21,6 +24,12 @@ interface HeroCardProps {
  *
  * Денний бюджет — єдине джерело правди на сторінці; MonthPulseCard більше
  * не дублює це число у блоці «Фінпульс».
+ *
+ * Phase 2.1 v2 redesign (C3): chrome тепер через `<Card prominence="hero"
+ * module="finyk">` + decorative `--hero-grad-finyk` wash. Статус-акцент
+ * (`pulseStyle.color`) тримається на самому числі/підпису — лівий 4px
+ * accent border видалено, бо hero-gradient + кольоровий statusText вже
+ * несуть pulse-signal без дублювання chrome.
  */
 const HeroCardImpl = function HeroCard({
   networth,
@@ -33,7 +42,7 @@ const HeroCardImpl = function HeroCard({
   spendPlanRatio = 0,
   showBalance = true,
 }: HeroCardProps) {
-  const { accentLeft, color, statusText } = computePulseStyle({
+  const { color, statusText } = computePulseStyle({
     hasExpensePlan,
     spendPlanRatio,
     dayBudget,
@@ -52,21 +61,28 @@ const HeroCardImpl = function HeroCard({
     : "••••";
 
   return (
-    <div
-      className={cn(
-        "rounded-3xl bg-finyk/[.06] dark:bg-finyk-surface-dark/10",
-        "border border-finyk/[.14] dark:border-finyk-border-dark/20",
-        "border-l-4 shadow-card",
-        accentLeft,
-      )}
+    <Card
+      prominence="hero"
+      module="finyk"
+      radius="r-2xl"
+      padding="none"
+      className="relative overflow-hidden"
     >
-      <div className="px-5 pt-4 pb-3">
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "var(--hero-grad-finyk)",
+          opacity: 0.07,
+        }}
+      />
+      <div className="relative px-5 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-style-caption text-subtle">Нетворс</p>
             <p
               className={cn(
-                "text-base sm:text-style-title tabular-nums leading-tight mt-0.5",
+                "text-style-title tabular-nums leading-tight mt-0.5",
                 networth < 0
                   ? "text-danger-strong dark:text-danger"
                   : "text-text",
@@ -109,10 +125,10 @@ const HeroCardImpl = function HeroCard({
         </p>
       </div>
 
-      <div className="border-t border-finyk/20 px-5 py-4">
+      <div className="relative border-t border-finyk-soft-border px-5 py-4">
         <div
           className={cn(
-            "text-display-stat",
+            "text-style-display-hero",
             color,
             !showBalance && "tracking-widest",
           )}
@@ -145,7 +161,7 @@ const HeroCardImpl = function HeroCard({
               {Math.round(monthProgressPct)}%
             </span>
           </div>
-          <div className="h-1 rounded-full bg-finyk/15 overflow-hidden">
+          <div className="h-1 rounded-full bg-finyk-soft-border overflow-hidden">
             <div
               className="h-full rounded-full bg-linear-to-r from-brand-400 to-brand-500 transition-[width] duration-500"
               style={{ width: `${monthProgressPct}%` }}
@@ -153,7 +169,7 @@ const HeroCardImpl = function HeroCard({
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
