@@ -1,0 +1,5 @@
+Screen: Routine — Today view (module home)
+Source: apps/web/src/modules/routine/RoutineApp.tsx (+ RoutineHeader.tsx, RoutineTimeline.tsx)
+Status: live-in-code
+Note: no pages/ directory in routine — RoutineApp IS the today screen.
+Replace with: screenshot at 390×844px, light + dark mode.

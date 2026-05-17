@@ -1,0 +1,4 @@
+Screen: Paywall / upgrade gate
+Source: apps/web/src/core/billing/ (directory) — verify exact screen path
+Status: not-yet-implemented (paywall UX per docs/launch/product-os/paywall-implementation-plan.md)
+Replace with: screenshot once implemented, or remove this placeholder.

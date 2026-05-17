@@ -1,5 +1,7 @@
 # Landing-page мокапи для бета-тесту та реклами
 
+> **Файли переміщено** до `mockups/landing/campaigns/` (git history збережено через `git mv`). Посилання нижче оновлено.
+
 > **Last validated:** 2026-05-14 by @Skords-01 / Devin. **Next review:** 2026-08-12.
 > **Status:** Scaffolded
 
@@ -23,14 +25,14 @@ Chrome) і preview-деплой був тривіальним (Vercel static / N
 
 | #   | Файл                                                                         | Концепт                 | Hero-CTA                       | Target traffic                                                |
 | --- | ---------------------------------------------------------------------------- | ----------------------- | ------------------------------ | ------------------------------------------------------------- |
-| 01  | [`mockup-01-ai-coach.html`](./mockup-01-ai-coach.html)                       | AI Coach hero           | «Хочу в бету» + email          | Twitter/X · DOU.ua · аудиторія, що любить AI                  |
-| 02  | [`mockup-02-five-in-one.html`](./mockup-02-five-in-one.html)                 | 5-в-1 / Before-After    | «Хочу спробувати»              | Product Hunt · Threads · users з SaaS-fatigue                 |
-| 03  | [`mockup-03-local-first-privacy.html`](./mockup-03-local-first-privacy.html) | Local-first manifesto   | «Запит на доступ»              | Hacker News · privacy-aware · Indie Hackers                   |
-| 04  | [`mockup-04-day-in-life.html`](./mockup-04-day-in-life.html)                 | Day-in-the-life         | «Хочу в бету»                  | Instagram · Threads · аудиторія, що любить storytelling       |
-| 05  | [`mockup-05-beta-exclusive.html`](./mockup-05-beta-exclusive.html)           | Closed-beta urgency     | «Забронювати спот» + countdown | Meta Ads · paid traffic · retargeting · founder-DM-кампанія   |
-| 06  | [`mockup-06-founder-letter.html`](./mockup-06-founder-letter.html)           | Founder letter / IH     | «Запиши мене у бету»           | Substack · Telegram-канал · email-list · founder-friendly DOU |
-| 07  | [`mockup-07-roi-calculator.html`](./mockup-07-roi-calculator.html)           | ROI / Savings calc      | «Хочу зекономити»              | Google Search · «alternatives to YNAB» queries · cost-aware   |
-| 08  | [`mockup-08-made-in-ukraine.html`](./mockup-08-made-in-ukraine.html)         | Made in Ukraine (UA-UA) | «🇺🇦 Записатись у бету»         | DOU · Telegram-канали (укр-патріотичні) · локальні медіа      |
+| 01  | [`campaigns/ai-coach.html`](../../mockups/landing/campaigns/ai-coach.html)                       | AI Coach hero           | «Хочу в бету» + email          | Twitter/X · DOU.ua · аудиторія, що любить AI                  |
+| 02  | [`campaigns/five-in-one.html`](../../mockups/landing/campaigns/five-in-one.html)                 | 5-в-1 / Before-After    | «Хочу спробувати»              | Product Hunt · Threads · users з SaaS-fatigue                 |
+| 03  | [`campaigns/local-first-privacy.html`](../../mockups/landing/campaigns/local-first-privacy.html) | Local-first manifesto   | «Запит на доступ»              | Hacker News · privacy-aware · Indie Hackers                   |
+| 04  | [`campaigns/day-in-life.html`](../../mockups/landing/campaigns/day-in-life.html)                 | Day-in-the-life         | «Хочу в бету»                  | Instagram · Threads · аудиторія, що любить storytelling       |
+| 05  | [`campaigns/beta-exclusive.html`](../../mockups/landing/campaigns/beta-exclusive.html)           | Closed-beta urgency     | «Забронювати спот» + countdown | Meta Ads · paid traffic · retargeting · founder-DM-кампанія   |
+| 06  | [`campaigns/founder-letter.html`](../../mockups/landing/campaigns/founder-letter.html)           | Founder letter / IH     | «Запиши мене у бету»           | Substack · Telegram-канал · email-list · founder-friendly DOU |
+| 07  | [`campaigns/roi-calculator.html`](../../mockups/landing/campaigns/roi-calculator.html)           | ROI / Savings calc      | «Хочу зекономити»              | Google Search · «alternatives to YNAB» queries · cost-aware   |
+| 08  | [`campaigns/made-in-ukraine.html`](../../mockups/landing/campaigns/made-in-ukraine.html)         | Made in Ukraine (UA-UA) | «🇺🇦 Записатись у бету»         | DOU · Telegram-канали (укр-патріотичні) · локальні медіа      |
 
 ### Спільне для всіх
 
@@ -45,13 +47,12 @@ Chrome) і preview-деплой був тривіальним (Vercel static / N
 
 ```bash
 # з кореня репо
-cd docs/launch/landing-mockups
+cd mockups/landing/campaigns
 python3 -m http.server 8000
-# відкрий http://localhost:8000/mockup-01-ai-coach.html
+# відкрий http://localhost:8000/ai-coach.html
 ```
 
-Або просто відкрий `*.html` напряму у браузері (`file://` працює — Tailwind CDN і Google Fonts
-тягнуться з мережі).
+Або просто відкрий `*.html` напряму у браузері (`file://` працює — Google Fonts тягнуться з мережі, `tokens.css` — локальний).
 
 ## Як вибрати переможця
 

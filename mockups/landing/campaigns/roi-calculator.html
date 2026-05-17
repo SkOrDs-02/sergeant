@@ -9,49 +9,7 @@
       content="Інтерактивний калькулятор: порахуй, скільки твій SaaS-стек коштує на рік, і скільки економиш, переходячи на Sergeant за ₴99/міс."
     />
     <!-- Mockup variant: 07 / ROI / Savings calculator. Status: Mockup. -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap"
-      rel="stylesheet"
-    />
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "system-ui", "sans-serif"],
-              mono: ["JetBrains Mono", "ui-monospace", "monospace"],
-            },
-            colors: {
-              brand: {
-                50: "#ecfdf5",
-                100: "#d1fae5",
-                200: "#a7f3d0",
-                400: "#34d399",
-                500: "#10b981",
-                600: "#059669",
-                700: "#047857",
-                800: "#065f46",
-                900: "#064e3b",
-              },
-              lime: { 100: "#ecfccb", 400: "#a3e635", 500: "#92cc17" },
-              coral: { 100: "#ffe4e1", 500: "#f97066", 600: "#e64d4d" },
-              cream: { 50: "#fefdfb", 100: "#fdf9f3", 200: "#faf3e8" },
-              ink: "#1c1917",
-            },
-            keyframes: {
-              "count-pop": {
-                "0%": { transform: "scale(1)" },
-                "50%": { transform: "scale(1.04)" },
-                "100%": { transform: "scale(1)" },
-              },
-            },
-            animation: { "count-pop": "count-pop 0.3s ease-out" },
-          },
-        },
-      };
-    </script>
+    <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
       body {
         background:

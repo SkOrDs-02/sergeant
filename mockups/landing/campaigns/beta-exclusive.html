@@ -9,57 +9,12 @@
       content="Закрита бета Sergeant. Перші 500 founding-members зберігають Pro назавжди. Старт — 1 червня 2026."
     />
     <!-- Mockup variant: 05 / Closed beta urgency + countdown. Status: Mockup. -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="stylesheet" href="../../_shared/tokens.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
-            },
-            colors: {
-              brand: {
-                100: "#d1fae5",
-                400: "#34d399",
-                500: "#10b981",
-                600: "#059669",
-                700: "#047857",
-                800: "#065f46",
-              },
-              teal: { 500: "#14b8a6", 700: "#0f766e" },
-              coral: { 500: "#f97066", 600: "#e64d4d", 700: "#c23a3a" },
-              lime: { 400: "#b0e636", 500: "#92cc17" },
-              cream: {
-                50: "#fefdfb",
-                100: "#fdf9f3",
-                200: "#faf3e8",
-                300: "#f5ead8",
-              },
-              ink: "#1c1917",
-            },
-            keyframes: {
-              "pulse-ring": {
-                "0%": { transform: "scale(0.95)", opacity: 0.7 },
-                "100%": { transform: "scale(1.6)", opacity: 0 },
-              },
-              tick: {
-                from: { transform: "translateY(0)" },
-                to: { transform: "translateY(-100%)" },
-              },
-            },
-            animation: {
-              "pulse-ring":
-                "pulse-ring 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite",
-            },
-          },
-        },
-      };
-    </script>
     <style>
       body {
         background: #1c1917;

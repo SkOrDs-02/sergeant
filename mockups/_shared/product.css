@@ -1,0 +1,133 @@
+/* mockups/_shared/product.css — dark product surface for handoff mockups (v2 redesign) */
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  font-family: var(--font-sans);
+  background: #1a1614;
+  color: #f5f0eb;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* --- Dark surface overrides --- */
+:root {
+  --bg-dark:          #1a1614;
+  --surface-dark:     #221e1b;
+  --surface-dark-2:   #2a2522;
+  --border-dark:      rgba(255, 255, 255, 0.08);
+  --border-dark-soft: rgba(255, 255, 255, 0.04);
+  --text-dark:        #f5f0eb;
+  --muted-dark:       #a09890;
+  --subtle-dark:      #6b6560;
+}
+
+/* --- Glass card surface --- */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--r-xl);
+}
+.glass-card-sm {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--r-lg);
+}
+
+/* --- Module hero gradients (dark surface) --- */
+.module-hero-finyk {
+  background: var(--finyk-gradient);
+  border-radius: var(--r-xl);
+}
+.module-hero-fizruk {
+  background: var(--fizruk-gradient);
+  border-radius: var(--r-xl);
+}
+.module-hero-routine {
+  background: var(--routine-gradient);
+  border-radius: var(--r-xl);
+}
+.module-hero-nutrition {
+  background: var(--nutrition-gradient);
+  border-radius: var(--r-xl);
+}
+
+/* --- Product phone frame (dark bezel) --- */
+.phone-product {
+  width: 390px;
+  min-height: 844px;
+  background: #1a1614;
+  border: 10px solid #0a0a09;
+  border-radius: 54px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.06);
+  position: relative;
+}
+.phone-product-screen {
+  width: 100%;
+  min-height: 100%;
+  background: #1a1614;
+  padding: 52px 0 90px;
+  overflow: hidden;
+}
+
+/* --- Status bar placeholder --- */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* --- Dynamic island --- */
+.dynamic-island {
+  width: 120px;
+  height: 34px;
+  background: #0a0a09;
+  border-radius: var(--r-full);
+  margin: 14px auto 0;
+}
+
+/* --- Bottom nav placeholder --- */
+.module-bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 90px;
+  background: rgba(26, 22, 20, 0.92);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 12px;
+}
+
+/* --- Annotation layer (for handoff notes) --- */
+.handoff-annotation {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--finyk);
+  font-family: var(--font-mono);
+}

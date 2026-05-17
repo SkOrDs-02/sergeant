@@ -9,51 +9,7 @@
       content="Sergeant — український local-first додаток для фінансів, тренувань, харчування і звичок. UAH-first, monobank-сумісність, серверy в EU. Без YC і USD-pricing."
     />
     <!-- Mockup variant: 08 / Made in Ukraine / local-market patriotic angle. Status: Mockup. -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "system-ui", "sans-serif"],
-              display: ["Manrope", "Inter", "system-ui", "sans-serif"],
-            },
-            colors: {
-              brand: {
-                50: "#ecfdf5",
-                100: "#d1fae5",
-                500: "#10b981",
-                600: "#059669",
-                700: "#047857",
-                800: "#065f46",
-                900: "#064e3b",
-              },
-              ua: {
-                blue: "#0057b7",
-                "blue-dark": "#003d80",
-                yellow: "#ffd700",
-                "yellow-soft": "#fff3a0",
-              },
-              cream: { 50: "#fefdfb", 100: "#fdf9f3", 200: "#faf3e8" },
-              coral: { 500: "#f97066" },
-              ink: "#1c1917",
-            },
-            keyframes: {
-              wave: {
-                "0%, 100%": { transform: "translateY(0)" },
-                "50%": { transform: "translateY(-3px)" },
-              },
-            },
-            animation: { wave: "wave 3s ease-in-out infinite" },
-          },
-        },
-      };
-    </script>
+    <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
       body {
         background:
