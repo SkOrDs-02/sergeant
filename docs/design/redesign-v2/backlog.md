@@ -1,6 +1,6 @@
 # Sergeant v2 — Полірувальний backlog (PR-8 follow-ups)
 
-> **Last validated:** 2026-05-17 by @codex. **Next review:** 2026-08-15.
+> **Last validated:** 2026-05-17 by @Skords-01 (extended with 2026-05-17 handoff-package audit). **Next review:** 2026-08-13.
 > **Status:** Active
 
 ## Контекст
@@ -8,6 +8,35 @@
 Sergeant v2 редизайн (governance: `redesign-v2.md`) поставив **foundation** через 9 PR (PR-0..PR-8). Це backlog **підстраничного полірування** яке доставило б 100% візуального паритету з handoff мокапами, але було свідомо відкладено зі скоп v2 rollout щоб не блокувати landing.
 
 Кожен пункт нижче — окремий micro-PR (~30 хв роботи). Можна виконувати в будь-якому порядку: вони незалежні.
+
+## Hidden tech-debt gaps (audit 2026-05-17 — handoff-package)
+
+> Знайдено канвою + grep по `apps/web/src/` 2026-05-17. Повний контекст — [`handoff-package/Hidden tech-debt audit.md`](./handoff-package/Hidden%20tech-debt%20audit.md). Спеціально не входило в оригінальний `redesign-v2/execution-plan.md`.
+
+- [ ] **ModuleBottomNav v2 unification** (PR-8 у локед послідовності) — `apps/web/src/shared/components/ui/ModuleBottomNav.tsx` + 4 module wires (`finykNav.tsx`, `fizrukNav.tsx`, `RoutineBottomNav.tsx`, `NutritionBottomNav.tsx`). **Decision locked 2026-05-17: full v2 (НЕ chrome-lift).** Мігрувати до `mx-3 mb-3 rounded-r-2xl shadow-nav bg-surface-strong-glass` (як `HubBottomNav` після PR-5). Active pill: `bg-{module}-strong` (НЕ `ink-strong`) — module identity несе pill background замість icon glow. **Routine спец-кейс:** center FAB як sibling (`z-index >`, `top: -22` above pill), НЕ nested у nav; nav стає 2-tab pill, FAB виступає над bezel. Оновити [`unified-bottom-nav.md`](../unified-bottom-nav.md) — формула «однакова форма» застаріла після PR-5. **Розмір:** M.
+- [ ] **AssistantAdviceCard + TodayFocusCard glass migration** — `apps/web/src/core/insights/AssistantAdviceCard.tsx:59`, `TodayFocusCard.tsx:183`. `bg-panel border border-line rounded-2xl shadow-card` → `<Card prominence="glass" radius="r-lg">`. Hub-level surfaces juxtapose'ують з v2 InsightCard/AIPill/WeeklyDigest. **Розмір:** S.
+- [ ] **`core/hub/dashboard/dashboardCards.tsx` glass migration** — extension до C1 (`BentoCard`). Bundle з C1 у Phase 2.1. **Розмір:** S.
+- [ ] **CrossModulePreview v1 chrome** — `apps/web/src/core/hub/CrossModulePreview.tsx:77`. Згадано в Phase 2.4 (Onboarding cards), але без verification recipe. Mapping `prominence="glass" radius="r-lg"`. **Розмір:** XS.
+- [ ] **Skeleton glass-aware tint** — `apps/web/src/shared/components/ui/Skeleton.tsx` primitive має знати про parent surface. На glass card v1 `bg-panelHi` shimmer виглядає як footprint. Додати `variant?: 'default' | 'glass'` (default = current, glass = `bg-white/10` shimmer). Bundle у Phase 0. **Розмір:** S (1 primitive + propagation).
+- [ ] **PullToRefresh stories v1 wraps** — `apps/web/src/shared/components/ui/PullToRefresh.stories.tsx:55,81,108`. Wrap demo `bg-panel rounded-2xl border border-line` → glass. Storybook only. **Розмір:** XS.
+- [ ] **6.4 AI-source tag на tx/meal rows** (cherry-pick з handoff Phase 6 extension) — `<Badge size="xs" soft module="finyk">AI · Кав'ярні</Badge>` на auto-categorized Finyk tx-rows; `<Badge>AI · фото</Badge>` на photo-imported Nutrition meals. Pattern primitive — той самий `Badge soft module=` recipe (existing). Wiring-only. **Розмір:** XS-S.
+- [ ] **W6 StreakFlame wiring (Routine hero)** (cherry-pick з handoff Phase 4 extension) — Coral radial-glow у правому верхньому куті Routine hero card + streak day counter. Motion-safe (Hard Rule #17 — займає AMBIENT slot замість mesh усередині hero). Hook: `useStreakFlame(streakDays)` повертає `{intensity, shouldAnimate}`. Primitive existing — потрібен hook + integration. **Розмір:** XS.
+
+### Speculative gaps (verify first)
+
+Потребують 5-min code-review для підтвердження. Повний перелік у [`handoff-package/Hidden tech-debt audit.md`](./handoff-package/Hidden%20tech-debt%20audit.md) §🤔.
+
+- IOSInstallBanner / OfflineBanner surface на v2 mesh
+- Form controls (`Input`, `Select`, `Switch`, `Slider`) на glass-card parents (Input `bg-panelHi` background "пливе" на glass)
+- Banner / Toast / Tooltip / Popover surface treatment на v2
+- Onboarding cards (`ReEngagementCard`, `FirstActionSheet`, `DailyNudge`) — partial у Phase 2.4
+
+### Out of scope для v2 (deferred to Phase 7 v2.1)
+
+- WelcomeScreen first-time experience
+- AuthPage / LoginForm / RegisterForm (login screen)
+- PaywallModal / TrialBanner (окремий "Premium v2" цикл)
+- HubChat (full-screen route) modal-route restructure (L)
 
 ## Hub
 
@@ -79,7 +108,6 @@ Sergeant v2 редизайн (governance: `redesign-v2.md`) поставив **f
 ## Verification (фінал)
 
 Перед closure всього v2 rollout:
-
 - `pnpm check` clean
 - `pnpm size-limit` ≤ 900kB JS / 28kB CSS brotli
 - Playwright snapshots × 5 top routes мають візуальний паритет з handoff `screens/Part-*.html`

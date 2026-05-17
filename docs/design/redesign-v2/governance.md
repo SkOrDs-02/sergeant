@@ -1,7 +1,7 @@
 # Sergeant v2 Redesign
 
-> **Last validated:** 2026-05-17 by @codex. **Next review:** 2026-08-15.
-> **Status:** Active (rollout in PR-0..PR-8)
+> **Last validated:** 2026-05-17 by @Skords-01 (PR-0..PR-8 foundation shipped; post-foundation polish tracked у `execution-plan.md` + `execution-status.md`). **Next review:** 2026-08-15.
+> **Status:** Active (foundation PR-0..PR-8 ✅ shipped; post-foundation Phase 0+1 ✅ shipped — see `execution-status.md`)
 
 ## Контекст
 
@@ -20,17 +20,17 @@
 
 ## Що змінюється
 
-| Шар                       | До (v1)                                   | Після (v2)                                                                                              |
-| ------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Шрифт                     | DM Sans Variable                          | **Manrope** 400-800 + JetBrains Mono (PR-2)                                                             |
-| Background                | Flat `--c-bg` (`#fdf9f3`)                 | **Mesh-gradient** 4 corner radials + `--c-bg-base`                                                      |
-| Cards                     | Solid `--c-panel` + hairline              | **Floating glass** `--surface-glass` (alpha 0.82 light / 0.06 dark) + `backdrop-blur` + inset highlight |
-| Hero blocks               | Subtle gradient washes                    | **Bright module-tinted** `--hero-grad-{module}` linear gradients                                        |
-| Icons (system)            | Mix emoji + custom registry               | **Lucide-style stroke 2px** (PR-3)                                                                      |
-| HubBottomNav              | Flat panel + top-pill indicator           | **Floating glass pill** mx-3/mb-3 (PR-5)                                                                |
-| AI access                 | Sparkle 40×40 в header + FAB на dashboard | **AIPill** persistent + **InsightCard** push (PR-7)                                                     |
-| Module `--fizruk` accent  | `#14b8a6` teal-500                        | `#0e7490` cyan-700 (PR-0 ✅)                                                                            |
-| Module `bg-fizruk-strong` | `#0f766e` teal-700                        | `#155e75` cyan-800 (PR-1)                                                                               |
+| Шар | До (v1) | Після (v2) |
+|---|---|---|
+| Шрифт | DM Sans Variable | **Manrope** 400-800 + JetBrains Mono (PR-2) |
+| Background | Flat `--c-bg` (`#fdf9f3`) | **Mesh-gradient** 4 corner radials + `--c-bg-base` |
+| Cards | Solid `--c-panel` + hairline | **Floating glass** `--surface-glass` (alpha 0.82 light / 0.06 dark) + `backdrop-blur` + inset highlight |
+| Hero blocks | Subtle gradient washes | **Bright module-tinted** `--hero-grad-{module}` linear gradients |
+| Icons (system) | Mix emoji + custom registry | **Lucide-style stroke 2px** (PR-3) |
+| HubBottomNav | Flat panel + top-pill indicator | **Floating glass pill** mx-3/mb-3 (PR-5) |
+| AI access | Sparkle 40×40 в header + FAB на dashboard | **AIPill** persistent + **InsightCard** push (PR-7) |
+| Module `--fizruk` accent | `#14b8a6` teal-500 | `#0e7490` cyan-700 (PR-0 ✅) |
+| Module `bg-fizruk-strong` | `#0f766e` teal-700 | `#155e75` cyan-800 (PR-1) |
 
 ## Adapter strategy — token shape
 
@@ -63,37 +63,37 @@
 
 ## PR sequence
 
-| PR       | Розмір | Статус                                                      | Зміст                                                                                                   |
-| -------- | ------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **PR-0** | XS     | ✅ [#2902](https://github.com/Skords-01/Sergeant/pull/2902) | `--fizruk` hue change `#14b8a6 → #0e7490` (teal-500 → cyan-700)                                         |
-| **PR-1** | M      | ✅ [#2903](https://github.com/Skords-01/Sergeant/pull/2903) | Foundation tokens v2 namespace (mesh, shadows, radii, HC overrides) + cyan палітра + governance doc     |
-| PR-2     | S      | ✅ [#2904](https://github.com/Skords-01/Sergeant/pull/2904) | `@fontsource-variable/manrope` + `@fontsource-variable/jetbrains-mono` self-hosted; Tailwind fontFamily |
-| PR-3     | M      | ✅ [#2905](https://github.com/Skords-01/Sergeant/pull/2905) | Audit & extend Lucide-style Icon registry (22 нових icons)                                              |
-| PR-4     | M      | ✅ [#2906](https://github.com/Skords-01/Sergeant/pull/2906) | Card glass + Button primary-ink + FAB v2 gradients (opt-in variants)                                    |
-| PR-5     | M      | ✅ [#2907](https://github.com/Skords-01/Sergeant/pull/2907) | New `MeshBackground.tsx`, HubHeader icon-radius, HubBottomNav floating glass pill                       |
-| PR-6     | M      | ✅ [#2908](https://github.com/Skords-01/Sergeant/pull/2908) | Module shells × 4 → wrap у MeshBackground (ModuleShell + 3 \*App.tsx)                                   |
-| PR-7a    | M      | ✅ [#2909](https://github.com/Skords-01/Sergeant/pull/2909) | `AIPill.tsx` + `InsightCard.tsx` + `useInsightDismissal` hook                                           |
-| Hotfix   | XS     | ✅ [#2910](https://github.com/Skords-01/Sergeant/pull/2910) | PR-7a `@core/*` alias → relative import (Vercel build unblock)                                          |
-| PR-7b    | M      | 🔍 [#2911](https://github.com/Skords-01/Sergeant/pull/2911) | Wire AIPill into HubHomeView + 4 module shells                                                          |
-| **PR-8** | M      | 🔄 цей PR                                                   | Storybook stories для AIPill/InsightCard + polish backlog doc + status closure                          |
+| PR | Розмір | Статус | Зміст |
+|---|---|---|---|
+| **PR-0** | XS | ✅ [#2902](https://github.com/Skords-01/Sergeant/pull/2902) | `--fizruk` hue change `#14b8a6 → #0e7490` (teal-500 → cyan-700) |
+| **PR-1** | M | ✅ [#2903](https://github.com/Skords-01/Sergeant/pull/2903) | Foundation tokens v2 namespace (mesh, shadows, radii, HC overrides) + cyan палітра + governance doc |
+| PR-2 | S | ✅ [#2904](https://github.com/Skords-01/Sergeant/pull/2904) | `@fontsource-variable/manrope` + `@fontsource-variable/jetbrains-mono` self-hosted; Tailwind fontFamily |
+| PR-3 | M | ✅ [#2905](https://github.com/Skords-01/Sergeant/pull/2905) | Audit & extend Lucide-style Icon registry (22 нових icons) |
+| PR-4 | M | ✅ [#2906](https://github.com/Skords-01/Sergeant/pull/2906) | Card glass + Button primary-ink + FAB v2 gradients (opt-in variants) |
+| PR-5 | M | ✅ [#2907](https://github.com/Skords-01/Sergeant/pull/2907) | New `MeshBackground.tsx`, HubHeader icon-radius, HubBottomNav floating glass pill |
+| PR-6 | M | ✅ [#2908](https://github.com/Skords-01/Sergeant/pull/2908) | Module shells × 4 → wrap у MeshBackground (ModuleShell + 3 *App.tsx) |
+| PR-7a | M | ✅ [#2909](https://github.com/Skords-01/Sergeant/pull/2909) | `AIPill.tsx` + `InsightCard.tsx` + `useInsightDismissal` hook |
+| Hotfix | XS | ✅ [#2910](https://github.com/Skords-01/Sergeant/pull/2910) | PR-7a `@core/*` alias → relative import (Vercel build unblock) |
+| PR-7b | M | 🔍 [#2911](https://github.com/Skords-01/Sergeant/pull/2911) | Wire AIPill into HubHomeView + 4 module shells |
+| **PR-8** | M | 🔄 цей PR | Storybook stories для AIPill/InsightCard + polish backlog doc + status closure |
 
-**Polish backlog** (under-page glass treatments, ChatSheet modal-route, insight backlog wiring, DM Sans retire) — див. [`redesign-v2-backlog.md`](./backlog.md).
+**Post-foundation polish** (Phase 0–7) — окремий cycle після PR-8 foundation close. Канонічна послідовність — [`execution-plan.md`](./execution-plan.md), live progress — [`execution-status.md`](./execution-status.md), orchestration contract — [`execution-brief.md`](./execution-brief.md), canvas mockups + locked decisions з 2026-05-17 — [`handoff-package/`](./handoff-package/). Raw polish items — [`backlog.md`](./backlog.md).
 
 ## HC contract — новий внесок (хендоф не покривав)
 
 Sergeant має AAA-leaning HC mode (`html.hc { … }`). Для v2 tokens:
 
-| Токен                           | HC light                   | HC dark                                                   |
-| ------------------------------- | -------------------------- | --------------------------------------------------------- |
-| `--bg-mesh-1..4`                | **0 alpha**                | **0 alpha** — mesh disorients low-vision; HC = solid base |
-| `--surface-glass`               | `rgba(255 255 255 / 1)`    | `rgba(32 28 25 / 1)` — strip alpha                        |
-| `--surface-strong-glass`        | `rgba(255 255 255 / 1)`    | `rgba(48 42 37 / 1)`                                      |
-| `--surface-soft-glass`          | `rgba(255 255 255 / 0.95)` | `rgba(32 28 25 / 0.95)`                                   |
-| `--c-ink-strong`                | `0 0 0`                    | `255 255 255`                                             |
-| `--line-v2`                     | `rgba(0 0 0 / 0.35)`       | `rgba(255 255 255 / 0.45)`                                |
-| `--line-strong-v2`              | `rgba(0 0 0 / 0.60)`       | `rgba(255 255 255 / 0.70)`                                |
-| `--shadow-card-v2/pill/nav/fab` | Solid 2-3px borders        | Same — HC ignores depth                                   |
-| `--hero-grad-{module}`          | Solid `--{module}-strong`  | Brighter solid module color                               |
+| Токен | HC light | HC dark |
+|---|---|---|
+| `--bg-mesh-1..4` | **0 alpha** | **0 alpha** — mesh disorients low-vision; HC = solid base |
+| `--surface-glass` | `rgba(255 255 255 / 1)` | `rgba(32 28 25 / 1)` — strip alpha |
+| `--surface-strong-glass` | `rgba(255 255 255 / 1)` | `rgba(48 42 37 / 1)` |
+| `--surface-soft-glass` | `rgba(255 255 255 / 0.95)` | `rgba(32 28 25 / 0.95)` |
+| `--c-ink-strong` | `0 0 0` | `255 255 255` |
+| `--line-v2` | `rgba(0 0 0 / 0.35)` | `rgba(255 255 255 / 0.45)` |
+| `--line-strong-v2` | `rgba(0 0 0 / 0.60)` | `rgba(255 255 255 / 0.70)` |
+| `--shadow-card-v2/pill/nav/fab` | Solid 2-3px borders | Same — HC ignores depth |
+| `--hero-grad-{module}` | Solid `--{module}-strong` | Brighter solid module color |
 
 `.bg-mesh` utility class автоматично degrade'ить до solid `rgb(var(--c-bg-base))` коли `html.hc` або `@media (prefers-reduced-motion: reduce)` активні.
 
@@ -139,7 +139,13 @@ Sergeant має AAA-leaning HC mode (`html.hc { … }`). Для v2 tokens:
 
 ## Refs
 
-- Локальний plan: `C:\Users\dmytr\.claude\plans\d-zip-refactored-starlight.md`
-- Хендоф: `D:\_unzipped\handoff\` (особливо `01-tokens-diff.md`, `04-pr-sequence.md`)
+- Post-foundation execution plan: [`execution-plan.md`](./execution-plan.md)
+- Live progress + divergences: [`execution-status.md`](./execution-status.md)
+- Orchestration contract (toolkit dispatch, acceptance gates): [`execution-brief.md`](./execution-brief.md)
+- Canvas mockups + locked decisions (2026-05-17): [`handoff-package/`](./handoff-package/)
+- Polish backlog: [`backlog.md`](./backlog.md)
+- BEFORE/AFTER patterns: [`migration.md`](./migration.md)
+- Локальний plan (initial foundation): `C:\Users\dmytr\.claude\plans\d-zip-refactored-starlight.md`
+- Хендоф (initial foundation): `D:\_unzipped\handoff\` (особливо `01-tokens-diff.md`, `04-pr-sequence.md`)
 - Існуючий design system: `docs/design/design-system.md`, `docs/design/brandbook.md`, `docs/design/module-accent.md`
-- Pull requests: PR-0 ([#2902](https://github.com/Skords-01/Sergeant/pull/2902))
+- Pull requests: PR-0 ([#2902](https://github.com/Skords-01/Sergeant/pull/2902)) … PR-8 (foundation closure); post-foundation Phase 0 ([#2952](https://github.com/Skords-01/Sergeant/pull/2952)), Phase 1 ([#2953](https://github.com/Skords-01/Sergeant/pull/2953))

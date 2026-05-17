@@ -1,10 +1,12 @@
 # Unified Bottom Navigation
 
-> **Last validated:** 2026-05-11 by @Skords-01. **Next review:** 2026-08-09.
-> **Status:** Active
+> **Last validated:** 2026-05-17 by @Skords-01 (post-PR-5 form divergence noted). **Next review:** 2026-08-15.
+> **Status:** Active — **form unification pending PR-8 (ModuleBottomNav full v2 migration)**.
 
-> **TL;DR:** Хаб і 4 модулі тепер живуть під **одним** навігаційним патерном —
+> **TL;DR:** Хаб і 4 модулі живуть під **одним** навігаційним патерном —
 > `bottom-nav`. Hybrid «top-tabs у хабі + bottom-nav у модулях» більше немає.
+>
+> ⚠ **Form divergence active (2026-05-17):** PR-5 мігрував `HubBottomNav` на v2 floating glass pill (`mx-3 mb-3 rounded-r-2xl shadow-nav bg-surface-strong-glass`). `ModuleBottomNav` лишається на v1 flat panel (`bg-panel/95 backdrop-blur-xl border-t border-line` + top-pill 4px indicator). Decision locked 2026-05-17: **full v2 migration** для ModuleBottomNav — див. [`redesign-v2/handoff-package/Handoff for Claude Code.md`](./redesign-v2/handoff-package/Handoff%20for%20Claude%20Code.md) §3.2 + [`redesign-v2/execution-plan.md`](./redesign-v2/execution-plan.md) §Phase 2.5. Цей doc оновиться у тому ж PR.
 
 ## Було → Стало
 
@@ -53,20 +55,31 @@
 
 ## `HubBottomNav` vs `ModuleBottomNav`
 
-Однакова форма — два різні shell-и:
+**Поточна реальність (2026-05-17):** **різні форми**, виправлення locked у Phase 2.5 PR. Контракт нижче — це **target state після Phase 2.5** (full v2). Поточний `ModuleBottomNav` ще на v1 — фактичні відмінності див. block нижче.
 
-|                       | `HubBottomNav`                        | `ModuleBottomNav`                    |
-| --------------------- | ------------------------------------- | ------------------------------------ |
-| Items                 | 2-3 (Головна / Звіти? / Налаштування) | 4 per module (finyk/fizruk/...)      |
-| Accent                | `brand` (module-agnostic)             | module color (finyk/teal/coral/lime) |
-| `safe-area-pb`        | ✓                                     | ✓                                    |
-| `role="tablist"`      | ✓                                     | ✓ (опційно; за замовчуванням nav)    |
-| Висота                | 60 px / 64 px coarse                  | 60 px / 64 px coarse                 |
-| Active indicator pill | `w-10 h-1` top, brand gradient        | `w-10 h-1` top, module gradient      |
+### Target state (після Phase 2.5 ModuleBottomNav v2 PR)
 
-> `HubBottomNav` — дорога копія `ModuleBottomNav` з brand-токенами, бо у
-> хабі немає active module. Якщо колись захочемо reuse — винести
-> `<BottomNavShell>` в shared і параметризувати gradient.
+|                       | `HubBottomNav` (v2, since PR-5)                    | `ModuleBottomNav` (v2, target)                       |
+| --------------------- | -------------------------------------------------- | ---------------------------------------------------- |
+| Items                 | 2-3 (Головна / Звіти? / Налаштування)              | 4 per module (finyk/fizruk/routine/nutrition)        |
+| Shell shape           | `mx-3 mb-3 rounded-r-2xl shadow-nav`               | `mx-3 mb-3 rounded-r-2xl shadow-nav` (identical)     |
+| Surface               | `bg-surface-strong-glass backdrop-blur-md`         | `bg-surface-strong-glass backdrop-blur-md` (identical) |
+| Active pill           | `bg-ink-strong` (brand-agnostic)                   | `bg-{module}-strong` (module-tinted — identity carrier) |
+| `safe-area-pb`        | ✓ (через wrapper `padding-bottom: calc(...)`)      | ✓                                                    |
+| `role="tablist"`      | ✓                                                  | ✓ (опційно; за замовчуванням nav)                    |
+| Висота                | 60 px / 64 px coarse                               | 60 px / 64 px coarse                                 |
+| FAB integration       | N/A                                                | Routine special-case: center FAB як sibling (z-index >, top: -22 above pill); інші модулі — N/A |
+
+> **Module identity transfer:** до Phase 2.5 module identity несе icon glow + top-pill gradient. Після Phase 2.5 — `bg-{module}-strong` pill background. Icon glow можна прибрати (redundant).
+
+### Поточний state divergence (до Phase 2.5)
+
+`ModuleBottomNav` ще використовує v1 shape:
+- `bg-panel/95 motion-safe:backdrop-blur-xl border-t border-line` (flat panel)
+- Sliding top-pill 4px indicator + drop-shadow icon glow
+- Без `mx-3 mb-3 rounded-r-2xl shadow-nav`
+
+Один екран бачить v2 mesh + glass cards + AIPill зверху і v1 flat nav знизу — **mosaic**. Це закрите рішенням PR-8 у локед послідовності.
 
 ## Тестовий рецепт
 
