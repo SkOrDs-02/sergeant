@@ -87,6 +87,10 @@ export const Sizes: Story = {
 /**
  * Module-варіанти: кожен з 4 ринків Sergeant має власний accent-колір,
  * тож KPI-каблиця візуально належить своєму модулю.
+ *
+ * Внутрішньо (з Phase 2 v2 redesign) module-варіанти роутять stroke
+ * через `--c-chart-{module}` T2 vars — це AA-tuned проти `bg-bg` при
+ * малих діаметрах (≥ 5:1), замість primary-палітри, тюнуваної під fills.
  */
 export const ModuleVariants: Story = {
   render: () => (

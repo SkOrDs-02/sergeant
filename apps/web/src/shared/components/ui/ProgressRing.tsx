@@ -1,8 +1,8 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-18
  * Status: Active
  */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -14,6 +14,14 @@ import { cn } from "../../lib/ui/cn";
  *
  * Variants map to module / status semantic tokens so dark-mode works
  * automatically via `stroke="currentColor"` + Tailwind `text-*` utility.
+ *
+ * Module variants (`finyk` / `fizruk` / `routine` / `nutrition`) route
+ * the arc through the `--c-chart-{module}` T2 chart vars instead of the
+ * `text-{module}` primary palette. Why: the chart vars are tuned for
+ * AA contrast against `bg-bg` (5:1+) at small sizes while the primary
+ * palette is tuned for fills + chrome. The status variants (`success` /
+ * `warning` / `danger` / `info` / `accent`) keep the `currentColor`
+ * + `text-*` path unchanged.
  *
  * API:
  * - `value` — current progress, 0..`max` (clamped).
@@ -53,10 +61,26 @@ const variantColor: Record<ProgressRingVariant, string> = {
   warning: "text-warning",
   danger: "text-danger",
   info: "text-info",
+  // Module variants use the chart-T2 vars via inline stroke; the `text-*`
+  // class still tints the centre label so percentages stay branded.
   finyk: "text-finyk",
   fizruk: "text-fizruk",
   routine: "text-routine",
   nutrition: "text-nutrition",
+};
+
+const MODULE_VARIANTS = new Set<ProgressRingVariant>([
+  "finyk",
+  "fizruk",
+  "routine",
+  "nutrition",
+]);
+
+const chartVar: Record<"finyk" | "fizruk" | "routine" | "nutrition", string> = {
+  finyk: "rgb(var(--c-chart-finyk))",
+  fizruk: "rgb(var(--c-chart-fizruk))",
+  routine: "rgb(var(--c-chart-routine))",
+  nutrition: "rgb(var(--c-chart-nutrition))",
 };
 
 const sizePx: Record<ProgressRingSize, number> = {
@@ -118,6 +142,14 @@ export function ProgressRing({
   const displayLabel =
     label !== undefined ? label : showLabel ? `${percentText}%` : null;
 
+  const isModuleVariant = MODULE_VARIANTS.has(variant);
+  const arcStroke: CSSProperties | undefined = isModuleVariant
+    ? {
+        stroke:
+          chartVar[variant as "finyk" | "fizruk" | "routine" | "nutrition"],
+      }
+    : undefined;
+
   // ARIA progressbar requires an accessible name. The visible centre label
   // is `aria-hidden`, so derive a default `aria-label` ("65%" / "65 / 100")
   // when the caller did not pass one explicitly.
@@ -157,7 +189,7 @@ export function ProgressRing({
           cy={diameter / 2}
           r={radius}
           fill="none"
-          stroke="currentColor"
+          stroke={arcStroke?.stroke ?? "currentColor"}
           strokeOpacity={0.15}
           strokeWidth={stroke}
         />
@@ -166,7 +198,7 @@ export function ProgressRing({
           cy={diameter / 2}
           r={radius}
           fill="none"
-          stroke="currentColor"
+          stroke={arcStroke?.stroke ?? "currentColor"}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
