@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — OG Cards Preview</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .og-frame { aspect-ratio: 1200/630; border-radius: 12px; padding: 24px; overflow: hidden; position: relative; display: flex; flex-direction: column; justify-content: center; }
+  .og-1 { background: linear-gradient(135deg, #fdf9f3 0%, #f0fdfa 100%); }
+  .og-1 .og-logo { display: flex; gap: 8px; align-items: center; font-weight: 800; font-size: 16px; margin-bottom: 12px; }
+  .og-1 .og-mark { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #047857); display: grid; place-items: center; color: white; font-size: 14px; }
+  .og-1 .og-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
+  .og-1 h2 { font-size: 28px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; }
+  .og-1 .og-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  .og-2 { background: #1c1917; color: white; }
+  .og-2 .og-counter { font-family: 'JetBrains Mono', monospace; font-size: 36px; font-weight: 500; color: #10b981; line-height: 1; margin-bottom: 6px; }
+  .og-2 .og-counter-label { font-size: 11px; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+  .og-2 h2 { font-size: 22px; font-weight: 800; line-height: 1.1; }
+  .og-2 .og-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #a8a29e; margin-top: 12px; }
+
+  .og-3 { background: linear-gradient(135deg, #10b981 0%, #047857 100%); color: white; position: relative; }
+  .og-3::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,.3), transparent 70%); }
+  .og-3 .og-modules { position: absolute; bottom: 20px; right: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .og-3 .og-mod { padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 700; background: rgba(255,255,255,.2); }
+  .og-3 h2 { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; max-width: 70%; }
+  .og-3 .og-sub { font-size: 13px; opacity: 0.9; margin-top: 8px; max-width: 60%; }
+
+  .telegram-preview { background: #2b5278; padding: 12px; border-radius: 8px; margin-top: 12px; }
+  .telegram-preview .tp-from { color: #76c1e8; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .telegram-preview .tp-card { background: white; border-radius: 8px; padding: 8px; }
+  .telegram-preview .tp-title { font-size: 11px; font-weight: 700; color: #1c1917; }
+  .telegram-preview .tp-desc { font-size: 10px; color: #57534e; margin-top: 2px; }
+  .telegram-preview .tp-url { font-size: 10px; color: #76c1e8; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 04 · OG / share cards</div>
+      <h1>Open Graph / share preview</h1>
+      <p>Що бачить юзер коли друг ділиться твоїм landing у Telegram, X або iMessage. 1200×630 image. Bad OG = no clicks.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Brand + tagline</span></div>
+      <p class="variant-desc">Soft & Organic palette. Logo + hero tagline. Безпечно і clean. Universal usage.</p>
+      <div class="variant-body">
+        <div class="og-frame og-1">
+          <div class="og-logo"><span class="og-mark">S</span> Sergeant</div>
+          <div class="og-tag">Pre-launch · UA-only</div>
+          <h2>Усе про себе — в одному місці.</h2>
+          <div class="og-sub">Фінанси · Тренування · Звички · Харчування. Нарешті разом.</div>
+        </div>
+        <div class="telegram-preview">
+          <div class="tp-from">Юзер переслав з sergeant.app</div>
+          <div class="tp-card">
+            <div class="tp-title">Sergeant — Усе про себе в одному місці</div>
+            <div class="tp-desc">Фінанси, тренування, звички, харчування. Нарешті разом. UA-only, pre-launch.</div>
+            <div class="tp-url">sergeant.app</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Live counter + dark</span></div>
+      <p class="variant-desc">Dark mood, JetBrains Mono live waitlist counter. Urgency без fake countdown. UA-tech audience hit.</p>
+      <div class="variant-body">
+        <div class="og-frame og-2">
+          <div class="og-counter">847</div>
+          <div class="og-counter-label">людей у списку очікування</div>
+          <h2>Sergeant — Pre-launch.<br>Перші 500 — early access.</h2>
+          <div class="og-meta">sergeant.app · UA-only · solo + AI + n8n</div>
+        </div>
+        <div class="telegram-preview">
+          <div class="tp-from">Юзер переслав з sergeant.app</div>
+          <div class="tp-card">
+            <div class="tp-title">847 людей у списку Sergeant — Перші 500 раніше</div>
+            <div class="tp-desc">Pre-launch продукту "усе про себе в одному місці". UA-only. Solo dev + AI + n8n.</div>
+            <div class="tp-url">sergeant.app</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Module gradient burst</span></div>
+      <p class="variant-desc">Emerald hero gradient заповнює весь card. Bold visual statement. Module names як corner accent.</p>
+      <div class="variant-body">
+        <div class="og-frame og-3">
+          <h2>Усе про себе.<br>В одному місці.</h2>
+          <div class="og-sub">UA-only · pre-launch · waitlist відкрито</div>
+          <div class="og-modules">
+            <div class="og-mod">Finyk</div>
+            <div class="og-mod">Fizruk</div>
+            <div class="og-mod">Routine</div>
+            <div class="og-mod">Nutrition</div>
+          </div>
+        </div>
+        <div class="telegram-preview">
+          <div class="tp-from">Юзер переслав з sergeant.app</div>
+          <div class="tp-card">
+            <div class="tp-title">Sergeant — Усе про себе в одному місці</div>
+            <div class="tp-desc">Finyk · Fizruk · Routine · Nutrition. UA-only pre-launch.</div>
+            <div class="tp-url">sergeant.app</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes · як вибирати</h2>
+    <ul>
+      <li><strong>V1</strong> — універсальний default. Safe, brand-aligned, читається на будь-якому background (Telegram dark/light, X feed, iMessage).</li>
+      <li><strong>V2</strong> — dynamic counter — потребує OG-image generation runtime (n8n cron → re-render). Скидно але impressive. Резонує з urgency mechanic.</li>
+      <li><strong>V3</strong> — bold visual для special moments (Day 1 launch announce, milestone post). Не для daily-share posts (зashemblems with V1 voice tone).</li>
+      <li>Implementation: `&lt;meta property="og:image"&gt;` + `og:title` + `og:description`. Twitter Card okремий tag (`twitter:card`). Можна 1 image per page, але recommended варіювати між sub-pages.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

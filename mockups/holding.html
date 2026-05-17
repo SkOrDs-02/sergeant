@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — Coming Soon Pages</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .holding-frame { aspect-ratio: 9/13; border-radius: 16px; padding: 16px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+
+  /* V1 Minimal countdown */
+  .v1 .holding-frame { background: var(--bg); }
+  .v1 .h-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; }
+  .v1 .h-mark { width: 24px; height: 24px; border-radius: 7px; background: linear-gradient(135deg, #10b981, #047857); color: white; display: grid; place-items: center; font-size: 12px; }
+  .v1 .h-center { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+  .v1 .h-headline { font-size: 22px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .v1 .h-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+  .v1 .h-form { display: flex; flex-direction: column; gap: 4px; }
+  .v1 .h-input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 11px; }
+  .v1 .h-btn { background: var(--brand); color: white; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 700; text-align: center; }
+
+  /* V2 Build journal */
+  .v2 .holding-frame { background: white; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .v2 .h-issue { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-size: 9px; }
+  .v2 .h-title { font-family: 'Lora', serif; font-weight: 600; font-size: 20px; margin: 8px 0; font-style: italic; }
+  .v2 .h-entry { padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-size: 9px; }
+  .v2 .h-date { color: var(--brand); margin-right: 4px; }
+  .v2 .h-footer { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--ink); font-size: 9px; }
+
+  /* V3 Counter-focused */
+  .v3 .holding-frame { background: #1c1917; color: white; }
+  .v3 .h-counter { font-family: 'JetBrains Mono', monospace; font-size: 60px; font-weight: 500; color: #10b981; line-height: 0.9; text-align: center; }
+  .v3 .h-counter-label { text-align: center; font-size: 11px; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 6px; }
+  .v3 .h-cta-block { background: rgba(255,255,255,.05); border-radius: 10px; padding: 12px; margin-top: auto; }
+  .v3 .h-cta-title { font-weight: 800; font-size: 12px; margin-bottom: 6px; }
+  .v3 .h-input { background: transparent; border: 1px solid #57534e; color: white; padding: 8px 10px; border-radius: 6px; font-size: 10px; width: 100%; margin-bottom: 4px; }
+  .v3 .h-btn { background: #10b981; color: white; padding: 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-align: center; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 13 · Coming soon / holding</div>
+      <h1>Coming soon — 3 mood варіанти</h1>
+      <p>Pre-launch holding page для коли продукт ще не готовий показувати full landing. Або для maintenance window після launch.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Minimal calm</span></div>
+      <p class="variant-desc">Тихо, без anxiety. Безпечний default. Не обіцяє конкретної дати — просто "скоро".</p>
+      <div class="variant-body">
+        <div class="holding-frame">
+          <div class="h-logo"><span class="h-mark">S</span> Sergeant</div>
+          <div class="h-center">
+            <div class="h-headline">Скоро.</div>
+            <div class="h-sub">Усе про себе — в одному місці. Pre-launch, Україна.</div>
+            <div class="h-form">
+              <input class="h-input" type="email" placeholder="твій@email">
+              <div class="h-btn">Сповістити коли запустимось</div>
+            </div>
+          </div>
+          <div style="text-align: center; font-size: 9px; color: var(--subtle); margin-top: auto;">847 людей вже чекають</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Build journal preview</span></div>
+      <p class="variant-desc">Editorial / build-in-public. Показує що продукт активно будується. Solo dev unique leverage.</p>
+      <div class="variant-body">
+        <div class="holding-frame">
+          <div class="h-issue">Issue №001 · Pre-launch field notes</div>
+          <div class="h-title">Sergeant</div>
+          <div class="h-entry"><span class="h-date">D142</span> Finyk balance reveal counter shipped</div>
+          <div class="h-entry"><span class="h-date">D140</span> Sync engine fix on cellular</div>
+          <div class="h-entry"><span class="h-date">D138</span> Routine micro-particles instead confetti</div>
+          <div class="h-entry"><span class="h-date">D135</span> AIPill wired in 4 modules</div>
+          <div class="h-footer">
+            <strong>Ще не готово. Скоро буде.</strong><br>
+            sergeant.app/waitlist → стеж за прогресом
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Counter focused</span></div>
+      <p class="variant-desc">Dark + waitlist counter. Urgency без fake countdown. Конверсія орієнтована.</p>
+      <div class="variant-body">
+        <div class="holding-frame">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 24px;">Sergeant · pre-launch · UA</div>
+          <div class="h-counter">847</div>
+          <div class="h-counter-label">людей у списку очікування</div>
+          <div class="h-cta-block">
+            <div class="h-cta-title">Залиш email — будеш серед перших 500.</div>
+            <input class="h-input" type="email" placeholder="твій@email">
+            <div class="h-btn">Зайняти місце →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>V1 Minimal calm</strong> — recommended коли продукт ще немає brand momentum. Не overpromise.</li>
+      <li><strong>V2 Build journal</strong> — recommended коли solo dev publicly активний. Конвертує trust + проявляє momentum.</li>
+      <li><strong>V3 Counter focused</strong> — recommended коли є momentum (847+ waitlist). Social proof + urgency.</li>
+      <li>Можна свапати: V1 → V2 → V3 у міру росту waitlist. n8n cron checks count → server renders різний template.</li>
+      <li>Same page також служить як <strong>maintenance window</strong> після launch (rare).</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

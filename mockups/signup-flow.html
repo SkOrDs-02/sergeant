@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — Signup Flow</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .step-card { background: white; border: 1px solid var(--line-soft); border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: 11px; }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 6px; }
+  .step-title { font-weight: 700; margin-bottom: 6px; font-size: 12px; }
+  .form-field { background: #fafaf9; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: 10px; color: var(--subtle); margin-bottom: 4px; }
+  .chip-row { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0; }
+  .pchip { padding: 4px 8px; border-radius: 12px; font-size: 9px; border: 1px solid var(--line); }
+  .pchip.selected { background: var(--brand); color: white; border-color: var(--brand); }
+  .btn-flow { background: var(--brand); color: white; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; display: inline-block; }
+  .success { background: var(--brand-soft); border: 1px solid var(--brand); }
+
+  /* V2 Inline transformation */
+  .v2 .transform { position: relative; }
+  .v2 .transform-overlay { background: var(--brand-soft); border-radius: 8px; padding: 8px; margin-top: 4px; font-size: 10px; }
+
+  /* V3 Storyboard */
+  .v3 .panel { aspect-ratio: 4/3; background: white; border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 6px; position: relative; display: flex; flex-direction: column; justify-content: center; }
+  .v3 .panel-label { position: absolute; top: 4px; left: 6px; font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--brand); }
+  .v3 .panel-title { font-size: 10px; font-weight: 700; line-height: 1.2; }
+  .v3 .panel-arrow { text-align: center; color: var(--brand); font-size: 14px; margin: -2px 0; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 11 · Signup flow</div>
+      <h1>Signup flow — від форми до confirmation</h1>
+      <p>Як юзер проходить: landing → email submit → success card з module poll → confirmation email. 3 narrative styles for visualization.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Step indicator</span></div>
+      <p class="variant-desc">Numbered step-by-step. Clear progression. Для internal documentation чи user FAQ.</p>
+      <div class="variant-body">
+        <div class="step-card">
+          <div class="step-num">Step 01</div>
+          <div class="step-title">Landing waitlist form</div>
+          <div class="form-field">твій@email</div>
+          <div class="btn-flow">Отримати early access</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 02</div>
+          <div class="step-title">Inline success card</div>
+          <p style="font-size: 10px; color: var(--muted);">✓ Ти в списку! Лист протягом 5 хвилин.</p>
+          <p style="font-size: 9px; margin-top: 4px;">Optional: розкажи нам більше →</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 03</div>
+          <div class="step-title">Module poll (optional)</div>
+          <div class="chip-row">
+            <span class="pchip selected">Фінанси</span>
+            <span class="pchip">Тренування</span>
+            <span class="pchip">Звички</span>
+            <span class="pchip">Харчування</span>
+          </div>
+        </div>
+        <div class="step-card success">
+          <div class="step-num" style="color: var(--brand);">Step 04 · Email arrives</div>
+          <div class="step-title">«Твоє місце заброньовано»</div>
+          <p style="font-size: 10px; color: var(--muted);">Within 5 min. Resend API + n8n.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Inline transformation</span></div>
+      <p class="variant-desc">Показує how same component transforms через states. Менше overhead, більше fidelity для UX.</p>
+      <div class="variant-body">
+        <div class="step-card transform">
+          <div class="step-num">Before submit</div>
+          <div class="form-field">Email</div>
+          <div class="btn-flow">Отримати early access</div>
+        </div>
+        <div style="text-align: center; color: var(--brand); font-size: 14px; margin: 4px 0;">↓ submit</div>
+        <div class="step-card transform success">
+          <div class="step-num" style="color: var(--brand);">After submit · same page</div>
+          <div class="step-title">✓ Ти в списку!</div>
+          <p style="font-size: 10px;">Лист протягом 5 хв · Тимчасова timeline: запрошення → онбординг → доступ</p>
+          <div class="transform-overlay">
+            <p style="font-size: 9px; margin-bottom: 4px;">— Розкажи нам більше (optional) —</p>
+            <div class="chip-row">
+              <span class="pchip">Фінанси</span>
+              <span class="pchip selected">Тренування</span>
+              <span class="pchip">Звички</span>
+              <span class="pchip">Харчування</span>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: center; color: var(--brand); font-size: 14px; margin: 4px 0;">↓ async</div>
+        <div class="step-card">
+          <div class="step-num">Email Day 0 · 5 min later</div>
+          <div class="step-title">«Твоє місце заброньовано»</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Storyboard panels</span></div>
+      <p class="variant-desc">Comic-strip frames. Дуже візуально, не tech. Для presentation з третьою стороною.</p>
+      <div class="variant-body">
+        <div class="panel">
+          <div class="panel-label">SCENE 01</div>
+          <div class="panel-title">Юзер бачить waitlist форму</div>
+          <p style="font-size: 8px; color: var(--muted); margin-top: 4px;">Telegram → click → landing</p>
+        </div>
+        <div class="panel-arrow">↓</div>
+        <div class="panel">
+          <div class="panel-label">SCENE 02</div>
+          <div class="panel-title">Вводить email · 1 поле</div>
+          <p style="font-size: 8px; color: var(--muted); margin-top: 4px;">~5 sec interaction</p>
+        </div>
+        <div class="panel-arrow">↓</div>
+        <div class="panel">
+          <div class="panel-label">SCENE 03</div>
+          <div class="panel-title">✓ Success! Tap module quick-poll</div>
+          <p style="font-size: 8px; color: var(--muted); margin-top: 4px;">~70% поставлять модуль</p>
+        </div>
+        <div class="panel-arrow">↓</div>
+        <div class="panel" style="background: var(--brand-soft); border-color: var(--brand);">
+          <div class="panel-label" style="color: var(--brand);">SCENE 04</div>
+          <div class="panel-title">Email прилетів. Ти у списку.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>V1 Step indicator</strong> — для internal docs / для onboarding нового developer'а у проект.</li>
+      <li><strong>V2 Inline transformation</strong> — для UX-review / handoff Astro implementation. Показує exact UI states.</li>
+      <li><strong>V3 Storyboard</strong> — для blog post «як ми будували waitlist» або pitch deck.</li>
+      <li>Реалізація з ради: 1 поле (email) primary, module-interest у post-submit success card як optional async webhook. ~30-40% drop module поле.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

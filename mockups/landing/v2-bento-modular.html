@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — V2 Bento Modular</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-base: #f0e9d8;
+    --mesh-1: rgba(167, 243, 208, 0.5);
+    --mesh-2: rgba(204, 251, 241, 0.45);
+    --mesh-3: rgba(254, 215, 170, 0.35);
+    --mesh-4: rgba(221, 252, 157, 0.4);
+    --glass: rgba(255, 255, 255, 0.82);
+    --glass-strong: rgba(255, 255, 255, 0.96);
+    --glass-soft: rgba(255, 255, 255, 0.65);
+    --line: rgba(0, 0, 0, 0.06);
+    --line-strong: rgba(0, 0, 0, 0.10);
+    --ink: #1c1917;
+    --ink-strong: #0a0a09;
+    --muted: #57534e;
+    --subtle: #a8a29e;
+    --brand: #047857;
+    --finyk: #047857;
+    --fizruk: #155e75;
+    --routine: #c23a3a;
+    --nutrition: #466212;
+    --hero-finyk: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    --hero-fizruk: linear-gradient(135deg, #22d3ee 0%, #0e7490 100%);
+    --hero-routine: linear-gradient(135deg, #fb7185 0%, #c23a3a 100%);
+    --hero-nutrition: linear-gradient(135deg, #a3e635 0%, #466212 100%);
+  }
+  html, body { font-family: 'Manrope', system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.4; }
+  body { min-height: 100vh; background: var(--bg-base); position: relative; overflow-x: hidden; }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(at 12% 18%, var(--mesh-1) 0px, transparent 50%),
+      radial-gradient(at 88% 12%, var(--mesh-2) 0px, transparent 50%),
+      radial-gradient(at 18% 92%, var(--mesh-3) 0px, transparent 55%),
+      radial-gradient(at 82% 88%, var(--mesh-4) 0px, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+  nav { padding: 18px 0; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; }
+  .logo { display: flex; gap: 10px; align-items: center; font-weight: 800; font-size: 18px; }
+  .logo-mark { width: 34px; height: 34px; border-radius: 12px; background: var(--ink-strong); display: grid; place-items: center; color: var(--bg-base); font-size: 16px; font-weight: 800; }
+  .nav-cta {
+    padding: 10px 18px; border: 1px solid var(--line-strong); border-radius: 999px; color: var(--ink);
+    text-decoration: none; font-size: 14px; font-weight: 700; cursor: pointer;
+    background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    transition: all .15s;
+  }
+  .nav-cta:hover { background: var(--glass-strong); }
+
+  .hero { padding: 48px 0 32px; }
+  .hero-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: stretch; }
+  .hero-text {
+    background: var(--glass);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line);
+    border-radius: 32px;
+    padding: 56px 48px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.9) inset,
+      0 8px 32px rgba(28,25,23,.06);
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: rgba(4,120,87,.1); color: var(--brand);
+    border-radius: 999px; font-size: 12px; font-weight: 700;
+    margin-bottom: 24px; align-self: flex-start;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  h1 {
+    font-size: clamp(36px, 5.6vw, 64px);
+    font-weight: 800;
+    line-height: 1.02; letter-spacing: -0.03em;
+    margin-bottom: 16px;
+    color: var(--ink-strong);
+  }
+  h1 .highlight { background: linear-gradient(135deg, var(--brand) 0%, #0e7490 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { font-size: clamp(15px, 1.6vw, 18px); color: var(--muted); line-height: 1.5; margin-bottom: 32px; max-width: 480px; }
+  .cta-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--ink-strong); color: var(--bg-base); padding: 14px 26px;
+    border-radius: 16px; border: none; font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(28,25,23,.15), inset 0 1px 0 rgba(255,255,255,.1);
+    transition: transform .15s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .hero-meta { margin-top: 16px; font-size: 13px; color: var(--subtle); display: flex; align-items: center; gap: 10px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.2); }
+
+  .hero-stats {
+    display: grid; grid-template-rows: 1fr 1fr; gap: 16px;
+  }
+  .stat-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.9) inset,
+      0 8px 32px rgba(28,25,23,.06);
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .stat-card .blob { position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; border-radius: 50%; opacity: 0.25; pointer-events: none; }
+  .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 36px; font-weight: 500; letter-spacing: -0.03em; color: var(--ink-strong); }
+  .stat-delta { font-size: 13px; font-weight: 600; color: var(--brand); display: flex; align-items: center; gap: 4px; }
+  .stat-card.finyk .blob { background: var(--finyk); }
+  .stat-card.routine .blob { background: var(--routine); }
+
+  .bento { padding: 32px 0 64px; }
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 280px);
+    gap: 16px;
+  }
+  .bento-card {
+    border-radius: 28px; padding: 28px;
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 8px 32px rgba(28,25,23,.06);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    cursor: pointer; transition: transform .2s, box-shadow .2s;
+  }
+  .bento-card:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 16px 48px rgba(28,25,23,.10); }
+  .bento-card .module-tag { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: .85; }
+  .bento-card h3 { font-size: 22px; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; margin-top: 6px; }
+  .bento-card .desc { font-size: 13px; line-height: 1.45; opacity: .8; margin-top: 8px; }
+  .bento-card .preview { display: flex; align-items: flex-end; gap: 10px; margin-top: auto; }
+  .bento-card .num { font-family: 'JetBrains Mono', monospace; font-weight: 500; letter-spacing: -0.02em; }
+
+  /* Finyk — big tile, top-left, glass + hero gradient */
+  .bento-card.finyk { grid-column: span 2; grid-row: span 2; background: var(--hero-finyk); color: white; }
+  .bento-card.finyk .num { font-size: 56px; line-height: 1; color: white; }
+  .bento-card.finyk .label { font-size: 13px; opacity: 0.85; }
+  /* Fizruk — top right */
+  .bento-card.fizruk { grid-column: span 2; background: var(--hero-fizruk); color: white; }
+  .bento-card.fizruk .num { font-size: 40px; color: white; }
+  /* Routine — bottom mid */
+  .bento-card.routine { background: var(--hero-routine); color: white; }
+  .bento-card.routine .num { font-size: 34px; color: white; }
+  /* Nutrition — bottom right */
+  .bento-card.nutrition { background: var(--hero-nutrition); color: white; }
+  .bento-card.nutrition .num { font-size: 34px; color: white; }
+
+  .ring { width: 56px; height: 56px; border-radius: 50%; border: 4px solid rgba(255,255,255,.3); border-top-color: white; position: relative; }
+  .ring::after { content: '74%'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .checks { display: flex; gap: 6px; }
+  .check-dot { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,.25); position: relative; }
+  .check-dot.on { background: white; }
+  .check-dot.on::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--routine); font-size: 11px; font-weight: 800; }
+
+  .section { padding: 64px 0; }
+  .section-head { text-align: center; margin-bottom: 40px; }
+  .section-head h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink-strong); }
+  .section-head p { color: var(--muted); margin-top: 12px; font-size: 16px; }
+
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .step {
+    background: var(--glass-soft);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.9) inset;
+  }
+  .step-num { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 8px; background: var(--ink-strong); color: var(--bg-base); font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 13px; margin-bottom: 12px; }
+  .step h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--ink-strong); }
+  .step p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+  .waitlist {
+    background: var(--glass-strong);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--line);
+    border-radius: 32px; padding: 56px 40px; text-align: center;
+    box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 24px 64px rgba(28,25,23,.08);
+    position: relative; overflow: hidden;
+  }
+  .waitlist::before { content: ''; position: absolute; top: -100px; right: -100px; width: 320px; height: 320px; background: radial-gradient(circle, rgba(16,185,129,.25), transparent 70%); }
+  .waitlist > * { position: relative; z-index: 1; }
+  .waitlist h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 12px; color: var(--ink-strong); }
+  .waitlist p { color: var(--muted); max-width: 480px; margin: 0 auto 28px; }
+  .form-row { display: flex; gap: 8px; max-width: 480px; margin: 0 auto 12px; }
+  .form-row input { flex: 1; padding: 14px 18px; border: 1px solid var(--line-strong); border-radius: 14px; font-family: inherit; font-size: 15px; background: white; }
+  .form-row input:focus { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .form-meta { font-size: 13px; color: var(--subtle); display: flex; justify-content: center; align-items: center; gap: 8px; }
+
+  footer { padding: 48px 0 32px; margin-top: 32px; border-top: 1px solid var(--line); color: var(--subtle); font-size: 13px; }
+  footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-text { padding: 36px 28px; }
+    .bento-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+    .bento-card.finyk { grid-column: span 2; grid-row: span 1; min-height: 240px; }
+    .bento-card.fizruk { grid-column: span 2; min-height: 180px; }
+    .bento-card.routine, .bento-card.nutrition { min-height: 180px; }
+    .how { grid-template-columns: 1fr; }
+    .form-row { flex-direction: column; }
+  }
+  @media (max-width: 520px) {
+    h1 { font-size: 38px; }
+    .bento-grid { grid-template-columns: 1fr; }
+    .bento-card.finyk, .bento-card.fizruk { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="container">
+    <div class="logo"><span class="logo-mark">S</span> Sergeant</div>
+    <a class="nav-cta" href="#waitlist">Зайняти місце</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-text">
+        <span class="eyebrow"><span class="dot"></span>Pre-launch · UA-only</span>
+        <h1>Усе про себе — <span class="highlight">в одному місці.</span></h1>
+        <p class="sub">Фінанси, тренування, звички та харчування. Нарешті разом — без перемикань між чотирма різними застосунками.</p>
+        <div class="cta-row">
+          <button class="btn-primary" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">Хочу бути першим →</button>
+        </div>
+        <div class="hero-meta">
+          <span class="live-dot"></span>
+          <strong style="color:var(--ink);font-weight:700;">847</strong> людей вже чекають · сповістимо першими
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card finyk">
+          <div class="blob"></div>
+          <div>
+            <div class="stat-label">Залишок місяця</div>
+            <div class="stat-value">₴8 240</div>
+          </div>
+          <div class="stat-delta">↗ +₴1 100 ніж минулого тижня</div>
+        </div>
+        <div class="stat-card routine">
+          <div class="blob"></div>
+          <div>
+            <div class="stat-label">Серія звичок</div>
+            <div class="stat-value">12 днів</div>
+          </div>
+          <div class="stat-delta" style="color:var(--routine);">🔥 особистий рекорд</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bento">
+  <div class="container">
+    <div class="bento-grid">
+      <div class="bento-card finyk">
+        <div>
+          <div class="module-tag">FINYK · Фінанси</div>
+          <h3>Знаєш, куди йдуть гроші — без таблиць.</h3>
+          <div class="desc" style="max-width:380px;">Витрати, бюджети, цілі. Авто-категоризація з першого тапу.</div>
+        </div>
+        <div>
+          <div class="label">Цього тижня · кав'ярні</div>
+          <div class="num">₴340</div>
+        </div>
+      </div>
+      <div class="bento-card fizruk">
+        <div>
+          <div class="module-tag">FIZRUK · Фітнес</div>
+          <h3>Тренування, які пам'ятають за тебе.</h3>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:16px;">
+          <div class="ring"></div>
+          <div>
+            <div class="num">4×8</div>
+            <div style="font-size:11px;opacity:.85;">PR підхід</div>
+          </div>
+        </div>
+      </div>
+      <div class="bento-card routine">
+        <div>
+          <div class="module-tag">ROUTINE</div>
+          <h3>Маленькі кроки. Щодня.</h3>
+        </div>
+        <div>
+          <div class="checks">
+            <div class="check-dot on"></div>
+            <div class="check-dot on"></div>
+            <div class="check-dot on"></div>
+            <div class="check-dot"></div>
+            <div class="check-dot"></div>
+          </div>
+          <div style="font-size:11px;opacity:.85;margin-top:8px;">3 з 5 сьогодні</div>
+        </div>
+      </div>
+      <div class="bento-card nutrition">
+        <div>
+          <div class="module-tag">NUTRITION</div>
+          <h3>Що з'їв — без суджень.</h3>
+        </div>
+        <div>
+          <div class="num">1 840 / 2 100</div>
+          <div style="font-size:11px;opacity:.85;">ккал · 88% денної норми</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Три кроки до повної картини</h2>
+      <p>Без онбордингу на 12 хвилин. Один тап — і вже працює.</p>
+    </div>
+    <div class="how">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Обери модулі</h3>
+        <p>Один або всі чотири. Можна додавати пізніше — без міграції даних.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Один запис щодня</h3>
+        <p>Витрата, тренування, звичка, прийом їжі — по одному в день досить.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Бачиш картину</h3>
+        <p>Через тиждень — патерни. Через місяць — куди реально йде твоє життя.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="waitlist" id="waitlist">
+      <span class="eyebrow"><span class="dot"></span>Перші 500 · Early access</span>
+      <h2>Залиш email — будеш першим, коли відкриємо доступ.</h2>
+      <p>Без оплати, без обов'язків. Сповістимо коли продукт буде готовий.</p>
+      <div class="form-row">
+        <input type="email" placeholder="твій@email" required>
+        <button class="btn-primary">Отримати early access →</button>
+      </div>
+      <div class="form-meta">
+        <span class="live-dot"></span>
+        <span><strong style="color:var(--ink);font-weight:700;">847</strong> людей вже чекають · без спаму</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>© 2026 Sergeant · Маленькі кроки. Щоденно.</div>
+    <div>
+      <a href="#">Telegram</a>
+      <a href="#">X</a>
+      <a href="#">Instagram</a>
+    </div>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>

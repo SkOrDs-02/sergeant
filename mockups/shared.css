@@ -1,0 +1,107 @@
+/* Sergeant mockups — shared styles */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  --bg: #fdf9f3;
+  --paper: #faf7f1;
+  --panel: #ffffff;
+  --line: #ebe4da;
+  --line-soft: rgba(0,0,0,0.06);
+  --ink: #1c1917;
+  --ink-strong: #0a0a09;
+  --muted: #57534e;
+  --subtle: #a8a29e;
+  --brand: #047857;
+  --brand-soft: #ecfdf5;
+  --finyk: #047857;
+  --fizruk: #155e75;
+  --routine: #c23a3a;
+  --nutrition: #466212;
+  --finyk-soft: #ecfdf5;
+  --fizruk-soft: #ecfeff;
+  --routine-soft: #fff5f3;
+  --nutrition-soft: #f8fee7;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: 'Manrope', system-ui, sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+body { min-height: 100vh; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+.mockup-page {
+  max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px;
+}
+.mockup-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--line);
+  gap: 24px; flex-wrap: wrap;
+}
+.mockup-header .crumb {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.mockup-header h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 8px; }
+.mockup-header p { color: var(--muted); max-width: 560px; }
+.back-link {
+  color: var(--brand); font-weight: 600; font-size: 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--panel); transition: background .15s;
+}
+.back-link:hover { background: var(--brand-soft); }
+
+.variants {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+}
+.variant {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
+  padding: 20px; box-shadow: 0 1px 3px rgba(28,25,23,.04);
+  display: flex; flex-direction: column;
+}
+.variant-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px dashed var(--line);
+  gap: 8px;
+}
+.variant-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--brand); text-transform: uppercase; letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.variant-title { font-size: 14px; font-weight: 700; flex: 1; line-height: 1.3; }
+.variant-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; min-height: 36px; }
+.variant-body { flex: 1; min-height: 240px; display: flex; flex-direction: column; }
+
+.notes {
+  margin-top: 48px; padding: 24px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.notes h2 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.06em; }
+.notes ul { padding-left: 20px; }
+.notes li { font-size: 14px; line-height: 1.6; color: var(--muted); margin-bottom: 4px; }
+.notes li strong { color: var(--ink); font-weight: 700; }
+
+@media (max-width: 980px) { .variants { grid-template-columns: 1fr; } }
+
+/* Common UI tokens */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; border: none; cursor: pointer; }
+.btn-primary { background: var(--brand); color: white; }
+.btn-ink { background: var(--ink-strong); color: var(--paper); }
+.btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.serif { font-family: 'Lora', serif; }
+.muted { color: var(--muted); }
+.subtle { color: var(--subtle); font-size: 12px; }
+.chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.chip-finyk { background: var(--finyk-soft); color: var(--finyk); }
+.chip-fizruk { background: var(--fizruk-soft); color: var(--fizruk); }
+.chip-routine { background: var(--routine-soft); color: var(--routine); }
+.chip-nutrition { background: var(--nutrition-soft); color: var(--nutrition); }
+
+/* Phone frame for mobile mockups */
+.phone { width: 100%; max-width: 320px; aspect-ratio: 9/16; background: var(--bg); border: 8px solid #0a0a09; border-radius: 32px; padding: 8px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.15); position: relative; margin: 0 auto; }
+.phone::before { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 80px; height: 18px; background: #0a0a09; border-radius: 0 0 14px 14px; z-index: 10; }
+.phone-screen { width: 100%; height: 100%; background: var(--bg); border-radius: 22px; overflow: hidden; position: relative; padding-top: 32px; }

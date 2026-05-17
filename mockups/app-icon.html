@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — App Icon Variants</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .icon-row { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .icon-group { display: flex; gap: 8px; align-items: flex-end; }
+  .icon { border-radius: 22%; box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+  .icon-180 { width: 96px; height: 96px; }
+  .icon-120 { width: 56px; height: 56px; }
+  .icon-60  { width: 28px; height: 28px; }
+  .icon-context { display: flex; gap: 6px; align-items: center; padding: 8px; background: #f5f5f4; border-radius: 12px; margin-top: 12px; font-size: 11px; }
+  .icon-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+  /* V1 Monogram */
+  .v1 .icon { background: linear-gradient(135deg, #10b981 0%, #047857 60%, #064e3b 100%); display: grid; place-items: center; color: white; font-family: 'Manrope', sans-serif; font-weight: 800; }
+  .v1 .icon.icon-180 { font-size: 56px; }
+  .v1 .icon.icon-120 { font-size: 32px; }
+  .v1 .icon.icon-60 { font-size: 16px; }
+
+  /* V2 Module quadrant */
+  .v2 .icon { background: white; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px; overflow: hidden; }
+  .v2 .quad { display: grid; place-items: center; color: white; font-weight: 800; font-size: 9px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+  .v2 .quad.finyk { background: var(--finyk); border-radius: 30% 4% 4% 4%; }
+  .v2 .quad.fizruk { background: var(--fizruk); border-radius: 4% 30% 4% 4%; }
+  .v2 .quad.routine { background: var(--routine); border-radius: 4% 4% 4% 30%; }
+  .v2 .quad.nutrition { background: var(--nutrition); border-radius: 4% 4% 30% 4%; }
+  .v2 .icon-60 .quad { font-size: 6px; }
+  .v2 .icon-120 .quad { font-size: 7px; }
+
+  /* V3 Abstract chevron */
+  .v3 .icon { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%); display: grid; place-items: center; position: relative; overflow: hidden; }
+  .v3 .icon svg { width: 60%; height: 60%; }
+  .v3 .icon::after { content: ''; position: absolute; top: -20%; right: -20%; width: 60%; height: 60%; background: rgba(255,255,255,.4); border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 06 · App icon</div>
+      <h1>App icon — 3 напрямки</h1>
+      <p>Як виглядає Sergeant на home screen / у store. 3 концепти: monogram-clean / module quadrants / abstract emerald. Кожен показано в 3 розмірах.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Monogram «S»</span></div>
+      <p class="variant-desc">Clean, recognizable, scalable. Emerald gradient. Найбезпечніша опція. Подібний клас: Notion, Spotify.</p>
+      <div class="variant-body">
+        <div class="icon-row">
+          <div class="icon-group">
+            <div><div class="icon icon-180">S</div><div class="icon-meta">180px</div></div>
+            <div><div class="icon icon-120">S</div><div class="icon-meta">120px</div></div>
+            <div><div class="icon icon-60">S</div><div class="icon-meta">60px</div></div>
+          </div>
+          <div class="icon-context">
+            <div class="icon icon-60">S</div>
+            <div><div style="font-weight:700;font-size:11px;">Sergeant</div><div style="color:var(--muted);font-size:10px;">Усе про себе</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Module quadrants</span></div>
+      <p class="variant-desc">4 модулі = 4 кольорові квадранти. Розповідає продукт у самій icon. Risk: на 60px нечитко, виглядає як confused mosaic.</p>
+      <div class="variant-body">
+        <div class="icon-row">
+          <div class="icon-group">
+            <div><div class="icon icon-180">
+              <div class="quad finyk">FN</div>
+              <div class="quad fizruk">FZ</div>
+              <div class="quad routine">RT</div>
+              <div class="quad nutrition">NT</div>
+            </div><div class="icon-meta">180px</div></div>
+            <div><div class="icon icon-120">
+              <div class="quad finyk"></div>
+              <div class="quad fizruk"></div>
+              <div class="quad routine"></div>
+              <div class="quad nutrition"></div>
+            </div><div class="icon-meta">120px</div></div>
+            <div><div class="icon icon-60">
+              <div class="quad finyk"></div>
+              <div class="quad fizruk"></div>
+              <div class="quad routine"></div>
+              <div class="quad nutrition"></div>
+            </div><div class="icon-meta">60px</div></div>
+          </div>
+          <div class="icon-context">
+            <div class="icon icon-60">
+              <div class="quad finyk"></div>
+              <div class="quad fizruk"></div>
+              <div class="quad routine"></div>
+              <div class="quad nutrition"></div>
+            </div>
+            <div><div style="font-weight:700;font-size:11px;">Sergeant</div><div style="color:var(--muted);font-size:10px;">4 модулі · 1 застосунок</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Abstract chevron</span></div>
+      <p class="variant-desc">Soft emerald gradient + субtle abstract mark (sergeant chevron у contemporary стилі). Не літерний, не модульний — більше дружній.</p>
+      <div class="variant-body">
+        <div class="icon-row">
+          <div class="icon-group">
+            <div><div class="icon icon-180">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 60 L50 30 L80 60" stroke="#047857" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <path d="M20 80 L50 50 L80 80" stroke="#047857" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+              </svg>
+            </div><div class="icon-meta">180px</div></div>
+            <div><div class="icon icon-120">
+              <svg viewBox="0 0 100 100"><path d="M20 60 L50 30 L80 60" stroke="#047857" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M20 80 L50 50 L80 80" stroke="#047857" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/></svg>
+            </div><div class="icon-meta">120px</div></div>
+            <div><div class="icon icon-60">
+              <svg viewBox="0 0 100 100"><path d="M20 60 L50 30 L80 60" stroke="#047857" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </div><div class="icon-meta">60px</div></div>
+          </div>
+          <div class="icon-context">
+            <div class="icon icon-60">
+              <svg viewBox="0 0 100 100"><path d="M20 60 L50 30 L80 60" stroke="#047857" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </div>
+            <div><div style="font-weight:700;font-size:11px;">Sergeant</div><div style="color:var(--muted);font-size:10px;">Маленькі кроки. Щоденно.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>V1 Monogram</strong> — найbezopodno, scaling perfect, recognizable після 2-3 launches. Standard SaaS pattern. Risk: generic.</li>
+      <li><strong>V2 Quadrants</strong> — explicit storytelling. Працює якщо ти показуєш product одразу. На 60px (notification badge, App Library) ризик stop-light pattern.</li>
+      <li><strong>V3 Chevron</strong> — найбільш distinctive, не letter-based. "Sergeant" від військового rank — chevron literal reference. Soft, не aggressive. Найбільш memorable з 3-х.</li>
+      <li>Рекомендація: <strong>V1 для launch</strong> (safest CTR у App Store search results), <strong>V3 для marketing assets / Telegram bio / OG cards</strong> (signature without name).</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

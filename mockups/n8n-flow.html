@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — N8n Flow Diagram</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .flow-frame { font-size: 10px; line-height: 1.4; }
+
+  /* V1 Mermaid-style nodes */
+  .v1 .node { background: white; border: 2px solid var(--brand); border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 700; text-align: center; }
+  .v1 .arrow { text-align: center; color: var(--brand); font-size: 14px; font-weight: 800; line-height: 1; padding: 2px 0; }
+  .v1 .branch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .v1 .branch-label { text-align: center; font-size: 9px; color: var(--muted); font-style: italic; }
+  .v1 .node-end { background: var(--brand); color: white; border-color: var(--brand); }
+  .v1 .node-trigger { background: #fef3c7; border-color: #92400e; color: #92400e; }
+
+  /* V2 Linear timeline */
+  .v2 .step { display: grid; grid-template-columns: 32px 1fr; gap: 8px; padding: 8px 0; border-left: 2px solid var(--line); padding-left: 12px; margin-left: 12px; position: relative; }
+  .v2 .step::before { content: ''; position: absolute; left: -7px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--brand); border: 2px solid white; }
+  .v2 .step-num { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: var(--brand); }
+  .v2 .step-title { font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .v2 .step-desc { font-size: 9px; color: var(--muted); }
+
+  /* V3 Sankey-style */
+  .v3 .sankey { display: flex; flex-direction: column; gap: 4px; font-size: 9px; }
+  .v3 .bar { padding: 4px 8px; border-radius: 4px; color: white; font-weight: 600; }
+  .v3 .bar-source { background: var(--ink); width: 100%; }
+  .v3 .bar-flow { display: grid; grid-template-columns: 60% 40%; gap: 2px; }
+  .v3 .bar-airtable { background: var(--brand); }
+  .v3 .bar-email { background: var(--fizruk); }
+  .v3 .bar-leaf { background: #57534e; padding: 3px 6px; font-size: 8px; }
+  .v3 .legend { margin-top: 8px; font-size: 9px; }
+  .v3 .legend-item { display: inline-block; margin-right: 6px; }
+  .v3 .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 10 · N8n flow diagram</div>
+      <h1>N8n signup flow diagram — 3 styles</h1>
+      <p>Внутрішня docs візуалізація основного waitlist flow (#1 signup → CRM + #2 drip + #3 referral). Reference для коли будуєш actual n8n workflows.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Mermaid nodes</span></div>
+      <p class="variant-desc">Класична node-and-arrow flowchart. Звична для розробників. Зрозумілий decision branching.</p>
+      <div class="variant-body">
+        <div class="flow-frame">
+          <div class="node node-trigger">POST /signup</div>
+          <div class="arrow">↓</div>
+          <div class="node">parse UTM + ref</div>
+          <div class="arrow">↓</div>
+          <div class="node">Airtable: create row</div>
+          <div class="arrow">↓</div>
+          <div class="branch">
+            <div>
+              <div class="node">send email Day 0</div>
+              <div class="branch-label">always</div>
+            </div>
+            <div>
+              <div class="node">if ?ref=</div>
+              <div class="branch-label">conditional</div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+          <div class="node">Wait 5d → Day 5 email</div>
+          <div class="arrow">↓</div>
+          <div class="node">Branch by module_interest</div>
+          <div class="arrow">↓</div>
+          <div class="node-end node">→ Day 14 Referral → Day 21 Teaser</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Linear timeline</span></div>
+      <p class="variant-desc">Step-by-step з description per step. Найкраще для самого реалізатора — як runbook.</p>
+      <div class="variant-body">
+        <div class="flow-frame">
+          <div class="step">
+            <div></div>
+            <div>
+              <div class="step-num">01</div>
+              <div class="step-title">Webhook receive</div>
+              <div class="step-desc">POST /signup → JSON body {email, utm_*, ref}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div></div>
+            <div>
+              <div class="step-num">02</div>
+              <div class="step-title">Generate ref_code</div>
+              <div class="step-desc">nanoid(8) → ABCD1234</div>
+            </div>
+          </div>
+          <div class="step">
+            <div></div>
+            <div>
+              <div class="step-num">03</div>
+              <div class="step-title">Airtable: create</div>
+              <div class="step-desc">waitlist table → email + ref_code + utm + invited_by</div>
+            </div>
+          </div>
+          <div class="step">
+            <div></div>
+            <div>
+              <div class="step-num">04</div>
+              <div class="step-title">Email Day 0</div>
+              <div class="step-desc">Resend API → confirmation</div>
+            </div>
+          </div>
+          <div class="step">
+            <div></div>
+            <div>
+              <div class="step-num">05</div>
+              <div class="step-title">Wait 5d → Day 5</div>
+              <div class="step-desc">Branch per module_interest</div>
+            </div>
+          </div>
+          <div class="step">
+            <div></div>
+            <div>
+              <div class="step-num">06</div>
+              <div class="step-title">If ref present → invite_count++</div>
+              <div class="step-desc">Inviter check, ≥3 → priority email</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Sankey / data flow</span></div>
+      <p class="variant-desc">Шар-flow visualization. Показує куди дані йдуть, у яких пропорціях. Гарне для presentation.</p>
+      <div class="variant-body">
+        <div class="flow-frame">
+          <div class="sankey">
+            <div class="bar bar-source">Signup webhook · 100%</div>
+            <div class="bar bar-flow">
+              <div class="bar bar-airtable">Airtable create</div>
+              <div class="bar bar-email">Email Day 0</div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); padding: 6px 0 2px;">↓ 5 днів очікування</div>
+            <div class="bar bar-flow">
+              <div class="bar bar-email">Day 5 · per-module</div>
+              <div class="bar bar-leaf">~30% no module</div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); padding: 6px 0 2px;">↓ 9 днів очікування</div>
+            <div class="bar bar-flow">
+              <div class="bar bar-email">Day 14 · Referral</div>
+              <div class="bar bar-leaf">~10% unsub</div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); padding: 6px 0 2px;">↓ 7 днів очікування</div>
+            <div class="bar bar-email">Day 21 · Pre-launch</div>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot" style="background: var(--ink);"></span>source</span>
+            <span class="legend-item"><span class="legend-dot" style="background: var(--brand);"></span>storage</span>
+            <span class="legend-item"><span class="legend-dot" style="background: var(--fizruk);"></span>email</span>
+            <span class="legend-item"><span class="legend-dot" style="background: #57534e;"></span>drop-off</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>V1 Mermaid</strong> — стандартний flow-chart. Якщо коли-небудь захочеш automated diagram from code — це mermaid syntax.</li>
+      <li><strong>V2 Linear</strong> — recommended для personal docs. Step-by-step як runbook що ти реально implementuєш.</li>
+      <li><strong>V3 Sankey</strong> — для blog post / presentation. Показує drop-off (~30% no module-interest, ~10% unsub). Marketing-friendly.</li>
+      <li>Recommendation: V2 у internal `docs/n8n/flow-01-signup.md`, V3 у blog post про funnel.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

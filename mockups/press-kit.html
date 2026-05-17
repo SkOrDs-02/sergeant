@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — Press Kit Pages</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .pk-frame { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 11px; line-height: 1.55; height: 100%; }
+  .pk-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+  .pk-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .pk-section { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .pk-section:last-child { border-bottom: none; }
+  .pk-h { font-weight: 700; font-size: 11px; margin-bottom: 4px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pk-quote { font-family: 'Lora', serif; font-style: italic; color: var(--muted); margin: 6px 0; font-size: 11px; }
+  .pk-btn { background: var(--ink); color: white; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 700; display: inline-block; margin-right: 4px; }
+
+  /* V2 Asset gallery */
+  .v2 .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0; }
+  .v2 .asset-tile { aspect-ratio: 1/1; border-radius: 8px; display: grid; place-items: center; color: white; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+  .v2 .asset-icon { background: linear-gradient(135deg, #10b981, #047857); }
+  .v2 .asset-screen { background: linear-gradient(135deg, var(--finyk-soft), #d1fae5); color: var(--ink); }
+  .v2 .asset-logo { background: var(--bg); border: 1px solid var(--line); color: var(--ink); }
+  .v2 .asset-og { background: #1c1917; }
+  .v2 .download-bar { background: #fafafa; padding: 6px 8px; border-radius: 6px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .v2 .download-bar strong { color: var(--brand); }
+
+  /* V3 Founder bio */
+  .v3 .founder-card { background: var(--brand-soft); padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+  .v3 .founder-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--brand); color: white; display: grid; place-items: center; font-weight: 800; font-size: 20px; margin-bottom: 6px; }
+  .v3 .founder-name { font-weight: 800; font-size: 14px; }
+  .v3 .founder-role { font-size: 10px; color: var(--muted); }
+  .v3 .founder-story { font-size: 11px; color: var(--ink); margin-top: 6px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 15 · Press kit</div>
+      <h1>Press kit — for DOU.ua, ain.ua, mc.today</h1>
+      <p>Один URL з усім потрібним для журналіста: pitch, screenshots, founder bio, contact. 3 структури залежно від audience.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Single-page summary</span></div>
+      <p class="variant-desc">All-in-one. Pitch + facts + contact. Найдружніший для quick-write journalist.</p>
+      <div class="variant-body">
+        <div class="pk-frame">
+          <div class="pk-meta">Press kit · Sergeant · 2026</div>
+          <div class="pk-title">Sergeant</div>
+          <p style="color: var(--muted); margin-bottom: 10px;">Українська платформа life management — 4 модулі в одному застосунку.</p>
+          <div class="pk-section">
+            <div class="pk-h">Pitch (one-liner)</div>
+            <p>Замість 4 застосунків — один. Фінанси, тренування, звички, харчування. UA-only, soft tone.</p>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Quick facts</div>
+            <p>· Pre-launch · 847+ waitlist<br>· Solo dev + AI + n8n<br>· UA-only ринок<br>· Founded 2026</p>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Quote (use this)</div>
+            <div class="pk-quote">"Я будую один застосунок замість чотирьох — без drill-сержанта і без shaming."</div>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Contact</div>
+            <p>press@sergeant.app · @sergeant_app</p>
+            <div style="margin-top: 6px;"><a href="#" class="pk-btn">Завантажити assets (.zip)</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Asset gallery</span></div>
+      <p class="variant-desc">Visual-first. Журналіст одразу бачить що можна embed-ити. Готовий до paste-into-article.</p>
+      <div class="variant-body">
+        <div class="pk-frame">
+          <div class="pk-meta">Press kit · Assets</div>
+          <div class="pk-title">Brand assets</div>
+          <div class="asset-grid">
+            <div class="asset-tile asset-icon">app icon<br>1024×1024</div>
+            <div class="asset-tile asset-logo">logo<br>SVG + PNG</div>
+            <div class="asset-tile asset-screen">screenshot<br>Finyk</div>
+            <div class="asset-tile asset-og">OG card<br>1200×630</div>
+          </div>
+          <div class="download-bar">
+            <span>sergeant-press-kit-v1.zip</span>
+            <span><strong>Download →</strong></span>
+          </div>
+          <div class="pk-section" style="margin-top: 10px;">
+            <div class="pk-h">Usage rules</div>
+            <p>· Не змінюй кольори<br>· Не зменшуй mark менше 24px<br>· Завжди свіжа версія тут</p>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Contact</div>
+            <p>press@sergeant.app · @sergeant_app</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Founder bio focused</span></div>
+      <p class="variant-desc">Story-first. Особистий angle — solo UA dev. Резонує з DOU.ua / build-in-public coverage.</p>
+      <div class="variant-body">
+        <div class="pk-frame">
+          <div class="pk-meta">Press kit · Founder story</div>
+          <div class="pk-title">Хто будує Sergeant</div>
+          <div class="founder-card">
+            <div class="founder-avatar">D</div>
+            <div class="founder-name">Dmytro</div>
+            <div class="founder-role">Solo founder · UA</div>
+            <div class="founder-story">Будую Sergeant сам — з AI як co-pilot і n8n як automation. Один застосунок замість чотирьох. UA-only ринок, ukrainian-first voice.</div>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Чому це важливо</div>
+            <p>На UA ринку немає рідного life-hub продукту. Sergeant — це чесна спроба зробити soft, не drill-сержант інструмент для української аудиторії.</p>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Підходящі історії</div>
+            <p>· Solo dev + AI workflow<br>· UA-product positioning<br>· Build-in-public on Telegram + X</p>
+          </div>
+          <div class="pk-section">
+            <div class="pk-h">Available for</div>
+            <p>· Interview (Ukr/Eng)<br>· Podcast guest<br>· Trade show / event</p>
+            <p style="margin-top: 6px;">press@sergeant.app</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>V1 Single-page</strong> — recommended default. UA-журналіст пише швидко, не хоче scrollувати 3 secitons.</li>
+      <li><strong>V2 Asset gallery</strong> — підвищує chance что journalist embed'ить screenshot в article (better placement).</li>
+      <li><strong>V3 Founder bio</strong> — для DOU.ua "Як я будую" interview format. Resonates з UA-tech audience.</li>
+      <li>Рекомендація: <strong>1 URL `/press`</strong> з структурою V1 + V2 asset grid внизу + V3 bio section. All-in-one дає журналістам вибір що використати.</li>
+      <li>Press kit Phase 4 (post-launch, після ~3 months). До того — outreach pitches manual.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

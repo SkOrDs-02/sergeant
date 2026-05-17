@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — Unsubscribe Pages</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .unsub-frame { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 16px; font-size: 11px; line-height: 1.5; }
+  .u-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+  .u-sub { color: var(--muted); margin-bottom: 12px; }
+  .u-btn { background: var(--brand); color: white; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-block; margin-right: 6px; }
+  .u-btn-ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; display: inline-block; }
+  .u-link { color: var(--brand); text-decoration: underline; font-size: 11px; }
+
+  /* V1 Honest sad */
+  .v1 .u-frame { background: var(--bg); }
+  .v1 .u-emoji { font-size: 32px; text-align: center; margin: 16px 0 8px; }
+  .v1 .u-quote { font-family: 'Lora', serif; font-style: italic; color: var(--muted); margin: 12px 0; padding: 8px 12px; border-left: 3px solid var(--line); font-size: 11px; }
+
+  /* V2 Preference center */
+  .v2 .pref-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-size: 11px; }
+  .v2 .pref-name { font-weight: 600; }
+  .v2 .pref-desc { font-size: 9px; color: var(--muted); }
+  .v2 .toggle { width: 28px; height: 16px; border-radius: 999px; background: var(--brand); position: relative; flex-shrink: 0; }
+  .v2 .toggle::after { content: ''; position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; top: 2px; right: 2px; }
+  .v2 .toggle.off { background: var(--line); }
+  .v2 .toggle.off::after { right: auto; left: 2px; }
+
+  /* V3 Pause vs unsub */
+  .v3 .opt { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; cursor: pointer; }
+  .v3 .opt.selected { background: var(--brand-soft); border-color: var(--brand); }
+  .v3 .opt-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--brand-soft); display: grid; place-items: center; font-size: 14px; flex-shrink: 0; }
+  .v3 .opt.selected .opt-icon { background: var(--brand); color: white; }
+  .v3 .opt-name { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+  .v3 .opt-desc { font-size: 10px; color: var(--muted); line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="mockup-page">
+  <div class="mockup-header">
+    <div>
+      <div class="crumb">Mockups · 14 · Unsubscribe</div>
+      <h1>Unsubscribe page — 3 voice tones</h1>
+      <p>Що бачить юзер коли клацає "unsubscribe" у footer email. Voice opportunity — навіть прощаючись, бренд має tone.</p>
+    </div>
+    <a href="index.html" class="back-link">← Portal</a>
+  </div>
+
+  <div class="variants">
+
+    <div class="variant v1">
+      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Honest "see you"</span></div>
+      <p class="variant-desc">Tumblr-style. Прийняти рішення без guilt-trip. Подякувати. Залишити двері відчиненими.</p>
+      <div class="variant-body">
+        <div class="unsub-frame">
+          <div class="u-emoji">👋</div>
+          <div class="u-title" style="text-align: center;">Прощаємось.</div>
+          <p class="u-sub" style="text-align: center;">Ти більше не отримаєш листи від Sergeant. Жодних "ти впевнений?" — ми тебе зрозуміли з першого разу.</p>
+          <div class="u-quote">"Якщо колись захочеш повернутись — sergeant.app/waitlist. Без образ."</div>
+          <div style="text-align: center; margin-top: 12px;">
+            <a href="#" class="u-link">Розкажи чому йдеш →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v2">
+      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Preference center</span></div>
+      <p class="variant-desc">Не all-or-nothing. Selective unsub per email type. Reduces full-list churn.</p>
+      <div class="variant-body">
+        <div class="unsub-frame">
+          <div class="u-title">Які листи ти хочеш отримувати?</div>
+          <p class="u-sub">Обери самостійно. Можна змінити в будь-який момент.</p>
+          <div class="pref-row">
+            <div><div class="pref-name">Pre-launch updates</div><div class="pref-desc">~1 лист на тиждень</div></div>
+            <div class="toggle"></div>
+          </div>
+          <div class="pref-row">
+            <div><div class="pref-name">Module value tips</div><div class="pref-desc">Per-module insights</div></div>
+            <div class="toggle off"></div>
+          </div>
+          <div class="pref-row">
+            <div><div class="pref-name">Launch announcement</div><div class="pref-desc">1 раз коли запустимось</div></div>
+            <div class="toggle"></div>
+          </div>
+          <div class="pref-row">
+            <div><div class="pref-name">Referral rewards</div><div class="pref-desc">Коли друг приєднується</div></div>
+            <div class="toggle"></div>
+          </div>
+          <div style="margin-top: 12px; text-align: center;">
+            <a href="#" class="u-btn">Зберегти</a>
+            <a href="#" class="u-link">Відписатись від усіх</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant v3">
+      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Pause vs unsubscribe</span></div>
+      <p class="variant-desc">Substack-style. Пропонує "пауза 30 днів" як альтернатива повному unsubscribe. Зберігає relationship.</p>
+      <div class="variant-body">
+        <div class="unsub-frame">
+          <div class="u-title">Перш ніж піти…</div>
+          <p class="u-sub">Можливо, просто перерва підійде краще?</p>
+          <div class="opt selected">
+            <div class="opt-icon">⏸</div>
+            <div>
+              <div class="opt-name">Перерва 30 днів</div>
+              <div class="opt-desc">Лікаря Day 21 проскочиш. Через 30 днів — рестарт drip.</div>
+            </div>
+          </div>
+          <div class="opt">
+            <div class="opt-icon">📭</div>
+            <div>
+              <div class="opt-name">Тільки launch announcement</div>
+              <div class="opt-desc">Жодних більше листів, окрім одного — коли запустимось.</div>
+            </div>
+          </div>
+          <div class="opt">
+            <div class="opt-icon">👋</div>
+            <div>
+              <div class="opt-name">Повна відписка</div>
+              <div class="opt-desc">Більше жодних листів. Без образ — повертайся колись.</div>
+            </div>
+          </div>
+          <a href="#" class="u-btn" style="display: block; text-align: center; margin-top: 12px;">Підтвердити</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>V1 Honest</strong> — найшвидший до ship, найпростіший. Best для маленьких списків.</li>
+      <li><strong>V2 Preference</strong> — reduces full-list churn ~30-50%. Implementation: extra Airtable columns per email type.</li>
+      <li><strong>V3 Pause</strong> — most sophisticated. Substack proven approach. Підходить коли drip має багато типів.</li>
+      <li>Voice rule (з ради): жодних "Ти впевнений?", "Ми тебе будемо сумувати". Просто accept, подякувати, залишити двері.</li>
+      <li>Legal: One-click unsub у footer — обов'язково (GAS, Yahoo 2024+). Усі 3 варіанти треба як post-click landing, не сам unsub action.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

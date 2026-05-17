@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sergeant — Mockup Portal</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { background: var(--paper); }
+  .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--panel); border-right: 1px solid var(--line); padding: 32px 20px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .sb-logo { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .sb-logo-mark { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, #10b981, #047857); display: grid; place-items: center; color: white; font-size: 16px; font-weight: 800; }
+  .sb-logo-name { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
+  .sb-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 32px; }
+  .sb-group { margin-bottom: 28px; }
+  .sb-group-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 8px; padding-left: 12px; }
+  .sb-link { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--ink); transition: background .15s; }
+  .sb-link:hover { background: var(--bg); }
+  .sb-link .count { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--subtle); }
+  .sb-link.active { background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+
+  .main { padding: 40px 48px 80px; max-width: 1280px; }
+  .main-header { margin-bottom: 32px; }
+  .crumb { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 12px; }
+  .main-header h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 12px; }
+  .main-header p { color: var(--muted); font-size: 17px; max-width: 640px; line-height: 1.55; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+    margin-bottom: 56px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px; transition: transform .15s, box-shadow .15s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(28,25,23,.08); }
+  .card-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--brand); font-weight: 700; letter-spacing: 0.08em; }
+  .card h3 { font-size: 18px; font-weight: 800; margin: 8px 0; line-height: 1.2; letter-spacing: -0.01em; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.5; flex: 1; margin-bottom: 12px; }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
+  .card-meta .variants-count { color: var(--subtle); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .card-meta .open { color: var(--brand); font-weight: 700; }
+  .card-meta .open::after { content: ' →'; }
+
+  .section-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em;
+    margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); display: none; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    .main { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <span class="sb-logo-mark">S</span>
+      <span class="sb-logo-name">Sergeant</span>
+    </div>
+    <div class="sb-sub">Mockup portal · v0.1</div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Landing</div>
+      <a class="sb-link" href="landing/v1-soft-organic.html">V1 · Soft & Organic <span class="count">→</span></a>
+      <a class="sb-link" href="landing/v2-bento-modular.html">V2 · Bento Modular <span class="count">→</span></a>
+      <a class="sb-link" href="landing/v3-editorial.html">V3 · Editorial <span class="count">→</span></a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Marketing surfaces</div>
+      <a class="sb-link" href="email-drip.html">01 · Email drip <span class="count">3v</span></a>
+      <a class="sb-link" href="social-posts.html">02 · Social posts <span class="count">3v</span></a>
+      <a class="sb-link" href="store-listing.html">03 · App Store listing <span class="count">3v</span></a>
+      <a class="sb-link" href="og-cards.html">04 · OG / share cards <span class="count">3v</span></a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Brand & visual</div>
+      <a class="sb-link" href="brand-sheet.html">05 · Brand cheat sheet <span class="count">3v</span></a>
+      <a class="sb-link" href="app-icon.html">06 · App icon <span class="count">3v</span></a>
+      <a class="sb-link" href="module-page.html">07 · Module page (/finyk) <span class="count">3v</span></a>
+      <a class="sb-link" href="blog-post.html">08 · Blog post template <span class="count">3v</span></a>
+      <a class="sb-link" href="compare-page.html">09 · Comparison page <span class="count">3v</span></a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Flows & system</div>
+      <a class="sb-link" href="n8n-flow.html">10 · N8n flow diagram <span class="count">3v</span></a>
+      <a class="sb-link" href="signup-flow.html">11 · Signup flow <span class="count">3v</span></a>
+      <a class="sb-link" href="referral-flow.html">12 · Referral flow <span class="count">3v</span></a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Utility pages</div>
+      <a class="sb-link" href="holding.html">13 · Coming soon <span class="count">3v</span></a>
+      <a class="sb-link" href="unsub.html">14 · Unsubscribe <span class="count">3v</span></a>
+      <a class="sb-link" href="press-kit.html">15 · Press kit <span class="count">3v</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-header">
+      <div class="crumb">Mockups · 16 surfaces · 48 variants</div>
+      <h1>Перегляд варіантів дизайну Sergeant</h1>
+      <p>Лендинг (3 версії) + 15 marketing/system поверхонь × 3 варіанти кожна. Натисни картку — відкриється повний mockup з side-by-side варіантами. У sidebar — швидка навігація.</p>
+    </div>
+
+    <div class="section-title">Landing pages · 3 directional sketches</div>
+    <div class="grid">
+      <a href="landing/v1-soft-organic.html" class="card">
+        <span class="card-num">L1</span>
+        <h3>V1 · Soft & Organic</h3>
+        <p>Yazio × Notion mood. Кремовий фон, м'які тіні, generous white space. Найближче до brandbook tone.</p>
+        <div class="card-meta"><span class="variants-count">Standalone</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="landing/v2-bento-modular.html" class="card">
+        <span class="card-num">L2</span>
+        <h3>V2 · Bento Modular</h3>
+        <p>Linear × iOS keynote. Glass surfaces, bento grid модулів, hero gradients — resonates з v2 product redesign.</p>
+        <div class="card-meta"><span class="variants-count">Standalone</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="landing/v3-editorial.html" class="card">
+        <span class="card-num">L3</span>
+        <h3>V3 · Editorial</h3>
+        <p>Stripe blog × Substack. Вузька колонка, Lora serif, JetBrains Mono accents, build journal block.</p>
+        <div class="card-meta"><span class="variants-count">Standalone</span><span class="open">Відкрити</span></div>
+      </a>
+    </div>
+
+    <div class="section-title">Marketing surfaces · what 847 people will see</div>
+    <div class="grid">
+      <a href="email-drip.html" class="card">
+        <span class="card-num">01</span>
+        <h3>Email drip preview</h3>
+        <p>4 листи (Day 0/5/14/21) рендерені як inbox cards. Brand voice live. 3 tone варіанти.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="social-posts.html" class="card">
+        <span class="card-num">02</span>
+        <h3>Social posts</h3>
+        <p>Telegram + X + Instagram side-by-side, та сама announce-копія. 3 стилі adaptation.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="store-listing.html" class="card">
+        <span class="card-num">03</span>
+        <h3>App Store listing</h3>
+        <p>Icon + name + subtitle + screenshots + description. 3 підходи до store metadata.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="og-cards.html" class="card">
+        <span class="card-num">04</span>
+        <h3>OG / share cards</h3>
+        <p>Як landing виглядає коли ділиш у Telegram/X. 1200×630 preview. 3 layout стратегії.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+    </div>
+
+    <div class="section-title">Brand & visual surfaces</div>
+    <div class="grid">
+      <a href="brand-sheet.html" class="card">
+        <span class="card-num">05</span>
+        <h3>Brand cheat sheet</h3>
+        <p>Palette + type + button states. Reference page. 3 формати: designer / dev / marketing.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="app-icon.html" class="card">
+        <span class="card-num">06</span>
+        <h3>App icon</h3>
+        <p>3 напрямки icon design — monogram / module grid / abstract.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="module-page.html" class="card">
+        <span class="card-num">07</span>
+        <h3>Module deep-link page</h3>
+        <p>/finyk як приклад. 3 layout: focus / demo-first / pain-first.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="blog-post.html" class="card">
+        <span class="card-num">08</span>
+        <h3>Blog post template</h3>
+        <p>Pillar SEO article + inline CTAs. 3 reading-mode layouts.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="compare-page.html" class="card">
+        <span class="card-num">09</span>
+        <h3>Comparison page</h3>
+        <p>/compare/habitica-vs-sergeant — fit-framing tone з ради. 3 представлення.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+    </div>
+
+    <div class="section-title">Flows & internal documentation</div>
+    <div class="grid">
+      <a href="n8n-flow.html" class="card">
+        <span class="card-num">10</span>
+        <h3>N8n flow diagram</h3>
+        <p>Signup → CRM → drip + referral візуалізація. 3 diagram styles.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="signup-flow.html" class="card">
+        <span class="card-num">11</span>
+        <h3>Signup flow</h3>
+        <p>Form → success → confirm email. UX storyboard. 3 narrative styles.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="referral-flow.html" class="card">
+        <span class="card-num">12</span>
+        <h3>Referral flow</h3>
+        <p>User → друг → milestone email. Як це працює візуально.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+    </div>
+
+    <div class="section-title">Utility pages</div>
+    <div class="grid">
+      <a href="holding.html" class="card">
+        <span class="card-num">13</span>
+        <h3>Coming soon page</h3>
+        <p>Pre-launch holding page для коли продукт ще не готовий. 3 mood варіанти.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="unsub.html" class="card">
+        <span class="card-num">14</span>
+        <h3>Unsubscribe page</h3>
+        <p>Що юзер бачить коли відписується. Voice opportunity. 3 підходи.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+      <a href="press-kit.html" class="card">
+        <span class="card-num">15</span>
+        <h3>Press kit page</h3>
+        <p>Для журналістів DOU/ain/mc.today — bio, screenshots, contact. 3 структури.</p>
+        <div class="card-meta"><span class="variants-count">3 variants</span><span class="open">Відкрити</span></div>
+      </a>
+    </div>
+
+    <div class="section-title">How to use</div>
+    <div class="card" style="max-width: 720px;">
+      <p style="margin-bottom: 12px;"><strong>Дивись:</strong> кожна картка → окрема сторінка з 3 варіантами side-by-side.</p>
+      <p style="margin-bottom: 12px;"><strong>Feedback:</strong> якщо щось особливо подобається — скажи "беремо V3 з #02" — наступна сесія застосує до production build.</p>
+      <p><strong>Mobile:</strong> 980px breakpoint — варіанти збираються вертикально, sidebar колапсується.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>
