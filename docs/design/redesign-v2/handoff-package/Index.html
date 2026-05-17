@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sergeant v2 redesign · Module comparison index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #1a1614;
+  --panel: rgba(255,255,255,0.04);
+  --panel-hover: rgba(255,255,255,0.07);
+  --line: rgba(255,255,255,0.07);
+  --line-hover: rgba(255,255,255,0.14);
+  --text: #faf7f1;
+  --muted: #b4aea9;
+  --subtle: #878079;
+  --finyk: #10b981;
+  --fizruk: #22d3ee;
+  --routine: #ff8c78;
+  --nutrition: #b0e636;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 64px 32px 96px;
+  letter-spacing: -0.005em;
+}
+.wrap { max-width: 1280px; margin: 0 auto; }
+
+header { margin-bottom: 56px; }
+header .kicker {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--subtle);
+  margin-bottom: 14px;
+}
+header h1 {
+  font-size: 56px; line-height: 1.02; font-weight: 800;
+  letter-spacing: -0.035em; margin: 0 0 18px;
+  max-width: 920px;
+}
+header h1 em {
+  font-style: normal; color: var(--muted);
+}
+header p {
+  font-size: 17px; line-height: 1.55; color: var(--muted);
+  max-width: 720px; margin: 0;
+}
+
+.legend {
+  display: flex; gap: 32px; margin: 40px 0 56px;
+  padding: 22px 24px; border: 1px solid var(--line); border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.legend-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-item .dot.now { background: #ff8c78; }
+.legend-item .dot.plan { background: #34d399; }
+.legend-item .dot.mine { background: #67e8f9; }
+.legend-item .dot.gap { background: #fbbf24; }
+.legend-item strong { color: var(--text); font-weight: 700; }
+
+.module-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px;
+  margin-bottom: 56px;
+}
+.module-card {
+  display: block; text-decoration: none;
+  padding: 30px 32px; border-radius: 18px;
+  background: var(--panel); border: 1px solid var(--line);
+  color: inherit;
+  transition: background 200ms, border-color 200ms, transform 200ms;
+  position: relative; overflow: hidden;
+}
+.module-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--accent);
+}
+.module-card:hover {
+  background: var(--panel-hover);
+  border-color: var(--line-hover);
+  transform: translateY(-2px);
+}
+.module-card.finyk { --accent: var(--finyk); }
+.module-card.fizruk { --accent: var(--fizruk); }
+.module-card.routine { --accent: var(--routine); }
+.module-card.nutrition { --accent: var(--nutrition); }
+
+.module-card .module-name {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 10px;
+}
+.module-card h2 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.022em;
+  margin: 0 0 8px; line-height: 1.15;
+}
+.module-card h2 small {
+  display: block; font-size: 14px; font-weight: 500;
+  color: var(--muted); margin-top: 4px; letter-spacing: -0.005em;
+}
+.module-card .summary {
+  font-size: 14px; line-height: 1.55; color: var(--muted);
+  margin: 14px 0 0;
+}
+.module-card .summary strong { color: var(--text); font-weight: 600; }
+.module-card .stats {
+  display: flex; gap: 20px; margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.module-card .stat {
+  font-size: 11px; color: var(--subtle); letter-spacing: 0.03em;
+}
+.module-card .stat strong {
+  display: block; font-size: 18px; font-weight: 800;
+  color: var(--text); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; margin-bottom: 2px;
+}
+.module-card .open {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; font-size: 13px; font-weight: 600;
+  color: var(--accent);
+}
+.module-card .open::after {
+  content: '→';
+  transition: transform 200ms;
+}
+.module-card:hover .open::after { transform: translateX(4px); }
+
+.summary-section {
+  padding: 28px 32px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 18px;
+  margin-bottom: 28px;
+}
+.summary-section h3 {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--subtle); margin: 0 0 16px;
+}
+.summary-section h3 em { color: #fbbf24; font-style: normal; }
+.summary-section dl { margin: 0; }
+.summary-section dt {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  margin-top: 14px;
+}
+.summary-section dt:first-child { margin-top: 0; }
+.summary-section dd {
+  margin: 4px 0 0; font-size: 13px; line-height: 1.55; color: var(--muted);
+}
+.summary-section code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px; background: rgba(255,255,255,0.06);
+  padding: 1px 5px; border-radius: 4px; color: #e6dccc;
+}
+
+.kbd-hint {
+  margin-top: 48px; font-size: 12px; color: var(--subtle);
+  text-align: center; letter-spacing: 0.02em;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Sergeant · v2 redesign · 2026-05</div>
+    <h1>Чотири модулі. Три стани. <em>Зараз → Після плану → Мої доповнення</em></h1>
+    <p>
+      Кожен модуль — окремий файл. Спільний шаблон: <strong>стан 0</strong> — що юзер бачить
+      у проді сьогодні, з покликаннями на актуальний код. <strong>Стан 1</strong> — після
+      закриття всього <code>../execution-plan.md</code> + backlog. <strong>Стан 2</strong> —
+      мої доповнення поверх плану з обґрунтуванням і trade-off.
+    </p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="dot now"></span><span><strong>0 · Сьогодні</strong> — поточна реальність у проді (v1)</span></div>
+    <div class="legend-item"><span class="dot plan"></span><span><strong>1 · Після плану</strong> — execution-plan Phase 0-6 + backlog</span></div>
+    <div class="legend-item"><span class="dot mine"></span><span><strong>2 · Мої доповнення</strong> — поверх плану</span></div>
+    <div class="legend-item"><span class="dot gap"></span><span><strong>Прихована тех-дебт</strong> — gap не у backlog</span></div>
+  </div>
+
+  <div class="module-grid">
+
+    <a href="Finyk%20Overview%20Mobile.html" class="module-card finyk">
+      <div class="module-name">Фінік</div>
+      <h2>Finyk Overview<small>Огляд фінансів · головний екран модуля</small></h2>
+      <p class="summary">
+        <strong>C3</strong> закрито: HeroCard мігрує на glass r-2xl. <strong>+ Phase 6.1</strong>
+        category-tinted icon-pill на tx-rows. <strong>+ Phase 5</strong> coffee-limit insight.
+        Мої: day-budget як єдиний display + AI-cat tag + 2-up sparkline tiles.
+      </p>
+      <div class="stats">
+        <div class="stat"><strong>3</strong>стани</div>
+        <div class="stat"><strong>6</strong>артбордів</div>
+        <div class="stat"><strong>9</strong>diff-рядків</div>
+      </div>
+      <div class="open">Відкрити</div>
+    </a>
+
+    <a href="Routine%20Today.html" class="module-card routine">
+      <div class="module-name">Рутина</div>
+      <h2>Routine Today<small>Сьогоднішні звички · day-progress + KPI</small></h2>
+      <p class="summary">
+        <strong>V1</strong> закрито: 4 naked KPI → <code>&lt;HeroValueLine narrative metric&gt;</code>.
+        <strong>+ F3</strong> completion-note collapsed. <strong>+ Phase 5</strong> streak-record insight.
+        Мої: StreakFlame ambient halo, 44-px tap-target, ModuleBottomNav v2 з збереженим center FAB.
+      </p>
+      <div class="stats">
+        <div class="stat"><strong>3</strong>стани</div>
+        <div class="stat"><strong>6</strong>артбордів</div>
+        <div class="stat"><strong>9</strong>diff-рядків</div>
+      </div>
+      <div class="open">Відкрити</div>
+    </a>
+
+    <a href="Fizruk%20Dashboard.html" class="module-card fizruk">
+      <div class="module-name">Фізрук</div>
+      <h2>Fizruk Dashboard<small>Огляд тренувань · last workout + stat tiles</small></h2>
+      <p class="summary">
+        <strong>C4</strong> закрито: hero wrapper + workout-list rows → glass. Stat tiles glass r-xl.
+        <strong>+ Phase 5</strong> rest-day-overdue insight.
+        Мої: PR badge на hero (preview W2), Manrope 800/32 на KPI, ModuleBottomNav v2 cyan.
+      </p>
+      <div class="stats">
+        <div class="stat"><strong>3</strong>стани</div>
+        <div class="stat"><strong>6</strong>артбордів</div>
+        <div class="stat"><strong>6</strong>diff-рядків</div>
+      </div>
+      <div class="open">Відкрити</div>
+    </a>
+
+    <a href="Nutrition%20Today.html" class="module-card nutrition">
+      <div class="module-name">Харчування</div>
+      <h2>Nutrition Today<small>Денний денний баланс · ккал + 3 macro bars</small></h2>
+      <p class="summary">
+        <strong>V2</strong> закрито: 4 zero-plates → outcome copy. ProgressRing nutrition у hero
+        glass card. Macros tinted glass row tiles. <strong>+ Phase 5</strong> protein-low insight.
+        Мої: outcome copy на partial-progress, pantry-aware quick-add chips, AI-source tag на meal.
+      </p>
+      <div class="stats">
+        <div class="stat"><strong>3</strong>стани</div>
+        <div class="stat"><strong>6</strong>артбордів</div>
+        <div class="stat"><strong>6</strong>diff-рядків</div>
+      </div>
+      <div class="open">Відкрити</div>
+    </a>
+
+  </div>
+
+  <section class="summary-section">
+    <h3>Спільні знахідки чотирьох модулів</h3>
+    <dl>
+      <dt><em>⚠ Прихована тех-дебт у плані:</em> ModuleBottomNav ще на v1</dt>
+      <dd>
+        <code>HubBottomNav</code> мігровано на v2 floating glass pill у PR-5.
+        <code>ModuleBottomNav</code> (усі 4 модулі) — лишається v1 flat panel з top sliding pill +
+        module-coloured glow. У <code>../backlog.md</code> немає окремого пункту про це.
+        <code>unified-bottom-nav.md</code> формально описує однакову форму обох, але реальність розійшлася.
+        Кожен з 4 файлів пропонує v2-міграцію зі збереженням module identity (через
+        <code>--hero-grad-{module}</code> на active pill).
+      </dd>
+      <dt>Phase 0 token blockers — bundle 1 PR, ландиться перед усім</dt>
+      <dd>
+        <code>text-style-display-hero</code> (T1, Manrope 800) + <code>--c-chart-{module}</code> CSS vars (T2) +
+        <code>Sheet variant="glass"</code> (T3) + <code>min-h-touch-target</code> (T6) +
+        <code>CounterReveal</code> primitive (P1) + <code>HeroValueLine</code> primitive (P2).
+        Усі 4 модулі читають ці токени.
+      </dd>
+      <dt>Спільні primitives — створювати раз, використовувати в усіх</dt>
+      <dd>
+        <code>HeroValueLine</code> live у Routine V1, Nutrition V2, Finyk balance W1. <code>CounterReveal</code> —
+        у всіх 4. <code>CategoryIconPill</code> — Finyk (Phase 6.1) + перенос на Nutrition meal-row.
+      </dd>
+      <dt>Послідовність</dt>
+      <dd>
+        Phase 0 → Phase 2 polish migration (4 модулі паралельно) → Phase 5 insights wire (4 паралельно) →
+        Phase 6 Expensa-inspired (Finyk first, потім перенос). Mine додатки — після Phase 6.
+      </dd>
+    </dl>
+  </section>
+
+  <div class="kbd-hint">
+    Tab / Shift+Tab — фокус між модулями · Enter — відкрити
+  </div>
+
+</div>
+
+</body>
+</html>

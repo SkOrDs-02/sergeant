@@ -1,9 +1,9 @@
 # Sergeant v2 — Execution Status (live tracker)
 
-> **Last validated:** 2026-05-17 by @Skords-01 (Phase 1 in flight).
+> **Last validated:** 2026-05-17 by @Skords-01 (Phase 0+1 shipped, smoke verified on production).
 > **Next review:** updated after each Phase wrap.
 > **Status:** Active.
-> **Companion docs:** [`redesign-v2-execution-plan.md`](./execution-plan.md) (intent — what we plan to do) · [`redesign-v2.md`](./governance.md) (governance) · [`redesign-v2-migration.md`](./migration.md) (BEFORE/AFTER tokens).
+> **Companion docs:** [`execution-brief.md`](./execution-brief.md) (orchestration contract — how to run the work) · [`execution-plan.md`](./execution-plan.md) (intent — what we plan to do) · [`governance.md`](./governance.md) (governance) · [`migration.md`](./migration.md) (BEFORE/AFTER tokens) · [`handoff-package/`](./handoff-package/) (canvas mockups + locked decisions, 2026-05-17).
 
 ## Як цей doc працює
 
@@ -18,7 +18,7 @@
 | Phase | Status | Branch / PR | Acceptance |
 |---|---|---|---|
 | Phase 0 — Foundation | ✅ Shipped | [#2952](https://github.com/Skords-01/Sergeant/pull/2952) — `feat/redesign-v2/phase-0-foundation` | Typecheck clean, 8/8 rule tests pass, additive only |
-| Phase 1 — Quick wins | ⏳ In PR review | `feat/redesign-v2/phase-1-quick-wins` (stack on Phase 0) | Typecheck clean (0 new errors); Chrome MCP smoke pending |
+| Phase 1 — Quick wins | ✅ Shipped | [#2953](https://github.com/Skords-01/Sergeant/pull/2953) — squash-merged → main | Typecheck clean (0 new errors); Chrome MCP smoke verified on https://sergeant.vercel.app — all features functional, 0 console errors |
 | Phase 2 — Polish migration | ⬜ Not started | — | — |
 | Phase 3 — Friction removal | ⬜ Not started | — | — |
 | Phase 4 — Value + Wow | ⬜ Not started | — | — |
@@ -113,10 +113,66 @@ Spawned Explore agent помилково повідомив що «Hub не wrap
 
 ---
 
+## Next session entry point
+
+Якщо ти агент, що приходить cold у v2-роботу — **починай ЗВІДСИ.** Це 30-секундний onboarding before any tool call.
+
+### Reading order (≤ 10 хв)
+
+1. [`AGENTS.md`](../../../AGENTS.md) — hard rules #11-#17 (особливо).
+2. [`CLAUDE.md`](../../../CLAUDE.md) — local-execution policy (не запускай `pnpm test/lint/check/build/dev` без явного прохання).
+3. [`execution-brief.md`](./execution-brief.md) — orchestration contract: toolkit dispatch matrix, anti-patterns, self-eval rubric, per-phase acceptance gates. **Читай повністю.**
+4. **Цей файл** — поточний phase status, divergences, follow-ups.
+5. [`execution-plan.md`](./execution-plan.md) — intent / phase sequencing.
+6. [`governance.md`](./governance.md) — governance / token strategy.
+7. [`migration.md`](./migration.md) — BEFORE/AFTER patterns (Phase 2 + 6 потребують).
+8. [`handoff-package/`](./handoff-package/) — canvas mockups + locked decisions per phase 2 entry (Finyk hero A/B, ModuleBottomNav v2, Phase 6 cherry-picks).
+
+### Memory (durable behavioral lessons)
+
+`C:\Users\dmytr\.claude\projects\E---claude-Sergeant\memory\project_redesign_v2_tokens.md` — оновлюй після кожної фази:
+- Що landed (короткий summary)
+- Hard-rule trip-prevention notes
+- Behavioral lessons (recon errors, scope reductions, anti-pattern slips)
+- Open follow-ups not done
+
+### Bootstrap steps
+
+```powershell
+# 1. Verify state
+cd E:\.claude\Sergeant
+git checkout main
+git pull --ff-only origin main
+
+# 2. Sync target worktree if needed (or create new for next phase)
+git worktree list
+# If `..\sergeant-redesign-v2-exec` is on a stale post-merge branch, switch to main:
+git -C ..\sergeant-redesign-v2-exec checkout main
+git -C ..\sergeant-redesign-v2-exec pull --ff-only origin main
+
+# 3. New phase branch
+git -C ..\sergeant-redesign-v2-exec checkout -b feat/redesign-v2/phase-<N>-<topic> main
+
+# 4. Load skill
+# Active skill: sergeant-web-ui (repo has no sergeant-design-system — DS work falls under web-ui)
+```
+
+### Current phase pointer
+
+- **Last completed:** Phase 1 (Quick wins) — shipped 2026-05-17.
+- **Next up:** Phase 2 (Polish migration) — 3-4 sub-PRs: C1+C2+C5 Hub critical, C3+C4 Module Hero, codemod for MAJOR module lists (~15 files), Onboarding cards. **Recon agent first** for C1-C5 surfaces, then `Plan` agent for the codemod recipe before starting 2.3. Locked decisions у [`handoff-package/Handoff for Claude Code.md`](./handoff-package/Handoff%20for%20Claude%20Code.md) §3.
+- **Parallel-track follow-up:** T5 `prefer-text-style` baseline cleanup PR — see § Follow-ups not done below. Was spawned as a separate task chip; pick up when convenient.
+
+### Telling the next agent in plain text
+
+> "Continue redesign v2 execution from Phase 2. Read `docs/design/redesign-v2/execution-brief.md` and `docs/design/redesign-v2/execution-status.md` first, then `docs/design/redesign-v2/handoff-package/Handoff for Claude Code.md` for locked decisions. Check memory file `project_redesign_v2_tokens.md`. Active skill: `sergeant-web-ui`. Start with Explore agent recon of Phase 2 surfaces C1-C5, then Plan agent for codemod recipe before sub-PR 2.3."
+
 ## Refs
 
-- Plan: [`redesign-v2-execution-plan.md`](./execution-plan.md)
-- Governance: [`redesign-v2.md`](./governance.md)
-- Migration BEFORE/AFTER: [`redesign-v2-migration.md`](./migration.md)
-- Polish backlog: [`redesign-v2-backlog.md`](./backlog.md)
-- DS contract: [`design-system.md`](../design-system.md)
+- Brief (orchestration): [`execution-brief.md`](./execution-brief.md)
+- Plan: [`execution-plan.md`](./execution-plan.md)
+- Governance: [`governance.md`](./governance.md)
+- Migration BEFORE/AFTER: [`migration.md`](./migration.md)
+- Polish backlog: [`backlog.md`](./backlog.md)
+- Handoff package (canvas + locked decisions): [`handoff-package/`](./handoff-package/)
+- DS contract: [`../design-system.md`](../design-system.md)
