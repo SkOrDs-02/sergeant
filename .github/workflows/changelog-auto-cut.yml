@@ -1,0 +1,87 @@
+name: Changelog auto-cut
+
+# Owner: @Skords-01 (solo maintainer).
+# Purpose: cut a release tag every Friday IF the Unreleased section has real
+# content. Solo vibe-coder workflow — no human-triggered release cadence;
+# this cron makes "tag what shipped this week" zero-effort.
+#
+# Schedule rationale: Friday 15:00 UTC = ~18:00 Kyiv, end-of-week. Tag
+# captures the week's work; user sees a fresh entry under GitHub Releases
+# Saturday morning. If nothing landed in Unreleased (or only header
+# scaffolding), the cut script refuses and the workflow exits cleanly.
+#
+# Safety:
+#   - The cut script (`scripts/changelog/cut-release.mjs`) already refuses
+#     to cut an empty Unreleased — the workflow does NOT bypass this gate.
+#   - The script does NOT auto-push by default; this workflow explicitly
+#     adds `git push --follow-tags` AFTER a successful cut.
+#   - Concurrency group prevents two crons from racing.
+#   - `[skip ci]` in the commit subject prevents looping with docs gates.
+
+on:
+  schedule:
+    # Friday 15:00 UTC ≈ Friday 18:00 Kyiv (EEST summer / EET winter).
+    - cron: "0 15 * * 5"
+  workflow_dispatch:
+    # Manual trigger for ad-hoc release between scheduled runs.
+    inputs:
+      date:
+        description: "Release date YYYY-MM-DD (default: today)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: changelog-auto-cut
+  cancel-in-progress: false
+
+jobs:
+  cut:
+    name: Cut release if Unreleased has content
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Need full history for tag operations.
+          fetch-depth: 0
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Cut release (if Unreleased has content)
+        id: cut
+        run: |
+          # Capture exit code: 0 = cut succeeded, 1 = validation failed
+          # (empty Unreleased, tag collision, etc.) — both are "OK to exit
+          # cleanly", we just signal to the next step whether to push.
+          DATE_ARG="${{ github.event.inputs.date }}"
+          if node scripts/changelog/cut-release.mjs $DATE_ARG; then
+            echo "cut=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cut=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Nothing to cut — Unreleased section is empty or tag exists. Exiting cleanly."
+          fi
+
+      - name: Append [skip ci] to commit subject
+        if: steps.cut.outputs.cut == 'true'
+        run: |
+          # The cut script writes `chore(release): cut vYYYY.MM.DD`. We amend
+          # to add [skip ci] so docs-automation drift gates don't re-trigger
+          # on the release commit.
+          MSG=$(git log -1 --pretty=%s)
+          git commit --amend -m "$MSG [skip ci]"
+
+      - name: Push commit + tag together
+        if: steps.cut.outputs.cut == 'true'
+        run: git push --follow-tags origin HEAD:main

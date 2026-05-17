@@ -112,6 +112,14 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 Ці bundles обговорювалися під час планування і свідомо **не включені** в Phase 1+2. Зведено сюди як future considerations — стартуємо коли Phase 1+2 приживуться і знатимемо чи real friction залишається.
 
+### Bundle Zeta — External-blocker detection у `today.md` (~2h, proposed)
+
+- Розрізняти `blocked-by-us` (треба unblock-ити) vs `blocked-by-external` (чекаємо третю сторону — нема daily action)
+- Detection pattern: status string містить «blocked» + одне з: «external», «чекаємо», «чекає», «waiting for», «pending release of», «depends on»
+- Behavior: external-blocked items НЕ в Top-N, окрема секція "💤 Indefinitely blocked on external" з порогом `>30 днів` since last update
+- **Trigger to start:** ще раз tailwind-v4-style ситуація — maintainer бачить stale item у `today.md` що не має daily-actionable forward path
+- **Reference incident:** 2026-05-18 — `tailwind-v4-migration.md` показувався як Top-1 з `Phase 2 blocked` хоча 3 з 4 фаз закриті і Phase 2 чекає NativeWind 5 (external). Тимчасовий fix: перевести status у `Reference`. Long-term: detection rule вище.
+
 ### Bundle Gamma — Review Hygiene (~4h, proposed)
 
 - Auto-gen `docs/this-week-review.md` weekly: docs з `Next review` цього тижня, сорtовано ADR > playbook > решта
