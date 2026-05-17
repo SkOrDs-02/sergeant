@@ -1,0 +1,78 @@
+name: Docs daily brief
+
+# Owner: @Skords-01 (solo maintainer).
+# Purpose: regenerate the daily-ops artifacts (open-work / today / trust badge)
+# from a scheduled run, then push the refreshed copy back to `main` if any of
+# them drifted in the last 24 hours. Without this cron the artifacts would only
+# refresh when a PR touches them, which would defeat the "open today.md every
+# morning" maintainer routine — Status headers and Next review dates change
+# silently as time passes.
+#
+# Schedule rationale: 06:00 UTC = ~08:00 / 09:00 Kyiv time, before the
+# maintainer's working day. Aligned with existing observability cron blocks
+# so a single morning glance covers product + docs health.
+#
+# Safety:
+#   - The commit step uses the GITHUB_TOKEN with `contents: write` scoped
+#     to this workflow only — no cross-repo bleed.
+#   - `[skip ci]` in the commit message prevents an infinite loop with
+#     docs-automation.yml drift gates.
+#   - Manual trigger via `workflow_dispatch` so the maintainer can force a
+#     refresh between scheduled runs without touching the repo.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-daily-brief
+  cancel-in-progress: false
+
+jobs:
+  regen:
+    name: Regenerate daily-ops artifacts and push
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # Need write access to push back to main.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Fetch full history so the commit-and-push doesn't try to
+          # restage anything; safe enough — the repo isn't large for a
+          # nightly job.
+          fetch-depth: 0
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate open-work + today + trust badge
+        # `docs:gen-daily` is the orchestrator; runs open-work first because
+        # both today and trust-badge consume its data, then today (because
+        # trust-badge reads pickOverdueReview from it), then trust-badge.
+        run: pnpm docs:gen-daily
+
+      - name: Commit + push refreshed artifacts (if any drift)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet docs/open-work.md docs/today.md docs/README.md; then
+            echo "no drift — nothing to commit"
+            exit 0
+          fi
+          git add docs/open-work.md docs/today.md docs/README.md
+          git commit -m "chore(docs): daily brief refresh [skip ci]"
+          git push origin HEAD:main

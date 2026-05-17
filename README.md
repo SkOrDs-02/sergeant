@@ -346,6 +346,8 @@ Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
 
 - Humans: start with [CONTRIBUTING.md](./CONTRIBUTING.md).
 - Agents: start with [AGENTS.md](./AGENTS.md) and [docs/agents/agent-skills-catalog.md](./docs/agents/agent-skills-catalog.md).
+- Full docs index (genre-grouped — informational / trackers / archive): [docs/README.md](./docs/README.md).
+- **What is currently in flight across all 7 trackers** (auto-rollup, CI drift gate): [docs/open-work.md](./docs/open-work.md).
 - Repeatable execution recipes: [docs/playbooks/README.md](./docs/playbooks/README.md).
 - Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
 - Runtime inventory, release, incident, and recovery surfaces: [docs/architecture/service-catalog.md](./docs/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).

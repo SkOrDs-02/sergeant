@@ -138,6 +138,41 @@ jobs:
         # docs themselves; the dashboard is rebuilt deterministically.
         run: pnpm docs:check-open-work
 
+  daily-brief:
+    name: Daily brief + WIP + trust badge (in sync)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check docs/today.md is up to date
+        # `today.md` is regenerated daily by docs-daily-brief.yml. This
+        # check catches PRs that touch a Status header or initiative
+        # frontmatter without re-running the generator.
+        run: pnpm docs:check-today
+
+      - name: Check WIP limits (soft warn / hard fail)
+        # Soft over-limit prints a warning to stderr but exits 0; hard
+        # over-limit exits 1 and blocks the PR. Tuning: docs/governance/wip-limits.json
+        run: pnpm docs:check-wip-limits
+
+      - name: Check trust badge in docs/README.md is up to date
+        # Trust badge is a sliced block between TRUST-BADGE:START/END
+        # markers in docs/README.md. Same drift semantics as today.md.
+        run: pnpm docs:check-trust-badge
+
   hard-rules-matrix:
     name: Hard-rules matrix (in sync)
     runs-on: ubuntu-latest
