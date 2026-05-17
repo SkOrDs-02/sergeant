@@ -1,0 +1,1812 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant · Mockups portal</title>
+    <link rel="stylesheet" href="_shared/tokens.css" />
+    <style>
+      /* ─── reset ─── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: inherit;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
+
+      /* ─── topbar ─── */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: var(--z-sticky);
+        background: rgba(253, 249, 243, 0.92);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--border);
+      }
+      .topbar-inner {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 14px 32px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 28px;
+        align-items: center;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .logo-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: var(--r-md);
+        background: var(--finyk-gradient);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .logo-name {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .logo-sub {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        padding: 2px 6px;
+        border: 1px solid var(--border);
+        border-radius: var(--r-xs);
+        margin-left: 4px;
+      }
+      .nav-jumps {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .nav-jumps a {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        padding: 6px 12px;
+        border-radius: var(--r-sm);
+        transition: all var(--dur-fast) var(--ease-standard);
+      }
+      .nav-jumps a:hover {
+        background: var(--surface-muted);
+        color: var(--text);
+      }
+      .nav-jumps .pill-count {
+        margin-left: 6px;
+        font-size: 10px;
+        color: var(--subtle);
+      }
+      .search {
+        position: relative;
+        width: 260px;
+      }
+      .search input {
+        width: 100%;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 8px 12px 8px 32px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        outline: none;
+        color: var(--text);
+        transition: border-color var(--dur-fast);
+      }
+      .search input:focus {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px var(--brand-soft);
+      }
+      .search input::placeholder {
+        color: var(--subtle);
+      }
+      .search svg {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--subtle);
+      }
+      .search-clear {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 22px;
+        height: 22px;
+        border-radius: var(--r-sm);
+        color: var(--subtle);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        display: none;
+      }
+      .search-clear:hover {
+        background: var(--surface-muted);
+        color: var(--text);
+      }
+      .search.has-text .search-clear {
+        display: grid;
+        place-items: center;
+      }
+
+      /* ─── filter bar ─── */
+      .filter-bar {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 18px 32px 14px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .filter-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--subtle);
+        margin-right: 4px;
+      }
+      .chip {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 5px 11px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-full);
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all var(--dur-fast) var(--ease-standard);
+      }
+      .chip:hover {
+        border-color: var(--border-strong);
+        color: var(--text);
+      }
+      .chip[aria-pressed="true"] {
+        background: var(--text);
+        color: white;
+        border-color: var(--text);
+      }
+      .chip .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .chip[data-value="done"] .dot {
+        background: var(--success);
+      }
+      .chip[data-value="wip"] .dot {
+        background: var(--warning);
+      }
+      .chip[data-value="pending"] .dot {
+        background: var(--subtle);
+      }
+      .chip[data-value="p0"] .dot {
+        background: var(--danger);
+      }
+      .chip[data-value="p1"] .dot {
+        background: var(--warning);
+      }
+      .chip[data-value="p2"] .dot {
+        background: var(--info);
+      }
+      .chip[data-value="p3"] .dot {
+        background: var(--subtle);
+      }
+      .filter-clear {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--muted);
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+      }
+      .filter-clear:hover {
+        background: var(--surface-muted);
+      }
+      .filter-clear.is-disabled {
+        opacity: 0.3;
+        pointer-events: none;
+      }
+
+      /* ─── hero ─── */
+      .hero {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 40px;
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 64px;
+        align-items: end;
+      }
+      .hero .kicker {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 16px;
+      }
+      .hero h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        text-wrap: balance;
+        margin-bottom: 18px;
+      }
+      .hero h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .hero p {
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+        max-width: 540px;
+      }
+      .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+      }
+      .hero-stats .cell {
+        padding: 22px 22px;
+        background: var(--panel);
+      }
+      .hero-stats .cell .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--subtle);
+        margin-bottom: 6px;
+      }
+      .hero-stats .cell .val {
+        font-size: 36px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+        line-height: 1;
+        color: var(--text);
+      }
+      .hero-stats .cell .val.done {
+        color: var(--success);
+      }
+      .hero-stats .cell .val.pending {
+        color: var(--warning);
+      }
+      .hero-stats .cell .sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      /* ─── legend bar ─── */
+      .legend-wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 24px 32px 8px;
+      }
+      .legend-bar {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+      }
+      .legend-bar-head {
+        padding: 16px 22px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .legend-bar-head h2 {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
+      .legend-bar-head .src {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .legend-bar-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--border);
+      }
+      .legend-bar-grid.split { border-top: 1px solid var(--border); }
+      .lb-cell { background: var(--panel); padding: 16px 22px; }
+      .lb-badge {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 10px;
+      }
+      .lb-dot { width: 8px; height: 8px; border-radius: 50%; }
+      .lb-cell.ok .lb-badge { background: var(--success-soft); color: var(--success); }
+      .lb-cell.wip .lb-badge { background: var(--warning-soft); color: var(--warning); }
+      .lb-cell.pend .lb-badge { background: var(--surface-muted); color: var(--muted); }
+      .lb-cell.ok .lb-dot { background: var(--success); }
+      .lb-cell.wip .lb-dot { background: var(--warning); }
+      .lb-cell.pend .lb-dot {
+        background: var(--subtle);
+        background-image: repeating-linear-gradient(45deg, transparent 0 2px, rgba(0,0,0,0.2) 2px 3px);
+      }
+      .lb-cell.p1 .lb-badge { background: var(--danger-soft); color: var(--danger); }
+      .lb-cell.p2 .lb-badge { background: var(--warning-soft); color: var(--warning); }
+      .lb-cell.p3 .lb-badge { background: var(--info-soft); color: var(--info); }
+      .lb-num {
+        background: currentColor;
+        color: white;
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        display: grid; place-items: center;
+        font-size: 10px;
+      }
+      .lb-num::after { color: white; }
+      .lb-cell p {
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      /* ─── main ─── */
+      main {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 16px 32px 96px;
+      }
+
+      /* ─── section ─── */
+      section.cluster {
+        margin-bottom: 64px;
+        scroll-margin-top: 140px;
+      }
+      .cluster-head {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        margin-bottom: 22px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .cluster-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 3px 8px;
+        border-radius: var(--r-xs);
+      }
+      .cluster.landing .sn {
+        background: var(--brand-soft);
+        color: var(--brand);
+      }
+      .cluster.marketing .sn {
+        background: var(--routine-soft);
+        color: var(--routine-dark);
+      }
+      .cluster.product .sn {
+        background: var(--fizruk-soft);
+        color: var(--fizruk-dark);
+      }
+      .cluster.flows .sn {
+        background: var(--nutrition-soft);
+        color: var(--nutrition-dark);
+      }
+      .cluster-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .cluster-head .desc {
+        color: var(--muted);
+        font-size: 13.5px;
+        flex: 1;
+        margin-left: 6px;
+      }
+      .cluster-head .extra {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      .cluster-head .extra strong {
+        color: var(--text);
+      }
+
+      .subcluster {
+        margin-bottom: 32px;
+      }
+      .subcluster-head {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--subtle);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .subcluster-head::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* ─── grid ─── */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      .grid[data-empty="true"] {
+        display: none;
+      }
+      .empty-state {
+        display: none;
+        padding: 40px;
+        background: var(--panel);
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--r-xl);
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .empty-state.is-active {
+        display: block;
+      }
+
+      /* ─── card ─── */
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all var(--dur-base) var(--ease-standard);
+        position: relative;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-e3);
+        border-color: var(--border-strong);
+      }
+      .card.is-pending {
+        opacity: 0.78;
+      }
+      .card.is-pending:hover {
+        opacity: 1;
+      }
+      .card.is-pending .vignette::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: repeating-linear-gradient(
+          45deg,
+          transparent 0 8px,
+          rgba(0, 0, 0, 0.025) 8px 9px
+        );
+        pointer-events: none;
+      }
+
+      .vignette {
+        height: 132px;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .vignette.tone-cream {
+        background: linear-gradient(135deg, #fefcf8 0%, #f5ead8 100%);
+      }
+      .vignette.tone-paper {
+        background: var(--surface);
+      }
+      .vignette.tone-finyk {
+        background: linear-gradient(
+          135deg,
+          var(--finyk-soft) 0%,
+          var(--finyk-soft) 100%
+        );
+      }
+      .vignette.tone-fizruk {
+        background: linear-gradient(
+          135deg,
+          var(--fizruk-soft) 0%,
+          var(--fizruk-soft) 100%
+        );
+      }
+      .vignette.tone-routine {
+        background: linear-gradient(
+          135deg,
+          var(--routine-soft) 0%,
+          var(--routine-soft) 100%
+        );
+      }
+      .vignette.tone-nutrition {
+        background: linear-gradient(
+          135deg,
+          var(--nutrition-soft) 0%,
+          var(--nutrition-soft) 100%
+        );
+      }
+      .vignette.tone-dark {
+        background: linear-gradient(135deg, #2a2520 0%, #1a1614 100%);
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .vignette.tone-ua {
+        background: linear-gradient(
+          180deg,
+          #0057b8 0%,
+          #0057b8 50%,
+          #ffd700 50%,
+          #ffd700 100%
+        );
+      }
+
+      /* vignette overlay common */
+      .vignette .px {
+        position: absolute;
+        background: rgba(28, 25, 23, 0.15);
+        border-radius: var(--r-xs);
+      }
+      .vignette.tone-dark .px {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .card-body {
+        padding: 16px 18px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+      .card-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .card-title {
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+      }
+      .card-meta {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .status {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 3px 7px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .status.done {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .status.wip {
+        background: var(--warning-soft);
+        color: var(--warning);
+      }
+      .status.pending {
+        background: var(--surface-muted);
+        color: var(--muted);
+      }
+      .status .d {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .pri {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        padding: 3px 6px;
+        border-radius: var(--r-sm);
+      }
+      .pri.p0 {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+      .pri.p1 {
+        background: var(--warning-soft);
+        color: var(--warning);
+      }
+      .pri.p2 {
+        background: var(--info-soft);
+        color: var(--info);
+      }
+      .pri.p3 {
+        background: var(--surface-muted);
+        color: var(--muted);
+      }
+      .card-desc {
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.5;
+        flex: 1;
+      }
+      .card-foot {
+        margin-top: 4px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .card-foot .path {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 70%;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      .card-foot .open {
+        color: var(--brand);
+        font-weight: 700;
+      }
+      .card.is-pending .card-foot .open {
+        color: var(--subtle);
+      }
+
+      /* ─── footer ─── */
+      footer.bot {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 32px 32px 56px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
+
+      /* ─── responsive ─── */
+      @media (max-width: 980px) {
+        .legend-wrap { padding: 18px 22px 4px; }
+        .legend-bar-grid { grid-template-columns: 1fr; }
+        .topbar-inner {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .nav-jumps {
+          justify-content: flex-start;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+        }
+        .search {
+          width: 100%;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+          gap: 32px;
+          padding: 40px 22px 24px;
+        }
+        .filter-bar,
+        main {
+          padding-left: 22px;
+          padding-right: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TOPBAR -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="logo">
+          <span class="logo-mark">S</span>
+          <span class="logo-name">Sergeant</span>
+          <span class="logo-sub">mockups · v0.2</span>
+        </div>
+        <nav class="nav-jumps" aria-label="Кластери">
+          <a href="#landing">лендинги<span class="pill-count" data-count="landing">11</span></a>
+          <a href="#marketing">маркетинг<span class="pill-count" data-count="marketing">12</span></a>
+          <a href="#product">продукт<span class="pill-count" data-count="product">11</span></a>
+          <a href="#flows">потоки<span class="pill-count" data-count="flows">4</span></a>
+        </nav>
+        <div class="search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3-3" />
+          </svg>
+          <input type="text" id="search" placeholder="пошук за назвою…" autocomplete="off" />
+          <button class="search-clear" id="search-clear" aria-label="Clear">×</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group">
+          <span class="filter-label">статус</span>
+          <button class="chip" data-filter="status" data-value="done" aria-pressed="false"><span class="dot"></span>у продукті</button>
+          <button class="chip" data-filter="status" data-value="wip" aria-pressed="false"><span class="dot"></span>у роботі</button>
+          <button class="chip" data-filter="status" data-value="pending" aria-pressed="false"><span class="dot"></span>заплановано</button>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">пріоритет</span>
+          <button class="chip" data-filter="priority" data-value="p0" aria-pressed="false"><span class="dot"></span>1 — критично</button>
+          <button class="chip" data-filter="priority" data-value="p1" aria-pressed="false"><span class="dot"></span>2 — високо</button>
+          <button class="chip" data-filter="priority" data-value="p2" aria-pressed="false"><span class="dot"></span>3 — середньо</button>
+        </div>
+        <button class="filter-clear is-disabled" id="filter-clear">очистити</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- HERO -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="hero">
+      <div>
+        <div class="kicker">Sergeant · портал мокапів · 2026-05</div>
+        <h1>Усі візуальні поверхні в одному місці, <em>статус видно з першого погляду</em></h1>
+        <p>
+          4 кластери — лендинги, маркетинг, продукт, потоки. Зелений маркер — файл вже є у продукті.
+          Жовтий — у роботі, ще збирається. Сірий зі штрихуванням — заплановано, файлу ще немає.
+          Фільтруй за статусом, пріоритетом і шукай за назвою.
+        </p>
+      </div>
+      <div class="hero-stats">
+        <div class="cell">
+          <div class="label">Усього поверхонь</div>
+          <div class="val" id="stat-total">38</div>
+          <div class="sub">унікальних мокапів</div>
+        </div>
+        <div class="cell">
+          <div class="label">У продукті</div>
+          <div class="val done" id="stat-done">38</div>
+          <div class="sub">перевірено 2026-05-18</div>
+        </div>
+        <div class="cell">
+          <div class="label">Заплановано</div>
+          <div class="val pending" id="stat-pending">0</div>
+          <div class="sub">усі поверхні готові</div>
+        </div>
+        <div class="cell">
+          <div class="label">Останнє оновлення</div>
+          <div class="val" style="font-size: 16px; line-height: 1.2; letter-spacing: 0; margin-top: 8px">
+            2026-05-17<br/><span class="mono" style="font-size:11px; color:var(--muted)">токени синхр. з design-system.md</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- LEGEND -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="legend-wrap">
+      <div class="legend-bar">
+        <div class="legend-bar-head">
+          <h2>Як читати картки</h2>
+          <span class="src">статус — у трьох кольорах · пріоритет — у трьох рівнях</span>
+        </div>
+        <div class="legend-bar-grid">
+          <div class="lb-cell ok">
+            <span class="lb-badge"><span class="lb-dot"></span>у продукті</span>
+            <p>Файл існує, відкривається. Готовий до перегляду або передачі у код.</p>
+          </div>
+          <div class="lb-cell wip">
+            <span class="lb-badge"><span class="lb-dot"></span>у роботі</span>
+            <p>Файл вже є, але текст або структура поки змінюються. Чернетка, не остаточне.</p>
+          </div>
+          <div class="lb-cell pend">
+            <span class="lb-badge"><span class="lb-dot"></span>заплановано</span>
+            <p>Картка показує, що поверхня потрібна, але файлу ще немає. Штрихована заливка.</p>
+          </div>
+        </div>
+        <div class="legend-bar-grid split">
+          <div class="lb-cell p1">
+            <span class="lb-badge"><span class="lb-num">1</span>критично</span>
+            <p>На launch-критичному шляху. Без цього beta-ціль не вистрілить.</p>
+          </div>
+          <div class="lb-cell p2">
+            <span class="lb-badge"><span class="lb-num">2</span>високо</span>
+            <p>Сильно покращує знайомство або повернення. Бажано до launch.</p>
+          </div>
+          <div class="lb-cell p3">
+            <span class="lb-badge"><span class="lb-num">3</span>середньо</span>
+            <p>Корисне, але можна після launch. Не блокує жоден шлях.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- MAIN -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <main>
+      <!-- ─────────── LANDING ─────────── -->
+      <section class="cluster landing" id="landing" data-cluster="landing">
+        <div class="cluster-head">
+          <span class="sn">A</span>
+          <h2>Landing</h2>
+          <span class="desc">3 загальні брендові підходи + 8 рекламних варіантів під різні канали. Перші тримають тон бренду, другі — оптимізовані під канал.</span>
+          <span class="extra"><strong>11</strong> · усі готові</span>
+        </div>
+
+        <div class="subcluster">
+          <div class="subcluster-head">напрямки · 3 брендові підходи</div>
+          <div class="grid" data-section-grid>
+            <!-- v1 soft organic -->
+            <a class="card" href="landing/directions/v1-soft-organic.html"
+              data-status="done" data-priority="" data-title="v1 soft organic">
+              <div class="vignette tone-cream">
+                <div class="px" style="left:14px; top:18px; width:90px; height:8px"></div>
+                <div class="px" style="left:14px; top:32px; width:140px; height:14px; background:rgba(4,120,87,.7)"></div>
+                <div class="px" style="left:14px; top:54px; width:170px; height:6px; background:rgba(28,25,23,.08)"></div>
+                <div class="px" style="left:14px; top:66px; width:120px; height:6px; background:rgba(28,25,23,.08)"></div>
+                <div class="px" style="left:14px; top:88px; width:80px; height:24px; background:var(--brand); border-radius:12px"></div>
+                <div class="px" style="right:18px; top:18px; width:60px; height:60px; border-radius:50%; background:radial-gradient(circle,#a7f3d0 0%,transparent 70%)"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">V1 · Soft & Organic</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Yazio × Notion. Кремовий фон, м'які тіні, багато повітря. Найближче до тону бренду.</p>
+                <div class="card-foot">
+                  <span class="path">landing/directions/v1…</span>
+                  <span class="open">відкрити →</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- v2 bento -->
+            <a class="card" href="landing/directions/v2-bento-modular.html"
+              data-status="done" data-title="v2 bento modular">
+              <div class="vignette tone-paper">
+                <div class="px" style="left:14px; top:14px; width:60px; height:60px; background:rgba(4,120,87,.85); border-radius:12px"></div>
+                <div class="px" style="left:80px; top:14px; width:96px; height:28px; background:rgba(28,25,23,.12); border-radius:8px"></div>
+                <div class="px" style="left:80px; top:46px; width:60px; height:28px; background:rgba(14,116,144,.7); border-radius:8px"></div>
+                <div class="px" style="left:144px; top:46px; width:32px; height:28px; background:rgba(249,112,102,.7); border-radius:8px"></div>
+                <div class="px" style="left:14px; top:80px; width:162px; height:36px; background:rgba(28,25,23,.06); border-radius:8px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">V2 · Bento Modular</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Linear × iOS keynote. Скляні поверхні, бенто-сітка модулів, градієнти у заголовку.</p>
+                <div class="card-foot">
+                  <span class="path">landing/directions/v2…</span>
+                  <span class="open">відкрити →</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- v3 editorial -->
+            <a class="card" href="landing/directions/v3-editorial.html"
+              data-status="done" data-title="v3 editorial">
+              <div class="vignette tone-paper">
+                <div class="px" style="left:36px; top:18px; width:50px; height:8px; background:rgba(28,25,23,.4)"></div>
+                <div class="px" style="left:36px; top:32px; width:120px; height:16px; background:rgba(28,25,23,.85); border-radius:0"></div>
+                <div class="px" style="left:36px; top:54px; width:140px; height:5px; background:rgba(28,25,23,.2)"></div>
+                <div class="px" style="left:36px; top:64px; width:120px; height:5px; background:rgba(28,25,23,.2)"></div>
+                <div class="px" style="left:36px; top:74px; width:100px; height:5px; background:rgba(28,25,23,.2)"></div>
+                <div class="px" style="left:36px; top:90px; width:70px; height:18px; background:rgba(28,25,23,.9); border-radius:0"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">V3 · Editorial</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Stripe blog × Substack. Вузька колонка, серифний Lora, монопросторні акценти JBMono.</p>
+                <div class="card-foot">
+                  <span class="path">landing/directions/v3…</span>
+                  <span class="open">відкрити →</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="subcluster">
+          <div class="subcluster-head">рекламні варіанти · 8 каналів</div>
+          <div class="grid" data-section-grid>
+            <!-- ai-coach -->
+            <a class="card" href="landing/campaigns/ai-coach.html" data-status="done" data-title="ai coach">
+              <div class="vignette tone-paper">
+                <div class="px" style="left:14px; top:18px; width:110px; height:30px; background:rgba(28,25,23,.85); border-radius:14px 14px 14px 4px"></div>
+                <div class="px" style="right:14px; top:56px; width:120px; height:28px; background:rgba(4,120,87,.85); border-radius:14px 14px 4px 14px"></div>
+                <div class="px" style="left:14px; top:92px; width:80px; height:24px; background:rgba(28,25,23,.85); border-radius:14px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">AI Coach</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Заголовок — демо HubChat. Канал: X · DOU. Аудиторія, що любить AI.</p>
+                <div class="card-foot"><span class="path">campaigns/ai-coach</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- five in one -->
+            <a class="card" href="landing/campaigns/five-in-one.html" data-status="done" data-title="five in one">
+              <div class="vignette tone-paper">
+                <div class="px" style="left:14px; top:18px; width:80px; height:14px"></div>
+                <div class="px" style="left:14px; top:42px; width:38px; height:38px; background:var(--finyk); border-radius:12px"></div>
+                <div class="px" style="left:58px; top:42px; width:38px; height:38px; background:var(--fizruk); border-radius:12px"></div>
+                <div class="px" style="left:102px; top:42px; width:38px; height:38px; background:var(--routine); border-radius:12px"></div>
+                <div class="px" style="left:146px; top:42px; width:38px; height:38px; background:var(--nutrition); border-radius:12px"></div>
+                <div class="px" style="left:14px; top:92px; width:120px; height:22px; background:rgba(28,25,23,.85); border-radius:11px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">Five-in-One</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Сюжет «до — після» для людей зі стомою від SaaS. Канал: Product Hunt · Threads.</p>
+                <div class="card-foot"><span class="path">campaigns/five-in-one</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- local-first-privacy -->
+            <a class="card" href="landing/campaigns/local-first-privacy.html" data-status="done" data-title="local first privacy">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:14px; top:18px; width:120px; height:6px; background:rgba(255,255,255,.4)"></div>
+                <div class="px" style="left:50%; top:42px; width:54px; height:54px; background:rgba(4,120,87,.5); border-radius:16px; transform:translateX(-50%); display:grid; place-items:center"></div>
+                <div class="px" style="left:14px; top:108px; width:170px; height:10px; background:rgba(255,255,255,.16)"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">Local-first Privacy</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Маніфест privacy. Канал: HN · Indie Hackers.</p>
+                <div class="card-foot"><span class="path">campaigns/local-first…</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- day-in-life -->
+            <a class="card" href="landing/campaigns/day-in-life.html" data-status="done" data-title="day in life">
+              <div class="vignette tone-paper">
+                <div class="px" style="left:14px; top:14px; width:24px; height:8px; background:rgba(4,120,87,.7)"></div>
+                <div class="px" style="left:14px; top:28px; width:160px; height:6px"></div>
+                <div class="px" style="left:14px; top:42px; width:24px; height:8px; background:rgba(14,116,144,.7)"></div>
+                <div class="px" style="left:14px; top:56px; width:140px; height:6px"></div>
+                <div class="px" style="left:14px; top:70px; width:24px; height:8px; background:rgba(249,112,102,.7)"></div>
+                <div class="px" style="left:14px; top:84px; width:170px; height:6px"></div>
+                <div class="px" style="left:14px; top:98px; width:24px; height:8px; background:rgba(146,204,23,.7)"></div>
+                <div class="px" style="left:14px; top:112px; width:130px; height:6px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">Day-in-Life</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Сторітелінг. Канал: Instagram · Threads.</p>
+                <div class="card-foot"><span class="path">campaigns/day-in-life</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- beta-exclusive -->
+            <a class="card" href="landing/campaigns/beta-exclusive.html" data-status="done" data-title="beta exclusive">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:24px; transform:translateX(-50%); width:130px; height:30px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.2); border-radius:8px; display:grid; place-items:center"></div>
+                <div class="px" style="left:24px; top:66px; width:32px; height:42px; background:rgba(255,255,255,.1); border-radius:6px"></div>
+                <div class="px" style="left:66px; top:66px; width:32px; height:42px; background:rgba(255,255,255,.1); border-radius:6px"></div>
+                <div class="px" style="left:108px; top:66px; width:32px; height:42px; background:rgba(255,255,255,.1); border-radius:6px"></div>
+                <div class="px" style="left:150px; top:66px; width:32px; height:42px; background:rgba(255,255,255,.1); border-radius:6px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">Beta Exclusive</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Зворотній відлік + терміновість. Канал: Meta Ads · платне ретаргетування.</p>
+                <div class="card-foot"><span class="path">campaigns/beta-exclusive</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- founder-letter -->
+            <a class="card" href="landing/campaigns/founder-letter.html" data-status="done" data-title="founder letter">
+              <div class="vignette tone-cream">
+                <div class="px" style="left:36px; top:18px; width:120px; height:5px; background:rgba(28,25,23,.5)"></div>
+                <div class="px" style="left:36px; top:30px; width:130px; height:5px; background:rgba(28,25,23,.25)"></div>
+                <div class="px" style="left:36px; top:42px; width:100px; height:5px; background:rgba(28,25,23,.25)"></div>
+                <div class="px" style="left:36px; top:54px; width:130px; height:5px; background:rgba(28,25,23,.25)"></div>
+                <div class="px" style="left:36px; top:66px; width:80px; height:5px; background:rgba(28,25,23,.25)"></div>
+                <div class="px" style="left:36px; top:90px; width:60px; height:14px; transform:rotate(-3deg); background:rgba(28,25,23,.65); border-radius:2px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">Founder Letter</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Лист засновника, build-in-public. Канал: Substack · Telegram-канал.</p>
+                <div class="card-foot"><span class="path">campaigns/founder-letter</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- roi-calculator -->
+            <a class="card" href="landing/campaigns/roi-calculator.html" data-status="done" data-title="roi calculator">
+              <div class="vignette tone-paper">
+                <div class="px" style="left:14px; top:18px; width:170px; height:30px; background:rgba(28,25,23,.92); border-radius:6px"></div>
+                <div class="px" style="left:24px; top:26px; width:60px; height:14px; background:rgba(146,204,23,.95); border-radius:2px"></div>
+                <div class="px" style="left:14px; top:58px; width:80px; height:24px; background:rgba(28,25,23,.08); border-radius:6px"></div>
+                <div class="px" style="left:104px; top:58px; width:80px; height:24px; background:rgba(28,25,23,.08); border-radius:6px"></div>
+                <div class="px" style="left:14px; top:92px; width:80px; height:24px; background:rgba(28,25,23,.08); border-radius:6px"></div>
+                <div class="px" style="left:104px; top:92px; width:80px; height:24px; background:rgba(4,120,87,.85); border-radius:6px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">ROI Calculator</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Калькулятор економії. Канал: Google Search · «alternatives to YNAB».</p>
+                <div class="card-foot"><span class="path">campaigns/roi-calculator</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- made-in-ukraine -->
+            <a class="card" href="landing/campaigns/made-in-ukraine.html" data-status="done" data-title="made in ukraine">
+              <div class="vignette tone-ua"></div>
+              <div class="card-body">
+                <div class="card-title-row">
+                  <div class="card-title">Made in Ukraine</div>
+                  <div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div>
+                </div>
+                <p class="card-desc">Українське позиціонування. Канал: DOU · україномовні TG-канали.</p>
+                <div class="card-foot"><span class="path">campaigns/made-in-ukraine</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────── MARKETING ─────────── -->
+      <section class="cluster marketing" id="marketing" data-cluster="marketing">
+        <div class="cluster-head">
+          <span class="sn">B</span>
+          <h2>Marketing</h2>
+          <span class="desc">Поверхні поза лендингом — листи, соцмережі, сторінки магазинів, OG-картки, блог, бренд-шіт, прес-кіт, утиліти.</span>
+          <span class="extra"><strong>12</strong> · усі готові</span>
+        </div>
+
+        <div class="grid" data-section-grid>
+          <!-- email-drip -->
+          <a class="card" href="marketing/email-drip.html" data-status="done" data-title="email drip">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:14px; right:14px; height:28px; width:auto; background:white; border:1px solid rgba(28,25,23,.08); border-radius:6px"></div>
+              <div class="px" style="left:14px; top:48px; right:14px; height:28px; width:auto; background:white; border:1px solid rgba(28,25,23,.08); border-radius:6px"></div>
+              <div class="px" style="left:14px; top:82px; right:14px; height:28px; width:auto; background:white; border:1px solid rgba(28,25,23,.08); border-radius:6px"></div>
+              <div class="px" style="left:22px; top:21px; width:6px; height:6px; background:var(--brand); border-radius:50%"></div>
+              <div class="px" style="left:22px; top:55px; width:6px; height:6px; background:var(--brand); border-radius:50%"></div>
+              <div class="px" style="left:22px; top:89px; width:6px; height:6px; background:var(--subtle); border-radius:50%"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Email drip</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">4 листи (день 0/5/14/21) як превʼю поштової скриньки. 3 варіанти тону.</p>
+              <div class="card-foot"><span class="path">marketing/email-drip</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- social-posts -->
+          <a class="card" href="marketing/social-posts.html" data-status="done" data-title="social posts">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:12px; top:14px; width:50px; height:104px; background:white; border:1px solid rgba(28,25,23,.08); border-radius:8px"></div>
+              <div class="px" style="left:74px; top:14px; width:50px; height:104px; background:white; border:1px solid rgba(28,25,23,.08); border-radius:8px"></div>
+              <div class="px" style="left:136px; top:14px; width:50px; height:104px; background:white; border:1px solid rgba(28,25,23,.08); border-radius:8px"></div>
+              <div class="px" style="left:20px; top:22px; width:14px; height:14px; background:#0088cc; border-radius:50%"></div>
+              <div class="px" style="left:82px; top:22px; width:14px; height:14px; background:#000; border-radius:4px"></div>
+              <div class="px" style="left:144px; top:22px; width:14px; height:14px; background:#e1306c; border-radius:4px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Social posts</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Telegram + X + Instagram поряд. 3 стилі адаптації.</p>
+              <div class="card-foot"><span class="path">marketing/social-posts</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- store-listing -->
+          <a class="card" href="marketing/store-listing.html" data-status="done" data-title="store listing">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:14px; width:36px; height:36px; background:var(--finyk); border-radius:9px"></div>
+              <div class="px" style="left:58px; top:18px; width:80px; height:8px; background:rgba(28,25,23,.85)"></div>
+              <div class="px" style="left:58px; top:32px; width:60px; height:6px"></div>
+              <div class="px" style="left:144px; top:24px; width:38px; height:18px; background:var(--brand); border-radius:9px"></div>
+              <div class="px" style="left:14px; top:60px; width:38px; height:58px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+              <div class="px" style="left:60px; top:60px; width:38px; height:58px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+              <div class="px" style="left:106px; top:60px; width:38px; height:58px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+              <div class="px" style="left:152px; top:60px; width:38px; height:58px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">App Store listing</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Іконка + назва + підзаголовок + скріни. 3 підходи до метаданих.</p>
+              <div class="card-foot"><span class="path">marketing/store-listing</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- og-cards -->
+          <a class="card" href="marketing/og-cards.html" data-status="done" data-title="og cards">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:24px; width:88px; height:46px; background:rgba(4,120,87,.85); border-radius:6px"></div>
+              <div class="px" style="left:108px; top:24px; width:88px; height:46px; background:rgba(28,25,23,.85); border-radius:6px"></div>
+              <div class="px" style="left:14px; top:78px; width:88px; height:46px; background:rgba(249,112,102,.85); border-radius:6px"></div>
+              <div class="px" style="left:108px; top:78px; width:88px; height:46px; background:rgba(146,204,23,.85); border-radius:6px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">OG / share cards</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">1200×630 — як лендинг виглядає у Telegram/X-превʼю.</p>
+              <div class="card-foot"><span class="path">marketing/og-cards</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- brand-sheet -->
+          <a class="card" href="marketing/brand-sheet.html" data-status="done" data-title="brand sheet">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:14px; width:32px; height:32px; background:var(--finyk); border-radius:6px"></div>
+              <div class="px" style="left:50px; top:14px; width:32px; height:32px; background:var(--fizruk); border-radius:6px"></div>
+              <div class="px" style="left:86px; top:14px; width:32px; height:32px; background:var(--routine); border-radius:6px"></div>
+              <div class="px" style="left:122px; top:14px; width:32px; height:32px; background:var(--nutrition); border-radius:6px"></div>
+              <div class="px" style="left:158px; top:14px; width:32px; height:32px; background:#1c1917; border-radius:6px"></div>
+              <div class="px" style="left:14px; top:54px; width:90px; height:12px; background:rgba(28,25,23,.85); font-family:serif"></div>
+              <div class="px" style="left:14px; top:72px; width:140px; height:8px"></div>
+              <div class="px" style="left:14px; top:88px; width:120px; height:8px"></div>
+              <div class="px" style="left:14px; top:104px; width:60px; height:14px; background:rgba(28,25,23,.85); border-radius:7px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Brand cheat sheet</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Палітра + типографіка + стани кнопок. 3 формати: для дизайнера / розробника / маркетолога.</p>
+              <div class="card-foot"><span class="path">marketing/brand-sheet</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- app-icon -->
+          <a class="card" href="marketing/app-icon.html" data-status="done" data-title="app icon">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:18px; top:30px; width:50px; height:50px; background:var(--brand); border-radius:14px"></div>
+              <div class="px" style="left:82px; top:30px; width:50px; height:50px; background:rgba(28,25,23,.9); border-radius:14px"></div>
+              <div class="px" style="left:146px; top:30px; width:50px; height:50px; background:linear-gradient(135deg,var(--finyk),var(--fizruk)); border-radius:14px"></div>
+              <div class="px" style="left:30px; top:48px; width:26px; height:14px; background:white; border-radius:2px"></div>
+              <div class="px" style="left:94px; top:48px; width:6px; height:14px; background:var(--brand); border-radius:1px"></div>
+              <div class="px" style="left:102px; top:48px; width:6px; height:14px; background:var(--fizruk); border-radius:1px"></div>
+              <div class="px" style="left:110px; top:48px; width:6px; height:14px; background:var(--routine); border-radius:1px"></div>
+              <div class="px" style="left:118px; top:48px; width:6px; height:14px; background:var(--nutrition); border-radius:1px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">App icon</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">3 напрямки: монограма / сітка модулів / абстракт.</p>
+              <div class="card-foot"><span class="path">marketing/app-icon</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- module-page -->
+          <a class="card" href="marketing/module-page.html" data-status="done" data-title="module page">
+            <div class="vignette tone-finyk">
+              <div class="px" style="left:14px; top:18px; width:20px; height:6px; background:var(--brand)"></div>
+              <div class="px" style="left:14px; top:30px; width:130px; height:18px; background:rgba(4,120,87,.95); border-radius:0"></div>
+              <div class="px" style="left:14px; top:58px; width:170px; height:6px"></div>
+              <div class="px" style="left:14px; top:74px; width:60px; height:22px; background:var(--brand); border-radius:11px"></div>
+              <div class="px" style="left:120px; top:74px; width:64px; height:44px; background:white; border:1px solid rgba(28,25,23,.08); border-radius:8px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Module page (/finyk)</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Глибокий вхід у модуль. 3 розкладки: фокус / спершу демо / спершу біль.</p>
+              <div class="card-foot"><span class="path">marketing/module-page</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- blog-post -->
+          <a class="card" href="marketing/blog-post.html" data-status="done" data-title="blog post">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:50px; top:14px; width:104px; height:5px; background:var(--brand)"></div>
+              <div class="px" style="left:50px; top:26px; width:120px; height:14px; background:rgba(28,25,23,.85)"></div>
+              <div class="px" style="left:50px; top:50px; width:130px; height:5px"></div>
+              <div class="px" style="left:50px; top:60px; width:120px; height:5px"></div>
+              <div class="px" style="left:50px; top:70px; width:130px; height:5px"></div>
+              <div class="px" style="left:50px; top:84px; width:110px; height:5px"></div>
+              <div class="px" style="left:50px; top:100px; width:60px; height:16px; background:var(--text-strong); border-radius:8px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Blog post template</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Стовпова SEO-стаття з кнопками у тексті. 3 розкладки для читання.</p>
+              <div class="card-foot"><span class="path">marketing/blog-post</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- compare-page -->
+          <a class="card" href="marketing/compare-page.html" data-status="done" data-title="compare page">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:14px; width:170px; height:18px; background:rgba(28,25,23,.85)"></div>
+              <div class="px" style="left:14px; top:40px; width:60px; height:12px; background:rgba(28,25,23,.1)"></div>
+              <div class="px" style="left:80px; top:40px; width:50px; height:12px; background:rgba(28,25,23,.1)"></div>
+              <div class="px" style="left:136px; top:40px; width:50px; height:12px; background:var(--brand-soft)"></div>
+              <div class="px" style="left:14px; top:60px; width:60px; height:12px"></div>
+              <div class="px" style="left:80px; top:60px; width:14px; height:12px; background:rgba(192,58,58,.7); border-radius:6px"></div>
+              <div class="px" style="left:136px; top:60px; width:14px; height:12px; background:var(--brand); border-radius:6px"></div>
+              <div class="px" style="left:14px; top:80px; width:60px; height:12px"></div>
+              <div class="px" style="left:80px; top:80px; width:14px; height:12px; background:rgba(192,58,58,.7); border-radius:6px"></div>
+              <div class="px" style="left:136px; top:80px; width:14px; height:12px; background:var(--brand); border-radius:6px"></div>
+              <div class="px" style="left:14px; top:100px; width:60px; height:12px"></div>
+              <div class="px" style="left:80px; top:100px; width:14px; height:12px; background:var(--brand); border-radius:6px"></div>
+              <div class="px" style="left:136px; top:100px; width:14px; height:12px; background:var(--brand); border-radius:6px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Compare page</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">/compare/habitica-vs-sergeant. Тон «підходить — не підходить».</p>
+              <div class="card-foot"><span class="path">marketing/compare-page</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- press-kit -->
+          <a class="card" href="marketing/press-kit.html" data-status="done" data-title="press kit">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:14px; width:60px; height:60px; background:linear-gradient(135deg,var(--finyk),var(--fizruk)); border-radius:8px"></div>
+              <div class="px" style="left:84px; top:18px; width:80px; height:8px; background:rgba(28,25,23,.85)"></div>
+              <div class="px" style="left:84px; top:32px; width:90px; height:6px"></div>
+              <div class="px" style="left:84px; top:44px; width:60px; height:6px"></div>
+              <div class="px" style="left:84px; top:60px; width:40px; height:14px; background:var(--brand); border-radius:7px"></div>
+              <div class="px" style="left:14px; top:90px; width:50px; height:24px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+              <div class="px" style="left:70px; top:90px; width:50px; height:24px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+              <div class="px" style="left:126px; top:90px; width:50px; height:24px; background:rgba(28,25,23,.08); border-radius:4px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Press kit</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Для DOU/ain/mc.today — біо, скріни, контакти.</p>
+              <div class="card-foot"><span class="path">marketing/press-kit</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- holding -->
+          <a class="card" href="marketing/holding.html" data-status="done" data-title="holding coming soon">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:50%; top:18px; transform:translateX(-50%); width:90px; height:24px; background:rgba(28,25,23,.85); border-radius:0; font-family:serif"></div>
+              <div class="px" style="left:50%; top:50px; transform:translateX(-50%); width:140px; height:6px"></div>
+              <div class="px" style="left:34px; top:74px; width:32px; height:32px; background:white; border:1px solid rgba(28,25,23,.15); border-radius:4px"></div>
+              <div class="px" style="left:74px; top:74px; width:32px; height:32px; background:white; border:1px solid rgba(28,25,23,.15); border-radius:4px"></div>
+              <div class="px" style="left:114px; top:74px; width:32px; height:32px; background:white; border:1px solid rgba(28,25,23,.15); border-radius:4px"></div>
+              <div class="px" style="left:154px; top:74px; width:32px; height:32px; background:white; border:1px solid rgba(28,25,23,.15); border-radius:4px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Coming soon</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Заглушка перед запуском. 3 настрої.</p>
+              <div class="card-foot"><span class="path">marketing/holding</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <!-- unsub -->
+          <a class="card" href="marketing/unsub.html" data-status="done" data-title="unsubscribe">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:50%; top:24px; transform:translateX(-50%); width:120px; height:10px; background:rgba(28,25,23,.85)"></div>
+              <div class="px" style="left:50%; top:42px; transform:translateX(-50%); width:140px; height:5px"></div>
+              <div class="px" style="left:50%; top:54px; transform:translateX(-50%); width:120px; height:5px"></div>
+              <div class="px" style="left:50%; top:74px; transform:translateX(-50%); width:140px; height:22px; background:white; border:1px solid rgba(28,25,23,.15); border-radius:4px"></div>
+              <div class="px" style="left:50%; top:104px; transform:translateX(-50%); width:60px; height:14px; background:rgba(192,58,58,.7); border-radius:7px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Unsubscribe</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Що користувач бачить коли відписується. Можливість показати голос бренду.</p>
+              <div class="card-foot"><span class="path">marketing/unsub</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- ─────────── PRODUCT ─────────── -->
+      <section class="cluster product" id="product" data-cluster="product">
+        <div class="cluster-head">
+          <span class="sn">C</span>
+          <h2>Product</h2>
+          <span class="desc">Екрани всередині застосунку у форматі трьох станів (Зараз → Планується → Рекомендую). Темна v2-поверхня з glass.</span>
+          <span class="extra"><strong>11</strong> · усі готові</span>
+        </div>
+
+        <div class="subcluster">
+          <div class="subcluster-head">огляди модулів · 4 з 4</div>
+          <div class="grid" data-section-grid>
+            <!-- finyk -->
+            <a class="card" href="product/finyk/overview-mobile.html" data-status="done" data-title="finyk overview">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:16px; transform:translateX(-50%); width:60px; height:100px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:8px"></div>
+                <div class="px" style="left:50%; top:24px; transform:translateX(-50%); width:50px; height:6px; background:rgba(16,185,129,.85)"></div>
+                <div class="px" style="left:50%; top:36px; transform:translateX(-50%); width:40px; height:14px; background:rgba(255,255,255,.85)"></div>
+                <div class="px" style="left:50%; top:58px; transform:translateX(-50%); width:50px; height:30px; background:rgba(16,185,129,.4); border-radius:4px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Finyk Overview</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Гроші. 3 стани · скляна HeroCard + бюджет дня + AI-категоризація.</p>
+                <div class="card-foot"><span class="path">product/finyk/…</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- fizruk -->
+            <a class="card" href="product/fizruk/dashboard.html" data-status="done" data-title="fizruk dashboard">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:16px; transform:translateX(-50%); width:60px; height:100px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:8px"></div>
+                <div class="px" style="left:50%; top:24px; transform:translateX(-50%); width:50px; height:6px; background:rgba(34,211,238,.85)"></div>
+                <div class="px" style="left:50%; top:36px; transform:translateX(-50%); width:40px; height:14px; background:rgba(255,255,255,.85)"></div>
+                <div class="px" style="left:50%; top:58px; transform:translateX(-50%); width:22px; height:30px; background:rgba(34,211,238,.5); border-radius:4px"></div>
+                <div class="px" style="left:50%; top:58px; transform:translate(8px,0); width:22px; height:30px; background:rgba(34,211,238,.3); border-radius:4px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Fizruk Dashboard</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Тренування. Заголовок + список + значок особистого рекорду.</p>
+                <div class="card-foot"><span class="path">product/fizruk/…</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- routine -->
+            <a class="card" href="product/routine/today.html" data-status="done" data-title="routine today">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:16px; transform:translateX(-50%); width:60px; height:100px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:8px"></div>
+                <div class="px" style="left:50%; top:24px; transform:translateX(-50%); width:50px; height:6px; background:rgba(249,112,102,.85)"></div>
+                <div class="px" style="left:50%; top:36px; transform:translateX(-50%); width:40px; height:14px; background:rgba(255,255,255,.85)"></div>
+                <div class="px" style="left:50%; top:58px; transform:translate(-50%,0); width:50px; height:6px; background:rgba(249,112,102,.85); border-radius:2px"></div>
+                <div class="px" style="left:50%; top:70px; transform:translate(-50%,0); width:50px; height:6px; background:rgba(249,112,102,.85); border-radius:2px"></div>
+                <div class="px" style="left:50%; top:82px; transform:translate(-50%,0); width:50px; height:6px; background:rgba(255,255,255,.2); border-radius:2px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Routine Today</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Звички. HeroValueLine + сяйво «полум'я» біля стріку.</p>
+                <div class="card-foot"><span class="path">product/routine/…</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- nutrition -->
+            <a class="card" href="product/nutrition/today.html" data-status="done" data-title="nutrition today">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:16px; transform:translateX(-50%); width:60px; height:100px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:8px"></div>
+                <div class="px" style="left:50%; top:24px; transform:translateX(-50%); width:50px; height:6px; background:rgba(146,204,23,.85)"></div>
+                <div class="px" style="left:50%; top:38px; transform:translateX(-50%); width:30px; height:30px; border-radius:50%; border:4px solid rgba(146,204,23,.7); background:transparent"></div>
+                <div class="px" style="left:50%; top:78px; transform:translate(-50%,0); width:18px; height:16px; background:rgba(146,204,23,.4); border-radius:3px"></div>
+                <div class="px" style="left:50%; top:78px; transform:translate(0,0); width:18px; height:16px; background:rgba(146,204,23,.6); border-radius:3px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Nutrition Today</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Харчування. Кільце прогресу + макроси + AI-джерело страви.</p>
+                <div class="card-foot"><span class="path">product/nutrition/…</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="subcluster">
+          <div class="subcluster-head">основні поверхні · 4 з 4</div>
+          <div class="grid" data-section-grid>
+            <!-- hubchat -->
+            <a class="card" href="product/hubchat/index.html" data-status="done" data-title="hubchat fullscreen">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:12px; top:18px; width:80px; height:14px; background:rgba(255,255,255,.12); border-radius:7px 7px 7px 2px"></div>
+                <div class="px" style="right:12px; top:42px; width:90px; height:14px; background:rgba(16,185,129,.5); border-radius:7px 7px 2px 7px"></div>
+                <div class="px" style="left:12px; top:66px; width:120px; height:24px; background:rgba(255,255,255,.12); border-radius:7px 7px 7px 2px"></div>
+                <div class="px" style="left:12px; top:100px; right:12px; width:auto; height:18px; background:rgba(255,255,255,.06); border-radius:9px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">HubChat full-screen</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">AI-тред з джерелами, викликами інструментів і вбудованими діями. Звідки: core/hub/chat/ + плани.</p>
+                <div class="card-foot"><span class="path">product/hubchat/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- onboarding -->
+            <a class="card" href="product/onboarding/index.html" data-status="done" data-title="onboarding ftux">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:12px; top:24px; width:24px; height:24px; background:rgba(16,185,129,.85); border-radius:50%"></div>
+                <div class="px" style="left:36px; top:34px; width:24px; height:2px; background:rgba(255,255,255,.3)"></div>
+                <div class="px" style="left:60px; top:24px; width:24px; height:24px; background:rgba(34,211,238,.7); border-radius:50%"></div>
+                <div class="px" style="left:84px; top:34px; width:24px; height:2px; background:rgba(255,255,255,.3)"></div>
+                <div class="px" style="left:108px; top:24px; width:24px; height:24px; background:rgba(249,112,102,.7); border-radius:50%"></div>
+                <div class="px" style="left:132px; top:34px; width:24px; height:2px; background:rgba(255,255,255,.3)"></div>
+                <div class="px" style="left:156px; top:24px; width:24px; height:24px; background:rgba(146,204,23,.7); border-radius:50%"></div>
+                <div class="px" style="left:12px; top:60px; right:12px; width:auto; height:48px; background:rgba(255,255,255,.06); border-radius:8px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Onboarding (FTUX)</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">6 кроків сторіборда з варіантами під персони. Звідки: ftux-master-tracker.md (67кб).</p>
+                <div class="card-foot"><span class="path">product/onboarding/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- paywall -->
+            <a class="card" href="product/paywall/index.html" data-status="done" data-title="paywall">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:16px; transform:translateX(-50%); width:60px; height:100px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:8px"></div>
+                <div class="px" style="left:50%; top:26px; transform:translateX(-50%); width:14px; height:14px; background:rgba(255,255,255,.4); border-radius:3px"></div>
+                <div class="px" style="left:50%; top:48px; transform:translate(-50%,0); width:46px; height:14px; background:rgba(255,255,255,.12); border-radius:3px"></div>
+                <div class="px" style="left:50%; top:68px; transform:translate(-50%,0); width:46px; height:14px; background:rgba(16,185,129,.7); border-radius:3px"></div>
+                <div class="px" style="left:50%; top:88px; transform:translate(-50%,0); width:46px; height:14px; background:rgba(255,255,255,.12); border-radius:3px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Paywall · 3 placements</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Жорстка / мʼяка / після пробного періоду. Звідки: paywall-implementation-plan.md.</p>
+                <div class="card-foot"><span class="path">product/paywall/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- states -->
+            <a class="card" href="product/states/index.html" data-status="done" data-title="empty error zero states">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:14px; top:24px; width:48px; height:84px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:6px"></div>
+                <div class="px" style="left:80px; top:24px; width:48px; height:84px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:6px"></div>
+                <div class="px" style="left:146px; top:24px; width:48px; height:84px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.12); border-radius:6px"></div>
+                <div class="px" style="left:32px; top:60px; width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,.3)"></div>
+                <div class="px" style="left:98px; top:60px; width:12px; height:12px; background:rgba(239,68,68,.7); border-radius:50%"></div>
+                <div class="px" style="left:164px; top:60px; width:12px; height:12px; background:rgba(245,158,11,.7); border-radius:50%"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Empty / Error / Zero states</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">3 рівні × 4 модулі. Перевикористовувані примітиви. Звідки: empty-states.md.</p>
+                <div class="card-foot"><span class="path">product/states/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="subcluster">
+          <div class="subcluster-head">допоміжні поверхні · 3 з 3</div>
+          <div class="grid" data-section-grid>
+            <!-- settings -->
+            <a class="card" href="product/settings/index.html" data-status="done" data-title="settings privacy">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:14px; top:18px; width:170px; height:14px; background:rgba(255,255,255,.06); border-radius:4px"></div>
+                <div class="px" style="left:14px; top:38px; width:170px; height:14px; background:rgba(255,255,255,.06); border-radius:4px"></div>
+                <div class="px" style="left:14px; top:58px; width:170px; height:14px; background:rgba(255,255,255,.06); border-radius:4px"></div>
+                <div class="px" style="left:14px; top:78px; width:170px; height:14px; background:rgba(255,255,255,.06); border-radius:4px"></div>
+                <div class="px" style="left:14px; top:98px; width:170px; height:14px; background:rgba(255,255,255,.06); border-radius:4px"></div>
+                <div class="px" style="right:24px; top:18px; width:20px; height:14px; background:rgba(16,185,129,.7); border-radius:7px"></div>
+                <div class="px" style="right:24px; top:38px; width:20px; height:14px; background:rgba(16,185,129,.7); border-radius:7px"></div>
+                <div class="px" style="right:24px; top:58px; width:20px; height:14px; background:rgba(255,255,255,.12); border-radius:7px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Settings · privacy</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Експорт, видалення, тумблер синхр., відмова від телеметрії. UI приватності.</p>
+                <div class="card-foot"><span class="path">product/settings/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- quick-add -->
+            <a class="card" href="product/quick-add/index.html" data-status="done" data-title="quick add fab">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:14px; top:14px; width:182px; height:56px; background:rgba(255,255,255,.04); border-radius:8px"></div>
+                <div class="px" style="left:14px; top:78px; right:14px; width:auto; height:40px; background:rgba(16,185,129,.18); border-radius:16px 16px 0 0"></div>
+                <div class="px" style="left:50%; top:86px; transform:translateX(-50%); width:32px; height:4px; background:rgba(255,255,255,.3); border-radius:2px"></div>
+                <div class="px" style="left:30px; top:98px; width:36px; height:14px; background:rgba(255,255,255,.12); border-radius:4px"></div>
+                <div class="px" style="left:74px; top:98px; width:36px; height:14px; background:rgba(255,255,255,.12); border-radius:4px"></div>
+                <div class="px" style="left:118px; top:98px; width:36px; height:14px; background:rgba(255,255,255,.12); border-radius:4px"></div>
+                <div class="px" style="left:162px; top:98px; width:24px; height:14px; background:rgba(16,185,129,.7); border-radius:4px"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Quick-add sheet</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Нижній лист з плаваючої кнопки · режими: текст / сканер / голос / фото.</p>
+                <div class="card-foot"><span class="path">product/quick-add/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+
+            <!-- push -->
+            <a class="card" href="product/push/index.html" data-status="done" data-title="push notifications">
+              <div class="vignette tone-dark">
+                <div class="px" style="left:50%; top:14px; transform:translateX(-50%); width:60px; height:10px; background:rgba(255,255,255,.6); border-radius:0"></div>
+                <div class="px" style="left:14px; top:36px; right:14px; width:auto; height:28px; background:rgba(255,255,255,.94); border-radius:10px"></div>
+                <div class="px" style="left:24px; top:44px; width:12px; height:12px; background:var(--brand); border-radius:3px"></div>
+                <div class="px" style="left:44px; top:42px; width:80px; height:6px; background:rgba(28,25,23,.5)"></div>
+                <div class="px" style="left:44px; top:52px; width:60px; height:5px; background:rgba(28,25,23,.3)"></div>
+                <div class="px" style="left:14px; top:72px; right:14px; width:auto; height:28px; background:rgba(255,255,255,.94); border-radius:10px"></div>
+                <div class="px" style="left:24px; top:80px; width:12px; height:12px; background:var(--routine); border-radius:3px"></div>
+                <div class="px" style="left:44px; top:78px; width:90px; height:6px; background:rgba(28,25,23,.5)"></div>
+                <div class="px" style="left:44px; top:88px; width:50px; height:5px; background:rgba(28,25,23,.3)"></div>
+              </div>
+              <div class="card-body">
+                <div class="card-title-row"><div class="card-title">Push notifications</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+                <p class="card-desc">Екран блокування iOS/Android + дії в сповіщенні + крос-модульні підказки.</p>
+                <div class="card-foot"><span class="path">product/push/</span><span class="open">відкрити →</span></div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────── FLOWS ─────────── -->
+      <section class="cluster flows" id="flows" data-cluster="flows">
+        <div class="cluster-head">
+          <span class="sn">D</span>
+          <h2>Flows</h2>
+          <span class="desc">Послідовності й діаграми потоків — реєстрація, реферали, автоматизації n8n, Telegram-бот.</span>
+          <span class="extra"><strong>4</strong> · усі готові</span>
+        </div>
+
+        <div class="grid" data-section-grid>
+          <a class="card" href="flows/signup-flow.html" data-status="done" data-title="signup flow">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:50%; transform:translateY(-50%); width:46px; height:46px; background:white; border:2px solid var(--brand); border-radius:50%"></div>
+              <div class="px" style="left:62px; top:50%; transform:translateY(-50%); width:24px; height:2px; background:var(--subtle)"></div>
+              <div class="px" style="left:86px; top:50%; transform:translateY(-50%); width:46px; height:46px; background:white; border:2px solid var(--brand); border-radius:50%"></div>
+              <div class="px" style="left:134px; top:50%; transform:translateY(-50%); width:24px; height:2px; background:var(--subtle)"></div>
+              <div class="px" style="left:158px; top:50%; transform:translateY(-50%); width:38px; height:38px; background:var(--brand); border-radius:50%"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Signup flow</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Форма → успіх → лист підтвердження. Сторіборд.</p>
+              <div class="card-foot"><span class="path">flows/signup-flow</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <a class="card" href="flows/referral-flow.html" data-status="done" data-title="referral flow">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:16px; top:30px; width:34px; height:34px; background:var(--finyk); border-radius:50%"></div>
+              <div class="px" style="left:52px; top:46px; width:22px; height:2px; background:var(--subtle)"></div>
+              <div class="px" style="left:76px; top:30px; width:34px; height:34px; background:var(--fizruk); border-radius:50%"></div>
+              <div class="px" style="left:112px; top:46px; width:22px; height:2px; background:var(--subtle)"></div>
+              <div class="px" style="left:136px; top:30px; width:34px; height:34px; background:var(--routine); border-radius:50%"></div>
+              <div class="px" style="left:50%; transform:translateX(-50%); bottom:14px; width:80px; height:18px; background:rgba(28,25,23,.85); border-radius:9px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Referral flow</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Користувач → друг → лист про досягнення.</p>
+              <div class="card-foot"><span class="path">flows/referral-flow</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <a class="card" href="flows/n8n-flow.html" data-status="done" data-title="n8n flow">
+            <div class="vignette tone-paper">
+              <div class="px" style="left:14px; top:20px; width:32px; height:24px; background:white; border:1px solid var(--brand); border-radius:4px"></div>
+              <div class="px" style="left:50px; top:32px; width:18px; height:2px; background:var(--subtle)"></div>
+              <div class="px" style="left:72px; top:20px; width:32px; height:24px; background:white; border:1px solid var(--brand); border-radius:4px"></div>
+              <div class="px" style="left:108px; top:32px; width:18px; height:2px; background:var(--subtle)"></div>
+              <div class="px" style="left:130px; top:20px; width:32px; height:24px; background:var(--brand); border-radius:4px"></div>
+              <div class="px" style="left:88px; top:62px; width:32px; height:24px; background:white; border:1px solid var(--fizruk); border-radius:4px"></div>
+              <div class="px" style="left:88px; top:96px; width:32px; height:24px; background:white; border:1px solid var(--routine); border-radius:4px"></div>
+              <div class="px" style="left:104px; top:46px; width:2px; height:16px; background:var(--subtle)"></div>
+              <div class="px" style="left:104px; top:86px; width:2px; height:10px; background:var(--subtle)"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">N8n flow diagram</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">Реєстрація → CRM → серія листів + реферал. 3 стилі діаграми.</p>
+              <div class="card-foot"><span class="path">flows/n8n-flow</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+
+          <a class="card" href="flows/telegram-bot.html" data-status="done" data-title="telegram bot">
+            <div class="vignette tone-paper" style="background:linear-gradient(180deg,#e7f3fa 0%,#fafdff 100%)">
+              <div class="px" style="left:14px; top:18px; width:120px; height:18px; background:white; border-radius:10px 10px 10px 2px"></div>
+              <div class="px" style="right:14px; top:42px; width:100px; height:18px; background:#0088cc; border-radius:10px 10px 2px 10px"></div>
+              <div class="px" style="left:14px; top:66px; width:140px; height:30px; background:white; border-radius:10px 10px 10px 2px"></div>
+              <div class="px" style="left:22px; top:104px; width:50px; height:14px; background:white; border:1px solid rgba(28,25,23,.1); border-radius:14px"></div>
+              <div class="px" style="left:78px; top:104px; width:50px; height:14px; background:white; border:1px solid rgba(28,25,23,.1); border-radius:14px"></div>
+              <div class="px" style="left:134px; top:104px; width:50px; height:14px; background:white; border:1px solid rgba(28,25,23,.1); border-radius:14px"></div>
+            </div>
+            <div class="card-body">
+              <div class="card-title-row"><div class="card-title">Telegram bot flow</div><div class="card-meta"><span class="status done"><span class="d"></span>у продукті</span></div></div>
+              <p class="card-desc">/start → знайомство → щоденне нагадування → швидкий запис → веб-застосунок.</p>
+              <div class="card-foot"><span class="path">flows/telegram-bot</span><span class="open">відкрити →</span></div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- empty state -->
+      <div class="empty-state" id="empty-state">
+        Нічого не знайшлося. Спробуй очистити фільтри або змінити запит.
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- FOOTER -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <footer class="bot">
+      <span>Sergeant · портал мокапів · <strong>v0.2 · 2026-05-17</strong></span>
+      <span>Токени — дзеркало <strong>docs/design/design-system.md</strong></span>
+      <span>Імена · kebab-case · статус · перевірено</span>
+    </footer>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- JS -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <script>
+      (function () {
+        const state = { status: null, priority: null, query: "" };
+
+        const $cards = Array.from(document.querySelectorAll(".card"));
+        const $sections = Array.from(document.querySelectorAll("section.cluster"));
+        const $search = document.getElementById("search");
+        const $searchWrap = $search.parentElement;
+        const $searchClear = document.getElementById("search-clear");
+        const $chips = Array.from(document.querySelectorAll(".chip"));
+        const $clear = document.getElementById("filter-clear");
+        const $emptyState = document.getElementById("empty-state");
+
+        function recount() {
+          // per-cluster visible counts
+          const counts = { landing: 0, marketing: 0, product: 0, flows: 0 };
+          $cards.forEach((c) => {
+            if (c.dataset.visible === "true") {
+              const cluster = c.closest("section.cluster")?.dataset.cluster;
+              if (cluster) counts[cluster]++;
+            }
+          });
+          Object.entries(counts).forEach(([k, v]) => {
+            const el = document.querySelector(`[data-count="${k}"]`);
+            if (el) el.textContent = v;
+          });
+
+          // section/subsection visibility
+          let totalVisible = 0;
+          document.querySelectorAll("[data-section-grid]").forEach((g) => {
+            const visibleInGrid = Array.from(g.children).filter(
+              (c) => c.dataset.visible === "true"
+            ).length;
+            g.parentElement.style.display = visibleInGrid ? "" : "none";
+            totalVisible += visibleInGrid;
+          });
+          $sections.forEach((s) => {
+            const anyVisible = Array.from(s.querySelectorAll(".card")).some(
+              (c) => c.dataset.visible === "true"
+            );
+            s.style.display = anyVisible ? "" : "none";
+          });
+          $emptyState.classList.toggle("is-active", totalVisible === 0);
+        }
+
+        function apply() {
+          const q = state.query.trim().toLowerCase();
+          $cards.forEach((c) => {
+            let ok = true;
+            if (state.status && c.dataset.status !== state.status) ok = false;
+            if (state.priority && c.dataset.priority !== state.priority)
+              ok = false;
+            if (q && !(c.dataset.title || "").toLowerCase().includes(q))
+              ok = false;
+            c.style.display = ok ? "" : "none";
+            c.dataset.visible = ok ? "true" : "false";
+          });
+          $clear.classList.toggle(
+            "is-disabled",
+            !state.status && !state.priority && !q
+          );
+          recount();
+        }
+
+        // chips
+        $chips.forEach((chip) => {
+          chip.addEventListener("click", () => {
+            const f = chip.dataset.filter;
+            const v = chip.dataset.value;
+            const isOn = chip.getAttribute("aria-pressed") === "true";
+            // single-select within group
+            document
+              .querySelectorAll(`.chip[data-filter="${f}"]`)
+              .forEach((c) => c.setAttribute("aria-pressed", "false"));
+            if (isOn) {
+              state[f] = null;
+            } else {
+              chip.setAttribute("aria-pressed", "true");
+              state[f] = v;
+            }
+            apply();
+          });
+        });
+
+        // search
+        $search.addEventListener("input", (e) => {
+          state.query = e.target.value;
+          $searchWrap.classList.toggle("has-text", !!state.query);
+          apply();
+        });
+        $searchClear.addEventListener("click", () => {
+          $search.value = "";
+          state.query = "";
+          $searchWrap.classList.remove("has-text");
+          apply();
+          $search.focus();
+        });
+
+        // clear
+        $clear.addEventListener("click", () => {
+          state.status = null;
+          state.priority = null;
+          state.query = "";
+          $search.value = "";
+          $searchWrap.classList.remove("has-text");
+          $chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
+          apply();
+        });
+
+        // init counts
+        $cards.forEach((c) => (c.dataset.visible = "true"));
+        recount();
+      })();
+    </script>
+  </body>
+</html>

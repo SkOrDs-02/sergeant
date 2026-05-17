@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant · HubChat — AI-асистент на повний екран</title>
+    <link rel="stylesheet" href="../../_shared/tokens.css" />
+    <style>
+      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html,body {
+        font-family: var(--font-sans);
+        background: var(--bg); color: var(--text);
+        -webkit-font-smoothing: antialiased; line-height: 1.5;
+      }
+      a { color: inherit; text-decoration: none; }
+      code,.mono { font-family: var(--font-mono); }
+      .serif { font-family: var(--font-serif); }
+
+      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+
+      /* ─── HEADER ─── */
+      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+      .crumb {
+        font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand);
+        margin-bottom: 14px; display: flex; gap: 8px; align-items: center;
+      }
+      .crumb a { color: var(--muted); }
+      .crumb .sep { color: var(--subtle); }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px); font-weight: 800;
+        letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px;
+        max-width: 920px; text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted);
+      }
+      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
+      .meta-row {
+        margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap;
+        font-family: var(--font-mono); font-size: 11px; color: var(--subtle);
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+
+      /* ─── LEGEND ─── */
+      .legend {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl); margin-bottom: 64px; overflow: hidden;
+      }
+      .legend-head {
+        padding: 18px 24px; background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: baseline;
+        flex-wrap: wrap; gap: 12px;
+      }
+      .legend-head h2 { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
+      .legend-head .src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+      .legend-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 1px; background: var(--border);
+      }
+      .legend-cell { background: var(--panel); padding: 22px 24px; }
+      .legend-cell .badge {
+        font-family: var(--font-mono); font-weight: 800; font-size: 11px;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        padding: 4px 10px; border-radius: var(--r-sm);
+        display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
+      }
+      .legend-cell .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      .legend-cell.now .badge { color: var(--routine); background: var(--routine-soft); }
+      .legend-cell.plan .badge { color: var(--finyk-dark); background: var(--finyk-soft); }
+      .legend-cell.rec .badge { color: var(--fizruk-dark); background: var(--fizruk-soft); }
+      .legend-cell h3 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
+      .legend-cell p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+      .legend-cell .when {
+        margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);
+        font-family: var(--font-mono); font-size: 11px; color: var(--subtle);
+        text-transform: uppercase; letter-spacing: 0.1em;
+      }
+
+      /* ─── SECTION ─── */
+      section { margin-bottom: 72px; scroll-margin-top: 32px; }
+      .section-head {
+        display: flex; align-items: baseline; gap: 16px;
+        margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono); font-size: 12px; font-weight: 800;
+        letter-spacing: 0.1em; color: var(--brand);
+        padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm);
+      }
+      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
+      .section-head .event {
+        margin-left: auto; font-family: var(--font-mono); font-size: 11px;
+        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      .section-head .event strong { color: var(--text); }
+      .section-intro {
+        color: var(--muted); font-size: 15px; line-height: 1.6;
+        max-width: 740px; margin-bottom: 24px;
+      }
+
+      /* ─── STATE ROW ─── */
+      .state-row {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 18px; align-items: start;
+      }
+      .state-card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px 18px;
+        display: flex; flex-direction: column; gap: 14px;
+        border-left-width: 3px;
+      }
+      .state-card.now { border-left-color: var(--routine); }
+      .state-card.plan { border-left-color: var(--finyk-dark); }
+      .state-card.rec { border-left-color: var(--fizruk-dark); }
+      .state-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .state-tag {
+        font-family: var(--font-mono); font-weight: 800; font-size: 10px;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        padding: 3px 8px; border-radius: var(--r-sm);
+        display: inline-flex; gap: 6px; align-items: center;
+      }
+      .state-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .state-card.now .state-tag { color: var(--routine); background: var(--routine-soft); }
+      .state-card.plan .state-tag { color: var(--finyk-dark); background: var(--finyk-soft); }
+      .state-card.rec .state-tag { color: var(--fizruk-dark); background: var(--fizruk-soft); }
+      .state-title { font-size: 13px; font-weight: 800; letter-spacing: -0.005em; }
+      .state-ref {
+        margin-left: auto; font-family: var(--font-mono); font-size: 10px;
+        color: var(--subtle); white-space: nowrap;
+      }
+
+      /* ─── PHONE ─── */
+      .phone {
+        width: 100%; max-width: 280px;
+        margin: 0 auto;
+        aspect-ratio: 9 / 19.5;
+        background: #1a1614;
+        border: 6px solid #0a0a09;
+        border-radius: 34px;
+        box-shadow: 0 12px 28px rgba(28,25,23,0.16);
+        position: relative;
+        overflow: hidden;
+        color: #f5f0eb;
+      }
+      .phone-island {
+        position: absolute; top: 8px; left: 50%;
+        transform: translateX(-50%);
+        width: 32%; height: 16px;
+        background: #0a0a09; border-radius: 999px;
+        z-index: 5;
+      }
+      .phone-screen {
+        position: absolute; inset: 0;
+        padding: 30px 0 0;
+        display: flex; flex-direction: column;
+        overflow: hidden;
+      }
+      .phone-statusbar {
+        display: flex; justify-content: space-between;
+        font-size: 8px; font-weight: 700;
+        color: rgba(245,240,235,0.7); font-family: var(--font-mono);
+        margin-bottom: 8px; padding: 0 16px;
+      }
+
+      /* ─── CHAT HEADER ─── */
+      .chat-head {
+        display: flex; align-items: center; gap: 8px;
+        padding: 0 10px 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .avatar {
+        width: 24px; height: 24px;
+        border-radius: 6px;
+        background: rgba(16,185,129,0.14);
+        display: grid; place-items: center;
+        position: relative;
+        flex-shrink: 0;
+      }
+      .avatar svg {
+        width: 12px; height: 12px;
+        fill: var(--finyk);
+      }
+      .avatar .dot {
+        position: absolute;
+        bottom: -2px; right: -2px;
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--finyk);
+        border: 1.5px solid #1a1614;
+      }
+      .avatar .dot.warn { background: var(--warning); }
+      .avatar .dot.idle { background: rgba(255,255,255,0.15); }
+      .chat-title {
+        font-size: 12px; font-weight: 800;
+        flex: 1;
+        display: flex; align-items: center; gap: 4px;
+      }
+      .chat-title .chevron {
+        font-size: 9px; color: rgba(245,240,235,0.4);
+      }
+      .new-chat {
+        padding: 4px 8px;
+        background: rgba(16,185,129,0.14);
+        color: var(--finyk);
+        border-radius: 8px;
+        font-size: 9px; font-weight: 700;
+        display: flex; align-items: center; gap: 3px;
+      }
+      .close-x {
+        width: 18px; height: 18px;
+        color: rgba(245,240,235,0.5);
+        font-size: 14px; font-weight: 600;
+        display: grid; place-items: center;
+      }
+
+      /* ─── CHAT BODY ─── */
+      .chat-body {
+        flex: 1;
+        overflow: hidden;
+        padding: 10px 10px 0;
+        display: flex; flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+      }
+
+      /* Empty state */
+      .empty-block {
+        flex: 1;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        text-align: center;
+        gap: 8px;
+        padding: 8px;
+      }
+      .empty-title {
+        font-size: 11px; font-weight: 800;
+        color: rgba(245,240,235,0.9);
+      }
+      .empty-desc {
+        font-size: 8.5px; color: rgba(245,240,235,0.55);
+        line-height: 1.45;
+        max-width: 80%;
+      }
+      .empty-chips {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 4px; width: 100%; margin-top: 4px;
+      }
+      .empty-chip {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 7px;
+        padding: 5px 7px;
+        font-size: 8px;
+        color: rgba(245,240,235,0.75);
+        text-align: left;
+        display: flex; align-items: center; gap: 4px;
+      }
+      .empty-chip svg {
+        width: 9px; height: 9px; flex-shrink: 0;
+      }
+      .empty-chip.finyk svg { fill: var(--finyk); }
+      .empty-chip.fizruk svg { fill: var(--fizruk); }
+      .empty-chip.routine svg { fill: var(--routine); }
+      .empty-chip.nutrition svg { fill: var(--nutrition); }
+
+      /* Messages */
+      .msg {
+        max-width: 88%;
+        padding: 7px 10px;
+        border-radius: 12px;
+        font-size: 9.5px;
+        line-height: 1.45;
+        word-wrap: break-word;
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: rgba(255,255,255,0.08);
+        color: rgba(245,240,235,0.95);
+        border-radius: 12px 12px 4px 12px;
+      }
+      .msg.ai {
+        align-self: flex-start;
+        background: rgba(16,185,129,0.08);
+        color: rgba(245,240,235,0.95);
+        border-radius: 12px 12px 12px 4px;
+        border: 1px solid rgba(16,185,129,0.14);
+      }
+      .msg.ai b { color: #f5f0eb; font-weight: 700; }
+      .msg.ai .mono {
+        background: rgba(255,255,255,0.06);
+        padding: 0 4px; border-radius: 3px;
+        font-size: 9px;
+      }
+      .typing {
+        align-self: flex-start;
+        display: flex; gap: 3px;
+        padding: 7px 10px;
+        background: rgba(16,185,129,0.08);
+        border-radius: 12px 12px 12px 4px;
+        border: 1px solid rgba(16,185,129,0.14);
+      }
+      .typing span {
+        width: 4px; height: 4px;
+        border-radius: 50%;
+        background: var(--finyk);
+        opacity: 0.5;
+      }
+
+      /* Sources (plan) */
+      .sources-row {
+        align-self: flex-start;
+        display: flex; gap: 3px;
+        flex-wrap: wrap;
+        margin-top: -4px;
+        margin-left: 2px;
+      }
+      .source-chip {
+        font-family: var(--font-mono);
+        font-size: 7.5px;
+        padding: 2px 6px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 999px;
+        color: rgba(245,240,235,0.65);
+        display: flex; align-items: center; gap: 3px;
+      }
+      .source-chip .ch-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+      }
+      .source-chip.finyk .ch-dot { background: var(--finyk); }
+      .source-chip.fizruk .ch-dot { background: var(--fizruk); }
+      .source-chip.routine .ch-dot { background: var(--routine); }
+      .source-chip.nutrition .ch-dot { background: var(--nutrition); }
+
+      /* Tool calls (plan) */
+      .tool-call {
+        align-self: flex-start;
+        max-width: 90%;
+        background: rgba(255,255,255,0.03);
+        border: 1px dashed rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-family: var(--font-mono);
+        font-size: 8.5px;
+        color: rgba(245,240,235,0.55);
+        line-height: 1.5;
+      }
+      .tool-call .tool-line {
+        display: flex; align-items: center; gap: 5px;
+      }
+      .tool-call .step {
+        font-size: 7px;
+        background: rgba(245,158,11,0.18);
+        color: var(--warning);
+        padding: 1px 4px;
+        border-radius: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .tool-call .step.done {
+        background: rgba(16,185,129,0.18);
+        color: var(--finyk);
+      }
+      .tool-call .name b { color: rgba(245,240,235,0.85); font-weight: 600; }
+      .tool-call .meta { color: rgba(245,240,235,0.4); margin-top: 2px; padding-left: 32px; }
+
+      /* Inline actions (mine) */
+      .inline-actions {
+        align-self: flex-start;
+        display: flex; gap: 4px; flex-wrap: wrap;
+        margin-top: -2px;
+        max-width: 90%;
+      }
+      .inline-action {
+        font-size: 8.5px;
+        font-weight: 600;
+        padding: 4px 8px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 999px;
+        color: rgba(245,240,235,0.85);
+        display: flex; align-items: center; gap: 4px;
+      }
+      .inline-action.primary {
+        background: var(--finyk);
+        color: #0a0a09;
+        border-color: var(--finyk);
+      }
+      .inline-action svg {
+        width: 8px; height: 8px;
+      }
+
+      /* ─── COMPOSER ─── */
+      .composer {
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.02);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 6px 10px 8px;
+      }
+      .quick-actions {
+        display: flex; gap: 4px;
+        overflow-x: auto;
+        margin-bottom: 6px;
+        padding-bottom: 2px;
+      }
+      .quick-chip {
+        flex-shrink: 0;
+        font-size: 8.5px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        color: rgba(245,240,235,0.75);
+        white-space: nowrap;
+      }
+      .input-row {
+        display: flex; gap: 5px; align-items: center;
+        background: rgba(255,255,255,0.05);
+        border-radius: 18px;
+        padding: 4px 4px 4px 10px;
+      }
+      .input-row .ph {
+        flex: 1;
+        font-size: 9px;
+        color: rgba(245,240,235,0.4);
+      }
+      .input-row .mic {
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        display: grid; place-items: center;
+        font-size: 11px;
+        color: rgba(245,240,235,0.7);
+      }
+      .input-row .send {
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: var(--finyk);
+        color: #0a0a09;
+        display: grid; place-items: center;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      /* ─── STATE FOOTER ─── */
+      .state-foot {
+        margin-top: 6px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .state-foot b { color: var(--text); font-weight: 600; }
+      .state-foot code {
+        font-size: 10px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .state-foot dl { display: grid; gap: 4px; }
+      .state-foot dt {
+        font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; font-size: 9.5px; color: var(--subtle);
+      }
+
+      /* ─── ANATOMY: 5 features compared ─── */
+      .feat-table {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+      }
+      .feat-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+      }
+      .feat-table thead th {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--subtle);
+        font-weight: 600;
+        text-align: left;
+        padding: 14px 18px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .feat-table thead th.state-now { color: var(--routine); }
+      .feat-table thead th.state-plan { color: var(--finyk-dark); }
+      .feat-table thead th.state-rec { color: var(--fizruk-dark); }
+      .feat-table tbody td {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+        line-height: 1.5;
+        font-size: 13px;
+        color: var(--ink);
+      }
+      .feat-table tbody tr:last-child td { border-bottom: none; }
+      .feat-table tbody td.feat-name {
+        font-weight: 800;
+        font-size: 13.5px;
+        letter-spacing: -0.005em;
+      }
+      .feat-table .cell-now { background: rgba(192,58,58,0.03); color: var(--muted); }
+      .feat-table .cell-plan { background: rgba(16,185,129,0.04); }
+      .feat-table .cell-rec { background: rgba(34,211,238,0.04); }
+      .feat-table .yes {
+        font-family: var(--font-mono);
+        font-size: 11px; font-weight: 700;
+        color: var(--success);
+      }
+      .feat-table .partial {
+        font-family: var(--font-mono);
+        font-size: 11px; font-weight: 700;
+        color: var(--warning);
+      }
+      .feat-table .no {
+        font-family: var(--font-mono);
+        font-size: 11px; font-weight: 700;
+        color: var(--muted);
+        opacity: 0.6;
+      }
+      .feat-table .label-mini {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 3px;
+      }
+
+      /* ─── FOOTER ─── */
+      footer.bot {
+        margin-top: 64px; padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono); font-size: 11px;
+        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
+        display: flex; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap;
+      }
+      footer.bot strong { color: var(--text); }
+
+      @media (max-width: 980px) {
+        .wrap { padding: 40px 22px 80px; }
+        .legend-grid, .state-row { grid-template-columns: 1fr; }
+        .feat-table { font-size: 12px; overflow-x: auto; }
+        .feat-table table { min-width: 720px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- ═══════════════ HEADER ═══════════════ -->
+      <header class="top">
+        <div class="crumb">
+          <a href="../../index.html">мокапи</a>
+          <span class="sep">/</span>
+          <a href="../">продукт</a>
+          <span class="sep">/</span>
+          <span>HubChat</span>
+        </div>
+        <h1>AI-асистент, що <em>бачить весь твій день</em></h1>
+        <p class="lede">
+          HubChat уже існує у коді (<code>apps/web/src/core/hub/chat/</code>) —
+          порожній стан з 4 чіпами-підказками, чат-сесії, статус контексту,
+          швидкі дії. Але немає видимості джерел даних, кроків AI і
+          вбудованих дій. Малюю всі 3 стани, щоб видно різницю.
+        </p>
+        <div class="meta-row">
+          <span>У коді<strong>7 файлів</strong></span>
+          <span>Кластер<strong>core/hub/chat/</strong></span>
+          <span>Стан<strong>живий, чекає розширення</strong></span>
+          <span>Джерело<strong>HubChatBody, ChatEmpty, HubChatHeader</strong></span>
+        </div>
+      </header>
+
+      <!-- ═══════════════ LEGEND ═══════════════ -->
+      <div class="legend">
+        <div class="legend-head">
+          <h2>Три стани — як читати</h2>
+          <span class="src">та сама конвенція що й у onboarding / paywall</span>
+        </div>
+        <div class="legend-grid">
+          <div class="legend-cell now">
+            <span class="badge"><span class="dot"></span>Зараз</span>
+            <h3>Те, що вже у коді</h3>
+            <p>
+              Чат з порожнім станом, 4 чіпи-підказки, текстовий ввід, голос,
+              швидкі дії. Контекст-індикатор (готовий / збираю / очікую).
+              Можна спитати — отримаєш відповідь. Але без видимості «звідки воно».
+            </p>
+            <div class="when">джерело: apps/web/src/core/hub/chat/</div>
+          </div>
+          <div class="legend-cell plan">
+            <span class="badge"><span class="dot"></span>Планується</span>
+            <h3>Те, що згадано у планах</h3>
+            <p>
+              У всіх 3 лендингах HubChat — головний показ. Треба зробити
+              видимими: джерела (з якого модуля прийшло число), кроки AI
+              (що він рахував), inline-можливості (записати з чату).
+            </p>
+            <div class="when">джерело: лендинги + cross-module-prompts.md</div>
+          </div>
+          <div class="legend-cell rec">
+            <span class="badge"><span class="dot"></span>Рекомендую</span>
+            <h3>Доповнення поверх плану</h3>
+            <p>
+              Inline-actions з підтвердженням («Записати ₴45?» з кнопками)
+              і крос-модульні наслідки («Бачив тренування — додам білка»).
+              Прориває межу: чат не лише читає, він пише.
+            </p>
+            <div class="when">джерело: цей файл · обговорення з founder-ом</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════ STEP 1 · EMPTY STATE ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">1 · ПОРОЖНІЙ</span>
+          <h2>Як виглядає чат, поки нічого не запитали</h2>
+          <span class="event">подія<strong> chat_session_opened</strong></span>
+        </div>
+        <p class="section-intro">
+          Перший екран чату. У коді вже є <code>ChatEmpty</code> з 4 чіпами під
+          активні модулі. Питання: чи показуємо приклади відповідей одразу,
+          щоб дати уявлення про можливості?
+        </p>
+
+        <div class="state-row">
+
+          <!-- now -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">4 чіпи + текст-заклик</span>
+              <span class="state-ref">ChatEmpty.tsx</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg>
+                    <span class="dot"></span>
+                  </div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="empty-block">
+                    <div class="empty-title">З чого почнемо?</div>
+                    <div class="empty-desc">Запитай те, що цікавить. Або обери приклад.</div>
+                    <div class="empty-chips">
+                      <div class="empty-chip finyk"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12" rx="2"/></svg>Скільки на каву?</div>
+                      <div class="empty-chip fizruk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>Як тренування?</div>
+                      <div class="empty-chip routine"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>Стрік звичок?</div>
+                      <div class="empty-chip nutrition"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>Скільки ккал?</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай Sergeant…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>ChatEmpty.tsx</code> + <code>HubChatHeader.tsx</code></dd>
+                <dt>працює</dt>
+                <dd>4 чіпи фільтруються за активними модулями · префіл composer-у на тап · фокус у поле</dd>
+                <dt>слабке</dt>
+                <dd>чіпи показують <i>питання</i>, не <i>можливості</i> — користувач не знає що ще можна</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- plan -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">Категоріями + приклади відповіді</span>
+              <span class="state-ref">cross-module-prompts.md</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg>
+                    <span class="dot"></span>
+                  </div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="empty-block" style="justify-content:flex-start;padding-top:14px">
+                    <div class="empty-title">Що можу робити</div>
+                    <!-- category groups -->
+                    <div style="width:100%; display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+                      <div>
+                        <div style="font-size:8px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.12em;color:var(--finyk);margin-bottom:3px;text-align:left;padding-left:2px">аналіз</div>
+                        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:5px 7px;font-size:8.5px;text-align:left">«Скільки витратив на каву цього тижня?»</div>
+                      </div>
+                      <div>
+                        <div style="font-size:8px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.12em;color:var(--fizruk);margin-bottom:3px;text-align:left;padding-left:2px">прогнози</div>
+                        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:5px 7px;font-size:8.5px;text-align:left">«Чи був я у дефіциті калорій сьогодні?»</div>
+                      </div>
+                      <div>
+                        <div style="font-size:8px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.12em;color:var(--routine);margin-bottom:3px;text-align:left;padding-left:2px">записи</div>
+                        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:5px 7px;font-size:8.5px;text-align:left">«Додай каву ₴45 за сьогодні»</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="quick-actions">
+                    <div class="quick-chip" style="color:var(--finyk)">💸 каву?</div>
+                    <div class="quick-chip" style="color:var(--fizruk)">💪 тренування</div>
+                    <div class="quick-chip">більше →</div>
+                  </div>
+                  <div class="input-row">
+                    <span class="ph">Запитай чи запиши…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>3 категорії можливостей (аналіз / прогнози / записи) замість 4 рівних чіпів</dd>
+                <dt>чому</dt>
+                <dd>користувач має побачити, що чат — це не лише пошук, а й входить-точка для запису</dd>
+                <dt>джерело</dt>
+                <dd>лендинги показують у hero AI-розмову з фактами — треба, щоб емпті-стан це обіцяв</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- rec -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Контекст-резюме + «що нового»</span>
+              <span class="state-ref">поверх плану</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg>
+                    <span class="dot"></span>
+                  </div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div style="padding:4px 2px 0;text-align:left;font-size:9.5px;color:rgba(245,240,235,0.85);line-height:1.5;">
+                    <b>Доброго ранку, Олексій.</b>
+                  </div>
+                  <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.14);border-radius:10px;padding:8px 10px;font-size:9px;color:rgba(245,240,235,0.8);line-height:1.5;margin-top:4px">
+                    Бачу за останні 24 год:<br/>
+                    · 1 тренування (45 хв) ·
+                    · 4 транзакції на ₴820 ·<br/>
+                    · 1 200 ккал · 3 з 5 звичок
+                  </div>
+                  <div class="sources-row">
+                    <span class="source-chip finyk"><span class="ch-dot"></span>Фінік</span>
+                    <span class="source-chip fizruk"><span class="ch-dot"></span>Фізрук</span>
+                    <span class="source-chip routine"><span class="ch-dot"></span>Рутина</span>
+                    <span class="source-chip nutrition"><span class="ch-dot"></span>Харчув.</span>
+                  </div>
+                  <div style="padding:6px 2px 0;text-align:left;font-size:8.5px;color:rgba(245,240,235,0.5);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em">що далі?</div>
+                  <div class="empty-chips" style="margin-top:0">
+                    <div class="empty-chip">Розбити тиждень</div>
+                    <div class="empty-chip">Запропонувати план</div>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай чи запиши…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>резюме за 24 год замість абстрактного питання — показує що Sergeant справді бачить</dd>
+                <dt>чіпи-джерел</dt>
+                <dd>під резюме — 4 кольорові «звідки воно», натяк на крос-модульний характер AI</dd>
+                <dt>ризик</dt>
+                <dd>для нового користувача без даних резюме порожнє → fallback на план «що можу»</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 2 · DURING RESPONSE ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">2 · ВІДПОВІДЬ</span>
+          <h2>Запитав про каву — що бачить юзер</h2>
+          <span class="event">подія<strong> chat_message_sent → ai_response_streamed</strong></span>
+        </div>
+        <p class="section-intro">
+          Користувач питає «Скільки на каву?». Зараз — просто текстова
+          відповідь з числом. Планується — показати, з якого модуля
+          число і скільки запитів зробив AI. Рекомендую — додати inline
+          кнопки для дій з результатом.
+        </p>
+
+        <div class="state-row">
+
+          <!-- now -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">Текст-відповідь з числом</span>
+              <span class="state-ref">ChatMessage</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar"><svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg><span class="dot"></span></div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="msg user">Скільки витратив на каву цього тижня?</div>
+                  <div class="msg ai">
+                    <b>₴487</b> за 6 чашок. Це <span style="color:var(--routine)">+34%</span> до минулого тижня.
+                    Бюджет «кав'ярні» на травень — ₴800, лишилось ₴313.
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай Sergeant…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>HubChatBody.tsx</code> + <code>ChatMessage.tsx</code></dd>
+                <dt>працює</dt>
+                <dd>текст-стрім · авто-скрол · TTS · скасування у польоті</dd>
+                <dt>слабке</dt>
+                <dd>звідки ₴487? скільки записів проаналізовано? юзер не може перевірити</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- plan -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">Джерела + кроки AI</span>
+              <span class="state-ref">cross-module-prompts</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar"><svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg><span class="dot"></span></div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="msg user">Скільки витратив на каву цього тижня?</div>
+                  <div class="tool-call">
+                    <div class="tool-line"><span class="step done">1</span><span class="name"><b>Фінік</b> · отримав транзакції</span></div>
+                    <div class="meta">6 записів · 13–18 травня</div>
+                    <div class="tool-line" style="margin-top:3px"><span class="step done">2</span><span class="name"><b>Фінік</b> · бюджет «кафе» травень</span></div>
+                    <div class="meta">ціль ₴800 · витрачено ₴487</div>
+                  </div>
+                  <div class="msg ai">
+                    <b>₴487</b> за 6 чашок. Це <span style="color:var(--routine)">+34%</span> до минулого тижня.<br/>
+                    Бюджет «кав'ярні» на травень — ₴800, лишилось <b>₴313</b>.
+                  </div>
+                  <div class="sources-row">
+                    <span class="source-chip finyk"><span class="ch-dot"></span>Фінік · 6 транз.</span>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай Sergeant…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>видимі кроки AI (tool-calls) + чіпи-джерел під відповіддю</dd>
+                <dt>згортається</dt>
+                <dd>tool-calls — за замовчуванням розгорнуті, при наступному питанні згортаються</dd>
+                <dt>чому</dt>
+                <dd>прозорість: юзер бачить, що чат справді читав транзакції, а не вигадав число</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- rec -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Inline-дії з результатом</span>
+              <span class="state-ref">поверх плану</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar"><svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg><span class="dot"></span></div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="msg user">Скільки витратив на каву цього тижня?</div>
+                  <div class="msg ai">
+                    <b>₴487</b> за 6 чашок. <span style="color:var(--routine)">+34%</span> до минулого тижня.<br/>
+                    До бюджету ₴800 лишилось <b>₴313</b>.
+                  </div>
+                  <div class="sources-row">
+                    <span class="source-chip finyk"><span class="ch-dot"></span>Фінік · 6 транз.</span>
+                    <span style="font-family:var(--font-mono);font-size:7.5px;color:rgba(245,240,235,0.4);align-self:center">подивитись →</span>
+                  </div>
+                  <div class="inline-actions">
+                    <span class="inline-action primary">Зменшити ліміт</span>
+                    <span class="inline-action">До розбору</span>
+                  </div>
+                  <div class="msg user">додай каву ₴45 за сьогодні</div>
+                  <div class="msg ai">
+                    Додав <b>«Кава»</b> · <b>₴45</b> · сьогодні 14:23.<br/>
+                    На цьому тижні витрачено вже <b>₴532</b>.
+                  </div>
+                  <div class="inline-actions">
+                    <span class="inline-action">↶ Скасувати</span>
+                    <span class="inline-action">📂 До категорії</span>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай чи запиши…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>inline-дії під AI-повідомленням («Зменшити ліміт», «Скасувати» для щойно створеного запису)</dd>
+                <dt>скасувати</dt>
+                <dd>5-секундне вікно undo для будь-якого AI-створеного запису (узгоджено з undo-pattern.md)</dd>
+                <dt>ризик</dt>
+                <dd>забагато дій — UI стає клікабельним wall-of-buttons; обмежити до 2-3 на повідомлення</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 3 · CROSS-MODULE ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">3 · КРОС-МОДУЛЬНЕ</span>
+          <h2>«Чи був я в дефіциті?» — питання, що ходить між модулями</h2>
+          <span class="event">подія<strong> ai_multi_source_query</strong></span>
+        </div>
+        <p class="section-intro">
+          Найцінніший тип запиту — той, що поєднує дані з 2+ модулів. Зараз
+          AI у коді читає контекст, але користувач не бачить що саме. План —
+          показати багатоджерельний шлях. Рекомендую — після такої відповіді
+          пропонувати дію у сусідньому модулі.
+        </p>
+
+        <div class="state-row">
+
+          <!-- now -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">Текст з 2-х модулів, без джерел</span>
+              <span class="state-ref">useChatSend.ts</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar"><svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg><span class="dot"></span></div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="msg user">Чи був я в дефіциті калорій сьогодні?</div>
+                  <div class="msg ai">
+                    Так. <b>1 840 ккал</b> зʼїв, ціль — <b>2 100</b>.
+                    Тренування спалило 420 ккал. Дефіцит сьогодні ≈ <b>680 ккал</b>.
+                    Можна додати грецький йогурт + банан.
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай Sergeant…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>useChatSend.ts</code> · 18 кб логіки контексту</dd>
+                <dt>працює</dt>
+                <dd>в контекст підтягуються 10 останніх повідомлень + поточний стан 4 модулів</dd>
+                <dt>слабке</dt>
+                <dd>юзер не бачить, що тут використали і харчування, і тренування. Пропозиція їжі — куди вона веде?</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- plan -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">2 джерела видимі</span>
+              <span class="state-ref">cross-module-prompts</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar"><svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg><span class="dot"></span></div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="msg user">Чи був я в дефіциті калорій сьогодні?</div>
+                  <div class="tool-call">
+                    <div class="tool-line"><span class="step done">1</span><span class="name"><b>Харчування</b> · сьогодні</span></div>
+                    <div class="meta">1 840 ккал · ціль 2 100</div>
+                    <div class="tool-line" style="margin-top:3px"><span class="step done">2</span><span class="name"><b>Фізрук</b> · тренування</span></div>
+                    <div class="meta">45 хв · ~420 ккал</div>
+                  </div>
+                  <div class="msg ai">
+                    Так. <b>1 840 ккал</b> зʼїв, ціль — <b>2 100</b>.
+                    Тренування спалило 420 ккал. Дефіцит ≈ <b>680 ккал</b>.
+                    Грецький йогурт + банан закриють.
+                  </div>
+                  <div class="sources-row">
+                    <span class="source-chip nutrition"><span class="ch-dot"></span>Харчування</span>
+                    <span class="source-chip fizruk"><span class="ch-dot"></span>Фізрук</span>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай Sergeant…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>tool-calls для багатоджерельних запитів — обов'язкові, не схлопуються</dd>
+                <dt>порядок</dt>
+                <dd>джерела перераховані у тому самому порядку, що й tool-calls вище</dd>
+                <dt>чому</dt>
+                <dd>«ага, він і їжу, і тренування врахував» — це і є моменти WOW для маркетингу</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- rec -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Перехід у сусідній модуль</span>
+              <span class="state-ref">поверх плану</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="chat-head">
+                  <div class="avatar"><svg viewBox="0 0 24 24"><path d="M12 0l2.5 6L21 8l-5 4.5L17.5 19 12 16l-5.5 3L8 12.5 3 8l6.5-2z"/></svg><span class="dot"></span></div>
+                  <div class="chat-title">Асистент <span class="chevron">▾</span></div>
+                  <div class="new-chat">+ Нова</div>
+                  <div class="close-x">×</div>
+                </div>
+                <div class="chat-body">
+                  <div class="msg user">Чи був я в дефіциті сьогодні?</div>
+                  <div class="msg ai">
+                    Так. Дефіцит ≈ <b>680 ккал</b> (1 840 із 2 100, тренування −420).<br/>
+                    Грецький йогурт + банан закриє.
+                  </div>
+                  <div class="sources-row">
+                    <span class="source-chip nutrition"><span class="ch-dot"></span>Харчування</span>
+                    <span class="source-chip fizruk"><span class="ch-dot"></span>Фізрук</span>
+                  </div>
+                  <div class="inline-actions">
+                    <span class="inline-action primary">＋ Йогурт у харчув.</span>
+                    <span class="inline-action">Інший варіант</span>
+                  </div>
+                  <div style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.16);border-radius:10px;padding:7px 9px;font-size:8.5px;color:rgba(245,240,235,0.75);line-height:1.5;margin-top:4px">
+                    <span style="font-family:var(--font-mono);font-size:7.5px;text-transform:uppercase;color:var(--fizruk);letter-spacing:0.1em">пов'язано</span><br/>
+                    Стрік сну 5 днів · сон впливає на апетит наступного дня. <span style="color:var(--fizruk);text-decoration:underline">Глянути →</span>
+                  </div>
+                </div>
+                <div class="composer">
+                  <div class="input-row">
+                    <span class="ph">Запитай чи запиши…</span>
+                    <div class="mic">🎙</div>
+                    <div class="send">↑</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>«пов'язано» картка — натяк, що сусідній модуль має дотичні дані; deep-link туди</dd>
+                <dt>правило</dt>
+                <dd>максимум 1 «пов'язано» на повідомлення; не нагадувати про той самий модуль 2 рази на день</dd>
+                <dt>ризик</dt>
+                <dd>нагадування в чаті — можуть стати nag-ом; cross-module-prompts.md має anti-nag механіку, дотриматись</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ FEATURES TABLE ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">різниця</span>
+          <h2>5 можливостей × 3 стани</h2>
+          <span class="event">що змінюється у кожному стані</span>
+        </div>
+        <p class="section-intro">
+          Якщо одне речення — Зараз чат відповідає, Планується робить це
+          прозоро, Рекомендую робить це дієвим. Розклад нижче.
+        </p>
+
+        <div class="feat-table">
+          <table>
+            <thead>
+              <tr>
+                <th>можливість</th>
+                <th class="state-now">Зараз</th>
+                <th class="state-plan">Планується</th>
+                <th class="state-rec">Рекомендую</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="feat-name">Текстова відповідь</td>
+                <td class="cell-now"><span class="yes">є</span><div class="label-mini">streaming · TTS · cancel</div></td>
+                <td class="cell-plan"><span class="yes">є</span><div class="label-mini">той самий рендер</div></td>
+                <td class="cell-rec"><span class="yes">є</span><div class="label-mini">той самий рендер</div></td>
+              </tr>
+              <tr>
+                <td class="feat-name">Видимі джерела</td>
+                <td class="cell-now"><span class="no">немає</span><div class="label-mini">контекст збирається, не показується</div></td>
+                <td class="cell-plan"><span class="yes">є</span><div class="label-mini">чіпи під відповіддю · клік → деталі</div></td>
+                <td class="cell-rec"><span class="yes">є</span><div class="label-mini">+ deep-link у модуль-джерело</div></td>
+              </tr>
+              <tr>
+                <td class="feat-name">Кроки AI (tool-calls)</td>
+                <td class="cell-now"><span class="no">немає</span><div class="label-mini">прозорості нуль</div></td>
+                <td class="cell-plan"><span class="yes">є</span><div class="label-mini">розгорнуті · згортаються після наступного питання</div></td>
+                <td class="cell-rec"><span class="yes">є</span><div class="label-mini">той самий блок</div></td>
+              </tr>
+              <tr>
+                <td class="feat-name">Inline-дії з результатом</td>
+                <td class="cell-now"><span class="no">немає</span><div class="label-mini">користувач сам має йти у модуль</div></td>
+                <td class="cell-plan"><span class="partial">обмежено</span><div class="label-mini">тільки запис, без post-actions</div></td>
+                <td class="cell-rec"><span class="yes">є</span><div class="label-mini">скасувати, змінити категорію, до розбору</div></td>
+              </tr>
+              <tr>
+                <td class="feat-name">Підказка про сусідній модуль</td>
+                <td class="cell-now"><span class="no">немає</span><div class="label-mini">кожна сесія — у своїй області</div></td>
+                <td class="cell-plan"><span class="no">немає</span><div class="label-mini">план мовчить про крос-модульні підказки в чаті</div></td>
+                <td class="cell-rec"><span class="yes">є</span><div class="label-mini">«пов'язано» картка · anti-nag з cross-module-prompts.md</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════════ FOOTER ═══════════════ -->
+      <footer class="bot">
+        <span>Sergeant · <strong>product/hubchat</strong> · 2026-05-18</span>
+        <span>Код · <strong>apps/web/src/core/hub/chat/ (7 файлів)</strong></span>
+        <span>Залежить · <strong>cross-module-prompts.md · undo-pattern.md</strong></span>
+      </footer>
+    </div>
+  </body>
+</html>

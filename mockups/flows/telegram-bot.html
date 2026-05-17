@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant · Telegram-бот — сценарій для користувача</title>
+    <link rel="stylesheet" href="../_shared/tokens.css" />
+    <style>
+      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+      a { color: inherit; text-decoration: none; }
+      code,.mono { font-family: var(--font-mono); }
+      .serif { font-family: var(--font-serif); }
+      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+
+      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
+      .crumb a { color: var(--muted); }
+      .crumb .sep { color: var(--subtle); }
+      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; text-wrap: balance; }
+      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
+      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
+      .meta-row { margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
+      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+
+      .legend { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); margin-bottom: 64px; overflow: hidden; }
+      .legend-head { padding: 18px 24px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+      .legend-head h2 { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
+      .legend-head .src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+      .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); }
+      .legend-cell { background: var(--panel); padding: 22px 24px; }
+      .legend-cell .badge { font-family: var(--font-mono); font-weight: 800; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-sm); display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+      .legend-cell .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      .legend-cell.now .badge { color: var(--routine); background: var(--routine-soft); }
+      .legend-cell.plan .badge { color: var(--finyk-dark); background: var(--finyk-soft); }
+      .legend-cell.rec .badge { color: var(--fizruk-dark); background: var(--fizruk-soft); }
+      .legend-cell h3 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
+      .legend-cell p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+      .legend-cell .when { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.1em; }
+
+      section { margin-bottom: 64px; }
+      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
+      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
+      .section-head .event { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; white-space: nowrap; }
+      .section-head .event strong { color: var(--text); }
+      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+
+      /* TG screen */
+      .tg-screen {
+        background: #0f1419;
+        border-radius: 18px;
+        padding: 12px 14px 14px;
+        color: #f5f0eb;
+        position: relative;
+        overflow: hidden;
+        min-height: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .tg-head {
+        display: flex; align-items: center; gap: 9px;
+        padding-bottom: 9px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        margin-bottom: 6px;
+      }
+      .tg-back { font-size: 14px; color: rgba(245,240,235,0.5); }
+      .tg-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--finyk-gradient); display: grid; place-items: center; color: white; font-size: 13px; font-weight: 800; }
+      .tg-name { font-size: 13px; font-weight: 800; }
+      .tg-status { font-size: 9.5px; color: rgba(245,240,235,0.5); }
+      .tg-actions { margin-left: auto; display: flex; gap: 6px; font-size: 14px; color: rgba(245,240,235,0.4); }
+
+      /* TG message */
+      .tg-msgs { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+      .tg-msg {
+        max-width: 86%;
+        padding: 7px 10px;
+        border-radius: 12px;
+        font-size: 10.5px;
+        line-height: 1.45;
+      }
+      .tg-msg.from-bot {
+        align-self: flex-start;
+        background: #1c2733;
+        color: rgba(245,240,235,0.95);
+        border-radius: 12px 12px 12px 4px;
+      }
+      .tg-msg.from-user {
+        align-self: flex-end;
+        background: #2b5278;
+        color: white;
+        border-radius: 12px 12px 4px 12px;
+      }
+      .tg-msg b { color: white; font-weight: 700; }
+      .tg-msg .small-time {
+        font-size: 8px; color: rgba(245,240,235,0.4);
+        margin-top: 2px; text-align: right;
+      }
+      /* TG inline keyboard under message */
+      .tg-kbd { display: grid; align-self: flex-start; gap: 3px; max-width: 86%; margin-top: -2px; }
+      .tg-kbd-row { display: grid; grid-template-columns: repeat(var(--n, 2), 1fr); gap: 3px; }
+      .tg-kbd-btn {
+        background: rgba(46,89,128,0.5);
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: 9.5px;
+        text-align: center;
+        color: #cde;
+        font-weight: 500;
+      }
+      .tg-kbd-btn.webapp::after {
+        content: "↗";
+        margin-left: 4px;
+        font-size: 8px;
+        opacity: 0.6;
+      }
+      .tg-kbd-btn.primary { background: var(--finyk); color: #0a0a09; font-weight: 700; }
+
+      /* Composer at bottom of TG */
+      .tg-composer {
+        margin-top: 6px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        display: flex; align-items: center; gap: 6px;
+      }
+      .tg-attach { font-size: 14px; color: rgba(245,240,235,0.4); }
+      .tg-input { flex: 1; font-size: 9.5px; color: rgba(245,240,235,0.35); padding: 5px 0; }
+      .tg-mic { font-size: 14px; color: rgba(245,240,235,0.5); }
+
+      /* Reply keyboard at bottom */
+      .tg-reply-kbd {
+        margin: 6px -14px -14px;
+        padding: 6px 8px 8px;
+        background: #1a232b;
+        display: grid; grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px;
+      }
+      .tg-reply-btn {
+        background: #2a3744;
+        border-radius: 8px;
+        padding: 7px 4px;
+        font-size: 9px;
+        text-align: center;
+        color: rgba(245,240,235,0.9);
+      }
+
+      /* Steps row */
+      .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
+      .step-card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px 18px;
+        display: flex; flex-direction: column; gap: 12px;
+      }
+      .step-head { display: flex; align-items: center; gap: 10px; }
+      .step-n {
+        font-family: var(--font-mono); font-weight: 800;
+        font-size: 12px; letter-spacing: 0.1em;
+        padding: 3px 9px; background: var(--brand-soft); color: var(--brand);
+        border-radius: var(--r-sm);
+        text-transform: uppercase;
+      }
+      .step-title { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
+      .step-foot {
+        margin-top: 4px; padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-size: 12.5px; color: var(--muted); line-height: 1.55;
+      }
+      .step-foot b { color: var(--text); font-weight: 600; }
+      .step-foot code { font-size: 11px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+      .step-arrow {
+        font-family: var(--font-mono);
+        font-size: 20px;
+        color: var(--subtle);
+        text-align: center;
+        margin: 6px 0;
+      }
+
+      /* state-card variant for "now / plan / rec" comparison */
+      .state-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
+      .state-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; border-left-width: 3px; }
+      .state-card.now { border-left-color: var(--routine); }
+      .state-card.plan { border-left-color: var(--finyk-dark); }
+      .state-card.rec { border-left-color: var(--fizruk-dark); }
+      .state-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .state-tag { font-family: var(--font-mono); font-weight: 800; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-sm); display: inline-flex; gap: 6px; align-items: center; }
+      .state-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .state-card.now .state-tag { color: var(--routine); background: var(--routine-soft); }
+      .state-card.plan .state-tag { color: var(--finyk-dark); background: var(--finyk-soft); }
+      .state-card.rec .state-tag { color: var(--fizruk-dark); background: var(--fizruk-soft); }
+      .state-title { font-size: 13px; font-weight: 800; letter-spacing: -0.005em; }
+      .state-foot { margin-top: 6px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); line-height: 1.5; }
+      .state-foot b { color: var(--text); font-weight: 600; }
+      .state-foot dl { display: grid; gap: 4px; }
+      .state-foot dt { font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 9.5px; color: var(--subtle); }
+
+      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+      footer.bot strong { color: var(--text); }
+
+      @media (max-width: 980px) {
+        .wrap { padding: 40px 22px 80px; }
+        .legend-grid, .steps-row, .state-row { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <header class="top">
+        <div class="crumb">
+          <a href="../index.html">мокапи</a><span class="sep">/</span>
+          <a href="../">потоки</a><span class="sep">/</span>
+          <span>Telegram-бот</span>
+        </div>
+        <h1>Сценарій для нового користувача — <em>4 повідомлення до першого запису</em></h1>
+        <p class="lede">
+          Telegram для Sergeant — не дублікат застосунку, а коротка точка
+          входу. /start веде до webapp, але до того встигає привітати,
+          швидко налаштувати і обіцяти щоденне нагадування. Тут показую
+          основний потік + 3 порівняння як «нагадування на день» виглядає
+          у різних варіантах.
+        </p>
+        <div class="meta-row">
+          <span>Стан<strong>заплановано</strong></span>
+          <span>Бот<strong>@SergeantHub_bot (user-facing)</strong></span>
+          <span>Джерело<strong>telegram-improvements-roadmap.md (адаптовано)</strong></span>
+        </div>
+      </header>
+
+      <div class="legend">
+        <div class="legend-head">
+          <h2>Як читати</h2>
+          <span class="src">2 розділи · сценарій потоку + порівняння станів</span>
+        </div>
+        <div class="legend-grid">
+          <div class="legend-cell now">
+            <span class="badge"><span class="dot"></span>Сценарій</span>
+            <h3>Потік перших 4 повідомлень</h3>
+            <p>
+              4 кадри як user проходить від /start до webapp. Кожен — окремий
+              екран Telegram з повідомленнями і inline-кнопками.
+            </p>
+            <div class="when">розділ нижче — «Потік»</div>
+          </div>
+          <div class="legend-cell plan">
+            <span class="badge"><span class="dot"></span>Тон</span>
+            <h3>3 варіанти щоденного нагадування</h3>
+            <p>
+              Те саме інформаційне ядро (стрік 12 днів) в 3 тонах: сухий,
+              емоційний з emoji, стримана дисципліна. A/B-тестабельне.
+            </p>
+            <div class="when">розділ нижче — «Тон»</div>
+          </div>
+          <div class="legend-cell rec">
+            <span class="badge"><span class="dot"></span>Канонічна форма</span>
+            <h3>«Стримана дисципліна» — обрана</h3>
+            <p>
+              Найближче до brand voice з PR-04 «disciplined-helper».
+              Інші — для post-launch A/B якщо метрика повернення слабка.
+            </p>
+            <div class="when">обґрунтування у foot-секціях</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── STEPS ─── -->
+      <section>
+        <div class="section-head">
+          <span class="sn">ПОТІК</span>
+          <h2>4 повідомлення від /start до першого запису</h2>
+          <span class="event">користувач<strong> новий · з реклами</strong></span>
+        </div>
+        <p class="section-intro">
+          Бот — не дублікат хабу. Він знайомить, питає одне-два питання,
+          відправляє у webapp. Кожен крок — окреме повідомлення з inline-кнопками
+          (швидше за reply-keyboard на mobile).
+        </p>
+
+        <div class="steps-row">
+
+          <!-- Step 1: /start -->
+          <div class="step-card">
+            <div class="step-head">
+              <span class="step-n">/start</span>
+              <span class="step-title">Привітання + 1 питання</span>
+            </div>
+            <div class="tg-screen">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">бот · UA</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-user">/start<div class="small-time">14:23 ✓✓</div></div>
+                <div class="tg-msg from-bot">
+                  <b>Привіт.</b> Я Sergeant — допомагаю тримати фінанси, тіло, звички й харчування в одному місці.<br/><br/>
+                  З чого тобі найкорисніше почати?
+                  <div class="small-time">14:23</div>
+                </div>
+                <div class="tg-kbd" style="--n: 2">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn">💸 Гроші</div><div class="tg-kbd-btn">💪 Тіло</div></div>
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn">● Звички</div><div class="tg-kbd-btn">🥗 Їжа</div></div>
+                  <div class="tg-kbd-row" style="--n: 1"><div class="tg-kbd-btn">Усе разом</div></div>
+                </div>
+              </div>
+              <div class="tg-composer">
+                <span class="tg-attach">📎</span>
+                <span class="tg-input">Написати…</span>
+                <span class="tg-mic">🎙</span>
+              </div>
+            </div>
+            <div class="step-foot">
+              <b>Чому одне питання.</b> Замість 6-step wizard'у — одна inline-кнопка. Бот не онбординг, а вхідні двері.
+            </div>
+          </div>
+
+          <!-- Step 2: choice → quick check -->
+          <div class="step-card">
+            <div class="step-head">
+              <span class="step-n">крок 2</span>
+              <span class="step-title">Підтвердження + ціль на тиждень</span>
+            </div>
+            <div class="tg-screen">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">пише…</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-user">💸 Гроші<div class="small-time">14:24 ✓✓</div></div>
+                <div class="tg-msg from-bot">
+                  Гроші. <b>Найшвидший шлях</b> — додавати витрати одразу як вони стаються. Запитаю одне:
+                  <div class="small-time">14:24</div>
+                </div>
+                <div class="tg-msg from-bot">
+                  <b>Що хочеш через тиждень?</b><br/>
+                  Один варіант. Можна змінити пізніше.
+                  <div class="small-time">14:24</div>
+                </div>
+                <div class="tg-kbd" style="--n: 1">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn">«Розумію куди йдуть гроші»</div></div>
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn">«Тримаю бюджет на каву»</div></div>
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn">«Бачу борги і збереження»</div></div>
+                </div>
+              </div>
+              <div class="tg-composer">
+                <span class="tg-attach">📎</span>
+                <span class="tg-input">Або напиши свою…</span>
+                <span class="tg-mic">🎙</span>
+              </div>
+            </div>
+            <div class="step-foot">
+              <b>Чому ціль конкретна.</b> «Розумію куди йдуть гроші» зрозуміла, не абстрактна. Користувач знатиме коли досяг.
+            </div>
+          </div>
+
+          <!-- Step 3: webapp launch -->
+          <div class="step-card">
+            <div class="step-head">
+              <span class="step-n">крок 3</span>
+              <span class="step-title">Запуск webapp · підготувати дані</span>
+            </div>
+            <div class="tg-screen">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">в мережі</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-user">«Розумію куди йдуть гроші»<div class="small-time">14:25 ✓✓</div></div>
+                <div class="tg-msg from-bot">
+                  Зрозумів. <b>Перша витрата</b> — це початок. У застосунку чекає підготовлений тиждень.
+                  <div class="small-time">14:25</div>
+                </div>
+                <div class="tg-kbd" style="--n: 1">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn primary webapp">Відкрити Sergeant</div></div>
+                </div>
+                <div class="tg-msg from-bot" style="font-size:9.5px; opacity:0.85">
+                  Я нагадуватиму раз на день, ввечері. <b>Без флуду.</b>
+                  Хочеш — вимкни тут: /quiet
+                  <div class="small-time">14:25</div>
+                </div>
+              </div>
+              <div class="tg-composer">
+                <span class="tg-attach">📎</span>
+                <span class="tg-input">Написати…</span>
+                <span class="tg-mic">🎙</span>
+              </div>
+            </div>
+            <div class="step-foot">
+              <b>Чому webapp, не нативний.</b> Нативний застосунок ще не у store. WebApp inside Telegram = одна іконка, без походу в app store.
+            </div>
+          </div>
+
+        </div>
+
+        <div class="step-arrow">↓ той самий потік ↓ день 2 ↓</div>
+
+        <!-- Step 4: standalone reminder -->
+        <div class="steps-row" style="grid-template-columns: 1fr 1fr 1fr">
+
+          <div class="step-card">
+            <div class="step-head">
+              <span class="step-n">день 2</span>
+              <span class="step-title">Вечір · нагадування з даними</span>
+            </div>
+            <div class="tg-screen">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">в мережі</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-bot">
+                  <b>День 2.</b> Сьогодні ти записав <b>2 транзакції</b> (₴ 245). Бачу: вечеря і таксі.<br/><br/>
+                  Стрік: <b>2 дні</b>. Завтра — 3-й.
+                  <div class="small-time">21:30</div>
+                </div>
+                <div class="tg-kbd" style="--n: 2">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn webapp">Розбити день</div><div class="tg-kbd-btn">+ запис</div></div>
+                </div>
+              </div>
+              <div class="tg-composer">
+                <span class="tg-attach">📎</span>
+                <span class="tg-input">Написати…</span>
+                <span class="tg-mic">🎙</span>
+              </div>
+            </div>
+            <div class="step-foot">
+              <b>Тон.</b> Звітово. Без вигуків, без emoji-сюрпризів. Дані сильніші за драму. <br/>
+              <b>Час.</b> 21:30 Київ — обрано бо у цей момент ймовірніше що день уже завершений.
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-head">
+              <span class="step-n">команди</span>
+              <span class="step-title">Що ще може бот</span>
+            </div>
+            <div class="tg-screen">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">в мережі</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-user">/help<div class="small-time">10:14 ✓✓</div></div>
+                <div class="tg-msg from-bot">
+                  <b>4 команди.</b><br/><br/>
+                  <code style="background:rgba(255,255,255,0.06); padding:1px 4px; border-radius:3px">/today</code> — короткий зріз дня<br/>
+                  <code style="background:rgba(255,255,255,0.06); padding:1px 4px; border-radius:3px">/week</code> — підсумок тижня<br/>
+                  <code style="background:rgba(255,255,255,0.06); padding:1px 4px; border-radius:3px">/quiet 1d</code> — без нагадувань на N днів<br/>
+                  <code style="background:rgba(255,255,255,0.06); padding:1px 4px; border-radius:3px">/stop</code> — повністю вимкнути бот
+                  <div class="small-time">10:14</div>
+                </div>
+                <div class="tg-kbd" style="--n: 1">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn primary webapp">Відкрити Sergeant</div></div>
+                </div>
+              </div>
+              <div class="tg-composer">
+                <span class="tg-attach">📎</span>
+                <span class="tg-input">Написати…</span>
+                <span class="tg-mic">🎙</span>
+              </div>
+            </div>
+            <div class="step-foot">
+              <b>Чому 4, не 10.</b> Команди мають вирішувати ключові потреби (звіт, тиша, вихід). Решта — у застосунку, не дублюємо.
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-head">
+              <span class="step-n">помилка</span>
+              <span class="step-title">Стрік розірвано — м'яко</span>
+            </div>
+            <div class="tg-screen">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">в мережі</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-bot">
+                  Вчора без записів.<br/><br/>
+                  Не страшно. <b>Стрік починається з 1.</b>
+                  <div class="small-time">21:30</div>
+                </div>
+                <div class="tg-kbd" style="--n: 2">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn webapp">Записати зараз</div><div class="tg-kbd-btn">Пропустити день</div></div>
+                </div>
+              </div>
+              <div class="tg-composer">
+                <span class="tg-attach">📎</span>
+                <span class="tg-input">Написати…</span>
+                <span class="tg-mic">🎙</span>
+              </div>
+            </div>
+            <div class="step-foot">
+              <b>Не дорікаємо.</b> Стрік не зашейміти користувача. «Не страшно. Починається з 1» — реагуємо як друг, не як годинник.
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ─── TONE COMPARISON ─── -->
+      <section>
+        <div class="section-head">
+          <span class="sn">ТОН</span>
+          <h2>Одна обіцянка, три голоси — для A/B</h2>
+          <span class="event">щоденне нагадування<strong> стрік 12 днів</strong></span>
+        </div>
+        <p class="section-intro">
+          Ядро повідомлення однакове: «ти на 12-му дні стріку, лишилось
+          записати каву і медитацію». Тон різний. Перший варіант — обраний
+          (disciplined-helper). Два інші — для post-launch A/B, якщо
+          метрика повернення слабка.
+        </p>
+
+        <div class="state-row">
+
+          <!-- Disciplined — selected -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Обрано</span>
+              <span class="state-title">Стримана дисципліна</span>
+            </div>
+            <div class="tg-screen" style="min-height:280px">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">21:30</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-bot">
+                  День 12.<br/><br/>
+                  Лишилось: <b>кава</b> і <b>медитація</b>. 3 хв.
+                  <div class="small-time">21:30</div>
+                </div>
+                <div class="tg-kbd" style="--n: 2">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn primary webapp">Дотиснути</div><div class="tg-kbd-btn">Завтра</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>тон</dt>
+                <dd>факт + час · без вигуків · без emoji</dd>
+                <dt>resonance</dt>
+                <dd>той самий голос що у welcome-screen (PR-04 winner): «Менше хаосу. Більше зробленого.»</dd>
+                <dt>ризик</dt>
+                <dd>звучить холодно для широкої mass-market UA — слідкувати за churn-метрикою</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- Warm/emoji -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>A/B варіант</span>
+              <span class="state-title">Тепло · emoji</span>
+            </div>
+            <div class="tg-screen" style="min-height:280px">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">21:30</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-bot">
+                  🔥 <b>12 днів поспіль!</b> Лишилось пів-кроку до повного дня:<br/><br/>
+                  ☕ кава &nbsp;·&nbsp; 🧘 медитація<br/><br/>
+                  Ти на хвилі — не зривайся 💪
+                  <div class="small-time">21:30</div>
+                </div>
+                <div class="tg-kbd" style="--n: 2">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn primary webapp">Гайда!</div><div class="tg-kbd-btn">Завтра</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>тон</dt>
+                <dd>підбадьорлива · emoji · вигуки</dd>
+                <dt>працює для</dt>
+                <dd>широкої UA-аудиторії якщо disciplined вийде холодним</dd>
+                <dt>ризик</dt>
+                <dd>конфлікт з brand voice; може набриднути за тиждень — fatigue-ризик вищий</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- Pure data -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>A/B варіант</span>
+              <span class="state-title">Чистий звіт</span>
+            </div>
+            <div class="tg-screen" style="min-height:280px">
+              <div class="tg-head">
+                <span class="tg-back">←</span>
+                <div class="tg-avatar">S</div>
+                <div>
+                  <div class="tg-name">Sergeant</div>
+                  <div class="tg-status">21:30</div>
+                </div>
+                <div class="tg-actions">⋯</div>
+              </div>
+              <div class="tg-msgs">
+                <div class="tg-msg from-bot" style="font-family:var(--font-mono); font-size:9.5px; line-height:1.65">
+                  <b style="font-family:var(--font-sans)">Сьогодні</b><br/>
+                  Стрік: 12 / 13<br/>
+                  Звички: 3 / 5<br/>
+                  Лишилось: кава, медитація<br/>
+                  Час: ~3 хв
+                  <div class="small-time" style="font-family:var(--font-mono)">21:30</div>
+                </div>
+                <div class="tg-kbd" style="--n: 2">
+                  <div class="tg-kbd-row"><div class="tg-kbd-btn primary webapp">→ застосунок</div><div class="tg-kbd-btn">/quiet 1d</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>тон</dt>
+                <dd>табличний · моноширинний · нуль емоції</dd>
+                <dt>працює для</dt>
+                <dd>tech-aware niche (DOU/HN cohort) · users що йдуть від «тренувань ради тренувань»</dd>
+                <dt>ризик</dt>
+                <dd>надто холодно для широкої mass-market UA · може звучати як cron-job</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <footer class="bot">
+        <span>Sergeant · <strong>flows/telegram-bot</strong> · 2026-05-18</span>
+        <span>Джерело · <strong>telegram-improvements-roadmap.md (адаптовано · user-facing)</strong></span>
+        <span>Зауваження · <strong>OpenClaw bot (DM founder) — окремий мокап</strong></span>
+      </footer>
+    </div>
+  </body>
+</html>

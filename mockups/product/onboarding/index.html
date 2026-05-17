@@ -1,0 +1,2018 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant · FTUX — первинне знайомство · 6 кроків</title>
+    <link rel="stylesheet" href="../../_shared/tokens.css" />
+    <style>
+      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html,body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a { color: inherit; text-decoration: none; }
+      code,.mono { font-family: var(--font-mono); }
+      .serif { font-family: var(--font-serif); }
+
+      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+
+      /* ─── HEADER ─── */
+      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+      .crumb {
+        font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand);
+        margin-bottom: 14px; display: flex; gap: 8px; align-items: center;
+      }
+      .crumb a { color: var(--muted); }
+      .crumb .sep { color: var(--subtle); }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px); font-weight: 800;
+        letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px;
+        max-width: 920px; text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6;
+      }
+      .meta-row {
+        margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap;
+        font-family: var(--font-mono); font-size: 11px; color: var(--subtle);
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+
+      /* ─── LEGEND ─── */
+      .legend {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl); margin-bottom: 64px; overflow: hidden;
+      }
+      .legend-head {
+        padding: 18px 24px; background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: baseline;
+        flex-wrap: wrap; gap: 12px;
+      }
+      .legend-head h2 { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
+      .legend-head .src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+      .legend-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 1px; background: var(--border);
+      }
+      .legend-cell { background: var(--panel); padding: 22px 24px; }
+      .legend-cell .badge {
+        font-family: var(--font-mono); font-weight: 800; font-size: 11px;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        padding: 4px 10px; border-radius: var(--r-sm);
+        display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
+      }
+      .legend-cell .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      .legend-cell.now .badge { color: var(--routine); background: var(--routine-soft); }
+      .legend-cell.plan .badge { color: var(--finyk-dark); background: var(--finyk-soft); }
+      .legend-cell.rec .badge { color: var(--fizruk-dark); background: var(--fizruk-soft); }
+      .legend-cell h3 {
+        font-size: 16px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px;
+      }
+      .legend-cell p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+      .legend-cell .when {
+        margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);
+        font-family: var(--font-mono); font-size: 11px; color: var(--subtle);
+        text-transform: uppercase; letter-spacing: 0.1em;
+      }
+
+      /* ─── SECTION ─── */
+      section { margin-bottom: 72px; scroll-margin-top: 32px; }
+      .section-head {
+        display: flex; align-items: baseline; gap: 16px;
+        margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono); font-size: 12px; font-weight: 800;
+        letter-spacing: 0.1em; color: var(--brand);
+        padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm);
+      }
+      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
+      .section-head .event {
+        margin-left: auto; font-family: var(--font-mono); font-size: 11px;
+        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      .section-head .event strong { color: var(--text); }
+      .section-intro {
+        color: var(--muted); font-size: 15px; line-height: 1.6;
+        max-width: 740px; margin-bottom: 24px;
+      }
+
+      /* ─── STATE ROW (3 phones side-by-side) ─── */
+      .state-row {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .state-card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px 18px;
+        display: flex; flex-direction: column; gap: 14px;
+        border-left-width: 3px;
+        position: relative;
+      }
+      .state-card.now { border-left-color: var(--routine); }
+      .state-card.plan { border-left-color: var(--finyk-dark); }
+      .state-card.rec { border-left-color: var(--fizruk-dark); }
+      .state-head {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      }
+      .state-tag {
+        font-family: var(--font-mono); font-weight: 800; font-size: 10px;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        padding: 3px 8px; border-radius: var(--r-sm);
+        display: inline-flex; gap: 6px; align-items: center;
+      }
+      .state-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .state-card.now .state-tag { color: var(--routine); background: var(--routine-soft); }
+      .state-card.plan .state-tag { color: var(--finyk-dark); background: var(--finyk-soft); }
+      .state-card.rec .state-tag { color: var(--fizruk-dark); background: var(--fizruk-soft); }
+      .state-title {
+        font-size: 13px; font-weight: 800; letter-spacing: -0.005em;
+      }
+      .state-ref {
+        margin-left: auto;
+        font-family: var(--font-mono); font-size: 10px;
+        color: var(--subtle); white-space: nowrap;
+      }
+
+      /* ─── PHONE ─── */
+      .phone {
+        width: 100%; max-width: 252px;
+        margin: 0 auto;
+        aspect-ratio: 9 / 19.5;
+        background: #1a1614;
+        border: 6px solid #0a0a09;
+        border-radius: 34px;
+        box-shadow: 0 12px 28px rgba(28,25,23,0.16);
+        position: relative;
+        overflow: hidden;
+        color: #f5f0eb;
+      }
+      .phone-island {
+        position: absolute; top: 8px; left: 50%;
+        transform: translateX(-50%);
+        width: 32%; height: 16px;
+        background: #0a0a09; border-radius: 999px;
+        z-index: 5;
+      }
+      .phone-screen {
+        position: absolute; inset: 0;
+        padding: 30px 14px 14px;
+        display: flex; flex-direction: column;
+        overflow: hidden;
+      }
+      .phone-statusbar {
+        display: flex; justify-content: space-between;
+        font-size: 8px; font-weight: 700;
+        color: rgba(245,240,235,0.7); font-family: var(--font-mono);
+        margin-bottom: 10px; padding: 0 4px;
+      }
+      .phone-content {
+        flex: 1; display: flex; flex-direction: column;
+        min-height: 0;
+      }
+
+      /* ─── PHONE CONTENT BLOCKS ─── */
+      .brand-row {
+        display: flex; align-items: center; gap: 6px;
+        margin-bottom: 14px;
+      }
+      .brand-mark {
+        width: 22px; height: 22px;
+        background: var(--finyk-gradient);
+        border-radius: 6px;
+        display: grid; place-items: center;
+        color: white; font-size: 11px; font-weight: 800; letter-spacing: -0.02em;
+      }
+      .brand-name {
+        font-size: 11px; font-weight: 800; letter-spacing: -0.01em;
+      }
+      .brand-meta {
+        margin-left: auto; font-size: 8px; font-family: var(--font-mono);
+        color: rgba(245,240,235,0.45);
+      }
+      .hero-kicker {
+        font-size: 8.5px; font-family: var(--font-mono);
+        font-weight: 700; letter-spacing: 0.12em;
+        text-transform: uppercase; color: var(--finyk);
+        margin-bottom: 8px;
+      }
+      .hero-h1 {
+        font-size: 17px; font-weight: 800; line-height: 1.1;
+        letter-spacing: -0.018em; margin-bottom: 8px;
+        text-wrap: balance;
+      }
+      .hero-h1 b {
+        background: linear-gradient(120deg, var(--finyk) 0%, var(--fizruk) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 800;
+      }
+      .hero-sub {
+        font-size: 10px; color: rgba(245,240,235,0.7);
+        line-height: 1.45; margin-bottom: 14px;
+      }
+      .hero-cta {
+        font-size: 10.5px; font-weight: 700;
+        padding: 8px 12px; border-radius: var(--r-md);
+        text-align: center; margin-bottom: 7px;
+      }
+      .hero-cta.primary {
+        background: #f5f0eb; color: #1a1614;
+      }
+      .hero-cta.primary.brand {
+        background: var(--finyk); color: #0a0a09;
+      }
+      .hero-cta.ghost {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.18);
+        color: rgba(245,240,235,0.9);
+      }
+      .hero-trust {
+        margin-top: 12px;
+        display: flex; flex-wrap: wrap; gap: 8px;
+        font-size: 8px; font-family: var(--font-mono);
+        color: rgba(245,240,235,0.45);
+      }
+      .hero-trust span { display: inline-flex; align-items: center; gap: 4px; }
+      .hero-trust .ok { color: var(--finyk); font-size: 9px; }
+
+      /* peek backdrop */
+      .peek-backdrop {
+        margin-top: auto;
+        background: rgba(255,255,255,0.03);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        margin: 12px -14px 0;
+        padding: 10px 14px 0;
+        font-size: 8px;
+        color: rgba(245,240,235,0.35);
+        font-family: var(--font-mono);
+        text-align: center;
+      }
+      .peek-tiles {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 4px; margin-top: 6px;
+      }
+      .peek-tile {
+        background: rgba(255,255,255,0.04);
+        border-radius: 3px; aspect-ratio: 1;
+      }
+
+      /* ─── STEP 2 — VIBE PICK ─── */
+      .step-title {
+        font-size: 12px; font-weight: 800; letter-spacing: -0.005em;
+        margin-bottom: 5px;
+      }
+      .step-q {
+        font-size: 9px; color: rgba(245,240,235,0.6);
+        line-height: 1.45; margin-bottom: 14px;
+      }
+      .vibe-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: var(--r-md);
+        padding: 9px 10px;
+        margin-bottom: 6px;
+        display: flex; gap: 8px; align-items: center;
+      }
+      .vibe-card.picked {
+        background: rgba(16,185,129,0.14);
+        border-color: var(--finyk);
+      }
+      .vibe-emoji { font-size: 13px; }
+      .vibe-body { flex: 1; }
+      .vibe-name { font-size: 10px; font-weight: 700; }
+      .vibe-desc { font-size: 8.5px; color: rgba(245,240,235,0.5); }
+      .vibe-check {
+        width: 14px; height: 14px; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+      .vibe-card.picked .vibe-check {
+        background: var(--finyk);
+        border-color: var(--finyk);
+      }
+
+      /* outcome question */
+      .outcome-q {
+        background: rgba(255,255,255,0.04);
+        border-radius: var(--r-md); padding: 10px;
+        margin-bottom: 10px;
+      }
+      .outcome-q .label {
+        font-size: 9px; color: rgba(245,240,235,0.55);
+        margin-bottom: 6px;
+      }
+      .outcome-q .val {
+        font-size: 12px; font-weight: 700;
+      }
+      .outcome-q .options {
+        display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+      }
+      .outcome-pill {
+        font-size: 8.5px; font-weight: 600;
+        padding: 4px 7px;
+        border-radius: var(--r-full);
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+      }
+      .outcome-pill.picked {
+        background: var(--finyk); color: #0a0a09;
+        border-color: var(--finyk);
+      }
+
+      /* ─── STEP 3 — FIRST ACTION ─── */
+      .module-pick {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: var(--r-md);
+        padding: 10px;
+        margin-bottom: 6px;
+        display: flex; gap: 10px; align-items: center;
+      }
+      .module-pick .swatch {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        display: grid; place-items: center;
+        font-size: 13px;
+        color: white;
+      }
+      .module-pick.finyk .swatch { background: var(--finyk); }
+      .module-pick.fizruk .swatch { background: var(--fizruk); }
+      .module-pick.routine .swatch { background: var(--routine); }
+      .module-pick.nutrition .swatch { background: var(--nutrition); }
+      .module-pick .body { flex: 1; }
+      .module-pick .name {
+        font-size: 10.5px; font-weight: 800;
+      }
+      .module-pick .reason {
+        font-size: 8.5px; color: rgba(245,240,235,0.55);
+        font-family: var(--font-mono);
+        margin-top: 1px;
+      }
+      .module-pick.match::after {
+        content: "✓";
+        color: var(--finyk);
+        font-size: 12px; font-weight: 800;
+      }
+      .module-pick.recommended {
+        border-color: var(--finyk);
+        background: rgba(16,185,129,0.08);
+      }
+      .recommended-tag {
+        position: absolute;
+        top: -6px; right: 8px;
+        font-size: 7.5px;
+        font-family: var(--font-mono);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 1px 5px;
+        background: var(--finyk); color: #0a0a09;
+        border-radius: 3px;
+      }
+      .pos-rel { position: relative; }
+
+      /* ─── STEP 4 — PRESET ─── */
+      .sheet {
+        background: #221e1b;
+        margin: 0 -14px -14px;
+        padding: 14px 14px 12px;
+        border-radius: 16px 16px 0 0;
+        border-top: 1px solid rgba(255,255,255,0.08);
+      }
+      .sheet-handle {
+        width: 32px; height: 4px;
+        background: rgba(255,255,255,0.18);
+        border-radius: 2px; margin: 0 auto 10px;
+      }
+      .sheet-title {
+        font-size: 12px; font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .sheet-sub {
+        font-size: 9.5px; color: rgba(245,240,235,0.55);
+        margin-bottom: 12px;
+      }
+      .preset-list { display: flex; flex-direction: column; gap: 5px; }
+      .preset-row {
+        display: flex; justify-content: space-between;
+        padding: 8px 10px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 7px;
+        font-size: 10px;
+      }
+      .preset-row .l { display: flex; align-items: center; gap: 8px; }
+      .preset-row .l .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+      }
+      .preset-row .val {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        color: rgba(245,240,235,0.85);
+      }
+      .preset-actions {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 6px; margin-top: 12px;
+      }
+      .preset-btn {
+        font-size: 10px; font-weight: 700;
+        padding: 7px;
+        border-radius: 6px;
+        text-align: center;
+      }
+      .preset-btn.primary { background: var(--finyk); color: #0a0a09; }
+      .preset-btn.ghost {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.18);
+        color: rgba(245,240,235,0.85);
+      }
+      .preset-skip {
+        margin-top: 8px;
+        font-size: 9px;
+        text-align: center;
+        color: rgba(245,240,235,0.4);
+        text-decoration: underline;
+      }
+
+      /* ─── STEP 5 — DASHBOARD ─── */
+      .dashboard-greeting {
+        font-size: 10px;
+        color: rgba(245,240,235,0.55);
+        margin-bottom: 4px;
+      }
+      .dashboard-h {
+        font-size: 14px; font-weight: 800; letter-spacing: -0.01em;
+        margin-bottom: 14px;
+      }
+
+      /* ModuleChecklist + OnboardingProgress (Зараз) */
+      .progress-bar {
+        background: rgba(255,255,255,0.06);
+        border-radius: 999px;
+        height: 4px;
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+      .progress-bar .fill {
+        background: var(--finyk);
+        height: 100%; width: 0%;
+      }
+      .checklist-card {
+        background: rgba(255,255,255,0.04);
+        border-radius: 8px;
+        padding: 9px;
+        margin-bottom: 10px;
+      }
+      .checklist-card .title {
+        font-size: 9.5px; font-weight: 700;
+        margin-bottom: 6px;
+        color: rgba(245,240,235,0.7);
+      }
+      .check-line {
+        display: flex; align-items: center; gap: 7px;
+        padding: 4px 0;
+        font-size: 9.5px;
+        color: rgba(245,240,235,0.5);
+      }
+      .check-line .checkbox {
+        width: 12px; height: 12px; border-radius: 3px;
+        border: 1.2px solid rgba(255,255,255,0.18);
+      }
+
+      /* Bento 2x2 */
+      .bento {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      .bento-tile {
+        aspect-ratio: 1;
+        background: rgba(255,255,255,0.04);
+        border-radius: 8px;
+        padding: 8px;
+        display: flex; flex-direction: column;
+        justify-content: space-between;
+      }
+      .bento-tile .name {
+        font-size: 9px; font-weight: 700;
+        color: rgba(245,240,235,0.55);
+      }
+      .bento-tile.empty .val {
+        font-size: 8.5px; font-family: var(--font-mono);
+        color: rgba(245,240,235,0.25);
+      }
+      .bento-tile.finyk .name { color: var(--finyk); }
+      .bento-tile.fizruk .name { color: var(--fizruk); }
+      .bento-tile.routine .name { color: var(--routine); }
+      .bento-tile.nutrition .name { color: var(--nutrition); }
+      .bento-tile.primary {
+        border: 1px solid rgba(16,185,129,0.3);
+        background: rgba(16,185,129,0.08);
+      }
+      .bento-tile .stat {
+        font-size: 14px; font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+      }
+
+      /* HeroPromiseCard (Планується) */
+      .promise-card {
+        background: rgba(16,185,129,0.06);
+        border: 1px solid rgba(16,185,129,0.18);
+        border-radius: 12px;
+        padding: 11px;
+        margin-bottom: 10px;
+      }
+      .promise-card.routine {
+        background: rgba(249,112,102,0.06);
+        border-color: rgba(249,112,102,0.18);
+      }
+      .promise-card.fizruk {
+        background: rgba(34,211,238,0.06);
+        border-color: rgba(34,211,238,0.18);
+      }
+      .promise-card.nutrition {
+        background: rgba(146,204,23,0.06);
+        border-color: rgba(146,204,23,0.18);
+      }
+      .promise-h {
+        font-size: 12px; font-weight: 800;
+        margin-bottom: 4px;
+        letter-spacing: -0.01em;
+      }
+      .promise-visual {
+        background: rgba(255,255,255,0.04);
+        border-radius: 6px;
+        height: 50px;
+        margin: 8px 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .promise-visual .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px; padding: 6px 8px;
+        height: 100%;
+      }
+      .promise-visual .cal-cell {
+        background: rgba(255,255,255,0.04);
+        border-radius: 2px;
+      }
+      .promise-visual .cal-cell.hi {
+        background: var(--routine);
+      }
+      .promise-visual .line-chart {
+        position: absolute; inset: 0;
+        padding: 8px;
+      }
+      .promise-visual .line-chart svg {
+        width: 100%; height: 100%;
+      }
+      .promise-body {
+        font-size: 9px;
+        color: rgba(245,240,235,0.6);
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+      .promise-cta {
+        background: rgba(255,255,255,0.06);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 9.5px;
+        font-weight: 700;
+        display: flex; justify-content: space-between;
+        align-items: center;
+        color: rgba(245,240,235,0.9);
+      }
+      .promise-cta .arr { opacity: 0.5; }
+
+      /* HeroOutcomeCard (post-entry) */
+      .outcome-card {
+        background: rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        position: relative;
+      }
+      .outcome-card .stat-big {
+        font-size: 22px; font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .outcome-card.routine .stat-big { color: var(--routine); }
+      .outcome-card.finyk .stat-big { color: var(--finyk); }
+      .outcome-card .stat-label {
+        font-size: 9.5px;
+        color: rgba(245,240,235,0.65);
+      }
+      .outcome-card .sub-stat {
+        margin-top: 8px; padding-top: 8px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        font-size: 9px; font-family: var(--font-mono);
+        color: rgba(245,240,235,0.5);
+        display: flex; justify-content: space-between;
+      }
+
+      /* ─── STEP 6 — CELEBRATION ─── */
+      .celebration {
+        flex: 1;
+        display: flex; flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        gap: 12px;
+        padding: 0 8px;
+      }
+      .celebration .confetti-mark {
+        font-size: 36px;
+        line-height: 1;
+      }
+      .celebration .cel-h {
+        font-size: 14px; font-weight: 800;
+        letter-spacing: -0.01em;
+        text-wrap: balance;
+      }
+      .celebration .cel-sub {
+        font-size: 10px; color: rgba(245,240,235,0.65);
+        line-height: 1.5;
+      }
+      .celebration .next-tip {
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 9px 10px;
+        font-size: 9px;
+        color: rgba(245,240,235,0.7);
+        text-align: left;
+        margin-top: 4px;
+      }
+      .celebration .next-tip .what {
+        font-size: 8px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(245,240,235,0.4);
+        margin-bottom: 3px;
+      }
+      .celebration .cel-cta {
+        font-size: 11px; font-weight: 700;
+        padding: 9px 14px;
+        border-radius: 8px;
+        background: var(--routine);
+        color: #0a0a09;
+      }
+      .celebration .streak-preview {
+        margin-top: 6px;
+        background: rgba(249,112,102,0.08);
+        border: 1px solid rgba(249,112,102,0.2);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 9px;
+        color: rgba(245,240,235,0.7);
+        text-align: left;
+      }
+      .streak-flame {
+        display: inline-block; margin-right: 4px;
+      }
+
+      /* ─── STATE FOOTER ─── */
+      .state-foot {
+        margin-top: 6px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .state-foot b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .state-foot code {
+        font-size: 10px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .state-foot dl { display: grid; gap: 4px; }
+      .state-foot dt {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 9.5px;
+        color: var(--subtle);
+      }
+
+      /* ─── FUNNEL ─── */
+      .funnel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 28px;
+      }
+      .funnel-head {
+        display: flex; justify-content: space-between; align-items: baseline;
+        margin-bottom: 18px;
+        flex-wrap: wrap; gap: 12px;
+      }
+      .funnel-head h3 {
+        font-size: 18px; font-weight: 800; letter-spacing: -0.015em;
+      }
+      .funnel-head .meta {
+        font-family: var(--font-mono); font-size: 11px;
+        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .funnel-steps {
+        display: grid; grid-template-columns: repeat(8, 1fr);
+        gap: 2px;
+      }
+      .funnel-step {
+        background: var(--surface);
+        padding: 14px 12px;
+        position: relative;
+        display: flex; flex-direction: column;
+        min-height: 100px;
+      }
+      .funnel-step:first-child { border-radius: var(--r-md) 0 0 var(--r-md); }
+      .funnel-step:last-child { border-radius: 0 var(--r-md) var(--r-md) 0; }
+      .funnel-step .n {
+        font-family: var(--font-mono);
+        font-size: 9px; font-weight: 800;
+        color: var(--subtle);
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+      .funnel-step .ev {
+        font-family: var(--font-mono);
+        font-size: 11px; font-weight: 700;
+        color: var(--text);
+        line-height: 1.3;
+        margin-bottom: auto;
+        word-break: break-word;
+      }
+      .funnel-step .where {
+        margin-top: 8px;
+        padding-top: 6px;
+        border-top: 1px dashed var(--border);
+        font-size: 10px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+      .funnel-step .where b { color: var(--text); font-weight: 600; }
+      .funnel-step.value { background: var(--brand-soft); }
+      .funnel-step.value .ev { color: var(--brand); }
+
+      /* SLO row */
+      .slo-row {
+        margin-top: 22px;
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 1px; background: var(--border);
+        border: 1px solid var(--border); border-radius: var(--r-md);
+        overflow: hidden;
+      }
+      .slo-cell {
+        background: var(--panel); padding: 16px 18px;
+      }
+      .slo-cell .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--subtle);
+        margin-bottom: 6px;
+      }
+      .slo-cell .val {
+        font-family: var(--font-mono);
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--text);
+        margin-bottom: 2px;
+      }
+      .slo-cell .extra {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+
+      /* ─── FOOTER ─── */
+      footer.bot {
+        margin-top: 64px; padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono); font-size: 11px;
+        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
+        display: flex; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap;
+      }
+      footer.bot strong { color: var(--text); }
+
+      @media (max-width: 980px) {
+        .wrap { padding: 40px 22px 80px; }
+        .legend-grid, .state-row, .slo-row { grid-template-columns: 1fr; }
+        .funnel-steps { grid-template-columns: repeat(2, 1fr); }
+        .funnel-step { border-radius: var(--r-md) !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- ═══════════════ HEADER ═══════════════ -->
+      <header class="top">
+        <div class="crumb">
+          <a href="../../index.html">мокапи</a>
+          <span class="sep">/</span>
+          <a href="../">продукт</a>
+          <span class="sep">/</span>
+          <span>первинне знайомство</span>
+        </div>
+        <h1>6 кроків першого знайомства, <em>з трьох ракурсів</em></h1>
+        <p class="lede">
+          Це історія від першого запуску застосунку до моменту коли користувач
+          зробив свій перший запис у модулі. Кожен крок показано у трьох станах:
+          що є зараз у продукті, що додає план з документів, і що пропоную я.
+          Джерело — <code>docs/launch/product-os/ftux-master-tracker.md</code>
+          плюс реальні файли з <code>apps/web/src/core/onboarding/</code>.
+        </p>
+        <div class="meta-row">
+          <span>Кроків<strong>6</strong></span>
+          <span>Станів на крок<strong>3</strong></span>
+          <span>Артбордів<strong>18</strong></span>
+          <span>Цільова конверсія<strong>≥ 30% за 24 год</strong></span>
+        </div>
+      </header>
+
+      <!-- ═══════════════ LEGEND ═══════════════ -->
+      <div class="legend">
+        <div class="legend-head">
+          <h2>Як читати: три стани одного кроку</h2>
+          <span class="src">конвенція з handoff-package · оновлено 2026-05-17</span>
+        </div>
+        <div class="legend-grid">
+          <div class="legend-cell now">
+            <span class="badge"><span class="dot"></span>Зараз</span>
+            <h3>Те, що вже у продукті</h3>
+            <p>
+              Реальний код з <code>apps/web/src/core/onboarding/</code> станом
+              на main. Те, що зараз бачить користувач, який зайшов у beta.
+              Може бути слабке або переходовим — головне що це правда.
+            </p>
+            <div class="when">джерело: код + PR-и, що в main</div>
+          </div>
+          <div class="legend-cell plan">
+            <span class="badge"><span class="dot"></span>Планується</span>
+            <h3>Те, що описано у планах</h3>
+            <p>
+              З документа <code>ftux-master-tracker.md</code> — PR-09
+              outcome-card, PR-12 orchestrator, PR-13 goal-first wizard,
+              PR-20 paywall sheet. Підтверджено founder-ом, чекає реалізації.
+            </p>
+            <div class="when">джерело: docs/launch/product-os/</div>
+          </div>
+          <div class="legend-cell rec">
+            <span class="badge"><span class="dot"></span>Рекомендую</span>
+            <h3>Те, що я пропоную поверх</h3>
+            <p>
+              Мої доповнення — не у планах, не у коді. Дрібні штрихи поверх
+              плану: trust-стрічка, persona-варіанти, мікро-CTA «спробувати на
+              прикладі». Кожне з обґрунтуванням.
+            </p>
+            <div class="when">джерело: цей файл · обговорення з founder-ом</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════ STEP 1 ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">КРОК 1</span>
+          <h2>Привітання — обкладинка з обіцянкою</h2>
+          <span class="event">подія<strong> onboarding_started</strong></span>
+        </div>
+        <p class="section-intro">
+          Перше, що бачить людина. Сюди ж лягає випадковий A/B варіант
+          заголовка (4-варіантний експеримент). Тон — «спокійна влада,
+          без пафосу». Дві дії: головна та «подивитись приклад».
+        </p>
+
+        <div class="state-row">
+
+          <!-- STEP 1 · ЗАРАЗ -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">Welcome v2 · 4 варіанти A/B</span>
+              <span class="state-ref">PR-04 #1944</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">v2</span>
+                  </div>
+                  <div class="hero-h1">Менше хаосу. Більше зробленого.</div>
+                  <div class="hero-sub">Один хаб для фінансів, тренувань, звичок і харчування. Працює офлайн, без зайвої реклами.</div>
+                  <div class="hero-cta primary">Зайти в стрій</div>
+                  <div class="hero-cta ghost">Подивитись приклад</div>
+                  <div class="peek-backdrop">
+                    приклад інтерфейсу (демо)
+                    <div class="peek-tiles">
+                      <div class="peek-tile"></div>
+                      <div class="peek-tile"></div>
+                      <div class="peek-tile"></div>
+                      <div class="peek-tile"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>WelcomeScreen.tsx</code> · <code>OnboardingWizard.tsx:237</code></dd>
+                <dt>працює</dt>
+                <dd>4 варіанти заголовка (40/20/20/20) · demo-режим як друга дія (PR-05) · banner встановлення PWA (PR-07)</dd>
+                <dt>слабке</dt>
+                <dd>приклад під обкладинкою без disclaimer-у був mislead — закрито у PR #1610</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 1 · ПЛАНУЄТЬСЯ -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">Goal-first майстер</span>
+              <span class="state-ref">PR-13 · S5.1</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">beta</span>
+                  </div>
+                  <div class="hero-kicker">Крок 1 з 4</div>
+                  <div class="hero-h1">З чого <b>почнемо</b>?</div>
+                  <div class="hero-sub">Спершу — що ти хочеш покращити. Усе інше підлаштуємо під цю мету.</div>
+                  <div class="outcome-q">
+                    <div class="label">Я хочу, щоб за тиждень я</div>
+                    <div class="val">…</div>
+                    <div class="options">
+                      <span class="outcome-pill">розумів куди йдуть гроші</span>
+                      <span class="outcome-pill">не пропускав тренування</span>
+                      <span class="outcome-pill">мав ритм у дні</span>
+                      <span class="outcome-pill">бачив що з'їв</span>
+                    </div>
+                  </div>
+                  <div class="hero-cta primary brand">Далі</div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>сценарій починається з outcome, заголовок — наслідок вибору</dd>
+                <dt>чому</dt>
+                <dd>гіпотеза: D7 retention для goal-first arm ≥ +5pp до поточного</dd>
+                <dt>гейт</dt>
+                <dd>A/B на feature-flag, рішення після 14 днів живих даних</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 1 · РЕКОМЕНДУЮ -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Trust-стрічка + 3 модулі-прев'ю</span>
+              <span class="state-ref">поверх PR-13</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">beta · 423/500</span>
+                  </div>
+                  <div class="hero-h1">Менше хаосу. <b>Більше зробленого.</b></div>
+                  <div class="hero-sub">Один застосунок для грошей, тіла, звичок і їжі. Без cloud-у за замовчуванням.</div>
+                  <div class="hero-cta primary brand">Почати — 1 хв</div>
+                  <div class="hero-cta ghost">Подивитись на прикладі</div>
+                  <div class="hero-trust">
+                    <span><span class="ok">✓</span>без оплати</span>
+                    <span><span class="ok">✓</span>без емейлів</span>
+                    <span><span class="ok">✓</span>офлайн</span>
+                  </div>
+                  <div class="peek-backdrop" style="margin-top:auto">
+                    <div style="margin-bottom:4px">що буде далі</div>
+                    <div class="peek-tiles">
+                      <div class="peek-tile" style="background:rgba(16,185,129,0.18)"></div>
+                      <div class="peek-tile" style="background:rgba(34,211,238,0.18)"></div>
+                      <div class="peek-tile" style="background:rgba(249,112,102,0.18)"></div>
+                      <div class="peek-tile" style="background:rgba(146,204,23,0.18)"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>trust-стрічка під CTA (3 короткі «ні»: оплата, емейли, cloud) · 4 модулі-прев'ю забарвлені у свій колір</dd>
+                <dt>чому</dt>
+                <dd>privacy-claim — ключова differentiator; нагадати про неї на першому екрані, не глибоко у налаштуваннях</dd>
+                <dt>ризик</dt>
+                <dd>копія «без емейлів» не повна правда — є transactional листи. треба переформулювати у «без розсилок»</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 2 ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">КРОК 2</span>
+          <h2>Налаштування під себе — настрій і цілі</h2>
+          <span class="event">подія<strong> vibe_picked</strong></span>
+        </div>
+        <p class="section-intro">
+          Користувач каже, який він зараз і до чого йде. На основі цього
+          застосунок розставляє пріоритет модулів. Той самий вибір лежить в
+          основі майбутнього goal-first майстра з PR-13.
+        </p>
+
+        <div class="state-row">
+
+          <!-- STEP 2 · ЗАРАЗ -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">Vibe-сітка · одиничний вибір</span>
+              <span class="state-ref">S0.5</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">2 / 5</span>
+                  </div>
+                  <div class="step-title">Як зараз?</div>
+                  <div class="step-q">Обери настрій, який ближче. Це не назавжди — потім можна змінити.</div>
+                  <div class="vibe-card picked">
+                    <span class="vibe-emoji">🪖</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">У бойовому ритмі</div>
+                      <div class="vibe-desc">Дисципліна, чіткі цілі</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="vibe-card">
+                    <span class="vibe-emoji">🧘</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">Шукаю баланс</div>
+                      <div class="vibe-desc">М'яко, поступово</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="vibe-card">
+                    <span class="vibe-emoji">🌱</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">Починаю наново</div>
+                      <div class="vibe-desc">З нуля, без стресу</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="hero-cta primary brand" style="margin-top:auto">Далі</div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>OnboardingWizard.tsx</code> · крок vibe</dd>
+                <dt>працює</dt>
+                <dd>обраний vibe + goals зберігаються у PostHog як <code>vibe_picked</code></dd>
+                <dt>слабке</dt>
+                <dd>зв'язок vibe → пріоритет модулів був жорстко закодований; полагоджено у PR #1991</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 2 · ПЛАНУЄТЬСЯ -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">Цілі першого тижня</span>
+              <span class="state-ref">PR-13 goal-first</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">2 / 4</span>
+                  </div>
+                  <div class="step-title">Що зробимо за тиждень?</div>
+                  <div class="step-q">Обери одну-три цілі. Sergeant підлаштує модулі під них.</div>
+                  <div class="vibe-card picked">
+                    <span class="vibe-emoji">💰</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">Розумію свої гроші</div>
+                      <div class="vibe-desc">Куди йшли цього тижня?</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="vibe-card picked">
+                    <span class="vibe-emoji">🏋️</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">3 тренування</div>
+                      <div class="vibe-desc">Не пропустити жодного</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="vibe-card">
+                    <span class="vibe-emoji">🌅</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">Ритм ранку</div>
+                      <div class="vibe-desc">Вода + читання + …</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="hero-cta primary brand" style="margin-top:auto">Далі · 2 цілі</div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>1-3 цілі замість vibe-настрою; multiple-select; кнопка показує лічильник</dd>
+                <dt>чому</dt>
+                <dd>outcome конкретніший за настрій → можна точніше підлаштувати дашборд</dd>
+                <dt>гейт</dt>
+                <dd>A/B проти поточного vibe-вибору; перемога ≥ +5pp за D7 retention</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 2 · РЕКОМЕНДУЮ -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Кнопка «Поки не знаю»</span>
+              <span class="state-ref">поверх PR-13</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">2 / 4</span>
+                  </div>
+                  <div class="step-title">Що зробимо за тиждень?</div>
+                  <div class="step-q">Обери одну-три цілі — або пропусти, покажу все.</div>
+                  <div class="vibe-card picked">
+                    <span class="vibe-emoji">💰</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">Розумію свої гроші</div>
+                      <div class="vibe-desc">Куди йшли цього тижня?</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="vibe-card">
+                    <span class="vibe-emoji">🏋️</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">3 тренування</div>
+                      <div class="vibe-desc">Не пропустити жодного</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="vibe-card">
+                    <span class="vibe-emoji">🌅</span>
+                    <div class="vibe-body">
+                      <div class="vibe-name">Ритм ранку</div>
+                      <div class="vibe-desc">Вода + читання + …</div>
+                    </div>
+                    <span class="vibe-check"></span>
+                  </div>
+                  <div class="hero-cta primary brand">Далі</div>
+                  <div style="font-size:9px;color:rgba(245,240,235,0.45);text-align:center;margin-top:8px;text-decoration:underline">пропустити — побачу все</div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>друга шкірка під CTA: «пропустити — побачу все». пише <code>vibe_skipped</code> у PostHog</dd>
+                <dt>чому</dt>
+                <dd>користувачі, що не визначилися, кидають wizard. дати їм escape без drop-off-у</dd>
+                <dt>розмір</dt>
+                <dd>з PostHog видно частку <code>skipped</code> — якщо &lt; 5% за тиждень → можна прибрати</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 3 ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">КРОК 3</span>
+          <h2>З якого модуля почати — перша дія</h2>
+          <span class="event">подія<strong> first_action_picked</strong></span>
+        </div>
+        <p class="section-intro">
+          Користувач обирає, у який модуль зайти першим. На основі цілей з
+          попереднього кроку один варіант підсвічений як рекомендований.
+          Інші три — поряд, з коротким поясненням «чому».
+        </p>
+
+        <div class="state-row">
+
+          <!-- STEP 3 · ЗАРАЗ -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">Goal-aware ранжування</span>
+              <span class="state-ref">PR-11 #1991</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">3 / 5</span>
+                  </div>
+                  <div class="step-title">Перша дія</div>
+                  <div class="step-q">Обери модуль — від нього й почнемо.</div>
+                  <div class="pos-rel">
+                    <div class="module-pick finyk recommended match">
+                      <span class="swatch">₴</span>
+                      <div class="body">
+                        <div class="name">Фінік · Гроші</div>
+                        <div class="reason">під твою ціль «розумію гроші»</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="module-pick fizruk">
+                    <span class="swatch">💪</span>
+                    <div class="body">
+                      <div class="name">Фізрук · Тіло</div>
+                      <div class="reason">тренування, прогрес</div>
+                    </div>
+                  </div>
+                  <div class="module-pick routine">
+                    <span class="swatch">●</span>
+                    <div class="body">
+                      <div class="name">Рутина · Звички</div>
+                      <div class="reason">щоденні ритуали</div>
+                    </div>
+                  </div>
+                  <div class="module-pick nutrition">
+                    <span class="swatch">🥗</span>
+                    <div class="body">
+                      <div class="name">Харчування</div>
+                      <div class="reason">калорії, білок</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>FirstActionSheet.tsx</code> + <code>rankFirstActionCandidates</code></dd>
+                <dt>працює</dt>
+                <dd>ранжування на основі goals; tie-break за vibe-pick-order; <code>primary_reason</code> у PostHog</dd>
+                <dt>слабке</dt>
+                <dd>усі 4 в одному списку без візуальної ієрархії — рекомендований лише з тонким border-ом</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 3 · ПЛАНУЄТЬСЯ -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">Один герой + 3 поряд</span>
+              <span class="state-ref">PR-12 single-hero</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">3 / 4</span>
+                  </div>
+                  <div class="step-title">Почнемо з грошей</div>
+                  <div class="step-q">Це найшвидший шлях до твоєї цілі «розумію гроші».</div>
+                  <div style="background:rgba(16,185,129,0.1);border:1px solid var(--finyk);border-radius:10px;padding:11px;margin-bottom:10px">
+                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+                      <span class="swatch" style="width:34px;height:34px;background:var(--finyk);border-radius:8px;display:grid;place-items:center;color:white;font-weight:800">₴</span>
+                      <div>
+                        <div style="font-size:11px;font-weight:800">Фінік · Гроші</div>
+                        <div style="font-size:9px;color:rgba(245,240,235,0.55);font-family:var(--font-mono)">∽ 1 хв · перша витрата</div>
+                      </div>
+                    </div>
+                    <div class="hero-cta primary brand" style="margin:0">Почати →</div>
+                  </div>
+                  <div style="font-size:9px;color:rgba(245,240,235,0.45);margin-bottom:6px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em">або</div>
+                  <div class="module-pick fizruk" style="padding:7px 10px">
+                    <span class="swatch" style="width:22px;height:22px;font-size:10px">💪</span>
+                    <div class="body"><div class="name" style="font-size:10px">Фізрук</div></div>
+                  </div>
+                  <div class="module-pick routine" style="padding:7px 10px">
+                    <span class="swatch" style="width:22px;height:22px;font-size:10px">●</span>
+                    <div class="body"><div class="name" style="font-size:10px">Рутина</div></div>
+                  </div>
+                  <div class="module-pick nutrition" style="padding:7px 10px">
+                    <span class="swatch" style="width:22px;height:22px;font-size:10px">🥗</span>
+                    <div class="body"><div class="name" style="font-size:10px">Харчування</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>один великий герой замість 4 рівних · інші три — стиснені рядки нижче</dd>
+                <dt>чому</dt>
+                <dd>правило одного героя з PR-12; знижує параліч вибору, веде до first_real_entry швидше</dd>
+                <dt>деталь</dt>
+                <dd>оцінка «∽ 1 хв» — з телеметрії медіаного часу до першого запису по модулю</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 3 · РЕКОМЕНДУЮ -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Прев'ю екрана модуля</span>
+              <span class="state-ref">поверх PR-12</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">3 / 4</span>
+                  </div>
+                  <div class="step-title">Почнемо з грошей</div>
+                  <div style="background:rgba(16,185,129,0.1);border:1px solid var(--finyk);border-radius:10px;padding:11px;margin-bottom:10px">
+                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+                      <span class="swatch" style="width:30px;height:30px;background:var(--finyk);border-radius:8px;display:grid;place-items:center;color:white;font-weight:800">₴</span>
+                      <div>
+                        <div style="font-size:11px;font-weight:800">Фінік</div>
+                        <div style="font-size:9px;color:rgba(245,240,235,0.55);font-family:var(--font-mono)">∽ 1 хв</div>
+                      </div>
+                    </div>
+                    <!-- mini-preview of what they'll see -->
+                    <div style="background:rgba(0,0,0,0.3);border-radius:6px;padding:7px;margin-bottom:8px">
+                      <div style="font-size:8px;color:rgba(245,240,235,0.5);margin-bottom:4px;font-family:var(--font-mono)">що буде далі</div>
+                      <div style="display:flex;justify-content:space-between;font-size:8.5px;margin-bottom:3px"><span>Кава</span><span style="font-family:var(--font-mono)">₴45</span></div>
+                      <div style="display:flex;justify-content:space-between;font-size:8.5px;color:rgba(245,240,235,0.4)"><span>+ нова витрата</span><span>—</span></div>
+                    </div>
+                    <div class="hero-cta primary brand" style="margin:0">Записати першу витрату →</div>
+                  </div>
+                  <div style="font-size:9px;color:rgba(245,240,235,0.45);margin-bottom:6px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em">або інший модуль</div>
+                  <div class="module-pick fizruk" style="padding:6px 10px"><span class="swatch" style="width:20px;height:20px;font-size:9px">💪</span><div class="body"><div class="name" style="font-size:10px">Фізрук</div></div></div>
+                  <div class="module-pick routine" style="padding:6px 10px"><span class="swatch" style="width:20px;height:20px;font-size:9px">●</span><div class="body"><div class="name" style="font-size:10px">Рутина</div></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>мікро-прев'ю всередині рекомендованого модуля: 2 рядки реалістичних даних + «+ нова витрата»</dd>
+                <dt>чому</dt>
+                <dd>«побачив що буде» закриває страх «не зрозумію куди потрапив»</dd>
+                <dt>ризик</dt>
+                <dd>висота прев'ю забирає місце у списку інших модулів; на 360px екран треба перевірити</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 4 ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">КРОК 4</span>
+          <h2>Швидкий старт — пресет як приклад</h2>
+          <span class="event">подія<strong> ftux_preset_picked</strong></span>
+        </div>
+        <p class="section-intro">
+          Перед першим записом застосунок пропонує «стартовий набір» —
+          типові категорії витрат, базові звички, шаблон тренування. Це
+          швидкий шлях до того, щоб дашборд не був порожнім, але без обману
+          що це «твої справжні дані».
+        </p>
+
+        <div class="state-row">
+
+          <!-- STEP 4 · ЗАРАЗ -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">PresetSheet з категоріями</span>
+              <span class="state-ref">S2.2a / S2.2b</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">Фінік</span>
+                  </div>
+                  <!-- faded background -->
+                  <div style="opacity:0.3;font-size:9px;color:rgba(245,240,235,0.5);margin-bottom:auto">
+                    Травень
+                    <div style="height:40px;background:rgba(255,255,255,0.04);border-radius:6px;margin-top:6px"></div>
+                  </div>
+                  <div class="sheet">
+                    <div class="sheet-handle"></div>
+                    <div class="sheet-title">Шаблон категорій</div>
+                    <div class="sheet-sub">Можна змінити пізніше</div>
+                    <div class="preset-list">
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#f59e0b"></span>Кафе та кав'ярні</div><span class="val">₴800/міс</span></div>
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#3b82f6"></span>Транспорт</div><span class="val">₴1 200</span></div>
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#10b981"></span>Продукти</div><span class="val">₴4 500</span></div>
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#ef4444"></span>Підписки</div><span class="val">₴600</span></div>
+                    </div>
+                    <div class="preset-actions">
+                      <div class="preset-btn ghost">Налаштувати</div>
+                      <div class="preset-btn primary">Прийняти</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>PresetSheet.tsx</code></dd>
+                <dt>працює</dt>
+                <dd>пресети без застарілих цін (S2.2a/S2.2b закрито 2026-05-07); 2 кнопки — налаштувати або прийняти</dd>
+                <dt>слабке</dt>
+                <dd>немає кнопки «пропустити» — користувач, що нічого не хоче, мусить «налаштувати» і вийти</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 4 · ПЛАНУЄТЬСЯ -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">A/B пустих станів за модулем</span>
+              <span class="state-ref">PR-10</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">Фінік</span>
+                  </div>
+                  <div style="opacity:0.3;font-size:9px;color:rgba(245,240,235,0.5);margin-bottom:auto">
+                    Травень
+                    <div style="height:40px;background:rgba(255,255,255,0.04);border-radius:6px;margin-top:6px"></div>
+                  </div>
+                  <div class="sheet">
+                    <div class="sheet-handle"></div>
+                    <div class="sheet-title">З чого почати?</div>
+                    <div class="sheet-sub">Дві дороги. Обидві швидкі.</div>
+                    <div class="preset-list">
+                      <div class="preset-row" style="padding:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)">
+                        <div class="l" style="flex-direction:column;align-items:flex-start;gap:2px">
+                          <span style="font-weight:700">📦 Зі стартовим набором</span>
+                          <span style="font-size:8.5px;color:rgba(245,240,235,0.55);font-family:var(--font-mono)">4 категорії · 3 бюджети</span>
+                        </div>
+                      </div>
+                      <div class="preset-row" style="padding:10px">
+                        <div class="l" style="flex-direction:column;align-items:flex-start;gap:2px">
+                          <span style="font-weight:700">✍️ З нуля</span>
+                          <span style="font-size:8.5px;color:rgba(245,240,235,0.55);font-family:var(--font-mono)">створювати по ходу</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="preset-skip">пропустити — побачу як без цього</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>3 варіанти копії пустого стану за модулем · 14-day winner за <code>first_real_entry conversion</code></dd>
+                <dt>чому</dt>
+                <dd>гіпотеза: користувачі, що бояться «забити чужими даними», ховаються від пресетів</dd>
+                <dt>залежності</dt>
+                <dd>після PR-06 (canonical naming) і PR-09 (outcome-card)</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 4 · РЕКОМЕНДУЮ -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Прев'ю набору + «спробувати»</span>
+              <span class="state-ref">поверх PR-10</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="brand-row">
+                    <span class="brand-mark">S</span>
+                    <span class="brand-name">Sergeant</span>
+                    <span class="brand-meta">Фінік</span>
+                  </div>
+                  <div style="opacity:0.3;font-size:9px;color:rgba(245,240,235,0.5);margin-bottom:auto">
+                    Травень
+                    <div style="height:40px;background:rgba(255,255,255,0.04);border-radius:6px;margin-top:6px"></div>
+                  </div>
+                  <div class="sheet">
+                    <div class="sheet-handle"></div>
+                    <div class="sheet-title">Стартовий набір — Фінік</div>
+                    <div class="sheet-sub">Створимо 4 категорії — їх можна редагувати або видалити пізніше.</div>
+                    <div class="preset-list">
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#f59e0b"></span>☕ Кафе</div><span class="val">₴800</span></div>
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#3b82f6"></span>🚇 Транспорт</div><span class="val">₴1 200</span></div>
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#10b981"></span>🛒 Продукти</div><span class="val">₴4 500</span></div>
+                      <div class="preset-row"><div class="l"><span class="dot" style="background:#ef4444"></span>📺 Підписки</div><span class="val">₴600</span></div>
+                    </div>
+                    <div class="preset-actions">
+                      <div class="preset-btn ghost">Своє</div>
+                      <div class="preset-btn primary">Спробувати ці</div>
+                    </div>
+                    <div class="preset-skip">пропустити</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>копія «Спробувати ці» (не «Прийняти») · явна обіцянка «можна редагувати або видалити» у підзаголовку</dd>
+                <dt>чому</dt>
+                <dd>«прийняти» звучить обов'язково. «спробувати» — м'якше; знімає страх що це останнє рішення</dd>
+                <dt>зміна копії</dt>
+                <dd>тільки 1 слово + 1 речення; інженерно — none-PR</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 5 ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">КРОК 5</span>
+          <h2>Дашборд першого дня — обіцянка, не TODO</h2>
+          <span class="event">подія<strong> step_completed</strong> · перехід на хаб</span>
+        </div>
+        <p class="section-intro">
+          Після майстра користувач опиняється на головному екрані. Зараз там
+          чекліст «що зробити» і прогрес-бар «4 з 4 модулів готові» — це
+          показує, що ти ще нічого не зробив. План PR-09 замінює це на
+          HeroPromiseCard: одну візуальну обіцянку від обраного модуля.
+        </p>
+
+        <div class="state-row">
+
+          <!-- STEP 5 · ЗАРАЗ -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">Чекліст + прогрес + 4 пусті плитки</span>
+              <span class="state-ref">HubDashboard</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="dashboard-greeting">Привіт, Олексій</div>
+                  <div class="dashboard-h">Сьогодні · пт</div>
+                  <div class="progress-bar"><div class="fill"></div></div>
+                  <div style="font-size:8.5px;color:rgba(245,240,235,0.45);margin-bottom:10px;font-family:var(--font-mono)">0 з 4 модулів готові</div>
+                  <div class="checklist-card">
+                    <div class="title">Перші кроки</div>
+                    <div class="check-line"><span class="checkbox"></span>додати першу витрату</div>
+                    <div class="check-line"><span class="checkbox"></span>запланувати тренування</div>
+                    <div class="check-line"><span class="checkbox"></span>обрати звичку</div>
+                    <div class="check-line"><span class="checkbox"></span>записати прийом їжі</div>
+                  </div>
+                  <div class="bento">
+                    <div class="bento-tile finyk empty"><div class="name">Фінік</div><div class="val">— ₴</div></div>
+                    <div class="bento-tile fizruk empty"><div class="name">Фізрук</div><div class="val">— хв</div></div>
+                    <div class="bento-tile routine empty"><div class="name">Рутина</div><div class="val">0/0</div></div>
+                    <div class="bento-tile nutrition empty"><div class="name">Харчування</div><div class="val">— ккал</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>HubDashboard.tsx</code> + <code>&lt;ModuleChecklist /&gt;</code> + <code>&lt;OnboardingProgress /&gt;</code></dd>
+                <dt>працює</dt>
+                <dd>чекліст пише <code>first_action_picked</code>; bento показує модулі; прогрес-бар оновлюється</dd>
+                <dt>слабке</dt>
+                <dd>«0 з 4» = obsoleteness, не value · ще один TODO замість обіцянки</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 5 · ПЛАНУЄТЬСЯ -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">HeroPromiseCard замість TODO</span>
+              <span class="state-ref">PR-09 · FF dashboard_outcome_card_v1</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="dashboard-greeting">Привіт, Олексій</div>
+                  <div class="dashboard-h">Твій тиждень починається</div>
+                  <div class="promise-card finyk">
+                    <div class="promise-h">Твоя зарплата на радарі</div>
+                    <div class="promise-visual">
+                      <div class="line-chart">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                          <path d="M 0 32 L 14 28 L 28 30 L 42 22 L 56 24 L 70 18 L 84 22 L 100 14" stroke="rgba(16,185,129,0.5)" fill="none" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>
+                          <circle cx="100" cy="14" r="3" fill="var(--finyk)"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="promise-body">Додай суму витрати → побачиш скільки лишилося до зарплати.</div>
+                    <div class="promise-cta">Записати першу витрату<span class="arr">→</span></div>
+                  </div>
+                  <div class="bento">
+                    <div class="bento-tile finyk primary"><div class="name">Фінік</div><div class="stat">—</div></div>
+                    <div class="bento-tile fizruk empty"><div class="name">Фізрук</div><div class="val">—</div></div>
+                    <div class="bento-tile routine empty"><div class="name">Рутина</div><div class="val">—</div></div>
+                    <div class="bento-tile nutrition empty"><div class="name">Харчування</div><div class="val">—</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>чекліст і прогрес-бар прибираються; додається HeroPromiseCard первинного модуля; bento залишається</dd>
+                <dt>чому</dt>
+                <dd>«твій тиждень тут» — обіцянка результату, не TODO-лист</dd>
+                <dt>копія</dt>
+                <dd>per-module: Фінік «Твоя зарплата на радарі» · Рутина «Твій тиждень тут» · Фізрук «Сили вистачить — якщо рахуємо» · Харчування «Що з'їв сьогодні?»</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 5 · РЕКОМЕНДУЮ -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">«Спробувати на прикладі»</span>
+              <span class="state-ref">поверх PR-09</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="dashboard-greeting">Привіт, Олексій</div>
+                  <div class="dashboard-h">Твій тиждень починається</div>
+                  <div class="promise-card finyk">
+                    <div class="promise-h">Твоя зарплата на радарі</div>
+                    <div class="promise-visual">
+                      <div class="line-chart">
+                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                          <path d="M 0 32 L 14 28 L 28 30 L 42 22 L 56 24 L 70 18 L 84 22 L 100 14" stroke="rgba(16,185,129,0.5)" fill="none" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>
+                          <circle cx="100" cy="14" r="3" fill="var(--finyk)"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="promise-body">Додай суму витрати → побачиш скільки лишилося до зарплати.</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+                      <div class="promise-cta" style="background:var(--finyk);color:#0a0a09">Записати<span class="arr">→</span></div>
+                      <div class="promise-cta" style="background:rgba(255,255,255,0.04);font-size:9px">На прикладі</div>
+                    </div>
+                  </div>
+                  <div class="bento">
+                    <div class="bento-tile finyk primary"><div class="name">Фінік</div><div class="stat">—</div></div>
+                    <div class="bento-tile fizruk empty"><div class="name">Фізрук</div><div class="val">—</div></div>
+                    <div class="bento-tile routine empty"><div class="name">Рутина</div><div class="val">—</div></div>
+                    <div class="bento-tile nutrition empty"><div class="name">Харчування</div><div class="val">—</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>друга дія «На прикладі» — швидкий sandbox-режим з фейковими даними, без запису у БД</dd>
+                <dt>чому</dt>
+                <dd>є люди, які хочуть «помацати» перед першим реальним записом. зараз вони кидають wizard</dd>
+                <dt>гейт</dt>
+                <dd>метрика — % переходів зі sandbox-режиму на справжній запис; якщо &lt; 20% — прибрати</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ STEP 6 ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">КРОК 6</span>
+          <h2>Перший запис — святкування і наступний крок</h2>
+          <span class="event">подія<strong> first_real_entry → celebration_shown</strong></span>
+        </div>
+        <p class="section-intro">
+          Користувач зробив перший справжній запис. Це момент справжньої
+          цінності, тому святкування доречне. Але одне коротке святкування
+          без блокування — і одразу натяк на «що далі», щоб не залишити у
+          вакуумі.
+        </p>
+
+        <div class="state-row">
+
+          <!-- STEP 6 · ЗАРАЗ -->
+          <div class="state-card now">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Зараз</span>
+              <span class="state-title">CelebrationModal з module-aware tip</span>
+              <span class="state-ref">S3.2 #1630 + Roast #1</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="celebration">
+                    <div class="confetti-mark">🎉</div>
+                    <div class="cel-h">Перший крок зроблено</div>
+                    <div class="cel-sub">Витрату записано. Тепер бачу твою картину дня.</div>
+                    <div class="next-tip">
+                      <div class="what">що далі</div>
+                      Продовжуй кожного дня — за тиждень побачимо твій pattern.
+                    </div>
+                    <div class="cel-cta" style="background:var(--finyk)">Продовжити</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>код</dt>
+                <dd><code>CelebrationModal</code> + <code>FIRST_ENTRY_CELEBRATIONS</code></dd>
+                <dt>працює</dt>
+                <dd>модуль-aware <code>nextStepTip</code> + <code>primaryCtaLabel</code> · regression-захищено тестами</dd>
+                <dt>слабке</dt>
+                <dd>«Продовжити» — generic; не пояснює куди веде. Roast #1 закрив <code>primaryCtaLabel</code> per module — але CTA «продовжити» поки лишається</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 6 · ПЛАНУЄТЬСЯ -->
+          <div class="state-card plan">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Планується</span>
+              <span class="state-title">HeroOutcomeCard з реальними цифрами</span>
+              <span class="state-ref">PR-09 §5.4 transformation</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="dashboard-greeting">Готово</div>
+                  <div class="dashboard-h">Перший запис</div>
+                  <div class="outcome-card finyk">
+                    <div class="stat-big">₴45</div>
+                    <div class="stat-label">Перша витрата · кафе</div>
+                    <div class="sub-stat">
+                      <span>до зарплати</span>
+                      <span style="color:#f5f0eb">11 240 ₴</span>
+                    </div>
+                  </div>
+                  <div class="next-tip">
+                    <div class="what">що далі</div>
+                    За тиждень побачиш скільки йде на каву · це найшвидший pattern.
+                  </div>
+                  <div class="hero-cta primary brand" style="margin-top:auto">Записати ще одну</div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>план</dt>
+                <dd>HeroPromiseCard перетворюється на HeroOutcomeCard з реальним числом запису · продовження веде у той самий модуль</dd>
+                <dt>чому</dt>
+                <dd>замість окремого святкового modal — те саме місце на дашборді стає «доказом»</dd>
+                <dt>зв'язок</dt>
+                <dd>теж PR-09; CelebrationModal зникає (або стає subtle toast)</dd>
+              </dl>
+            </div>
+          </div>
+
+          <!-- STEP 6 · РЕКОМЕНДУЮ -->
+          <div class="state-card rec">
+            <div class="state-head">
+              <span class="state-tag"><span class="dot"></span>Рекомендую</span>
+              <span class="state-title">Стрік-прев'ю + крос-модуль</span>
+              <span class="state-ref">поверх PR-09</span>
+            </div>
+            <div class="phone">
+              <div class="phone-island"></div>
+              <div class="phone-screen">
+                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-content">
+                  <div class="dashboard-greeting">Готово</div>
+                  <div class="dashboard-h">Перший запис</div>
+                  <div class="outcome-card finyk">
+                    <div class="stat-big">₴45</div>
+                    <div class="stat-label">Перша витрата · кафе</div>
+                    <div class="sub-stat">
+                      <span>до зарплати</span>
+                      <span style="color:#f5f0eb">11 240 ₴</span>
+                    </div>
+                  </div>
+                  <div class="streak-preview">
+                    <div class="what" style="font-size:8px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,240,235,0.4);margin-bottom:3px">стрік</div>
+                    <span class="streak-flame">🔥</span><b>день 1</b> · завтра — день 2 → новий рекорд
+                  </div>
+                  <div class="next-tip" style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.18)">
+                    <div class="what">пропоную</div>
+                    А тренування на цей тиждень? <span style="color:var(--fizruk);text-decoration:underline">Запланувати →</span>
+                  </div>
+                  <div class="hero-cta primary brand" style="margin-top:auto;background:var(--finyk)">Записати ще одну</div>
+                </div>
+              </div>
+            </div>
+            <div class="state-foot">
+              <dl>
+                <dt>додаю</dt>
+                <dd>стрік-прев'ю «день 1 → завтра день 2 → новий рекорд» · крос-модульна підказка на другий модуль з цілей</dd>
+                <dt>чому</dt>
+                <dd>стрік дає привід повернутися завтра; крос-модуль натякає що Sergeant — не одно-модульний застосунок</dd>
+                <dt>ризик</dt>
+                <dd>дві nudge-картки одночасно ламає правило одного героя з PR-12. треба показувати по черзі: стрік першим тижнем, крос-модуль після D2</dd>
+              </dl>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════ FUNNEL ═══════════════ -->
+      <section>
+        <div class="section-head">
+          <span class="sn">воронка</span>
+          <h2>Куди дивитися в PostHog</h2>
+          <span class="event">8 канонічних подій · 24 год вікно</span>
+        </div>
+        <p class="section-intro">
+          Усі 6 кроків зі сторі вище генерують події у PostHog. Ось як вони
+          лягають у канонічну 8-крокову воронку активації з
+          <code>posthog-ftux-dashboards.md</code>. Перший <strong>first_real_entry</strong>
+          у зеленому — це справжній момент цінності, інші — інструментальні.
+        </p>
+
+        <div class="funnel">
+          <div class="funnel-head">
+            <h3>Activation funnel · 8 events</h3>
+            <span class="meta">target: ≥ 30% за 24 год</span>
+          </div>
+          <div class="funnel-steps">
+            <div class="funnel-step">
+              <div class="n">01</div>
+              <div class="ev">onboarding_started</div>
+              <div class="where">wizard mounted<br/><b>Крок 1</b></div>
+            </div>
+            <div class="funnel-step">
+              <div class="n">02</div>
+              <div class="ev">onboarding_step_viewed</div>
+              <div class="where">кожен step rendered<br/><b>Кроки 1-4</b></div>
+            </div>
+            <div class="funnel-step">
+              <div class="n">03</div>
+              <div class="ev">onboarding_step_completed</div>
+              <div class="where">step finished<br/><b>Кроки 1-4</b></div>
+            </div>
+            <div class="funnel-step">
+              <div class="n">04</div>
+              <div class="ev">vibe_picked</div>
+              <div class="where">vibe + goals chosen<br/><b>Крок 2</b></div>
+            </div>
+            <div class="funnel-step">
+              <div class="n">05</div>
+              <div class="ev">first_action_picked</div>
+              <div class="where">primary module selected<br/><b>Крок 3</b></div>
+            </div>
+            <div class="funnel-step">
+              <div class="n">06</div>
+              <div class="ev">ftux_preset_picked</div>
+              <div class="where">preset chosen or skipped<br/><b>Крок 4</b></div>
+            </div>
+            <div class="funnel-step value">
+              <div class="n">07</div>
+              <div class="ev">first_real_entry</div>
+              <div class="where">user wrote real data<br/><b>Крок 6 · це і є value</b></div>
+            </div>
+            <div class="funnel-step">
+              <div class="n">08</div>
+              <div class="ev">celebration_shown</div>
+              <div class="where">CelebrationModal rendered<br/><b>Крок 6</b></div>
+            </div>
+          </div>
+
+          <div class="slo-row">
+            <div class="slo-cell">
+              <div class="label">activation conversion</div>
+              <div class="val">≥ 30%</div>
+              <div class="extra">first_real_entry / onboarding_started за 24 год</div>
+            </div>
+            <div class="slo-cell">
+              <div class="label">time-to-value p50</div>
+              <div class="val">≤ 90 сек</div>
+              <div class="extra">медіана ftux_time_to_value за 7-денне вікно</div>
+            </div>
+            <div class="slo-cell">
+              <div class="label">D1 retention</div>
+              <div class="val">≥ 25%</div>
+              <div class="extra">повернення наступного дня · 7-day cohort</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ FOOTER ═══════════════ -->
+      <footer class="bot">
+        <span>Sergeant · <strong>product/onboarding</strong> · 2026-05-17</span>
+        <span>Джерело · <strong>docs/launch/product-os/ftux-master-tracker.md</strong></span>
+        <span>Код · <strong>apps/web/src/core/onboarding/</strong></span>
+      </footer>
+    </div>
+  </body>
+</html>

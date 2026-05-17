@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant · Транзакційні листи</title>
+    <link rel="stylesheet" href="../_shared/tokens.css" />
+    <style>
+      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+      a { color: inherit; text-decoration: none; }
+      code,.mono { font-family: var(--font-mono); }
+      .serif { font-family: "Lora", serif; }
+      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+
+      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
+      .crumb a { color: var(--muted); }
+      .crumb .sep { color: var(--subtle); }
+      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; }
+      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
+      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
+
+      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
+      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
+      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+
+      .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-bottom: 32px; }
+      .email {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl); overflow: hidden;
+        display: flex; flex-direction: column;
+      }
+      .email-hdr { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; background: var(--surface); }
+      .email-hdr .av { width: 32px; height: 32px; border-radius: 50%; background: var(--finyk-gradient); display: grid; place-items: center; color: white; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+      .email-hdr .from { font-size: 12px; font-weight: 700; }
+      .email-hdr .from small { display: block; font-size: 10px; color: var(--muted); font-weight: 400; }
+      .email-hdr .ago { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--subtle); }
+
+      .email-subj { padding: 14px 18px 6px; font-size: 17px; font-weight: 800; letter-spacing: -0.012em; line-height: 1.3; }
+      .email-body { padding: 8px 18px 18px; font-size: 13px; color: var(--ink); line-height: 1.6; }
+      .email-body p { margin-bottom: 10px; }
+      .email-body b { font-weight: 700; }
+      .email-body code { font-family: var(--font-mono); font-size: 12px; background: var(--surface); padding: 1px 6px; border-radius: 3px; }
+      .email-cta { display: inline-block; background: var(--brand); color: white; padding: 10px 18px; border-radius: var(--r-md); font-size: 13px; font-weight: 700; margin: 10px 0; }
+      .email-cta.ghost { background: transparent; color: var(--brand); border: 1px solid var(--border); padding: 9px 17px; }
+
+      .email-data {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--r-md); padding: 12px 14px; margin: 12px 0;
+        font-size: 12.5px;
+      }
+      .email-data .row { display: flex; justify-content: space-between; padding: 4px 0; }
+      .email-data .row + .row { border-top: 1px dashed var(--border); }
+      .email-data .row .k { color: var(--muted); }
+      .email-data .row .v { font-family: var(--font-mono); font-weight: 700; }
+
+      .email-footer { padding: 14px 18px; border-top: 1px solid var(--border); font-size: 11px; color: var(--subtle); line-height: 1.55; background: var(--surface); }
+
+      .meta-tag {
+        font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        padding: 3px 8px; border-radius: var(--r-sm);
+        background: var(--brand-soft); color: var(--brand);
+        display: inline-block; margin-bottom: 10px;
+      }
+      .meta-tag.transactional { background: var(--info-soft); color: var(--info); }
+      .meta-tag.marketing { background: var(--warning-soft); color: var(--warning); }
+      .meta-tag.referral { background: var(--routine-soft); color: var(--routine); }
+
+      .matrix {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--r-xl); overflow: hidden; margin-top: 24px;
+      }
+      .matrix table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .matrix thead th {
+        font-family: var(--font-mono); font-size: 10px;
+        text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--subtle); font-weight: 600;
+        text-align: left; padding: 12px 18px;
+        background: var(--surface); border-bottom: 1px solid var(--border);
+      }
+      .matrix tbody td { padding: 11px 18px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+      .matrix tbody tr:last-child td { border-bottom: none; }
+      .matrix tbody td.name { font-weight: 700; }
+      .matrix tbody td.tag { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+      .matrix tbody td.tag.done { color: var(--success); }
+      .matrix tbody td.tag.new { color: var(--info); font-weight: 700; }
+
+      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+      footer.bot strong { color: var(--text); }
+
+      @media (max-width: 980px) { .wrap { padding: 40px 22px 80px; } .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <div class="crumb"><a href="../index.html">мокапи</a><span class="sep">/</span><a href="./">маркетинг</a><span class="sep">/</span><span>транзакційні листи</span></div>
+        <h1>Транзакційні листи — <em>4 ситуації коли треба написати</em></h1>
+        <p class="lede">
+          Serial drip (`email-drip.html`) — це маркетинг. Тут — навпаки:
+          транзакційні листи, що відправляються у відповідь на конкретну
+          дію. Підтвердження email, скидання пароля, чек оплати, реферальна
+          віха. Не drip, не реклама — чіткий factual tone.
+        </p>
+      </header>
+
+      <div class="section-head">
+        <span class="sn">4 ЛИСТИ</span>
+        <h2>Підтвердження · скидання · чек · реферал</h2>
+      </div>
+      <p class="section-intro">
+        Усі — у тому ж голосі що welcome-screen («Менше хаосу. Більше
+        зробленого.»). Один заголовок, одна дія, мінімум прикрашань.
+        Brand-tone з brandbook.
+      </p>
+
+      <div class="grid">
+
+        <!-- 1. Verify email -->
+        <div class="email">
+          <div class="email-hdr">
+            <div class="av">S</div>
+            <div class="from">Sergeant<small>noreply@sergeant.com.ua</small></div>
+            <div class="ago">щойно</div>
+          </div>
+          <div class="email-subj">
+            <span class="meta-tag transactional">підтвердження</span>
+            Підтверди свій email
+          </div>
+          <div class="email-body">
+            <p>Привіт, Олексій.</p>
+            <p>Хтось (сподіваюсь, ти) запросив доступ до Sergeant з адреси <b>oleksii@example.com</b>. Підтверди один кліком — і можна починати.</p>
+            <a class="email-cta">Підтвердити email →</a>
+            <p>Або вставити у браузер: <code>app.sergeant.com.ua/verify/8K3F2</code></p>
+            <p>Посилання живе <b>24 години</b>. Якщо це не ти — просто проігноруй цей лист.</p>
+          </div>
+          <div class="email-footer">
+            Sergeant · Київ, Україна<br/>
+            Це транзакційний лист — він не пов'язаний з розсилками. Якщо ти не реєструвався — відповідь не потрібна.
+          </div>
+        </div>
+
+        <!-- 2. Password reset -->
+        <div class="email">
+          <div class="email-hdr">
+            <div class="av">S</div>
+            <div class="from">Sergeant<small>noreply@sergeant.com.ua</small></div>
+            <div class="ago">щойно</div>
+          </div>
+          <div class="email-subj">
+            <span class="meta-tag transactional">скидання</span>
+            Зміна пароля
+          </div>
+          <div class="email-body">
+            <p>Привіт.</p>
+            <p>Ти попросив скинути пароль. Натисни нижче, щоб задати новий.</p>
+            <a class="email-cta">Задати новий пароль →</a>
+            <p>Посилання живе <b>1 годину</b>. Якщо це не ти — змінювати нічого не треба, старий пароль працює.</p>
+            <p style="margin-top:18px; padding-top:12px; border-top:1px dashed var(--border); color:var(--muted); font-size:12px">
+              Запит з IP <code>192.168.0.42</code> · браузер Chrome · 18 травня 14:23 Київ
+            </p>
+          </div>
+          <div class="email-footer">
+            Якщо ти не запитував зміну пароля — рекомендую перевірити налаштування акаунту й увімкнути двофакторну авторизацію.
+          </div>
+        </div>
+
+        <!-- 3. Receipt -->
+        <div class="email">
+          <div class="email-hdr">
+            <div class="av">S</div>
+            <div class="from">Sergeant<small>billing@sergeant.com.ua</small></div>
+            <div class="ago">5 хв тому</div>
+          </div>
+          <div class="email-subj">
+            <span class="meta-tag transactional">чек</span>
+            Дякую за Pro — чек ₴249
+          </div>
+          <div class="email-body">
+            <p>Привіт, Олексій.</p>
+            <p>Оплата пройшла. Pro активний до <b>18 червня</b>.</p>
+            <div class="email-data">
+              <div class="row"><span class="k">тариф</span><span class="v">Pro · місяць</span></div>
+              <div class="row"><span class="k">сума</span><span class="v">₴249.00</span></div>
+              <div class="row"><span class="k">картка</span><span class="v">•••• 8341</span></div>
+              <div class="row"><span class="k">дата</span><span class="v">18.05.2026</span></div>
+              <div class="row"><span class="k">id транзакції</span><span class="v">stripe · pi_3O5Hkw…</span></div>
+            </div>
+            <a class="email-cta ghost">Завантажити PDF →</a>
+            <p style="margin-top:14px">Не подобається — повне повернення коштів протягом 14 днів, без питань. Просто напиши.</p>
+          </div>
+          <div class="email-footer">
+            ФОП Олексій Прізвищенко · ІПН 1234567890 · Київ<br/>
+            sergeant.com.ua/billing — керування підпискою
+          </div>
+        </div>
+
+        <!-- 4. Referral milestone -->
+        <div class="email">
+          <div class="email-hdr">
+            <div class="av">S</div>
+            <div class="from">Sergeant<small>hello@sergeant.com.ua</small></div>
+            <div class="ago">2 год тому</div>
+          </div>
+          <div class="email-subj">
+            <span class="meta-tag referral">реферал</span>
+            Твій друг записався — Pro на 30 днів подарували
+          </div>
+          <div class="email-body">
+            <p>Олексій,</p>
+            <p>Андрій (твоє посилання) щойно завершив реєстрацію. Дякую — у тебе тепер <b>30 додаткових днів Pro</b>.</p>
+            <div class="email-data">
+              <div class="row"><span class="k">запросив</span><span class="v">Андрій К.</span></div>
+              <div class="row"><span class="k">бонус тобі</span><span class="v">+30 днів Pro</span></div>
+              <div class="row"><span class="k">наступна віха</span><span class="v">5 запрошених</span></div>
+              <div class="row"><span class="k">прогрес</span><span class="v">2 / 5</span></div>
+            </div>
+            <p>Ще 3 запрошених — і Pro назавжди. Поділись лінком: <code>sergeant.com.ua/r/oleksii</code></p>
+            <a class="email-cta">Скопіювати посилання →</a>
+          </div>
+          <div class="email-footer">
+            Sergeant · Це нагадування про реферальний бонус. Вимкнути такі листи — у Налаштуваннях → Сповіщення.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Inventory matrix -->
+      <div class="section-head" style="margin-top:56px">
+        <span class="sn">ІНВЕНТАР</span>
+        <h2>Що вже є · що додаємо</h2>
+      </div>
+      <div class="matrix">
+        <table>
+          <thead>
+            <tr>
+              <th>лист</th>
+              <th>тип</th>
+              <th>тригер</th>
+              <th style="width: 90px">статус</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="name">Welcome drip · 4 листи</td><td class="tag">маркетинг</td><td>day 0, 5, 14, 21</td><td class="tag done">є</td></tr>
+            <tr><td class="name">Verify email</td><td class="tag">транзакційний</td><td>signup</td><td class="tag new">додаємо</td></tr>
+            <tr><td class="name">Password reset</td><td class="tag">транзакційний</td><td>forgot-password click</td><td class="tag new">додаємо</td></tr>
+            <tr><td class="name">Stripe receipt</td><td class="tag">транзакційний</td><td>checkout_completed</td><td class="tag new">додаємо</td></tr>
+            <tr><td class="name">Referral milestone</td><td class="tag">транзакційний</td><td>referee first_real_entry</td><td class="tag new">додаємо</td></tr>
+            <tr><td class="name">Pro expires soon</td><td class="tag">транзакційний</td><td>subscription -7d</td><td class="tag" style="color:var(--warning)">backlog</td></tr>
+            <tr><td class="name">Streak broken</td><td class="tag">life-cycle</td><td>habit streak reset</td><td class="tag" style="color:var(--warning)">backlog</td></tr>
+            <tr><td class="name">Account deletion confirm</td><td class="tag">транзакційний</td><td>delete request</td><td class="tag" style="color:var(--warning)">backlog</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="bot">
+        <span>Sergeant · <strong>marketing/transactional-emails</strong> · 2026-05-18</span>
+        <span>Розширення · <strong>email-drip.html (4 нових шаблони)</strong></span>
+      </footer>
+    </div>
+  </body>
+</html>
