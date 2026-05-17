@@ -29,6 +29,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 
 /**
@@ -95,8 +96,43 @@ export interface HeroCardProps {
   readonly onOpenPrograms: () => void;
 }
 
-const HERO_CARD_CLASS =
-  "rounded-3xl p-6 overflow-hidden bg-hero-teal dark:bg-panel dark:border dark:border-teal-800/30 dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0.05)_100%)]";
+/**
+ * Phase 2.3 v2 redesign (C4): chrome тепер через `<Card prominence="hero"
+ * module="fizruk">` + decorative `--hero-grad-fizruk` wash overlay.
+ * Замінив рукописний `bg-hero-teal` + dark gradient на orthogonal Card
+ * primitive — module identity та dark-mode parity тепер тримаються
+ * через `MODULE_PROMINENCE.fizruk.hero` у `Card.tsx`, без дублювання
+ * gradient-літералів у feature-коді.
+ */
+function HeroShell({
+  ariaLabel,
+  children,
+}: {
+  readonly ariaLabel: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <Card
+      as="section"
+      prominence="hero"
+      module="fizruk"
+      radius="r-2xl"
+      padding="none"
+      className="relative overflow-hidden"
+      aria-label={ariaLabel}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "var(--hero-grad-fizruk)",
+          opacity: 0.08,
+        }}
+      />
+      <div className="relative p-6">{children}</div>
+    </Card>
+  );
+}
 
 function formatElapsed(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return "0:00";
@@ -238,7 +274,7 @@ function ActiveState({
       ? `${state.itemsCount} вправ у сесії`
       : "Сесія відкрита — підходи й таймер чекають";
   return (
-    <section className={HERO_CARD_CLASS} aria-label="Активне тренування">
+    <HeroShell ariaLabel="Активне тренування">
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Тренування триває</HeroStateLabel>
       <p
@@ -272,7 +308,7 @@ function ActiveState({
           </span>
         </button>
       </div>
-    </section>
+    </HeroShell>
   );
 }
 
@@ -291,7 +327,7 @@ function TodayState({
   if (state.estimatedMin) metaParts.push(`~${state.estimatedMin} хв`);
   if (state.hint) metaParts.push(state.hint);
   return (
-    <section className={HERO_CARD_CLASS} aria-label="Сьогоднішнє тренування">
+    <HeroShell ariaLabel="Сьогоднішнє тренування">
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Сьогоднішнє тренування</HeroStateLabel>
       <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight truncate">
@@ -323,7 +359,7 @@ function TodayState({
           </span>
         </button>
       </div>
-    </section>
+    </HeroShell>
   );
 }
 
@@ -346,7 +382,7 @@ function UpcomingState({
     metaParts.push(`${state.exerciseCount} вправ`);
   }
   return (
-    <section className={HERO_CARD_CLASS} aria-label="Наступне тренування">
+    <HeroShell ariaLabel="Наступне тренування">
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Наступне тренування</HeroStateLabel>
       <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight truncate">
@@ -365,7 +401,7 @@ function UpcomingState({
           Відкрити план
         </Button>
       </div>
-    </section>
+    </HeroShell>
   );
 }
 
@@ -384,7 +420,7 @@ function EmptyState({
 }) {
   const primaryLabel = state.hasTemplates ? "Обрати шаблон" : "Створити шаблон";
   return (
-    <section className={HERO_CARD_CLASS} aria-label="План на сьогодні порожній">
+    <HeroShell ariaLabel="План на сьогодні порожній">
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>План порожній</HeroStateLabel>
       <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight">
@@ -419,7 +455,7 @@ function EmptyState({
           До програм
         </Button>
       </div>
-    </section>
+    </HeroShell>
   );
 }
 
