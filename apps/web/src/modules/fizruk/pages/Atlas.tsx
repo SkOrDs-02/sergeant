@@ -77,37 +77,49 @@ export function Atlas() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
-        <section
-          className="rounded-3xl p-5 border border-line/20 bg-hero-teal dark:border-teal-800/30 dark:bg-panel dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0.05)_100%)]"
+        <Card
+          as="section"
+          module="fizruk"
+          prominence="hero"
+          radius="r-2xl"
+          padding="none"
+          className="relative overflow-hidden"
           aria-label="Атлас мʼязів"
         >
-          <SectionHeading size="sm" variant="fizruk" as="p">
-            Атлас мʼязів
-          </SectionHeading>
-          <h1 className="text-hero font-black text-teal-900 dark:text-white mt-2 leading-tight">
-            Стан відновлення
-          </h1>
-          <div className="flex gap-4 mt-3">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-success inline-block" />
-              <span className="text-xs text-teal-700 dark:text-white/70">
-                Готовий
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block" />
-              <span className="text-xs text-teal-700 dark:text-white/70">
-                Відновлюється
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-danger inline-block" />
-              <span className="text-xs text-teal-700 dark:text-white/70">
-                Уникати
-              </span>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "var(--hero-grad-fizruk)", opacity: 0.08 }}
+          />
+          <div className="relative p-5">
+            <SectionHeading size="sm" variant="fizruk" as="p">
+              Атлас мʼязів
+            </SectionHeading>
+            <h1 className="text-hero font-black text-teal-900 dark:text-white mt-2 leading-tight">
+              Стан відновлення
+            </h1>
+            <div className="flex gap-4 mt-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-success inline-block" />
+                <span className="text-xs text-teal-700 dark:text-white/70">
+                  Готовий
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block" />
+                <span className="text-xs text-teal-700 dark:text-white/70">
+                  Відновлюється
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-danger inline-block" />
+                <span className="text-xs text-teal-700 dark:text-white/70">
+                  Уникати
+                </span>
+              </div>
             </div>
           </div>
-        </section>
+        </Card>
 
         <Card radius="lg" padding="lg">
           <BodyAtlas
