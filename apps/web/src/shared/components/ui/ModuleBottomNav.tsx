@@ -2,27 +2,47 @@ import { memo, type ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
 
 /**
- * Sergeant Design System — ModuleBottomNav
+ * Sergeant Design System — ModuleBottomNav (v2)
  *
- * Single shared bottom-navigation shell for Фінік / Фізрук / Рутина /
- * Харчування. Replaces 4 near-identical per-module implementations that
- * had drifted on height (58 vs 60 px), blur (md vs xl), label size,
- * active-indicator treatment and color tokens.
+ * Shared bottom-navigation shell for Фінік / Фізрук / Рутина /
+ * Харчування. v2 (2026-05, PR-8) aligns the shape with `HubBottomNav`
+ * — both navs are now floating glass pills (`mx-3`, `rounded-r-2xl`,
+ * `shadow-nav`, `bg-surface-strong-glass`) so the whole app reads
+ * under one navigation pattern. The only intentional divergence:
+ * active-pill background is **module-tinted** (`bg-{module}-strong`)
+ * instead of brand-agnostic `bg-ink-strong` — it carries module
+ * identity now that the icon-glow + top-pill stripe are gone.
  *
- * Canonical shape:
- * - height 60 px
- * - bg-panel/95 backdrop-blur-xl border-t border-line
- * - 4 tabs, each min-h-[48px], gap-1, active:scale-95
- * - active indicator: w-10 h-1 rounded-full at the top, module color
- * - icon uses module-colored glow when active
- * - label: text-2xs font-semibold
+ * Migration notes:
+ * - v1 flat `border-t bg-panel/95` shell removed.
+ * - v1 4px sliding top-pill indicator removed (active background pill
+ *   does the same job with less visual noise).
+ * - v1 icon `drop-shadow` glow removed (redundant once the pill is
+ *   color-tinted). Active state now reads on the pill via
+ *   `text-bg-base` (warm cream in light, near-black in dark) like
+ *   HubBottomNav. Inactive icons keep `text-muted`.
+ * - Labels switched from `text-2xs` (10px) to `text-style-caption`
+ *   (12px) to satisfy Hard Rule #16 (12px floor for tab labels).
+ * - Layout contract: outer wrapper owns `safe-area-pb` via
+ *   `padding-bottom: calc(0.75rem + env(safe-area-inset-bottom))`;
+ *   the inner `<nav>` becomes the visible pill. Floating chrome
+ *   (`AIPill`, `ActiveWorkoutBanner`, FABs) must clear ≈ 84 px above
+ *   the bottom — same offset as HubBottomNav.
+ *
+ * Routine special-case (FAB):
+ * - Consumers may render an additional center FAB as a sibling of
+ *   the nav (NOT nested inside it) at `z-40`, positioned over the
+ *   pill's top edge. See `RoutineBottomNav`. The FAB sits in front
+ *   of the nav's stacking context and keeps its own coral gradient
+ *   per Routine identity.
  *
  * Accessibility:
  * - Default role is <nav> with <button aria-current="page">.
- * - Visible text label provides the accessible name (no duplicate aria-label).
- * - Pass `role="tablist"` to render as tabs (role="tab", aria-selected,
- *   tabIndex, aria-controls via `panelId`). Matches routine settings
- *   tabs semantics.
+ * - Visible text label provides the accessible name (no duplicate
+ *   aria-label).
+ * - Pass `role="tablist"` to render as tabs (role="tab",
+ *   aria-selected, tabIndex, aria-controls via `panelId`). Matches
+ *   routine settings tabs semantics.
  */
 
 export type ModuleNavColor = "finyk" | "fizruk" | "routine" | "nutrition";
@@ -50,35 +70,27 @@ export interface ModuleBottomNavProps {
 }
 
 type ColorTokens = {
-  text: string;
+  /** Active-pill background. Module-tinted — identity carrier in v2. */
   pill: string;
-  glow: string;
+  /** Tiny unread/attention dot color. */
   badge: string;
 };
 
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
-    text: "text-finyk",
-    pill: "bg-linear-to-r from-brand-400 to-brand-500",
-    glow: "drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]",
+    pill: "bg-finyk-strong",
     badge: "bg-finyk",
   },
   fizruk: {
-    text: "text-fizruk",
-    pill: "bg-linear-to-r from-teal-400 to-teal-500",
-    glow: "drop-shadow-[0_0_8px_rgba(20,184,166,0.3)]",
+    pill: "bg-fizruk-strong",
     badge: "bg-fizruk",
   },
   routine: {
-    text: "text-routine",
-    pill: "bg-linear-to-r from-coral-400 to-coral-500",
-    glow: "drop-shadow-[0_0_8px_rgba(249,112,102,0.3)]",
+    pill: "bg-routine-strong",
     badge: "bg-routine",
   },
   nutrition: {
-    text: "text-nutrition",
-    pill: "bg-linear-to-r from-lime-400 to-lime-500",
-    glow: "drop-shadow-[0_0_8px_rgba(132,204,22,0.3)]",
+    pill: "bg-nutrition-strong",
     badge: "bg-nutrition",
   },
 };
@@ -97,91 +109,105 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   const activeIndex = items.findIndex((i) => i.id === activeId);
 
   return (
-    <nav
-      className={cn(
-        "shrink-0 relative z-30 safe-area-pb",
-        // Phase 1 (M3) — `motion-safe:` guard so reduced-motion users get
-        // the translucent panel without GPU-heavy blur (Android Chrome
-        // WebView jank). Same treatment as HubBottomNav.
-        "bg-panel/95 motion-safe:backdrop-blur-xl",
-        "border-t border-line",
-        className,
-      )}
-      aria-label={ariaLabel}
+    // Outer wrapper owns `safe-area-pb` so the floating pill clears
+    // the iOS home indicator without doubling padding inside `<nav>`
+    // (matches HubBottomNav Phase 1 / M2 fix).
+    <div
+      className={cn("shrink-0 relative z-30", className)}
+      style={{
+        paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+      }}
     >
-      <div
-        className="relative flex h-nav pointer-coarse:h-nav-touch"
-        role={isTablist ? "tablist" : undefined}
-      >
-        {/* Sliding pill indicator — single element that translates to active tab */}
-        {activeIndex >= 0 && (
-          <span
-            className={cn(
-              "absolute top-0 h-1 w-10 rounded-full shadow-sm pointer-events-none",
-              "transition-[left] duration-200 ease-out",
-              tokens.pill,
-            )}
-            style={{
-              left: `calc(${activeIndex} * (100% / ${items.length}) + (100% / ${items.length} - 2.5rem) / 2)`,
-            }}
-            aria-hidden
-          />
+      <nav
+        aria-label={ariaLabel}
+        className={cn(
+          "mx-3",
+          // Phase 1 (M3) — `motion-safe:` guard so prefers-reduced-motion
+          // users get the translucent panel without GPU-heavy blur
+          // (Android Chrome WebView jank). Same treatment as
+          // HubBottomNav v2.
+          "bg-surface-strong-glass motion-safe:backdrop-blur-md",
+          "border border-line",
+          "rounded-r-2xl",
+          "shadow-nav",
         )}
-
-        {items.map((item) => {
-          const active = activeId === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role={isTablist ? "tab" : undefined}
-              id={isTablist ? `${module}-tab-${item.id}` : undefined}
-              aria-selected={isTablist ? active : undefined}
-              aria-current={
-                !isTablist ? (active ? "page" : undefined) : undefined
-              }
-              aria-controls={isTablist ? item.panelId : undefined}
-              tabIndex={isTablist ? (active ? 0 : -1) : undefined}
-              onClick={() => onChange(item.id)}
+      >
+        <div
+          className="relative flex h-[60px] pointer-coarse:h-[64px] p-1"
+          role={isTablist ? "tablist" : undefined}
+        >
+          {/* Active-tab background pill — module-tinted, sits BEHIND the
+           * button content (`z-10` on each button keeps icons + labels
+           * on top). Translates between tabs via `transition-[left]`. */}
+          {activeIndex >= 0 && (
+            <span
+              data-testid="module-bottom-nav-active-indicator"
               className={cn(
-                "relative flex-1 flex flex-col items-center justify-center gap-1",
-                "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
-                "active:scale-95 pointer-coarse:active:bg-panelHi/50",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                active ? "text-text" : "text-muted hover:text-text/70",
+                "absolute inset-y-1 pointer-events-none",
+                "rounded-xl",
+                tokens.pill,
+                "transition-[left] duration-200 ease-out",
               )}
-            >
-              <span
+              style={{
+                left: `calc(${activeIndex} * (100% / ${items.length}) + 0.25rem)`,
+                width: `calc(100% / ${items.length} - 0.5rem)`,
+              }}
+              aria-hidden
+            />
+          )}
+
+          {items.map((item) => {
+            const active = activeId === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role={isTablist ? "tab" : undefined}
+                id={isTablist ? `${module}-tab-${item.id}` : undefined}
+                aria-selected={isTablist ? active : undefined}
+                aria-current={
+                  !isTablist ? (active ? "page" : undefined) : undefined
+                }
+                aria-controls={isTablist ? item.panelId : undefined}
+                tabIndex={isTablist ? (active ? 0 : -1) : undefined}
+                onClick={() => onChange(item.id)}
                 className={cn(
-                  "relative transition-all duration-200",
-                  active && tokens.text,
-                  active && tokens.glow,
-                )}
-                aria-hidden
-              >
-                {item.icon}
-                {item.badge && !active && (
-                  <span
-                    className={cn(
-                      "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
-                      tokens.badge,
-                    )}
-                    aria-hidden
-                  />
-                )}
-              </span>
-              <span
-                className={cn(
-                  "text-2xs leading-none font-semibold transition-colors",
-                  active ? "text-text" : "text-muted",
+                  // `z-10` lifts the button above the absolutely-positioned
+                  // active background pill so icons + labels stay on top.
+                  "relative z-10 flex-1 flex flex-col items-center justify-center gap-1",
+                  "min-h-touch-target",
+                  "transition-all duration-200",
+                  "active:scale-95",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                  // v2: active label/icon read on the module-strong pill
+                  // background → invert to cream (`bg-base`). Inactive
+                  // stays muted on the glass surface.
+                  active ? "text-bg-base" : "text-muted hover:text-text/70",
                 )}
               >
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+                <span
+                  className="relative transition-all duration-200"
+                  aria-hidden
+                >
+                  {item.icon}
+                  {item.badge && !active && (
+                    <span
+                      className={cn(
+                        "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
+                        tokens.badge,
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                </span>
+                <span className="text-style-caption font-semibold leading-none">
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
   );
 });

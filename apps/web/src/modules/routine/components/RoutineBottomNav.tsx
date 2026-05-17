@@ -70,6 +70,13 @@ export function RoutineBottomNav({
   onSelectTab,
   onAddHabit,
 }: RoutineBottomNavProps) {
+  // Sergeant v2 (PR-8) — center FAB rendered as a sibling of the
+  // floating-pill `ModuleBottomNav`, NOT nested inside it. The nav now
+  // owns its own glass pill + safe-area-pb; positioning the FAB inside
+  // would clip it under `overflow-hidden` and double-shadow it on the
+  // pill bezel. As a sibling at `z-40` it sits above the nav's stacking
+  // context and overlaps the pill's top edge by ~22 px so it reads as
+  // "floating above the dock", matching the v2 module-hero language.
   return (
     <div className="relative shrink-0">
       <ModuleBottomNav
@@ -86,7 +93,11 @@ export function RoutineBottomNav({
           onClick={onAddHabit}
           aria-label="Додати звичку"
           className={[
-            "absolute left-1/2 -translate-x-1/2 -top-6",
+            // `-top-[22px]` lifts the FAB above the pill's top edge by
+            // 22 px (per locked spec §3.2). `z-40` clears the nav's
+            // `z-30` wrapper. `border-bg` punches a halo through the
+            // glass pill so the coral disk doesn't read as merged.
+            "absolute left-1/2 -translate-x-1/2 -top-[22px]",
             "w-14 h-14 rounded-full z-40",
             "bg-linear-to-br from-coral-400 to-coral-500 text-white",
             "shadow-float border-4 border-bg",
