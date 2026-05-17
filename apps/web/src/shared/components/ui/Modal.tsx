@@ -10,6 +10,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { Button } from "./Button";
+import { Icon } from "./Icon";
 import { Sheet } from "./Sheet";
 
 /**
@@ -214,20 +215,7 @@ export function Modal({
                 aria-label={closeLabel}
                 className="shrink-0"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <Icon name="close" size={18} aria-hidden />
               </Button>
             )}
           </div>

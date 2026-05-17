@@ -2229,6 +2229,87 @@ const noRoundedLg = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
+// `no-v1-gradient` — block re-introduction of Sergeant v1 module gradients
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant v2 redesign (2026-05) replaces the legacy pastel
+// `--gradient-{finyk,fizruk,routine,nutrition}` and
+// `--gradient-card-{module}-dark` CSS vars (plus the `bg-card-{module}-dark`
+// Tailwind utilities they back) with the brighter `--hero-grad-{module}` set
+// + the `bg-hero-grad-{module}` utility family. The v1 vars are JSDoc
+// `@deprecated` in `apps/web/src/styles/theme.css` and kept only for the
+// in-flight v1→v2 migration sweep; this rule prevents new consumers from
+// taking a dependency on them. Existing call-sites (currently zero — recon
+// 2026-05-17) are exempt only via the file-level exemption list below.
+// See docs/design/redesign-v2-migration.md.
+
+const NO_V1_GRADIENT_MESSAGE =
+  "Avoid v1 module gradient `{{token}}` — Sergeant v2 redesign replaces it with " +
+  "`--hero-grad-{module}` / `bg-hero-grad-{module}`. See docs/design/redesign-v2-migration.md.";
+
+const RX_V1_GRADIENT_UTILITY =
+  /(?:^|\s)(?:[\w-]+:)*bg-card-(?:finyk|fizruk|routine|nutrition)-dark(?:\s|$)/;
+const RX_V1_GRADIENT_VAR =
+  /var\(\s*--gradient-(?:finyk|fizruk|routine|nutrition|card-(?:finyk|fizruk|routine|nutrition)-dark)\b/;
+
+function findV1GradientToken(value) {
+  if (typeof value !== "string") return null;
+  const utilityHit = RX_V1_GRADIENT_UTILITY.exec(value);
+  if (utilityHit) return utilityHit[0].trim();
+  const varHit = RX_V1_GRADIENT_VAR.exec(value);
+  if (varHit) return varHit[0];
+  return null;
+}
+
+const noV1Gradient = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid Sergeant v1 module gradients (`bg-card-{module}-dark`, `var(--gradient-{module})`, `var(--gradient-card-{module}-dark)`) — use the v2 `bg-hero-grad-{module}` / `--hero-grad-{module}` set instead.",
+    },
+    schema: [],
+    messages: { v1Gradient: NO_V1_GRADIENT_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Exempt the v1 token bridge (design-tokens preset maps the legacy
+    // `bg-card-{module}-dark` keys to their CSS vars) and tests. The
+    // `apps/web/src/styles/theme.css` declarations themselves never reach
+    // this rule — ESLint's JS parser doesn't lint `.css` files.
+    if (
+      /packages[\\/]design-tokens[\\/]/.test(filename) ||
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      /__tests__[\\/]/.test(filename)
+    ) {
+      return {};
+    }
+
+    function report(node, value) {
+      const hit = findV1GradientToken(value);
+      if (hit) {
+        context.report({
+          node,
+          messageId: "v1Gradient",
+          data: { token: hit },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
 // `no-bare-empty-text` — enforce empty-state tier discipline
 // ─────────────────────────────────────────────────────────────────────────
 //
@@ -4377,6 +4458,7 @@ const plugin = {
     "no-raw-dark-palette": noRawDarkPalette,
     "prefer-focus-visible": preferFocusVisible,
     "no-rounded-lg": noRoundedLg,
+    "no-v1-gradient": noV1Gradient,
     "no-bare-empty-text": noBareEmptyText,
     "no-cyrillic-jsx-literal": noCyrillicJsxLiteral,
     "prefer-text-style": preferTextStyle,
@@ -4415,6 +4497,7 @@ export {
   FOCUS_OUTLINE_ALLOWED_TAILS,
   PREFER_FOCUS_VISIBLE_MESSAGE,
   NO_ROUNDED_LG_MESSAGE,
+  NO_V1_GRADIENT_MESSAGE,
   NO_BARE_EMPTY_TEXT_MESSAGE,
   NO_CYRILLIC_JSX_LITERAL_MESSAGE,
   PREFER_TEXT_STYLE_MESSAGE,

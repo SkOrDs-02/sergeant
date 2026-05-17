@@ -78,3 +78,18 @@ export const NoHandle: Story = {
     hideHandle: true,
   },
 };
+
+/**
+ * Sergeant v2 — glass variant. Translucent floating-glass shell
+ * (`bg-surface-glass` + `motion-safe:backdrop-blur-md` + `shadow-nav`
+ * + `rounded-t-r-2xl`) so the underlying `MeshBackground` / hero
+ * gradient reads through. Opt into this on any v2 sheet sitting
+ * above a mesh shell. Default (`variant="default"`) keeps the
+ * opaque `bg-panel` shell for back-compat.
+ */
+export const GlassVariant: Story = {
+  args: {
+    variant: "glass",
+    description: "Glass sheet — mesh background visible through alpha-baked surface",
+  },
+};

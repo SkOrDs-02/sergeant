@@ -265,15 +265,27 @@ export function HubBottomNav({
     // becomes the visible pill. Active indicator changed from a top
     // 1-px stripe to a full-cell `bg-ink-strong` background pill
     // sitting BEHIND the active tab content.
+    //
+    // Phase 1 (M2) — bottom inset math moved from `mb-3` on the nav
+    // to the wrapper as `padding-bottom: calc(0.75rem +
+    // env(safe-area-inset-bottom))`. Putting `mb-3` on the nav while
+    // the wrapper also applied `safe-area-pb` stacked both margins on
+    // iPhone notch devices, pushing the pill into the home indicator.
+    // Phase 1 (M3) — `backdrop-blur-md` → `motion-safe:backdrop-blur-md`
+    // so `prefers-reduced-motion` users get the clearer translucent
+    // surface without the GPU-heavy blur (Android Chrome WebView jank).
     <div
-      className="shrink-0 relative z-30 safe-area-pb"
+      className="shrink-0 relative z-30"
+      style={{
+        paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+      }}
       aria-hidden={false}
     >
       <nav
         aria-label={messages.nav.hubSections}
         className={cn(
-          "mx-3 mb-3",
-          "bg-surface-strong-glass backdrop-blur-md",
+          "mx-3",
+          "bg-surface-strong-glass motion-safe:backdrop-blur-md",
           "border border-line",
           "rounded-r-2xl",
           "shadow-nav",

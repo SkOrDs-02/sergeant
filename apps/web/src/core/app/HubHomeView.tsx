@@ -1,3 +1,4 @@
+import { type CSSProperties } from "react";
 import { type User } from "@sergeant/shared";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
@@ -84,7 +85,16 @@ export function HubHomeView(props: HubHomeViewProps) {
     // from theme.css) renders behind all hub content. `h-dvh flex flex-col
     // overflow-hidden` is baked into MeshBackground; the remaining
     // `safe-area-pt page-enter` slot through as className.
-    <MeshBackground className="safe-area-pt page-enter">
+    // Sergeant v2 redesign Phase 1 (T6 synergy) — exposes
+    // `--bottom-nav-height` so portaled <Sheet>s and the AIPill below
+    // resolve their `var(--bottom-nav-height, 0px)` calc against a real
+    // 60px floor instead of 0px. Closes M4 + M6 (Sheet positioning on
+    // hub) with the same single edit. The 60px matches the inner
+    // `h-[60px]` track of HubBottomNav (see HubBottomNav.tsx tablist).
+    <MeshBackground
+      className="safe-area-pt page-enter"
+      style={{ "--bottom-nav-height": "60px" } as CSSProperties}
+    >
       <SkipLink />
       <HintsOrchestrator
         inFtuxSession={inFtuxSession}

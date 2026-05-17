@@ -95,7 +95,11 @@ export function KeyboardAccessory({
           type="button"
           onClick={() => onChipPress(chip)}
           className={cn(
-            "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+            // Phase 1 (M5) — chip target raised from `px-2.5 py-1` (~24px
+            // tall) to `px-3 py-2.5 min-h-touch-target` so the WCAG 2.5.5
+            // / Apple HIG 44px floor is met on coarse pointers. Pairs
+            // with the `min-h-touch-target` token landed in Phase 0 (T6).
+            "rounded-full px-3 py-2.5 min-h-touch-target text-xs font-semibold transition-colors",
             style!.chip!,
             style!.chipHover!,
           )}

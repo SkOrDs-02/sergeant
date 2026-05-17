@@ -91,6 +91,15 @@ export default [
       // semantic role; use `rounded-md` or `rounded-xl` instead.
       // See docs/design/radius-rhythm.md.
       "sergeant-design/no-rounded-lg": "warn",
+      // `no-v1-gradient` — Sergeant v2 redesign (2026-05) replaced v1 module
+      // gradient vars (`--gradient-{module}`, `--gradient-card-{module}-dark`)
+      // and their `bg-card-{module}-dark` Tailwind utilities with the
+      // brighter `--hero-grad-{module}` set + `bg-hero-grad-{module}`. The
+      // v1 vars are JSDoc-@deprecated in theme.css but kept for migration
+      // back-compat. Severity `error` — recon shows zero current consumers,
+      // so this is a tripwire for accidental v1 re-introduction.
+      // See docs/design/redesign-v2-migration.md.
+      "sergeant-design/no-v1-gradient": "error",
       // `no-bare-empty-text` — enforce empty-state tier discipline.
       // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
       // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
@@ -109,6 +118,11 @@ export default [
       // `prefer-text-style` — semantic typography over hand-rolled combos.
       // Replace (text-sm font-medium) with text-style-label etc.
       // See docs/design/design-system.md § Typography.
+      // TODO(redesign-v2 T5): ramp to "error" for `apps/web/src/modules/**`
+      // after the baseline-cleanup PR lands. Current recon (2026-05-17)
+      // shows 80+ candidate violations — flipping severity before cleanup
+      // would break CI. See docs/design/redesign-v2-execution-plan.md
+      // § Phase 0 → T5.
       "sergeant-design/prefer-text-style": "warn",
       // `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` /
       // `text-[Nrem]` literals; route every call-site through a named

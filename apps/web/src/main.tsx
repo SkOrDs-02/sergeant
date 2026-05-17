@@ -34,10 +34,23 @@ import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
 import { maybeRunOnboarding } from "./core/onboarding/index.js";
-import { isCapacitor } from "@sergeant/shared";
+import { isCapacitor, getPlatform } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
+
+// Sergeant v2 redesign Phase 1 (M1) — flag the document root when
+// running inside the iOS Capacitor WebView so `theme.css` can swap
+// the mesh `background-attachment: fixed → scroll` (the fixed
+// strategy stutters in iOS WKWebView during scroll). The legacy
+// `@supports (-webkit-overflow-scrolling: touch)` detector was
+// reliable on iOS ≤ 12 but modern iOS (13+) silently dropped that
+// property, so the detector regressed to no-op on every recent
+// device. Runtime detection through `@sergeant/shared.getPlatform()`
+// reads the Capacitor bridge directly and is iOS-version stable.
+if (isCapacitor() && getPlatform() === "ios") {
+  document.documentElement.dataset.iosCapacitor = "true";
+}
 
 const queryClient = createAppQueryClient();
 // Persistent IDB-backed snapshot для warm-start: на холодному старті

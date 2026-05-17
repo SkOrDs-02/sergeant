@@ -100,7 +100,10 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     <nav
       className={cn(
         "shrink-0 relative z-30 safe-area-pb",
-        "bg-panel/95 backdrop-blur-xl",
+        // Phase 1 (M3) — `motion-safe:` guard so reduced-motion users get
+        // the translucent panel without GPU-heavy blur (Android Chrome
+        // WebView jank). Same treatment as HubBottomNav.
+        "bg-panel/95 motion-safe:backdrop-blur-xl",
         "border-t border-line",
         className,
       )}

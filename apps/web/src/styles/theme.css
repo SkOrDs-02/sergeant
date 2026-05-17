@@ -123,9 +123,14 @@
     /* Destructive hover ring (Button variant="destructive"). */
     --shadow-danger-ring: 0 0 0 3px rgba(239, 68, 68, 0.15);
 
-    /* Dark-mode overlay gradients for module hero Card variants. These are
-       layered on top of `bg-panel` when the theme is dark so the card keeps
-       a faint module tint instead of reading as a neutral warm panel. */
+    /**
+     * @deprecated v1 dark-mode overlay gradients — Sergeant v2 redesign
+     * (introduced 2026-05) replaces these with `--hero-grad-{module}`
+     * (defined in the v2 token block below; auto-handles dark via the
+     * `.dark` cascade). Kept for back-compat until the v1→v2 migration
+     * sweep completes. ESLint guard: `sergeant-design/no-v1-gradient`
+     * blocks new consumers. See docs/design/redesign-v2-migration.md.
+     */
     --gradient-card-finyk-dark: linear-gradient(
       135deg,
       rgba(16, 185, 129, 0.1) 0%,
@@ -264,9 +269,26 @@
     --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
     --c-xp: 139 92 246; /* violet-500 — XP / level-up accent */
 
-    /* Module hero card gradients — delicate accent washes for top-of-page
-       hero cards. Semi-transparent so they layer over `bg-panel` or
-       module surfaces. */
+    /* Chart series CSS vars — mirror the Tailwind preset `chart-{module}`
+       utilities so Recharts SVG `fill="..."` / `stroke="..."` (which take
+       inline strings, not Tailwind class names) reach the same module-
+       semantic colors. Sync rule: any change here must also update
+       `chart-{module}` in `packages/design-tokens/tailwind-preset.js`. */
+    --c-chart-finyk: 4 120 87; /* emerald-700 — 5.23:1 vs cream */
+    --c-chart-fizruk: 21 94 117; /* cyan-800 — 7.5:1 vs cream */
+    --c-chart-routine: 194 58 58; /* coral-700 — 5.06:1 vs cream */
+    --c-chart-nutrition: 70 98 18; /* lime-800 — 6.64:1 vs cream */
+
+    /**
+     * @deprecated v1 module hero card gradients — Sergeant v2 redesign
+     * (introduced 2026-05) replaces these with `--hero-grad-{module}`
+     * (defined in the v2 token block below). New code MUST use
+     * `--hero-grad-{module}` or `bg-hero-{module}` Tailwind utility.
+     * These v1 vars are kept only for back-compat until the v1→v2
+     * migration sweep completes. ESLint guard:
+     * `sergeant-design/no-v1-gradient` blocks new consumers.
+     * See docs/design/redesign-v2-migration.md.
+     */
     --gradient-finyk: linear-gradient(
       135deg,
       rgba(16, 185, 129, 0.08) 0%,
@@ -452,6 +474,13 @@
     --c-nutrition-soft-border: 86 124 15; /* lime-700 */
     --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
 
+    /* Chart series — brighter -400 tier for visibility on dark warm bg.
+       Sync with `:root` chart vars + `chart-{module}` Tailwind palette. */
+    --c-chart-finyk: 52 211 153; /* emerald-400 */
+    --c-chart-fizruk: 34 211 238; /* cyan-400 */
+    --c-chart-routine: 255 140 120; /* coral-400 */
+    --c-chart-nutrition: 176 230 54; /* lime-400 */
+
     /* ───────────────────────────────────────────────────────────────────
        MODULE DARK SURFACES & BORDERS
        Premixed accents tuned for use over the dark `panel` background.
@@ -601,6 +630,13 @@
     --c-routine-soft-border: 159 36 30;
     --c-nutrition-soft: 217 249 157; /* lime-200 */
     --c-nutrition-soft-border: 63 98 18;
+
+    /* Chart series — HC light keeps the AA-strong tier from `:root`
+       (already 5+ contrast on cream). 4 hues stay distinguishable. */
+    --c-chart-finyk: 4 120 87; /* emerald-700 */
+    --c-chart-fizruk: 21 94 117; /* cyan-800 */
+    --c-chart-routine: 194 58 58; /* coral-700 */
+    --c-chart-nutrition: 70 98 18; /* lime-800 */
   }
 
   html.hc.dark {
@@ -634,6 +670,13 @@
     --c-routine-soft-border: 255 140 120;
     --c-nutrition-soft: 86 124 15; /* lime-700 */
     --c-nutrition-soft-border: 176 230 54;
+
+    /* Chart series — HC dark uses brighter -300 tier so 4 hues stay
+       distinguishable against high-contrast dark bg + meet ≥7:1 AAA. */
+    --c-chart-finyk: 110 231 183; /* emerald-300 */
+    --c-chart-fizruk: 103 232 249; /* cyan-300 */
+    --c-chart-routine: 255 180 165; /* coral-300 */
+    --c-chart-nutrition: 217 249 157; /* lime-300 */
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -838,11 +881,16 @@
   background-attachment: fixed;
 }
 
-/* iOS WKWebView (Capacitor) ignores background-attachment:fixed on scrollable containers,
- * causing mesh to stutter during scroll. Detect via -webkit-overflow-scrolling CSS feature
- * (iOS-only, CSS-only — no JS runtime detection needed). */
-@supports (-webkit-overflow-scrolling: touch) {
-  .bg-mesh { background-attachment: scroll; }
+/* iOS WKWebView (Capacitor) ignores `background-attachment: fixed` on
+ * scrollable containers, causing the mesh to stutter during scroll.
+ * The legacy `@supports (-webkit-overflow-scrolling: touch)` detector
+ * regressed to no-op on iOS 13+, so detection now happens at runtime
+ * in `apps/web/src/main.tsx` (Capacitor bridge → set
+ * `html[data-ios-capacitor="true"]`). This selector consumes that
+ * flag and falls back to `fixed` everywhere else (where it works).
+ * Sergeant v2 redesign Phase 1 (M1). */
+html[data-ios-capacitor="true"] .bg-mesh {
+  background-attachment: scroll;
 }
 
 @media (prefers-reduced-motion: reduce) {

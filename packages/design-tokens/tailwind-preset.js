@@ -824,6 +824,24 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
+      // MIN HEIGHT — Touch-target token (WCAG 2.5.5 / Apple HIG ≥44×44px)
+      //
+      // `min-h-touch-target` (44px) is the universal floor for any
+      // interactive element on coarse pointers. Pair with the
+      // `[data-touch-target]` attribute in `apps/web/src/index.css` if you
+      // want the floor applied conditionally (only on `(pointer: coarse)`).
+      // The Tailwind utility version (this key) always applies the floor,
+      // regardless of pointer.
+      //
+      // Adopted by Sergeant v2 redesign Phase 0 (T6) — closes the FAB
+      // action items + KeyboardAccessory chip + Fizruk exercise-type
+      // pill-segmented control inconsistencies.
+      // ═══════════════════════════════════════════════════════════════════
+      minHeight: {
+        "touch-target": "44px",
+      },
+
+      // ═══════════════════════════════════════════════════════════════════
       // Z-INDEX — Semantic stacking tier (paired with elevation scale)
       //
       // Authoring rule: an element at elevation `eN` must use the
@@ -916,6 +934,17 @@ const preset = {
           lineHeight: "1.05",
           fontWeight: "700",
           letterSpacing: "-0.025em",
+        },
+        // v2 hero display — Manrope-800 weight, tight leading.
+        // Slot: Finyk balance reveal, Expensa amount hero (Phase 6.2),
+        // Workout Win celebration headline (Phase 4.4 W2).
+        // Separate from `.text-style-display` so existing display call-sites
+        // keep their 700 weight; this opts you into the 800 hero look.
+        ".text-style-display-hero": {
+          fontSize: "clamp(2.5rem, 2rem + 2.5vw, 4rem)",
+          lineHeight: "1",
+          fontWeight: "800",
+          letterSpacing: "-0.03em",
         },
         ".text-style-headline": {
           fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",

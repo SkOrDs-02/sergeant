@@ -33,6 +33,20 @@
   }
 }
 
+/* Opt-IN companion to the safety-net block above. Tag any non-standard
+   interactive element (custom div with onClick, chip span, FAB action
+   item, KeyboardAccessory chip, Fizruk pill-segmented option) with the
+   `data-touch-target` attribute and it inherits the 44×44 coarse-pointer
+   floor without changing its visual size on hover-capable input. Pairs
+   with the `min-h-touch-target` Tailwind utility (always-on companion).
+   Sergeant v2 redesign Phase 0 (T6). */
+@media (pointer: coarse) {
+  [data-touch-target] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* Mobile-optimized list items with larger touch targets */
 .mobile-list-item {
   @apply min-h-[56px] flex items-center px-4 py-3
