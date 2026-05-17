@@ -52,7 +52,7 @@ describe("Button", () => {
     const { getByRole } = render(<Button variant="primary">Go</Button>);
     const cls = getByRole("button").className;
     // `bg-brand-strong` (= emerald-700) clears WCAG AA against text-white
-    // — see docs/design/brand-palette-wcag-aa-proposal.md.
+    // — see docs/design/archive/brand-palette-wcag-aa-proposal.md.
     expect(cls).toContain("bg-brand-strong");
     expect(cls).toContain("text-white");
   });

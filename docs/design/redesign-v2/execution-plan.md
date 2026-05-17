@@ -3,14 +3,14 @@
 > **Last validated:** 2026-05-16 by @Skords-01 (UX + DS council audit).
 > **Next review:** 2026-08-14.
 > **Status:** Ready to execute.
-> **Companion docs:** [`redesign-v2.md`](./redesign-v2.md) (governance) · [`redesign-v2-backlog.md`](./redesign-v2-backlog.md) (raw polish items) · [`redesign-v2-migration.md`](./redesign-v2-migration.md) (BEFORE/AFTER patterns) · [`design-system.md`](./design-system.md) (canonical contract).
+> **Companion docs:** [`redesign-v2.md`](./governance.md) (governance) · [`redesign-v2-backlog.md`](./backlog.md) (raw polish items) · [`redesign-v2-migration.md`](./migration.md) (BEFORE/AFTER patterns) · [`design-system.md`](../design-system.md) (canonical contract).
 
 ## How to use this document
 
 Цей файл — **виконавчий план** для агента/розробника, який буде закривати polish + UX gaps Sergeant v2 редизайну. Він написаний так, щоб новий агент міг увійти cold і виконувати PR-послідовність без додаткового брифу.
 
 **Перед першим PR з цього плану — обов'язково:**
-1. Прочитай `AGENTS.md` (Hard Rules, особливо #11–#17), `docs/design/redesign-v2.md` (governance), `docs/design/redesign-v2-migration.md` (BEFORE/AFTER tokens).
+1. Прочитай `AGENTS.md` (Hard Rules, особливо #11–#17), `docs/design/redesign-v2/governance.md` (governance), `docs/design/redesign-v2/migration.md` (BEFORE/AFTER tokens).
 2. Підвантаж `.agents/skills/sergeant-start-here/SKILL.md` + один specialist skill для основної поверхні (web — `sergeant-web`; DS зміни — `sergeant-design-system`).
 3. Виконуй PR-и в **порядку залежностей** (див. dependency tree нижче). Phase 0 розблоковує Phase 1+, Phase 0.1 (`text-style-display` weight) розблоковує всю wow-typography.
 
@@ -177,7 +177,7 @@ Primitives існують. Wire layer відсутній.
 - 4.6 V5 HubReports insight threshold fix
 
 ### Phase 5 — Insights wiring (паралельно Phase 4)
-9 InsightCard тригерів з [`redesign-v2-backlog.md § Insights backlog`](./redesign-v2-backlog.md) з value-framed copy (не "Кави +25%" а "Кави +25% — це 340 грн. Встановити ліміт?").
+9 InsightCard тригерів з [`redesign-v2-backlog.md § Insights backlog`](./backlog.md) з value-framed copy (не "Кави +25%" а "Кави +25% — це 340 грн. Встановити ліміт?").
 
 ### Phase 6 — Expensa-inspired delights (після core polish)
 - 6.1 Category-tinted icon pill на Finyk transaction rows
@@ -235,9 +235,9 @@ Phase 6 ── Phase 0 (T1, T3) + Phase 2 завершено
 
 ## Refs
 
-- Aудит контексту: `docs/design/redesign-v2.md` § PR sequence, § Risks, § Open questions
-- Backlog (raw items): `docs/design/redesign-v2-backlog.md`
-- Migration patterns: `docs/design/redesign-v2-migration.md`
+- Aудит контексту: `docs/design/redesign-v2/governance.md` § PR sequence, § Risks, § Open questions
+- Backlog (raw items): `docs/design/redesign-v2/backlog.md`
+- Migration patterns: `docs/design/redesign-v2/migration.md`
 - DS canonical contract: `docs/design/design-system.md`
 - Brand voice: `docs/design/brandbook.md` (потребує align з `redesign-v2.md` — див. T4)
 - Empty state patterns: `docs/design/empty-states.md`

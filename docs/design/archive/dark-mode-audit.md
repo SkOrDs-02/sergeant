@@ -8,7 +8,7 @@
 ## TL;DR
 
 > **Code-sync 2026-05-02.** Це історичний аудит закритої міграції `apps/web`.
-> Поточна норма описана в [`design-system.md`](./design-system.md): новий код
+> Поточна норма описана в [`design-system.md`](../design-system.md): новий код
 > використовує semantic tokens (`bg-*-soft`, `text-*-strong`,
 > `border-*-soft-border`) і не додає raw palette light/dark пари. Таблиці
 > нижче залишені як audit trail того, що було мігровано.

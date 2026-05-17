@@ -9,7 +9,7 @@ import { Stat } from "./Stat";
  * danger, плюс кожен з module-токенів finyk / fizruk / routine / nutrition).
  * Module-варіанти беруть `text-{c}-strong` (= `[700]`, lime-800 для nutrition),
  * щоб відповідати WCAG AA contrast на cream `bg-bg` — див.
- * `docs/design/brand-palette-wcag-aa-proposal.md`.
+ * `docs/design/archive/brand-palette-wcag-aa-proposal.md`.
  *
  * `tabular-nums` гарантує, що числа з різним кратним 0/1/8 не "стрибають" по
  * ширині при анімації або swap-і значень.

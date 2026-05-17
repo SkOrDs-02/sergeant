@@ -8,7 +8,7 @@
  * `name` + `input` + текстового `result`, які повертає сервер.
  *
  * Підтримуваний набір tool-name-ів дзеркалить web-side §3 specu
- * `docs/design/specs/2026-04-24-assistant-quick-actions-v1-design.md`,
+ * `docs/design/specs/archive/2026-04-24-assistant-quick-actions-v1-design.md`,
  * щоб картка відрендерилася для тих самих ключових дій.
  */
 

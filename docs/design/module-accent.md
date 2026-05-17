@@ -14,7 +14,7 @@
 </ModuleShell>
 ```
 
-- `bg-module-accent` → активний module-колір (`finyk`=emerald-500, `fizruk`=cyan-700, `routine`=coral-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05) щоб disambiguate від finyk-emerald spectrum — див. [`redesign-v2.md`](./redesign-v2.md).
+- `bg-module-accent` → активний module-колір (`finyk`=emerald-500, `fizruk`=cyan-700, `routine`=coral-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05) щоб disambiguate від finyk-emerald spectrum — див. [`redesign-v2/governance.md`](./redesign-v2/governance.md).
 - `bg-module-accent-strong` → WCAG-AA `-strong`-companion для фонів під `text-white` (clears 4.5 : 1).
 - Використовується у спільних компонентах, які живуть у 4 модулях — без hardcoded `bg-finyk` / `bg-fizruk`-лукапів.
 
@@ -213,9 +213,9 @@ it("публікує --module-accent-rgb + strong для finyk", () => {
 
 - [`docs/design/brandbook.md`](./brandbook.md) — WCAG-AA `-strong` Tier
   - повна per-family-таблиця контрасту.
-- [`docs/design/brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md) — migration-історія (PR-и #854 / #855 / #857).
+- [`docs/design/archive/brand-palette-wcag-aa-proposal.md`](./archive/brand-palette-wcag-aa-proposal.md) — migration-історія (PR-и #854 / #855 / #857).
 - `AGENTS.md` hard rule #8 — Tailwind opacity scale.
 - `AGENTS.md` hard rule #9 — `-strong`-companion під `text-white`.
 - `AGENTS.md` hard rule #11 — no arbitrary hex colors in `className`.
 - `AGENTS.md` hard rule #12 — module-accent containment.
-- [`docs/design/dark-mode-audit.md`](./dark-mode-audit.md) — pending міграційний план із 28 raw-palette `dark:`-патчів у семантичні токени (`bg-{module}-surface`, `bg-{status}-soft`, і Wave-1b target-токени `bg-brand-soft` / `border-brand-soft-border` / `-soft-hover`, які увійдуть у preset одночасно з міграцією).
+- [`docs/design/archive/dark-mode-audit.md`](./archive/dark-mode-audit.md) — pending міграційний план із 28 raw-palette `dark:`-патчів у семантичні токени (`bg-{module}-surface`, `bg-{status}-soft`, і Wave-1b target-токени `bg-brand-soft` / `border-brand-soft-border` / `-soft-hover`, які увійдуть у preset одночасно з міграцією).

@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-17 by @Skords-01 (Phase 1 in flight).
 > **Next review:** updated after each Phase wrap.
 > **Status:** Active.
-> **Companion docs:** [`redesign-v2-execution-plan.md`](./redesign-v2-execution-plan.md) (intent — what we plan to do) · [`redesign-v2.md`](./redesign-v2.md) (governance) · [`redesign-v2-migration.md`](./redesign-v2-migration.md) (BEFORE/AFTER tokens).
+> **Companion docs:** [`redesign-v2-execution-plan.md`](./execution-plan.md) (intent — what we plan to do) · [`redesign-v2.md`](./governance.md) (governance) · [`redesign-v2-migration.md`](./migration.md) (BEFORE/AFTER tokens).
 
 ## Як цей doc працює
 
@@ -115,8 +115,8 @@ Spawned Explore agent помилково повідомив що «Hub не wrap
 
 ## Refs
 
-- Plan: [`redesign-v2-execution-plan.md`](./redesign-v2-execution-plan.md)
-- Governance: [`redesign-v2.md`](./redesign-v2.md)
-- Migration BEFORE/AFTER: [`redesign-v2-migration.md`](./redesign-v2-migration.md)
-- Polish backlog: [`redesign-v2-backlog.md`](./redesign-v2-backlog.md)
-- DS contract: [`design-system.md`](./design-system.md)
+- Plan: [`redesign-v2-execution-plan.md`](./execution-plan.md)
+- Governance: [`redesign-v2.md`](./governance.md)
+- Migration BEFORE/AFTER: [`redesign-v2-migration.md`](./migration.md)
+- Polish backlog: [`redesign-v2-backlog.md`](./backlog.md)
+- DS contract: [`design-system.md`](../design-system.md)

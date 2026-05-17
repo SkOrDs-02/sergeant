@@ -176,7 +176,7 @@ export const SYSTEM_PATHS: Record<string, ReactNode> = {
   // SERGEANT v2 REDESIGN ICONS (2026-05, PR-3).
   // Lucide-style strokes 2px, rounded line caps. Added to support the v2
   // navigation, AIPill, FTUX, and module-header chrome — see
-  // docs/design/redesign-v2.md § Icons.
+  // docs/design/redesign-v2/governance.md § Icons.
   // ═══════════════════════════════════════════════════════════════════════
 
   // `x` — close glyph, alias of `close`. Handoff uses bare `x`; keep both

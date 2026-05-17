@@ -2,7 +2,7 @@
  * Sergeant Design System — `InsightCard` (PR-7a).
  *
  * @lifecycle experimental (introduced 2026-05; promoted to active after PR-8)
- * @see docs/design/redesign-v2.md § AI surfaces
+ * @see docs/design/redesign-v2/governance.md § AI surfaces
  *
  * AI push card — конкретна пропозиція коли AI знайшов щось важливе.
  * Show-once-per-day, dismissible. Поступово рендериться через

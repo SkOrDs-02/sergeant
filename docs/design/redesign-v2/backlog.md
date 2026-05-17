@@ -88,6 +88,6 @@ Sergeant v2 редизайн (governance: `redesign-v2.md`) поставив **f
 
 ## Refs
 
-- `docs/design/redesign-v2.md` — adapter strategy + governance
+- `docs/design/redesign-v2/governance.md` — adapter strategy + governance
 - Handoff: `D:\_unzipped\handoff\screens\` + `final/`
 - PR-0..PR-8: див. `redesign-v2.md § PR sequence` для merged PR-URLs

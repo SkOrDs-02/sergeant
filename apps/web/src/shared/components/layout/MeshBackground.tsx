@@ -2,7 +2,7 @@
  * Sergeant Design System — `MeshBackground`
  *
  * @lifecycle experimental (introduced 2026-05 у PR-5; promote to active after PR-8)
- * @see docs/design/redesign-v2.md § Mesh background
+ * @see docs/design/redesign-v2/governance.md § Mesh background
  *
  * Base layout layer that renders the v2 mesh-gradient surface. Composites
  * four corner radial gradients (`--bg-mesh-1..4` defined in

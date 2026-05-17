@@ -34,7 +34,7 @@ export type BadgeSize = "xs" | "sm" | "md";
 // Solid tones use `bg-{c}-strong text-white` (5.0–7.0:1) so labels stay
 // readable at body sizes. The previous `bg-{c} text-white` failed WCAG
 // AA (~2.5:1) for every brand / status / module token. See
-// docs/design/brand-palette-wcag-aa-proposal.md § 2.2.
+// docs/design/archive/brand-palette-wcag-aa-proposal.md § 2.2.
 const solidVariants: Record<BadgeVariant, string> = {
   neutral: "bg-fg-muted/90 text-surface border-transparent",
   accent: "bg-brand-strong text-white border-transparent",

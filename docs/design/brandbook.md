@@ -161,7 +161,7 @@ Cross-platform: `-strong`-Tailwind-утиліти вивезені через
 з тими самими hex-значеннями (див. `packages/design-tokens/mobile.js`).
 
 Повне обґрунтування, виміряння контрасту й історію міграції (PR #851 → PR #855)
-див. у [`docs/design/brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md).
+див. у [`docs/design/archive/brand-palette-wcag-aa-proposal.md`](./archive/brand-palette-wcag-aa-proposal.md).
 
 ### Кольори фону (Light-режим)
 
@@ -557,7 +557,7 @@ Toolkit: `shadow-soft`, `shadow-card`, `shadow-float` плюс card-варіан
 > Contrast intent: `muted` / `subtle` / `line` були підняті після WCAG-аудиту
 > (PR-серія dark-mode contrast lift: [#316](https://github.com/Skords-01/Sergeant/pull/316),
 > [#550](https://github.com/Skords-01/Sergeant/pull/550); подальші точкові
-> патчі див. у [`dark-mode-audit.md`](./dark-mode-audit.md)). Dark-mode border
+> патчі див. у [`archive/dark-mode-audit.md`](./archive/dark-mode-audit.md)). Dark-mode border
 > тепер читається на `--c-panel` ≥3:1, а `--c-subtle` забезпечує ≥4.5:1
 > на всіх поверхнях.
 

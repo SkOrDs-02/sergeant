@@ -129,7 +129,7 @@
      * (defined in the v2 token block below; auto-handles dark via the
      * `.dark` cascade). Kept for back-compat until the v1→v2 migration
      * sweep completes. ESLint guard: `sergeant-design/no-v1-gradient`
-     * blocks new consumers. See docs/design/redesign-v2-migration.md.
+     * blocks new consumers. See docs/design/redesign-v2/migration.md.
      */
     --gradient-card-finyk-dark: linear-gradient(
       135deg,
@@ -234,7 +234,7 @@
        `dark:bg-{family}-500/15` gymnastics. Used by `Segmented`, `Tabs`,
        `Button[variant=soft]`, `Badge`, `Banner`, `Card[variant=tint]`,
        `WeeklyDigestCard`, `AssistantAdviceCard`, etc.
-       See docs/design/dark-mode-audit.md for the migration targets.
+       See docs/design/archive/dark-mode-audit.md for the migration targets.
        ─────────────────────────────────────────────────────────────────── */
     --c-brand-soft: 236 253 245; /* emerald-50 — matches legacy `bg-brand-50` */
     --c-brand-soft-border: 167 243 208; /* emerald-200 — matches legacy ring */
@@ -287,7 +287,7 @@
      * These v1 vars are kept only for back-compat until the v1→v2
      * migration sweep completes. ESLint guard:
      * `sergeant-design/no-v1-gradient` blocks new consumers.
-     * See docs/design/redesign-v2-migration.md.
+     * See docs/design/redesign-v2/migration.md.
      */
     --gradient-finyk: linear-gradient(
       135deg,
@@ -700,7 +700,7 @@
        Hero gradient — `--hero-grad-{module}` (linear gradients per module).
 
      Light + dark + HC variants are all authored here. See
-     `docs/design/redesign-v2.md` for the full token contract.
+     `docs/design/redesign-v2/governance.md` for the full token contract.
      ═══════════════════════════════════════════════════════════════════════ */
   :root {
     /* Background base — warm cream (handoff `--bg-base`). */
@@ -801,7 +801,7 @@
        - Hairlines bump from 0.06 / 0.10 → 0.35 / 0.60 for visible separators.
        - Shadows degrade to solid 2px borders (HC ignores depth cues).
        - Hero gradients flip to solid module-strong tints.
-     See docs/design/redesign-v2.md § HC contract.
+     See docs/design/redesign-v2/governance.md § HC contract.
      ═══════════════════════════════════════════════════════════════════════ */
   html.hc {
     /* Solid bg-base — no mesh. */

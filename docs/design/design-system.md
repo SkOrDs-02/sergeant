@@ -1,7 +1,7 @@
 # Sergeant Design System
 
 > **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
-> **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2-backlog.md`](./redesign-v2-backlog.md))
+> **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
 **Харчування**. Документ — контракт між дизайном і кодом; будь-який новий
@@ -10,7 +10,7 @@
 > **v2 redesign awareness.** Sergeant v2 (травень 2026) додав parallel v2
 > token namespace (glass surfaces, mesh background, ink-strong, нові radii)
 > поряд з legacy `--c-*` тritриплет-токенами які лишилися активні. Якщо ти
-> пишеш новий компонент — дивися [`redesign-v2-migration.md`](./redesign-v2-migration.md) для BEFORE/AFTER патернів. Для governance — [`redesign-v2.md`](./redesign-v2.md). Цей design-system.md лишається canonical довідник для shared контракту; v2-specific deviations документовані окремо.
+> пишеш новий компонент — дивися [`redesign-v2/migration.md`](./redesign-v2/migration.md) для BEFORE/AFTER патернів. Для governance — [`redesign-v2/governance.md`](./redesign-v2/governance.md). Цей design-system.md лишається canonical довідник для shared контракту; v2-specific deviations документовані окремо.
 
 > **TL;DR для контриб'ютора.** Якщо ти пишеш новий екран — імпорти все з
 > `@shared/components/ui` і використовуй семантичні класи Tailwind
@@ -61,7 +61,7 @@ Hard Rules + ESLint rules.
 2. **Темна тема — first-class.** Всі токени живуть у CSS-змінних
    `:root` та `.dark`; теми перемикаються класом без перезапису стилів.
    Парні `dark:` override з сирою палітрою (`bg-teal-100 dark:bg-teal-900/30`)
-   — заборонений анти-патерн. [`dark-mode-audit.md`](./dark-mode-audit.md)
+   — заборонений анти-патерн. [`archive/dark-mode-audit.md`](./archive/dark-mode-audit.md)
    збережений як історія міграції; поточний guardrail —
    `sergeant-design/no-raw-dark-palette` на рівні `error` для `apps/web`.
 3. **Модулі діляться токенами, а не стилями.** `bg-finyk-surface`,

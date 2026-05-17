@@ -57,7 +57,7 @@ export interface SegmentedProps<V extends string = string> {
 // Solid mode pairs `bg-{c}-strong text-white` (5.0–7.0:1) so the active
 // segment label stays readable at 12 px. Border keeps the brand `*-500`
 // for visual continuity with siblings; borders aren't text. See
-// docs/design/brand-palette-wcag-aa-proposal.md § 2.2.
+// docs/design/archive/brand-palette-wcag-aa-proposal.md § 2.2.
 const VARIANT_SOLID: Record<SegmentedVariant, string> = {
   brand: "bg-brand-strong text-white border-brand",
   fizruk: "bg-fizruk-strong text-white border-fizruk",

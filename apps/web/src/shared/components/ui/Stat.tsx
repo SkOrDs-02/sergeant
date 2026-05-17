@@ -34,7 +34,7 @@ export type StatSize = "sm" | "md" | "lg";
 // `text-{c}` (= `[500]`) only cleared ~2.4:1 — the `text-2xl` size
 // nominally exempts it from the 4.5:1 rule (large-text 3:1), but the
 // nested `<span>` value isn't `font-bold`, so axe applies the regular
-// threshold. See docs/design/brand-palette-wcag-aa-proposal.md.
+// threshold. See docs/design/archive/brand-palette-wcag-aa-proposal.md.
 const variantClass: Record<StatVariant, string> = {
   default: "text-text",
   success: "text-success-strong",

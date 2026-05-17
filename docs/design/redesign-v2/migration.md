@@ -5,7 +5,7 @@
 
 Цей doc — практичний reference для **engineers** які пишуть новий код або торкаються існуючого у post-v2-rollout world. Містить **BEFORE/AFTER** для типових патернів.
 
-Для **governance** дивися [`redesign-v2.md`](./redesign-v2.md). Для **полірувального backlog** — [`redesign-v2-backlog.md`](./redesign-v2-backlog.md).
+Для **governance** дивися [`redesign-v2.md`](./governance.md). Для **полірувального backlog** — [`redesign-v2-backlog.md`](./backlog.md).
 
 ## TL;DR (3 правила)
 
@@ -159,7 +159,7 @@ function CoffeeInsight() {
 }
 ```
 
-Дивись [`redesign-v2-backlog.md` § Insights backlog](./redesign-v2-backlog.md#insights-backlog-pr-7a-hook-scaffold-wire-actual-triggers-тут) для full list.
+Дивись [`redesign-v2-backlog.md` § Insights backlog](./backlog.md#insights-backlog-pr-7a-hook-scaffold-wire-actual-triggers-тут) для full list.
 
 ## HC mode — automatic
 

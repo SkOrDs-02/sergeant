@@ -29,7 +29,7 @@ describe("Badge", () => {
     // `bg-success-strong` (= emerald-700) clears 5.48:1 against
     // text-white. The previous `bg-brand-700` resolved to the same hex,
     // but the semantic name pairs better with the WCAG-AA contract in
-    // docs/design/brand-palette-wcag-aa-proposal.md.
+    // docs/design/archive/brand-palette-wcag-aa-proposal.md.
     expect(el.className).toContain("bg-success-strong");
     expect(el.className).toContain("text-white");
   });

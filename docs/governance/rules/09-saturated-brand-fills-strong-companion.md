@@ -19,7 +19,7 @@
 
 ## Why / What is enforced
 
-Every saturated brand colour (`brand`, `accent`, `success`, `warning`, `danger`, `info`, `finyk`, `fizruk`, `routine`, `nutrition`) ships with a `-strong` companion (typically the `-700` step; `nutrition` uses `-800`) that clears WCAG 2.1 AA 4.5 : 1 against `text-white`. The saturated `-500` shades regress to ~2.4–2.8 : 1 against white — see `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier" for the full per-family contrast table and `docs/design/brand-palette-wcag-aa-proposal.md` for the migration history (PRs [#854](https://github.com/Skords-01/Sergeant/pull/854) / [#855](https://github.com/Skords-01/Sergeant/pull/855) / [#857](https://github.com/Skords-01/Sergeant/pull/857)).
+Every saturated brand colour (`brand`, `accent`, `success`, `warning`, `danger`, `info`, `finyk`, `fizruk`, `routine`, `nutrition`) ships with a `-strong` companion (typically the `-700` step; `nutrition` uses `-800`) that clears WCAG 2.1 AA 4.5 : 1 against `text-white`. The saturated `-500` shades regress to ~2.4–2.8 : 1 against white — see `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier" for the full per-family contrast table and `docs/design/archive/brand-palette-wcag-aa-proposal.md` for the migration history (PRs [#854](https://github.com/Skords-01/Sergeant/pull/854) / [#855](https://github.com/Skords-01/Sergeant/pull/855) / [#857](https://github.com/Skords-01/Sergeant/pull/857)).
 
 ```tsx
 // ❌ BAD — saturated brand fill behind white text fails WCAG AA at body sizes.

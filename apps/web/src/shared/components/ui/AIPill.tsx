@@ -2,7 +2,7 @@
  * Sergeant Design System — `AIPill` (PR-7a).
  *
  * @lifecycle experimental (introduced 2026-05; promoted to active after PR-8)
- * @see docs/design/redesign-v2.md § AI surfaces
+ * @see docs/design/redesign-v2/governance.md § AI surfaces
  *
  * Persistent AI affordance що сидить НАД bottom-nav (z-sticky tier).
  * Двi окремi кнопки в одному visual pill:

@@ -96,7 +96,7 @@ const radii: Record<CardRadius, string> = {
   lg: "rounded-2xl", // 16px — CARD tier (legacy)
   xl: "rounded-3xl", // 24px — HERO tier (legacy)
   // Sergeant v2 redesign radii (parallel namespace introduced in PR-1).
-  // Use these on v2 glass surfaces — see docs/design/redesign-v2.md.
+  // Use these on v2 glass surfaces — see docs/design/redesign-v2/governance.md.
   "r-lg": "rounded-r-lg", // 14px — primary v2 card
   "r-xl": "rounded-r-xl", // 18px — metric / sub-hero card
   "r-2xl": "rounded-r-2xl", // 24px — hero / sheet

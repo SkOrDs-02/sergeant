@@ -1,20 +1,28 @@
 # Дизайн
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-13.
 > **Status:** Active
 
-Брендбук, дизайн-система, спеціалізовані патерни, аудити і tooling.
+Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
+
+## Як знайти потрібне
+
+- **Канонічний контракт для нового UI-коду** → [`design-system.md`](./design-system.md).
+- **Бренд (голос, ім'я, палітра)** → [`brandbook.md`](./brandbook.md).
+- **Активний v2 редизайн (rollout, migration, live status, backlog)** → [`redesign-v2/`](./redesign-v2/README.md).
+- **Спеціалізовані UX-патерни** → таблиця нижче.
+- **Закриті аудити та реалізовані пропозиції (для governance-trace)** → [`archive/`](./archive/README.md).
+- **Product-side design specs** → [`specs/`](./specs/README.md).
 
 ## v2 redesign (травень 2026)
 
 Sergeant v2 редизайн (foundation merged 2026-05) додав parallel v2 token
 namespace (glass surfaces, mesh background, ink-strong, Manrope шрифт,
 22 нові Lucide icons, AIPill / InsightCard AI surfaces). Legacy `--c-*`
-токени лишилися активні — нічого не зламано. Документи:
-
-- [`redesign-v2.md`](./redesign-v2.md) — governance, adapter strategy, PR sequence (PR-0..PR-8)
-- [`redesign-v2-migration.md`](./redesign-v2-migration.md) — BEFORE/AFTER патерни для engineers
-- [`redesign-v2-backlog.md`](./redesign-v2-backlog.md) — under-page polish follow-ups + insights backlog
+токени лишилися активні — нічого не зламано. Весь кластер винесено в
+підпапку [`redesign-v2/`](./redesign-v2/README.md): 5 файлів (governance,
+migration, execution-plan, live execution-status, backlog) плюс index,
+що підказує куди йти cold.
 
 ## Живий styleguide
 
@@ -58,8 +66,10 @@ namespace (glass surfaces, mesh background, ink-strong, Manrope шрифт,
 2. Спеціалізовані патерни (`cross-module-prompts.md`, `empty-states.md`,
    `module-accent.md`, `radius-rhythm.md`, `undo-pattern.md`,
    `unified-bottom-nav.md`) — уточнюють конкретні UX-рішення.
-3. Аудити (`dark-mode-audit.md`, `brand-palette-wcag-aa-proposal.md` та
-   документи в `docs/audits`) — історія рішень і tracker-и.
+3. v2-rollout кластер (`redesign-v2/`) — переходи на v2 поверх дизайн-системи.
+4. Архів (`archive/`, `specs/archive/`) — закриті аудити та superseded specs.
+   Жоден з цих файлів не є живим контрактом — лише історичний контекст
+   для governance-посилань.
 
 ## Identity / brand
 
@@ -91,9 +101,11 @@ namespace (glass surfaces, mesh background, ink-strong, Manrope шрифт,
 | [`storybook.md`](./storybook.md) | Storybook 10 setup, conventions, ESLint `require-stories-for-ui-components` контракт |
 | [`specs/`](./specs)              | Design specs для нетривіальних product-side фіч (раніше `agents/specs/`)             |
 
-## Audit / history
+## Archive
 
-| Документ                                                                   | Опис                                                                   |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`dark-mode-audit.md`](./dark-mode-audit.md)                               | Closed audit trail міграції raw dark palette (Wave 1b → 2a → 2b → 2c)  |
-| [`brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md) | Implemented: WCAG AA `-strong`-tier для brand palette (PR #851 → #857) |
+Закриті аудити та реалізовані пропозиції — повний індекс і підсумки кожного у [`archive/README.md`](./archive/README.md). Файли тут лишені як **історичний контекст** для governance-посилань (HR #9, HR #13, ADR-0007), не як живий контракт.
+
+| Документ                                                                                   | Статус         |
+| ------------------------------------------------------------------------------------------ | -------------- |
+| [`archive/dark-mode-audit.md`](./archive/dark-mode-audit.md)                               | Closed         |
+| [`archive/brand-palette-wcag-aa-proposal.md`](./archive/brand-palette-wcag-aa-proposal.md) | Implemented    |

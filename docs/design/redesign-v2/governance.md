@@ -77,7 +77,7 @@
 | PR-7b | M | 🔍 [#2911](https://github.com/Skords-01/Sergeant/pull/2911) | Wire AIPill into HubHomeView + 4 module shells |
 | **PR-8** | M | 🔄 цей PR | Storybook stories для AIPill/InsightCard + polish backlog doc + status closure |
 
-**Polish backlog** (under-page glass treatments, ChatSheet modal-route, insight backlog wiring, DM Sans retire) — див. [`redesign-v2-backlog.md`](./redesign-v2-backlog.md).
+**Polish backlog** (under-page glass treatments, ChatSheet modal-route, insight backlog wiring, DM Sans retire) — див. [`redesign-v2-backlog.md`](./backlog.md).
 
 ## HC contract — новий внесок (хендоф не покривав)
 
