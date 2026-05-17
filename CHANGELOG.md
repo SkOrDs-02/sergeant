@@ -1,16 +1,16 @@
 # Changelog
 
-> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
+> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-15.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/),
-версіювання — [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+версіювання — CalVer `vYYYY.MM.DD` (тег за датою release-cut, не SemVer — проєкт не публікується у npm registry).
 
-> **Автоматизація:** проєкт використовує Conventional Commits + commitlint.
-> Наступний крок — підключити автоматичну генерацію changelog
-> (наприклад, `changesets` або `conventional-changelog-cli`).
+> **Як писати:** entries у секції `## [Unreleased]` пишуться **вручну** у rich narrative-style (multi-paragraph з PR-mentions, file refs, technical rationale) — це свідомий вибір, бо auto-generation з commit-subjects втратило б контекст.
+>
+> **Як cut-ити release:** `pnpm changelog:cut` (опц. `<YYYY-MM-DD>` як arg) renames `## [Unreleased]` → `## [<date>]`, додає fresh empty Unreleased, створює tag `v<date>`, commit-ить. `--dry-run` для preview. Деталі — [`docs/initiatives/0016-changelog-release-cut.md`](./docs/initiatives/0016-changelog-release-cut.md).
 
 ## [Unreleased]
 

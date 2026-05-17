@@ -89,6 +89,7 @@
     "docs:gen-trust-badge": "node scripts/docs/generate-trust-badge.mjs",
     "docs:check-trust-badge": "node scripts/docs/generate-trust-badge.mjs --check",
     "docs:gen-daily": "pnpm docs:gen-open-work && pnpm docs:gen-today && pnpm docs:gen-trust-badge",
+    "changelog:cut": "node scripts/changelog/cut-release.mjs",
     "docs:gen-graph": "node scripts/docs/generate-knowledge-graph.mjs",
     "docs:check-graph": "node scripts/docs/generate-knowledge-graph.mjs --check",
     "docs:gen-symbols": "node scripts/docs/generate-symbol-catalog.mjs",
