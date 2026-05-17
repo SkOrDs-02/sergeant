@@ -1,8 +1,8 @@
 /** @vitest-environment jsdom */
 import type { ReactNode } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { HubSettingsPage } from "./HubSettingsPage";
 
@@ -18,6 +18,14 @@ function renderWithToast(ui: ReactNode) {
     <MemoryRouter initialEntries={[initial]}>
       <ToastProvider>{ui}</ToastProvider>
     </MemoryRouter>,
+  );
+}
+
+function renderWithBrowserToast(ui: ReactNode) {
+  return render(
+    <BrowserRouter>
+      <ToastProvider>{ui}</ToastProvider>
+    </BrowserRouter>,
   );
 }
 
@@ -64,7 +72,7 @@ describe("HubSettingsPage", () => {
   });
 
   it("renders stable anchors and search keywords for settings sections", () => {
-    renderWithToast(
+    renderWithBrowserToast(
       <HubSettingsPage
         user={{
           id: "u1",
@@ -94,7 +102,7 @@ describe("HubSettingsPage", () => {
   it("reveals and scrolls to a hash-linked settings section", () => {
     window.history.replaceState(null, "", "/?tab=settings#settings-finyk");
 
-    renderWithToast(
+    renderWithBrowserToast(
       <HubSettingsPage
         user={{
           id: "u1",
@@ -140,6 +148,29 @@ describe("HubSettingsPage", () => {
     expect(screen.getByText("Routine section")).toBeInTheDocument();
     expect(screen.getByText("Finyk section")).toBeInTheDocument();
     expect(screen.queryByText("General section")).not.toBeInTheDocument();
+  });
+
+  it("keeps ?tab=settings when switching inner groups", () => {
+    window.history.replaceState(null, "", "/?tab=settings");
+
+    renderWithBrowserToast(
+      <HubSettingsPage
+        user={{
+          id: "u1",
+          email: null,
+          name: null,
+          image: null,
+          emailVerified: true,
+          createdAt: null,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /Розділи/ }));
+
+    expect(window.location.search).toContain("tab=settings");
+    expect(window.location.search).toContain("group=modules");
+    expect(screen.getByText("Routine section")).toBeInTheDocument();
   });
 
   it("auto-expands the Дашборд section when navigated via #settings-dashboard", () => {

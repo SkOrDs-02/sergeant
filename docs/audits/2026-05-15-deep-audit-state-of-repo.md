@@ -178,11 +178,13 @@ pnpm docs:check-links
 | README hero placeholder                                                  | neutralized `PR-02b` posthumous reference                                                                          | open [#2894](https://github.com/Skords-01/Sergeant/pull/2894)                       |
 | `pr-plan-backend-perf-2026-05.md` PR-12 — audit stubs                    | `2026-08-XX-sync-engine-roast.md` + `2026-08-XX-openclaw-internal-roast.md` + index                                | open [#2895](https://github.com/Skords-01/Sergeant/pull/2895)                       |
 | §[Truly outstanding](#truly-outstanding) D1 — Stripe webhook e2e         | route-level supertest + 8 scenarios                                                                                | open ([#2872](https://github.com/Skords-01/Sergeant/pull/2872) — попередній прохід) |
-| §[Truly outstanding](#truly-outstanding) D3 — `VOYAGE_API_KEY` fail-loud | startup guard + 7 tests у `assertStartupEnv`                                                                       | open ([#2873](https://github.com/Skords-01/Sergeant/pull/2873) — попередній прохід) |
+| §[Truly outstanding](#truly-outstanding) D3 — `VOYAGE_API_KEY` fail-loud | startup guard + 7 tests у `assertStartupEnv`                                                                       | closed (local diff; verified 2026-05-17)                                            |
 | §[Truly outstanding](#truly-outstanding) D4 — ADR freshness backfill     | codemod + 43 ADR з `Last validated` markers                                                                        | open ([#2874](https://github.com/Skords-01/Sergeant/pull/2874) — попередній прохід) |
 
 **Що залишається у §[Truly outstanding](#truly-outstanding):**
 
+- D2 (Stryker removal decision-record) — підтверджено як **already-closed** під час другого проходу. `docs/testing/README.md:12` + `2026-05-05-tests-review.md:40` + ADR-0020:235 уже містять explicit decision. Drop з outstanding-list — наступний синтез-прохід.
+- D1/D4 — PR-и open; чекають merge. D3 закрито локальним diff-ом і перевірено таргетованим `assertStartupEnv` Vitest.
 - D2 (Stryker removal decision-record) — ✅ Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)). Drop з outstanding-list виконано.
 - D1/D3/D4 — PR-и open; чекають merge. Перебудувати таблицю на наступному циклі.
 

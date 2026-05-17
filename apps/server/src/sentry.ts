@@ -36,6 +36,8 @@ export type SentrySamplingRule = {
 export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
   // Order is intentional: longest path first so /api/auth/sign-up does not
   // accidentally fall through to /api/health (longest-prefix-first).
+  // Do not add a broad `/api/internal/` 1.0 rule: n8n/cron/internal read
+  // endpoints can spike. Keep 100% sampling to low-volume write mutations.
   {
     match: "/api/internal/openclaw/write/",
     rate: 1.0,

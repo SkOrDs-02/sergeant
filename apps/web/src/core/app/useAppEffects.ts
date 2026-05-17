@@ -49,7 +49,9 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   } = deps;
   const { hubView, setHubView } = ui;
 
-  // Prefetch critical module chunks once the main thread is free.
+  // Prefetch hub-navigation pages first, then let heavier module chunks
+  // follow on a later idle slot. Reports and Settings are primary tabs,
+  // so they should not sit behind four module prefetches on cold start.
   // Previously hard-coded to `setTimeout(2000)`, which over-paid on fast
   // devices (idle by 200 ms) and under-paid on slow ones (still hydrating
   // at 2 s). `requestIdleCallback` lets the browser fire whenever the
@@ -59,20 +61,33 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // 2 s fallback for it.
   useEffect(() => {
     if ("requestIdleCallback" in window) {
-      const id = requestIdleCallback(
+      const pageId = requestIdleCallback(
         () => {
-          prefetchCriticalModules();
           prefetchHubNavigationPages();
         },
         { timeout: 4000 },
       );
-      return () => cancelIdleCallback(id);
+      const moduleId = requestIdleCallback(
+        () => {
+          prefetchCriticalModules();
+        },
+        { timeout: 6000 },
+      );
+      return () => {
+        cancelIdleCallback(pageId);
+        cancelIdleCallback(moduleId);
+      };
     }
-    const timer = setTimeout(() => {
-      prefetchCriticalModules();
+    const pageTimer = setTimeout(() => {
       prefetchHubNavigationPages();
     }, 2000);
-    return () => clearTimeout(timer);
+    const moduleTimer = setTimeout(() => {
+      prefetchCriticalModules();
+    }, 3000);
+    return () => {
+      clearTimeout(pageTimer);
+      clearTimeout(moduleTimer);
+    };
   }, []);
 
   // If the user signs out while the «Профіль» tab is active, bounce the

@@ -71,6 +71,16 @@ describe("pickTracesSampleRate", () => {
     ).toBe(1.0);
   });
 
+  it("does not sample all /api/internal/* routes at admin-level rates", () => {
+    expect(pickTracesSampleRate("/api/internal/alerts/post", 0.05)).toBe(0.05);
+    expect(
+      pickTracesSampleRate("/api/internal/mono/webhook/rotate", 0.05),
+    ).toBe(0.05);
+    expect(
+      pickTracesSampleRate("/api/internal/openclaw/metrics/sentry", 0.05),
+    ).toBe(0.05);
+  });
+
   it("falls back to default for unmatched routes", () => {
     expect(pickTracesSampleRate("/api/nutrition/log", 0.05)).toBe(0.05);
     expect(pickTracesSampleRate("/api/finyk/transactions", 0.05)).toBe(0.05);
@@ -124,6 +134,17 @@ describe("SENTRY_SAMPLING_RULES — table integrity", () => {
       expect(seen.has(rule.match)).toBe(false);
       seen.add(rule.match);
     }
+  });
+
+  it("keeps 100% internal sampling scoped to OpenClaw write mutations", () => {
+    const fullRateInternalRules = SENTRY_SAMPLING_RULES.filter(
+      (rule) => rule.match.startsWith("/api/internal/") && rule.rate === 1.0,
+    ).map((rule) => rule.match);
+
+    expect(fullRateInternalRules).toEqual(["/api/internal/openclaw/write/"]);
+    expect(
+      SENTRY_SAMPLING_RULES.some((rule) => rule.match === "/api/internal/"),
+    ).toBe(false);
   });
 });
 

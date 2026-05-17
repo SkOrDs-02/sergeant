@@ -217,12 +217,12 @@ export function prefetchHubNavigationPages(): void {
 
   if ("requestIdleCallback" in window) {
     HUB_NAVIGATION_PAGES.forEach((page) => {
-      requestIdleCallback(() => prefetchPage(page), { timeout: 3000 });
+      requestIdleCallback(() => importPageChunk(page), { timeout: 3000 });
     });
     return;
   }
   HUB_NAVIGATION_PAGES.forEach((page, index) => {
-    setTimeout(() => prefetchPage(page), index * 100);
+    setTimeout(() => importPageChunk(page), index * 100);
   });
 }
 

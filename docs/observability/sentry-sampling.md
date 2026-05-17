@@ -45,6 +45,12 @@ to keep the audit pattern consistent.
 | `/api/health`                   | `0.001` | Liveness probe — 0.1 % prevents quota burn.                                                                                                                         |
 | _(no match — fallback)_         | `0.05`  | Resolved via `defaultSampleRate()`: explicit `SENTRY_TRACES_SAMPLE_RATE` > `SENTRY_SAMPLE_PROFILE` preset > `0.05`.                                                 |
 
+There is intentionally no broad `/api/internal/` 1.0 rule. Internal
+n8n/cron/read endpoints can spike, so they use the fallback rate unless a
+route gets a narrow rule. Today only `/api/internal/openclaw/write/` is sampled
+at 100% because those founder-approved write mutations are low-volume and need
+full audit reconstruction.
+
 ### Order matters
 
 The rule table is consulted top-to-bottom; first prefix match wins.

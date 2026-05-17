@@ -4,6 +4,7 @@ import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
+import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { AIDigestSection } from "../settings/AIDigestSection";
 import { AssistantCatalogueSection } from "../settings/AssistantCatalogueSection";
 import { DashboardSection } from "../settings/DashboardSection";
@@ -101,13 +102,15 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   // otherwise `useLocation()` consumers across the app start reading stale
   // pathname/search and in-app navigation silently no-ops.
   const navigate = useNavigate();
-  const location = useLocation();
+  const routerLocation = useLocation();
+  const location = useBrowserLocation(routerLocation);
   const locationRef = useRef(location);
   locationRef.current = location;
   const writeSettingsGroupParam = useCallback(
     (groupId: string) => {
       const current = locationRef.current;
       const params = new URLSearchParams(current.search);
+      params.set("tab", "settings");
       if (groupId === "general") {
         params.delete("group");
       } else {

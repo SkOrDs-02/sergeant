@@ -105,7 +105,7 @@
 
 ### P2-1. Codemod catalog enforcement gap
 
-[`scripts/codemods/README.md`](../../scripts/codemods/README.md) каталогізує `@deprecated` codemods. ESLint guard для запобігання нових deep-import-ів `kvStore` (per `2026-05-02-doc-hygiene-audit.md` PR #013) — не зашиплений (статус: planned).
+✅ Closed via `local diff`: [`scripts/check-kvstore-deep-imports.mjs`](../../scripts/check-kvstore-deep-imports.mjs) guards against new app-layer `kvStore` deep imports, `package.json` wires it through `lint:kvstore-deep-imports` and the top-level `lint`, and [`scripts/__tests__/check-kvstore-deep-imports.test.mjs`](../../scripts/__tests__/check-kvstore-deep-imports.test.mjs) now covers both detection and lint wiring.
 
 ### P2-2. Knip respects-scaffolded edge case
 
@@ -120,7 +120,8 @@
 - ✅ **P1-1** (follow-up PR): `docs/audits/README.md` row для `2026-05-03-readme-gap-analysis.md` пересинхронізовано з `Implemented: 0/8 ≈ / Outstanding: 8 ≈` на `Implemented: 13/15 ≈ / Outstanding: 2`. Реальний стан зачекдено по `README.md` (13 секцій присутні: Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map; 2 залишаються outstanding — Packages як окрема таблиця-каталог і Environment Variables як окрема секція). `docs/audits/README.md` `Last validated` бампнуто. Сам `2026-05-03-readme-gap-analysis.md` не редагувався — деталізовані §Резюме-пункти живуть там як історичний знімок 2026-05-03.
 - ✅ **P1-3**: `.github/workflows/lighthouse-ci.yml` зашиплений у `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726).
 - ✅ **P2-2**: `@experimental` уже покритий у `scripts/knip-respects-scaffolded.mjs`.
-- ⏸ **P1-2, P2-1**: рекомендовані follow-up-и, не блокуючі.
+- ⏸ **P1-2**: рекомендований follow-up, не блокуючий.
+- ✅ **P2-1**: `kvStore` deep-import guard exists, is wired into `lint`, and is covered by a wiring regression test (`local diff`).
 
 ## Файли у цьому PR (~7-9)
 

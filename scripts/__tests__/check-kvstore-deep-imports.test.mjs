@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { findKvStoreDeepImports } from "../check-kvstore-deep-imports.mjs";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 test("findKvStoreDeepImports flags direct kvStore imports", () => {
   const hits = findKvStoreDeepImports(
@@ -26,4 +31,16 @@ test("findKvStoreDeepImports flags dynamic kv-store imports", () => {
   assert.deepEqual(hits, [
     { line: 1, specifier: "@sergeant/shared/lib/kv-store/native" },
   ]);
+});
+
+test("kvStore deep-import guard is wired into lint", () => {
+  const packageJson = JSON.parse(
+    readFileSync(resolve(repoRoot, "package.json"), "utf8"),
+  );
+
+  assert.equal(
+    packageJson.scripts["lint:kvstore-deep-imports"],
+    "node scripts/check-kvstore-deep-imports.mjs",
+  );
+  assert.match(packageJson.scripts.lint, /\bpnpm lint:kvstore-deep-imports\b/);
 });
