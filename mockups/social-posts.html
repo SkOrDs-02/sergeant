@@ -1,171 +1,368 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Social Posts Preview</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .post-stack { display: flex; flex-direction: column; gap: 12px; }
-  .post { padding: 12px; border-radius: 10px; background: white; border: 1px solid var(--line-soft); font-size: 12px; line-height: 1.5; }
-  .post-head { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-  .post-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #047857); color: white; display: grid; place-items: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
-  .post-name { font-weight: 700; font-size: 12px; }
-  .post-handle { color: var(--subtle); font-size: 11px; }
-  .post-platform { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .post-body { white-space: pre-wrap; font-size: 12px; }
-  .post-img { aspect-ratio: 16/9; background: linear-gradient(135deg, #ecfdf5, #f0fdfa); border-radius: 8px; margin-top: 8px; display: grid; place-items: center; color: var(--muted); font-size: 10px; }
-  .post-meta { display: flex; gap: 12px; margin-top: 8px; color: var(--subtle); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Social Posts Preview</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .post-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .post {
+        padding: 12px;
+        border-radius: 10px;
+        background: white;
+        border: 1px solid var(--line-soft);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .post-head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .post-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: white;
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+      .post-name {
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .post-handle {
+        color: var(--subtle);
+        font-size: 11px;
+      }
+      .post-platform {
+        margin-left: auto;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .post-body {
+        white-space: pre-wrap;
+        font-size: 12px;
+      }
+      .post-img {
+        aspect-ratio: 16/9;
+        background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+        border-radius: 8px;
+        margin-top: 8px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .post-meta {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+        color: var(--subtle);
+        font-size: 10px;
+        font-family: "JetBrains Mono", monospace;
+      }
 
-  /* V2 BIP variant — code-friendly */
-  .v2 .post-body { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-  .v2 .post-img { background: #1c1917; color: #a3e635; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 12px; align-items: flex-start; justify-content: flex-start; text-align: left; }
+      /* V2 BIP variant — code-friendly */
+      .v2 .post-body {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+      }
+      .v2 .post-img {
+        background: #1c1917;
+        color: #a3e635;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        padding: 12px;
+        align-items: flex-start;
+        justify-content: flex-start;
+        text-align: left;
+      }
 
-  /* V3 Visual carousel — Instagram-first */
-  .v3 .post-img { aspect-ratio: 1/1; background: linear-gradient(135deg, var(--finyk-soft), #d1fae5); position: relative; }
-  .v3 .post-img::after { content: '1 / 5'; position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.5); color: white; padding: 2px 8px; border-radius: 999px; font-size: 9px; }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 02 · Social posts</div>
-      <h1>Social posts — Telegram + X + Instagram</h1>
-      <p>Одна launch-announce ідея, як вона рендериться у 3 каналах. Voice playbook у дії: Telegram розмовний, X build-in-public, Instagram візуальний.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
+      /* V3 Visual carousel — Instagram-first */
+      .v3 .post-img {
+        aspect-ratio: 1/1;
+        background: linear-gradient(135deg, var(--finyk-soft), #d1fae5);
+        position: relative;
+      }
+      .v3 .post-img::after {
+        content: "1 / 5";
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 9px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 02 · Social posts</div>
+          <h1>Social posts — Telegram + X + Instagram</h1>
+          <p>
+            Одна launch-announce ідея, як вона рендериться у 3 каналах. Voice
+            playbook у дії: Telegram розмовний, X build-in-public, Instagram
+            візуальний.
+          </p>
+        </div>
+        <a href="index.html" class="back-link">← Portal</a>
+      </div>
 
-  <div class="variants">
-
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Friendly warm</span></div>
-      <p class="variant-desc">Default brandbook tone. "Розумний друг-ровесник". Емоdzi обережно, без bro-енергетики.</p>
-      <div class="variant-body">
-        <div class="post-stack">
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">Sergeant</div><div class="post-handle">@sergeant_app</div></div><div class="post-platform">Telegram</div></div>
-            <div class="post-body">Привіт! 👋
-
-Я будую Sergeant — один застосунок замість 4-х: фінанси, тренування, звички, харчування. UA-only, ukrainian-first.
-
-Записуйся у waitlist — перші 500 отримають доступ.</div>
-            <div class="post-img">[ Sergeant lockup + 4 modules grid ]</div>
-            <div class="post-meta"><span>👁 142 views</span><span>♥ 8</span><span>↗ 3</span></div>
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Friendly warm</span>
           </div>
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">Sergeant</div><div class="post-handle">@sergeant_app</div></div><div class="post-platform">X</div></div>
-            <div class="post-body">Будую один застосунок замість 4-х:
-
-→ Finyk (фінанси)
-→ Fizruk (фітнес)
-→ Routine (звички)
-→ Nutrition (харчування)
-
-UA-only. Solo dev + AI + n8n. Без drill-сержанта. Waitlist відкрито.</div>
-            <div class="post-meta"><span>♥ 24</span><span>🔄 6</span><span>💬 3</span></div>
+          <p class="variant-desc">
+            Default brandbook tone. "Розумний друг-ровесник". Емоdzi обережно,
+            без bro-енергетики.
+          </p>
+          <div class="variant-body">
+            <div class="post-stack">
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div>
+                    <div class="post-name">Sergeant</div>
+                    <div class="post-handle">@sergeant_app</div>
+                  </div>
+                  <div class="post-platform">Telegram</div>
+                </div>
+                <div class="post-body">
+                  Привіт! 👋 Я будую Sergeant — один застосунок замість 4-х:
+                  фінанси, тренування, звички, харчування. UA-only,
+                  ukrainian-first. Записуйся у waitlist — перші 500 отримають
+                  доступ.
+                </div>
+                <div class="post-img">[ Sergeant lockup + 4 modules grid ]</div>
+                <div class="post-meta">
+                  <span>👁 142 views</span><span>♥ 8</span><span>↗ 3</span>
+                </div>
+              </div>
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div>
+                    <div class="post-name">Sergeant</div>
+                    <div class="post-handle">@sergeant_app</div>
+                  </div>
+                  <div class="post-platform">X</div>
+                </div>
+                <div class="post-body">
+                  Будую один застосунок замість 4-х: → Finyk (фінанси) → Fizruk
+                  (фітнес) → Routine (звички) → Nutrition (харчування) UA-only.
+                  Solo dev + AI + n8n. Без drill-сержанта. Waitlist відкрито.
+                </div>
+                <div class="post-meta">
+                  <span>♥ 24</span><span>🔄 6</span><span>💬 3</span>
+                </div>
+              </div>
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div><div class="post-name">sergeant_app</div></div>
+                  <div class="post-platform">Instagram</div>
+                </div>
+                <div class="post-img" style="aspect-ratio: 1/1">
+                  [ Carousel 1/5 · "Що таке Sergeant" ]
+                </div>
+                <div class="post-body" style="font-size: 11px">
+                  Усе про себе — в одному місці. ✨ Чотири модулі. Одна звичка
+                  щодня. Українською. Свайп →
+                </div>
+                <div class="post-meta">
+                  <span>♥ 47</span><span>💬 5</span><span>📤 2</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">sergeant_app</div></div><div class="post-platform">Instagram</div></div>
-            <div class="post-img" style="aspect-ratio: 1/1;">[ Carousel 1/5 · "Що таке Sergeant" ]</div>
-            <div class="post-body" style="font-size: 11px;">Усе про себе — в одному місці. ✨
+        </div>
 
-Чотири модулі. Одна звичка щодня. Українською.
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Build-in-public</span>
+          </div>
+          <p class="variant-desc">
+            Founder voice. Технічний, чесний, з кодом/числами. Resonates з UA
+            tech audience.
+          </p>
+          <div class="variant-body">
+            <div class="post-stack">
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div>
+                    <div class="post-name">Sergeant</div>
+                    <div class="post-handle">@sergeant_app</div>
+                  </div>
+                  <div class="post-platform">Telegram</div>
+                </div>
+                <div class="post-body">
+                  Day 142. Тиждень фіксу: replaceь лінійний backoff на jitter у
+                  sync-engine. RetryQueue не тримав offline batch &gt;200 events
+                  на cellular — AI підказав, fix у 18 рядків. Якщо ти теж solo
+                  dev на UA — підписуйся. Я роблю один застосунок замість 4-х. →
+                  waitlist відкрито
+                </div>
+                <div class="post-meta">
+                  <span>👁 287 views</span><span>♥ 22</span><span>↗ 8</span>
+                </div>
+              </div>
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div>
+                    <div class="post-name">Sergeant</div>
+                    <div class="post-handle">@sergeant_app</div>
+                  </div>
+                  <div class="post-platform">X · Thread</div>
+                </div>
+                <div class="post-body">
+                  1/ Будую Sergeant — все життя в одному застосунку. UA-only.
+                  Solo. Stack: React + RN + Postgres + n8n + Claude. Чому
+                  копійки як number, а не bigint у DB — у наступному пості. 🧵
+                </div>
+                <div class="post-img">[ Schema diagram screenshot ]</div>
+                <div class="post-meta">
+                  <span>♥ 68</span><span>🔄 14</span><span>💬 9</span>
+                </div>
+              </div>
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div><div class="post-name">sergeant_app</div></div>
+                  <div class="post-platform">Instagram Story</div>
+                </div>
+                <div
+                  class="post-img"
+                  style="aspect-ratio: 9/16; max-height: 180px"
+                >
+                  [ Screen recording: AIPill demo · 15s ]
+                </div>
+                <div class="post-body" style="font-size: 11px">
+                  "AI підказує категорію витрати ще до того як ти натиснеш save.
+                  Magic preview, не FAB."
+                </div>
+                <div class="post-meta"><span>👁 89</span><span>↗ 4</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-Свайп →</div>
-            <div class="post-meta"><span>♥ 47</span><span>💬 5</span><span>📤 2</span></div>
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Visual carousel</span>
+          </div>
+          <p class="variant-desc">
+            Instagram-first. Кожен пост — частина visual story. Telegram стає
+            supplemental.
+          </p>
+          <div class="variant-body">
+            <div class="post-stack">
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div><div class="post-name">sergeant_app</div></div>
+                  <div class="post-platform">Instagram</div>
+                </div>
+                <div class="post-img">
+                  [ Slide 1: Soft & Organic hero · "Усе про себе" ]
+                </div>
+                <div class="post-body" style="font-size: 11px">
+                  Усе про себе — в одному місці. 🌱 Свайп далі → познайомлю з 4
+                  модулями. #sergeant #ua #productivity
+                </div>
+                <div class="post-meta">
+                  <span>♥ 124</span><span>💬 18</span><span>📤 9</span>
+                </div>
+              </div>
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div>
+                    <div class="post-name">Sergeant</div>
+                    <div class="post-handle">@sergeant_app</div>
+                  </div>
+                  <div class="post-platform">Telegram</div>
+                </div>
+                <div class="post-body">
+                  Сьогодні у нас новий Instagram-карусель — про чотири модулі
+                  Sergeant. Глянь → instagram.com/sergeant_app Якщо подобається
+                  — підписуйся у waitlist 👇
+                </div>
+                <div class="post-meta">
+                  <span>👁 78 views</span><span>♥ 5</span>
+                </div>
+              </div>
+              <div class="post">
+                <div class="post-head">
+                  <div class="post-avatar">S</div>
+                  <div>
+                    <div class="post-name">Sergeant</div>
+                    <div class="post-handle">@sergeant_app</div>
+                  </div>
+                  <div class="post-platform">X</div>
+                </div>
+                <div class="post-body">
+                  Зробив для Instagram carousel про Sergeant. 5 слайдів — 4
+                  модулі + finale. Якщо ти візуальна людина — глянь там. Якщо
+                  текстова — Telegram-канал. Усі шляхи ведуть у waitlist.
+                </div>
+                <div class="post-img">
+                  [ Single screenshot · carousel slide 3 ]
+                </div>
+                <div class="post-meta"><span>♥ 18</span><span>🔄 2</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Build-in-public</span></div>
-      <p class="variant-desc">Founder voice. Технічний, чесний, з кодом/числами. Resonates з UA tech audience.</p>
-      <div class="variant-body">
-        <div class="post-stack">
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">Sergeant</div><div class="post-handle">@sergeant_app</div></div><div class="post-platform">Telegram</div></div>
-            <div class="post-body">Day 142.
-
-Тиждень фіксу: replaceь лінійний backoff на jitter у sync-engine. RetryQueue не тримав offline batch &gt;200 events на cellular — AI підказав, fix у 18 рядків.
-
-Якщо ти теж solo dev на UA — підписуйся. Я роблю один застосунок замість 4-х.
-
-→ waitlist відкрито</div>
-            <div class="post-meta"><span>👁 287 views</span><span>♥ 22</span><span>↗ 8</span></div>
-          </div>
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">Sergeant</div><div class="post-handle">@sergeant_app</div></div><div class="post-platform">X · Thread</div></div>
-            <div class="post-body">1/ Будую Sergeant — все життя в одному застосунку.
-
-UA-only. Solo. Stack: React + RN + Postgres + n8n + Claude.
-
-Чому копійки як number, а не bigint у DB — у наступному пості.
-
-🧵</div>
-            <div class="post-img">[ Schema diagram screenshot ]</div>
-            <div class="post-meta"><span>♥ 68</span><span>🔄 14</span><span>💬 9</span></div>
-          </div>
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">sergeant_app</div></div><div class="post-platform">Instagram Story</div></div>
-            <div class="post-img" style="aspect-ratio: 9/16; max-height: 180px;">[ Screen recording: AIPill demo · 15s ]</div>
-            <div class="post-body" style="font-size: 11px;">"AI підказує категорію витрати ще до того як ти натиснеш save. Magic preview, не FAB."</div>
-            <div class="post-meta"><span>👁 89</span><span>↗ 4</span></div>
-          </div>
-        </div>
+      <div class="notes">
+        <h2>Notes · як вибирати</h2>
+        <ul>
+          <li>
+            <strong>V1 Friendly warm</strong> — найдоступніший для broad UA.
+            Recommended <strong>default</strong> для day 1 announce-cycle.
+            Безпечно для Routine/Nutrition mass-market audience.
+          </li>
+          <li>
+            <strong>V2 Build-in-public</strong> — solo dev signature leverage.
+            Recommended для weekly cadence на X + Telegram. Не для Instagram
+            (там візуальне сильніше). Resonates з UA-dev audience.
+          </li>
+          <li>
+            <strong>V3 Visual carousel</strong> — Instagram-led strategy. Якщо
+            Instagram буде primary growth channel — варто. Інакше — secondary.
+          </li>
+          <li>
+            Pratiqu рекомендація: V1 (Telegram) + V2 (X) + V3 (Instagram) —
+            кожен канал у своєму домінантному tone. n8n flow #5 робить
+            syndication але не дублює тон.
+          </li>
+        </ul>
       </div>
     </div>
-
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Visual carousel</span></div>
-      <p class="variant-desc">Instagram-first. Кожен пост — частина visual story. Telegram стає supplemental.</p>
-      <div class="variant-body">
-        <div class="post-stack">
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">sergeant_app</div></div><div class="post-platform">Instagram</div></div>
-            <div class="post-img">[ Slide 1: Soft & Organic hero · "Усе про себе" ]</div>
-            <div class="post-body" style="font-size: 11px;">Усе про себе — в одному місці. 🌱
-Свайп далі → познайомлю з 4 модулями.
-
-#sergeant #ua #productivity</div>
-            <div class="post-meta"><span>♥ 124</span><span>💬 18</span><span>📤 9</span></div>
-          </div>
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">Sergeant</div><div class="post-handle">@sergeant_app</div></div><div class="post-platform">Telegram</div></div>
-            <div class="post-body">Сьогодні у нас новий Instagram-карусель — про чотири модулі Sergeant.
-
-Глянь → instagram.com/sergeant_app
-
-Якщо подобається — підписуйся у waitlist 👇</div>
-            <div class="post-meta"><span>👁 78 views</span><span>♥ 5</span></div>
-          </div>
-          <div class="post">
-            <div class="post-head"><div class="post-avatar">S</div><div><div class="post-name">Sergeant</div><div class="post-handle">@sergeant_app</div></div><div class="post-platform">X</div></div>
-            <div class="post-body">Зробив для Instagram carousel про Sergeant. 5 слайдів — 4 модулі + finale.
-
-Якщо ти візуальна людина — глянь там. Якщо текстова — Telegram-канал.
-
-Усі шляхи ведуть у waitlist.</div>
-            <div class="post-img">[ Single screenshot · carousel slide 3 ]</div>
-            <div class="post-meta"><span>♥ 18</span><span>🔄 2</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes · як вибирати</h2>
-    <ul>
-      <li><strong>V1 Friendly warm</strong> — найдоступніший для broad UA. Recommended <strong>default</strong> для day 1 announce-cycle. Безпечно для Routine/Nutrition mass-market audience.</li>
-      <li><strong>V2 Build-in-public</strong> — solo dev signature leverage. Recommended для weekly cadence на X + Telegram. Не для Instagram (там візуальне сильніше). Resonates з UA-dev audience.</li>
-      <li><strong>V3 Visual carousel</strong> — Instagram-led strategy. Якщо Instagram буде primary growth channel — варто. Інакше — secondary.</li>
-      <li>Pratiqu рекомендація: V1 (Telegram) + V2 (X) + V3 (Instagram) — кожен канал у своєму домінантному tone. n8n flow #5 робить syndication але не дублює тон.</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>

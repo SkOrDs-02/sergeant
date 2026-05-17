@@ -1,121 +1,275 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Module Deep-link Page (/finyk)</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .mp-hero { padding: 16px; border-radius: 12px; margin-bottom: 10px; background: linear-gradient(135deg, var(--finyk-soft), #d1fae5); }
-  .mp-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--finyk); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
-  .mp-title { font-size: 18px; font-weight: 800; line-height: 1.1; margin: 4px 0 6px; }
-  .mp-sub { font-size: 11px; color: var(--muted); line-height: 1.5; }
-  .mp-cta { background: var(--finyk); color: white; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; display: inline-block; margin-top: 8px; }
-  .mp-section { padding: 10px 12px; background: white; border: 1px solid var(--line-soft); border-radius: 10px; margin-bottom: 8px; font-size: 11px; }
-  .mp-h3 { font-weight: 700; margin-bottom: 4px; font-size: 12px; }
-  .mp-mock { background: linear-gradient(135deg, var(--finyk-soft), white); border-radius: 8px; padding: 10px; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-  .mp-num { font-size: 18px; font-weight: 500; color: var(--finyk); }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Module Deep-link Page (/finyk)</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .mp-hero {
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        background: linear-gradient(135deg, var(--finyk-soft), #d1fae5);
+      }
+      .mp-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        color: var(--finyk);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 700;
+      }
+      .mp-title {
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1.1;
+        margin: 4px 0 6px;
+      }
+      .mp-sub {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .mp-cta {
+        background: var(--finyk);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        display: inline-block;
+        margin-top: 8px;
+      }
+      .mp-section {
+        padding: 10px 12px;
+        background: white;
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        font-size: 11px;
+      }
+      .mp-h3 {
+        font-weight: 700;
+        margin-bottom: 4px;
+        font-size: 12px;
+      }
+      .mp-mock {
+        background: linear-gradient(135deg, var(--finyk-soft), white);
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 6px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+      }
+      .mp-num {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--finyk);
+      }
 
-  /* V1 Focus hero */
-  .v1 .mp-hero { padding: 24px 16px; text-align: center; aspect-ratio: 4/3; display: flex; flex-direction: column; justify-content: center; }
-  .v1 .mp-title { font-size: 22px; margin: 8px 0; }
+      /* V1 Focus hero */
+      .v1 .mp-hero {
+        padding: 24px 16px;
+        text-align: center;
+        aspect-ratio: 4/3;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .v1 .mp-title {
+        font-size: 22px;
+        margin: 8px 0;
+      }
 
-  /* V2 Demo-first */
-  .v2 .mp-screenshot { aspect-ratio: 9/16; background: linear-gradient(180deg, var(--finyk-soft), #d1fae5); border-radius: 10px; padding: 12px; font-size: 9px; margin-bottom: 8px; }
-  .v2 .mp-screenshot .ss-bar { background: rgba(255,255,255,.7); border-radius: 6px; padding: 6px; margin-bottom: 4px; }
+      /* V2 Demo-first */
+      .v2 .mp-screenshot {
+        aspect-ratio: 9/16;
+        background: linear-gradient(180deg, var(--finyk-soft), #d1fae5);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 9px;
+        margin-bottom: 8px;
+      }
+      .v2 .mp-screenshot .ss-bar {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 6px;
+        padding: 6px;
+        margin-bottom: 4px;
+      }
 
-  /* V3 Pain-first */
-  .v3 .mp-pain { background: #fef2f2; border-left: 3px solid var(--routine); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 11px; line-height: 1.5; }
-  .v3 .mp-pain strong { color: var(--routine); }
-  .v3 .mp-solution { background: var(--brand-soft); border-left: 3px solid var(--brand); padding: 10px; border-radius: 8px; font-size: 11px; line-height: 1.5; }
-  .v3 .mp-solution strong { color: var(--brand); }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 07 · Module deep-link page</div>
-      <h1>Module page (/finyk) — 3 layouts</h1>
-      <p>Deep-link landing для module-specific traffic (UTM з Telegram-поста про Finyk, blog post про бюджети, AI search citation). Не main landing.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
-
-  <div class="variants">
-
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Single-focus hero</span></div>
-      <p class="variant-desc">Один великий hero з module-tinted gradient. CTA-first. Найшвидше до signup.</p>
-      <div class="variant-body">
-        <div class="mp-hero">
-          <div class="mp-tag">FINYK · Фінанси</div>
-          <div class="mp-title">Знаєш, куди йдуть гроші — без таблиць.</div>
-          <div class="mp-sub">Витрати, бюджети, цілі. Auto-категоризація з першого тапу.</div>
-          <div class="mp-cta">Отримати early access →</div>
+      /* V3 Pain-first */
+      .v3 .mp-pain {
+        background: #fef2f2;
+        border-left: 3px solid var(--routine);
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .v3 .mp-pain strong {
+        color: var(--routine);
+      }
+      .v3 .mp-solution {
+        background: var(--brand-soft);
+        border-left: 3px solid var(--brand);
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .v3 .mp-solution strong {
+        color: var(--brand);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 07 · Module deep-link page</div>
+          <h1>Module page (/finyk) — 3 layouts</h1>
+          <p>
+            Deep-link landing для module-specific traffic (UTM з Telegram-поста
+            про Finyk, blog post про бюджети, AI search citation). Не main
+            landing.
+          </p>
         </div>
-        <div class="mp-section">
-          <div class="mp-h3">Чому Finyk?</div>
-          <p>Один тап на витрату. AI пропонує категорію — підтверджуєш або swap'аєш. Без shaming за каву.</p>
-        </div>
-        <div class="mp-section">
-          <div class="mp-h3">Bunch of one-liners</div>
-          <p>· Бюджети на місяць<br>· Цілі (save up)<br>· Recurring detection<br>· UA-only</p>
-        </div>
+        <a href="index.html" class="back-link">← Portal</a>
       </div>
-    </div>
 
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Demo-first</span></div>
-      <p class="variant-desc">App screenshot — primary surface. Hero copy secondary. Для visual-curious traffic з Instagram/Reddit.</p>
-      <div class="variant-body">
-        <div class="mp-hero" style="padding: 8px;">
-          <div class="mp-screenshot">
-            <div class="ss-bar"><strong>₴8 240</strong> залишок місяця</div>
-            <div class="ss-bar">Кафе · ₴340</div>
-            <div class="ss-bar">Транспорт · ₴280</div>
-            <div class="ss-bar">Продукти · ₴1 100</div>
-            <div class="ss-bar" style="background: rgba(4,120,87,.1);">+ Додати витрату</div>
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Single-focus hero</span>
           </div>
-          <div class="mp-tag">FINYK · Фінанси</div>
-          <div class="mp-title" style="font-size: 14px;">Так виглядає твій місяць.</div>
-          <div class="mp-cta">Хочу так само →</div>
+          <p class="variant-desc">
+            Один великий hero з module-tinted gradient. CTA-first. Найшвидше до
+            signup.
+          </p>
+          <div class="variant-body">
+            <div class="mp-hero">
+              <div class="mp-tag">FINYK · Фінанси</div>
+              <div class="mp-title">Знаєш, куди йдуть гроші — без таблиць.</div>
+              <div class="mp-sub">
+                Витрати, бюджети, цілі. Auto-категоризація з першого тапу.
+              </div>
+              <div class="mp-cta">Отримати early access →</div>
+            </div>
+            <div class="mp-section">
+              <div class="mp-h3">Чому Finyk?</div>
+              <p>
+                Один тап на витрату. AI пропонує категорію — підтверджуєш або
+                swap'аєш. Без shaming за каву.
+              </p>
+            </div>
+            <div class="mp-section">
+              <div class="mp-h3">Bunch of one-liners</div>
+              <p>
+                · Бюджети на місяць<br />· Цілі (save up)<br />· Recurring
+                detection<br />· UA-only
+              </p>
+            </div>
+          </div>
         </div>
-        <div class="mp-section">
-          <div class="mp-h3">Що бачить інший</div>
-          <p>"Я нарешті бачу куди йдуть 20% бюджету, які зникали без сліду." — early tester</p>
+
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Demo-first</span>
+          </div>
+          <p class="variant-desc">
+            App screenshot — primary surface. Hero copy secondary. Для
+            visual-curious traffic з Instagram/Reddit.
+          </p>
+          <div class="variant-body">
+            <div class="mp-hero" style="padding: 8px">
+              <div class="mp-screenshot">
+                <div class="ss-bar"><strong>₴8 240</strong> залишок місяця</div>
+                <div class="ss-bar">Кафе · ₴340</div>
+                <div class="ss-bar">Транспорт · ₴280</div>
+                <div class="ss-bar">Продукти · ₴1 100</div>
+                <div class="ss-bar" style="background: rgba(4, 120, 87, 0.1)">
+                  + Додати витрату
+                </div>
+              </div>
+              <div class="mp-tag">FINYK · Фінанси</div>
+              <div class="mp-title" style="font-size: 14px">
+                Так виглядає твій місяць.
+              </div>
+              <div class="mp-cta">Хочу так само →</div>
+            </div>
+            <div class="mp-section">
+              <div class="mp-h3">Що бачить інший</div>
+              <p>
+                "Я нарешті бачу куди йдуть 20% бюджету, які зникали без сліду."
+                — early tester
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Pain → solution</span>
+          </div>
+          <p class="variant-desc">
+            Editorial structure. Признати pain (без guilt) → запропонувати
+            solution. Для blog-traffic що шукає рішення.
+          </p>
+          <div class="variant-body">
+            <div class="mp-pain">
+              <strong>Знайомо?</strong><br />Кінець місяця. Гроші зникли. Куди —
+              без поняття. Excel забув відкрити. Інший застосунок — лякає
+              графіками.
+            </div>
+            <div class="mp-solution">
+              <strong>Finyk</strong><br />Один тап на витрату — категорія сама.
+              Місяць закінчився — бачиш звичайну розшифровку. Без табів, без
+              shaming, без 47 кнопок.
+            </div>
+            <div class="mp-mock">
+              // це не «контроль фінансів»<br />// це знати, куди йдеш
+            </div>
+            <div
+              class="mp-cta"
+              style="
+                background: var(--brand);
+                margin-top: 10px;
+                display: block;
+                text-align: center;
+              "
+            >
+              Хочу спробувати →
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Pain → solution</span></div>
-      <p class="variant-desc">Editorial structure. Признати pain (без guilt) → запропонувати solution. Для blog-traffic що шукає рішення.</p>
-      <div class="variant-body">
-        <div class="mp-pain">
-          <strong>Знайомо?</strong><br>Кінець місяця. Гроші зникли. Куди — без поняття. Excel забув відкрити. Інший застосунок — лякає графіками.
-        </div>
-        <div class="mp-solution">
-          <strong>Finyk</strong><br>Один тап на витрату — категорія сама. Місяць закінчився — бачиш звичайну розшифровку. Без табів, без shaming, без 47 кнопок.
-        </div>
-        <div class="mp-mock">
-          // це не «контроль фінансів»<br>// це знати, куди йдеш
-        </div>
-        <div class="mp-cta" style="background: var(--brand); margin-top: 10px; display: block; text-align: center;">Хочу спробувати →</div>
+      <div class="notes">
+        <h2>Notes</h2>
+        <ul>
+          <li>
+            <strong>V1 Focus</strong> — для X/Telegram traffic який клікнув на
+            specific module pitch. Wants quick decision.
+          </li>
+          <li>
+            <strong>V2 Demo-first</strong> — для Instagram/TikTok traffic що
+            хоче "побачити продукт" перед signup. Visual learner.
+          </li>
+          <li>
+            <strong>V3 Pain→Solution</strong> — для blog/SEO traffic ("як вести
+            бюджет") що ще не визначився. Educational stance.
+          </li>
+          <li>
+            Page same URL — `/finyk`. Можна A/B між варіантами по UTM source (X
+            traffic → V1, Instagram → V2, organic blog → V3).
+          </li>
+        </ul>
       </div>
     </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes</h2>
-    <ul>
-      <li><strong>V1 Focus</strong> — для X/Telegram traffic який клікнув на specific module pitch. Wants quick decision.</li>
-      <li><strong>V2 Demo-first</strong> — для Instagram/TikTok traffic що хоче "побачити продукт" перед signup. Visual learner.</li>
-      <li><strong>V3 Pain→Solution</strong> — для blog/SEO traffic ("як вести бюджет") що ще не визначився. Educational stance.</li>
-      <li>Page same URL — `/finyk`. Можна A/B між варіантами по UTM source (X traffic → V1, Instagram → V2, organic blog → V3).</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>

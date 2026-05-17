@@ -19,10 +19,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  safeReadStringLS,
-  safeWriteLS,
-} from "@shared/lib/storage/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { InsightId } from "./types";
 
 const DISMISSED_KEY = "sergeant.v2.insights.dismissed";
@@ -31,7 +28,9 @@ function parseDismissed(raw: string | null): Set<InsightId> {
   if (!raw) return new Set();
   try {
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === "string")) : new Set();
+    return Array.isArray(arr)
+      ? new Set(arr.filter((x): x is string => typeof x === "string"))
+      : new Set();
   } catch {
     return new Set();
   }

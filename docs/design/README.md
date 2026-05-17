@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-17 by @codex. **Next review:** 2026-08-13.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
@@ -105,7 +105,7 @@ migration, execution-plan, live execution-status, backlog) плюс index,
 
 Закриті аудити та реалізовані пропозиції — повний індекс і підсумки кожного у [`archive/README.md`](./archive/README.md). Файли тут лишені як **історичний контекст** для governance-посилань (HR #9, HR #13, ADR-0007), не як живий контракт.
 
-| Документ                                                                                   | Статус         |
-| ------------------------------------------------------------------------------------------ | -------------- |
-| [`archive/dark-mode-audit.md`](./archive/dark-mode-audit.md)                               | Closed         |
-| [`archive/brand-palette-wcag-aa-proposal.md`](./archive/brand-palette-wcag-aa-proposal.md) | Implemented    |
+| Документ                                                                                   | Статус      |
+| ------------------------------------------------------------------------------------------ | ----------- |
+| [`archive/dark-mode-audit.md`](./archive/dark-mode-audit.md)                               | Closed      |
+| [`archive/brand-palette-wcag-aa-proposal.md`](./archive/brand-palette-wcag-aa-proposal.md) | Implemented |

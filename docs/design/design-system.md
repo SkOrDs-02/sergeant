@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-17 by @codex. **Next review:** 2026-08-15.
 > **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -106,13 +106,13 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
 
 ### 2.3 Бренд і модулі
 
-| Token                  | Hex       | Використання                    |
-| ---------------------- | --------- | ------------------------------- |
-| `accent` / `brand-500` | `#10b981` | Основний бренд, focus ring, CTA |
-| `finyk`                | `#10b981` | ФІНІК — гроші, баланси          |
+| Token                  | Hex       | Використання                                                        |
+| ---------------------- | --------- | ------------------------------------------------------------------- |
+| `accent` / `brand-500` | `#10b981` | Основний бренд, focus ring, CTA                                     |
+| `finyk`                | `#10b981` | ФІНІК — гроші, баланси                                              |
 | `fizruk`               | `#0e7490` | ФІЗРУК — тренування (cyan-700 — v2 redesign 2026-05; було teal-500) |
-| `routine`              | `#f97066` | Рутина — звички, коралові       |
-| `nutrition`            | `#92cc17` | Харчування — ліма               |
+| `routine`              | `#f97066` | Рутина — звички, коралові                                           |
+| `nutrition`            | `#92cc17` | Харчування — ліма                                                   |
 
 Для кожного модуля доступні градаційні шкали `-50`…`-900` + hero-поверхні:
 `bg-finyk-surface`, `bg-fizruk-surface`, `bg-routine-surface`,

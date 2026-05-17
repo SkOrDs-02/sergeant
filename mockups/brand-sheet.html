@@ -1,129 +1,357 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Brand Cheat Sheet</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .swatch-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
-  .swatch { width: 32px; height: 32px; border-radius: 6px; }
-  .swatch-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 2px; text-align: center; }
-  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Brand Cheat Sheet</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .swatch-row {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .swatch {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+      }
+      .swatch-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        color: var(--muted);
+        margin-top: 2px;
+        text-align: center;
+      }
+      .section-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+      }
 
-  /* V1 Designer style */
-  .v1 .swatch { width: 48px; height: 60px; border-radius: 8px; }
-  .v1 .swatch-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-  .v1 .swatch-cell { text-align: center; }
-  .v1 .swatch-hex { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--ink); margin-top: 2px; }
-  .v1 .type-spec { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+      /* V1 Designer style */
+      .v1 .swatch {
+        width: 48px;
+        height: 60px;
+        border-radius: 8px;
+      }
+      .v1 .swatch-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+      }
+      .v1 .swatch-cell {
+        text-align: center;
+      }
+      .v1 .swatch-hex {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 8px;
+        color: var(--ink);
+        margin-top: 2px;
+      }
+      .v1 .type-spec {
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--line);
+      }
 
-  /* V2 Code-friendly */
-  .v2 { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-  .v2 .swatch { width: 16px; height: 16px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 8px; }
-  .v2 .var-row { padding: 4px 0; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; }
-  .v2 .var-name { flex: 1; color: var(--ink); }
-  .v2 .var-val { color: var(--muted); }
+      /* V2 Code-friendly */
+      .v2 {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+      }
+      .v2 .swatch {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 8px;
+      }
+      .v2 .var-row {
+        padding: 4px 0;
+        border-bottom: 1px solid var(--line-soft);
+        display: flex;
+        align-items: center;
+      }
+      .v2 .var-name {
+        flex: 1;
+        color: var(--ink);
+      }
+      .v2 .var-val {
+        color: var(--muted);
+      }
 
-  /* V3 Marketing usage */
-  .v3 .usage-block { padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 12px; }
-  .v3 .usage-do { background: var(--brand-soft); border-left: 3px solid var(--brand); }
-  .v3 .usage-dont { background: #fef2f2; border-left: 3px solid var(--routine); }
-  .v3 .usage-label { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 05 · Brand cheat sheet</div>
-      <h1>Brand cheat sheet</h1>
-      <p>Палітра, типографіка, button states, voice rules — одна reference сторінка. Для себе, AI prompts, contractors. 3 формати залежно від audience.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
-
-  <div class="variants">
-
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Designer-style</span></div>
-      <p class="variant-desc">Figma spec sheet feel. Swatches, type specimens, готово до screenshot у Figma comment.</p>
-      <div class="variant-body">
-        <div class="section-label">Module palette</div>
-        <div class="swatch-grid" style="margin-bottom: 12px;">
-          <div class="swatch-cell"><div class="swatch" style="background:#047857"></div><div class="swatch-hex">finyk</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#155e75"></div><div class="swatch-hex">fizruk</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#c23a3a"></div><div class="swatch-hex">routine</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#466212"></div><div class="swatch-hex">nutrition</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#1c1917"></div><div class="swatch-hex">ink</div></div>
+      /* V3 Marketing usage */
+      .v3 .usage-block {
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+      .v3 .usage-do {
+        background: var(--brand-soft);
+        border-left: 3px solid var(--brand);
+      }
+      .v3 .usage-dont {
+        background: #fef2f2;
+        border-left: 3px solid var(--routine);
+      }
+      .v3 .usage-label {
+        font-weight: 700;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 05 · Brand cheat sheet</div>
+          <h1>Brand cheat sheet</h1>
+          <p>
+            Палітра, типографіка, button states, voice rules — одна reference
+            сторінка. Для себе, AI prompts, contractors. 3 формати залежно від
+            audience.
+          </p>
         </div>
-        <div class="section-label">Surface tokens</div>
-        <div class="swatch-grid" style="margin-bottom: 12px;">
-          <div class="swatch-cell"><div class="swatch" style="background:#fdf9f3;border:1px solid var(--line)"></div><div class="swatch-hex">bg</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#ffffff;border:1px solid var(--line)"></div><div class="swatch-hex">panel</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#ecfdf5"></div><div class="swatch-hex">brand-soft</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#ebe4da"></div><div class="swatch-hex">line</div></div>
-          <div class="swatch-cell"><div class="swatch" style="background:#a8a29e"></div><div class="swatch-hex">subtle</div></div>
+        <a href="index.html" class="back-link">← Portal</a>
+      </div>
+
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Designer-style</span>
+          </div>
+          <p class="variant-desc">
+            Figma spec sheet feel. Swatches, type specimens, готово до
+            screenshot у Figma comment.
+          </p>
+          <div class="variant-body">
+            <div class="section-label">Module palette</div>
+            <div class="swatch-grid" style="margin-bottom: 12px">
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #047857"></div>
+                <div class="swatch-hex">finyk</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #155e75"></div>
+                <div class="swatch-hex">fizruk</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #c23a3a"></div>
+                <div class="swatch-hex">routine</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #466212"></div>
+                <div class="swatch-hex">nutrition</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #1c1917"></div>
+                <div class="swatch-hex">ink</div>
+              </div>
+            </div>
+            <div class="section-label">Surface tokens</div>
+            <div class="swatch-grid" style="margin-bottom: 12px">
+              <div class="swatch-cell">
+                <div
+                  class="swatch"
+                  style="background: #fdf9f3; border: 1px solid var(--line)"
+                ></div>
+                <div class="swatch-hex">bg</div>
+              </div>
+              <div class="swatch-cell">
+                <div
+                  class="swatch"
+                  style="background: #ffffff; border: 1px solid var(--line)"
+                ></div>
+                <div class="swatch-hex">panel</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #ecfdf5"></div>
+                <div class="swatch-hex">brand-soft</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #ebe4da"></div>
+                <div class="swatch-hex">line</div>
+              </div>
+              <div class="swatch-cell">
+                <div class="swatch" style="background: #a8a29e"></div>
+                <div class="swatch-hex">subtle</div>
+              </div>
+            </div>
+            <div class="section-label">Typography</div>
+            <div class="type-spec">
+              <span style="font-weight: 800; font-size: 20px">Display 800</span
+              ><span
+                class="mono"
+                style="font-size: 10px; color: var(--muted); margin-left: 8px"
+                >Manrope 800 · -0.02em</span
+              >
+            </div>
+            <div class="type-spec">
+              <span style="font-weight: 700; font-size: 14px">Body 700</span
+              ><span
+                class="mono"
+                style="font-size: 10px; color: var(--muted); margin-left: 8px"
+                >Manrope 700</span
+              >
+            </div>
+            <div class="type-spec">
+              <span
+                style="font-family: &quot;JetBrains Mono&quot;; font-size: 12px"
+                >Mono 500</span
+              ><span
+                class="mono"
+                style="font-size: 10px; color: var(--muted); margin-left: 8px"
+                >JetBrains Mono 500</span
+              >
+            </div>
+          </div>
         </div>
-        <div class="section-label">Typography</div>
-        <div class="type-spec"><span style="font-weight: 800; font-size: 20px;">Display 800</span><span class="mono" style="font-size:10px;color:var(--muted);margin-left:8px;">Manrope 800 · -0.02em</span></div>
-        <div class="type-spec"><span style="font-weight: 700; font-size: 14px;">Body 700</span><span class="mono" style="font-size:10px;color:var(--muted);margin-left:8px;">Manrope 700</span></div>
-        <div class="type-spec"><span style="font-family:'JetBrains Mono';font-size:12px;">Mono 500</span><span class="mono" style="font-size:10px;color:var(--muted);margin-left:8px;">JetBrains Mono 500</span></div>
+
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Code-friendly</span>
+          </div>
+          <p class="variant-desc">
+            CSS variables list — copy-paste у Tailwind config / shared.css. Для
+            contractors / для AI prompts (--c-finyk: 4 120 87).
+          </p>
+          <div class="variant-body">
+            <div class="var-row">
+              <span class="swatch" style="background: #047857"></span
+              ><span class="var-name">--c-finyk</span
+              ><span class="var-val">4 120 87</span>
+            </div>
+            <div class="var-row">
+              <span class="swatch" style="background: #155e75"></span
+              ><span class="var-name">--c-fizruk</span
+              ><span class="var-val">21 94 117</span>
+            </div>
+            <div class="var-row">
+              <span class="swatch" style="background: #c23a3a"></span
+              ><span class="var-name">--c-routine</span
+              ><span class="var-val">194 58 58</span>
+            </div>
+            <div class="var-row">
+              <span class="swatch" style="background: #466212"></span
+              ><span class="var-name">--c-nutrition</span
+              ><span class="var-val">70 98 18</span>
+            </div>
+            <div class="var-row">
+              <span
+                class="swatch"
+                style="background: #fdf9f3; border: 1px solid #ddd"
+              ></span
+              ><span class="var-name">--c-bg</span
+              ><span class="var-val">253 249 243</span>
+            </div>
+            <div class="var-row">
+              <span
+                class="swatch"
+                style="background: #ffffff; border: 1px solid #ddd"
+              ></span
+              ><span class="var-name">--c-panel</span
+              ><span class="var-val">255 255 255</span>
+            </div>
+            <div class="var-row">
+              <span class="swatch" style="background: #1c1917"></span
+              ><span class="var-name">--c-ink</span
+              ><span class="var-val">28 25 23</span>
+            </div>
+            <div class="var-row">
+              <span class="swatch" style="background: #57534e"></span
+              ><span class="var-name">--c-muted</span
+              ><span class="var-val">87 83 78</span>
+            </div>
+            <div
+              style="
+                margin-top: 12px;
+                padding: 8px;
+                background: #1c1917;
+                color: #a3e635;
+                border-radius: 6px;
+                font-size: 10px;
+              "
+            >
+              font-sans: 'Manrope', system-ui<br />font-mono: 'JetBrains
+              Mono'<br />font-serif: 'Lora' (editorial only)
+            </div>
+          </div>
+        </div>
+
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Marketing usage</span>
+          </div>
+          <p class="variant-desc">
+            Do/Don't для marketing assets. Voice + visual rules з прикладами.
+            Targeted на content production.
+          </p>
+          <div class="variant-body">
+            <div class="usage-block usage-do">
+              <div class="usage-label" style="color: var(--brand)">
+                VOICE · DO
+              </div>
+              «Знаєш, куди йдуть гроші — без таблиць.»<br />«Один тап на день.
+              Через місяць — побачиш картину.»
+            </div>
+            <div class="usage-block usage-dont">
+              <div class="usage-label" style="color: var(--routine)">
+                VOICE · DON'T
+              </div>
+              «Контролюй свої фінанси!»<br />«Ти вже Х днів не тренувався 😢»<br />«Нарешті
+              — рішення для всіх твоїх задач»
+            </div>
+            <div class="usage-block usage-do">
+              <div class="usage-label" style="color: var(--brand)">
+                COLOR · DO
+              </div>
+              Module color для CTA · text-strong tier на body sizes · Hub hero =
+              soft & organic · module hero = bright tinted
+            </div>
+            <div class="usage-block usage-dont">
+              <div class="usage-label" style="color: var(--routine)">
+                COLOR · DON'T
+              </div>
+              Module color поза module surface · raw `bg-emerald-500` без
+              `-strong` варіанта на body text · Cross-module palette mixing
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h2>Notes</h2>
+        <ul>
+          <li>
+            <strong>V1 Designer</strong> — screenshot цього прямо в Figma
+            comment для visual reference. Чи у press kit як brand asset.
+          </li>
+          <li>
+            <strong>V2 Code</strong> — copy-paste у AI prompts ("дотримуйся цих
+            CSS vars"). Або як internal `BRAND.md` reference для contractors.
+          </li>
+          <li>
+            <strong>V3 Marketing</strong> — для тебе самого як check'list при
+            content creation. Або як attached PDF до brief'у freelancer'у.
+          </li>
+          <li>
+            Усі три не mutually exclusive — можна вибрати чи об'єднати. V2 точно
+            треба як `mockups/brand-tokens.css` для AI prompts.
+          </li>
+        </ul>
       </div>
     </div>
-
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Code-friendly</span></div>
-      <p class="variant-desc">CSS variables list — copy-paste у Tailwind config / shared.css. Для contractors / для AI prompts (--c-finyk: 4 120 87).</p>
-      <div class="variant-body">
-        <div class="var-row"><span class="swatch" style="background:#047857"></span><span class="var-name">--c-finyk</span><span class="var-val">4 120 87</span></div>
-        <div class="var-row"><span class="swatch" style="background:#155e75"></span><span class="var-name">--c-fizruk</span><span class="var-val">21 94 117</span></div>
-        <div class="var-row"><span class="swatch" style="background:#c23a3a"></span><span class="var-name">--c-routine</span><span class="var-val">194 58 58</span></div>
-        <div class="var-row"><span class="swatch" style="background:#466212"></span><span class="var-name">--c-nutrition</span><span class="var-val">70 98 18</span></div>
-        <div class="var-row"><span class="swatch" style="background:#fdf9f3;border:1px solid #ddd"></span><span class="var-name">--c-bg</span><span class="var-val">253 249 243</span></div>
-        <div class="var-row"><span class="swatch" style="background:#ffffff;border:1px solid #ddd"></span><span class="var-name">--c-panel</span><span class="var-val">255 255 255</span></div>
-        <div class="var-row"><span class="swatch" style="background:#1c1917"></span><span class="var-name">--c-ink</span><span class="var-val">28 25 23</span></div>
-        <div class="var-row"><span class="swatch" style="background:#57534e"></span><span class="var-name">--c-muted</span><span class="var-val">87 83 78</span></div>
-        <div style="margin-top:12px;padding:8px;background:#1c1917;color:#a3e635;border-radius:6px;font-size:10px;">
-          font-sans: 'Manrope', system-ui<br>font-mono: 'JetBrains Mono'<br>font-serif: 'Lora' (editorial only)
-        </div>
-      </div>
-    </div>
-
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Marketing usage</span></div>
-      <p class="variant-desc">Do/Don't для marketing assets. Voice + visual rules з прикладами. Targeted на content production.</p>
-      <div class="variant-body">
-        <div class="usage-block usage-do">
-          <div class="usage-label" style="color:var(--brand)">VOICE · DO</div>
-          «Знаєш, куди йдуть гроші — без таблиць.»<br>«Один тап на день. Через місяць — побачиш картину.»
-        </div>
-        <div class="usage-block usage-dont">
-          <div class="usage-label" style="color:var(--routine)">VOICE · DON'T</div>
-          «Контролюй свої фінанси!»<br>«Ти вже Х днів не тренувався 😢»<br>«Нарешті — рішення для всіх твоїх задач»
-        </div>
-        <div class="usage-block usage-do">
-          <div class="usage-label" style="color:var(--brand)">COLOR · DO</div>
-          Module color для CTA · text-strong tier на body sizes · Hub hero = soft & organic · module hero = bright tinted
-        </div>
-        <div class="usage-block usage-dont">
-          <div class="usage-label" style="color:var(--routine)">COLOR · DON'T</div>
-          Module color поза module surface · raw `bg-emerald-500` без `-strong` варіанта на body text · Cross-module palette mixing
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes</h2>
-    <ul>
-      <li><strong>V1 Designer</strong> — screenshot цього прямо в Figma comment для visual reference. Чи у press kit як brand asset.</li>
-      <li><strong>V2 Code</strong> — copy-paste у AI prompts ("дотримуйся цих CSS vars"). Або як internal `BRAND.md` reference для contractors.</li>
-      <li><strong>V3 Marketing</strong> — для тебе самого як check'list при content creation. Або як attached PDF до brief'у freelancer'у.</li>
-      <li>Усі три не mutually exclusive — можна вибрати чи об'єднати. V2 точно треба як `mockups/brand-tokens.css` для AI prompts.</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>

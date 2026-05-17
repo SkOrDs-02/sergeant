@@ -90,6 +90,7 @@ export const NoHandle: Story = {
 export const GlassVariant: Story = {
   args: {
     variant: "glass",
-    description: "Glass sheet — mesh background visible through alpha-baked surface",
+    description:
+      "Glass sheet — mesh background visible through alpha-baked surface",
   },
 };

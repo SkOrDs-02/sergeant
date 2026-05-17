@@ -1,162 +1,325 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Store Listing Preview</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .store-card { background: #fafafa; border-radius: 16px; padding: 16px; }
-  .store-top { display: flex; gap: 12px; align-items: center; }
-  .store-icon { width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, #10b981, #047857); display: grid; place-items: center; color: white; font-weight: 800; font-size: 24px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(4,120,87,.25); }
-  .store-name { font-size: 16px; font-weight: 800; line-height: 1.1; }
-  .store-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .store-cta { background: var(--brand); color: white; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; margin-left: auto; flex-shrink: 0; }
-  .store-meta { display: flex; gap: 16px; margin-top: 12px; font-size: 11px; color: var(--muted); padding: 8px 0; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
-  .store-meta strong { color: var(--ink); display: block; font-size: 13px; }
-  .store-screens { display: flex; gap: 6px; margin-top: 12px; overflow: hidden; }
-  .store-screen { flex: 1; aspect-ratio: 9/16; background: linear-gradient(180deg, var(--bg) 0%, #ecfdf5 100%); border-radius: 8px; padding: 8px; font-size: 8px; color: var(--muted); }
-  .store-desc { font-size: 12px; color: var(--ink); line-height: 1.5; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Store Listing Preview</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .store-card {
+        background: #fafafa;
+        border-radius: 16px;
+        padding: 16px;
+      }
+      .store-top {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .store-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #10b981, #047857);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 800;
+        font-size: 24px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(4, 120, 87, 0.25);
+      }
+      .store-name {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+      .store-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .store-cta {
+        background: var(--brand);
+        color: white;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+      .store-meta {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+        font-size: 11px;
+        color: var(--muted);
+        padding: 8px 0;
+        border-top: 1px solid var(--line-soft);
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .store-meta strong {
+        color: var(--ink);
+        display: block;
+        font-size: 13px;
+      }
+      .store-screens {
+        display: flex;
+        gap: 6px;
+        margin-top: 12px;
+        overflow: hidden;
+      }
+      .store-screen {
+        flex: 1;
+        aspect-ratio: 9/16;
+        background: linear-gradient(180deg, var(--bg) 0%, #ecfdf5 100%);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 8px;
+        color: var(--muted);
+      }
+      .store-desc {
+        font-size: 12px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line-soft);
+      }
 
-  /* V2 Text-heavy */
-  .v2 .store-screens { display: none; }
-  .v2 .store-desc { font-size: 13px; }
-  .v2 .benefit-list { list-style: none; padding: 0; margin-top: 8px; }
-  .v2 .benefit-list li { padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 12px; }
-  .v2 .benefit-list li::before { content: '✓ '; color: var(--brand); font-weight: 800; }
+      /* V2 Text-heavy */
+      .v2 .store-screens {
+        display: none;
+      }
+      .v2 .store-desc {
+        font-size: 13px;
+      }
+      .v2 .benefit-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 8px;
+      }
+      .v2 .benefit-list li {
+        padding: 6px 0;
+        border-bottom: 1px dashed var(--line);
+        font-size: 12px;
+      }
+      .v2 .benefit-list li::before {
+        content: "✓ ";
+        color: var(--brand);
+        font-weight: 800;
+      }
 
-  /* V3 Module grid */
-  .v3 .store-modules { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
-  .v3 .store-module { padding: 10px; border-radius: 8px; font-size: 10px; color: white; aspect-ratio: 1.4/1; display: flex; flex-direction: column; justify-content: space-between; }
-  .v3 .store-module.finyk { background: var(--finyk); }
-  .v3 .store-module.fizruk { background: var(--fizruk); }
-  .v3 .store-module.routine { background: var(--routine); }
-  .v3 .store-module.nutrition { background: var(--nutrition); }
-  .v3 .store-module-tag { font-family: 'JetBrains Mono', monospace; font-size: 8px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.08em; }
-  .v3 .store-module-title { font-weight: 800; line-height: 1.2; }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 03 · App Store / Play Store</div>
-      <h1>Store listing preview</h1>
-      <p>Як виглядає Sergeant у App Store search results та product page. Icon + name + subtitle (30 chars) + screenshots + description.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
+      /* V3 Module grid */
+      .v3 .store-modules {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .v3 .store-module {
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 10px;
+        color: white;
+        aspect-ratio: 1.4/1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .v3 .store-module.finyk {
+        background: var(--finyk);
+      }
+      .v3 .store-module.fizruk {
+        background: var(--fizruk);
+      }
+      .v3 .store-module.routine {
+        background: var(--routine);
+      }
+      .v3 .store-module.nutrition {
+        background: var(--nutrition);
+      }
+      .v3 .store-module-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 8px;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .v3 .store-module-title {
+        font-weight: 800;
+        line-height: 1.2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 03 · App Store / Play Store</div>
+          <h1>Store listing preview</h1>
+          <p>
+            Як виглядає Sergeant у App Store search results та product page.
+            Icon + name + subtitle (30 chars) + screenshots + description.
+          </p>
+        </div>
+        <a href="index.html" class="back-link">← Portal</a>
+      </div>
 
-  <div class="variants">
-
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Screenshot-focused</span></div>
-      <p class="variant-desc">Hero screenshots — primary asset. Description secondary. Найкраще для visual-curious users.</p>
-      <div class="variant-body">
-        <div class="store-card">
-          <div class="store-top">
-            <div class="store-icon">S</div>
-            <div style="flex:1;">
-              <div class="store-name">Sergeant</div>
-              <div class="store-sub">Усе про себе — в одному місці</div>
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Screenshot-focused</span>
+          </div>
+          <p class="variant-desc">
+            Hero screenshots — primary asset. Description secondary. Найкраще
+            для visual-curious users.
+          </p>
+          <div class="variant-body">
+            <div class="store-card">
+              <div class="store-top">
+                <div class="store-icon">S</div>
+                <div style="flex: 1">
+                  <div class="store-name">Sergeant</div>
+                  <div class="store-sub">Усе про себе — в одному місці</div>
+                </div>
+                <div class="store-cta">ОТРИМАТИ</div>
+              </div>
+              <div class="store-meta">
+                <div><strong>4.8</strong>27 оцінок</div>
+                <div><strong>12+</strong>Вік</div>
+                <div><strong>48 MB</strong>Розмір</div>
+                <div><strong>UA</strong>Мова</div>
+              </div>
+              <div class="store-screens">
+                <div class="store-screen">Hub<br />Dashboard</div>
+                <div class="store-screen">Finyk<br />Overview</div>
+                <div class="store-screen">Routine<br />Today</div>
+                <div class="store-screen">Insight<br />Card</div>
+              </div>
+              <div class="store-desc">
+                Чотири модулі — Finyk, Fizruk, Routine, Nutrition. Усе твоє в
+                одному місці. Без табів, без перемикань, без зайвого тиску.
+              </div>
             </div>
-            <div class="store-cta">ОТРИМАТИ</div>
           </div>
-          <div class="store-meta">
-            <div><strong>4.8</strong>27 оцінок</div>
-            <div><strong>12+</strong>Вік</div>
-            <div><strong>48 MB</strong>Розмір</div>
-            <div><strong>UA</strong>Мова</div>
+        </div>
+
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Benefits-focused</span>
           </div>
-          <div class="store-screens">
-            <div class="store-screen">Hub<br>Dashboard</div>
-            <div class="store-screen">Finyk<br>Overview</div>
-            <div class="store-screen">Routine<br>Today</div>
-            <div class="store-screen">Insight<br>Card</div>
+          <p class="variant-desc">
+            Text-heavy. Конкретні переваги списком. Підходить utility-seekers що
+            читають description перш ніж download.
+          </p>
+          <div class="variant-body">
+            <div class="store-card">
+              <div class="store-top">
+                <div class="store-icon">S</div>
+                <div style="flex: 1">
+                  <div class="store-name">Sergeant</div>
+                  <div class="store-sub">Усе про себе — в одному місці</div>
+                </div>
+                <div class="store-cta">ОТРИМАТИ</div>
+              </div>
+              <div class="store-meta">
+                <div><strong>4.8</strong>27 оцінок</div>
+                <div><strong>UA</strong>Мова</div>
+                <div><strong>Free</strong>Безкоштовно</div>
+              </div>
+              <ul class="benefit-list">
+                <li>Фінанси — без таблиць і shaming</li>
+                <li>Тренування — пам'ятає кожен підхід</li>
+                <li>Звички — streak без guilt</li>
+                <li>Харчування — рахує макроси за тебе</li>
+                <li>Українською. Завжди.</li>
+              </ul>
+              <div class="store-desc">
+                Один тап на день — і через місяць побачиш, куди реально йде твоє
+                життя.
+              </div>
+            </div>
           </div>
-          <div class="store-desc">Чотири модулі — Finyk, Fizruk, Routine, Nutrition. Усе твоє в одному місці. Без табів, без перемикань, без зайвого тиску.</div>
+        </div>
+
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Module grid</span>
+          </div>
+          <p class="variant-desc">
+            4 модулі візуально як 4 separate cards у store screenshot.
+            Bento-style. Resonates з V2 landing direction.
+          </p>
+          <div class="variant-body">
+            <div class="store-card">
+              <div class="store-top">
+                <div class="store-icon">S</div>
+                <div style="flex: 1">
+                  <div class="store-name">Sergeant</div>
+                  <div class="store-sub">4 модулі · 1 застосунок</div>
+                </div>
+                <div class="store-cta">ОТРИМАТИ</div>
+              </div>
+              <div class="store-modules">
+                <div class="store-module finyk">
+                  <div class="store-module-tag">Finyk</div>
+                  <div class="store-module-title">Фінанси<br />без таблиць</div>
+                </div>
+                <div class="store-module fizruk">
+                  <div class="store-module-tag">Fizruk</div>
+                  <div class="store-module-title">
+                    Тренування<br />з пам'яттю
+                  </div>
+                </div>
+                <div class="store-module routine">
+                  <div class="store-module-tag">Routine</div>
+                  <div class="store-module-title">Звички<br />без guilt</div>
+                </div>
+                <div class="store-module nutrition">
+                  <div class="store-module-tag">Nutrition</div>
+                  <div class="store-module-title">Макроси<br />за тебе</div>
+                </div>
+              </div>
+              <div class="store-desc">
+                Українською. Без перемикань між 4 застосунками. Solo dev + AI +
+                n8n.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Benefits-focused</span></div>
-      <p class="variant-desc">Text-heavy. Конкретні переваги списком. Підходить utility-seekers що читають description перш ніж download.</p>
-      <div class="variant-body">
-        <div class="store-card">
-          <div class="store-top">
-            <div class="store-icon">S</div>
-            <div style="flex:1;">
-              <div class="store-name">Sergeant</div>
-              <div class="store-sub">Усе про себе — в одному місці</div>
-            </div>
-            <div class="store-cta">ОТРИМАТИ</div>
-          </div>
-          <div class="store-meta">
-            <div><strong>4.8</strong>27 оцінок</div>
-            <div><strong>UA</strong>Мова</div>
-            <div><strong>Free</strong>Безкоштовно</div>
-          </div>
-          <ul class="benefit-list">
-            <li>Фінанси — без таблиць і shaming</li>
-            <li>Тренування — пам'ятає кожен підхід</li>
-            <li>Звички — streak без guilt</li>
-            <li>Харчування — рахує макроси за тебе</li>
-            <li>Українською. Завжди.</li>
-          </ul>
-          <div class="store-desc">Один тап на день — і через місяць побачиш, куди реально йде твоє життя.</div>
-        </div>
+      <div class="notes">
+        <h2>Notes · як вибирати</h2>
+        <ul>
+          <li>
+            <strong>Subtitle 30 chars limit (iOS)</strong>: "Усе про себе — в
+            одному місці" = 30 symbols. Tight, але fits. Альтернатива "4 модулі
+            · 1 застосунок" = 23.
+          </li>
+          <li>
+            <strong>V1</strong> — рекомендую для App Store. iOS searchers
+            скролять screenshots первым.
+          </li>
+          <li>
+            <strong>V2</strong> — рекомендую для Play Store. Android users
+            більше читають описи.
+          </li>
+          <li>
+            <strong>V3</strong> — найкраще для screenshot 1 (cover screen).
+            Module grid одразу пояснює value prop ще до того як user тапне.
+          </li>
+          <li>
+            Гібридна рекомендація: V1 layout + V3 module grid як screenshot 1 +
+            V2 benefit list як screenshot 5 (last).
+          </li>
+        </ul>
       </div>
     </div>
-
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Module grid</span></div>
-      <p class="variant-desc">4 модулі візуально як 4 separate cards у store screenshot. Bento-style. Resonates з V2 landing direction.</p>
-      <div class="variant-body">
-        <div class="store-card">
-          <div class="store-top">
-            <div class="store-icon">S</div>
-            <div style="flex:1;">
-              <div class="store-name">Sergeant</div>
-              <div class="store-sub">4 модулі · 1 застосунок</div>
-            </div>
-            <div class="store-cta">ОТРИМАТИ</div>
-          </div>
-          <div class="store-modules">
-            <div class="store-module finyk">
-              <div class="store-module-tag">Finyk</div>
-              <div class="store-module-title">Фінанси<br>без таблиць</div>
-            </div>
-            <div class="store-module fizruk">
-              <div class="store-module-tag">Fizruk</div>
-              <div class="store-module-title">Тренування<br>з пам'яттю</div>
-            </div>
-            <div class="store-module routine">
-              <div class="store-module-tag">Routine</div>
-              <div class="store-module-title">Звички<br>без guilt</div>
-            </div>
-            <div class="store-module nutrition">
-              <div class="store-module-tag">Nutrition</div>
-              <div class="store-module-title">Макроси<br>за тебе</div>
-            </div>
-          </div>
-          <div class="store-desc">Українською. Без перемикань між 4 застосунками. Solo dev + AI + n8n.</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes · як вибирати</h2>
-    <ul>
-      <li><strong>Subtitle 30 chars limit (iOS)</strong>: "Усе про себе — в одному місці" = 30 symbols. Tight, але fits. Альтернатива "4 модулі · 1 застосунок" = 23.</li>
-      <li><strong>V1</strong> — рекомендую для App Store. iOS searchers скролять screenshots первым.</li>
-      <li><strong>V2</strong> — рекомендую для Play Store. Android users більше читають описи.</li>
-      <li><strong>V3</strong> — найкраще для screenshot 1 (cover screen). Module grid одразу пояснює value prop ще до того як user тапне.</li>
-      <li>Гібридна рекомендація: V1 layout + V3 module grid як screenshot 1 + V2 benefit list як screenshot 5 (last).</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>

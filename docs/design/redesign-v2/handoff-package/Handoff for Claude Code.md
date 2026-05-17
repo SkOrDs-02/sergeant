@@ -21,6 +21,7 @@ Routine / Nutrition) — **лишається v1**: flat `bg-panel/95 backdrop-b
 з sliding top-pill 4px indicator + drop-shadow icon glow.
 
 **Звідки знаю.** Прочитав:
+
 - `apps/web/src/shared/components/ui/ModuleBottomNav.tsx` — current v1 implementation
 - `apps/web/src/modules/finyk/components/finykNav.tsx` — 5 items
 - `apps/web/src/modules/fizruk/shell/fizrukNav.tsx` — 4 items
@@ -35,7 +36,7 @@ Routine / Nutrition) — **лишається v1**: flat `bg-panel/95 backdrop-b
 
 ```markdown
 - [ ] **ModuleBottomNav v2 unification** — мігрувати spec ModuleBottomNav до того ж glass-pill
-  shape що HubBottomNav (PR-5). **Decision locked 2026-05-17: full v2, не XS chrome-lift.** Адаптації:
+      shape що HubBottomNav (PR-5). **Decision locked 2026-05-17: full v2, не XS chrome-lift.** Адаптації:
   - Active pill — `bg-{module}-strong` (не brand-agnostic `ink-strong`), щоб зберегти
     module identity який сьогодні передається через icon glow
   - Routine: center FAB як sibling (zindex >, top: -22), не nested у nav. Геометрія
@@ -75,6 +76,7 @@ Phase 6 у `execution-plan.md` обмежений «Expensa-inspired delights» 
 ### 1.3 Wow primitives без wiring — заповнити gap
 
 Execution plan §Wow gaps каже:
+
 > Primitives (`CelebrationModal`, `AnimatedNumber`, `StreakFlame`, `useFizrukRestSound`) існують,
 > але **wiring у модулях відсутній**.
 
@@ -186,6 +188,7 @@ module-accent halo на hero», але **конкретне місце wiring н
 **Behind TweaksPanel toggle:** single-storey day-budget primacy (mine).
 
 Implementation:
+
 - `TWEAK_DEFAULS` JSON у HeroCard з ключем `"heroLayout": "two-storey"`
 - PostHog feature flag `finyk.hero.single-storey` керує дефолтом для cohort
 - Telemetry: `hero_viewed` event з `layout` property для A/B aggregation
@@ -195,6 +198,7 @@ Implementation:
 **Не chrome-lift.** Повна міграція до v2 floating glass pill shape, з module-tinted active pill.
 
 Implementation:
+
 - `apps/web/src/shared/components/ui/ModuleBottomNav.tsx` — shape матч HubBottomNav v2 (mx-3 mb-3 rounded-r-2xl shadow-nav bg-surface-strong-glass)
 - Active pill: `bg-{module}-strong` (НЕ brand-agnostic ink-strong) — збереже module identity. Сьогодні цю identity несе icon glow; після міграції її несе pill background.
 - 4 module wires (`finykNav.tsx`, `fizrukNav.tsx`, `RoutineBottomNav.tsx`, `NutritionBottomNav.tsx`)
@@ -205,10 +209,12 @@ Implementation:
 ### 3.3 Мої доповнення — cherry-pick дешевих ✅
 
 **Включити в Phase 6 (v2 close):**
+
 - 6.4 **AI-source tag на tx/meal rows** — Badge primitive existing, no new component, just wiring (XS-S)
 - W6 **StreakFlame wiring** на Routine hero — primitive existing, потрібен hook + integration (XS)
 
 **Відкласти у Phase 7 «Polish v2.1»:**
+
 - 6.5 outcome copy на partial-progress macros
 - 6.6 quick-add pantry-aware chips на Nutrition
 - 6.7 PR badge на Fizruk Dashboard
@@ -269,6 +275,7 @@ Phase 7 Polish v2.1 (deferred):
 - `Nutrition Today.html` — V2 + 6.5 + 6.6 patterns
 
 Кожен файл має:
+
 - 3 артборди в light row + 3 артборди в dark row
 - Element-by-element diff table з citation на конкретні рядки в `backlog.md` / `execution-plan.md`
 - Citation map окремо для 0→1 (plan) і 1→2 (mine)

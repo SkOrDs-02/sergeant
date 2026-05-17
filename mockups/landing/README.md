@@ -16,35 +16,37 @@ Double-click any of:
 
 ## Comparison matrix
 
-| Аспект | V1 Soft & Organic | V2 Bento Modular | V3 Editorial |
-|---|---|---|---|
-| **Mood reference** | Yazio × Notion | Linear × iOS keynote | Stripe blog × Substack |
-| **Background** | Кремовий `#fdf9f3` + warm radial glow | Mesh-gradient на cream base | Paper texture + subtle noise SVG |
-| **Hero layout** | Centered, generous white space | Asymmetric grid (text + stat cards) | Left-aligned editorial column |
-| **Module showcase** | Tabbed single-card з module gradient | Bento grid 4 cards різних сізів з glass + hero gradients | Vertical timeline з index numbers + preview cards |
-| **Typography hero** | Manrope 800, 64px | Manrope 800 з gradient highlight | Lora serif italic, mono mast meta |
-| **Numbers/stats** | JetBrains Mono як accent | JetBrains Mono = primary stat treatment | JetBrains Mono = entire build journal |
-| **Hero copy treatment** | Plain "Усе про себе — в одному місці" | "Усе про себе — **в одному місці**" (gradient highlight) | "Усе про себе — *в одному місці*" (italic accent) |
-| **CTA primary** | Emerald-700 pill, soft shadow | Ink-strong rounded square з micro shadow | Ink rectangular з mono uppercase label |
-| **Build-in-public surface** | Не присутній (clean marketing) | Не присутній | Журнальний "Field notes / build journal" блок з SHIPPED/BROKE/WIP теги |
-| **Persona vibe** | Доступний для масової non-tech аудиторії | Premium tech-savvy early adopter | Indie tech-curious / dev / маркетингова niche |
-| **Mobile-first quality** | Excellent — все вертикалізується чисто | Good — bento grid складніше на 360px | Excellent — column natively narrow |
-| **Implementation cost** | S — найпростіший | M — більше cards + glass effects | M — більше typography setup, 3 fonts |
-| **Voice fit per brandbook** | ⭐⭐⭐ Найближче ("Soft & Organic", "Доступний, не лякає") | ⭐⭐ Modern, потенційно "холодніше" | ⭐⭐ Доросліший, niche-er audience fit |
-| **AI-search readiness** | OK — structured heading hierarchy | OK — semantic HTML | **Best** — content-rich text density |
-| **Conversion bet** | Broad UA mass-market | Tech early-adopters who appreciate craft | Niche UA-dev/PM/indie crowd via DOU.ua referral |
+| Аспект                      | V1 Soft & Organic                                          | V2 Bento Modular                                         | V3 Editorial                                                           |
+| --------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Mood reference**          | Yazio × Notion                                             | Linear × iOS keynote                                     | Stripe blog × Substack                                                 |
+| **Background**              | Кремовий `#fdf9f3` + warm radial glow                      | Mesh-gradient на cream base                              | Paper texture + subtle noise SVG                                       |
+| **Hero layout**             | Centered, generous white space                             | Asymmetric grid (text + stat cards)                      | Left-aligned editorial column                                          |
+| **Module showcase**         | Tabbed single-card з module gradient                       | Bento grid 4 cards різних сізів з glass + hero gradients | Vertical timeline з index numbers + preview cards                      |
+| **Typography hero**         | Manrope 800, 64px                                          | Manrope 800 з gradient highlight                         | Lora serif italic, mono mast meta                                      |
+| **Numbers/stats**           | JetBrains Mono як accent                                   | JetBrains Mono = primary stat treatment                  | JetBrains Mono = entire build journal                                  |
+| **Hero copy treatment**     | Plain "Усе про себе — в одному місці"                      | "Усе про себе — **в одному місці**" (gradient highlight) | "Усе про себе — _в одному місці_" (italic accent)                      |
+| **CTA primary**             | Emerald-700 pill, soft shadow                              | Ink-strong rounded square з micro shadow                 | Ink rectangular з mono uppercase label                                 |
+| **Build-in-public surface** | Не присутній (clean marketing)                             | Не присутній                                             | Журнальний "Field notes / build journal" блок з SHIPPED/BROKE/WIP теги |
+| **Persona vibe**            | Доступний для масової non-tech аудиторії                   | Premium tech-savvy early adopter                         | Indie tech-curious / dev / маркетингова niche                          |
+| **Mobile-first quality**    | Excellent — все вертикалізується чисто                     | Good — bento grid складніше на 360px                     | Excellent — column natively narrow                                     |
+| **Implementation cost**     | S — найпростіший                                           | M — більше cards + glass effects                         | M — більше typography setup, 3 fonts                                   |
+| **Voice fit per brandbook** | ⭐⭐⭐ Найближче ("Soft & Organic", "Доступний, не лякає") | ⭐⭐ Modern, потенційно "холодніше"                      | ⭐⭐ Доросліший, niche-er audience fit                                 |
+| **AI-search readiness**     | OK — structured heading hierarchy                          | OK — semantic HTML                                       | **Best** — content-rich text density                                   |
+| **Conversion bet**          | Broad UA mass-market                                       | Tech early-adopters who appreciate craft                 | Niche UA-dev/PM/indie crowd via DOU.ua referral                        |
 
 ## Trade-off summary
 
 ### V1 — Soft & Organic (default)
 
 **Чому обирати:**
+
 - Найближче до brandbook tone ("Soft & Organic", warm, безпечний).
 - Найшвидший до ship — найменше комплексності в CSS.
 - Найкраще для broad mass-market UA — не лякає non-tech людей.
 - Доступний для всіх 4 модулів equally.
 
 **Чому НЕ обирати:**
+
 - Виглядає "як ще один SaaS landing" — менше signature.
 - Не використовує v2 redesign glass/bento patterns — marketing і product візуально розходяться.
 - Не має build-in-public surface — solo dev leverage не показано.
@@ -52,12 +54,14 @@ Double-click any of:
 ### V2 — Bento Modular
 
 **Чому обирати:**
+
 - Resonates з v2 redesign mood (glass + module hero gradients) — marketing → product continuity.
 - Bento grid = signature visual для запам'ятовуваності, share-friendly screenshots.
 - Поіменно показує всі 4 модулі одразу — нема "обери таб" UX cost.
 - "Premium feel" — підвищує perceived quality продукту до launch.
 
 **Чому НЕ обирати:**
+
 - Glass effects + bento grid складніший на mobile 360px — risk implementation drift.
 - "Холодніше" tone може конфліктувати з brandbook "warm friend" persona.
 - Більше unique CSS — solo dev maintenance cost вищий.
@@ -65,12 +69,14 @@ Double-click any of:
 ### V3 — Editorial / Build-in-public
 
 **Чому обирати:**
+
 - Унікальний leverage — solo dev + build-in-public є literally візуально показано.
 - "Field notes" блок робить продукт human-scale, особистим — резонує з UA-tech community.
 - Найкраща content-density для AI search citation (Perplexity, ChatGPT) — більше text matter.
 - Підходить для DOU.ua / X UA-dev referral traffic — те, що audience очікує бачити.
 
 **Чому НЕ обирати:**
+
 - Narrow column = niche audience — не optimal для Routine/Nutrition mass-market.
 - Lora serif + JetBrains Mono = більше font weight (more bandwidth, slower CWV).
 - Build journal вимагає підтримки cadence — якщо empty / stale = signal "продукт мертвий".

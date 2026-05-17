@@ -186,7 +186,7 @@ pnpm docs:check-links
 - D2 (Stryker removal decision-record) — підтверджено як **already-closed** під час другого проходу. `docs/testing/README.md:12` + `2026-05-05-tests-review.md:40` + ADR-0020:235 уже містять explicit decision. Drop з outstanding-list — наступний синтез-прохід.
 - D1/D4 — PR-и open; чекають merge. D3 закрито локальним diff-ом і перевірено таргетованим `assertStartupEnv` Vitest.
 - D2 (Stryker removal decision-record) — ✅ Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)). Drop з outstanding-list виконано.
-- D1/D3/D4 — PR-и open; чекають merge. Перебудувати таблицю на наступному циклі.
+- D1/D4 — PR-и open; чекають merge. D3 лишається закритим локальним diff-ом; перебудувати таблицю на наступному циклі.
 
 **Cleanup item (synthesis non-tracked):** CONTRIBUTING.md Monobank fallback note — **false positive** (README не позначає Monobank webhook як deprecated; CONTRIBUTING.md не має згадок взагалі — нема чого додавати).
 

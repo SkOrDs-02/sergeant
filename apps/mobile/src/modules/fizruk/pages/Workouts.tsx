@@ -20,7 +20,6 @@
  */
 
 import {
-  computeWorkoutSummary,
   exerciseDisplayName,
   type WorkoutExerciseCatalogEntry,
   type WorkoutSet,
@@ -40,8 +39,10 @@ import { Card } from "@/components/ui/Card";
 import { RestTimerOverlay } from "../components/RestTimerOverlay";
 import { WorkoutTemplatesSheet } from "../components/templates/WorkoutTemplatesSheet";
 import {
+  ActiveItemCard,
   ActiveSetEditor,
   ExerciseCatalogSection,
+  RecentWorkoutRow,
   WorkoutActivePanel,
   WorkoutJournalSection,
 } from "../components/workouts";
@@ -553,111 +554,5 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
         testID={`${testID}-set-editor`}
       />
     </SafeAreaView>
-  );
-}
-
-interface ActiveItemCardProps {
-  item: FizrukWorkoutItem;
-  onAddSet(): void;
-  onEditSet(setIndex: number): void;
-  testID?: string;
-}
-
-function ActiveItemCard({
-  item,
-  onAddSet,
-  onEditSet,
-  testID,
-}: ActiveItemCardProps) {
-  const sets = item.sets ?? [];
-  return (
-    <Card variant="default" radius="lg" padding="md" testID={testID}>
-      <Text className="text-sm font-semibold text-fg">
-        {item.nameUk || "Вправа"}
-      </Text>
-      {sets.length > 0 ? (
-        <View className="mt-2 gap-1">
-          {sets.map((set, idx) => (
-            <Pressable
-              key={idx}
-              accessibilityRole="button"
-              accessibilityLabel={`Сет ${idx + 1}: ${set.weightKg} кг × ${set.reps}`}
-              onPress={() => onEditSet(idx)}
-              testID={`${testID}-set-${idx}`}
-              className="flex-row items-center justify-between py-1.5 px-2 rounded-lg bg-cream-100"
-            >
-              <Text className="text-xs text-fg-muted">Сет {idx + 1}</Text>
-              <Text className="text-sm font-semibold text-fg">
-                {set.weightKg} кг × {set.reps}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Додати сет"
-        onPress={onAddSet}
-        testID={`${testID}-add-set`}
-        className="mt-3 h-10 rounded-xl bg-teal-600 items-center justify-center"
-      >
-        <Text className="text-sm font-semibold text-white">+ Додати сет</Text>
-      </Pressable>
-    </Card>
-  );
-}
-
-interface RecentWorkoutRowProps {
-  workout: FizrukWorkout;
-  isActive: boolean;
-  testID?: string;
-}
-
-function RecentWorkoutRow({
-  workout,
-  isActive,
-  testID,
-}: RecentWorkoutRowProps) {
-  const summary = useMemo(
-    () => computeWorkoutSummary(workout as never),
-    [workout],
-  );
-  const started = new Date(workout.startedAt);
-  const dateLabel = started.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
-  const parts: string[] = [];
-  if (summary.itemCount > 0) parts.push(`${summary.itemCount} вправ`);
-  if (summary.setCount > 0) parts.push(`${summary.setCount} сетів`);
-  const durMin = summary.durationSec
-    ? Math.max(1, Math.round(summary.durationSec / 60))
-    : null;
-  if (durMin !== null) parts.push(`${durMin} хв`);
-  const subtitle = parts.length ? parts.join(" · ") : "порожнє тренування";
-
-  return (
-    <View
-      className="px-3 py-3 rounded-xl border border-cream-300 bg-cream-50 flex-row items-center justify-between"
-      testID={testID}
-    >
-      <View className="flex-1 pr-2">
-        <View className="flex-row items-center gap-2">
-          <Text className="text-sm font-semibold text-fg">{dateLabel}</Text>
-          {isActive ? (
-            <Text className="text-[10px] uppercase font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">
-              Активне
-            </Text>
-          ) : !summary.isFinished ? (
-            <Text className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-              Чернетка
-            </Text>
-          ) : null}
-        </View>
-        <Text className="text-xs text-fg-muted mt-0.5" numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </View>
-    </View>
   );
 }

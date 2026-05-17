@@ -1,146 +1,325 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Comparison Page Variants</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .cmp-frame { font-size: 11px; line-height: 1.5; height: 100%; }
-  .cmp-title { font-size: 16px; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
-  .cmp-sub { color: var(--muted); margin-bottom: 12px; font-size: 11px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Comparison Page Variants</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .cmp-frame {
+        font-size: 11px;
+        line-height: 1.5;
+        height: 100%;
+      }
+      .cmp-title {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 8px;
+      }
+      .cmp-sub {
+        color: var(--muted);
+        margin-bottom: 12px;
+        font-size: 11px;
+      }
 
-  /* V1 Side-by-side table */
-  .v1 .cmp-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-  .v1 .cmp-table th { padding: 6px 4px; text-align: center; font-weight: 700; border-bottom: 2px solid var(--ink); }
-  .v1 .cmp-table th.us { color: var(--brand); }
-  .v1 .cmp-table td { padding: 4px 4px; border-bottom: 1px solid var(--line); }
-  .v1 .cmp-table td:first-child { color: var(--muted); font-size: 9px; }
-  .v1 .cmp-table .yes { color: var(--brand); font-weight: 700; }
-  .v1 .cmp-table .no { color: var(--subtle); }
+      /* V1 Side-by-side table */
+      .v1 .cmp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+      .v1 .cmp-table th {
+        padding: 6px 4px;
+        text-align: center;
+        font-weight: 700;
+        border-bottom: 2px solid var(--ink);
+      }
+      .v1 .cmp-table th.us {
+        color: var(--brand);
+      }
+      .v1 .cmp-table td {
+        padding: 4px 4px;
+        border-bottom: 1px solid var(--line);
+      }
+      .v1 .cmp-table td:first-child {
+        color: var(--muted);
+        font-size: 9px;
+      }
+      .v1 .cmp-table .yes {
+        color: var(--brand);
+        font-weight: 700;
+      }
+      .v1 .cmp-table .no {
+        color: var(--subtle);
+      }
 
-  /* V2 Fit-framing narrative */
-  .v2 .cmp-fit { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-  .v2 .cmp-them { background: #fafafa; border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-  .v2 .cmp-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; font-weight: 700; }
-  .v2 .cmp-fit .cmp-label { color: var(--brand); }
-  .v2 .cmp-them .cmp-label { color: var(--muted); }
+      /* V2 Fit-framing narrative */
+      .v2 .cmp-fit {
+        background: var(--brand-soft);
+        border: 1px solid var(--brand);
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .v2 .cmp-them {
+        background: #fafafa;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .v2 .cmp-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+        font-weight: 700;
+      }
+      .v2 .cmp-fit .cmp-label {
+        color: var(--brand);
+      }
+      .v2 .cmp-them .cmp-label {
+        color: var(--muted);
+      }
 
-  /* V3 Feature checklist */
-  .v3 .cmp-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .v3 .cmp-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
-  .v3 .cmp-card.us { background: var(--brand-soft); border-color: var(--brand); }
-  .v3 .cmp-card .cmp-h { font-weight: 700; font-size: 12px; margin-bottom: 6px; }
-  .v3 .cmp-card.us .cmp-h { color: var(--brand); }
-  .v3 .cmp-card ul { list-style: none; padding: 0; font-size: 10px; }
-  .v3 .cmp-card li { padding: 2px 0; border-bottom: 1px dashed var(--line-soft); }
-  .v3 .cmp-card li::before { content: '· '; color: var(--subtle); }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 09 · Comparison page</div>
-      <h1>Comparison page — Habitica vs Sergeant</h1>
-      <p>Fit-framing tone з ради: «Різні інструменти для різних людей». НЕ "ми кращі". AI search-cite friendly. Phase 4 deliverable.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
-
-  <div class="variants">
-
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Side-by-side table</span></div>
-      <p class="variant-desc">Класичний comparison-table. Швидке scanning. SEO-friendly (structured).</p>
-      <div class="variant-body">
-        <div class="cmp-frame">
-          <div class="cmp-title">Habitica vs Sergeant</div>
-          <div class="cmp-sub">Різні інструменти для різних людей. Ось коротко.</div>
-          <table class="cmp-table">
-            <thead>
-              <tr><th></th><th>Habitica</th><th class="us">Sergeant</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Гра / RPG</td><td class="yes">✓</td><td class="no">—</td></tr>
-              <tr><td>Все життя в одному</td><td class="no">—</td><td class="yes">✓</td></tr>
-              <tr><td>Українська</td><td class="no">—</td><td class="yes">✓</td></tr>
-              <tr><td>Фінанси</td><td class="no">—</td><td class="yes">✓</td></tr>
-              <tr><td>Soft, без guilt</td><td class="no">—</td><td class="yes">✓</td></tr>
-              <tr><td>Pet/avatar</td><td class="yes">✓</td><td class="no">—</td></tr>
-              <tr><td>Community party</td><td class="yes">✓</td><td class="no">—</td></tr>
-              <tr><td>Калорії</td><td class="no">—</td><td class="yes">✓</td></tr>
-              <tr><td>UA-native team</td><td class="no">—</td><td class="yes">✓</td></tr>
-            </tbody>
-          </table>
+      /* V3 Feature checklist */
+      .v3 .cmp-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .v3 .cmp-card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+      }
+      .v3 .cmp-card.us {
+        background: var(--brand-soft);
+        border-color: var(--brand);
+      }
+      .v3 .cmp-card .cmp-h {
+        font-weight: 700;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .v3 .cmp-card.us .cmp-h {
+        color: var(--brand);
+      }
+      .v3 .cmp-card ul {
+        list-style: none;
+        padding: 0;
+        font-size: 10px;
+      }
+      .v3 .cmp-card li {
+        padding: 2px 0;
+        border-bottom: 1px dashed var(--line-soft);
+      }
+      .v3 .cmp-card li::before {
+        content: "· ";
+        color: var(--subtle);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 09 · Comparison page</div>
+          <h1>Comparison page — Habitica vs Sergeant</h1>
+          <p>
+            Fit-framing tone з ради: «Різні інструменти для різних людей». НЕ
+            "ми кращі". AI search-cite friendly. Phase 4 deliverable.
+          </p>
         </div>
+        <a href="index.html" class="back-link">← Portal</a>
       </div>
-    </div>
 
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Fit-framing narrative</span></div>
-      <p class="variant-desc">"Choose X if Y" framing. Чесний. AI search охоче цитує. Резонує з ради recommendation.</p>
-      <div class="variant-body">
-        <div class="cmp-frame">
-          <div class="cmp-title">Habitica vs Sergeant</div>
-          <div class="cmp-them">
-            <div class="cmp-label">Habitica</div>
-            <strong>Обери якщо:</strong> Любиш ігровий RPG-підхід, fantasy-естетику, pet-systems. Гейміфікація як primary motivation. Community-driven (party quests). Англомовний контент ок.
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Side-by-side table</span>
           </div>
-          <div class="cmp-fit">
-            <div class="cmp-label">Sergeant</div>
-            <strong>Обери якщо:</strong> Хочеш все life-management в одному (не тільки звички). Soft tone без drill-сержанта. Українську first-class. Бачити куди йдуть гроші + рух + калорії — не тільки checkmark.
-          </div>
-          <p style="font-size: 10px; color: var(--muted); margin-top: 8px;">Обидва добрі. Для різних людей.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Feature checklist</span></div>
-      <p class="variant-desc">Тих хто хоче scan-friendly спадковий список. Without "vs" hostility. Strengths-focused.</p>
-      <div class="variant-body">
-        <div class="cmp-frame">
-          <div class="cmp-title">Sergeant vs Habitica</div>
-          <div class="cmp-col">
-            <div class="cmp-card">
-              <div class="cmp-h">Habitica</div>
-              <ul>
-                <li>RPG gamification</li>
-                <li>Pet & avatar</li>
-                <li>Party quests</li>
-                <li>Open-source</li>
-                <li>~9 років на ринку</li>
-              </ul>
+          <p class="variant-desc">
+            Класичний comparison-table. Швидке scanning. SEO-friendly
+            (structured).
+          </p>
+          <div class="variant-body">
+            <div class="cmp-frame">
+              <div class="cmp-title">Habitica vs Sergeant</div>
+              <div class="cmp-sub">
+                Різні інструменти для різних людей. Ось коротко.
+              </div>
+              <table class="cmp-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Habitica</th>
+                    <th class="us">Sergeant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Гра / RPG</td>
+                    <td class="yes">✓</td>
+                    <td class="no">—</td>
+                  </tr>
+                  <tr>
+                    <td>Все життя в одному</td>
+                    <td class="no">—</td>
+                    <td class="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Українська</td>
+                    <td class="no">—</td>
+                    <td class="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Фінанси</td>
+                    <td class="no">—</td>
+                    <td class="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Soft, без guilt</td>
+                    <td class="no">—</td>
+                    <td class="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Pet/avatar</td>
+                    <td class="yes">✓</td>
+                    <td class="no">—</td>
+                  </tr>
+                  <tr>
+                    <td>Community party</td>
+                    <td class="yes">✓</td>
+                    <td class="no">—</td>
+                  </tr>
+                  <tr>
+                    <td>Калорії</td>
+                    <td class="no">—</td>
+                    <td class="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>UA-native team</td>
+                    <td class="no">—</td>
+                    <td class="yes">✓</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="cmp-card us">
-              <div class="cmp-h">Sergeant</div>
-              <ul>
-                <li>4 модулі в одному</li>
-                <li>Фінанси + рух + звички + калорії</li>
-                <li>Українська завжди</li>
-                <li>Без shaming і drill</li>
-                <li>Solo dev + AI build</li>
-              </ul>
+          </div>
+        </div>
+
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Fit-framing narrative</span>
+          </div>
+          <p class="variant-desc">
+            "Choose X if Y" framing. Чесний. AI search охоче цитує. Резонує з
+            ради recommendation.
+          </p>
+          <div class="variant-body">
+            <div class="cmp-frame">
+              <div class="cmp-title">Habitica vs Sergeant</div>
+              <div class="cmp-them">
+                <div class="cmp-label">Habitica</div>
+                <strong>Обери якщо:</strong> Любиш ігровий RPG-підхід,
+                fantasy-естетику, pet-systems. Гейміфікація як primary
+                motivation. Community-driven (party quests). Англомовний контент
+                ок.
+              </div>
+              <div class="cmp-fit">
+                <div class="cmp-label">Sergeant</div>
+                <strong>Обери якщо:</strong> Хочеш все life-management в одному
+                (не тільки звички). Soft tone без drill-сержанта. Українську
+                first-class. Бачити куди йдуть гроші + рух + калорії — не тільки
+                checkmark.
+              </div>
+              <p style="font-size: 10px; color: var(--muted); margin-top: 8px">
+                Обидва добрі. Для різних людей.
+              </p>
             </div>
           </div>
-          <p style="font-size: 10px; color: var(--muted); margin-top: 8px; text-align: center;">Різні tools для різних людей.</p>
+        </div>
+
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Feature checklist</span>
+          </div>
+          <p class="variant-desc">
+            Тих хто хоче scan-friendly спадковий список. Without "vs" hostility.
+            Strengths-focused.
+          </p>
+          <div class="variant-body">
+            <div class="cmp-frame">
+              <div class="cmp-title">Sergeant vs Habitica</div>
+              <div class="cmp-col">
+                <div class="cmp-card">
+                  <div class="cmp-h">Habitica</div>
+                  <ul>
+                    <li>RPG gamification</li>
+                    <li>Pet & avatar</li>
+                    <li>Party quests</li>
+                    <li>Open-source</li>
+                    <li>~9 років на ринку</li>
+                  </ul>
+                </div>
+                <div class="cmp-card us">
+                  <div class="cmp-h">Sergeant</div>
+                  <ul>
+                    <li>4 модулі в одному</li>
+                    <li>Фінанси + рух + звички + калорії</li>
+                    <li>Українська завжди</li>
+                    <li>Без shaming і drill</li>
+                    <li>Solo dev + AI build</li>
+                  </ul>
+                </div>
+              </div>
+              <p
+                style="
+                  font-size: 10px;
+                  color: var(--muted);
+                  margin-top: 8px;
+                  text-align: center;
+                "
+              >
+                Різні tools для різних людей.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+
+      <div class="notes">
+        <h2>Notes</h2>
+        <ul>
+          <li>
+            Comparison pages — Phase 4 (post-launch ~3 months). Потрібна domain
+            authority спочатку.
+          </li>
+          <li>
+            <strong>V2 Fit-framing</strong> — recommended. AI-агенти
+            (Perplexity, ChatGPT) цитують нейтральні comparisons частіше ніж "ми
+            кращі". SERP-ranking друже.
+          </li>
+          <li>
+            <strong>V1 Table</strong> — для users що шукають quick scan ("чи це
+            робить X?"). Pair з V2 у same page.
+          </li>
+          <li>
+            <strong>V3 Checklist</strong> — для blog/X share. Менш intimidating
+            tone, можна embed у posts.
+          </li>
+          <li>
+            Список target competitors з ради: Habitica, Streaks, MyFitnessPal,
+            Notion (часткове), Monobank Money. Не Bobby, не Mint (US).
+          </li>
+        </ul>
+      </div>
     </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes</h2>
-    <ul>
-      <li>Comparison pages — Phase 4 (post-launch ~3 months). Потрібна domain authority спочатку.</li>
-      <li><strong>V2 Fit-framing</strong> — recommended. AI-агенти (Perplexity, ChatGPT) цитують нейтральні comparisons частіше ніж "ми кращі". SERP-ranking друже.</li>
-      <li><strong>V1 Table</strong> — для users що шукають quick scan ("чи це робить X?"). Pair з V2 у same page.</li>
-      <li><strong>V3 Checklist</strong> — для blog/X share. Менш intimidating tone, можна embed у posts.</li>
-      <li>Список target competitors з ради: Habitica, Streaks, MyFitnessPal, Notion (часткове), Monobank Money. Не Bobby, не Mint (US).</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>

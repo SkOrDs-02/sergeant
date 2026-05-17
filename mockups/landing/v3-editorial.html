@@ -1,408 +1,832 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — V3 Editorial</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --paper: #faf7f1;
-    --paper-edge: #f0e9d8;
-    --ink: #18171a;
-    --ink-soft: #2c2a2e;
-    --muted: #6b6864;
-    --subtle: #a8a29e;
-    --rule: #2c2a2e;
-    --rule-soft: #ddd6c6;
-    --accent: #047857;
-    --finyk: #047857;
-    --fizruk: #155e75;
-    --routine: #c23a3a;
-    --nutrition: #466212;
-    --highlight: #fef3c7;
-  }
-  html, body { font-family: 'Manrope', system-ui, sans-serif; background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.55; }
-  body { min-height: 100vh; }
-  .container { max-width: 680px; margin: 0 auto; padding: 0 24px; }
-  .container-wide { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — V3 Editorial</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --paper: #faf7f1;
+        --paper-edge: #f0e9d8;
+        --ink: #18171a;
+        --ink-soft: #2c2a2e;
+        --muted: #6b6864;
+        --subtle: #a8a29e;
+        --rule: #2c2a2e;
+        --rule-soft: #ddd6c6;
+        --accent: #047857;
+        --finyk: #047857;
+        --fizruk: #155e75;
+        --routine: #c23a3a;
+        --nutrition: #466212;
+        --highlight: #fef3c7;
+      }
+      html,
+      body {
+        font-family: "Manrope", system-ui, sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.55;
+      }
+      body {
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .container-wide {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
 
-  /* Subtle noise/paper texture via SVG */
-  body::before {
-    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    opacity: 0.5;
-  }
-  .wrap { position: relative; z-index: 1; }
+      /* Subtle noise/paper texture via SVG */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+        opacity: 0.5;
+      }
+      .wrap {
+        position: relative;
+        z-index: 1;
+      }
 
-  /* Top masthead — newspaper style */
-  .masthead { border-bottom: 1px solid var(--rule); padding: 20px 0; }
-  .masthead .container-wide { display: flex; justify-content: space-between; align-items: center; }
-  .logo { display: flex; gap: 10px; align-items: baseline; }
-  .logo-name { font-family: 'Lora', serif; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; }
-  .logo-tagline { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
-  .mast-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; display: flex; gap: 16px; align-items: center; }
-  .mast-meta .live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-  .mast-meta .live::before { content: '●'; animation: blink 2s infinite; }
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      /* Top masthead — newspaper style */
+      .masthead {
+        border-bottom: 1px solid var(--rule);
+        padding: 20px 0;
+      }
+      .masthead .container-wide {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .logo-name {
+        font-family: "Lora", serif;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+      .logo-tagline {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .mast-meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .mast-meta .live {
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .mast-meta .live::before {
+        content: "●";
+        animation: blink 2s infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
 
-  /* Hero — text-heavy, editorial */
-  .hero { padding: 80px 0 64px; border-bottom: 1px solid var(--rule); }
-  .hero .container { text-align: left; }
-  .issue-tag {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em;
-    margin-bottom: 28px; display: flex; align-items: center; gap: 12px;
-  }
-  .issue-tag::after { content: ''; flex: 1; height: 1px; background: var(--rule-soft); }
-  h1 {
-    font-family: 'Lora', serif;
-    font-size: clamp(40px, 6.5vw, 76px);
-    font-weight: 600;
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-    margin-bottom: 28px;
-    color: var(--ink);
-  }
-  h1 em { font-style: italic; color: var(--accent); }
-  .lede {
-    font-size: 20px;
-    line-height: 1.55;
-    color: var(--ink-soft);
-    margin-bottom: 36px;
-    max-width: 580px;
-    font-weight: 400;
-  }
-  .lede strong { font-weight: 600; background: linear-gradient(180deg, transparent 60%, var(--highlight) 60%); padding: 0 2px; }
-  .byline {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    color: var(--muted); margin-bottom: 40px;
-    display: flex; gap: 16px; flex-wrap: wrap;
-    padding-bottom: 24px; border-bottom: 1px solid var(--rule-soft);
-  }
-  .byline span { display: flex; align-items: center; gap: 6px; }
-  .cta-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-  .btn-primary {
-    background: var(--ink); color: var(--paper); padding: 14px 24px;
-    border-radius: 4px; border: none; font-family: 'JetBrains Mono', monospace;
-    font-size: 13px; font-weight: 500; letter-spacing: 0.04em;
-    cursor: pointer; text-transform: uppercase;
-    transition: background .15s;
-  }
-  .btn-primary:hover { background: var(--accent); }
-  .btn-secondary {
-    color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 600;
-    text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px;
-    background: transparent; border: none; cursor: pointer;
-  }
+      /* Hero — text-heavy, editorial */
+      .hero {
+        padding: 80px 0 64px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .hero .container {
+        text-align: left;
+      }
+      .issue-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .issue-tag::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--rule-soft);
+      }
+      h1 {
+        font-family: "Lora", serif;
+        font-size: clamp(40px, 6.5vw, 76px);
+        font-weight: 600;
+        line-height: 1.02;
+        letter-spacing: -0.02em;
+        margin-bottom: 28px;
+        color: var(--ink);
+      }
+      h1 em {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .lede {
+        font-size: 20px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        margin-bottom: 36px;
+        max-width: 580px;
+        font-weight: 400;
+      }
+      .lede strong {
+        font-weight: 600;
+        background: linear-gradient(
+          180deg,
+          transparent 60%,
+          var(--highlight) 60%
+        );
+        padding: 0 2px;
+      }
+      .byline {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 40px;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      .byline span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .cta-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .btn-primary {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 14px 24px;
+        border-radius: 4px;
+        border: none;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: background 0.15s;
+      }
+      .btn-primary:hover {
+        background: var(--accent);
+      }
+      .btn-secondary {
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: underline;
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 4px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
 
-  /* Field notes / build journal section */
-  .journal { padding: 64px 0; border-bottom: 1px solid var(--rule); }
-  .journal-head {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em;
-    margin-bottom: 32px; padding-bottom: 12px; border-bottom: 1px solid var(--rule-soft);
-    display: flex; justify-content: space-between;
-  }
-  .journal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; align-items: start; }
-  .entry { font-size: 14px; line-height: 1.6; }
-  .entry .date {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--muted); margin-bottom: 6px; letter-spacing: 0.06em;
-  }
-  .entry h4 { font-family: 'Lora', serif; font-size: 18px; font-weight: 600; line-height: 1.3; margin-bottom: 8px; color: var(--ink); }
-  .entry p { color: var(--ink-soft); }
-  .entry .tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 2px; display: inline-block; margin-top: 8px; letter-spacing: 0.06em; }
-  .entry .tag.shipped { background: rgba(4,120,87,.12); color: var(--accent); }
-  .entry .tag.wip { background: rgba(217,119,6,.12); color: #92400e; }
-  .entry .tag.broke { background: rgba(194,58,58,.12); color: var(--routine); }
+      /* Field notes / build journal section */
+      .journal {
+        padding: 64px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .journal-head {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        margin-bottom: 32px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--rule-soft);
+        display: flex;
+        justify-content: space-between;
+      }
+      .journal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 32px;
+        align-items: start;
+      }
+      .entry {
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .entry .date {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 6px;
+        letter-spacing: 0.06em;
+      }
+      .entry h4 {
+        font-family: "Lora", serif;
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.3;
+        margin-bottom: 8px;
+        color: var(--ink);
+      }
+      .entry p {
+        color: var(--ink-soft);
+      }
+      .entry .tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 2px;
+        display: inline-block;
+        margin-top: 8px;
+        letter-spacing: 0.06em;
+      }
+      .entry .tag.shipped {
+        background: rgba(4, 120, 87, 0.12);
+        color: var(--accent);
+      }
+      .entry .tag.wip {
+        background: rgba(217, 119, 6, 0.12);
+        color: #92400e;
+      }
+      .entry .tag.broke {
+        background: rgba(194, 58, 58, 0.12);
+        color: var(--routine);
+      }
 
-  /* Modules — vertical timeline */
-  .modules { padding: 64px 0; border-bottom: 1px solid var(--rule); }
-  .section-head { margin-bottom: 56px; }
-  .section-head .kicker {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em;
-    margin-bottom: 12px;
-  }
-  .section-head h2 {
-    font-family: 'Lora', serif; font-weight: 600;
-    font-size: clamp(28px, 4vw, 40px);
-    line-height: 1.1; letter-spacing: -0.02em;
-    max-width: 540px;
-  }
-  .section-head h2 em { font-style: italic; }
-  .module-list { border-top: 1px solid var(--rule-soft); }
-  .module-row {
-    padding: 32px 0; border-bottom: 1px solid var(--rule-soft);
-    display: grid; grid-template-columns: 140px 1fr 220px; gap: 28px; align-items: start;
-  }
-  .module-row .index {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    color: var(--muted); letter-spacing: 0.08em;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .module-row .index .num { font-size: 32px; font-weight: 500; color: var(--ink); line-height: 1; letter-spacing: -0.02em; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
-  .module-row .body h3 {
-    font-family: 'Lora', serif; font-weight: 600;
-    font-size: 26px; line-height: 1.15;
-    margin-bottom: 10px;
-  }
-  .module-row .body p { color: var(--ink-soft); font-size: 15px; line-height: 1.6; max-width: 480px; }
-  .module-row .body .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 10px; letter-spacing: 0.06em; }
-  .module-row .preview {
-    background: white; border: 1px solid var(--rule-soft); border-radius: 6px;
-    padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px;
-    line-height: 1.6; color: var(--ink-soft);
-    box-shadow: 1px 1px 0 var(--rule-soft);
-  }
-  .module-row .preview .pv-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-  .module-row .preview .pv-value { font-size: 22px; color: var(--ink); font-weight: 500; letter-spacing: -0.02em; }
-  .module-row .preview .pv-delta { font-size: 12px; margin-top: 8px; }
-  .module-row .preview .pv-delta.pos { color: var(--accent); }
-  .module-row .preview .pv-delta.neg { color: var(--routine); }
+      /* Modules — vertical timeline */
+      .modules {
+        padding: 64px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .section-head {
+        margin-bottom: 56px;
+      }
+      .section-head .kicker {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        margin-bottom: 12px;
+      }
+      .section-head h2 {
+        font-family: "Lora", serif;
+        font-weight: 600;
+        font-size: clamp(28px, 4vw, 40px);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        max-width: 540px;
+      }
+      .section-head h2 em {
+        font-style: italic;
+      }
+      .module-list {
+        border-top: 1px solid var(--rule-soft);
+      }
+      .module-row {
+        padding: 32px 0;
+        border-bottom: 1px solid var(--rule-soft);
+        display: grid;
+        grid-template-columns: 140px 1fr 220px;
+        gap: 28px;
+        align-items: start;
+      }
+      .module-row .index {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .module-row .index .num {
+        font-size: 32px;
+        font-weight: 500;
+        color: var(--ink);
+        line-height: 1;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .module-row .body h3 {
+        font-family: "Lora", serif;
+        font-weight: 600;
+        font-size: 26px;
+        line-height: 1.15;
+        margin-bottom: 10px;
+      }
+      .module-row .body p {
+        color: var(--ink-soft);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 480px;
+      }
+      .module-row .body .meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 10px;
+        letter-spacing: 0.06em;
+      }
+      .module-row .preview {
+        background: white;
+        border: 1px solid var(--rule-soft);
+        border-radius: 6px;
+        padding: 16px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        box-shadow: 1px 1px 0 var(--rule-soft);
+      }
+      .module-row .preview .pv-label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 6px;
+      }
+      .module-row .preview .pv-value {
+        font-size: 22px;
+        color: var(--ink);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      .module-row .preview .pv-delta {
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .module-row .preview .pv-delta.pos {
+        color: var(--accent);
+      }
+      .module-row .preview .pv-delta.neg {
+        color: var(--routine);
+      }
 
-  .module-row[data-module="finyk"] .index .num { color: var(--finyk); }
-  .module-row[data-module="fizruk"] .index .num { color: var(--fizruk); }
-  .module-row[data-module="routine"] .index .num { color: var(--routine); }
-  .module-row[data-module="nutrition"] .index .num { color: var(--nutrition); }
+      .module-row[data-module="finyk"] .index .num {
+        color: var(--finyk);
+      }
+      .module-row[data-module="fizruk"] .index .num {
+        color: var(--fizruk);
+      }
+      .module-row[data-module="routine"] .index .num {
+        color: var(--routine);
+      }
+      .module-row[data-module="nutrition"] .index .num {
+        color: var(--nutrition);
+      }
 
-  /* Quote / pull-quote */
-  .pullquote { padding: 80px 0; border-bottom: 1px solid var(--rule); text-align: center; }
-  .pullquote blockquote {
-    font-family: 'Lora', serif; font-style: italic;
-    font-size: clamp(24px, 3.6vw, 36px); line-height: 1.3;
-    max-width: 720px; margin: 0 auto; color: var(--ink);
-    position: relative; padding: 0 24px;
-  }
-  .pullquote blockquote::before, .pullquote blockquote::after {
-    font-family: 'Lora', serif; font-size: 60px; color: var(--rule-soft);
-    line-height: 1; position: absolute; top: -10px;
-  }
-  .pullquote blockquote::before { content: '"'; left: -10px; }
-  .pullquote blockquote::after { content: '"'; right: -10px; bottom: -20px; top: auto; }
-  .pullquote cite { display: block; font-family: 'JetBrains Mono', monospace; font-style: normal; font-size: 12px; color: var(--muted); margin-top: 24px; text-transform: uppercase; letter-spacing: 0.12em; }
+      /* Quote / pull-quote */
+      .pullquote {
+        padding: 80px 0;
+        border-bottom: 1px solid var(--rule);
+        text-align: center;
+      }
+      .pullquote blockquote {
+        font-family: "Lora", serif;
+        font-style: italic;
+        font-size: clamp(24px, 3.6vw, 36px);
+        line-height: 1.3;
+        max-width: 720px;
+        margin: 0 auto;
+        color: var(--ink);
+        position: relative;
+        padding: 0 24px;
+      }
+      .pullquote blockquote::before,
+      .pullquote blockquote::after {
+        font-family: "Lora", serif;
+        font-size: 60px;
+        color: var(--rule-soft);
+        line-height: 1;
+        position: absolute;
+        top: -10px;
+      }
+      .pullquote blockquote::before {
+        content: '"';
+        left: -10px;
+      }
+      .pullquote blockquote::after {
+        content: '"';
+        right: -10px;
+        bottom: -20px;
+        top: auto;
+      }
+      .pullquote cite {
+        display: block;
+        font-family: "JetBrains Mono", monospace;
+        font-style: normal;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 24px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
 
-  /* Waitlist */
-  .waitlist { padding: 80px 0; border-bottom: 1px solid var(--rule); }
-  .waitlist .kicker {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em;
-    margin-bottom: 16px;
-  }
-  .waitlist h2 {
-    font-family: 'Lora', serif; font-weight: 600;
-    font-size: clamp(28px, 4.5vw, 44px); line-height: 1.1;
-    margin-bottom: 16px; letter-spacing: -0.02em;
-  }
-  .waitlist h2 em { font-style: italic; color: var(--accent); }
-  .waitlist .lede-small { color: var(--ink-soft); font-size: 17px; margin-bottom: 32px; max-width: 520px; }
-  .form-row { display: flex; gap: 8px; max-width: 480px; border-top: 1px solid var(--rule); padding-top: 24px; }
-  .form-row input {
-    flex: 1; padding: 14px 0; border: none; border-bottom: 1px solid var(--ink);
-    font-family: inherit; font-size: 18px; background: transparent; color: var(--ink);
-  }
-  .form-row input::placeholder { color: var(--subtle); }
-  .form-row input:focus { outline: none; border-bottom-color: var(--accent); }
-  .form-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 16px; text-transform: uppercase; letter-spacing: 0.1em; }
-  .form-meta strong { color: var(--ink); }
+      /* Waitlist */
+      .waitlist {
+        padding: 80px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .waitlist .kicker {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        margin-bottom: 16px;
+      }
+      .waitlist h2 {
+        font-family: "Lora", serif;
+        font-weight: 600;
+        font-size: clamp(28px, 4.5vw, 44px);
+        line-height: 1.1;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+      }
+      .waitlist h2 em {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .waitlist .lede-small {
+        color: var(--ink-soft);
+        font-size: 17px;
+        margin-bottom: 32px;
+        max-width: 520px;
+      }
+      .form-row {
+        display: flex;
+        gap: 8px;
+        max-width: 480px;
+        border-top: 1px solid var(--rule);
+        padding-top: 24px;
+      }
+      .form-row input {
+        flex: 1;
+        padding: 14px 0;
+        border: none;
+        border-bottom: 1px solid var(--ink);
+        font-family: inherit;
+        font-size: 18px;
+        background: transparent;
+        color: var(--ink);
+      }
+      .form-row input::placeholder {
+        color: var(--subtle);
+      }
+      .form-row input:focus {
+        outline: none;
+        border-bottom-color: var(--accent);
+      }
+      .form-meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .form-meta strong {
+        color: var(--ink);
+      }
 
-  footer { padding: 40px 0 32px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
-  footer .container-wide { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-  footer a { color: var(--muted); text-decoration: none; margin-left: 20px; }
-  footer a:hover { color: var(--ink); text-decoration: underline; }
+      footer {
+        padding: 40px 0 32px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      footer .container-wide {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      footer a {
+        color: var(--muted);
+        text-decoration: none;
+        margin-left: 20px;
+      }
+      footer a:hover {
+        color: var(--ink);
+        text-decoration: underline;
+      }
 
-  @media (max-width: 800px) {
-    .journal-grid { grid-template-columns: 1fr; gap: 24px; }
-    .module-row { grid-template-columns: 1fr; gap: 16px; }
-    .module-row .index { flex-direction: row; align-items: baseline; gap: 12px; }
-    .module-row .index .num { font-size: 24px; margin: 0; }
-  }
-  @media (max-width: 520px) {
-    .hero { padding: 56px 0 48px; }
-    h1 { font-size: 42px; }
-    .form-row { flex-direction: column; }
-    .form-row button { width: 100%; }
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
+      @media (max-width: 800px) {
+        .journal-grid {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+        .module-row {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        .module-row .index {
+          flex-direction: row;
+          align-items: baseline;
+          gap: 12px;
+        }
+        .module-row .index .num {
+          font-size: 24px;
+          margin: 0;
+        }
+      }
+      @media (max-width: 520px) {
+        .hero {
+          padding: 56px 0 48px;
+        }
+        h1 {
+          font-size: 42px;
+        }
+        .form-row {
+          flex-direction: column;
+        }
+        .form-row button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="masthead">
+        <div class="container-wide">
+          <div class="logo">
+            <span class="logo-name">Sergeant</span>
+            <span class="logo-tagline">— Маленькі кроки. Щоденно.</span>
+          </div>
+          <div class="mast-meta">
+            <span>Issue №001 · 2026</span>
+            <span class="live">In dev</span>
+          </div>
+        </div>
+      </header>
 
-<header class="masthead">
-  <div class="container-wide">
-    <div class="logo">
-      <span class="logo-name">Sergeant</span>
-      <span class="logo-tagline">— Маленькі кроки. Щоденно.</span>
+      <section class="hero">
+        <div class="container">
+          <div class="issue-tag">Pre-launch · Field notes</div>
+          <h1>Усе про себе — <em>в одному місці.</em></h1>
+          <p class="lede">
+            Я будую <strong>один застосунок</strong> замість чотирьох. Фінанси.
+            Тренування. Звички. Харчування.
+            <strong>Українською, тихо, без drill-сержанта.</strong>
+          </p>
+          <div class="byline">
+            <span>Solo dev, AI, n8n</span>
+            <span>·</span>
+            <span>UA-only</span>
+            <span>·</span>
+            <span>Build-in-public</span>
+          </div>
+          <div class="cta-row">
+            <button
+              class="btn-primary"
+              onclick="
+                document
+                  .getElementById('waitlist')
+                  .scrollIntoView({ behavior: 'smooth' })
+              "
+            >
+              → Зайняти місце в списку
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="
+                document
+                  .getElementById('modules')
+                  .scrollIntoView({ behavior: 'smooth' })
+              "
+            >
+              Що це таке?
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="journal">
+        <div class="container-wide">
+          <div class="journal-head">
+            <span>Build journal · last 7 days</span>
+            <span>→ Telegram</span>
+          </div>
+          <div class="journal-grid">
+            <div class="entry">
+              <div class="date">2026-05-14 · Day 142</div>
+              <h4>Finyk balance reveal — counter-up на 800ms</h4>
+              <p>
+                Додав entrance-from-zero для головного балансу. Раніше число
+                просто з'являлось — тепер нараховується. Один компонент, один
+                вечір.
+              </p>
+              <span class="tag shipped">SHIPPED</span>
+            </div>
+            <div class="entry">
+              <div class="date">2026-05-12 · Day 140</div>
+              <h4>Sync engine ламається на cellular</h4>
+              <p>
+                RetryQueue не враховував offline-batch &gt;200 events. AI
+                підказав замінити лінійний backoff на jitter — fix у 18 рядків.
+              </p>
+              <span class="tag broke">BROKE</span>
+            </div>
+            <div class="entry">
+              <div class="date">2026-05-10 · Day 138</div>
+              <h4>Routine streak — мікро-анімація без confetti</h4>
+              <p>
+                Confetti на кожен чек — занадто. 2-3 частки + haptic — рівно
+                стільки. Зекономив один з двох motion budget slots.
+              </p>
+              <span class="tag wip">IN PROGRESS</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="modules" id="modules">
+        <div class="container-wide">
+          <div class="section-head">
+            <div class="kicker">Чотири модулі · Один застосунок</div>
+            <h2>Те, на що зазвичай йде <em>чотири</em> застосунки.</h2>
+          </div>
+          <div class="module-list">
+            <div class="module-row" data-module="finyk">
+              <div class="index">
+                <span class="num">01</span>
+                <span>Finyk</span>
+                <span>фінанси</span>
+              </div>
+              <div class="body">
+                <h3>Знаєш, куди йдуть гроші — без таблиць.</h3>
+                <p>
+                  Витрати, бюджети, цілі та прогноз місяця. Авто-категоризація з
+                  першого тапу. Без shaming за каву, без menu з 47 кнопок.
+                </p>
+                <div class="meta">
+                  · копійки як number, не bigint · Europe/Kyiv day boundaries
+                </div>
+              </div>
+              <div class="preview">
+                <div class="pv-label">Залишок місяця</div>
+                <div class="pv-value">₴8 240</div>
+                <div class="pv-delta pos">↗ +₴1 100 ніж тиждень тому</div>
+              </div>
+            </div>
+            <div class="module-row" data-module="fizruk">
+              <div class="index">
+                <span class="num">02</span>
+                <span>Fizruk</span>
+                <span>фітнес</span>
+              </div>
+              <div class="body">
+                <h3>Тренування, які пам'ятають за тебе.</h3>
+                <p>
+                  Підходи, повторення, ваги. Програми та автоматичний
+                  rest-timer. Без drill-сержанта і без бро-енергетики. Зробив —
+                  молодець. Не зробив — завтра є.
+                </p>
+                <div class="meta">
+                  · rest timer audio + haptic · PR auto-detection
+                </div>
+              </div>
+              <div class="preview">
+                <div class="pv-label">Сьогодні · присіди</div>
+                <div class="pv-value">4×8</div>
+                <div class="pv-delta pos">PR підхід · 92.5 кг</div>
+              </div>
+            </div>
+            <div class="module-row" data-module="routine">
+              <div class="index">
+                <span class="num">03</span>
+                <span>Routine</span>
+                <span>звички</span>
+              </div>
+              <div class="body">
+                <h3>Маленькі кроки. Щодня.</h3>
+                <p>
+                  Streak-трекінг без guilt. Один тап — звичка зарахована. Якщо
+                  пропустив — streak не зникає одразу, є grace-день. Бо життя.
+                </p>
+                <div class="meta">· Duolingo-style milestones · no shame</div>
+              </div>
+              <div class="preview">
+                <div class="pv-label">Серія</div>
+                <div class="pv-value">12 днів</div>
+                <div class="pv-delta pos">🔥 особистий рекорд</div>
+              </div>
+            </div>
+            <div class="module-row" data-module="nutrition">
+              <div class="index">
+                <span class="num">04</span>
+                <span>Nutrition</span>
+                <span>харчування</span>
+              </div>
+              <div class="body">
+                <h3>Що з'їв — без суджень.</h3>
+                <p>
+                  Калорії, макроси, штрих-код, голос. Без «корисно / шкідливо» —
+                  лише цифри, щоб ти сам вирішив. Сканер чеків працює офлайн.
+                </p>
+                <div class="meta">
+                  · barcode scanner · voice input · UA food DB
+                </div>
+              </div>
+              <div class="preview">
+                <div class="pv-label">Сьогодні</div>
+                <div class="pv-value">1 840 / 2 100</div>
+                <div class="pv-delta pos">88% денної норми · 156г білку</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pullquote">
+        <div class="container">
+          <blockquote>
+            Один тап на день. Через місяць — побачиш, куди реально йде твоє
+            життя.
+          </blockquote>
+          <cite>— Філософія Sergeant</cite>
+        </div>
+      </section>
+
+      <section class="waitlist" id="waitlist">
+        <div class="container">
+          <div class="kicker">Waitlist · Перші 500</div>
+          <h2>Залиш email — будеш <em>першим</em>, коли відкриємо доступ.</h2>
+          <p class="lede-small">
+            Без оплати. Без обов'язків. Без спаму. Сповіщу, коли продукт буде
+            готовий — лист протягом 5 хвилин після підпису.
+          </p>
+          <div class="form-row">
+            <input type="email" placeholder="твій@email" required />
+            <button class="btn-primary">Підписатись →</button>
+          </div>
+          <div class="form-meta">
+            <strong>847</strong> людей вже чекають · UA-only · Pre-launch
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="container-wide">
+          <div>© 2026 Sergeant · Issue №001</div>
+          <div>
+            <a href="#">Telegram</a>
+            <a href="#">X / Twitter</a>
+            <a href="#">Instagram</a>
+          </div>
+        </div>
+      </footer>
     </div>
-    <div class="mast-meta">
-      <span>Issue №001 · 2026</span>
-      <span class="live">In dev</span>
-    </div>
-  </div>
-</header>
-
-<section class="hero">
-  <div class="container">
-    <div class="issue-tag">Pre-launch · Field notes</div>
-    <h1>Усе про себе — <em>в одному місці.</em></h1>
-    <p class="lede">Я будую <strong>один застосунок</strong> замість чотирьох. Фінанси. Тренування. Звички. Харчування. <strong>Українською, тихо, без drill-сержанта.</strong></p>
-    <div class="byline">
-      <span>Solo dev, AI, n8n</span>
-      <span>·</span>
-      <span>UA-only</span>
-      <span>·</span>
-      <span>Build-in-public</span>
-    </div>
-    <div class="cta-row">
-      <button class="btn-primary" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">→ Зайняти місце в списку</button>
-      <button class="btn-secondary" onclick="document.getElementById('modules').scrollIntoView({behavior:'smooth'})">Що це таке?</button>
-    </div>
-  </div>
-</section>
-
-<section class="journal">
-  <div class="container-wide">
-    <div class="journal-head">
-      <span>Build journal · last 7 days</span>
-      <span>→ Telegram</span>
-    </div>
-    <div class="journal-grid">
-      <div class="entry">
-        <div class="date">2026-05-14 · Day 142</div>
-        <h4>Finyk balance reveal — counter-up на 800ms</h4>
-        <p>Додав entrance-from-zero для головного балансу. Раніше число просто з'являлось — тепер нараховується. Один компонент, один вечір.</p>
-        <span class="tag shipped">SHIPPED</span>
-      </div>
-      <div class="entry">
-        <div class="date">2026-05-12 · Day 140</div>
-        <h4>Sync engine ламається на cellular</h4>
-        <p>RetryQueue не враховував offline-batch &gt;200 events. AI підказав замінити лінійний backoff на jitter — fix у 18 рядків.</p>
-        <span class="tag broke">BROKE</span>
-      </div>
-      <div class="entry">
-        <div class="date">2026-05-10 · Day 138</div>
-        <h4>Routine streak — мікро-анімація без confetti</h4>
-        <p>Confetti на кожен чек — занадто. 2-3 частки + haptic — рівно стільки. Зекономив один з двох motion budget slots.</p>
-        <span class="tag wip">IN PROGRESS</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="modules" id="modules">
-  <div class="container-wide">
-    <div class="section-head">
-      <div class="kicker">Чотири модулі · Один застосунок</div>
-      <h2>Те, на що зазвичай йде <em>чотири</em> застосунки.</h2>
-    </div>
-    <div class="module-list">
-      <div class="module-row" data-module="finyk">
-        <div class="index">
-          <span class="num">01</span>
-          <span>Finyk</span>
-          <span>фінанси</span>
-        </div>
-        <div class="body">
-          <h3>Знаєш, куди йдуть гроші — без таблиць.</h3>
-          <p>Витрати, бюджети, цілі та прогноз місяця. Авто-категоризація з першого тапу. Без shaming за каву, без menu з 47 кнопок.</p>
-          <div class="meta">·  копійки як number, не bigint  ·  Europe/Kyiv day boundaries</div>
-        </div>
-        <div class="preview">
-          <div class="pv-label">Залишок місяця</div>
-          <div class="pv-value">₴8 240</div>
-          <div class="pv-delta pos">↗ +₴1 100 ніж тиждень тому</div>
-        </div>
-      </div>
-      <div class="module-row" data-module="fizruk">
-        <div class="index">
-          <span class="num">02</span>
-          <span>Fizruk</span>
-          <span>фітнес</span>
-        </div>
-        <div class="body">
-          <h3>Тренування, які пам'ятають за тебе.</h3>
-          <p>Підходи, повторення, ваги. Програми та автоматичний rest-timer. Без drill-сержанта і без бро-енергетики. Зробив — молодець. Не зробив — завтра є.</p>
-          <div class="meta">·  rest timer audio + haptic  ·  PR auto-detection</div>
-        </div>
-        <div class="preview">
-          <div class="pv-label">Сьогодні · присіди</div>
-          <div class="pv-value">4×8</div>
-          <div class="pv-delta pos">PR підхід · 92.5 кг</div>
-        </div>
-      </div>
-      <div class="module-row" data-module="routine">
-        <div class="index">
-          <span class="num">03</span>
-          <span>Routine</span>
-          <span>звички</span>
-        </div>
-        <div class="body">
-          <h3>Маленькі кроки. Щодня.</h3>
-          <p>Streak-трекінг без guilt. Один тап — звичка зарахована. Якщо пропустив — streak не зникає одразу, є grace-день. Бо життя.</p>
-          <div class="meta">·  Duolingo-style milestones  ·  no shame</div>
-        </div>
-        <div class="preview">
-          <div class="pv-label">Серія</div>
-          <div class="pv-value">12 днів</div>
-          <div class="pv-delta pos">🔥 особистий рекорд</div>
-        </div>
-      </div>
-      <div class="module-row" data-module="nutrition">
-        <div class="index">
-          <span class="num">04</span>
-          <span>Nutrition</span>
-          <span>харчування</span>
-        </div>
-        <div class="body">
-          <h3>Що з'їв — без суджень.</h3>
-          <p>Калорії, макроси, штрих-код, голос. Без «корисно / шкідливо» — лише цифри, щоб ти сам вирішив. Сканер чеків працює офлайн.</p>
-          <div class="meta">·  barcode scanner  ·  voice input  ·  UA food DB</div>
-        </div>
-        <div class="preview">
-          <div class="pv-label">Сьогодні</div>
-          <div class="pv-value">1 840 / 2 100</div>
-          <div class="pv-delta pos">88% денної норми · 156г білку</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="pullquote">
-  <div class="container">
-    <blockquote>
-      Один тап на день. Через місяць — побачиш, куди реально йде твоє життя.
-    </blockquote>
-    <cite>— Філософія Sergeant</cite>
-  </div>
-</section>
-
-<section class="waitlist" id="waitlist">
-  <div class="container">
-    <div class="kicker">Waitlist · Перші 500</div>
-    <h2>Залиш email — будеш <em>першим</em>, коли відкриємо доступ.</h2>
-    <p class="lede-small">Без оплати. Без обов'язків. Без спаму. Сповіщу, коли продукт буде готовий — лист протягом 5 хвилин після підпису.</p>
-    <div class="form-row">
-      <input type="email" placeholder="твій@email" required>
-      <button class="btn-primary">Підписатись →</button>
-    </div>
-    <div class="form-meta"><strong>847</strong> людей вже чекають · UA-only · Pre-launch</div>
-  </div>
-</section>
-
-<footer>
-  <div class="container-wide">
-    <div>© 2026 Sergeant · Issue №001</div>
-    <div>
-      <a href="#">Telegram</a>
-      <a href="#">X / Twitter</a>
-      <a href="#">Instagram</a>
-    </div>
-  </div>
-</footer>
-
-</div>
-</body>
+  </body>
 </html>

@@ -24,14 +24,14 @@ Use this to decide **what to delegate vs do yourself.**
 
 ### Subagents — mandatory triggers
 
-| Signal in the task | Agent | How to call |
-|---|---|---|
-| > 3 grep / glob to locate file/symbol/pattern | `Explore` | One call, ≤ 250-word report + file list. **Point-verify any "X doesn't exist" claim before acting on it** — recon agents prove presence well but absence poorly. |
-| Architecture decision with 2+ valid paths (T1 additive vs patch; sub-PR codemod recipe; primitive API) | `Plan` | Before implementation, not after. |
-| Before merge of any phase PR | `code-reviewer` | Independent read on the diff. |
-| Security-sensitive (env vars, auth, secrets) | `code-reviewer` (with security focus prompt) | — |
-| Q about Claude Code / Agent SDK / Anthropic API itself | `claude-code-guide` | — |
-| Brand voice / copy for V1-V5 (Phase 4 / 5) | `brand-voice:enforce-voice` | Brief = brand guidelines + target string. |
+| Signal in the task                                                                                     | Agent                                        | How to call                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| > 3 grep / glob to locate file/symbol/pattern                                                          | `Explore`                                    | One call, ≤ 250-word report + file list. **Point-verify any "X doesn't exist" claim before acting on it** — recon agents prove presence well but absence poorly. |
+| Architecture decision with 2+ valid paths (T1 additive vs patch; sub-PR codemod recipe; primitive API) | `Plan`                                       | Before implementation, not after.                                                                                                                                |
+| Before merge of any phase PR                                                                           | `code-reviewer`                              | Independent read on the diff.                                                                                                                                    |
+| Security-sensitive (env vars, auth, secrets)                                                           | `code-reviewer` (with security focus prompt) | —                                                                                                                                                                |
+| Q about Claude Code / Agent SDK / Anthropic API itself                                                 | `claude-code-guide`                          | —                                                                                                                                                                |
+| Brand voice / copy for V1-V5 (Phase 4 / 5)                                                             | `brand-voice:enforce-voice`                  | Brief = brand guidelines + target string.                                                                                                                        |
 
 ### Parallelism — mandatory
 
@@ -41,15 +41,15 @@ Use this to decide **what to delegate vs do yourself.**
 
 ### Skills — load one per phase
 
-| Phase | Specialist skill | Reason |
-|---|---|---|
-| Phase 0 (tokens) | `sergeant-web-ui` | Repo has no `sergeant-design-system` skill — DS work falls under web-ui. |
-| Phase 1 (FAB, hero, glass migration) | `sergeant-web-ui` | Web shell + UI. |
-| Phase 2 (polish migration codemod) | `sergeant-web-ui` + read `docs/design/redesign-v2/migration.md` | BEFORE/AFTER patterns canonical. |
-| Phase 3 (friction UX) | `sergeant-web-ui` + read `docs/design/undo-pattern.md` | Pattern A for F2 (set-delete undo). |
-| Phase 4 (primitives, motion) | `sergeant-web-ui` | P1/P2 primitives live in `shared/ui`. |
-| Phase 5 (insights) | `sergeant-web-ui` | Wiring. |
-| Phase 6 (Expensa delights) | `sergeant-web-ui` | Category-tinted icon pills + amount hero typography. |
+| Phase                                | Specialist skill                                                | Reason                                                                   |
+| ------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Phase 0 (tokens)                     | `sergeant-web-ui`                                               | Repo has no `sergeant-design-system` skill — DS work falls under web-ui. |
+| Phase 1 (FAB, hero, glass migration) | `sergeant-web-ui`                                               | Web shell + UI.                                                          |
+| Phase 2 (polish migration codemod)   | `sergeant-web-ui` + read `docs/design/redesign-v2/migration.md` | BEFORE/AFTER patterns canonical.                                         |
+| Phase 3 (friction UX)                | `sergeant-web-ui` + read `docs/design/undo-pattern.md`          | Pattern A for F2 (set-delete undo).                                      |
+| Phase 4 (primitives, motion)         | `sergeant-web-ui`                                               | P1/P2 primitives live in `shared/ui`.                                    |
+| Phase 5 (insights)                   | `sergeant-web-ui`                                               | Wiring.                                                                  |
+| Phase 6 (Expensa delights)           | `sergeant-web-ui`                                               | Category-tinted icon pills + amount hero typography.                     |
 
 **Before changing any SKILL.md:** load `sergeant-writing-skills` first. After changes: `pnpm lint:skills && pnpm skills:lock`. CI fails without updated lock.
 
@@ -80,18 +80,18 @@ Use this to decide **what to delegate vs do yourself.**
 
 The dev laptop is old. Heavy commands hang the agent in background and pollute context.
 
-| Command | Run locally? |
-|---|---|
-| `pnpm typecheck` (or `--filter @sergeant/web typecheck`) | ✅ Always after non-trivial diff. |
-| `pnpm lint:skills && pnpm skills:lock` | ✅ Only after SKILL.md changes. |
-| `node --test packages/eslint-plugin-sergeant-design/__tests__/<rule>.test.mjs` | ✅ When changing the plugin. |
-| `git` ops | ✅ Default. |
-| `pnpm test` / `pnpm --filter ... test` | ❌ CI runs on push/PR. Don't run locally unless user explicitly asks. |
-| `pnpm lint` / `pnpm format` / `pnpm format:check` | ❌ CI auto-formats + lints. |
-| `pnpm check` (full canonical gate) | ❌ Only when user explicitly asks for pre-PR validation. |
-| `pnpm build` / `pnpm --filter ... build` | ❌ Except quick single-target compilation check. |
-| `pnpm dev:*` | ❌ User starts dev servers in their own terminal. |
-| `pnpm install` / `pnpm install --force` | ⚠️ User-driven. If target worktree needs deps, ask them to run. |
+| Command                                                                        | Run locally?                                                          |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `pnpm typecheck` (or `--filter @sergeant/web typecheck`)                       | ✅ Always after non-trivial diff.                                     |
+| `pnpm lint:skills && pnpm skills:lock`                                         | ✅ Only after SKILL.md changes.                                       |
+| `node --test packages/eslint-plugin-sergeant-design/__tests__/<rule>.test.mjs` | ✅ When changing the plugin.                                          |
+| `git` ops                                                                      | ✅ Default.                                                           |
+| `pnpm test` / `pnpm --filter ... test`                                         | ❌ CI runs on push/PR. Don't run locally unless user explicitly asks. |
+| `pnpm lint` / `pnpm format` / `pnpm format:check`                              | ❌ CI auto-formats + lints.                                           |
+| `pnpm check` (full canonical gate)                                             | ❌ Only when user explicitly asks for pre-PR validation.              |
+| `pnpm build` / `pnpm --filter ... build`                                       | ❌ Except quick single-target compilation check.                      |
+| `pnpm dev:*`                                                                   | ❌ User starts dev servers in their own terminal.                     |
+| `pnpm install` / `pnpm install --force`                                        | ⚠️ User-driven. If target worktree needs deps, ask them to run.       |
 
 **Before reporting completion:** if you did NOT run a test / lint / build that the work would normally need, **say so explicitly**. Don't claim verified what you didn't verify.
 

@@ -733,22 +733,35 @@
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2:
-      0 1px 0 rgba(255, 255, 255, 0.5) inset,
-      0 4px 14px rgba(20, 40, 30, 0.05);
+      0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 4px 14px rgba(20, 40, 30, 0.05);
     --shadow-pill:
-      0 1px 0 rgba(255, 255, 255, 0.8) inset,
-      0 10px 26px rgba(20, 40, 30, 0.12);
+      0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 26px rgba(20, 40, 30, 0.12);
     --shadow-nav:
-      0 1px 0 rgba(255, 255, 255, 0.8) inset,
-      0 12px 32px rgba(20, 40, 30, 0.12);
+      0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 12px 32px rgba(20, 40, 30, 0.12);
     --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45);
 
     /* Hero gradients — bright module-tinted linear gradients for
        hero cards (Finyk balance, Fizruk overview, etc.). */
-    --hero-grad-finyk: linear-gradient(135deg, #0f766e, #14b8a6); /* teal-700 → teal-500 (legacy emerald-teal mix kept for finyk balance card) */
-    --hero-grad-fizruk: linear-gradient(135deg, #0e7490, #14b8a6); /* cyan-700 → teal-500 — v2 spec; cyan primary with teal accent stop */
-    --hero-grad-routine: linear-gradient(135deg, #ff8c78, #c23a3a); /* coral-400 → coral-700 */
-    --hero-grad-nutrition: linear-gradient(135deg, #b0e636, #71a30d); /* lime-400 → lime-600 */
+    --hero-grad-finyk: linear-gradient(
+      135deg,
+      #0f766e,
+      #14b8a6
+    ); /* teal-700 → teal-500 (legacy emerald-teal mix kept for finyk balance card) */
+    --hero-grad-fizruk: linear-gradient(
+      135deg,
+      #0e7490,
+      #14b8a6
+    ); /* cyan-700 → teal-500 — v2 spec; cyan primary with teal accent stop */
+    --hero-grad-routine: linear-gradient(
+      135deg,
+      #ff8c78,
+      #c23a3a
+    ); /* coral-400 → coral-700 */
+    --hero-grad-nutrition: linear-gradient(
+      135deg,
+      #b0e636,
+      #71a30d
+    ); /* lime-400 → lime-600 */
   }
 
   .dark {
@@ -779,14 +792,11 @@
 
     /* Shadows dark — much stronger outer drops + faint bright inset. */
     --shadow-card-v2:
-      0 1px 0 rgba(255, 255, 255, 0.05) inset,
-      0 4px 14px rgba(0, 0, 0, 0.3);
+      0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 4px 14px rgba(0, 0, 0, 0.3);
     --shadow-pill:
-      0 1px 0 rgba(255, 255, 255, 0.08) inset,
-      0 10px 26px rgba(0, 0, 0, 0.4);
+      0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 10px 26px rgba(0, 0, 0, 0.4);
     --shadow-nav:
-      0 1px 0 rgba(255, 255, 255, 0.08) inset,
-      0 12px 32px rgba(0, 0, 0, 0.4);
+      0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 12px 32px rgba(0, 0, 0, 0.4);
     --shadow-fab: 0 8px 22px rgba(52, 211, 153, 0.4);
 
     /* Hero gradients unchanged — same hex pairs read fine on dark. */

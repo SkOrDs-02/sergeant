@@ -1,1121 +1,3010 @@
 <!doctype html>
 <html lang="uk">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sergeant v2 · Finyk Overview · Mobile exploration</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
-<style>
-/* ────────────────────────────────────────────────────────────────────
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant v2 · Finyk Overview · Mobile exploration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ────────────────────────────────────────────────────────────────────
    Sergeant v2 tokens — mirrored from
    apps/web/src/styles/theme.css. Only the surface I touch this session.
    ──────────────────────────────────────────────────────────────────── */
-:root,
-.theme-light {
-  /* v2 base */
-  --c-bg-base: 240 233 216;          /* #f0e9d8 */
-  --c-ink: 14 28 23;                  /* #0e1c17 */
-  --c-ink-strong: 6 78 59;            /* emerald-900 */
-  --c-muted-v2: 107 107 102;
-  --c-subtle-v2: 138 138 130;
-  --surface-glass: rgba(255,255,255,0.82);
-  --surface-strong-glass: rgba(255,255,255,0.92);
-  --surface-soft-glass: rgba(255,255,255,0.50);
-  --surface-line: rgba(255,255,255,0.55);
-  --line-v2: rgba(0,0,0,0.06);
-  --line-strong-v2: rgba(0,0,0,0.10);
-  --bg-mesh-1: rgba(255,180,166,0.32);
-  --bg-mesh-2: rgba( 20,184,166,0.22);
-  --bg-mesh-3: rgba(146,204, 23,0.22);
-  --bg-mesh-4: rgba( 16,185,129,0.20);
-  --shadow-card-v2: 0 1px 0 rgba(255,255,255,0.5) inset, 0 4px 14px rgba(20,40,30,0.05);
-  --shadow-pill:    0 1px 0 rgba(255,255,255,0.8) inset, 0 10px 26px rgba(20,40,30,0.12);
-  --shadow-nav:     0 1px 0 rgba(255,255,255,0.8) inset, 0 12px 32px rgba(20,40,30,0.12);
-  --shadow-fab: 0 8px 22px rgba(15,118,110,0.45);
+      :root,
+      .theme-light {
+        /* v2 base */
+        --c-bg-base: 240 233 216; /* #f0e9d8 */
+        --c-ink: 14 28 23; /* #0e1c17 */
+        --c-ink-strong: 6 78 59; /* emerald-900 */
+        --c-muted-v2: 107 107 102;
+        --c-subtle-v2: 138 138 130;
+        --surface-glass: rgba(255, 255, 255, 0.82);
+        --surface-strong-glass: rgba(255, 255, 255, 0.92);
+        --surface-soft-glass: rgba(255, 255, 255, 0.5);
+        --surface-line: rgba(255, 255, 255, 0.55);
+        --line-v2: rgba(0, 0, 0, 0.06);
+        --line-strong-v2: rgba(0, 0, 0, 0.1);
+        --bg-mesh-1: rgba(255, 180, 166, 0.32);
+        --bg-mesh-2: rgba(20, 184, 166, 0.22);
+        --bg-mesh-3: rgba(146, 204, 23, 0.22);
+        --bg-mesh-4: rgba(16, 185, 129, 0.2);
+        --shadow-card-v2:
+          0 1px 0 rgba(255, 255, 255, 0.5) inset,
+          0 4px 14px rgba(20, 40, 30, 0.05);
+        --shadow-pill:
+          0 1px 0 rgba(255, 255, 255, 0.8) inset,
+          0 10px 26px rgba(20, 40, 30, 0.12);
+        --shadow-nav:
+          0 1px 0 rgba(255, 255, 255, 0.8) inset,
+          0 12px 32px rgba(20, 40, 30, 0.12);
+        --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45);
 
-  --hero-grad-finyk:   linear-gradient(135deg,#0f766e,#14b8a6);
-  --hero-grad-fizruk:  linear-gradient(135deg,#0e7490,#14b8a6);
-  --hero-grad-routine: linear-gradient(135deg,#ff8c78,#c23a3a);
-  --hero-grad-nutrition:linear-gradient(135deg,#b0e636,#71a30d);
+        --hero-grad-finyk: linear-gradient(135deg, #0f766e, #14b8a6);
+        --hero-grad-fizruk: linear-gradient(135deg, #0e7490, #14b8a6);
+        --hero-grad-routine: linear-gradient(135deg, #ff8c78, #c23a3a);
+        --hero-grad-nutrition: linear-gradient(135deg, #b0e636, #71a30d);
 
-  /* Module accents (light) */
-  --finyk: 16 185 129;       --finyk-strong: 4 120 87;
-  --fizruk: 14 116 144;      --fizruk-strong: 21 94 117;
-  --routine: 249 112 102;    --routine-strong: 194 58 58;
-  --nutrition: 146 204 23;   --nutrition-strong: 70 98 18;
-  --danger: 239 68 68;       --danger-strong: 185 28 28;
-  --warning: 245 158 11;     --warning-strong: 180 83 9;
-  --success: 16 185 129;     --success-strong: 4 120 87;
-}
+        /* Module accents (light) */
+        --finyk: 16 185 129;
+        --finyk-strong: 4 120 87;
+        --fizruk: 14 116 144;
+        --fizruk-strong: 21 94 117;
+        --routine: 249 112 102;
+        --routine-strong: 194 58 58;
+        --nutrition: 146 204 23;
+        --nutrition-strong: 70 98 18;
+        --danger: 239 68 68;
+        --danger-strong: 185 28 28;
+        --warning: 245 158 11;
+        --warning-strong: 180 83 9;
+        --success: 16 185 129;
+        --success-strong: 4 120 87;
+      }
 
-.theme-dark {
-  --c-bg-base: 14 22 20;            /* #0e1614 */
-  --c-ink: 240 233 216;
-  --c-ink-strong: 255 255 255;
-  --c-muted-v2: 138 144 136;
-  --c-subtle-v2: 106 112 104;
-  --surface-glass: rgba(255,255,255,0.06);
-  --surface-strong-glass: rgba(255,255,255,0.10);
-  --surface-soft-glass: rgba(255,255,255,0.04);
-  --surface-line: rgba(255,255,255,0.08);
-  --line-v2: rgba(255,255,255,0.08);
-  --line-strong-v2: rgba(255,255,255,0.14);
-  --bg-mesh-1: rgba(249,112,102,0.18);
-  --bg-mesh-2: rgba( 20,184,166,0.20);
-  --bg-mesh-3: rgba(146,204, 23,0.15);
-  --bg-mesh-4: rgba( 16,185,129,0.22);
-  --shadow-card-v2: 0 1px 0 rgba(255,255,255,0.05) inset, 0 4px 14px rgba(0,0,0,0.30);
-  --shadow-pill:    0 1px 0 rgba(255,255,255,0.08) inset, 0 10px 26px rgba(0,0,0,0.40);
-  --shadow-nav:     0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px rgba(0,0,0,0.40);
-  --shadow-fab: 0 8px 22px rgba(52,211,153,0.40);
-  --finyk: 52 211 153;       --finyk-strong: 110 231 183;
-  --fizruk: 34 211 238;      --fizruk-strong: 103 232 249;
-  --routine: 255 140 120;    --routine-strong: 255 180 165;
-  --nutrition: 176 230 54;   --nutrition-strong: 217 249 157;
-  --danger: 248 113 113;     --danger-strong: 252 165 165;
-  --warning: 251 191 36;     --warning-strong: 253 224 71;
-  --success: 52 211 153;     --success-strong: 110 231 183;
-}
+      .theme-dark {
+        --c-bg-base: 14 22 20; /* #0e1614 */
+        --c-ink: 240 233 216;
+        --c-ink-strong: 255 255 255;
+        --c-muted-v2: 138 144 136;
+        --c-subtle-v2: 106 112 104;
+        --surface-glass: rgba(255, 255, 255, 0.06);
+        --surface-strong-glass: rgba(255, 255, 255, 0.1);
+        --surface-soft-glass: rgba(255, 255, 255, 0.04);
+        --surface-line: rgba(255, 255, 255, 0.08);
+        --line-v2: rgba(255, 255, 255, 0.08);
+        --line-strong-v2: rgba(255, 255, 255, 0.14);
+        --bg-mesh-1: rgba(249, 112, 102, 0.18);
+        --bg-mesh-2: rgba(20, 184, 166, 0.2);
+        --bg-mesh-3: rgba(146, 204, 23, 0.15);
+        --bg-mesh-4: rgba(16, 185, 129, 0.22);
+        --shadow-card-v2:
+          0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 4px 14px rgba(0, 0, 0, 0.3);
+        --shadow-pill:
+          0 1px 0 rgba(255, 255, 255, 0.08) inset,
+          0 10px 26px rgba(0, 0, 0, 0.4);
+        --shadow-nav:
+          0 1px 0 rgba(255, 255, 255, 0.08) inset,
+          0 12px 32px rgba(0, 0, 0, 0.4);
+        --shadow-fab: 0 8px 22px rgba(52, 211, 153, 0.4);
+        --finyk: 52 211 153;
+        --finyk-strong: 110 231 183;
+        --fizruk: 34 211 238;
+        --fizruk-strong: 103 232 249;
+        --routine: 255 140 120;
+        --routine-strong: 255 180 165;
+        --nutrition: 176 230 54;
+        --nutrition-strong: 217 249 157;
+        --danger: 248 113 113;
+        --danger-strong: 252 165 165;
+        --warning: 251 191 36;
+        --warning-strong: 253 224 71;
+        --success: 52 211 153;
+        --success-strong: 110 231 183;
+      }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
-  -webkit-font-smoothing: antialiased;
-  background: #1a1614;
-  color: #faf7f1;
-  min-height: 100vh;
-  padding: 56px 28px 120px;
-  letter-spacing: -0.005em;
-}
-.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'tnum' 1; }
-.tnum { font-variant-numeric: tabular-nums; }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          "Manrope",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-feature-settings:
+          "kern" 1,
+          "liga" 1,
+          "calt" 1;
+        -webkit-font-smoothing: antialiased;
+        background: #1a1614;
+        color: #faf7f1;
+        min-height: 100vh;
+        padding: 56px 28px 120px;
+        letter-spacing: -0.005em;
+      }
+      .mono {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-feature-settings: "tnum" 1;
+      }
+      .tnum {
+        font-variant-numeric: tabular-nums;
+      }
 
-/* Page chrome */
-.page-wrap { max-width: 1620px; margin: 0 auto; }
-.page-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 28px; }
-.page-head h1 {
-  font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -0.025em;
-  margin: 0;
-}
-.page-head h1 small { display:block; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #878079; margin-bottom: 8px; }
-.page-head p { font-size: 14px; color: #b4aea9; max-width: 560px; line-height: 1.55; margin: 0; text-align: right; }
+      /* Page chrome */
+      .page-wrap {
+        max-width: 1620px;
+        margin: 0 auto;
+      }
+      .page-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: end;
+        margin-bottom: 28px;
+      }
+      .page-head h1 {
+        font-size: 40px;
+        line-height: 1.05;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        margin: 0;
+      }
+      .page-head h1 small {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #878079;
+        margin-bottom: 8px;
+      }
+      .page-head p {
+        font-size: 14px;
+        color: #b4aea9;
+        max-width: 560px;
+        line-height: 1.55;
+        margin: 0;
+        text-align: right;
+      }
 
-.variant-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 36px; }
-.variant-card { padding: 22px 24px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; }
-.variant-card .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #878079; }
-.variant-card .tag .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-.variant-card h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.018em; margin: 8px 0 8px; line-height: 1.2; }
-.variant-card p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #b4aea9; }
-.variant-card ul { margin: 12px 0 0; padding-left: 16px; color: #b4aea9; font-size: 12.5px; line-height: 1.6; }
-.variant-card li { margin-bottom: 2px; }
-.variant-card .tag.A .dot { background: #ff8c78; }
-.variant-card .tag.B .dot { background: #34d399; }
-.variant-card .tag.C .dot { background: #67e8f9; }
+      .variant-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 36px;
+      }
+      .variant-card {
+        padding: 22px 24px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 18px;
+      }
+      .variant-card .tag {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #878079;
+      }
+      .variant-card .tag .dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .variant-card h2 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.018em;
+        margin: 8px 0 8px;
+        line-height: 1.2;
+      }
+      .variant-card p {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: #b4aea9;
+      }
+      .variant-card ul {
+        margin: 12px 0 0;
+        padding-left: 16px;
+        color: #b4aea9;
+        font-size: 12.5px;
+        line-height: 1.6;
+      }
+      .variant-card li {
+        margin-bottom: 2px;
+      }
+      .variant-card .tag.A .dot {
+        background: #ff8c78;
+      }
+      .variant-card .tag.B .dot {
+        background: #34d399;
+      }
+      .variant-card .tag.C .dot {
+        background: #67e8f9;
+      }
 
-/* Canvas grid */
-.canvas { display: grid; grid-template-columns: repeat(3, 480px); gap: 36px 36px; justify-content: center; }
-.canvas-row-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; margin: 12px 0 -4px; padding-left: 4px; }
-.canvas-row-head .label { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #878079; }
-.canvas-row-head .line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+      /* Canvas grid */
+      .canvas {
+        display: grid;
+        grid-template-columns: repeat(3, 480px);
+        gap: 36px 36px;
+        justify-content: center;
+      }
+      .canvas-row-head {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 12px 0 -4px;
+        padding-left: 4px;
+      }
+      .canvas-row-head .label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #878079;
+      }
+      .canvas-row-head .line {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.06);
+      }
 
-.artboard-frame { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.artboard-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #b4aea9; }
-.artboard-label .v { color: #fff; font-weight: 800; }
+      .artboard-frame {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+      .artboard-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #b4aea9;
+      }
+      .artboard-label .v {
+        color: #fff;
+        font-weight: 800;
+      }
 
-/* Artboard = iPhone screen */
-.artboard {
-  width: 390px; height: 844px; position: relative;
-  border-radius: 48px; overflow: hidden;
-  background: rgb(var(--c-bg-base));
-  color: rgb(var(--c-ink));
-  isolation: isolate;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,0.04) inset,
-    0 0 0 1px rgba(0,0,0,0.5),
-    0 0 0 10px #110d0a,
-    0 0 0 11px rgba(255,255,255,0.06),
-    0 50px 90px rgba(0,0,0,0.55),
-    0 24px 40px rgba(0,0,0,0.45);
-  font-family: 'Manrope', system-ui, sans-serif;
-}
+      /* Artboard = iPhone screen */
+      .artboard {
+        width: 390px;
+        height: 844px;
+        position: relative;
+        border-radius: 48px;
+        overflow: hidden;
+        background: rgb(var(--c-bg-base));
+        color: rgb(var(--c-ink));
+        isolation: isolate;
+        box-shadow:
+          0 0 0 2px rgba(255, 255, 255, 0.04) inset,
+          0 0 0 1px rgba(0, 0, 0, 0.5),
+          0 0 0 10px #110d0a,
+          0 0 0 11px rgba(255, 255, 255, 0.06),
+          0 50px 90px rgba(0, 0, 0, 0.55),
+          0 24px 40px rgba(0, 0, 0, 0.45);
+        font-family: "Manrope", system-ui, sans-serif;
+      }
 
-.mesh-bg {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(at 12% 14%, var(--bg-mesh-1) 0px, transparent 50%),
-    radial-gradient(at 88% 8%,  var(--bg-mesh-2) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, var(--bg-mesh-3) 0px, transparent 50%),
-    radial-gradient(at 0% 95%,  var(--bg-mesh-4) 0px, transparent 50%),
-    rgb(var(--c-bg-base));
-}
-.notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 118px; height: 32px; border-radius: 22px; background: #000; z-index: 6; }
+      .mesh-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(at 12% 14%, var(--bg-mesh-1) 0px, transparent 50%),
+          radial-gradient(at 88% 8%, var(--bg-mesh-2) 0px, transparent 50%),
+          radial-gradient(at 100% 100%, var(--bg-mesh-3) 0px, transparent 50%),
+          radial-gradient(at 0% 95%, var(--bg-mesh-4) 0px, transparent 50%),
+          rgb(var(--c-bg-base));
+      }
+      .notch {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 118px;
+        height: 32px;
+        border-radius: 22px;
+        background: #000;
+        z-index: 6;
+      }
 
-/* iOS status bar */
-.status-bar {
-  position: relative; z-index: 4;
-  height: 54px; padding: 18px 28px 0;
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 15px; font-weight: 600; color: rgb(var(--c-ink));
-}
-.status-bar .icons { display: flex; gap: 6px; align-items: center; }
-.status-bar svg { display: block; }
+      /* iOS status bar */
+      .status-bar {
+        position: relative;
+        z-index: 4;
+        height: 54px;
+        padding: 18px 28px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 15px;
+        font-weight: 600;
+        color: rgb(var(--c-ink));
+      }
+      .status-bar .icons {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .status-bar svg {
+        display: block;
+      }
 
-/* App header */
-.app-header { position: relative; z-index: 3; padding: 10px 18px 6px; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.row.gap-2 { gap: 8px; }
-.row.gap-3 { gap: 12px; }
-.module-eyebrow {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
-  text-transform: uppercase; color: rgb(var(--finyk-strong));
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.module-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--finyk)); }
-.greeting { font-size: 22px; font-weight: 700; letter-spacing: -0.018em; margin: 4px 0 0; color: rgb(var(--c-ink-strong)); }
-.greeting-sm { font-size: 17px; font-weight: 700; letter-spacing: -0.012em; margin: 2px 0 0; color: rgb(var(--c-ink-strong)); }
-.greeting-sub { font-size: 13px; color: rgb(var(--c-muted-v2)); margin: 2px 0 0; }
+      /* App header */
+      .app-header {
+        position: relative;
+        z-index: 3;
+        padding: 10px 18px 6px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .row.gap-2 {
+        gap: 8px;
+      }
+      .row.gap-3 {
+        gap: 12px;
+      }
+      .module-eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgb(var(--finyk-strong));
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .module-eyebrow::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgb(var(--finyk));
+      }
+      .greeting {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.018em;
+        margin: 4px 0 0;
+        color: rgb(var(--c-ink-strong));
+      }
+      .greeting-sm {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.012em;
+        margin: 2px 0 0;
+        color: rgb(var(--c-ink-strong));
+      }
+      .greeting-sub {
+        font-size: 13px;
+        color: rgb(var(--c-muted-v2));
+        margin: 2px 0 0;
+      }
 
-.icon-btn {
-  width: 40px; height: 40px; border-radius: 14px;
-  display: grid; place-items: center;
-  background: var(--surface-glass);
-  border: 1px solid var(--surface-line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: rgb(var(--c-ink));
-  box-shadow: var(--shadow-card-v2);
-}
-.icon-btn svg { width: 20px; height: 20px; }
-.avatar {
-  width: 40px; height: 40px; border-radius: 14px;
-  background: var(--hero-grad-finyk);
-  display: grid; place-items: center;
-  color: #fff; font-weight: 700; font-size: 14px;
-  border: 1px solid var(--surface-line);
-  box-shadow: var(--shadow-card-v2);
-  letter-spacing: 0;
-}
+      .icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: var(--surface-glass);
+        border: 1px solid var(--surface-line);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color: rgb(var(--c-ink));
+        box-shadow: var(--shadow-card-v2);
+      }
+      .icon-btn svg {
+        width: 20px;
+        height: 20px;
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: var(--hero-grad-finyk);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        border: 1px solid var(--surface-line);
+        box-shadow: var(--shadow-card-v2);
+        letter-spacing: 0;
+      }
 
-/* Main scroll area */
-.main-area {
-  position: relative; z-index: 2;
-  padding: 12px 16px 110px;
-  height: calc(100% - 54px);
-  overflow: hidden;
-}
+      /* Main scroll area */
+      .main-area {
+        position: relative;
+        z-index: 2;
+        padding: 12px 16px 110px;
+        height: calc(100% - 54px);
+        overflow: hidden;
+      }
 
-/* Glass card primitives */
-.glass {
-  background: var(--surface-glass);
-  border: 1px solid var(--surface-line);
-  border-radius: 14px;
-  box-shadow: var(--shadow-card-v2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.glass.soft { background: var(--surface-soft-glass); }
-.glass.strong { background: var(--surface-strong-glass); }
-.glass.r-xl { border-radius: 18px; }
-.glass.r-2xl { border-radius: 24px; }
+      /* Glass card primitives */
+      .glass {
+        background: var(--surface-glass);
+        border: 1px solid var(--surface-line);
+        border-radius: 14px;
+        box-shadow: var(--shadow-card-v2);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .glass.soft {
+        background: var(--surface-soft-glass);
+      }
+      .glass.strong {
+        background: var(--surface-strong-glass);
+      }
+      .glass.r-xl {
+        border-radius: 18px;
+      }
+      .glass.r-2xl {
+        border-radius: 24px;
+      }
 
-/* Typography */
-.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-muted-v2)); }
-.caption { font-size: 12px; line-height: 1.4; color: rgb(var(--c-muted-v2)); letter-spacing: 0.005em; }
-.body-sm { font-size: 13px; line-height: 1.5; color: rgb(var(--c-ink)); }
-.body { font-size: 15px; line-height: 1.5; color: rgb(var(--c-ink)); }
-.label { font-size: 13px; font-weight: 500; letter-spacing: 0.005em; color: rgb(var(--c-ink)); }
-.title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--c-ink-strong)); }
-.title-lg { font-size: 24px; font-weight: 700; letter-spacing: -0.015em; color: rgb(var(--c-ink-strong)); line-height: 1.2; }
+      /* Typography */
+      .eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgb(var(--c-muted-v2));
+      }
+      .caption {
+        font-size: 12px;
+        line-height: 1.4;
+        color: rgb(var(--c-muted-v2));
+        letter-spacing: 0.005em;
+      }
+      .body-sm {
+        font-size: 13px;
+        line-height: 1.5;
+        color: rgb(var(--c-ink));
+      }
+      .body {
+        font-size: 15px;
+        line-height: 1.5;
+        color: rgb(var(--c-ink));
+      }
+      .label {
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.005em;
+        color: rgb(var(--c-ink));
+      }
+      .title {
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: rgb(var(--c-ink-strong));
+      }
+      .title-lg {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        color: rgb(var(--c-ink-strong));
+        line-height: 1.2;
+      }
 
-.text-strong { color: rgb(var(--c-ink-strong)); }
-.text-ink { color: rgb(var(--c-ink)); }
-.text-muted { color: rgb(var(--c-muted-v2)); }
-.text-subtle { color: rgb(var(--c-subtle-v2)); }
-.text-finyk { color: rgb(var(--finyk-strong)); }
-.text-routine { color: rgb(var(--routine-strong)); }
-.text-fizruk { color: rgb(var(--fizruk-strong)); }
-.text-nutrition { color: rgb(var(--nutrition-strong)); }
-.text-danger { color: rgb(var(--danger-strong)); }
-.text-warning { color: rgb(var(--warning-strong)); }
-.text-success { color: rgb(var(--success-strong)); }
+      .text-strong {
+        color: rgb(var(--c-ink-strong));
+      }
+      .text-ink {
+        color: rgb(var(--c-ink));
+      }
+      .text-muted {
+        color: rgb(var(--c-muted-v2));
+      }
+      .text-subtle {
+        color: rgb(var(--c-subtle-v2));
+      }
+      .text-finyk {
+        color: rgb(var(--finyk-strong));
+      }
+      .text-routine {
+        color: rgb(var(--routine-strong));
+      }
+      .text-fizruk {
+        color: rgb(var(--fizruk-strong));
+      }
+      .text-nutrition {
+        color: rgb(var(--nutrition-strong));
+      }
+      .text-danger {
+        color: rgb(var(--danger-strong));
+      }
+      .text-warning {
+        color: rgb(var(--warning-strong));
+      }
+      .text-success {
+        color: rgb(var(--success-strong));
+      }
 
-/* Display heroes — Manrope 800 with tight tracking */
-.display-hero {
-  font-family: 'Manrope', system-ui, sans-serif;
-  font-weight: 800; letter-spacing: -0.035em; line-height: 0.95;
-  font-variant-numeric: tabular-nums;
-  color: rgb(var(--c-ink-strong));
-}
-.display-hero.size-56 { font-size: 56px; }
-.display-hero.size-48 { font-size: 48px; }
-.display-hero.size-40 { font-size: 40px; }
-.display-hero.size-32 { font-size: 32px; }
-.display-suffix {
-  font-size: 22px; font-weight: 600; letter-spacing: -0.012em;
-  color: rgb(var(--c-muted-v2));
-  margin-left: 4px; vertical-align: 0.1em;
-}
+      /* Display heroes — Manrope 800 with tight tracking */
+      .display-hero {
+        font-family: "Manrope", system-ui, sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 0.95;
+        font-variant-numeric: tabular-nums;
+        color: rgb(var(--c-ink-strong));
+      }
+      .display-hero.size-56 {
+        font-size: 56px;
+      }
+      .display-hero.size-48 {
+        font-size: 48px;
+      }
+      .display-hero.size-40 {
+        font-size: 40px;
+      }
+      .display-hero.size-32 {
+        font-size: 32px;
+      }
+      .display-suffix {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.012em;
+        color: rgb(var(--c-muted-v2));
+        margin-left: 4px;
+        vertical-align: 0.1em;
+      }
 
-/* Buttons */
-.btn-primary {
-  background: rgb(var(--c-ink-strong)); color: rgb(var(--c-bg-base));
-  border: 0; padding: 10px 14px; border-radius: 14px;
-  font: inherit; font-weight: 600; font-size: 14px;
-  cursor: pointer; letter-spacing: -0.005em;
-  display: inline-flex; align-items: center; gap: 6px;
-  box-shadow: var(--shadow-card-v2);
-}
-.btn-soft {
-  background: var(--surface-glass); border: 1px solid var(--line-v2);
-  color: rgb(var(--c-ink));
-  border-radius: 14px; padding: 8px 12px;
-  font: inherit; font-weight: 500; font-size: 13px;
-  display: inline-flex; align-items: center; gap: 6px;
-  backdrop-filter: blur(10px);
-}
-.chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 10px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.005em;
-  background: var(--surface-soft-glass);
-  border: 1px solid var(--line-v2);
-  color: rgb(var(--c-muted-v2));
-}
-.chip.active { background: rgb(var(--c-ink-strong)); color: rgb(var(--c-bg-base)); border-color: transparent; }
-.chip.finyk { background: rgba(16,185,129,0.10); color: rgb(var(--finyk-strong)); border-color: rgba(16,185,129,0.18); }
+      /* Buttons */
+      .btn-primary {
+        background: rgb(var(--c-ink-strong));
+        color: rgb(var(--c-bg-base));
+        border: 0;
+        padding: 10px 14px;
+        border-radius: 14px;
+        font: inherit;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        letter-spacing: -0.005em;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: var(--shadow-card-v2);
+      }
+      .btn-soft {
+        background: var(--surface-glass);
+        border: 1px solid var(--line-v2);
+        color: rgb(var(--c-ink));
+        border-radius: 14px;
+        padding: 8px 12px;
+        font: inherit;
+        font-weight: 500;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(10px);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.005em;
+        background: var(--surface-soft-glass);
+        border: 1px solid var(--line-v2);
+        color: rgb(var(--c-muted-v2));
+      }
+      .chip.active {
+        background: rgb(var(--c-ink-strong));
+        color: rgb(var(--c-bg-base));
+        border-color: transparent;
+      }
+      .chip.finyk {
+        background: rgba(16, 185, 129, 0.1);
+        color: rgb(var(--finyk-strong));
+        border-color: rgba(16, 185, 129, 0.18);
+      }
 
-/* Category icon pill — Expensa-style */
-.cat-pill {
-  width: 40px; height: 40px; border-radius: 12px;
-  display: grid; place-items: center;
-  flex-shrink: 0;
-}
-.cat-pill svg { width: 20px; height: 20px; stroke-width: 2; }
-.cat-pill.cafe { background: rgba(146,204,23,0.18); color: rgb(var(--nutrition-strong)); }
-.cat-pill.transport { background: rgba(14,116,144,0.16); color: rgb(var(--fizruk-strong)); }
-.cat-pill.shopping { background: rgba(249,112,102,0.16); color: rgb(var(--routine-strong)); }
-.cat-pill.income { background: rgba(16,185,129,0.16); color: rgb(var(--finyk-strong)); }
-.cat-pill.subscription { background: rgba(139,92,246,0.16); color: #8b5cf6; }
-.cat-pill.bills { background: rgba(245,158,11,0.18); color: rgb(var(--warning-strong)); }
-.theme-dark .cat-pill.cafe { background: rgba(176,230,54,0.18); color: rgb(var(--nutrition)); }
-.theme-dark .cat-pill.transport { background: rgba(34,211,238,0.18); color: rgb(var(--fizruk)); }
-.theme-dark .cat-pill.shopping { background: rgba(255,140,120,0.20); color: rgb(var(--routine)); }
-.theme-dark .cat-pill.income { background: rgba(52,211,153,0.18); color: rgb(var(--finyk)); }
-.theme-dark .cat-pill.subscription { background: rgba(167,139,250,0.20); color: #a78bfa; }
-.theme-dark .cat-pill.bills { background: rgba(251,191,36,0.18); color: rgb(var(--warning)); }
+      /* Category icon pill — Expensa-style */
+      .cat-pill {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .cat-pill svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+      }
+      .cat-pill.cafe {
+        background: rgba(146, 204, 23, 0.18);
+        color: rgb(var(--nutrition-strong));
+      }
+      .cat-pill.transport {
+        background: rgba(14, 116, 144, 0.16);
+        color: rgb(var(--fizruk-strong));
+      }
+      .cat-pill.shopping {
+        background: rgba(249, 112, 102, 0.16);
+        color: rgb(var(--routine-strong));
+      }
+      .cat-pill.income {
+        background: rgba(16, 185, 129, 0.16);
+        color: rgb(var(--finyk-strong));
+      }
+      .cat-pill.subscription {
+        background: rgba(139, 92, 246, 0.16);
+        color: #8b5cf6;
+      }
+      .cat-pill.bills {
+        background: rgba(245, 158, 11, 0.18);
+        color: rgb(var(--warning-strong));
+      }
+      .theme-dark .cat-pill.cafe {
+        background: rgba(176, 230, 54, 0.18);
+        color: rgb(var(--nutrition));
+      }
+      .theme-dark .cat-pill.transport {
+        background: rgba(34, 211, 238, 0.18);
+        color: rgb(var(--fizruk));
+      }
+      .theme-dark .cat-pill.shopping {
+        background: rgba(255, 140, 120, 0.2);
+        color: rgb(var(--routine));
+      }
+      .theme-dark .cat-pill.income {
+        background: rgba(52, 211, 153, 0.18);
+        color: rgb(var(--finyk));
+      }
+      .theme-dark .cat-pill.subscription {
+        background: rgba(167, 139, 250, 0.2);
+        color: #a78bfa;
+      }
+      .theme-dark .cat-pill.bills {
+        background: rgba(251, 191, 36, 0.18);
+        color: rgb(var(--warning));
+      }
 
-/* Tx row */
-.tx-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
-.tx-row + .tx-row { border-top: 1px solid var(--line-v2); }
-.tx-body { flex: 1; min-width: 0; }
-.tx-merchant { font-size: 15px; font-weight: 600; color: rgb(var(--c-ink)); line-height: 1.2; }
-.tx-meta { font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
-.tx-meta .ai-tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; background: rgba(6,78,59,0.08); color: rgb(var(--c-ink-strong)); font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
-.theme-dark .tx-meta .ai-tag { background: rgba(255,255,255,0.10); color: rgb(var(--c-ink-strong)); }
-.tx-amt { font-family: 'Manrope', sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 16px; letter-spacing: -0.012em; }
-.tx-amt.neg { color: rgb(var(--c-ink-strong)); }
-.tx-amt.pos { color: rgb(var(--finyk-strong)); }
+      /* Tx row */
+      .tx-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+      }
+      .tx-row + .tx-row {
+        border-top: 1px solid var(--line-v2);
+      }
+      .tx-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .tx-merchant {
+        font-size: 15px;
+        font-weight: 600;
+        color: rgb(var(--c-ink));
+        line-height: 1.2;
+      }
+      .tx-meta {
+        font-size: 12px;
+        color: rgb(var(--c-muted-v2));
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tx-meta .ai-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: rgba(6, 78, 59, 0.08);
+        color: rgb(var(--c-ink-strong));
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .theme-dark .tx-meta .ai-tag {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgb(var(--c-ink-strong));
+      }
+      .tx-amt {
+        font-family: "Manrope", sans-serif;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        font-size: 16px;
+        letter-spacing: -0.012em;
+      }
+      .tx-amt.neg {
+        color: rgb(var(--c-ink-strong));
+      }
+      .tx-amt.pos {
+        color: rgb(var(--finyk-strong));
+      }
 
-/* Sparkline svg styling */
-.spark { width: 100%; height: 32px; display: block; }
+      /* Sparkline svg styling */
+      .spark {
+        width: 100%;
+        height: 32px;
+        display: block;
+      }
 
-/* Progress ring */
-.ring { width: 88px; height: 88px; position: relative; }
-.ring svg { transform: rotate(-90deg); }
-.ring-track { stroke: rgba(0,0,0,0.06); }
-.theme-dark .ring-track { stroke: rgba(255,255,255,0.08); }
-.ring-progress { stroke: url(#ring-grad); }
-.ring-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
-.ring-center .pct { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; }
-.ring-center .pct-lab { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-muted-v2)); margin-top: 1px; }
+      /* Progress ring */
+      .ring {
+        width: 88px;
+        height: 88px;
+        position: relative;
+      }
+      .ring svg {
+        transform: rotate(-90deg);
+      }
+      .ring-track {
+        stroke: rgba(0, 0, 0, 0.06);
+      }
+      .theme-dark .ring-track {
+        stroke: rgba(255, 255, 255, 0.08);
+      }
+      .ring-progress {
+        stroke: url(#ring-grad);
+      }
+      .ring-center {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        text-align: center;
+      }
+      .ring-center .pct {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: rgb(var(--c-ink-strong));
+        font-variant-numeric: tabular-nums;
+      }
+      .ring-center .pct-lab {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgb(var(--c-muted-v2));
+        margin-top: 1px;
+      }
 
-/* AI insight banner */
-.ai-insight {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px 10px 14px;
-  border-radius: 16px;
-  background: rgb(var(--c-ink-strong)); color: rgb(var(--c-bg-base));
-  box-shadow: var(--shadow-pill);
-  font-size: 13px; line-height: 1.35;
-}
-.ai-insight .ai-dot {
-  width: 28px; height: 28px; border-radius: 8px;
-  background: rgba(255,255,255,0.14); color: inherit;
-  display: grid; place-items: center; flex-shrink: 0;
-}
-.ai-insight .ai-dot svg { width: 16px; height: 16px; }
-.ai-insight strong { font-weight: 700; }
-.ai-insight .ai-x { margin-left: auto; opacity: 0.6; cursor: pointer; padding: 2px; }
+      /* AI insight banner */
+      .ai-insight {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px 10px 14px;
+        border-radius: 16px;
+        background: rgb(var(--c-ink-strong));
+        color: rgb(var(--c-bg-base));
+        box-shadow: var(--shadow-pill);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .ai-insight .ai-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.14);
+        color: inherit;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .ai-insight .ai-dot svg {
+        width: 16px;
+        height: 16px;
+      }
+      .ai-insight strong {
+        font-weight: 700;
+      }
+      .ai-insight .ai-x {
+        margin-left: auto;
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 2px;
+      }
 
-/* Module bottom nav — mirrors apps/web/src/shared/components/ui/ModuleBottomNav.tsx
+      /* Module bottom nav — mirrors apps/web/src/shared/components/ui/ModuleBottomNav.tsx
    Current production state (v1 chrome): flat bg-panel/95 + border-top + sliding
    top-pill indicator + module-tinted icon glow. NOT yet migrated to v2 glass pill
    like HubBottomNav was in PR-5 — this is a polish gap not on the explicit
    backlog (see decision log below). */
-.module-nav {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
-  display: flex; height: 60px;
-  background: rgba(255,255,255,0.95);
-  border-top: 1px solid var(--line-v2);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-.theme-dark .module-nav { background: rgba(32,28,25,0.95); }
-.module-nav-pill {
-  position: absolute; top: 0;
-  width: 40px; height: 4px; border-radius: 999px;
-  background: linear-gradient(90deg, #34d399 0%, #10b981 100%); /* finyk: brand-400 → brand-500, per ModuleBottomNav COLORS.finyk.pill */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.10);
-  pointer-events: none;
-  transition: left 200ms cubic-bezier(0,0,0.2,1);
-}
-.module-nav-item {
-  flex: 1; position: relative;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px;
-  min-height: 48px;
-  background: transparent; border: 0; padding: 0;
-  color: rgb(var(--c-muted-v2));
-  font: inherit;
-  cursor: pointer;
-}
-.module-nav-item .icon { display: grid; place-items: center; transition: all 200ms; }
-.module-nav-item .icon svg { width: 22px; height: 22px; stroke-width: 2; display: block; }
-.module-nav-item .lab { font-size: 10px; font-weight: 600; line-height: 1; letter-spacing: 0.01em; }
-.module-nav-item.active { color: rgb(var(--c-ink)); }
-.module-nav-item.active .icon { color: rgb(var(--nutrition-strong)); filter: drop-shadow(0 0 8px rgba(146,204,23,0.45)); }
-.theme-dark .module-nav-item.active .icon { color: rgb(var(--nutrition)); filter: drop-shadow(0 0 10px rgba(176,230,54,0.55)); }
-.module-nav-pill { background: linear-gradient(90deg, #b0e636 0%, #71a30d 100%) !important; }
-.module-nav-item:focus-visible {
-  outline: 2px solid rgba(52,211,153,0.55);
-  outline-offset: -4px;
-  border-radius: 8px;
-}
+      .module-nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        display: flex;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.95);
+        border-top: 1px solid var(--line-v2);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .theme-dark .module-nav {
+        background: rgba(32, 28, 25, 0.95);
+      }
+      .module-nav-pill {
+        position: absolute;
+        top: 0;
+        width: 40px;
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(
+          90deg,
+          #34d399 0%,
+          #10b981 100%
+        ); /* finyk: brand-400 → brand-500, per ModuleBottomNav COLORS.finyk.pill */
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        pointer-events: none;
+        transition: left 200ms cubic-bezier(0, 0, 0.2, 1);
+      }
+      .module-nav-item {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 48px;
+        background: transparent;
+        border: 0;
+        padding: 0;
+        color: rgb(var(--c-muted-v2));
+        font: inherit;
+        cursor: pointer;
+      }
+      .module-nav-item .icon {
+        display: grid;
+        place-items: center;
+        transition: all 200ms;
+      }
+      .module-nav-item .icon svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 2;
+        display: block;
+      }
+      .module-nav-item .lab {
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.01em;
+      }
+      .module-nav-item.active {
+        color: rgb(var(--c-ink));
+      }
+      .module-nav-item.active .icon {
+        color: rgb(var(--nutrition-strong));
+        filter: drop-shadow(0 0 8px rgba(146, 204, 23, 0.45));
+      }
+      .theme-dark .module-nav-item.active .icon {
+        color: rgb(var(--nutrition));
+        filter: drop-shadow(0 0 10px rgba(176, 230, 54, 0.55));
+      }
+      .module-nav-pill {
+        background: linear-gradient(90deg, #b0e636 0%, #71a30d 100%) !important;
+      }
+      .module-nav-item:focus-visible {
+        outline: 2px solid rgba(52, 211, 153, 0.55);
+        outline-offset: -4px;
+        border-radius: 8px;
+      }
 
-/* AI Pill (Hub-style persistent CTA) — bottom: 84 per AIPill.tsx default,
+      /* AI Pill (Hub-style persistent CTA) — bottom: 84 per AIPill.tsx default,
    which clears the 60 px ModuleBottomNav + safe-area-inset. */
-.ai-pill {
-  position: absolute; right: 16px; bottom: 84px; z-index: 4;
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 6px 6px 16px;
-  background: rgb(var(--c-ink-strong));
-  border-radius: 24px;
-  color: rgb(var(--c-bg-base));
-  box-shadow: var(--shadow-pill);
-  font-size: 13px; font-weight: 500; letter-spacing: -0.005em;
-}
-.ai-pill .mic-btn {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(255,255,255,0.14);
-  display: grid; place-items: center;
-}
-.ai-pill .mic-btn svg { width: 16px; height: 16px; }
+      .ai-pill {
+        position: absolute;
+        right: 16px;
+        bottom: 84px;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 6px 6px 16px;
+        background: rgb(var(--c-ink-strong));
+        border-radius: 24px;
+        color: rgb(var(--c-bg-base));
+        box-shadow: var(--shadow-pill);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+      }
+      .ai-pill .mic-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        display: grid;
+        place-items: center;
+      }
+      .ai-pill .mic-btn svg {
+        width: 16px;
+        height: 16px;
+      }
 
-/* Bar progress */
-.bar { height: 6px; border-radius: 999px; background: rgba(0,0,0,0.06); overflow: hidden; }
-.theme-dark .bar { background: rgba(255,255,255,0.08); }
-.bar > span { display: block; height: 100%; border-radius: inherit; background: var(--hero-grad-finyk); }
+      /* Bar progress */
+      .bar {
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+      }
+      .theme-dark .bar {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--hero-grad-finyk);
+      }
 
-/* Decision log */
-.log-wrap { max-width: 1180px; margin: 48px auto 0; }
-.log-wrap h3 { font-size: 22px; font-weight: 700; letter-spacing: -0.018em; margin: 0 0 18px; }
-.log { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.log-card { padding: 22px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; }
-.log-card h4 { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #b4aea9; margin: 0 0 10px; }
-.log-card h4 strong { color: #fff; }
-.log-card dl { margin: 0; font-size: 13px; line-height: 1.55; }
-.log-card dt { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #878079; margin-top: 12px; }
-.log-card dt:first-child { margin-top: 0; }
-.log-card dd { margin: 4px 0 0; color: #d9d2c9; }
-.log-card code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; color: #e6dccc; }
-.log-card .trade { color: #fbbf24; }
+      /* Decision log */
+      .log-wrap {
+        max-width: 1180px;
+        margin: 48px auto 0;
+      }
+      .log-wrap h3 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.018em;
+        margin: 0 0 18px;
+      }
+      .log {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .log-card {
+        padding: 22px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 18px;
+      }
+      .log-card h4 {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #b4aea9;
+        margin: 0 0 10px;
+      }
+      .log-card h4 strong {
+        color: #fff;
+      }
+      .log-card dl {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .log-card dt {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #878079;
+        margin-top: 12px;
+      }
+      .log-card dt:first-child {
+        margin-top: 0;
+      }
+      .log-card dd {
+        margin: 4px 0 0;
+        color: #d9d2c9;
+      }
+      .log-card code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: #e6dccc;
+      }
+      .log-card .trade {
+        color: #fbbf24;
+      }
 
-/* Spacing helpers */
-.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-5 { margin-top: 20px; } .mt-6 { margin-top: 24px; }
-.mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
-.p-3 { padding: 12px; } .p-4 { padding: 16px; } .px-4 { padding-left: 16px; padding-right: 16px; } .py-3 { padding-top: 12px; padding-bottom: 12px; } .py-2 { padding-top: 8px; padding-bottom: 8px; }
-.gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
-.flex { display: flex; } .grid { display: grid; } .col { display: flex; flex-direction: column; }
-.items-center { align-items: center; } .items-end { align-items: flex-end; }
-.justify-between { justify-content: space-between; }
-.flex-1 { flex: 1; min-width: 0; }
-.grow { flex: 1; }
-.grid-cols-2 { grid-template-columns: 1fr 1fr; }
-.grid-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
-.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-.text-right { text-align: right; } .text-center { text-align: center; }
+      /* Spacing helpers */
+      .mt-1 {
+        margin-top: 4px;
+      }
+      .mt-2 {
+        margin-top: 8px;
+      }
+      .mt-3 {
+        margin-top: 12px;
+      }
+      .mt-4 {
+        margin-top: 16px;
+      }
+      .mt-5 {
+        margin-top: 20px;
+      }
+      .mt-6 {
+        margin-top: 24px;
+      }
+      .mb-2 {
+        margin-bottom: 8px;
+      }
+      .mb-3 {
+        margin-bottom: 12px;
+      }
+      .p-3 {
+        padding: 12px;
+      }
+      .p-4 {
+        padding: 16px;
+      }
+      .px-4 {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .py-3 {
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+      .py-2 {
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+      .gap-2 {
+        gap: 8px;
+      }
+      .gap-3 {
+        gap: 12px;
+      }
+      .gap-4 {
+        gap: 16px;
+      }
+      .flex {
+        display: flex;
+      }
+      .grid {
+        display: grid;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+      }
+      .items-center {
+        align-items: center;
+      }
+      .items-end {
+        align-items: flex-end;
+      }
+      .justify-between {
+        justify-content: space-between;
+      }
+      .flex-1 {
+        flex: 1;
+        min-width: 0;
+      }
+      .grow {
+        flex: 1;
+      }
+      .grid-cols-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .grid-cols-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .grid-cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .text-right {
+        text-align: right;
+      }
+      .text-center {
+        text-align: center;
+      }
 
-/* Section header inside artboard */
-.sect-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px 8px; }
-.sect-head h3 { font-size: 14px; font-weight: 700; letter-spacing: -0.005em; color: rgb(var(--c-ink-strong)); margin: 0; }
-.sect-head a { font-size: 12px; font-weight: 600; color: rgb(var(--c-muted-v2)); text-decoration: none; letter-spacing: 0.005em; }
-.sect-head a:focus-visible { outline: 2px solid rgb(var(--success)); outline-offset: 2px; border-radius: 4px; }
+      /* Section header inside artboard */
+      .sect-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 4px 8px;
+      }
+      .sect-head h3 {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: -0.005em;
+        color: rgb(var(--c-ink-strong));
+        margin: 0;
+      }
+      .sect-head a {
+        font-size: 12px;
+        font-weight: 600;
+        color: rgb(var(--c-muted-v2));
+        text-decoration: none;
+        letter-spacing: 0.005em;
+      }
+      .sect-head a:focus-visible {
+        outline: 2px solid rgb(var(--success));
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
 
-/* Compact (variant C) tx row */
-.tx-row.compact { padding: 10px 14px; gap: 10px; }
-.tx-row.compact .cat-pill { width: 34px; height: 34px; border-radius: 10px; }
-.tx-row.compact .cat-pill svg { width: 17px; height: 17px; }
-.tx-row.compact .tx-merchant { font-size: 14px; }
-.tx-row.compact .tx-amt { font-size: 15px; }
+      /* Compact (variant C) tx row */
+      .tx-row.compact {
+        padding: 10px 14px;
+        gap: 10px;
+      }
+      .tx-row.compact .cat-pill {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+      }
+      .tx-row.compact .cat-pill svg {
+        width: 17px;
+        height: 17px;
+      }
+      .tx-row.compact .tx-merchant {
+        font-size: 14px;
+      }
+      .tx-row.compact .tx-amt {
+        font-size: 15px;
+      }
 
-/* Day divider for variant C */
-.day-divider {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 14px 4px;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgb(var(--c-subtle-v2));
-}
-.day-divider .sum { color: rgb(var(--c-muted-v2)); font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+      /* Day divider for variant C */
+      .day-divider {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 14px 4px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgb(var(--c-subtle-v2));
+      }
+      .day-divider .sum {
+        color: rgb(var(--c-muted-v2));
+        font-family: "JetBrains Mono", monospace;
+        font-variant-numeric: tabular-nums;
+      }
 
-/* Focus a11y */
-.icon-btn:focus-visible, .btn-primary:focus-visible, .btn-soft:focus-visible, .nav-item:focus-visible, .chip:focus-visible {
-  outline: 3px solid rgba(52,211,153,0.55);
-  outline-offset: 2px;
-}
+      /* Focus a11y */
+      .icon-btn:focus-visible,
+      .btn-primary:focus-visible,
+      .btn-soft:focus-visible,
+      .nav-item:focus-visible,
+      .chip:focus-visible {
+        outline: 3px solid rgba(52, 211, 153, 0.55);
+        outline-offset: 2px;
+      }
 
-/* Notch / pill area decoration only when light theme — looks subtle on dark too */
-</style>
-</head>
-<body>
-
-<div class="page-wrap">
-
-  <header class="page-head">
-    <div>
-      <h1><small>Sergeant · v2 redesign · Nutrition Today</small>Зараз → Після плану → Мої доповнення</h1>
-    </div>
-    <p>
-      Цей файл закриває <code style="color:#fbbf24">V2</code> з execution-plan (no-goals state з
-      4 зеро-plates → outcome framing). Ліворуч — поточний NutritionDashboard. Посередині — Phase 2
-      backlog (calorie ring у hero glass, macros tinted) + Phase 5 (insight). Праворуч — quick-add
-      inline + outcome copy на macros + ModuleBottomNav v2.
-    </p>
-  </header>
-
-  <section class="variant-strip" aria-label="Compare states">
-    <article class="variant-card">
-      <div class="tag A"><span class="dot"></span>0 · Сьогодні</div>
-      <h2>Поточна реальність</h2>
-      <p><code>NutritionDashboard.tsx</code> — 4 macro plates (kcal/білки/жири/вугл.) на flat <code>bg-panel</code> + meal-row v1. Якщо ціль не встановлена — <em>«4 zero plates»</em> (V2 у плані).</p>
-      <ul>
-        <li>4 macro plates flat panel</li>
-        <li>ProgressRing absent / static</li>
-        <li>Meal-row v1 на <code>bg-panel shadow-card</code></li>
-        <li>No outcome-framed copy</li>
-      </ul>
-    </article>
-    <article class="variant-card">
-      <div class="tag B"><span class="dot"></span>1 · Після плану v2</div>
-      <h2>Завершений редизайн</h2>
-      <p>V2 закрито: zero-plates state → outcome copy «<em>Встанови ціль — і кожен прийом стане прогресом</em>». Calorie ring у hero glass card (per backlog). Macros tinted glass row tiles. AI insight (<code>nutrition-protein-low</code>) wired.</p>
-      <ul>
-        <li>Hero <code>prominence="hero" r-2xl</code> з ProgressRing nutrition</li>
-        <li>3 macro bars (білки / жири / вугл.) glass tiles</li>
-        <li>AI insight (Phase 5)</li>
-        <li>Meal-rows glass r-lg + scan mode pill</li>
-      </ul>
-    </article>
-    <article class="variant-card">
-      <div class="tag C"><span class="dot"></span>2 · Мої доповнення</div>
-      <h2>Поверх плану</h2>
-      <p>Outcome copy на macros — не лише на zero-state, а на partial: «<em>Білку залишилось 12 г</em>». Quick-add inline (pantry-aware) — натиск на macro-bar відкриває швидкі suggestions. ModuleBottomNav v2.</p>
-      <ul>
-        <li>Outcome copy на partial-progress macros</li>
-        <li>Quick-add chip — pantry-aware</li>
-        <li>ModuleBottomNav → v2 lime-tinted</li>
-        <li>AI tag на meal-row для photo-imported</li>
-      </ul>
-    </article>
-  </section>
-
-  <!-- Reusable SVG defs (gradient for ring) -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-      <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#0f766e" />
-        <stop offset="100%" stop-color="#14b8a6" />
-      </linearGradient>
-      <linearGradient id="ring-grad-nutrition" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#b0e636" />
-        <stop offset="100%" stop-color="#466212" />
-      </linearGradient>
-      <linearGradient id="bar-finyk" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#0f766e" />
-        <stop offset="100%" stop-color="#14b8a6" />
-      </linearGradient>
-    </defs>
-  </svg>
-
-  <!-- inline scoped CSS for the v2 floating glass module-nav (Variant 2 / Мої доповнення) -->
-  <style>
-    .artboard[data-variant="C"] .module-nav-v2 {
-      position: absolute; left: 12px; right: 12px; bottom: 16px; z-index: 5;
-      display: flex; height: 60px; padding: 6px;
-      background: var(--surface-strong-glass);
-      border: 1px solid var(--surface-line);
-      border-radius: 24px;
-      box-shadow: var(--shadow-nav);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    }
-    .artboard[data-variant="C"] .module-nav-v2 .pill {
-      position: absolute; top: 6px; bottom: 6px; left: 6px;
-      width: calc((100% / 5) - 12px);
-      background: var(--hero-grad-finyk);
-      border-radius: 18px;
-      box-shadow: 0 6px 14px rgba(15,118,110,0.45);
-      transition: left 200ms cubic-bezier(0,0,0.2,1);
-      pointer-events: none;
-    }
-    .artboard[data-variant="C"] .module-nav-v2 .module-nav-item {
-      position: relative; z-index: 1;
-      border: 0; background: transparent;
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 4px; min-height: 48px;
-      color: rgb(var(--c-muted-v2));
-      cursor: pointer; font: inherit;
-    }
-    .artboard[data-variant="C"] .module-nav-v2 .module-nav-item .icon svg { width: 22px; height: 22px; stroke-width: 2; display: block; }
-    .artboard[data-variant="C"] .module-nav-v2 .module-nav-item .lab { font-size: 10px; font-weight: 600; line-height: 1; letter-spacing: 0.01em; }
-    .artboard[data-variant="C"] .module-nav-v2 .module-nav-item.active { color: #fff; }
-    .artboard[data-variant="C"] .module-nav-v2 .module-nav-item.active .icon { color: #fff; filter: none; }
-
-    /* Diff table */
-    .diff-wrap { margin-top: 16px; overflow-x: auto; padding-bottom: 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); }
-    .diff-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; line-height: 1.55; min-width: 900px; }
-    .diff-table th, .diff-table td { padding: 14px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .diff-table th { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #b4aea9; background: rgba(255,255,255,0.025); }
-    .diff-table tbody td:first-child { font-weight: 700; color: #fff; font-size: 13px; white-space: nowrap; }
-    .diff-table tbody td { color: #d9d2c9; }
-    .diff-table tbody td code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; color: #e6dccc; }
-    .diff-table tbody td small { display: block; margin-top: 4px; }
-    .diff-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
-    .diff-table tbody tr:last-child td { border-bottom: 0; }
-    .diff-status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
-    .diff-status.unchanged { background: rgba(255,255,255,0.08); color: #b4aea9; }
-    .diff-status.changed { background: rgba(52,211,153,0.18); color: #6ee7b7; }
-    .diff-status.new { background: rgba(103,232,249,0.18); color: #67e8f9; }
-    .diff-status.gap { background: rgba(251,191,36,0.20); color: #fbbf24; }
-
-    /* Nutrition module accent — redirect finyk-named tokens to nutrition */
-    .theme-light, .theme-dark {
-      --finyk: var(--nutrition);
-      --finyk-strong: var(--nutrition-strong);
-      --hero-grad-finyk: var(--hero-grad-nutrition);
-    }
-    .module-nav-pill { width: 40px; left: calc((100% / 4 - 2.5rem) / 2); }
-    .artboard[data-variant="C"] .module-nav-v2 .pill {
-      width: calc(25% - 12px) !important;
-      background: var(--hero-grad-nutrition);
-      box-shadow: 0 6px 14px rgba(70,98,18,0.55) !important;
-    }
-    .meal-row-v1 {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px;
-      background: rgb(var(--c-panel));
-      border: 1px solid var(--line-v2);
-      border-radius: 16px;
-      box-shadow: 0 1px 2px rgba(28,25,23,0.04), 0 2px 6px rgba(28,25,23,0.06);
-    }
-    .meal-row-v1 + .meal-row-v1 { margin-top: 10px; }
-    .meal-icon {
-      width: 40px; height: 40px; border-radius: 12px;
-      background: rgba(146,204,23,0.18);
-      color: rgb(var(--nutrition-strong));
-      display: grid; place-items: center;
-      flex-shrink: 0;
-    }
-    .meal-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .theme-dark .meal-icon { background: rgba(176,230,54,0.18); color: rgb(var(--nutrition)); }
-
-    /* Macro bar */
-    .macro-bar { height: 6px; border-radius: 999px; background: rgba(0,0,0,0.06); overflow: hidden; }
-    .theme-dark .macro-bar { background: rgba(255,255,255,0.08); }
-    .macro-bar > span { display: block; height: 100%; border-radius: inherit; }
-  </style>
-
-  <div class="canvas" id="canvas">
-
-    <!-- ═══════════════════ LIGHT ROW ═══════════════════ -->
-    <div class="canvas-row-head">
-      <span class="label">Light theme · #f0e9d8 mesh</span>
-      <span class="line"></span>
-    </div>
-
-    <!-- =================================================== -->
-    <!-- VARIANT A — light                                   -->
-    <!-- =================================================== -->
-    <div class="artboard-frame">
-      <div class="artboard theme-light" data-variant="A">
-        <div class="mesh-bg"></div>
-        <div class="notch"></div>
-        <div class="status-bar"><span>9:41</span><span class="icons"><svg width="18" height="11" viewBox="0 0 18 11" fill="none"><path d="M1 5.5c0-1.4 1.1-2.5 2.5-2.5h11C15.9 3 17 4.1 17 5.5S15.9 8 14.5 8h-11C2.1 8 1 6.9 1 5.5z" stroke="currentColor" stroke-width="1" opacity="0.4"/><path d="M2 4h11v3H2z" fill="currentColor"/></svg><svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1 9h2v-2H1zM5 9h2V5H5zM9 9h2V3H9zM13 9h2V1h-2z" fill="currentColor"/></svg></span></div>
-        <div class="app-header">
-          <div class="row">
-            <div>
-              <div class="module-eyebrow">Харчування · Сьогодні</div>
-              <div class="greeting">Привіт, Дмитре</div>
-            </div>
-            <div class="row gap-2">
-              <button class="icon-btn" aria-label="Сканувати" tabindex="-1">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10v8H7z"/></svg>
-              </button>
-              <div class="avatar">Д</div>
-            </div>
-          </div>
+      /* Notch / pill area decoration only when light theme — looks subtle on dark too */
+    </style>
+  </head>
+  <body>
+    <div class="page-wrap">
+      <header class="page-head">
+        <div>
+          <h1>
+            <small>Sergeant · v2 redesign · Nutrition Today</small>Зараз → Після
+            плану → Мої доповнення
+          </h1>
         </div>
-        <div class="main-area">
-          <!-- v1 NutritionDashboard hero — 4 macro plates flat -->
-          <div style="background: rgb(var(--c-panel)); border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(28,25,23,0.04), 0 2px 6px rgba(28,25,23,0.06); border: 1px solid var(--line-v2);">
-            <p class="eyebrow">Сьогодні</p>
-            <p class="title tnum" style="font-size: 20px; margin-top: 4px;">1 280 ккал <span style="font-size: 13px; font-weight: 500; color: rgb(var(--c-muted-v2));">/ 2 100</span></p>
-          </div>
-          <div class="grid grid-cols-4 gap-2 mt-2" style="grid-template-columns: repeat(4, 1fr);">
-            <div style="background: rgb(var(--c-panel)); border-radius: 12px; padding: 10px 8px; text-align: center; box-shadow: 0 1px 2px rgba(28,25,23,0.04); border: 1px solid var(--line-v2);">
-              <p class="eyebrow" style="font-size: 9px;">Ккал</p>
-              <p style="font-size: 18px; font-weight: 800; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; margin-top: 2px; line-height: 1;">1280</p>
-            </div>
-            <div style="background: rgb(var(--c-panel)); border-radius: 12px; padding: 10px 8px; text-align: center; box-shadow: 0 1px 2px rgba(28,25,23,0.04); border: 1px solid var(--line-v2);">
-              <p class="eyebrow" style="font-size: 9px;">Білки</p>
-              <p style="font-size: 18px; font-weight: 800; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; margin-top: 2px; line-height: 1;">42г</p>
-            </div>
-            <div style="background: rgb(var(--c-panel)); border-radius: 12px; padding: 10px 8px; text-align: center; box-shadow: 0 1px 2px rgba(28,25,23,0.04); border: 1px solid var(--line-v2);">
-              <p class="eyebrow" style="font-size: 9px;">Жири</p>
-              <p style="font-size: 18px; font-weight: 800; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; margin-top: 2px; line-height: 1;">48г</p>
-            </div>
-            <div style="background: rgb(var(--c-panel)); border-radius: 12px; padding: 10px 8px; text-align: center; box-shadow: 0 1px 2px rgba(28,25,23,0.04); border: 1px solid var(--line-v2);">
-              <p class="eyebrow" style="font-size: 9px;">Вугл.</p>
-              <p style="font-size: 18px; font-weight: 800; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; margin-top: 2px; line-height: 1;">120г</p>
-            </div>
-          </div>
+        <p>
+          Цей файл закриває <code style="color: #fbbf24">V2</code> з
+          execution-plan (no-goals state з 4 зеро-plates → outcome framing).
+          Ліворуч — поточний NutritionDashboard. Посередині — Phase 2 backlog
+          (calorie ring у hero glass, macros tinted) + Phase 5 (insight).
+          Праворуч — quick-add inline + outcome copy на macros + ModuleBottomNav
+          v2.
+        </p>
+      </header>
 
-          <div class="sect-head"><h3>Сьогодні</h3><a href="#">Усі</a></div>
-          <div class="meal-row-v1">
-            <div class="meal-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 15px; font-weight: 600;">Сніданок · Вівсянка</div>
-              <div style="font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px;">420 ккал · 18Б 12Ж 60В</div>
-            </div>
-          </div>
-          <div class="meal-row-v1">
-            <div class="meal-icon"><svg viewBox="0 0 24 24"><path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z"/><path d="M12 7v10M7 12h10"/></svg></div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 15px; font-weight: 600;">Обід · Гречка + куряча</div>
-              <div style="font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px;">860 ккал · 24Б 36Ж 60В</div>
-            </div>
-          </div>
+      <section class="variant-strip" aria-label="Compare states">
+        <article class="variant-card">
+          <div class="tag A"><span class="dot"></span>0 · Сьогодні</div>
+          <h2>Поточна реальність</h2>
+          <p>
+            <code>NutritionDashboard.tsx</code> — 4 macro plates
+            (kcal/білки/жири/вугл.) на flat <code>bg-panel</code> + meal-row v1.
+            Якщо ціль не встановлена — <em>«4 zero plates»</em> (V2 у плані).
+          </p>
+          <ul>
+            <li>4 macro plates flat panel</li>
+            <li>ProgressRing absent / static</li>
+            <li>Meal-row v1 на <code>bg-panel shadow-card</code></li>
+            <li>No outcome-framed copy</li>
+          </ul>
+        </article>
+        <article class="variant-card">
+          <div class="tag B"><span class="dot"></span>1 · Після плану v2</div>
+          <h2>Завершений редизайн</h2>
+          <p>
+            V2 закрито: zero-plates state → outcome copy «<em
+              >Встанови ціль — і кожен прийом стане прогресом</em
+            >». Calorie ring у hero glass card (per backlog). Macros tinted
+            glass row tiles. AI insight (<code>nutrition-protein-low</code>)
+            wired.
+          </p>
+          <ul>
+            <li>
+              Hero <code>prominence="hero" r-2xl</code> з ProgressRing nutrition
+            </li>
+            <li>3 macro bars (білки / жири / вугл.) glass tiles</li>
+            <li>AI insight (Phase 5)</li>
+            <li>Meal-rows glass r-lg + scan mode pill</li>
+          </ul>
+        </article>
+        <article class="variant-card">
+          <div class="tag C"><span class="dot"></span>2 · Мої доповнення</div>
+          <h2>Поверх плану</h2>
+          <p>
+            Outcome copy на macros — не лише на zero-state, а на partial: «<em
+              >Білку залишилось 12 г</em
+            >». Quick-add inline (pantry-aware) — натиск на macro-bar відкриває
+            швидкі suggestions. ModuleBottomNav v2.
+          </p>
+          <ul>
+            <li>Outcome copy на partial-progress macros</li>
+            <li>Quick-add chip — pantry-aware</li>
+            <li>ModuleBottomNav → v2 lime-tinted</li>
+            <li>AI tag на meal-row для photo-imported</li>
+          </ul>
+        </article>
+      </section>
+
+      <!-- Reusable SVG defs (gradient for ring) -->
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs>
+          <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0f766e" />
+            <stop offset="100%" stop-color="#14b8a6" />
+          </linearGradient>
+          <linearGradient
+            id="ring-grad-nutrition"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stop-color="#b0e636" />
+            <stop offset="100%" stop-color="#466212" />
+          </linearGradient>
+          <linearGradient id="bar-finyk" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0f766e" />
+            <stop offset="100%" stop-color="#14b8a6" />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <!-- inline scoped CSS for the v2 floating glass module-nav (Variant 2 / Мої доповнення) -->
+      <style>
+        .artboard[data-variant="C"] .module-nav-v2 {
+          position: absolute;
+          left: 12px;
+          right: 12px;
+          bottom: 16px;
+          z-index: 5;
+          display: flex;
+          height: 60px;
+          padding: 6px;
+          background: var(--surface-strong-glass);
+          border: 1px solid var(--surface-line);
+          border-radius: 24px;
+          box-shadow: var(--shadow-nav);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        .artboard[data-variant="C"] .module-nav-v2 .pill {
+          position: absolute;
+          top: 6px;
+          bottom: 6px;
+          left: 6px;
+          width: calc((100% / 5) - 12px);
+          background: var(--hero-grad-finyk);
+          border-radius: 18px;
+          box-shadow: 0 6px 14px rgba(15, 118, 110, 0.45);
+          transition: left 200ms cubic-bezier(0, 0, 0.2, 1);
+          pointer-events: none;
+        }
+        .artboard[data-variant="C"] .module-nav-v2 .module-nav-item {
+          position: relative;
+          z-index: 1;
+          border: 0;
+          background: transparent;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          min-height: 48px;
+          color: rgb(var(--c-muted-v2));
+          cursor: pointer;
+          font: inherit;
+        }
+        .artboard[data-variant="C"] .module-nav-v2 .module-nav-item .icon svg {
+          width: 22px;
+          height: 22px;
+          stroke-width: 2;
+          display: block;
+        }
+        .artboard[data-variant="C"] .module-nav-v2 .module-nav-item .lab {
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 1;
+          letter-spacing: 0.01em;
+        }
+        .artboard[data-variant="C"] .module-nav-v2 .module-nav-item.active {
+          color: #fff;
+        }
+        .artboard[data-variant="C"]
+          .module-nav-v2
+          .module-nav-item.active
+          .icon {
+          color: #fff;
+          filter: none;
+        }
+
+        /* Diff table */
+        .diff-wrap {
+          margin-top: 16px;
+          overflow-x: auto;
+          padding-bottom: 8px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .diff-table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          font-size: 12.5px;
+          line-height: 1.55;
+          min-width: 900px;
+        }
+        .diff-table th,
+        .diff-table td {
+          padding: 14px 16px;
+          text-align: left;
+          vertical-align: top;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .diff-table th {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #b4aea9;
+          background: rgba(255, 255, 255, 0.025);
+        }
+        .diff-table tbody td:first-child {
+          font-weight: 700;
+          color: #fff;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+        .diff-table tbody td {
+          color: #d9d2c9;
+        }
+        .diff-table tbody td code {
+          font-family: "JetBrains Mono", monospace;
+          font-size: 11.5px;
+          background: rgba(255, 255, 255, 0.06);
+          padding: 1px 5px;
+          border-radius: 4px;
+          color: #e6dccc;
+        }
+        .diff-table tbody td small {
+          display: block;
+          margin-top: 4px;
+        }
+        .diff-table tbody tr:hover td {
+          background: rgba(255, 255, 255, 0.02);
+        }
+        .diff-table tbody tr:last-child td {
+          border-bottom: 0;
+        }
+        .diff-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px;
+          border-radius: 999px;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          margin-bottom: 6px;
+        }
+        .diff-status.unchanged {
+          background: rgba(255, 255, 255, 0.08);
+          color: #b4aea9;
+        }
+        .diff-status.changed {
+          background: rgba(52, 211, 153, 0.18);
+          color: #6ee7b7;
+        }
+        .diff-status.new {
+          background: rgba(103, 232, 249, 0.18);
+          color: #67e8f9;
+        }
+        .diff-status.gap {
+          background: rgba(251, 191, 36, 0.2);
+          color: #fbbf24;
+        }
+
+        /* Nutrition module accent — redirect finyk-named tokens to nutrition */
+        .theme-light,
+        .theme-dark {
+          --finyk: var(--nutrition);
+          --finyk-strong: var(--nutrition-strong);
+          --hero-grad-finyk: var(--hero-grad-nutrition);
+        }
+        .module-nav-pill {
+          width: 40px;
+          left: calc((100% / 4 - 2.5rem) / 2);
+        }
+        .artboard[data-variant="C"] .module-nav-v2 .pill {
+          width: calc(25% - 12px) !important;
+          background: var(--hero-grad-nutrition);
+          box-shadow: 0 6px 14px rgba(70, 98, 18, 0.55) !important;
+        }
+        .meal-row-v1 {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          background: rgb(var(--c-panel));
+          border: 1px solid var(--line-v2);
+          border-radius: 16px;
+          box-shadow:
+            0 1px 2px rgba(28, 25, 23, 0.04),
+            0 2px 6px rgba(28, 25, 23, 0.06);
+        }
+        .meal-row-v1 + .meal-row-v1 {
+          margin-top: 10px;
+        }
+        .meal-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          background: rgba(146, 204, 23, 0.18);
+          color: rgb(var(--nutrition-strong));
+          display: grid;
+          place-items: center;
+          flex-shrink: 0;
+        }
+        .meal-icon svg {
+          width: 20px;
+          height: 20px;
+          stroke: currentColor;
+          fill: none;
+          stroke-width: 2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .theme-dark .meal-icon {
+          background: rgba(176, 230, 54, 0.18);
+          color: rgb(var(--nutrition));
+        }
+
+        /* Macro bar */
+        .macro-bar {
+          height: 6px;
+          border-radius: 999px;
+          background: rgba(0, 0, 0, 0.06);
+          overflow: hidden;
+        }
+        .theme-dark .macro-bar {
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .macro-bar > span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+        }
+      </style>
+
+      <div class="canvas" id="canvas">
+        <!-- ═══════════════════ LIGHT ROW ═══════════════════ -->
+        <div class="canvas-row-head">
+          <span class="label">Light theme · #f0e9d8 mesh</span>
+          <span class="line"></span>
         </div>
-        <div class="ai-pill" role="group" aria-label="Запитати Сержанта">
-          Запитати…
-          <button class="mic-btn" aria-label="Голос" tabindex="-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-          </button>
-        </div>
-        <nav class="module-nav" aria-label="Розділи Харчування">
-          <span class="module-nav-pill" aria-hidden="true"></span>
-          <button class="module-nav-item active" tabindex="-1" aria-current="page">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-            <span class="lab">Огляд</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11c0 6 4 10 8 10s8-4 8-10"/><path d="M12 21V11"/><path d="M7 5c0 2 1 3 2 4M17 5c0 2-1 3-2 4"/></svg></span>
-            <span class="lab">Склад</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
-            <span class="lab">Журнал</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-            <span class="lab">Меню</span>
-          </button>
-        </nav>
-      </div>
-      <div class="artboard-label"><span class="v">0</span> · Сьогодні (v1 prod) — light</div>
-    </div>
 
-    <!-- =================================================== -->
-    <!-- VARIANT B — light                                   -->
-    <!-- =================================================== -->
-    <div class="artboard-frame">
-      <div class="artboard theme-light" data-variant="B">
-        <div class="mesh-bg"></div>
-        <div class="notch"></div>
-        <div class="status-bar"><span>9:41</span><span class="icons"><svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1 9h2v-2H1zM5 9h2V5H5zM9 9h2V3H9zM13 9h2V1h-2z" fill="currentColor"/></svg><svg width="18" height="11" viewBox="0 0 18 11" fill="none"><path d="M1 5.5c0-1.4 1.1-2.5 2.5-2.5h11C15.9 3 17 4.1 17 5.5S15.9 8 14.5 8h-11C2.1 8 1 6.9 1 5.5z" stroke="currentColor" stroke-width="1" opacity="0.4"/><path d="M2 4h11v3H2z" fill="currentColor"/></svg></span></div>
-        <div class="app-header">
-          <div class="row">
-            <div>
-              <div class="module-eyebrow">Харчування · Сьогодні</div>
-              <div class="greeting">Привіт, Дмитре</div>
+        <!-- =================================================== -->
+        <!-- VARIANT A — light                                   -->
+        <!-- =================================================== -->
+        <div class="artboard-frame">
+          <div class="artboard theme-light" data-variant="A">
+            <div class="mesh-bg"></div>
+            <div class="notch"></div>
+            <div class="status-bar">
+              <span>9:41</span
+              ><span class="icons"
+                ><svg width="18" height="11" viewBox="0 0 18 11" fill="none">
+                  <path
+                    d="M1 5.5c0-1.4 1.1-2.5 2.5-2.5h11C15.9 3 17 4.1 17 5.5S15.9 8 14.5 8h-11C2.1 8 1 6.9 1 5.5z"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    opacity="0.4"
+                  />
+                  <path d="M2 4h11v3H2z" fill="currentColor" /></svg
+                ><svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                  <path
+                    d="M1 9h2v-2H1zM5 9h2V5H5zM9 9h2V3H9zM13 9h2V1h-2z"
+                    fill="currentColor"
+                  /></svg
+              ></span>
             </div>
-            <div class="row gap-2">
-              <button class="icon-btn" aria-label="Сканувати" tabindex="-1">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10v8H7z"/></svg>
-              </button>
-              <div class="avatar">Д</div>
-            </div>
-          </div>
-        </div>
-        <div class="main-area">
-          <div class="ai-insight" role="status">
-            <span class="ai-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
-            <div><strong>Білку низько · 42 / 90г</strong>. До вечері — додай ще ~25г.</div>
-            <span class="ai-x" aria-label="Закрити">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>
-            </span>
-          </div>
-
-          <!-- v2 hero glass r-2xl з ProgressRing nutrition (per backlog § Nutrition Today calorie ring) -->
-          <div class="glass r-2xl mt-3" style="position: relative; overflow: hidden;">
-            <div aria-hidden="true" style="position: absolute; inset: 0; background: var(--hero-grad-nutrition); opacity: 0.10; pointer-events: none;"></div>
-            <div style="position: relative; padding: 18px 20px;">
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <div class="ring" style="position: relative; width: 92px; height: 92px; flex-shrink: 0;" aria-label="1280 з 2100 ккал">
-                  <svg width="92" height="92" viewBox="0 0 88 88">
-                    <circle cx="44" cy="44" r="38" stroke-width="10" fill="none" class="ring-track"/>
-                    <circle cx="44" cy="44" r="38" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="238.76" stroke-dashoffset="92" stroke="url(#ring-grad-nutrition)"/>
-                  </svg>
-                  <div class="ring-center">
-                    <div style="text-align: center; font-size: 22px; font-weight: 800; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; letter-spacing: -0.025em;">1280</div>
-                    <div class="pct-lab">/ 2100 ккал</div>
-                  </div>
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                  <div class="eyebrow" style="color: rgb(var(--nutrition-strong));">Сьогодні</div>
-                  <div class="caption" style="margin-top: 6px;">Залишилось <strong style="color: rgb(var(--c-ink-strong));">820 ккал</strong> · до 21:00</div>
-                  <div style="margin-top: 12px;">
-                    <div class="row" style="font-size: 11px; color: rgb(var(--c-muted-v2)); margin-bottom: 3px;"><span>Білки</span><span class="tnum">42 / 90 г</span></div>
-                    <div class="macro-bar"><span style="width: 47%; background: rgb(var(--nutrition-strong))"></span></div>
-                  </div>
-                  <div style="margin-top: 8px;">
-                    <div class="row" style="font-size: 11px; color: rgb(var(--c-muted-v2)); margin-bottom: 3px;"><span>Жири</span><span class="tnum">48 / 65 г</span></div>
-                    <div class="macro-bar"><span style="width: 74%; background: rgb(var(--warning-strong))"></span></div>
-                  </div>
-                  <div style="margin-top: 8px;">
-                    <div class="row" style="font-size: 11px; color: rgb(var(--c-muted-v2)); margin-bottom: 3px;"><span>Вугл.</span><span class="tnum">120 / 240 г</span></div>
-                    <div class="macro-bar"><span style="width: 50%; background: rgb(var(--routine-strong))"></span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Scan mode pill (per backlog § Nutrition Scanner viewfinder) -->
-          <div class="row mt-3 gap-2" style="overflow-x: auto;">
-            <span class="chip active">Сьогодні</span>
-            <span class="chip">Сканер</span>
-            <span class="chip">Голос</span>
-          </div>
-
-          <!-- Meal-rows glass r-lg -->
-          <div class="sect-head"><h3>Сьогодні</h3><a href="#">+</a></div>
-          <div class="glass">
-            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line-v2);">
-              <div class="meal-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 15px; font-weight: 600;">Сніданок · Вівсянка</div>
-                <div style="font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px;">420 ккал · 18Б 12Ж 60В</div>
-              </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
-              <div class="meal-icon"><svg viewBox="0 0 24 24"><path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z"/><path d="M12 7v10M7 12h10"/></svg></div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 15px; font-weight: 600;">Обід · Гречка + куряча</div>
-                <div style="font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px;">860 ккал · 24Б 36Ж 60В</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="ai-pill" role="group" aria-label="Запитати Сержанта">
-          Запитати…
-          <button class="mic-btn" aria-label="Голос" tabindex="-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-          </button>
-        </div>
-        <nav class="module-nav" aria-label="Розділи Харчування">
-          <span class="module-nav-pill" aria-hidden="true"></span>
-          <button class="module-nav-item active" tabindex="-1" aria-current="page">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-            <span class="lab">Огляд</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11c0 6 4 10 8 10s8-4 8-10"/><path d="M12 21V11"/><path d="M7 5c0 2 1 3 2 4M17 5c0 2-1 3-2 4"/></svg></span>
-            <span class="lab">Склад</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
-            <span class="lab">Журнал</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-            <span class="lab">Меню</span>
-          </button>
-        </nav>
-      </div>
-      <div class="artboard-label"><span class="v">1</span> · Після плану v2 — light</div>
-    </div>
-
-    <!-- =================================================== -->
-    <!-- VARIANT C — light                                   -->
-    <!-- =================================================== -->
-    <div class="artboard-frame">
-      <div class="artboard theme-light" data-variant="C">
-        <div class="mesh-bg"></div>
-        <div class="notch"></div>
-        <div class="status-bar"><span>9:41</span><span class="icons"><svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1 9h2v-2H1zM5 9h2V5H5zM9 9h2V3H9zM13 9h2V1h-2z" fill="currentColor"/></svg><svg width="18" height="11" viewBox="0 0 18 11" fill="none"><path d="M1 5.5c0-1.4 1.1-2.5 2.5-2.5h11C15.9 3 17 4.1 17 5.5S15.9 8 14.5 8h-11C2.1 8 1 6.9 1 5.5z" stroke="currentColor" stroke-width="1" opacity="0.4"/><path d="M2 4h11v3H2z" fill="currentColor"/></svg></span></div>
-        <div class="app-header">
-          <div class="row">
-            <div>
-              <div class="module-eyebrow">Харчування · Сьогодні</div>
-              <div class="greeting">Привіт, Дмитре</div>
-            </div>
-            <div class="row gap-2">
-              <button class="icon-btn" aria-label="Сканувати" tabindex="-1">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10v8H7z"/></svg>
-              </button>
-              <div class="avatar">Д</div>
-            </div>
-          </div>
-        </div>
-        <div class="main-area">
-          <div class="ai-insight" role="status">
-            <span class="ai-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
-            <div><strong>Білку низько · 42 / 90г</strong>. До вечері — додай ще ~25г.</div>
-            <span class="ai-x" aria-label="Закрити">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>
-            </span>
-          </div>
-
-          <div class="glass r-2xl mt-3" style="position: relative; overflow: hidden;">
-            <div aria-hidden="true" style="position: absolute; inset: 0; background: var(--hero-grad-nutrition); opacity: 0.10; pointer-events: none;"></div>
-            <div style="position: relative; padding: 18px 20px;">
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <div class="ring" style="position: relative; width: 96px; height: 96px; flex-shrink: 0;" aria-label="1280 з 2100 ккал">
-                  <svg width="96" height="96" viewBox="0 0 88 88">
-                    <circle cx="44" cy="44" r="38" stroke-width="10" fill="none" class="ring-track"/>
-                    <circle cx="44" cy="44" r="38" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="238.76" stroke-dashoffset="92" stroke="url(#ring-grad-nutrition)"/>
-                  </svg>
-                  <div class="ring-center">
-                    <div style="text-align: center; font-size: 24px; font-weight: 800; color: rgb(var(--c-ink-strong)); font-variant-numeric: tabular-nums; letter-spacing: -0.025em;">1280</div>
-                    <div class="pct-lab">/ 2100</div>
-                  </div>
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: rgb(var(--c-ink-strong));">
-                    820 ккал залишилось
-                  </div>
-                  <div class="body-sm" style="margin-top: 6px;">
-                    <span style="font-weight: 600; color: rgb(var(--c-ink-strong));">Білку низько</span>
-                    <span class="text-muted"> — спробуй грецький йогурт</span>
-                  </div>
-                  <div style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
-                    <span class="chip" style="background: rgba(146,204,23,0.18); color: rgb(var(--nutrition-strong)); border-color: rgba(146,204,23,0.30);">+18Б Йогурт</span>
-                    <span class="chip">+22Б Куряча</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Outcome-framed macros (mine — extends V2 framing з no-goals на partial-progress) -->
-              <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-v2);">
-                <div style="margin-bottom: 8px;">
-                  <div class="row" style="font-size: 11.5px; color: rgb(var(--c-muted-v2)); margin-bottom: 4px;"><span>Білки <strong style="color: rgb(var(--c-ink-strong));">·</strong> 12 г до цілі</span><span class="tnum">42 / 90 г</span></div>
-                  <div class="macro-bar"><span style="width: 47%; background: rgb(var(--nutrition-strong))"></span></div>
-                </div>
-                <div style="margin-bottom: 8px;">
-                  <div class="row" style="font-size: 11.5px; color: rgb(var(--c-muted-v2)); margin-bottom: 4px;"><span>Жири <strong style="color: rgb(var(--warning-strong));">·</strong> 17 г запас</span><span class="tnum">48 / 65 г</span></div>
-                  <div class="macro-bar"><span style="width: 74%; background: rgb(var(--warning-strong))"></span></div>
-                </div>
+            <div class="app-header">
+              <div class="row">
                 <div>
-                  <div class="row" style="font-size: 11.5px; color: rgb(var(--c-muted-v2)); margin-bottom: 4px;"><span>Вугл. <strong style="color: rgb(var(--c-ink-strong));">·</strong> 120 г залишилось</span><span class="tnum">120 / 240 г</span></div>
-                  <div class="macro-bar"><span style="width: 50%; background: rgb(var(--routine-strong))"></span></div>
+                  <div class="module-eyebrow">Харчування · Сьогодні</div>
+                  <div class="greeting">Привіт, Дмитре</div>
+                </div>
+                <div class="row gap-2">
+                  <button class="icon-btn" aria-label="Сканувати" tabindex="-1">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10v8H7z"
+                      />
+                    </svg>
+                  </button>
+                  <div class="avatar">Д</div>
                 </div>
               </div>
             </div>
-          </div>
+            <div class="main-area">
+              <!-- v1 NutritionDashboard hero — 4 macro plates flat -->
+              <div
+                style="
+                  background: rgb(var(--c-panel));
+                  border-radius: 16px;
+                  padding: 16px 18px;
+                  box-shadow:
+                    0 1px 2px rgba(28, 25, 23, 0.04),
+                    0 2px 6px rgba(28, 25, 23, 0.06);
+                  border: 1px solid var(--line-v2);
+                "
+              >
+                <p class="eyebrow">Сьогодні</p>
+                <p class="title tnum" style="font-size: 20px; margin-top: 4px">
+                  1 280 ккал
+                  <span
+                    style="
+                      font-size: 13px;
+                      font-weight: 500;
+                      color: rgb(var(--c-muted-v2));
+                    "
+                    >/ 2 100</span
+                  >
+                </p>
+              </div>
+              <div
+                class="grid grid-cols-4 gap-2 mt-2"
+                style="grid-template-columns: repeat(4, 1fr)"
+              >
+                <div
+                  style="
+                    background: rgb(var(--c-panel));
+                    border-radius: 12px;
+                    padding: 10px 8px;
+                    text-align: center;
+                    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+                    border: 1px solid var(--line-v2);
+                  "
+                >
+                  <p class="eyebrow" style="font-size: 9px">Ккал</p>
+                  <p
+                    style="
+                      font-size: 18px;
+                      font-weight: 800;
+                      color: rgb(var(--c-ink-strong));
+                      font-variant-numeric: tabular-nums;
+                      margin-top: 2px;
+                      line-height: 1;
+                    "
+                  >
+                    1280
+                  </p>
+                </div>
+                <div
+                  style="
+                    background: rgb(var(--c-panel));
+                    border-radius: 12px;
+                    padding: 10px 8px;
+                    text-align: center;
+                    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+                    border: 1px solid var(--line-v2);
+                  "
+                >
+                  <p class="eyebrow" style="font-size: 9px">Білки</p>
+                  <p
+                    style="
+                      font-size: 18px;
+                      font-weight: 800;
+                      color: rgb(var(--c-ink-strong));
+                      font-variant-numeric: tabular-nums;
+                      margin-top: 2px;
+                      line-height: 1;
+                    "
+                  >
+                    42г
+                  </p>
+                </div>
+                <div
+                  style="
+                    background: rgb(var(--c-panel));
+                    border-radius: 12px;
+                    padding: 10px 8px;
+                    text-align: center;
+                    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+                    border: 1px solid var(--line-v2);
+                  "
+                >
+                  <p class="eyebrow" style="font-size: 9px">Жири</p>
+                  <p
+                    style="
+                      font-size: 18px;
+                      font-weight: 800;
+                      color: rgb(var(--c-ink-strong));
+                      font-variant-numeric: tabular-nums;
+                      margin-top: 2px;
+                      line-height: 1;
+                    "
+                  >
+                    48г
+                  </p>
+                </div>
+                <div
+                  style="
+                    background: rgb(var(--c-panel));
+                    border-radius: 12px;
+                    padding: 10px 8px;
+                    text-align: center;
+                    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+                    border: 1px solid var(--line-v2);
+                  "
+                >
+                  <p class="eyebrow" style="font-size: 9px">Вугл.</p>
+                  <p
+                    style="
+                      font-size: 18px;
+                      font-weight: 800;
+                      color: rgb(var(--c-ink-strong));
+                      font-variant-numeric: tabular-nums;
+                      margin-top: 2px;
+                      line-height: 1;
+                    "
+                  >
+                    120г
+                  </p>
+                </div>
+              </div>
 
-          <div class="sect-head"><h3>Сьогодні</h3><a href="#">+</a></div>
-          <div class="glass">
-            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line-v2);">
-              <div class="meal-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 15px; font-weight: 600;">Сніданок · Вівсянка</div>
-                <div style="font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px;"><span class="ai-tag">AI · фото</span> <span style="margin-left: 4px;">420 ккал · 18Б</span></div>
+              <div class="sect-head">
+                <h3>Сьогодні</h3>
+                <a href="#">Усі</a>
+              </div>
+              <div class="meal-row-v1">
+                <div class="meal-icon">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M9 9l6 6M15 9l-6 6" />
+                  </svg>
+                </div>
+                <div style="flex: 1; min-width: 0">
+                  <div style="font-size: 15px; font-weight: 600">
+                    Сніданок · Вівсянка
+                  </div>
+                  <div
+                    style="
+                      font-size: 12px;
+                      color: rgb(var(--c-muted-v2));
+                      margin-top: 2px;
+                    "
+                  >
+                    420 ккал · 18Б 12Ж 60В
+                  </div>
+                </div>
+              </div>
+              <div class="meal-row-v1">
+                <div class="meal-icon">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z" />
+                    <path d="M12 7v10M7 12h10" />
+                  </svg>
+                </div>
+                <div style="flex: 1; min-width: 0">
+                  <div style="font-size: 15px; font-weight: 600">
+                    Обід · Гречка + куряча
+                  </div>
+                  <div
+                    style="
+                      font-size: 12px;
+                      color: rgb(var(--c-muted-v2));
+                      margin-top: 2px;
+                    "
+                  >
+                    860 ккал · 24Б 36Ж 60В
+                  </div>
+                </div>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
-              <div class="meal-icon"><svg viewBox="0 0 24 24"><path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z"/><path d="M12 7v10M7 12h10"/></svg></div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 15px; font-weight: 600;">Обід · Гречка + куряча</div>
-                <div style="font-size: 12px; color: rgb(var(--c-muted-v2)); margin-top: 2px;">860 ккал · 24Б 36Ж 60В</div>
-              </div>
+            <div class="ai-pill" role="group" aria-label="Запитати Сержанта">
+              Запитати…
+              <button class="mic-btn" aria-label="Голос" tabindex="-1">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <rect x="9" y="3" width="6" height="12" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                </svg>
+              </button>
             </div>
+            <nav class="module-nav" aria-label="Розділи Харчування">
+              <span class="module-nav-pill" aria-hidden="true"></span>
+              <button
+                class="module-nav-item active"
+                tabindex="-1"
+                aria-current="page"
+              >
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
+                ></span>
+                <span class="lab">Огляд</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 11c0 6 4 10 8 10s8-4 8-10" />
+                    <path d="M12 21V11" />
+                    <path d="M7 5c0 2 1 3 2 4M17 5c0 2-1 3-2 4" /></svg
+                ></span>
+                <span class="lab">Склад</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" /></svg
+                ></span>
+                <span class="lab">Журнал</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path
+                      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                    /></svg
+                ></span>
+                <span class="lab">Меню</span>
+              </button>
+            </nav>
+          </div>
+          <div class="artboard-label">
+            <span class="v">0</span> · Сьогодні (v1 prod) — light
           </div>
         </div>
-        <div class="ai-pill" role="group" aria-label="Запитати Сержанта">
-          Запитати…
-          <button class="mic-btn" aria-label="Голос" tabindex="-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-          </button>
+
+        <!-- =================================================== -->
+        <!-- VARIANT B — light                                   -->
+        <!-- =================================================== -->
+        <div class="artboard-frame">
+          <div class="artboard theme-light" data-variant="B">
+            <div class="mesh-bg"></div>
+            <div class="notch"></div>
+            <div class="status-bar">
+              <span>9:41</span
+              ><span class="icons"
+                ><svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                  <path
+                    d="M1 9h2v-2H1zM5 9h2V5H5zM9 9h2V3H9zM13 9h2V1h-2z"
+                    fill="currentColor"
+                  /></svg
+                ><svg width="18" height="11" viewBox="0 0 18 11" fill="none">
+                  <path
+                    d="M1 5.5c0-1.4 1.1-2.5 2.5-2.5h11C15.9 3 17 4.1 17 5.5S15.9 8 14.5 8h-11C2.1 8 1 6.9 1 5.5z"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    opacity="0.4"
+                  />
+                  <path d="M2 4h11v3H2z" fill="currentColor" /></svg
+              ></span>
+            </div>
+            <div class="app-header">
+              <div class="row">
+                <div>
+                  <div class="module-eyebrow">Харчування · Сьогодні</div>
+                  <div class="greeting">Привіт, Дмитре</div>
+                </div>
+                <div class="row gap-2">
+                  <button class="icon-btn" aria-label="Сканувати" tabindex="-1">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10v8H7z"
+                      />
+                    </svg>
+                  </button>
+                  <div class="avatar">Д</div>
+                </div>
+              </div>
+            </div>
+            <div class="main-area">
+              <div class="ai-insight" role="status">
+                <span class="ai-dot"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  >
+                    <path
+                      d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"
+                    /></svg
+                ></span>
+                <div>
+                  <strong>Білку низько · 42 / 90г</strong>. До вечері — додай ще
+                  ~25г.
+                </div>
+                <span class="ai-x" aria-label="Закрити">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                  >
+                    <path d="m6 6 12 12M18 6 6 18" />
+                  </svg>
+                </span>
+              </div>
+
+              <!-- v2 hero glass r-2xl з ProgressRing nutrition (per backlog § Nutrition Today calorie ring) -->
+              <div
+                class="glass r-2xl mt-3"
+                style="position: relative; overflow: hidden"
+              >
+                <div
+                  aria-hidden="true"
+                  style="
+                    position: absolute;
+                    inset: 0;
+                    background: var(--hero-grad-nutrition);
+                    opacity: 0.1;
+                    pointer-events: none;
+                  "
+                ></div>
+                <div style="position: relative; padding: 18px 20px">
+                  <div style="display: flex; align-items: center; gap: 16px">
+                    <div
+                      class="ring"
+                      style="
+                        position: relative;
+                        width: 92px;
+                        height: 92px;
+                        flex-shrink: 0;
+                      "
+                      aria-label="1280 з 2100 ккал"
+                    >
+                      <svg width="92" height="92" viewBox="0 0 88 88">
+                        <circle
+                          cx="44"
+                          cy="44"
+                          r="38"
+                          stroke-width="10"
+                          fill="none"
+                          class="ring-track"
+                        />
+                        <circle
+                          cx="44"
+                          cy="44"
+                          r="38"
+                          stroke-width="10"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-dasharray="238.76"
+                          stroke-dashoffset="92"
+                          stroke="url(#ring-grad-nutrition)"
+                        />
+                      </svg>
+                      <div class="ring-center">
+                        <div
+                          style="
+                            text-align: center;
+                            font-size: 22px;
+                            font-weight: 800;
+                            color: rgb(var(--c-ink-strong));
+                            font-variant-numeric: tabular-nums;
+                            letter-spacing: -0.025em;
+                          "
+                        >
+                          1280
+                        </div>
+                        <div class="pct-lab">/ 2100 ккал</div>
+                      </div>
+                    </div>
+                    <div style="flex: 1; min-width: 0">
+                      <div
+                        class="eyebrow"
+                        style="color: rgb(var(--nutrition-strong))"
+                      >
+                        Сьогодні
+                      </div>
+                      <div class="caption" style="margin-top: 6px">
+                        Залишилось
+                        <strong style="color: rgb(var(--c-ink-strong))"
+                          >820 ккал</strong
+                        >
+                        · до 21:00
+                      </div>
+                      <div style="margin-top: 12px">
+                        <div
+                          class="row"
+                          style="
+                            font-size: 11px;
+                            color: rgb(var(--c-muted-v2));
+                            margin-bottom: 3px;
+                          "
+                        >
+                          <span>Білки</span><span class="tnum">42 / 90 г</span>
+                        </div>
+                        <div class="macro-bar">
+                          <span
+                            style="
+                              width: 47%;
+                              background: rgb(var(--nutrition-strong));
+                            "
+                          ></span>
+                        </div>
+                      </div>
+                      <div style="margin-top: 8px">
+                        <div
+                          class="row"
+                          style="
+                            font-size: 11px;
+                            color: rgb(var(--c-muted-v2));
+                            margin-bottom: 3px;
+                          "
+                        >
+                          <span>Жири</span><span class="tnum">48 / 65 г</span>
+                        </div>
+                        <div class="macro-bar">
+                          <span
+                            style="
+                              width: 74%;
+                              background: rgb(var(--warning-strong));
+                            "
+                          ></span>
+                        </div>
+                      </div>
+                      <div style="margin-top: 8px">
+                        <div
+                          class="row"
+                          style="
+                            font-size: 11px;
+                            color: rgb(var(--c-muted-v2));
+                            margin-bottom: 3px;
+                          "
+                        >
+                          <span>Вугл.</span
+                          ><span class="tnum">120 / 240 г</span>
+                        </div>
+                        <div class="macro-bar">
+                          <span
+                            style="
+                              width: 50%;
+                              background: rgb(var(--routine-strong));
+                            "
+                          ></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scan mode pill (per backlog § Nutrition Scanner viewfinder) -->
+              <div class="row mt-3 gap-2" style="overflow-x: auto">
+                <span class="chip active">Сьогодні</span>
+                <span class="chip">Сканер</span>
+                <span class="chip">Голос</span>
+              </div>
+
+              <!-- Meal-rows glass r-lg -->
+              <div class="sect-head">
+                <h3>Сьогодні</h3>
+                <a href="#">+</a>
+              </div>
+              <div class="glass">
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 16px;
+                    border-bottom: 1px solid var(--line-v2);
+                  "
+                >
+                  <div class="meal-icon">
+                    <svg viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M9 9l6 6M15 9l-6 6" />
+                    </svg>
+                  </div>
+                  <div style="flex: 1; min-width: 0">
+                    <div style="font-size: 15px; font-weight: 600">
+                      Сніданок · Вівсянка
+                    </div>
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: rgb(var(--c-muted-v2));
+                        margin-top: 2px;
+                      "
+                    >
+                      420 ккал · 18Б 12Ж 60В
+                    </div>
+                  </div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 16px;
+                  "
+                >
+                  <div class="meal-icon">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z" />
+                      <path d="M12 7v10M7 12h10" />
+                    </svg>
+                  </div>
+                  <div style="flex: 1; min-width: 0">
+                    <div style="font-size: 15px; font-weight: 600">
+                      Обід · Гречка + куряча
+                    </div>
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: rgb(var(--c-muted-v2));
+                        margin-top: 2px;
+                      "
+                    >
+                      860 ккал · 24Б 36Ж 60В
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ai-pill" role="group" aria-label="Запитати Сержанта">
+              Запитати…
+              <button class="mic-btn" aria-label="Голос" tabindex="-1">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <rect x="9" y="3" width="6" height="12" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                </svg>
+              </button>
+            </div>
+            <nav class="module-nav" aria-label="Розділи Харчування">
+              <span class="module-nav-pill" aria-hidden="true"></span>
+              <button
+                class="module-nav-item active"
+                tabindex="-1"
+                aria-current="page"
+              >
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
+                ></span>
+                <span class="lab">Огляд</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 11c0 6 4 10 8 10s8-4 8-10" />
+                    <path d="M12 21V11" />
+                    <path d="M7 5c0 2 1 3 2 4M17 5c0 2-1 3-2 4" /></svg
+                ></span>
+                <span class="lab">Склад</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" /></svg
+                ></span>
+                <span class="lab">Журнал</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path
+                      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                    /></svg
+                ></span>
+                <span class="lab">Меню</span>
+              </button>
+            </nav>
+          </div>
+          <div class="artboard-label">
+            <span class="v">1</span> · Після плану v2 — light
+          </div>
         </div>
-        <nav class="module-nav-v2" aria-label="Розділи Харчування (v2)">
-          <span class="pill" aria-hidden="true" style="left: 6px;"></span>
-          <button class="module-nav-item active" tabindex="-1" aria-current="page">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-            <span class="lab">Огляд</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11c0 6 4 10 8 10s8-4 8-10"/><path d="M12 21V11"/><path d="M7 5c0 2 1 3 2 4M17 5c0 2-1 3-2 4"/></svg></span>
-            <span class="lab">Склад</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
-            <span class="lab">Журнал</span>
-          </button>
-          <button class="module-nav-item" tabindex="-1">
-            <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-            <span class="lab">Меню</span>
-          </button>
-        </nav>
+
+        <!-- =================================================== -->
+        <!-- VARIANT C — light                                   -->
+        <!-- =================================================== -->
+        <div class="artboard-frame">
+          <div class="artboard theme-light" data-variant="C">
+            <div class="mesh-bg"></div>
+            <div class="notch"></div>
+            <div class="status-bar">
+              <span>9:41</span
+              ><span class="icons"
+                ><svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                  <path
+                    d="M1 9h2v-2H1zM5 9h2V5H5zM9 9h2V3H9zM13 9h2V1h-2z"
+                    fill="currentColor"
+                  /></svg
+                ><svg width="18" height="11" viewBox="0 0 18 11" fill="none">
+                  <path
+                    d="M1 5.5c0-1.4 1.1-2.5 2.5-2.5h11C15.9 3 17 4.1 17 5.5S15.9 8 14.5 8h-11C2.1 8 1 6.9 1 5.5z"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    opacity="0.4"
+                  />
+                  <path d="M2 4h11v3H2z" fill="currentColor" /></svg
+              ></span>
+            </div>
+            <div class="app-header">
+              <div class="row">
+                <div>
+                  <div class="module-eyebrow">Харчування · Сьогодні</div>
+                  <div class="greeting">Привіт, Дмитре</div>
+                </div>
+                <div class="row gap-2">
+                  <button class="icon-btn" aria-label="Сканувати" tabindex="-1">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10v8H7z"
+                      />
+                    </svg>
+                  </button>
+                  <div class="avatar">Д</div>
+                </div>
+              </div>
+            </div>
+            <div class="main-area">
+              <div class="ai-insight" role="status">
+                <span class="ai-dot"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  >
+                    <path
+                      d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"
+                    /></svg
+                ></span>
+                <div>
+                  <strong>Білку низько · 42 / 90г</strong>. До вечері — додай ще
+                  ~25г.
+                </div>
+                <span class="ai-x" aria-label="Закрити">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                  >
+                    <path d="m6 6 12 12M18 6 6 18" />
+                  </svg>
+                </span>
+              </div>
+
+              <div
+                class="glass r-2xl mt-3"
+                style="position: relative; overflow: hidden"
+              >
+                <div
+                  aria-hidden="true"
+                  style="
+                    position: absolute;
+                    inset: 0;
+                    background: var(--hero-grad-nutrition);
+                    opacity: 0.1;
+                    pointer-events: none;
+                  "
+                ></div>
+                <div style="position: relative; padding: 18px 20px">
+                  <div style="display: flex; align-items: center; gap: 16px">
+                    <div
+                      class="ring"
+                      style="
+                        position: relative;
+                        width: 96px;
+                        height: 96px;
+                        flex-shrink: 0;
+                      "
+                      aria-label="1280 з 2100 ккал"
+                    >
+                      <svg width="96" height="96" viewBox="0 0 88 88">
+                        <circle
+                          cx="44"
+                          cy="44"
+                          r="38"
+                          stroke-width="10"
+                          fill="none"
+                          class="ring-track"
+                        />
+                        <circle
+                          cx="44"
+                          cy="44"
+                          r="38"
+                          stroke-width="10"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-dasharray="238.76"
+                          stroke-dashoffset="92"
+                          stroke="url(#ring-grad-nutrition)"
+                        />
+                      </svg>
+                      <div class="ring-center">
+                        <div
+                          style="
+                            text-align: center;
+                            font-size: 24px;
+                            font-weight: 800;
+                            color: rgb(var(--c-ink-strong));
+                            font-variant-numeric: tabular-nums;
+                            letter-spacing: -0.025em;
+                          "
+                        >
+                          1280
+                        </div>
+                        <div class="pct-lab">/ 2100</div>
+                      </div>
+                    </div>
+                    <div style="flex: 1; min-width: 0">
+                      <div
+                        style="
+                          font-family: &quot;Manrope&quot;, sans-serif;
+                          font-size: 18px;
+                          font-weight: 700;
+                          letter-spacing: -0.015em;
+                          line-height: 1.2;
+                          color: rgb(var(--c-ink-strong));
+                        "
+                      >
+                        820 ккал залишилось
+                      </div>
+                      <div class="body-sm" style="margin-top: 6px">
+                        <span
+                          style="
+                            font-weight: 600;
+                            color: rgb(var(--c-ink-strong));
+                          "
+                          >Білку низько</span
+                        >
+                        <span class="text-muted">
+                          — спробуй грецький йогурт</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          margin-top: 10px;
+                          display: flex;
+                          gap: 6px;
+                          flex-wrap: wrap;
+                        "
+                      >
+                        <span
+                          class="chip"
+                          style="
+                            background: rgba(146, 204, 23, 0.18);
+                            color: rgb(var(--nutrition-strong));
+                            border-color: rgba(146, 204, 23, 0.3);
+                          "
+                          >+18Б Йогурт</span
+                        >
+                        <span class="chip">+22Б Куряча</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Outcome-framed macros (mine — extends V2 framing з no-goals на partial-progress) -->
+                  <div
+                    style="
+                      margin-top: 14px;
+                      padding-top: 14px;
+                      border-top: 1px solid var(--line-v2);
+                    "
+                  >
+                    <div style="margin-bottom: 8px">
+                      <div
+                        class="row"
+                        style="
+                          font-size: 11.5px;
+                          color: rgb(var(--c-muted-v2));
+                          margin-bottom: 4px;
+                        "
+                      >
+                        <span
+                          >Білки
+                          <strong style="color: rgb(var(--c-ink-strong))"
+                            >·</strong
+                          >
+                          12 г до цілі</span
+                        ><span class="tnum">42 / 90 г</span>
+                      </div>
+                      <div class="macro-bar">
+                        <span
+                          style="
+                            width: 47%;
+                            background: rgb(var(--nutrition-strong));
+                          "
+                        ></span>
+                      </div>
+                    </div>
+                    <div style="margin-bottom: 8px">
+                      <div
+                        class="row"
+                        style="
+                          font-size: 11.5px;
+                          color: rgb(var(--c-muted-v2));
+                          margin-bottom: 4px;
+                        "
+                      >
+                        <span
+                          >Жири
+                          <strong style="color: rgb(var(--warning-strong))"
+                            >·</strong
+                          >
+                          17 г запас</span
+                        ><span class="tnum">48 / 65 г</span>
+                      </div>
+                      <div class="macro-bar">
+                        <span
+                          style="
+                            width: 74%;
+                            background: rgb(var(--warning-strong));
+                          "
+                        ></span>
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        class="row"
+                        style="
+                          font-size: 11.5px;
+                          color: rgb(var(--c-muted-v2));
+                          margin-bottom: 4px;
+                        "
+                      >
+                        <span
+                          >Вугл.
+                          <strong style="color: rgb(var(--c-ink-strong))"
+                            >·</strong
+                          >
+                          120 г залишилось</span
+                        ><span class="tnum">120 / 240 г</span>
+                      </div>
+                      <div class="macro-bar">
+                        <span
+                          style="
+                            width: 50%;
+                            background: rgb(var(--routine-strong));
+                          "
+                        ></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sect-head">
+                <h3>Сьогодні</h3>
+                <a href="#">+</a>
+              </div>
+              <div class="glass">
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 16px;
+                    border-bottom: 1px solid var(--line-v2);
+                  "
+                >
+                  <div class="meal-icon">
+                    <svg viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M9 9l6 6M15 9l-6 6" />
+                    </svg>
+                  </div>
+                  <div style="flex: 1; min-width: 0">
+                    <div style="font-size: 15px; font-weight: 600">
+                      Сніданок · Вівсянка
+                    </div>
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: rgb(var(--c-muted-v2));
+                        margin-top: 2px;
+                      "
+                    >
+                      <span class="ai-tag">AI · фото</span>
+                      <span style="margin-left: 4px">420 ккал · 18Б</span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 16px;
+                  "
+                >
+                  <div class="meal-icon">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z" />
+                      <path d="M12 7v10M7 12h10" />
+                    </svg>
+                  </div>
+                  <div style="flex: 1; min-width: 0">
+                    <div style="font-size: 15px; font-weight: 600">
+                      Обід · Гречка + куряча
+                    </div>
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: rgb(var(--c-muted-v2));
+                        margin-top: 2px;
+                      "
+                    >
+                      860 ккал · 24Б 36Ж 60В
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ai-pill" role="group" aria-label="Запитати Сержанта">
+              Запитати…
+              <button class="mic-btn" aria-label="Голос" tabindex="-1">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <rect x="9" y="3" width="6" height="12" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                </svg>
+              </button>
+            </div>
+            <nav class="module-nav-v2" aria-label="Розділи Харчування (v2)">
+              <span class="pill" aria-hidden="true" style="left: 6px"></span>
+              <button
+                class="module-nav-item active"
+                tabindex="-1"
+                aria-current="page"
+              >
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
+                ></span>
+                <span class="lab">Огляд</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 11c0 6 4 10 8 10s8-4 8-10" />
+                    <path d="M12 21V11" />
+                    <path d="M7 5c0 2 1 3 2 4M17 5c0 2-1 3-2 4" /></svg
+                ></span>
+                <span class="lab">Склад</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" /></svg
+                ></span>
+                <span class="lab">Журнал</span>
+              </button>
+              <button class="module-nav-item" tabindex="-1">
+                <span class="icon"
+                  ><svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path
+                      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                    /></svg
+                ></span>
+                <span class="lab">Меню</span>
+              </button>
+            </nav>
+          </div>
+          <div class="artboard-label">
+            <span class="v">2</span> · Мої доповнення — light
+          </div>
+        </div>
+
+        <!-- ═══════════════════ DARK ROW — clones via JS ═══════════════════ -->
+        <div class="canvas-row-head">
+          <span class="label">Dark theme · #0e1614 mesh</span>
+          <span class="line"></span>
+        </div>
+        <div id="dark-mount-A"></div>
+        <div id="dark-mount-B"></div>
+        <div id="dark-mount-C"></div>
       </div>
-      <div class="artboard-label"><span class="v">2</span> · Мої доповнення — light</div>
+
+      <!-- Decision log -->
+      <section class="log-wrap" aria-label="Decision log">
+        <h3>Element-by-element diff</h3>
+        <div class="diff-wrap">
+          <table class="diff-table">
+            <colgroup>
+              <col style="width: 160px" />
+              <col />
+              <col />
+              <col />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Element</th>
+                <th>
+                  <span style="color: #ff8c78">●</span>&nbsp; 0 · Сьогодні
+                </th>
+                <th>
+                  <span style="color: #34d399">●</span>&nbsp; 1 · Після плану
+                </th>
+                <th>
+                  <span style="color: #67e8f9">●</span>&nbsp; 2 · Мої доповнення
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hero / Ring</td>
+                <td>
+                  <span class="diff-status unchanged">v1</span>Flat panel +
+                  total kcal лише
+                </td>
+                <td>
+                  <span class="diff-status changed"
+                    >ProgressRing nutrition</span
+                  >
+                  Усередині glass r-2xl з hero-grad-nutrition wash<br /><small
+                    style="color: #878079"
+                    >backlog § Nutrition Today calorie ring</small
+                  >
+                </td>
+                <td><span class="diff-status unchanged">як у плану</span></td>
+              </tr>
+              <tr>
+                <td>Macros</td>
+                <td>
+                  <strong>4 zero-plates</strong> flat (V2 проблема) — ккал/Б/Ж/В
+                  як naked числа
+                </td>
+                <td>
+                  <span class="diff-status changed">3 macro bars</span> Glass
+                  row tiles з progress bars + ratio<br /><small
+                    style="color: #878079"
+                    >backlog § Nutrition Today macro bars</small
+                  >
+                </td>
+                <td>
+                  <span class="diff-status new">outcome framing</span> «12 г до
+                  цілі / 17 г запас / 120 г залишилось» — copy на
+                  partial-progress, не лише на zero-state. Extends V2 framing
+                </td>
+              </tr>
+              <tr>
+                <td>AI insight</td>
+                <td><span class="diff-status unchanged">відсутній</span></td>
+                <td>
+                  <span class="diff-status changed">wired</span
+                  ><code>nutrition-protein-low</code> trigger («Білку низько ·
+                  42 / 90г»)<br /><small style="color: #878079"
+                    >Phase 5 + backlog § Insights</small
+                  >
+                </td>
+                <td><span class="diff-status unchanged">як у плану</span></td>
+              </tr>
+              <tr>
+                <td>Quick-add</td>
+                <td>
+                  <span class="diff-status unchanged">FAB-only</span> Тільки
+                  центральний add-button
+                </td>
+                <td>
+                  <span class="diff-status unchanged">FAB + scan pill</span>
+                  Mode toggle (barcode/photo/voice) у glass pill
+                </td>
+                <td>
+                  <span class="diff-status new">inline chips</span> «+18Б
+                  Йогурт» / «+22Б Куряча» pantry-aware chips під hero — натиск
+                  додає одразу
+                </td>
+              </tr>
+              <tr>
+                <td>Meal-row</td>
+                <td>
+                  <span class="diff-status unchanged">v1</span
+                  ><code>bg-panel shadow-card</code> з lime-tinted meal-icon
+                </td>
+                <td>
+                  <span class="diff-status changed">glass r-lg</span> grouped
+                  container
+                </td>
+                <td>
+                  <span class="diff-status new">+ AI-tag</span> Inline «AI ·
+                  фото» badge на photo-imported meal — джерело категоризації
+                </td>
+              </tr>
+              <tr>
+                <td>ModuleBottomNav</td>
+                <td>
+                  <span class="diff-status unchanged">v1</span> 4-tab flat +
+                  lime icon glow
+                </td>
+                <td>
+                  <span class="diff-status unchanged">v1 (без змін)</span>
+                </td>
+                <td>
+                  <span class="diff-status gap">v2 unified</span> Floating glass
+                  pill + lime-tinted active (<code>--hero-grad-nutrition</code>)
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin-top: 36px">Citation map</h3>
+        <div class="log">
+          <article class="log-card" style="grid-column: 1 / -1">
+            <dl>
+              <dt>ProgressRing nutrition у hero glass</dt>
+              <dd>
+                <code>backlog § Nutrition · Today calorie ring</code>: «<code
+                  >&lt;ProgressRing variant="nutrition"&gt;</code
+                >
+                усередині hero glass card. Macro bars у tinted glass row tiles».
+              </dd>
+              <dt>Outcome framing (V2)</dt>
+              <dd>
+                <code>execution-plan.md § Value gaps V2</code>: «Встанови ціль
+                по калоріях — і кожен прийом їжі стане прогресом». Plan фіксує
+                копію на zero-state. Мій варіант — застосувати ту саму
+                outcome-рамку на partial-progress (12 г до цілі, 17 г запас).
+              </dd>
+              <dt>AI insight wire</dt>
+              <dd>
+                <code>backlog § Insights backlog</code>: «<code
+                  >nutrition-protein-low</code
+                >
+                — Білку &lt; 60% цілі, час &gt; 18:00».
+              </dd>
+              <dt>Scan mode pill</dt>
+              <dd>
+                <code>backlog § Nutrition · Scanner viewfinder</code>: «mode
+                toggle (barcode/photo/voice) у
+                <code>bg-surface-strong-glass</code> pill».
+              </dd>
+              <dt style="color: #67e8f9">Quick-add inline chips (моє)</dt>
+              <dd>
+                Не в плані. Plan F1 згадує AddMealSheet 5→3 steps — мій
+                quick-add — це <em>попередній</em> рівень: pantry-aware
+                suggestions просто на hero, не треба відкривати sheet. Натиск →
+                одразу logs з default-portion.
+              </dd>
+              <dt style="color: #67e8f9">
+                AI-tag «AI · фото» на meal-row (моє)
+              </dt>
+              <dd>
+                F5 в плані каже «emoji → IconName типізований». Я роблю інший
+                крок: показую <em>джерело</em> категоризації (photo / barcode /
+                manual) для transparency. Extends 6.3 pattern.
+              </dd>
+              <dt style="color: #fbbf24">ModuleBottomNav v2</dt>
+              <dd>
+                Той самий gap. Lime-tinted active pill
+                (<code>--hero-grad-nutrition</code>).
+              </dd>
+            </dl>
+          </article>
+        </div>
+
+        <h3 style="margin-top: 36px">repo_diff</h3>
+        <div class="log">
+          <article class="log-card" style="grid-column: 1 / -1">
+            <dl>
+              <dt>Migration</dt>
+              <dd>
+                <code
+                  >apps/web/src/modules/nutrition/pages/NutritionDashboard.tsx</code
+                >
+                — hero rewrite (4 plates → ProgressRing + 3 macro bars).
+                Conditional copy на zero-state з execution-plan V2.
+              </dd>
+              <dd>
+                <code
+                  >apps/web/src/modules/nutrition/components/MealRow.tsx</code
+                >
+                — chrome → glass r-lg.
+              </dd>
+              <dd>
+                <code>apps/web/src/modules/nutrition/pages/LogCard*</code> —
+                analytics блоки у glass.
+              </dd>
+
+              <dt>Mine extras</dt>
+              <dd>
+                Новий
+                <code>shared/components/nutrition/QuickAddChips.tsx</code> —
+                pantry-aware suggestions hook.
+              </dd>
+              <dd>
+                Новий <code>shared/components/nutrition/MealSource.tsx</code> —
+                AI-tag badge для photo/barcode/voice.
+              </dd>
+            </dl>
+          </article>
+        </div>
+
+        <h3 style="margin-top: 36px">Куди далі</h3>
+        <div class="log">
+          <article class="log-card" style="grid-column: 1 / -1">
+            <dl>
+              <dt>Тільки план</dt>
+              <dd>
+                Hero ring + macro bars + Phase 5 insight + V2 zero-state copy =
+                3 PR.
+              </dd>
+              <dt>+mine</dt>
+              <dd>
+                + QuickAddChips (S) + MealSource tag (XS) + ModuleBottomNav v2
+                (M, спільно).
+              </dd>
+            </dl>
+          </article>
+        </div>
+      </section>
     </div>
 
-    <!-- ═══════════════════ DARK ROW — clones via JS ═══════════════════ -->
-    <div class="canvas-row-head">
-      <span class="label">Dark theme · #0e1614 mesh</span>
-      <span class="line"></span>
-    </div>
-    <div id="dark-mount-A"></div>
-    <div id="dark-mount-B"></div>
-    <div id="dark-mount-C"></div>
-
-  </div>
-
-  <!-- Decision log -->
-  <section class="log-wrap" aria-label="Decision log">
-    <h3>Element-by-element diff</h3>
-    <div class="diff-wrap">
-      <table class="diff-table">
-        <colgroup><col style="width:160px"/><col/><col/><col/></colgroup>
-        <thead>
-          <tr><th>Element</th><th><span style="color:#ff8c78">●</span>&nbsp; 0 · Сьогодні</th><th><span style="color:#34d399">●</span>&nbsp; 1 · Після плану</th><th><span style="color:#67e8f9">●</span>&nbsp; 2 · Мої доповнення</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Hero / Ring</td>
-            <td><span class="diff-status unchanged">v1</span>Flat panel + total kcal лише</td>
-            <td><span class="diff-status changed">ProgressRing nutrition</span> Усередині glass r-2xl з hero-grad-nutrition wash<br><small style="color:#878079">backlog § Nutrition Today calorie ring</small></td>
-            <td><span class="diff-status unchanged">як у плану</span></td>
-          </tr>
-          <tr>
-            <td>Macros</td>
-            <td><strong>4 zero-plates</strong> flat (V2 проблема) — ккал/Б/Ж/В як naked числа</td>
-            <td><span class="diff-status changed">3 macro bars</span> Glass row tiles з progress bars + ratio<br><small style="color:#878079">backlog § Nutrition Today macro bars</small></td>
-            <td><span class="diff-status new">outcome framing</span> «12 г до цілі / 17 г запас / 120 г залишилось» — copy на partial-progress, не лише на zero-state. Extends V2 framing</td>
-          </tr>
-          <tr>
-            <td>AI insight</td>
-            <td><span class="diff-status unchanged">відсутній</span></td>
-            <td><span class="diff-status changed">wired</span><code>nutrition-protein-low</code> trigger («Білку низько · 42 / 90г»)<br><small style="color:#878079">Phase 5 + backlog § Insights</small></td>
-            <td><span class="diff-status unchanged">як у плану</span></td>
-          </tr>
-          <tr>
-            <td>Quick-add</td>
-            <td><span class="diff-status unchanged">FAB-only</span> Тільки центральний add-button</td>
-            <td><span class="diff-status unchanged">FAB + scan pill</span> Mode toggle (barcode/photo/voice) у glass pill</td>
-            <td><span class="diff-status new">inline chips</span> «+18Б Йогурт» / «+22Б Куряча» pantry-aware chips під hero — натиск додає одразу</td>
-          </tr>
-          <tr>
-            <td>Meal-row</td>
-            <td><span class="diff-status unchanged">v1</span><code>bg-panel shadow-card</code> з lime-tinted meal-icon</td>
-            <td><span class="diff-status changed">glass r-lg</span> grouped container</td>
-            <td><span class="diff-status new">+ AI-tag</span> Inline «AI · фото» badge на photo-imported meal — джерело категоризації</td>
-          </tr>
-          <tr>
-            <td>ModuleBottomNav</td>
-            <td><span class="diff-status unchanged">v1</span> 4-tab flat + lime icon glow</td>
-            <td><span class="diff-status unchanged">v1 (без змін)</span></td>
-            <td><span class="diff-status gap">v2 unified</span> Floating glass pill + lime-tinted active (<code>--hero-grad-nutrition</code>)</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3 style="margin-top: 36px;">Citation map</h3>
-    <div class="log">
-      <article class="log-card" style="grid-column: 1 / -1;">
-        <dl>
-          <dt>ProgressRing nutrition у hero glass</dt>
-          <dd><code>backlog § Nutrition · Today calorie ring</code>: «<code>&lt;ProgressRing variant="nutrition"&gt;</code> усередині hero glass card. Macro bars у tinted glass row tiles».</dd>
-          <dt>Outcome framing (V2)</dt>
-          <dd><code>execution-plan.md § Value gaps V2</code>: «Встанови ціль по калоріях — і кожен прийом їжі стане прогресом». Plan фіксує копію на zero-state. Мій варіант — застосувати ту саму outcome-рамку на partial-progress (12 г до цілі, 17 г запас).</dd>
-          <dt>AI insight wire</dt>
-          <dd><code>backlog § Insights backlog</code>: «<code>nutrition-protein-low</code> — Білку &lt; 60% цілі, час &gt; 18:00».</dd>
-          <dt>Scan mode pill</dt>
-          <dd><code>backlog § Nutrition · Scanner viewfinder</code>: «mode toggle (barcode/photo/voice) у <code>bg-surface-strong-glass</code> pill».</dd>
-          <dt style="color:#67e8f9">Quick-add inline chips (моє)</dt>
-          <dd>Не в плані. Plan F1 згадує AddMealSheet 5→3 steps — мій quick-add — це <em>попередній</em> рівень: pantry-aware suggestions просто на hero, не треба відкривати sheet. Натиск → одразу logs з default-portion.</dd>
-          <dt style="color:#67e8f9">AI-tag «AI · фото» на meal-row (моє)</dt>
-          <dd>F5 в плані каже «emoji → IconName типізований». Я роблю інший крок: показую <em>джерело</em> категоризації (photo / barcode / manual) для transparency. Extends 6.3 pattern.</dd>
-          <dt style="color:#fbbf24">ModuleBottomNav v2</dt>
-          <dd>Той самий gap. Lime-tinted active pill (<code>--hero-grad-nutrition</code>).</dd>
-        </dl>
-      </article>
-    </div>
-
-    <h3 style="margin-top: 36px;">repo_diff</h3>
-    <div class="log">
-      <article class="log-card" style="grid-column: 1 / -1;">
-        <dl>
-          <dt>Migration</dt>
-          <dd><code>apps/web/src/modules/nutrition/pages/NutritionDashboard.tsx</code> — hero rewrite (4 plates → ProgressRing + 3 macro bars). Conditional copy на zero-state з execution-plan V2.</dd>
-          <dd><code>apps/web/src/modules/nutrition/components/MealRow.tsx</code> — chrome → glass r-lg.</dd>
-          <dd><code>apps/web/src/modules/nutrition/pages/LogCard*</code> — analytics блоки у glass.</dd>
-
-          <dt>Mine extras</dt>
-          <dd>Новий <code>shared/components/nutrition/QuickAddChips.tsx</code> — pantry-aware suggestions hook.</dd>
-          <dd>Новий <code>shared/components/nutrition/MealSource.tsx</code> — AI-tag badge для photo/barcode/voice.</dd>
-        </dl>
-      </article>
-    </div>
-
-    <h3 style="margin-top: 36px;">Куди далі</h3>
-    <div class="log">
-      <article class="log-card" style="grid-column: 1 / -1;">
-        <dl>
-          <dt>Тільки план</dt><dd>Hero ring + macro bars + Phase 5 insight + V2 zero-state copy = 3 PR.</dd>
-          <dt>+mine</dt><dd>+ QuickAddChips (S) + MealSource tag (XS) + ModuleBottomNav v2 (M, спільно).</dd>
-        </dl>
-      </article>
-    </div>
-
-    </section>
-</div>
-
-<!--
+    <!--
   Dark theme = same markup, theme-light → theme-dark.
   Cloned at runtime so source is single-truth and edits to the light
   variant propagate to dark automatically. Removes the dual-maintenance
   trap (Hard Rule #13 — no raw light/dark className pairs).
 -->
-<script>
-(function cloneToDark() {
-  ['A','B','C'].forEach(function(v){
-    var srcFrame = document.querySelectorAll('.artboard-frame')[['A','B','C'].indexOf(v)];
-    var clone = srcFrame.cloneNode(true);
-    var art = clone.querySelector('.artboard');
-    art.classList.remove('theme-light');
-    art.classList.add('theme-dark');
-    var label = clone.querySelector('.artboard-label');
-    label.innerHTML = '<span class="v">' + (v==='A'?'0':v==='B'?'1':'2') + '</span> · ' + (v==='A'?'Сьогодні (v1 prod)':v==='B'?'Після плану v2':'Мої доповнення') + ' — dark';
-    document.getElementById('dark-mount-' + v).replaceWith(clone);
-  });
-})();
-</script>
-
-</body>
+    <script>
+      (function cloneToDark() {
+        ["A", "B", "C"].forEach(function (v) {
+          var srcFrame =
+            document.querySelectorAll(".artboard-frame")[
+              ["A", "B", "C"].indexOf(v)
+            ];
+          var clone = srcFrame.cloneNode(true);
+          var art = clone.querySelector(".artboard");
+          art.classList.remove("theme-light");
+          art.classList.add("theme-dark");
+          var label = clone.querySelector(".artboard-label");
+          label.innerHTML =
+            '<span class="v">' +
+            (v === "A" ? "0" : v === "B" ? "1" : "2") +
+            "</span> · " +
+            (v === "A"
+              ? "Сьогодні (v1 prod)"
+              : v === "B"
+                ? "Після плану v2"
+                : "Мої доповнення") +
+            " — dark";
+          document.getElementById("dark-mount-" + v).replaceWith(clone);
+        });
+      })();
+    </script>
+  </body>
 </html>

@@ -1,150 +1,356 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Referral Flow</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .actor { display: flex; gap: 8px; align-items: center; padding: 8px; background: white; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; font-size: 11px; }
-  .actor-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
-  .actor-name { font-weight: 700; }
-  .actor-action { color: var(--muted); font-size: 10px; }
-  .arrow-down { text-align: center; color: var(--brand); font-size: 14px; margin: -2px 0; }
-  .event { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 10px; }
-  .event-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 3px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Referral Flow</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .actor {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 8px;
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 11px;
+      }
+      .actor-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--brand-soft);
+        color: var(--brand);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      .actor-name {
+        font-weight: 700;
+      }
+      .actor-action {
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .arrow-down {
+        text-align: center;
+        color: var(--brand);
+        font-size: 14px;
+        margin: -2px 0;
+      }
+      .event {
+        background: var(--brand-soft);
+        border: 1px solid var(--brand);
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 6px;
+        font-size: 10px;
+      }
+      .event-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        color: var(--brand);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        margin-bottom: 3px;
+      }
 
-  /* V2 Data flow */
-  .v2 .data-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; padding: 4px 0; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-  .v2 .data-from, .v2 .data-to { background: white; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--line); }
-  .v2 .data-arr { color: var(--brand); font-size: 12px; }
-  .v2 .data-table { background: #1c1917; color: #a3e635; padding: 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 9px; line-height: 1.5; }
+      /* V2 Data flow */
+      .v2 .data-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 6px;
+        align-items: center;
+        padding: 4px 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+      }
+      .v2 .data-from,
+      .v2 .data-to {
+        background: white;
+        padding: 4px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--line);
+      }
+      .v2 .data-arr {
+        color: var(--brand);
+        font-size: 12px;
+      }
+      .v2 .data-table {
+        background: #1c1917;
+        color: #a3e635;
+        padding: 8px;
+        border-radius: 6px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        line-height: 1.5;
+      }
 
-  /* V3 Comic */
-  .v3 .scene { background: linear-gradient(135deg, var(--brand-soft), white); border: 2px solid var(--brand); border-radius: 12px; padding: 10px; margin-bottom: 6px; font-size: 10px; min-height: 60px; }
-  .v3 .scene-tag { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--brand); text-transform: uppercase; font-weight: 700; }
-  .v3 .scene-title { font-weight: 800; margin: 2px 0; font-size: 11px; }
-  .v3 .scene-dialog { font-style: italic; color: var(--muted); font-size: 10px; }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 12 · Referral flow</div>
-      <h1>Referral mechanic — visual flow</h1>
-      <p>Як працює: signup → nanoid(8) ref_code → user shares → friend signs з ?ref= → invite_count++ → ≥3 = priority access email. Без backend, тільки n8n + Airtable.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
+      /* V3 Comic */
+      .v3 .scene {
+        background: linear-gradient(135deg, var(--brand-soft), white);
+        border: 2px solid var(--brand);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 6px;
+        font-size: 10px;
+        min-height: 60px;
+      }
+      .v3 .scene-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 8px;
+        color: var(--brand);
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+      .v3 .scene-title {
+        font-weight: 800;
+        margin: 2px 0;
+        font-size: 11px;
+      }
+      .v3 .scene-dialog {
+        font-style: italic;
+        color: var(--muted);
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 12 · Referral flow</div>
+          <h1>Referral mechanic — visual flow</h1>
+          <p>
+            Як працює: signup → nanoid(8) ref_code → user shares → friend signs
+            з ?ref= → invite_count++ → ≥3 = priority access email. Без backend,
+            тільки n8n + Airtable.
+          </p>
+        </div>
+        <a href="index.html" class="back-link">← Portal</a>
+      </div>
 
-  <div class="variants">
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Actor sequence</span>
+          </div>
+          <p class="variant-desc">
+            User-centric. Показує WHO робить WHAT. Зрозуміло для product person.
+          </p>
+          <div class="variant-body">
+            <div class="actor">
+              <div class="actor-avatar">А</div>
+              <div>
+                <div class="actor-name">Анна (підписана)</div>
+                <div class="actor-action">отримує ref_code ABCD1234</div>
+              </div>
+            </div>
+            <div class="arrow-down">↓</div>
+            <div class="actor">
+              <div class="actor-avatar">А</div>
+              <div>
+                <div class="actor-name">Анна</div>
+                <div class="actor-action">
+                  ділиться у Telegram: sergeant.app/?ref=ABCD1234
+                </div>
+              </div>
+            </div>
+            <div class="arrow-down">↓</div>
+            <div class="actor">
+              <div class="actor-avatar">Б</div>
+              <div>
+                <div class="actor-name">Богдан (друг)</div>
+                <div class="actor-action">клікає → signup з referral</div>
+              </div>
+            </div>
+            <div class="arrow-down">↓</div>
+            <div class="event">
+              <div class="event-label">N8n event</div>
+              Анна.invite_count += 1 (= 1)
+            </div>
+            <div
+              style="
+                text-align: center;
+                color: var(--muted);
+                margin: 8px 0;
+                font-size: 9px;
+              "
+            >
+              … ще 2 друзі підписалися
+            </div>
+            <div class="event">
+              <div class="event-label">Milestone hit</div>
+              Анна.invite_count = 3 → priority email тригериться
+            </div>
+            <div class="arrow-down">↓</div>
+            <div
+              class="actor"
+              style="background: var(--brand-soft); border-color: var(--brand)"
+            >
+              <div
+                class="actor-avatar"
+                style="background: var(--brand); color: white"
+              >
+                ✉
+              </div>
+              <div>
+                <div class="actor-name">
+                  «Ти запросив 3 друзів — ти серед першої черги»
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Actor sequence</span></div>
-      <p class="variant-desc">User-centric. Показує WHO робить WHAT. Зрозуміло для product person.</p>
-      <div class="variant-body">
-        <div class="actor">
-          <div class="actor-avatar">А</div>
-          <div><div class="actor-name">Анна (підписана)</div><div class="actor-action">отримує ref_code ABCD1234</div></div>
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Data flow</span>
+          </div>
+          <p class="variant-desc">
+            Показує що пишеться у Airtable. Tech-focused. Для самого dev'а.
+          </p>
+          <div class="variant-body">
+            <div class="data-row">
+              <div class="data-from">POST /signup</div>
+              <div class="data-arr">→</div>
+              <div class="data-to">+row in Airtable</div>
+            </div>
+            <div class="data-table">
+              email: anna@example.com<br />
+              ref_code: ABCD1234<br />
+              invited_by: null<br />
+              invite_count: 0
+            </div>
+            <div
+              style="
+                text-align: center;
+                color: var(--muted);
+                margin: 6px 0;
+                font-size: 9px;
+              "
+            >
+              … час спливає
+            </div>
+            <div class="data-row">
+              <div class="data-from">GET /?ref=ABCD1234</div>
+              <div class="data-arr">→</div>
+              <div class="data-to">store in localStorage</div>
+            </div>
+            <div class="data-row">
+              <div class="data-from">POST /signup (Богдан)</div>
+              <div class="data-arr">→</div>
+              <div class="data-to">lookup ABCD1234</div>
+            </div>
+            <div class="data-table">
+              email: bohdan@example.com<br />
+              invited_by: anna@example.com<br />
+              --- update Анна ---<br />
+              invite_count: 1
+            </div>
+            <div
+              style="
+                text-align: center;
+                color: var(--brand);
+                margin: 6px 0;
+                font-size: 10px;
+                font-weight: 700;
+              "
+            >
+              при invite_count === 3
+            </div>
+            <div class="data-table" style="background: var(--brand)">
+              n8n trigger: send email<br />
+              to: anna@example.com<br />
+              template: priority_access<br />
+              subject: «Ти серед першої черги»
+            </div>
+          </div>
         </div>
-        <div class="arrow-down">↓</div>
-        <div class="actor">
-          <div class="actor-avatar">А</div>
-          <div><div class="actor-name">Анна</div><div class="actor-action">ділиться у Telegram: sergeant.app/?ref=ABCD1234</div></div>
-        </div>
-        <div class="arrow-down">↓</div>
-        <div class="actor">
-          <div class="actor-avatar">Б</div>
-          <div><div class="actor-name">Богдан (друг)</div><div class="actor-action">клікає → signup з referral</div></div>
-        </div>
-        <div class="arrow-down">↓</div>
-        <div class="event">
-          <div class="event-label">N8n event</div>
-          Анна.invite_count += 1 (= 1)
-        </div>
-        <div style="text-align: center; color: var(--muted); margin: 8px 0; font-size: 9px;">… ще 2 друзі підписалися</div>
-        <div class="event">
-          <div class="event-label">Milestone hit</div>
-          Анна.invite_count = 3 → priority email тригериться
-        </div>
-        <div class="arrow-down">↓</div>
-        <div class="actor" style="background: var(--brand-soft); border-color: var(--brand);">
-          <div class="actor-avatar" style="background: var(--brand); color: white;">✉</div>
-          <div><div class="actor-name">«Ти запросив 3 друзів — ти серед першої черги»</div></div>
+
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Comic story</span>
+          </div>
+          <p class="variant-desc">
+            Сторі-стайл. Для blog post чи Telegram-каналу. Friendly explanation
+            того, як це працює.
+          </p>
+          <div class="variant-body">
+            <div class="scene">
+              <div class="scene-tag">SCENE 1</div>
+              <div class="scene-title">Анна підписалась</div>
+              <div class="scene-dialog">
+                «Отримала своє посилання. Поділюсь — обом буде швидше.»
+              </div>
+            </div>
+            <div class="scene">
+              <div class="scene-tag">SCENE 2</div>
+              <div class="scene-title">Богдан клікнув → теж підписався</div>
+              <div class="scene-dialog">«Дякую за пораду! Я теж у списку.»</div>
+            </div>
+            <div class="scene">
+              <div class="scene-tag">SCENE 3</div>
+              <div class="scene-title">… і ще 2 друзі Анни</div>
+              <div class="scene-dialog">«+1 +1 +1»</div>
+            </div>
+            <div
+              class="scene"
+              style="
+                background: linear-gradient(135deg, var(--brand), #047857);
+                color: white;
+                border-color: var(--brand);
+              "
+            >
+              <div class="scene-tag" style="color: rgba(255, 255, 255, 0.85)">
+                SCENE 4
+              </div>
+              <div class="scene-title">Анна: «Ого, я серед першої черги!»</div>
+              <div
+                class="scene-dialog"
+                style="color: rgba(255, 255, 255, 0.85)"
+              >
+                «Sergeant дякує тобі за 3 запрошених друзів.»
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Data flow</span></div>
-      <p class="variant-desc">Показує що пишеться у Airtable. Tech-focused. Для самого dev'а.</p>
-      <div class="variant-body">
-        <div class="data-row"><div class="data-from">POST /signup</div><div class="data-arr">→</div><div class="data-to">+row in Airtable</div></div>
-        <div class="data-table">
-          email: anna@example.com<br>
-          ref_code: ABCD1234<br>
-          invited_by: null<br>
-          invite_count: 0
-        </div>
-        <div style="text-align: center; color: var(--muted); margin: 6px 0; font-size: 9px;">… час спливає</div>
-        <div class="data-row"><div class="data-from">GET /?ref=ABCD1234</div><div class="data-arr">→</div><div class="data-to">store in localStorage</div></div>
-        <div class="data-row"><div class="data-from">POST /signup (Богдан)</div><div class="data-arr">→</div><div class="data-to">lookup ABCD1234</div></div>
-        <div class="data-table">
-          email: bohdan@example.com<br>
-          invited_by: anna@example.com<br>
-          --- update Анна ---<br>
-          invite_count: 1
-        </div>
-        <div style="text-align: center; color: var(--brand); margin: 6px 0; font-size: 10px; font-weight: 700;">при invite_count === 3</div>
-        <div class="data-table" style="background: var(--brand);">
-          n8n trigger: send email<br>
-          to: anna@example.com<br>
-          template: priority_access<br>
-          subject: «Ти серед першої черги»
-        </div>
+      <div class="notes">
+        <h2>Notes</h2>
+        <ul>
+          <li>
+            <strong>V1 Actor sequence</strong> — для presentation product flow
+            комусь нетехнічному.
+          </li>
+          <li>
+            <strong>V2 Data flow</strong> — для тебе самого як reference під час
+            n8n implementation.
+          </li>
+          <li>
+            <strong>V3 Comic story</strong> — для blog post чи Telegram-каналу
+            що пояснює users як це працює.
+          </li>
+          <li>
+            Threshold у ради: <strong>3 invites = priority</strong>. K-factor
+            target ≥ 0.25 = ~25% юзерів запросять хоча б 1 друга. Якщо K-factor
+            &lt; 0.3 за 30 днів → switch до position-bump mechanic.
+          </li>
+          <li>
+            Без backend — все через n8n + Airtable + URL params. Жодного JWT,
+            жодних cookies.
+          </li>
+        </ul>
       </div>
     </div>
-
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Comic story</span></div>
-      <p class="variant-desc">Сторі-стайл. Для blog post чи Telegram-каналу. Friendly explanation того, як це працює.</p>
-      <div class="variant-body">
-        <div class="scene">
-          <div class="scene-tag">SCENE 1</div>
-          <div class="scene-title">Анна підписалась</div>
-          <div class="scene-dialog">«Отримала своє посилання. Поділюсь — обом буде швидше.»</div>
-        </div>
-        <div class="scene">
-          <div class="scene-tag">SCENE 2</div>
-          <div class="scene-title">Богдан клікнув → теж підписався</div>
-          <div class="scene-dialog">«Дякую за пораду! Я теж у списку.»</div>
-        </div>
-        <div class="scene">
-          <div class="scene-tag">SCENE 3</div>
-          <div class="scene-title">… і ще 2 друзі Анни</div>
-          <div class="scene-dialog">«+1 +1 +1»</div>
-        </div>
-        <div class="scene" style="background: linear-gradient(135deg, var(--brand), #047857); color: white; border-color: var(--brand);">
-          <div class="scene-tag" style="color: rgba(255,255,255,.85);">SCENE 4</div>
-          <div class="scene-title">Анна: «Ого, я серед першої черги!»</div>
-          <div class="scene-dialog" style="color: rgba(255,255,255,.85);">«Sergeant дякує тобі за 3 запрошених друзів.»</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes</h2>
-    <ul>
-      <li><strong>V1 Actor sequence</strong> — для presentation product flow комусь нетехнічному.</li>
-      <li><strong>V2 Data flow</strong> — для тебе самого як reference під час n8n implementation.</li>
-      <li><strong>V3 Comic story</strong> — для blog post чи Telegram-каналу що пояснює users як це працює.</li>
-      <li>Threshold у ради: <strong>3 invites = priority</strong>. K-factor target ≥ 0.25 = ~25% юзерів запросять хоча б 1 друга. Якщо K-factor &lt; 0.3 за 30 днів → switch до position-bump mechanic.</li>
-      <li>Без backend — все через n8n + Airtable + URL params. Жодного JWT, жодних cookies.</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>

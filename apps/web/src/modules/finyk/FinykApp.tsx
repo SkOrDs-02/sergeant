@@ -265,110 +265,110 @@ export default function App({
     <ModuleAccentProvider module="finyk">
       <MeshBackground>
         <ModuleHeader
-        module="finyk"
-        left={
-          typeof onBackToHub === "function" ? (
-            <ModuleHeaderBackButton onClick={onBackToHub} />
-          ) : (
-            <div
-              className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
-              aria-hidden
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          module="finyk"
+          left={
+            typeof onBackToHub === "function" ? (
+              <ModuleHeaderBackButton onClick={onBackToHub} />
+            ) : (
+              <div
+                className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
+                aria-hidden
               >
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
-            </div>
-          )
-        }
-        title="ФІНІК"
-        subtitle="Monobank · бюджети"
-        right={
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                "flex items-center gap-1.5 select-none",
-                "text-style-caption px-2 py-0.5 rounded-full border",
-                "transition-colors duration-200",
-                syncTone.pill,
-              )}
-              aria-label={`Стан синхронізації: ${syncTone.text}`}
-            >
-              <span
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </div>
+            )
+          }
+          title="ФІНІК"
+          subtitle="Monobank · бюджети"
+          right={
+            <div className="flex items-center gap-2">
+              <div
                 className={cn(
-                  "w-1.5 h-1.5 rounded-full shrink-0",
-                  syncTone.dot,
+                  "flex items-center gap-1.5 select-none",
+                  "text-style-caption px-2 py-0.5 rounded-full border",
+                  "transition-colors duration-200",
+                  syncTone.pill,
                 )}
-              />
-              <span className="hidden sm:inline">{syncTone.text}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowBalance((v) => !v)}
-              className="focus-ring w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
-              aria-label={showBalance ? "Приховати суми" : "Показати суми"}
-              title={showBalance ? "Приховати суми" : "Показати суми"}
-            >
-              {showBalance ? (
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              ) : (
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
+                aria-label={`Стан синхронізації: ${syncTone.text}`}
+              >
+                <span
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full shrink-0",
+                    syncTone.dot,
+                  )}
+                />
+                <span className="hidden sm:inline">{syncTone.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBalance((v) => !v)}
+                className="focus-ring w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                aria-label={showBalance ? "Приховати суми" : "Показати суми"}
+                title={showBalance ? "Приховати суми" : "Показати суми"}
+              >
+                {showBalance ? (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                )}
+              </button>
+              {onOpenSettings && (
+                <ModuleHeaderSettingsButton onClick={onOpenSettings} />
               )}
-            </button>
-            {onOpenSettings && (
-              <ModuleHeaderSettingsButton onClick={onOpenSettings} />
-            )}
-            <ModuleHeaderAssistantButton />
-          </div>
-        }
-      />
-
-      {showNoBankBanner && (
-        <NoBankBanner
-          onConnect={() => setShowLoginOverlay(true)}
-          onContinueManually={() => {
-            enableFinykManualOnly();
-            setManualOnly(true);
-          }}
+              <ModuleHeaderAssistantButton />
+            </div>
+          }
         />
-      )}
 
-      {/*
+        {showNoBankBanner && (
+          <NoBankBanner
+            onConnect={() => setShowLoginOverlay(true)}
+            onContinueManually={() => {
+              enableFinykManualOnly();
+              setManualOnly(true);
+            }}
+          />
+        )}
+
+        {/*
         Sync-v2 LWW-conflict banner для `finyk_manual_expenses` (Stage 5
         PR #044, `docs/planning/storage-roadmap.md`). Self-renders як
         no-op коли черга у `conflicts/store.ts` порожня — тому жодного
@@ -377,280 +377,282 @@ export default function App({
         свіжих юзерів, а conflict-warning спливав поверх для тих, хто
         вже має data + race з іншого пристрою.
       */}
-      <FinykManualExpenseConflictBanner />
+        <FinykManualExpenseConflictBanner />
 
-      {/* Page content */}
-      <div
-        className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y relative"
-        onTouchStart={swipe.onTouchStart}
-        onTouchMove={swipe.onTouchMove}
-        onTouchEnd={swipe.onTouchEnd}
-      >
-        {/*
+        {/* Page content */}
+        <div
+          className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y relative"
+          onTouchStart={swipe.onTouchStart}
+          onTouchMove={swipe.onTouchMove}
+          onTouchEnd={swipe.onTouchEnd}
+        >
+          {/*
           Swipe progress bar — surfaces an in-progress tab swipe so
           the gesture isn't a black box anymore. Sits at the top of
           the page wrapper, fills toward the threshold (60 px), then
           tints fully on commit. Hidden when the user isn't dragging
           to keep the chrome clean.
         */}
-        {swipeDx !== 0 && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-0 inset-x-0 h-0.5 z-20 overflow-hidden"
-          >
+          {swipeDx !== 0 && (
             <div
-              className={cn(
-                "h-full",
-                Math.abs(swipeDx) >= SWIPE_THRESHOLD_PX
-                  ? "bg-finyk"
-                  : "bg-finyk/40",
+              aria-hidden
+              className="pointer-events-none absolute top-0 inset-x-0 h-0.5 z-20 overflow-hidden"
+            >
+              <div
+                className={cn(
+                  "h-full",
+                  Math.abs(swipeDx) >= SWIPE_THRESHOLD_PX
+                    ? "bg-finyk"
+                    : "bg-finyk/40",
+                )}
+                style={{
+                  width: `${Math.min(100, (Math.abs(swipeDx) / SWIPE_THRESHOLD_PX) * 100)}%`,
+                  marginLeft: swipeDx < 0 ? "auto" : 0,
+                  transition: "background-color 120ms linear",
+                }}
+              />
+            </div>
+          )}
+          <div
+            key={`page-${page}`}
+            className="flex-1 overflow-hidden flex flex-col min-h-0 motion-safe:animate-fade-in"
+            style={
+              swipeDx !== 0
+                ? {
+                    // 0.45 follow-coefficient mirrors iOS' "rubber band"
+                    // feel — the page tracks the finger but lags behind
+                    // it, so the dominant motion stays in the user's
+                    // hand, not the screen. No transition while dragging
+                    // so there's no rubber-banding lag.
+                    transform: `translate3d(${swipeDx * 0.45}px, 0, 0)`,
+                    transition: "none",
+                    willChange: "transform",
+                  }
+                : {
+                    transform: "translate3d(0, 0, 0)",
+                    transition:
+                      "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
+                  }
+            }
+          >
+            <Suspense fallback={<ModulePageLoader module="finyk" />}>
+              {page === "overview" && (
+                <SectionErrorBoundary
+                  key="page-overview"
+                  title="Не вдалось показати «Огляд»"
+                >
+                  <Overview
+                    mono={mergedMono}
+                    storage={storage}
+                    onNavigate={navigate}
+                    showBalance={showBalance}
+                  />
+                </SectionErrorBoundary>
               )}
-              style={{
-                width: `${Math.min(100, (Math.abs(swipeDx) / SWIPE_THRESHOLD_PX) * 100)}%`,
-                marginLeft: swipeDx < 0 ? "auto" : 0,
-                transition: "background-color 120ms linear",
-              }}
-            />
+              {page === "transactions" && (
+                <SectionErrorBoundary
+                  key="page-transactions"
+                  title="Не вдалось показати «Операції»"
+                >
+                  <Transactions
+                    mono={mergedMono}
+                    storage={storage}
+                    showBalance={showBalance}
+                    categoryFilter={categoryFilter}
+                    onClearCategoryFilter={() => setCategoryFilter(null)}
+                    onEditManualExpense={(id) => {
+                      setEditingManualExpenseId(String(id));
+                      setShowExpenseSheet(true);
+                    }}
+                  />
+                </SectionErrorBoundary>
+              )}
+              {page === "budgets" && (
+                <SectionErrorBoundary
+                  key="page-budgets"
+                  title="Не вдалось показати «Планування»"
+                >
+                  <Budgets
+                    mono={mergedMono}
+                    storage={storage}
+                    showBalance={showBalance}
+                    focusLimitCategoryId={focusLimitCategoryId}
+                    monthlyPlanFirstRunHint={firstRunFinykActive}
+                    onDismissMonthlyPlanFirstRunHint={() => {
+                      markFinykSeen();
+                      setFirstRunFinykSurface(false);
+                    }}
+                  />
+                </SectionErrorBoundary>
+              )}
+              {page === "analytics" && (
+                <SectionErrorBoundary
+                  key="page-analytics"
+                  title="Не вдалось показати «Аналітику»"
+                >
+                  <Analytics mono={mergedMono} storage={storage} />
+                </SectionErrorBoundary>
+              )}
+              {page === "assets" && (
+                <SectionErrorBoundary
+                  key="page-assets"
+                  title="Не вдалось показати «Активи»"
+                >
+                  <Assets
+                    mono={mergedMono}
+                    storage={storage}
+                    showBalance={showBalance}
+                  />
+                </SectionErrorBoundary>
+              )}
+            </Suspense>
+          </div>
+        </div>
+
+        {(page === "overview" ||
+          page === "transactions" ||
+          page === "budgets") && (
+          <FloatingActionButton
+            variant="v2-finyk"
+            icon="plus"
+            onClick={() => {
+              setEditingManualExpenseId(null);
+              setShowExpenseSheet(true);
+            }}
+            aria-label="Додати витрату"
+          />
+        )}
+
+        {mono.authError && (
+          <div className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
+            <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
+              <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-style-label text-text">
+                  Токен потребує оновлення
+                </p>
+                <p className="text-xs text-muted mt-0.5">{mono.authError}</p>
+                {onBackToHub && (
+                  <button
+                    onClick={onBackToHub}
+                    className="text-xs font-semibold text-primary mt-2 hover:underline"
+                  >
+                    Оновити токен у Налаштуваннях Hub
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => mono.setAuthError("")}
+                className="text-muted hover:text-text transition-colors shrink-0"
+                aria-label="Закрити"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
-        <div
-          key={`page-${page}`}
-          className="flex-1 overflow-hidden flex flex-col min-h-0 motion-safe:animate-fade-in"
-          style={
-            swipeDx !== 0
-              ? {
-                  // 0.45 follow-coefficient mirrors iOS' "rubber band"
-                  // feel — the page tracks the finger but lags behind
-                  // it, so the dominant motion stays in the user's
-                  // hand, not the screen. No transition while dragging
-                  // so there's no rubber-banding lag.
-                  transform: `translate3d(${swipeDx * 0.45}px, 0, 0)`,
-                  transition: "none",
-                  willChange: "transform",
-                }
-              : {
-                  transform: "translate3d(0, 0, 0)",
-                  transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
-                }
-          }
-        >
-          <Suspense fallback={<ModulePageLoader module="finyk" />}>
-            {page === "overview" && (
-              <SectionErrorBoundary
-                key="page-overview"
-                title="Не вдалось показати «Огляд»"
-              >
-                <Overview
-                  mono={mergedMono}
-                  storage={storage}
-                  onNavigate={navigate}
-                  showBalance={showBalance}
-                />
-              </SectionErrorBoundary>
-            )}
-            {page === "transactions" && (
-              <SectionErrorBoundary
-                key="page-transactions"
-                title="Не вдалось показати «Операції»"
-              >
-                <Transactions
-                  mono={mergedMono}
-                  storage={storage}
-                  showBalance={showBalance}
-                  categoryFilter={categoryFilter}
-                  onClearCategoryFilter={() => setCategoryFilter(null)}
-                  onEditManualExpense={(id) => {
-                    setEditingManualExpenseId(String(id));
-                    setShowExpenseSheet(true);
-                  }}
-                />
-              </SectionErrorBoundary>
-            )}
-            {page === "budgets" && (
-              <SectionErrorBoundary
-                key="page-budgets"
-                title="Не вдалось показати «Планування»"
-              >
-                <Budgets
-                  mono={mergedMono}
-                  storage={storage}
-                  showBalance={showBalance}
-                  focusLimitCategoryId={focusLimitCategoryId}
-                  monthlyPlanFirstRunHint={firstRunFinykActive}
-                  onDismissMonthlyPlanFirstRunHint={() => {
-                    markFinykSeen();
-                    setFirstRunFinykSurface(false);
-                  }}
-                />
-              </SectionErrorBoundary>
-            )}
-            {page === "analytics" && (
-              <SectionErrorBoundary
-                key="page-analytics"
-                title="Не вдалось показати «Аналітику»"
-              >
-                <Analytics mono={mergedMono} storage={storage} />
-              </SectionErrorBoundary>
-            )}
-            {page === "assets" && (
-              <SectionErrorBoundary
-                key="page-assets"
-                title="Не вдалось показати «Активи»"
-              >
-                <Assets
-                  mono={mergedMono}
-                  storage={storage}
-                  showBalance={showBalance}
-                />
-              </SectionErrorBoundary>
-            )}
-          </Suspense>
-        </div>
-      </div>
 
-      {(page === "overview" ||
-        page === "transactions" ||
-        page === "budgets") && (
-        <FloatingActionButton
-          variant="v2-finyk"
-          icon="plus"
-          onClick={() => {
+        <ManualExpenseSheet
+          open={showExpenseSheet}
+          onClose={() => {
+            setShowExpenseSheet(false);
             setEditingManualExpenseId(null);
-            setShowExpenseSheet(true);
+            setQuickAddCategory(null);
+            setQuickAddDescription(null);
           }}
-          aria-label="Додати витрату"
+          initialExpense={
+            editingManualExpenseId
+              ? (storage.manualExpenses || []).find(
+                  (e) => String(e.id) === String(editingManualExpenseId),
+                ) || null
+              : null
+          }
+          initialCategory={quickAddCategory}
+          initialDescription={quickAddDescription}
+          frequentCategories={frequentCategories}
+          frequentMerchants={frequentMerchants}
+          onSave={(expense) => {
+            if (expense?.id) {
+              storage.editManualExpense?.(expense.id, expense);
+              toast.success("Витрату оновлено.");
+              return;
+            }
+            storage.addManualExpense(expense);
+            toast.success("Витрату додано.");
+
+            // Cross-module nudge (UX wave-4 #4):
+            // After a Кафе/Ресторан/Продукти save, suggest logging the
+            // matching meal in Nutrition. Suppressed automatically after
+            // ≥3 dismissals in 14 days or 12 h after the user accepts —
+            // see `docs/design/cross-module-prompts.md`.
+            const cat = String(expense?.category || "");
+            const promptId =
+              cat === "restaurant"
+                ? "finyk-restaurant-to-meal"
+                : cat === "food"
+                  ? "finyk-food-to-meal"
+                  : null;
+            if (promptId) {
+              const msg =
+                promptId === "finyk-restaurant-to-meal"
+                  ? "Додати прийом їжі з ресторану?"
+                  : "Додати прийом їжі з продуктів?";
+              tryShowCrossModulePrompt(toast, {
+                id: promptId,
+                msg,
+                acceptLabel: "Додати →",
+                onAccept: () =>
+                  openHubModuleWithAction("nutrition", "add_meal"),
+              });
+            }
+          }}
         />
-      )}
 
-      {mono.authError && (
-        <div className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
-          <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-            <span className="text-lg shrink-0 mt-0.5">⚠️</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-style-label text-text">
-                Токен потребує оновлення
-              </p>
-              <p className="text-xs text-muted mt-0.5">{mono.authError}</p>
-              {onBackToHub && (
-                <button
-                  onClick={onBackToHub}
-                  className="text-xs font-semibold text-primary mt-2 hover:underline"
-                >
-                  Оновити токен у Налаштуваннях Hub
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => mono.setAuthError("")}
-              className="text-muted hover:text-text transition-colors shrink-0"
-              aria-label="Закрити"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+        {/* Bottom navigation */}
+        <ModuleBottomNav
+          items={NAV_ITEMS.map((item) => ({
+            id: item.id,
+            label: item.label,
+            icon: NAV_ICONS[item.id],
+          }))}
+          activeId={page}
+          onChange={navigate}
+          module="finyk"
+        />
 
-      <ManualExpenseSheet
-        open={showExpenseSheet}
-        onClose={() => {
-          setShowExpenseSheet(false);
-          setEditingManualExpenseId(null);
-          setQuickAddCategory(null);
-          setQuickAddDescription(null);
-        }}
-        initialExpense={
-          editingManualExpenseId
-            ? (storage.manualExpenses || []).find(
-                (e) => String(e.id) === String(editingManualExpenseId),
-              ) || null
-            : null
-        }
-        initialCategory={quickAddCategory}
-        initialDescription={quickAddDescription}
-        frequentCategories={frequentCategories}
-        frequentMerchants={frequentMerchants}
-        onSave={(expense) => {
-          if (expense?.id) {
-            storage.editManualExpense?.(expense.id, expense);
-            toast.success("Витрату оновлено.");
-            return;
-          }
-          storage.addManualExpense(expense);
-          toast.success("Витрату додано.");
-
-          // Cross-module nudge (UX wave-4 #4):
-          // After a Кафе/Ресторан/Продукти save, suggest logging the
-          // matching meal in Nutrition. Suppressed automatically after
-          // ≥3 dismissals in 14 days or 12 h after the user accepts —
-          // see `docs/design/cross-module-prompts.md`.
-          const cat = String(expense?.category || "");
-          const promptId =
-            cat === "restaurant"
-              ? "finyk-restaurant-to-meal"
-              : cat === "food"
-                ? "finyk-food-to-meal"
-                : null;
-          if (promptId) {
-            const msg =
-              promptId === "finyk-restaurant-to-meal"
-                ? "Додати прийом їжі з ресторану?"
-                : "Додати прийом їжі з продуктів?";
-            tryShowCrossModulePrompt(toast, {
-              id: promptId,
-              msg,
-              acceptLabel: "Додати →",
-              onAccept: () => openHubModuleWithAction("nutrition", "add_meal"),
-            });
-          }
-        }}
-      />
-
-      {/* Bottom navigation */}
-      <ModuleBottomNav
-        items={NAV_ITEMS.map((item) => ({
-          id: item.id,
-          label: item.label,
-          icon: NAV_ICONS[item.id],
-        }))}
-        activeId={page}
-        onChange={navigate}
-        module="finyk"
-      />
-
-      {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance over the
+        {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance over the
           module bottom-nav. `bottom={84}` lifts the pill above the
           60 px ModuleBottomNav + safe-area-inset; `right-[4.5rem]` (baked
           into AIPill) leaves space for any future quick-add FAB. */}
-      <AIPill module="finyk" />
+        <AIPill module="finyk" />
 
-      {showLoginOverlay && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-bg"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Підключення Monobank"
-        >
-          <FinykLoginScreen
-            tokenInput={tokenInput}
-            onTokenInputChange={setTokenInput}
-            showToken={showToken}
-            onToggleShowToken={() => setShowToken((v) => !v)}
-            authError={authError}
-            error={error}
-            connecting={connecting}
-            onConnect={() => connect(tokenInput.trim())}
-            onContinueWithoutBank={() => {
-              enableFinykManualOnly();
-              setManualOnly(true);
-              setShowLoginOverlay(false);
-            }}
-            toast={toast}
-            onBackToHub={() => setShowLoginOverlay(false)}
-            backLabel="Назад"
-          />
-        </div>
-      )}
+        {showLoginOverlay && (
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto bg-bg"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Підключення Monobank"
+          >
+            <FinykLoginScreen
+              tokenInput={tokenInput}
+              onTokenInputChange={setTokenInput}
+              showToken={showToken}
+              onToggleShowToken={() => setShowToken((v) => !v)}
+              authError={authError}
+              error={error}
+              connecting={connecting}
+              onConnect={() => connect(tokenInput.trim())}
+              onContinueWithoutBank={() => {
+                enableFinykManualOnly();
+                setManualOnly(true);
+                setShowLoginOverlay(false);
+              }}
+              toast={toast}
+              onBackToHub={() => setShowLoginOverlay(false)}
+              backLabel="Назад"
+            />
+          </div>
+        )}
       </MeshBackground>
     </ModuleAccentProvider>
   );

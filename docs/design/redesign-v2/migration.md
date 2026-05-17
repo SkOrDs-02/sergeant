@@ -1,6 +1,6 @@
 # Sergeant v2 — Migration guide для розробників
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-17 by @codex. **Next review:** 2026-08-15.
 > **Status:** Active
 
 Цей doc — практичний reference для **engineers** які пишуть новий код або торкаються існуючого у post-v2-rollout world. Містить **BEFORE/AFTER** для типових патернів.
@@ -36,6 +36,7 @@
 ```
 
 `prominence="glass"`:
+
 - `bg-surface-glass` (alpha 0.82 light / 0.06 dark / 1.0 HC)
 - `backdrop-blur-md`
 - `border border-surface-line`
@@ -85,12 +86,12 @@ AIPill internalizes `navigate(CHAT_PATH)`. Mic button is a sibling — не nest
 
 ### Radii
 
-| v1 (legacy) | v2 (Sergeant redesign) | Слот |
-|---|---|---|
-| `rounded-xl` (12 px) | `rounded-r-md` (12 px alias) | CONTROL (buttons, chips) |
-| `rounded-2xl` (16 px) | `rounded-r-lg` (14 px) | CARD (Cards primary) |
-| `rounded-3xl` (24 px) | `rounded-r-xl` (18 px) | Metric cards |
-| `rounded-3xl` (24 px) | `rounded-r-2xl` (24 px) | Hero cards, sheets, AIPill, etc. |
+| v1 (legacy)           | v2 (Sergeant redesign)       | Слот                             |
+| --------------------- | ---------------------------- | -------------------------------- |
+| `rounded-xl` (12 px)  | `rounded-r-md` (12 px alias) | CONTROL (buttons, chips)         |
+| `rounded-2xl` (16 px) | `rounded-r-lg` (14 px)       | CARD (Cards primary)             |
+| `rounded-3xl` (24 px) | `rounded-r-xl` (18 px)       | Metric cards                     |
+| `rounded-3xl` (24 px) | `rounded-r-2xl` (24 px)      | Hero cards, sheets, AIPill, etc. |
 
 **Не плутати**: `rounded-r-*` — v2 keys (suffix `-r-` від "redesign"). `rounded-2xl` досі = 16 px. Якщо ти у v2-glass-card-і, використовуй `rounded-r-lg` (14 px) — це **handoff spec**.
 
@@ -127,14 +128,14 @@ ModuleShell-based modules (Fizruk) — додаси `<AIPill module="fizruk">` �
 
 ## Hard rules — повтор
 
-| # | Rule | v2 implication |
-|---|---|---|
-| #11 | No arbitrary hex у `className` | Use semantic tokens. `bg-em-900/95` (handoff suggest) — заборонено. Use `bg-ink-strong`. |
-| #12 | Module-accent containment | MeshBackground НЕ publishes `--module-accent-rgb` — він монтується INSIDE ModuleAccentProvider, не зовні. |
-| #13 | No raw light/dark className pairs | Use `bg-surface-glass` not `bg-white dark:bg-stone-800`. Tokens flip themselves. |
-| #14 | focus-visible:, not focus: | AIPill + InsightCard уже compliant — copy їхній focus-visible:ring-2 pattern. |
-| #16 | 12 px text floor | Handoff caption 10 px / overline 10 px → maps to existing `text-style-caption` (12 px). |
-| #17 | Animation budget — max 2 concurrent | `.bg-mesh` AMBIENT — auto-stripped on `prefers-reduced-motion: reduce`. |
+| #   | Rule                                | v2 implication                                                                                            |
+| --- | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| #11 | No arbitrary hex у `className`      | Use semantic tokens. `bg-em-900/95` (handoff suggest) — заборонено. Use `bg-ink-strong`.                  |
+| #12 | Module-accent containment           | MeshBackground НЕ publishes `--module-accent-rgb` — він монтується INSIDE ModuleAccentProvider, не зовні. |
+| #13 | No raw light/dark className pairs   | Use `bg-surface-glass` not `bg-white dark:bg-stone-800`. Tokens flip themselves.                          |
+| #14 | focus-visible:, not focus:          | AIPill + InsightCard уже compliant — copy їхній focus-visible:ring-2 pattern.                             |
+| #16 | 12 px text floor                    | Handoff caption 10 px / overline 10 px → maps to existing `text-style-caption` (12 px).                   |
+| #17 | Animation budget — max 2 concurrent | `.bg-mesh` AMBIENT — auto-stripped on `prefers-reduced-motion: reduce`.                                   |
 
 ## Insights — для PR що додають AI-triggered cards
 
@@ -164,6 +165,7 @@ function CoffeeInsight() {
 ## HC mode — automatic
 
 Усі v2 tokens мають HC overrides у `theme.css`. Engineer ничого не робить — `html.hc` activates strips:
+
 - Mesh → solid `--c-bg-base`
 - Glass alpha → 1.0 (opaque)
 - Shadows → solid 2-3 px borders
@@ -173,14 +175,14 @@ function CoffeeInsight() {
 
 ## What НЕ робити (анти-патерни)
 
-| ❌ Anti-pattern | ✅ Замість |
-|---|---|
-| Власний `<div className="h-dvh bg-bg ...">` у module entry | `<MeshBackground>` |
-| Inline `rgba(255,255,255,0.82)` background | `bg-surface-glass` |
-| `bg-em-900` (raw palette) для AI cards | `bg-ink-strong text-bg-base` |
-| `<button onClick=mic><button onClick=chat>...</button></button>` (nested) | `<div role="group"><button>chat</button><button>mic</button></div>` |
-| `font-family: Manrope` inline | Уже глобально через Tailwind `font-sans` |
-| `import { CHAT_PATH } from "@core/app/appPaths"` | Relative `from "../../../core/app/appPaths"` (немає `@core/*` alias) |
+| ❌ Anti-pattern                                                           | ✅ Замість                                                           |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Власний `<div className="h-dvh bg-bg ...">` у module entry                | `<MeshBackground>`                                                   |
+| Inline `rgba(255,255,255,0.82)` background                                | `bg-surface-glass`                                                   |
+| `bg-em-900` (raw palette) для AI cards                                    | `bg-ink-strong text-bg-base`                                         |
+| `<button onClick=mic><button onClick=chat>...</button></button>` (nested) | `<div role="group"><button>chat</button><button>mic</button></div>`  |
+| `font-family: Manrope` inline                                             | Уже глобально через Tailwind `font-sans`                             |
+| `import { CHAT_PATH } from "@core/app/appPaths"`                          | Relative `from "../../../core/app/appPaths"` (немає `@core/*` alias) |
 
 ## Refs
 

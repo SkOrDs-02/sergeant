@@ -11,13 +11,13 @@ Legacy токени лишаються активні — нічого не зл
 
 ## Документи кластера
 
-| Файл                                       | Призначення                                                                                                  |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| [`governance.md`](./governance.md)         | Контракт rollout: adapter strategy, PR sequence (PR-0…PR-8), hard-rule deltas, open questions, risks         |
-| [`migration.md`](./migration.md)           | Engineer reference: BEFORE/AFTER token patterns для кожного UI-первинного шаблону. Найчастіше консультується |
-| [`execution-plan.md`](./execution-plan.md) | Phase 0–7 breakdown: T-tasks (tokens), C-tasks (call-site swaps), F-tasks (friction), M-tasks (mobile)       |
-| [`execution-status.md`](./execution-status.md) | **Live tracker** — який phase у польоті, що shipped, які знайдені розриви плану та реальності             |
-| [`backlog.md`](./backlog.md)               | Незалежні 30-хв polish micro-PR-и (per-page glass, ChatSheet, insights wiring). Можна брати в будь-якому порядку |
+| Файл                                           | Призначення                                                                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [`governance.md`](./governance.md)             | Контракт rollout: adapter strategy, PR sequence (PR-0…PR-8), hard-rule deltas, open questions, risks             |
+| [`migration.md`](./migration.md)               | Engineer reference: BEFORE/AFTER token patterns для кожного UI-первинного шаблону. Найчастіше консультується     |
+| [`execution-plan.md`](./execution-plan.md)     | Phase 0–7 breakdown: T-tasks (tokens), C-tasks (call-site swaps), F-tasks (friction), M-tasks (mobile)           |
+| [`execution-status.md`](./execution-status.md) | **Live tracker** — який phase у польоті, що shipped, які знайдені розриви плану та реальності                    |
+| [`backlog.md`](./backlog.md)                   | Незалежні 30-хв polish micro-PR-и (per-page glass, ChatSheet, insights wiring). Можна брати в будь-якому порядку |
 
 ## Куди йти cold
 

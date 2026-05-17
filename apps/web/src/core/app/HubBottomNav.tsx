@@ -7,10 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
-import {
-  getPagePrefetchProps,
-  type PageKey,
-} from "../lib/useRoutePrefetch";
+import { getPagePrefetchProps, type PageKey } from "../lib/useRoutePrefetch";
 import { messages } from "@shared/i18n/uk";
 
 /**

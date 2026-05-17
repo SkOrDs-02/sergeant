@@ -1,137 +1,302 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sergeant — Blog Post Template</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-  .blog-frame { background: white; border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px; font-size: 11px; line-height: 1.55; height: 100%; overflow: hidden; }
-  .blog-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-  .blog-title { font-size: 16px; font-weight: 800; line-height: 1.15; margin-bottom: 8px; }
-  .blog-lede { font-size: 12px; color: var(--ink); margin-bottom: 10px; }
-  .blog-body p { margin-bottom: 8px; color: var(--muted); }
-  .blog-h2 { font-weight: 800; font-size: 13px; color: var(--ink); margin-top: 12px; margin-bottom: 4px; }
-  .inline-cta { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 8px; padding: 8px; margin: 10px 0; font-size: 10px; }
-  .inline-cta strong { color: var(--brand); }
-  .inline-cta a { background: var(--brand); color: white; padding: 3px 8px; border-radius: 4px; font-weight: 700; margin-left: 4px; font-size: 9px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant — Blog Post Template</title>
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      .blog-frame {
+        background: white;
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+        padding: 14px;
+        font-size: 11px;
+        line-height: 1.55;
+        height: 100%;
+        overflow: hidden;
+      }
+      .blog-meta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+      }
+      .blog-title {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-bottom: 8px;
+      }
+      .blog-lede {
+        font-size: 12px;
+        color: var(--ink);
+        margin-bottom: 10px;
+      }
+      .blog-body p {
+        margin-bottom: 8px;
+        color: var(--muted);
+      }
+      .blog-h2 {
+        font-weight: 800;
+        font-size: 13px;
+        color: var(--ink);
+        margin-top: 12px;
+        margin-bottom: 4px;
+      }
+      .inline-cta {
+        background: var(--brand-soft);
+        border: 1px solid var(--brand);
+        border-radius: 8px;
+        padding: 8px;
+        margin: 10px 0;
+        font-size: 10px;
+      }
+      .inline-cta strong {
+        color: var(--brand);
+      }
+      .inline-cta a {
+        background: var(--brand);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+        margin-left: 4px;
+        font-size: 9px;
+      }
 
-  /* V1 Substack wide */
-  .v1 .blog-title { font-family: 'Lora', serif; font-weight: 600; }
-  .v1 .blog-body p { font-size: 11px; }
+      /* V1 Substack wide */
+      .v1 .blog-title {
+        font-family: "Lora", serif;
+        font-weight: 600;
+      }
+      .v1 .blog-body p {
+        font-size: 11px;
+      }
 
-  /* V2 Sidebar TOC */
-  .v2 .blog-frame { display: grid; grid-template-columns: 60px 1fr; gap: 8px; }
-  .v2 .toc { font-size: 9px; color: var(--muted); }
-  .v2 .toc-title { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-  .v2 .toc-item { padding: 2px 0; border-left: 2px solid transparent; padding-left: 4px; }
-  .v2 .toc-item.active { border-left-color: var(--brand); color: var(--ink); font-weight: 600; }
+      /* V2 Sidebar TOC */
+      .v2 .blog-frame {
+        display: grid;
+        grid-template-columns: 60px 1fr;
+        gap: 8px;
+      }
+      .v2 .toc {
+        font-size: 9px;
+        color: var(--muted);
+      }
+      .v2 .toc-title {
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+      .v2 .toc-item {
+        padding: 2px 0;
+        border-left: 2px solid transparent;
+        padding-left: 4px;
+      }
+      .v2 .toc-item.active {
+        border-left-color: var(--brand);
+        color: var(--ink);
+        font-weight: 600;
+      }
 
-  /* V3 Magazine */
-  .v3 .blog-frame { padding: 0; }
-  .v3 .blog-cover { aspect-ratio: 16/9; background: linear-gradient(135deg, var(--finyk-soft), #d1fae5); padding: 12px; display: flex; flex-direction: column; justify-content: flex-end; }
-  .v3 .blog-cover .blog-title { color: var(--ink); }
-  .v3 .blog-content { padding: 12px; }
-  .v3 .drop-cap::first-letter { font-family: 'Lora', serif; font-size: 32px; font-weight: 600; float: left; line-height: 0.9; margin: 4px 6px 0 0; color: var(--brand); }
-</style>
-</head>
-<body>
-<div class="mockup-page">
-  <div class="mockup-header">
-    <div>
-      <div class="crumb">Mockups · 08 · Blog post template</div>
-      <h1>Pillar blog post — 3 reading modes</h1>
-      <p>Приклад: «Повний гайд: як вести особистий бюджет» (Finyk pillar). Inline CTAs за схемою з ради: intro (150 слів), 60% scroll, exit-intent.</p>
-    </div>
-    <a href="index.html" class="back-link">← Portal</a>
-  </div>
-
-  <div class="variants">
-
-    <div class="variant v1">
-      <div class="variant-head"><span class="variant-label">V1</span><span class="variant-title">Substack wide</span></div>
-      <p class="variant-desc">Wide single-column. Lora serif title. Editorial calm reading. Substack/Medium feel.</p>
-      <div class="variant-body">
-        <div class="blog-frame">
-          <div class="blog-meta">15 квітня 2026 · Finyk · 8 хв читання</div>
-          <div class="blog-title">Повний гайд: як вести особистий бюджет у 2026</div>
-          <div class="blog-lede">Вести фінанси нудно. Ми знаємо. Але мова не про excel-таблиці чи бухгалтерію — мова про те, щоб бачити, куди реально йде твоє життя у грошах.</div>
-          <div class="blog-body">
-            <p>Більшість гайдів починаються з «трекай витрати». Кажу одразу: це найгірша порада. Трекати без причини — як зважуватися без мети.</p>
-            <div class="inline-cta">
-              <strong>Sergeant Finyk</strong> робить це автоматично. <a href="#">Зайняти місце →</a>
-            </div>
-            <div class="blog-h2">Чому таблиці не працюють</div>
-            <p>Через тиждень ти забудеш заповнювати. Через місяць — забудеш чому почав. Це не лінь, це людська природа. Excel вимагає того, чого людський мозок не вміє — щоденного дисциплінованого вводу.</p>
-            <p>Замість того щоб бути дисциплінованим — будь розумним. Делегуй ввід машині, а собі залиш рішення.</p>
-          </div>
+      /* V3 Magazine */
+      .v3 .blog-frame {
+        padding: 0;
+      }
+      .v3 .blog-cover {
+        aspect-ratio: 16/9;
+        background: linear-gradient(135deg, var(--finyk-soft), #d1fae5);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      .v3 .blog-cover .blog-title {
+        color: var(--ink);
+      }
+      .v3 .blog-content {
+        padding: 12px;
+      }
+      .v3 .drop-cap::first-letter {
+        font-family: "Lora", serif;
+        font-size: 32px;
+        font-weight: 600;
+        float: left;
+        line-height: 0.9;
+        margin: 4px 6px 0 0;
+        color: var(--brand);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <div class="mockup-header">
+        <div>
+          <div class="crumb">Mockups · 08 · Blog post template</div>
+          <h1>Pillar blog post — 3 reading modes</h1>
+          <p>
+            Приклад: «Повний гайд: як вести особистий бюджет» (Finyk pillar).
+            Inline CTAs за схемою з ради: intro (150 слів), 60% scroll,
+            exit-intent.
+          </p>
         </div>
+        <a href="index.html" class="back-link">← Portal</a>
       </div>
-    </div>
 
-    <div class="variant v2">
-      <div class="variant-head"><span class="variant-label">V2</span><span class="variant-title">Sidebar TOC</span></div>
-      <p class="variant-desc">Docs-style з sticky TOC. Кращий для довгих гайдів (3000+ слів). Navigation-friendly.</p>
-      <div class="variant-body">
-        <div class="blog-frame">
-          <div class="toc">
-            <div class="toc-title">У статті</div>
-            <div class="toc-item active">Чому таблиці не працюють</div>
-            <div class="toc-item">3 типи витрат</div>
-            <div class="toc-item">Як рахувати бюджет</div>
-            <div class="toc-item">Помилки початківців</div>
-            <div class="toc-item">Інструменти</div>
+      <div class="variants">
+        <div class="variant v1">
+          <div class="variant-head">
+            <span class="variant-label">V1</span
+            ><span class="variant-title">Substack wide</span>
           </div>
-          <div>
-            <div class="blog-meta">8 хв · Finyk</div>
-            <div class="blog-title">Як вести бюджет у 2026</div>
-            <div class="blog-body">
-              <div class="blog-h2">Чому таблиці не працюють</div>
-              <p>Через тиждень забудеш. Через місяць — забудеш чому. Це не лінь — це людська природа.</p>
-              <p>Замість дисципліни — делегуй. Машині ввід, собі — рішення.</p>
-              <div class="inline-cta">
-                <strong>Так робить Finyk.</strong> <a href="#">Дізнатись →</a>
+          <p class="variant-desc">
+            Wide single-column. Lora serif title. Editorial calm reading.
+            Substack/Medium feel.
+          </p>
+          <div class="variant-body">
+            <div class="blog-frame">
+              <div class="blog-meta">15 квітня 2026 · Finyk · 8 хв читання</div>
+              <div class="blog-title">
+                Повний гайд: як вести особистий бюджет у 2026
               </div>
-              <div class="blog-h2">3 типи витрат</div>
-              <p>Фіксовані, варіативні, імпульсивні. Кожен потребує іншого підходу.</p>
+              <div class="blog-lede">
+                Вести фінанси нудно. Ми знаємо. Але мова не про excel-таблиці чи
+                бухгалтерію — мова про те, щоб бачити, куди реально йде твоє
+                життя у грошах.
+              </div>
+              <div class="blog-body">
+                <p>
+                  Більшість гайдів починаються з «трекай витрати». Кажу одразу:
+                  це найгірша порада. Трекати без причини — як зважуватися без
+                  мети.
+                </p>
+                <div class="inline-cta">
+                  <strong>Sergeant Finyk</strong> робить це автоматично.
+                  <a href="#">Зайняти місце →</a>
+                </div>
+                <div class="blog-h2">Чому таблиці не працюють</div>
+                <p>
+                  Через тиждень ти забудеш заповнювати. Через місяць — забудеш
+                  чому почав. Це не лінь, це людська природа. Excel вимагає
+                  того, чого людський мозок не вміє — щоденного дисциплінованого
+                  вводу.
+                </p>
+                <p>
+                  Замість того щоб бути дисциплінованим — будь розумним. Делегуй
+                  ввід машині, а собі залиш рішення.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="variant v2">
+          <div class="variant-head">
+            <span class="variant-label">V2</span
+            ><span class="variant-title">Sidebar TOC</span>
+          </div>
+          <p class="variant-desc">
+            Docs-style з sticky TOC. Кращий для довгих гайдів (3000+ слів).
+            Navigation-friendly.
+          </p>
+          <div class="variant-body">
+            <div class="blog-frame">
+              <div class="toc">
+                <div class="toc-title">У статті</div>
+                <div class="toc-item active">Чому таблиці не працюють</div>
+                <div class="toc-item">3 типи витрат</div>
+                <div class="toc-item">Як рахувати бюджет</div>
+                <div class="toc-item">Помилки початківців</div>
+                <div class="toc-item">Інструменти</div>
+              </div>
+              <div>
+                <div class="blog-meta">8 хв · Finyk</div>
+                <div class="blog-title">Як вести бюджет у 2026</div>
+                <div class="blog-body">
+                  <div class="blog-h2">Чому таблиці не працюють</div>
+                  <p>
+                    Через тиждень забудеш. Через місяць — забудеш чому. Це не
+                    лінь — це людська природа.
+                  </p>
+                  <p>
+                    Замість дисципліни — делегуй. Машині ввід, собі — рішення.
+                  </p>
+                  <div class="inline-cta">
+                    <strong>Так робить Finyk.</strong>
+                    <a href="#">Дізнатись →</a>
+                  </div>
+                  <div class="blog-h2">3 типи витрат</div>
+                  <p>
+                    Фіксовані, варіативні, імпульсивні. Кожен потребує іншого
+                    підходу.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="variant v3">
+          <div class="variant-head">
+            <span class="variant-label">V3</span
+            ><span class="variant-title">Magazine cover</span>
+          </div>
+          <p class="variant-desc">
+            Cover-image hero + drop cap у тексті. Sergeant-branded. Для
+            cornerstone / promotional pieces.
+          </p>
+          <div class="variant-body">
+            <div class="blog-frame">
+              <div class="blog-cover">
+                <div class="blog-meta" style="color: var(--brand)">
+                  Finyk · Pillar
+                </div>
+                <div class="blog-title">Як вести бюджет у 2026.</div>
+              </div>
+              <div class="blog-content">
+                <div class="blog-meta">8 хв читання · April 2026</div>
+                <p class="drop-cap" style="margin-top: 8px">
+                  Більшість гайдів починаються з «трекай витрати». Скажу одразу:
+                  це найгірша порада. Трекати без причини — як зважуватись без
+                  мети.
+                </p>
+                <div class="inline-cta">
+                  <strong>Sergeant Finyk</strong> бере це на себе.
+                  <a href="#">Спробувати →</a>
+                </div>
+                <p style="color: var(--muted)">
+                  Замість дисципліни — делегуй ввід машині, собі — рішення.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="variant v3">
-      <div class="variant-head"><span class="variant-label">V3</span><span class="variant-title">Magazine cover</span></div>
-      <p class="variant-desc">Cover-image hero + drop cap у тексті. Sergeant-branded. Для cornerstone / promotional pieces.</p>
-      <div class="variant-body">
-        <div class="blog-frame">
-          <div class="blog-cover">
-            <div class="blog-meta" style="color: var(--brand);">Finyk · Pillar</div>
-            <div class="blog-title">Як вести бюджет у 2026.</div>
-          </div>
-          <div class="blog-content">
-            <div class="blog-meta">8 хв читання · April 2026</div>
-            <p class="drop-cap" style="margin-top: 8px;">Більшість гайдів починаються з «трекай витрати». Скажу одразу: це найгірша порада. Трекати без причини — як зважуватись без мети.</p>
-            <div class="inline-cta">
-              <strong>Sergeant Finyk</strong> бере це на себе. <a href="#">Спробувати →</a>
-            </div>
-            <p style="color: var(--muted);">Замість дисципліни — делегуй ввід машині, собі — рішення.</p>
-          </div>
-        </div>
+      <div class="notes">
+        <h2>Notes</h2>
+        <ul>
+          <li>
+            <strong>V1 Substack</strong> — recommended default. Resonates з
+            UA-tech читачами, easy to maintain.
+          </li>
+          <li>
+            <strong>V2 TOC</strong> — для cornerstone-довгих гайдів (3000+
+            слів). Не для weekly content.
+          </li>
+          <li>
+            <strong>V3 Magazine</strong> — для promotional / launch-day posts.
+            Cover image — n8n flow #8 generated based on module accent.
+          </li>
+          <li>
+            Усі 3 — однакові 3 inline CTA точки (intro, mid, exit-intent). Texti
+            rules з ради: "Увійди в перших 500" / "Спробуй першим".
+          </li>
+        </ul>
       </div>
     </div>
-
-  </div>
-
-  <div class="notes">
-    <h2>Notes</h2>
-    <ul>
-      <li><strong>V1 Substack</strong> — recommended default. Resonates з UA-tech читачами, easy to maintain.</li>
-      <li><strong>V2 TOC</strong> — для cornerstone-довгих гайдів (3000+ слів). Не для weekly content.</li>
-      <li><strong>V3 Magazine</strong> — для promotional / launch-day posts. Cover image — n8n flow #8 generated based on module accent.</li>
-      <li>Усі 3 — однакові 3 inline CTA точки (intro, mid, exit-intent). Texti rules з ради: "Увійди в перших 500" / "Спробуй першим".</li>
-    </ul>
-  </div>
-</div>
-</body>
+  </body>
 </html>
