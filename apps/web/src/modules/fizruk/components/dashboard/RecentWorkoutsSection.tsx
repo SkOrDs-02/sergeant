@@ -63,7 +63,12 @@ export function RecentWorkoutsSection({
   onSeeAll,
 }: RecentWorkoutsSectionProps) {
   return (
-    <Card as="section" radius="lg" aria-label="Останні тренування">
+    <Card
+      as="section"
+      prominence="glass"
+      radius="r-lg"
+      aria-label="Останні тренування"
+    >
       <div className="flex items-baseline justify-between gap-2 mb-3">
         <SectionHeading as="h2" size="sm">
           Останні тренування

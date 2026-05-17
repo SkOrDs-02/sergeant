@@ -19,6 +19,7 @@
  * isolation.
  */
 
+import { Card } from "@shared/components/ui/Card";
 import type { DashboardKpis } from "@sergeant/fizruk-domain/domain";
 import type { MuscleState } from "@sergeant/fizruk-domain";
 
@@ -54,11 +55,15 @@ interface ChipProps {
 
 function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
   return (
-    <button
+    <Card
+      as="button"
+      prominence="glass"
+      radius="r-xl"
+      padding="none"
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="flex-1 min-w-0 rounded-2xl border border-line bg-bg hover:bg-panelHi active:scale-[0.99] px-3 py-2.5 text-left transition-[background-color,transform]"
+      className="flex-1 min-w-0 active:scale-[0.99] hover:opacity-90 px-3 py-2.5 text-left transition-[opacity,transform]"
     >
       <span className="block text-meta text-subtle truncate">{label}</span>
       <span
@@ -66,7 +71,7 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
       >
         {value}
       </span>
-    </button>
+    </Card>
   );
 }
 
