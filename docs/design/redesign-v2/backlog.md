@@ -1,6 +1,6 @@
 # Sergeant v2 — Полірувальний backlog (PR-8 follow-ups)
 
-> **Last validated:** 2026-05-17 by @Skords-01 (extended with 2026-05-17 handoff-package audit). **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-18 by council-v4 (alignment audit additions). **Next review:** 2026-08-13.
 > **Status:** Active
 
 ## Контекст
@@ -8,6 +8,47 @@
 Sergeant v2 редизайн (governance: `redesign-v2.md`) поставив **foundation** через 9 PR (PR-0..PR-8). Це backlog **підстраничного полірування** яке доставило б 100% візуального паритету з handoff мокапами, але було свідомо відкладено зі скоп v2 rollout щоб не блокувати landing.
 
 Кожен пункт нижче — окремий micro-PR (~30 хв роботи). Можна виконувати в будь-якому порядку: вони незалежні.
+
+## Audit-2026-05-18 additions
+
+Знайдено council-v4 alignment audit ([`alignment-audit-2026-05-18.md`](./alignment-audit-2026-05-18.md)).
+
+### Critical (block Wave 2 / chrome incoherence)
+
+- [ ] **Fizruk shell migration — ModuleShell → MeshBackground** (D2, audit Q1 pending). `apps/web/src/modules/fizruk/FizrukApp.tsx:121` досі `<ModuleShell module="fizruk">`, тоді як `FinykApp`, `RoutineApp`, `NutritionApp` мігровані. `governance.md:74` декларує PR-6 покриття 4 шеллів, але live-код суперечить. **Перш ніж робити fix — прочитай PR #2908 diff** щоб зрозуміти, чи ModuleShell обгорнутий MeshBackground внутрішньо (intent), чи Fizruk просто пропущений (bug). Якщо bug → `<MeshBackground module="fizruk" style={{...}}>` як в інших трьох. **Розмір:** XS (1 file, ~10 lines) АБО S (якщо ModuleShell треба refactor). **Risk:** R2 medium — Phase 2.5 ModuleBottomNav v2 landed у legacy chrome.
+
+- [ ] **NutritionDashboard `chartHex` → CSS var migration** (D7). `apps/web/src/modules/nutrition/components/NutritionDashboard.tsx:6` + `DailyPlanMacros.tsx:5` імпортують `chartHex` static hex з `@sergeant/design-tokens/tokens`. Замінити на `rgb(var(--c-chart-nutrition))` для HC/dark parity. **Розмір:** XS.
+
+- [ ] **flows/shared.css broken imports fix** (Q11). `mockups/flows/signup-flow.html`, `referral-flow.html`, `n8n-flow.html` — line 7 `href="shared.css"` → файлу немає, 3 mockups візуально зламані. Migrate до `href="../_shared/tokens.css"` як `telegram-bot.html`. **Розмір:** XS (3 line changes).
+
+### Acceptance criteria template (D9)
+
+Phases 3, 5, 6 у `execution-plan.md` мають zero acceptance criteria. Якщо беретесь за task з цих фаз — спочатку додайте acceptance criteria у форматі:
+
+- **F-task (Phase 3 Friction):** step-count before/after | undo-availability TTL | user-visible confirm state
+- **P-task / V-task / W-task (Phase 4):** primitive existing? | wiring file path | motion budget compliance (Hard Rule #17)
+- **Phase 5 (Insights):** trigger ID | value-framed copy text | activation rate target (per insight)
+- **Phase 6 (Expensa delights):** visual reference (mockup or screenshot) | wiring file path | A/B flag? (PostHog)
+
+Без acceptance criteria — task не actionable і має бути reject'нутий під час PR review.
+
+### Post-launch design-ready (mockup exists, no v2 commitment)
+
+5 поверхонь з production-fidelity мокапами у `mockups/product/` без phase-owner у v2 plan. Reject'нуто як wave 2 scope. Wire після v2 close coordinated cycle. **Не дублювати** — якщо беретесь за один з цих surfaces, спочатку прочитайте відповідний `mockups/product/<name>/index.html`.
+
+- [ ] **`mockups/product/nudges/`** — anti-nag cross-module toast system з fatigue-pip counter. Найбільш elaborated novel surface. Refs: `docs/design/cross-module-prompts.md`.
+- [ ] **`mockups/product/push/`** — push notification lock-screen templates (streak reminder / AI nudge / paywall re-engagement / weekly digest). Refs: `docs/launch/tech/telegram-improvements-roadmap.md`.
+- [ ] **`mockups/product/states/`** — empty/error/zero-data system, 5 surfaces (4 modules + hub). Refs: `docs/design/empty-states.md`.
+- [ ] **`mockups/product/responsive.html`** — tablet/desktop hub layout (sidebar nav + bento grid). Жодна phase не торкається tablet/desktop breakpoints.
+- [ ] **`mockups/product/details-pattern.html`** — deep-screen nav pattern (transaction detail, workout detail, meal detail). Absent з module mockups.
+
+### Surface decisions
+
+- [ ] **`quick-add` (Hub FAB → bottom-sheet)** — moved до Phase 4 (Q2 resolution, audit 2026-05-18). Prototype comparison: [`mockups/product/quick-add/comparison-vs-quick-actions.html`](../../../mockups/product/quick-add/comparison-vs-quick-actions.html). PLAN-state mockup (2 тапи: модуль → режим) — implementation target. AI-парсинг (REC-state) — post-launch.
+- [ ] **`QuickActionsMenu` per-item wiring (Phase 5/6)** (Q2 resolution). Code існує у `apps/web/src/shared/components/ui/QuickActionsMenu.tsx` (0 consumers). Wire у per-item long-press для 4 модулів: Фінік transactions, Фізрук exercises, Харч meals, Рутина habits. 4-5 PRs (по 1 на модуль). **Розмір:** S × 4-5.
+- [ ] **`InsightCard` wire у Phase 5** (Q8 resolution). Code існує у `apps/web/src/shared/components/ui/InsightCard.tsx` (0 consumers поза index.ts). Wire у `HubInsightsBlock` per Phase 5 insight triggers. **Розмір:** S.
+- [ ] **`CelebrationModal` dual-file consolidate** (Q8 resolution). `apps/web/src/shared/components/ui/CelebrationModal.tsx` (used у AuthPage + RegisterForm via `useCelebration()`) + `apps/web/src/core/onboarding/CelebrationModal.tsx` (used у HubDashboard) — два файли з тим самим іменем. Звести до одного (вирішити який canonical), оновити imports. **Розмір:** S. **Risk:** import-path renames можуть зачепити stories.
+- [ ] **Deprecate-кандидати** (Q8 resolution): `FeatureSpotlight` + `SpotlightQueue`, `StreakProtection`, `StreakCelebration` — exported у `shared/components/ui/index.ts`, 0 consumers поза own stories/tests. `StreakFlame.StreakBadge` (used у `dashboardCards.tsx:14`) покриває streak-visualization потребу — `StreakProtection` + `StreakCelebration` redundant. Якщо немає планів wire — видалити та зняти з `index.ts`. **Розмір:** XS на кожен.
 
 ## Hidden tech-debt gaps (audit 2026-05-17 — handoff-package)
 
@@ -108,6 +149,7 @@ Sergeant v2 редизайн (governance: `redesign-v2.md`) поставив **f
 ## Verification (фінал)
 
 Перед closure всього v2 rollout:
+
 - `pnpm check` clean
 - `pnpm size-limit` ≤ 900kB JS / 28kB CSS brotli
 - Playwright snapshots × 5 top routes мають візуальний паритет з handoff `screens/Part-*.html`
