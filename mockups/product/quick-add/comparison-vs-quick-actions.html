@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sergeant · Quick-add vs QuickActionsMenu — comparison</title>
+    <link rel="stylesheet" href="../../_shared/tokens.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
+
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(34px, 4.6vw, 52px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.04;
+        margin-bottom: 18px;
+        max-width: 980px;
+        text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 760px;
+        line-height: 1.6;
+      }
+      .meta-row {
+        margin-top: 24px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .meta-row span strong {
+        color: var(--text);
+        font-weight: 600;
+        margin-left: 6px;
+      }
+
+      .verdict {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--brand);
+        border-radius: var(--r-xl);
+        padding: 22px 26px;
+        margin-bottom: 56px;
+      }
+      .verdict .lab {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--brand);
+        margin-bottom: 8px;
+      }
+      .verdict h2 {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.012em;
+        margin-bottom: 4px;
+      }
+      .verdict p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+        max-width: 880px;
+      }
+
+      .scenes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+        margin-bottom: 64px;
+        align-items: start;
+      }
+      .scene {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        border-top: 3px solid;
+      }
+      .scene.create {
+        border-top-color: var(--finyk);
+      }
+      .scene.context {
+        border-top-color: var(--fizruk-dark);
+      }
+      .scene-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .scene-tag {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+      }
+      .scene.create .scene-tag {
+        color: var(--finyk);
+        background: var(--finyk-soft);
+      }
+      .scene.context .scene-tag {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .scene-title {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .scene-sub {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .phone-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .phone-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+      .phone-cap {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        text-align: center;
+      }
+
+      .phone {
+        width: 100%;
+        max-width: 240px;
+        aspect-ratio: 9 / 19.5;
+        background: #1a1614;
+        border: 5px solid #0a0a09;
+        border-radius: 28px;
+        box-shadow: 0 10px 24px rgba(28, 25, 23, 0.18);
+        position: relative;
+        overflow: hidden;
+        color: #f5f0eb;
+      }
+      .phone-island {
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 30%;
+        height: 13px;
+        background: #0a0a09;
+        border-radius: 999px;
+        z-index: 5;
+      }
+      .phone-screen {
+        position: absolute;
+        inset: 0;
+        padding: 26px 0 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .phone-statusbar {
+        display: flex;
+        justify-content: space-between;
+        font-size: 7.5px;
+        font-weight: 700;
+        color: rgba(245, 240, 235, 0.7);
+        font-family: var(--font-mono);
+        margin-bottom: 6px;
+        padding: 0 14px;
+      }
+
+      /* Generic dashboard background */
+      .dashboard-bg {
+        flex: 1;
+        padding: 0 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        opacity: 0.32;
+      }
+      .dashboard-bg.full {
+        opacity: 1;
+      }
+      .dashboard-bg .greet {
+        font-size: 8.5px;
+        color: rgba(245, 240, 235, 0.55);
+      }
+      .dashboard-bg .greet-h {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .dashboard-bg .bcard {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 7px;
+        padding: 7px;
+        font-size: 8px;
+        line-height: 1.4;
+      }
+      .dashboard-bg .bcard b {
+        font-size: 9px;
+      }
+
+      /* FAB */
+      .fab {
+        position: absolute;
+        bottom: 12px;
+        right: 10px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--finyk);
+        color: #0a0a09;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 600;
+        box-shadow: 0 5px 18px rgba(16, 185, 129, 0.4);
+        z-index: 4;
+      }
+      .fab.pulse::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        border: 2px solid var(--finyk);
+        opacity: 0.5;
+        animation: pulse 2s ease-out infinite;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 0.7;
+        }
+        100% {
+          transform: scale(1.5);
+          opacity: 0;
+        }
+      }
+
+      /* SHEET (Scene 1 RIGHT phone) */
+      .sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #221e1b;
+        border-radius: 16px 16px 0 0;
+        padding: 9px 11px 11px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        z-index: 5;
+        max-height: 72%;
+      }
+      .sheet-handle {
+        width: 28px;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        margin: 0 auto 9px;
+      }
+      .sheet-title {
+        font-size: 10px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+      .sheet-sub {
+        font-size: 7.5px;
+        color: rgba(245, 240, 235, 0.55);
+        margin-bottom: 8px;
+      }
+      .module-pick-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      .module-pick {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        padding: 6px 3px;
+        text-align: center;
+        font-size: 7px;
+      }
+      .module-pick.finyk {
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.1);
+      }
+      .module-pick .swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        margin: 0 auto 2px;
+        display: grid;
+        place-items: center;
+        font-size: 8px;
+        color: white;
+      }
+      .module-pick.finyk .swatch {
+        background: var(--finyk);
+      }
+      .module-pick.fizruk .swatch {
+        background: var(--fizruk);
+      }
+      .module-pick.routine .swatch {
+        background: var(--routine);
+      }
+      .module-pick.nutrition .swatch {
+        background: var(--nutrition);
+      }
+      .module-pick .nm {
+        font-size: 7px;
+        color: rgba(245, 240, 235, 0.85);
+      }
+      .modes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+      .mode {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        padding: 7px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .mode .icon-circle {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.14);
+        display: grid;
+        place-items: center;
+        color: var(--finyk);
+        font-size: 9px;
+      }
+      .mode .name {
+        font-size: 8px;
+        font-weight: 700;
+      }
+      .mode .hint {
+        font-size: 6.5px;
+        color: rgba(245, 240, 235, 0.45);
+      }
+
+      /* TX LIST (Scene 2 phones) */
+      .tx-list {
+        flex: 1;
+        padding: 0 10px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .tx-head {
+        font-size: 9px;
+        font-weight: 800;
+        padding: 4px 0;
+        color: rgba(245, 240, 235, 0.85);
+      }
+      .tx-head .sub {
+        display: block;
+        font-size: 7px;
+        font-weight: 500;
+        color: rgba(245, 240, 235, 0.45);
+        margin-top: 2px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .tx-row {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 7px 9px;
+        display: grid;
+        grid-template-columns: 18px 1fr auto;
+        gap: 8px;
+        align-items: center;
+        font-size: 8px;
+      }
+      .tx-row .ico {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.16);
+        color: var(--finyk);
+        display: grid;
+        place-items: center;
+        font-size: 10px;
+      }
+      .tx-row .ico.coffee {
+        background: rgba(255, 140, 120, 0.2);
+        color: var(--routine);
+      }
+      .tx-row .ico.food {
+        background: rgba(176, 230, 54, 0.2);
+        color: var(--nutrition);
+      }
+      .tx-row .name {
+        font-weight: 700;
+      }
+      .tx-row .meta {
+        font-size: 6.5px;
+        color: rgba(245, 240, 235, 0.4);
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .tx-row .amount {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 9px;
+      }
+      .tx-row.pressed {
+        background: rgba(34, 211, 238, 0.1);
+        border-color: rgba(34, 211, 238, 0.4);
+        position: relative;
+      }
+      .tx-row.pressed::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 10px;
+        border: 1.5px solid var(--fizruk);
+        opacity: 0.4;
+        animation: press-glow 1.6s ease-out infinite;
+        pointer-events: none;
+      }
+      @keyframes press-glow {
+        0% {
+          transform: scale(1);
+          opacity: 0.6;
+        }
+        100% {
+          transform: scale(1.06);
+          opacity: 0;
+        }
+      }
+      .press-hint {
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.62);
+        color: rgba(245, 240, 235, 0.85);
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 7px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        z-index: 6;
+      }
+
+      /* RADIAL MENU (Scene 2 RIGHT phone) */
+      .radial {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 6;
+        pointer-events: none;
+      }
+      .radial-anchor {
+        position: absolute;
+        top: 53%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 7;
+      }
+      .radial-source {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        background: rgba(34, 211, 238, 0.18);
+        border: 1.5px solid var(--fizruk);
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        color: var(--fizruk);
+      }
+      .radial-arc {
+        position: absolute;
+        inset: 0;
+      }
+      .radial-action {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+      }
+      .radial-action .btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #1a1614;
+        border: 1.5px solid rgba(255, 255, 255, 0.18);
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        color: #f5f0eb;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+      .radial-action .btn.danger {
+        color: #ff8c78;
+        border-color: rgba(255, 140, 120, 0.5);
+      }
+      .radial-action .btn.primary {
+        color: var(--finyk);
+        border-color: rgba(16, 185, 129, 0.5);
+      }
+      .radial-action .lab {
+        font-size: 6.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(245, 240, 235, 0.9);
+        background: rgba(0, 0, 0, 0.7);
+        padding: 2px 5px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
+      .scene-foot {
+        margin-top: 4px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--border);
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+      .scene-foot dl {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 6px 14px;
+      }
+      .scene-foot dt {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--subtle);
+        align-self: start;
+        padding-top: 2px;
+      }
+      .scene-foot dd {
+        color: var(--text);
+      }
+      .scene-foot code {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+
+      /* Combined section */
+      .combined {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 32px;
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 36px;
+        align-items: center;
+      }
+      .combined-text h3 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+      }
+      .combined-text p {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 14px;
+      }
+      .combined-text ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .combined-text li {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 10px;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+      .combined-text li::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--finyk);
+        margin-top: 9px;
+      }
+      .combined-text li.context::before {
+        background: var(--fizruk-dark);
+      }
+      .combined-phone {
+        display: flex;
+        justify-content: center;
+      }
+      .combined-phone .phone {
+        max-width: 280px;
+      }
+
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
+
+      @media (max-width: 980px) {
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .scenes,
+        .combined {
+          grid-template-columns: 1fr;
+        }
+        .combined {
+          gap: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <div class="crumb">
+          <a href="../../index.html">мокапи</a><span class="sep">/</span>
+          <a href="../">продукт</a><span class="sep">/</span>
+          <a href="index.html">швидкий запис</a><span class="sep">/</span>
+          <span>порівняння з QuickActionsMenu</span>
+        </div>
+        <h1>
+          <em>quick-add</em> vs <em>QuickActionsMenu</em> — два інструменти, не
+          конкуренти
+        </h1>
+        <p class="lede">
+          Один створює новий запис із Hub-рівня (FAB → нижній лист). Другий діє
+          на існуючий елемент списку (long-press → радіальне меню). Це різні
+          рівні UI — обидва можуть жити, треба тільки чітко розмежувати скоупи.
+        </p>
+        <div class="meta-row">
+          <span>Контекст<strong>Council audit · Q2 prototype</strong></span>
+          <span>Дата<strong>2026-05-18</strong></span>
+          <span
+            >Файли<strong
+              >mockups/product/quick-add/index.html ·
+              apps/web/src/shared/components/ui/QuickActionsMenu.tsx</strong
+            ></span
+          >
+        </div>
+      </header>
+
+      <div class="verdict">
+        <div class="lab">Verdict</div>
+        <h2>Це не «один замість іншого» — це різні рівні</h2>
+        <p>
+          <strong>quick-add</strong> = «створити новий запис у будь-який модуль»
+          (Hub entry point). <strong>QuickActionsMenu</strong> = «зробити дію
+          над існуючим item» (per-row context). Якщо ship обидва — потрібен
+          документальний boundary. Якщо ship лише quick-add — QuickActionsMenu
+          deprecate. Найдешевший шлях: спочатку quick-add (Phase 4), а
+          QuickActionsMenu залишити orphan-у-shared/ до моменту, коли
+          live-product покаже потребу у per-item long-press.
+        </p>
+      </div>
+
+      <div class="scenes">
+        <!-- ============ SCENE 1: CREATE (quick-add) ============ -->
+        <div class="scene create">
+          <div class="scene-head">
+            <span class="scene-tag">створити</span>
+            <span class="scene-title">quick-add · FAB → лист</span>
+          </div>
+          <p class="scene-sub">
+            Юзер хоче <b>додати новий запис</b> — не важливо в який модуль. Тап
+            по FAB на Hub-екрані → відкривається нижній лист з 4-modulе picker +
+            4 mode tiles. 2 тапи замість переходу в модуль.
+          </p>
+
+          <div class="phone-row">
+            <div class="phone-wrap">
+              <div class="phone-cap">1. Hub · FAB видно</div>
+              <div class="phone">
+                <div class="phone-island"></div>
+                <div class="phone-screen">
+                  <div class="phone-statusbar">
+                    <span>9:41</span><span>●●● ▮▮▮</span>
+                  </div>
+                  <div class="dashboard-bg full">
+                    <div class="greet">Привіт, Олексій</div>
+                    <div class="greet-h">Сьогодні · пт</div>
+                    <div class="bcard">Фінік<br /><b>₴ 487 / 800</b></div>
+                    <div class="bcard">Фізрук<br /><b>45 хв</b></div>
+                    <div class="bcard">Рутина<br /><b>3 / 5</b></div>
+                    <div class="bcard">Харчув.<br /><b>1 840 ккал</b></div>
+                  </div>
+                  <div class="fab pulse">+</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-wrap">
+              <div class="phone-cap">2. Тап → лист відкритий</div>
+              <div class="phone">
+                <div class="phone-island"></div>
+                <div class="phone-screen">
+                  <div class="phone-statusbar">
+                    <span>9:41</span><span>●●● ▮▮▮</span>
+                  </div>
+                  <div class="dashboard-bg">
+                    <div class="greet">Привіт</div>
+                    <div class="greet-h">Сьогодні</div>
+                  </div>
+                  <div class="sheet">
+                    <div class="sheet-handle"></div>
+                    <div class="sheet-title">Швидкий запис</div>
+                    <div class="sheet-sub">Куди запис?</div>
+                    <div class="module-pick-row">
+                      <div class="module-pick finyk">
+                        <div class="swatch">₴</div>
+                        <div class="nm">Фінік</div>
+                      </div>
+                      <div class="module-pick fizruk">
+                        <div class="swatch">💪</div>
+                        <div class="nm">Фізрук</div>
+                      </div>
+                      <div class="module-pick routine">
+                        <div class="swatch">●</div>
+                        <div class="nm">Рутина</div>
+                      </div>
+                      <div class="module-pick nutrition">
+                        <div class="swatch">🥗</div>
+                        <div class="nm">Харч.</div>
+                      </div>
+                    </div>
+                    <div class="sheet-sub" style="margin-top: 4px">
+                      Як записати?
+                    </div>
+                    <div class="modes">
+                      <div class="mode">
+                        <div class="icon-circle">✎</div>
+                        <div class="name">Текст</div>
+                        <div class="hint">вручну</div>
+                      </div>
+                      <div class="mode">
+                        <div class="icon-circle">🎙</div>
+                        <div class="name">Голос</div>
+                        <div class="hint">диктування</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="scene-foot">
+            <dl>
+              <dt>trigger</dt>
+              <dd>Single tap на FAB (видимий завжди на Hub)</dd>
+              <dt>сценарій</dt>
+              <dd>«Я хочу записати щось — не важливо, що саме»</dd>
+              <dt>контекст</dt>
+              <dd>Hub-level (one entry point на весь продукт)</dd>
+              <dt>density</dt>
+              <dd>4 модулі × 4 режими = 16 точок входу за 2 тапи</dd>
+              <dt>статус</dt>
+              <dd>
+                Mockup-ready, код не написано. <code>Phase 4 (V1)</code> по
+                audit.
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <!-- ============ SCENE 2: CONTEXT (QuickActionsMenu) ============ -->
+        <div class="scene context">
+          <div class="scene-head">
+            <span class="scene-tag">діяти</span>
+            <span class="scene-title">QuickActionsMenu · long-press</span>
+          </div>
+          <p class="scene-sub">
+            Юзер дивиться список — наприклад транзакцій у Фініку — і хоче
+            <b>щось зробити з конкретним рядком</b>: відредагувати, видалити,
+            продублювати. Long-press 500ms на рядку → радіальне меню з 3-5 дій
+            емерджиться над item'ом.
+          </p>
+
+          <div class="phone-row">
+            <div class="phone-wrap">
+              <div class="phone-cap">1. Список · юзер тримає палець</div>
+              <div class="phone">
+                <div class="phone-island"></div>
+                <div class="phone-screen">
+                  <div class="phone-statusbar">
+                    <span>9:41</span><span>●●● ▮▮▮</span>
+                  </div>
+                  <div class="tx-list">
+                    <div class="tx-head">
+                      Фінік · сьогодні<span class="sub">5 транзакцій</span>
+                    </div>
+                    <div class="tx-row">
+                      <span class="ico coffee">☕</span
+                      ><span
+                        ><span class="name">Кава</span>
+                        <span class="meta">9:12 · Кафе</span></span
+                      ><span class="amount">−65</span>
+                    </div>
+                    <div class="tx-row pressed">
+                      <span class="ico food">🥗</span
+                      ><span
+                        ><span class="name">Обід</span>
+                        <span class="meta">14:08 · Salateira</span></span
+                      ><span class="amount">−180</span>
+                    </div>
+                    <div class="tx-row">
+                      <span class="ico">⛽</span
+                      ><span
+                        ><span class="name">Бензин</span>
+                        <span class="meta">16:45 · OKKO</span></span
+                      ><span class="amount">−620</span>
+                    </div>
+                    <div class="tx-row">
+                      <span class="ico coffee">☕</span
+                      ><span
+                        ><span class="name">Кава</span>
+                        <span class="meta">17:30 · Mavpa</span></span
+                      ><span class="amount">−72</span>
+                    </div>
+                  </div>
+                  <div class="press-hint">тримай 500ms</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-wrap">
+              <div class="phone-cap">2. Меню розкрилось</div>
+              <div class="phone">
+                <div class="phone-island"></div>
+                <div class="phone-screen">
+                  <div class="phone-statusbar">
+                    <span>9:41</span><span>●●● ▮▮▮</span>
+                  </div>
+                  <div class="tx-list" style="opacity: 0.35">
+                    <div class="tx-head">
+                      Фінік · сьогодні<span class="sub">5 транзакцій</span>
+                    </div>
+                    <div class="tx-row">
+                      <span class="ico coffee">☕</span
+                      ><span
+                        ><span class="name">Кава</span>
+                        <span class="meta">9:12 · Кафе</span></span
+                      ><span class="amount">−65</span>
+                    </div>
+                    <div class="tx-row">
+                      <span class="ico food">🥗</span
+                      ><span
+                        ><span class="name">Обід</span>
+                        <span class="meta">14:08 · Salateira</span></span
+                      ><span class="amount">−180</span>
+                    </div>
+                    <div class="tx-row">
+                      <span class="ico">⛽</span
+                      ><span
+                        ><span class="name">Бензин</span>
+                        <span class="meta">16:45 · OKKO</span></span
+                      ><span class="amount">−620</span>
+                    </div>
+                  </div>
+                  <div class="radial"></div>
+                  <div class="radial-anchor">
+                    <div class="radial-arc">
+                      <div
+                        class="radial-action"
+                        style="
+                          transform: translate(
+                            calc(-50% - 56px),
+                            calc(-50% - 28px)
+                          );
+                        "
+                      >
+                        <div class="btn primary">✎</div>
+                        <div class="lab">edit</div>
+                      </div>
+                      <div
+                        class="radial-action"
+                        style="
+                          transform: translate(
+                            calc(-50% + 0px),
+                            calc(-50% - 64px)
+                          );
+                        "
+                      >
+                        <div class="btn">⎘</div>
+                        <div class="lab">dup</div>
+                      </div>
+                      <div
+                        class="radial-action"
+                        style="
+                          transform: translate(
+                            calc(-50% + 56px),
+                            calc(-50% - 28px)
+                          );
+                        "
+                      >
+                        <div class="btn">🏷</div>
+                        <div class="lab">tag</div>
+                      </div>
+                      <div
+                        class="radial-action"
+                        style="
+                          transform: translate(
+                            calc(-50% + 56px),
+                            calc(-50% + 28px)
+                          );
+                        "
+                      >
+                        <div class="btn danger">⌫</div>
+                        <div class="lab">del</div>
+                      </div>
+                    </div>
+                    <div class="radial-source">🥗</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="scene-foot">
+            <dl>
+              <dt>trigger</dt>
+              <dd>Long-press 500ms на конкретному item</dd>
+              <dt>сценарій</dt>
+              <dd>«Я хочу швидку дію над цим конкретним рядком»</dd>
+              <dt>контекст</dt>
+              <dd>
+                Item-level (per row — будь-який список у будь-якому модулі)
+              </dd>
+              <dt>density</dt>
+              <dd>3-5 actions у пів-кругу (radius 80px з коду)</dd>
+              <dt>статус</dt>
+              <dd>
+                Код є (<code>QuickActionsMenu.tsx</code>), 0 consumers, mockup
+                відсутній.
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ COMBINED ============ -->
+      <div class="combined">
+        <div class="combined-text">
+          <h3>Обидва на одному екрані — як уявити</h3>
+          <p>
+            FAB унизу-справа — це quick-add вхід. Long-press на будь-якому рядку
+            списку — це QuickActionsMenu. Між ними немає конфлікту: різні жести,
+            різні цілі, різний рівень UI.
+          </p>
+          <ul>
+            <li>
+              <b>tap FAB</b> → нижній лист «куди + як записати» →
+              <em>створення</em>
+            </li>
+            <li class="context">
+              <b>long-press item</b> → радіальне меню над item'ом →
+              <em>дія над існуючим</em>
+            </li>
+          </ul>
+          <p
+            style="
+              margin-top: 18px;
+              font-size: 13px;
+              color: var(--subtle);
+              border-left: 2px solid var(--border);
+              padding-left: 12px;
+            "
+          >
+            Ризик розрулювати — щоб юзер не плутав. Tutorial spotlight на FAB
+            при першому Hub-візиті + onboarding-hint про long-press при першому
+            open списку. Tech-debt не виникне, якщо документуємо це у
+            <code>backlog.md</code> при ship'і Phase 4 FAB.
+          </p>
+        </div>
+
+        <div class="combined-phone">
+          <div class="phone">
+            <div class="phone-island"></div>
+            <div class="phone-screen">
+              <div class="phone-statusbar">
+                <span>9:41</span><span>●●● ▮▮▮</span>
+              </div>
+              <div class="tx-list">
+                <div class="tx-head">
+                  Фінік · сьогодні<span class="sub">5 транзакцій</span>
+                </div>
+                <div class="tx-row">
+                  <span class="ico coffee">☕</span
+                  ><span
+                    ><span class="name">Кава</span>
+                    <span class="meta">9:12 · Кафе</span></span
+                  ><span class="amount">−65</span>
+                </div>
+                <div class="tx-row">
+                  <span class="ico food">🥗</span
+                  ><span
+                    ><span class="name">Обід</span>
+                    <span class="meta">14:08 · Salateira</span></span
+                  ><span class="amount">−180</span>
+                </div>
+                <div class="tx-row">
+                  <span class="ico">⛽</span
+                  ><span
+                    ><span class="name">Бензин</span>
+                    <span class="meta">16:45 · OKKO</span></span
+                  ><span class="amount">−620</span>
+                </div>
+                <div class="tx-row">
+                  <span class="ico coffee">☕</span
+                  ><span
+                    ><span class="name">Кава</span>
+                    <span class="meta">17:30 · Mavpa</span></span
+                  ><span class="amount">−72</span>
+                </div>
+                <div class="tx-row">
+                  <span class="ico">🛒</span
+                  ><span
+                    ><span class="name">Продукти</span>
+                    <span class="meta">19:20 · Сільпо</span></span
+                  ><span class="amount">−420</span>
+                </div>
+              </div>
+              <div class="fab pulse">+</div>
+              <div
+                class="press-hint"
+                style="
+                  bottom: 58px;
+                  background: rgba(34, 211, 238, 0.18);
+                  color: var(--fizruk);
+                "
+              >
+                long-press на рядку = меню
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="bot">
+        <span
+          >Sergeant ·
+          <strong>product/quick-add/comparison-vs-quick-actions</strong> ·
+          2026-05-18</span
+        >
+        <span
+          >Audit ref ·
+          <strong
+            ><a
+              href="../../../docs/design/redesign-v2/alignment-audit-2026-05-18.md"
+              >Q2 in alignment-audit</a
+            ></strong
+          ></span
+        >
+      </footer>
+    </div>
+  </body>
+</html>

@@ -66,6 +66,7 @@ function runLintStaged(env) {
         cwd: REPO_ROOT,
         stdio: "inherit",
         env,
+        shell: process.platform === "win32",
       },
     );
     child.on("error", rejectSpawn);
