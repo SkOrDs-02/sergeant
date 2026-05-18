@@ -1,11 +1,12 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-18
  * Status: Active
  */
 import { useMemo } from "react";
-import { chartHex } from "@sergeant/design-tokens/tokens";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { ProgressRing } from "@shared/components/ui/ProgressRing";
+import { MacroBarRow } from "@shared/components/ui/MacroBarRow";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
@@ -18,97 +19,11 @@ import {
 } from "../lib/nutritionStorage";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 
-type MacroKey = "kcal" | "protein_g" | "fat_g" | "carbs_g";
-type MacroTargetKey =
-  | "dailyTargetKcal"
-  | "dailyTargetProtein_g"
-  | "dailyTargetFat_g"
-  | "dailyTargetCarbs_g";
-
 type WeekRow = MacrosRow;
 
 function todayISO(): string {
   return toLocalISODate(new Date());
 }
-
-function pct(cur: number, target: number): number {
-  if (!(target > 0)) return 0;
-  return Math.min(100, (cur / target) * 100);
-}
-
-function ring(
-  percent: number,
-  color: string,
-  size = 56,
-  stroke = 5,
-): JSX.Element {
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const dash = (Math.min(percent, 100) / 100) * circ;
-  return (
-    <svg width={size} height={size} className="block -rotate-90">
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={stroke}
-        className="text-line/30"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeDasharray={`${dash} ${circ}`}
-        strokeLinecap="round"
-        className="transition-[stroke-dasharray,stroke-dashoffset] duration-500"
-      />
-    </svg>
-  );
-}
-
-interface MacroDef {
-  key: MacroKey;
-  label: string;
-  color: string;
-  prefKey: MacroTargetKey;
-  unit: string;
-}
-
-const MACRO_DEFS: MacroDef[] = [
-  {
-    key: "kcal",
-    label: "Ккал",
-    color: chartHex.kcal,
-    prefKey: "dailyTargetKcal",
-    unit: "",
-  },
-  {
-    key: "protein_g",
-    label: "Білки",
-    color: chartHex.protein,
-    prefKey: "dailyTargetProtein_g",
-    unit: "г",
-  },
-  {
-    key: "fat_g",
-    label: "Жири",
-    color: chartHex.fat,
-    prefKey: "dailyTargetFat_g",
-    unit: "г",
-  },
-  {
-    key: "carbs_g",
-    label: "Вуглев.",
-    color: chartHex.carbs,
-    prefKey: "dailyTargetCarbs_g",
-    unit: "г",
-  },
-];
 
 function MiniBar({
   rows,
@@ -188,105 +103,116 @@ export function NutritionDashboard({
     [log, today],
   );
 
-  const hasTargets =
-    (prefs.dailyTargetKcal || 0) > 0 ||
-    (prefs.dailyTargetProtein_g || 0) > 0 ||
-    (prefs.dailyTargetFat_g || 0) > 0 ||
-    (prefs.dailyTargetCarbs_g || 0) > 0;
+  const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
+
+  const kcalConsumed = Math.round(macros.kcal || 0);
+  const kcalGoal = prefs.dailyTargetKcal || 0;
+
+  const protein = {
+    consumed: Math.round(macros.protein_g || 0),
+    goal: prefs.dailyTargetProtein_g || 0,
+  };
+  const fat = {
+    consumed: Math.round(macros.fat_g || 0),
+    goal: prefs.dailyTargetFat_g || 0,
+  };
+  const carbs = {
+    consumed: Math.round(macros.carbs_g || 0),
+    goal: prefs.dailyTargetCarbs_g || 0,
+  };
 
   return (
     <div className="grid gap-3">
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="text-style-label text-text">Сьогодні</div>
-            <div className="text-xs text-subtle">
-              {summary.mealCount}{" "}
-              {pluralUa(summary.mealCount, {
-                one: "прийом",
-                few: "прийоми",
-                many: "прийомів",
-              })}{" "}
-              їжі
+      {/* ── Hero card ── */}
+      <Card prominence="hero" module="nutrition" radius="r-2xl" padding="none">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-style-label text-text">Сьогодні</div>
+              <div className="text-xs text-subtle">
+                {summary.mealCount}{" "}
+                {pluralUa(summary.mealCount, {
+                  one: "прийом",
+                  few: "прийоми",
+                  many: "прийомів",
+                })}{" "}
+                їжі
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={onAddMeal}
+              className={cn(
+                "text-style-label shrink-0 px-4 h-11 min-w-[44px] rounded-xl",
+                "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",
+              )}
+            >
+              + Додати
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onAddMeal}
-            className={cn(
-              "text-style-label shrink-0 px-4 h-9 rounded-xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",
-            )}
-          >
-            + Додати
-          </button>
-        </div>
 
-        {hasTargets ? (
-          <div className="grid grid-cols-4 gap-2">
-            {MACRO_DEFS.map((m) => {
-              const cur = Math.round(macros[m.key] || 0);
-              const target = prefs[m.prefKey] || 0;
-              const p = pct(cur, target);
-              return (
-                <div key={m.key} className="flex flex-col items-center gap-1">
-                  <div className="relative">
-                    {ring(p, m.color)}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-text leading-none">
-                        {cur}
+          {hasGoal ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-center">
+                <ProgressRing
+                  variant="nutrition"
+                  value={kcalConsumed}
+                  max={kcalGoal}
+                  size="lg"
+                  aria-label={`Калорії: ${kcalConsumed} з ${kcalGoal}`}
+                  label={
+                    <span className="flex flex-col items-center leading-none gap-0.5">
+                      <span className="text-style-title text-text tabular-nums">
+                        {kcalConsumed}
                       </span>
-                    </div>
-                  </div>
-                  <div className="text-style-caption text-subtle font-semibold leading-none">
-                    {m.label}
-                  </div>
-                  {target > 0 && (
-                    <div className="text-style-caption text-muted leading-none">
-                      / {target}
-                      {m.unit}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 gap-2">
-            {MACRO_DEFS.map((m) => {
-              const cur = Math.round(macros[m.key] || 0);
-              return (
-                <div
-                  key={m.key}
-                  className="rounded-xl border border-nutrition/20 bg-nutrition/8 px-2 py-2.5 text-center"
-                >
-                  <SectionHeading
-                    as="div"
-                    size="xs"
-                    variant="nutrition"
-                    className="leading-none mb-1"
-                  >
-                    {m.label}
-                  </SectionHeading>
-                  <div className="text-sm font-extrabold text-text leading-none">
-                    {cur}
-                    {m.unit ? ` ${m.unit}` : ""}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {!hasTargets && (
-          <button
-            type="button"
-            onClick={onGoToDailyPlan ?? onGoToLog}
-            className="text-style-caption mt-3 w-full text-nutrition-strong dark:text-nutrition hover:underline text-center"
-          >
-            Налаштувати денні цілі КБЖВ →
-          </button>
-        )}
+                      <span className="text-style-caption text-subtle">
+                        / {kcalGoal} ккал
+                      </span>
+                    </span>
+                  }
+                />
+              </div>
+              <MacroBarRow
+                macros={[
+                  {
+                    label: "Білки",
+                    value: protein.consumed,
+                    max: protein.goal,
+                    accent: "nutrition",
+                    unit: "г",
+                  },
+                  {
+                    label: "Жири",
+                    value: fat.consumed,
+                    max: fat.goal,
+                    accent: "warning",
+                    unit: "г",
+                  },
+                  {
+                    label: "Вугл.",
+                    value: carbs.consumed,
+                    max: carbs.goal,
+                    accent: "routine",
+                    unit: "г",
+                  },
+                ]}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-2">
+              <SectionHeading as="div" size="xs" variant="nutrition">
+                Встанови ціль калорій щоб бачити прогрес дня
+              </SectionHeading>
+              <button
+                type="button"
+                onClick={onGoToDailyPlan ?? onGoToLog}
+                className="text-style-caption min-h-[44px] min-w-[44px] px-4 text-nutrition-strong dark:text-nutrition hover:underline text-center"
+              >
+                Налаштувати денні цілі КБЖВ →
+              </button>
+            </div>
+          )}
+        </div>
       </Card>
 
       <Card className="p-4">
