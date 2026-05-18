@@ -112,12 +112,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     // Outer wrapper owns `safe-area-pb` so the floating pill clears
     // the iOS home indicator without doubling padding inside `<nav>`
     // (matches HubBottomNav Phase 1 / M2 fix).
-    <div
-      className={cn("shrink-0 relative z-30", className)}
-      style={{
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-      }}
-    >
+    <div className={cn("shrink-0 relative z-30", className)}>
       <nav
         aria-label={ariaLabel}
         className={cn(

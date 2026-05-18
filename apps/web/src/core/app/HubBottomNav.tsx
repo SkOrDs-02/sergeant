@@ -273,9 +273,6 @@ export function HubBottomNav({
     // surface without the GPU-heavy blur (Android Chrome WebView jank).
     <div
       className="shrink-0 relative z-30"
-      style={{
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-      }}
       aria-hidden={false}
     >
       <nav
