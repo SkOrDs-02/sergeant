@@ -15,11 +15,17 @@ Sergeant v2 редизайн (governance: `redesign-v2.md`) поставив **f
 
 ### Critical (block Wave 2 / chrome incoherence)
 
-- [ ] **Fizruk shell migration — ModuleShell → MeshBackground** (D2, audit Q1 pending). `apps/web/src/modules/fizruk/FizrukApp.tsx:121` досі `<ModuleShell module="fizruk">`, тоді як `FinykApp`, `RoutineApp`, `NutritionApp` мігровані. `governance.md:74` декларує PR-6 покриття 4 шеллів, але live-код суперечить. **Перш ніж робити fix — прочитай PR #2908 diff** щоб зрозуміти, чи ModuleShell обгорнутий MeshBackground внутрішньо (intent), чи Fizruk просто пропущений (bug). Якщо bug → `<MeshBackground module="fizruk" style={{...}}>` як в інших трьох. **Розмір:** XS (1 file, ~10 lines) АБО S (якщо ModuleShell треба refactor). **Risk:** R2 medium — Phase 2.5 ModuleBottomNav v2 landed у legacy chrome.
+- [x] ~~Fizruk shell migration~~ **(Q1 resolved 2026-05-18 — not a gap)**. PR #2908 diff read показав, що `ModuleShell.tsx` сам internally wraps content у `<MeshBackground>` (line 62-78). Fizruk через ModuleShell отримує mesh background. Функціонально еквівалентно іншим трьом модулям (які використовують direct `<MeshBackground>` через Path A migration). Залишилася **architectural inconsistency low-priority** — 3 modules direct vs 1 via ModuleShell — але це не coverage gap і не blocking. R2 ризик знято до **low**. Якщо хочеш delete `ModuleShell` цілком — тоді треба мігрувати Fizruk на Path A; інакше leave as-is. Деталі: [`alignment-audit-2026-05-18.md`](./alignment-audit-2026-05-18.md) §Q1 resolved.
 
 - [ ] **NutritionDashboard `chartHex` → CSS var migration** (D7). `apps/web/src/modules/nutrition/components/NutritionDashboard.tsx:6` + `DailyPlanMacros.tsx:5` імпортують `chartHex` static hex з `@sergeant/design-tokens/tokens`. Замінити на `rgb(var(--c-chart-nutrition))` для HC/dark parity. **Розмір:** XS.
 
-- [ ] **flows/shared.css broken imports fix** (Q11). `mockups/flows/signup-flow.html`, `referral-flow.html`, `n8n-flow.html` — line 7 `href="shared.css"` → файлу немає, 3 mockups візуально зламані. Migrate до `href="../_shared/tokens.css"` як `telegram-bot.html`. **Розмір:** XS (3 line changes).
+- [x] ~~flows/shared.css broken imports fix~~ **(Q11 resolved у PR #2991 — 2026-05-18)**. 3 flow mockups мігровані до `../_shared/tokens.css`.
+
+### Q6 speculative gaps verified (2026-05-18)
+
+- [ ] **`Popover.tsx:242` v1 chrome** (Q6 #14b verified). `bg-panel border border-line rounded-2xl shadow-float` — real v1 surface, рендериться над v2 mesh hub. Migrate до `bg-surface-glass backdrop-blur-md`. **Розмір:** XS-S.
+
+Inші speculative items з `handoff-package/Hidden tech-debt audit.md` verified як: 4 Phase 7 deferred (WelcomeScreen, AuthPage, Input/Form controls), 2 low-priority (OfflineBanner has blur — works visually; Banner has transparency), 1 false alarm (Tooltip uses inverted colors `bg-fg text-surface` — works on any parent), 1 unconfirmed (Toast — grep no hits). Деталі: audit doc §Q6.
 
 ### Acceptance criteria template (D9)
 

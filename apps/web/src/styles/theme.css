@@ -273,7 +273,18 @@
        utilities so Recharts SVG `fill="..."` / `stroke="..."` (which take
        inline strings, not Tailwind class names) reach the same module-
        semantic colors. Sync rule: any change here must also update
-       `chart-{module}` in `packages/design-tokens/tailwind-preset.js`. */
+       `chart-{module}` in `packages/design-tokens/tailwind-preset.js`.
+
+       Systematic contrast pivot across theme scopes (alignment audit Q10,
+       2026-05-18): chart colors deliberately shift between light/dark/HC
+       to maintain ≥5:1 contrast on each surface — light scopes use darker
+       hues (cyan-800, emerald-700, coral-700, lime-800) against cream
+       background; dark scopes use lighter hues (cyan-400 etc.) against
+       dark background; HC variants push even further (cyan-300 in
+       hc.dark). This is intentional, not a regression. Landing mockups
+       (`mockups/landing/directions/*`) referencing brighter chart colors
+       are matching the dark-mode register; light-mode landing alignment
+       depends on Q3 landing-direction lock. */
     --c-chart-finyk: 4 120 87; /* emerald-700 — 5.23:1 vs cream */
     --c-chart-fizruk: 21 94 117; /* cyan-800 — 7.5:1 vs cream */
     --c-chart-routine: 194 58 58; /* coral-700 — 5.06:1 vs cream */

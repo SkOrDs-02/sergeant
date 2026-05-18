@@ -136,6 +136,13 @@ generated_by: council-v4 (5 ролей)
 **Resolver:** redesign-v2-planner (next session — прочитати PR #2908 diff).
 **Deadline-proxy:** before Phase 2 closeout (Wave 2 unblock).
 
+**RESOLVED 2026-05-18 (PR #2908 diff read):** PR #2908 виконав **два migration paths паралельно**:
+
+- **Path A (Finyk/Routine/Nutrition):** Drop `<ModuleShell>` entirely, render `<ModuleAccentProvider module="X">` (без `asShellRoot`) → `<MeshBackground>` → header + content + nav. Inline coментар у `FinykApp.tsx:253-260` пояснює: «ModuleAccentProvider drops `asShellRoot` because MeshBackground takes the shell role».
+- **Path B (Fizruk):** Залишився на `<ModuleShell module="fizruk">` (`FizrukApp.tsx:121`). Сам `ModuleShell.tsx:62-78` (per PR-6 diff) тепер internally wraps content у `<MeshBackground style={shellStyle}>` — comment: «module shell wraps content in `<MeshBackground>` so the mesh-gradient surface renders behind every module screen».
+
+**Висновок:** Fizruk **DOES** отримує MeshBackground — через ModuleShell wrap. Функціонально еквівалентно іншим трьом модулям. D2 «real gap» framing був неточний. Це **architectural inconsistency** (3 modules direct, 1 via ModuleShell), не coverage gap. R2 (medium risk про chrome incoherence) знижено до **low**. Залишається open якщо хочеш delete'нути ModuleShell цілком — тоді Fizruk треба мігрувати на Path A. Інакше: leave as-is.
+
 ### Q2 — QuickActionsMenu vs quick-add: canonical interaction model
 
 **Text:** Code-component `QuickActionsMenu` (radial long-press) vs mockup `quick-add/` (FAB→bottom-sheet) — це дві несумісні interaction models на одному surface. Треба вибрати одну.
@@ -181,12 +188,29 @@ generated_by: council-v4 (5 ролей)
 **Resolver:** redesign-v2-planner.
 **Deadline-proxy:** before Phase 3 starts.
 
+**RESOLVED 2026-05-18 (grep batch verify):**
+
+| #   | Component                                         | Finding                                                                                     | Status                                                 |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| 8   | `OfflineBanner.tsx:37,76,91` + `IOSInstallBanner` | `bg-panel/90 backdrop-blur-sm` — partial v2 (has blur, v1 color)                            | **Low priority** — works visually на mesh завдяки blur |
+| 9   | `WelcomeScreen.tsx:145-266`                       | `bg-panel/60`, `bg-panelHi` — pure v1                                                       | **Phase 7 deferred** per execution-plan                |
+| 10  | `AuthPage` / `LoginForm` / `RegisterForm`         | Out of scope, per plan                                                                      | **Phase 7 deferred**                                   |
+| 11  | `Input.tsx:66-72`                                 | All 3 variants use `bg-panelHi` — real v1 gap on glass parents                              | **Phase 7 deferred** (Form controls audit)             |
+| 12  | `Banner.tsx:20`                                   | `bg-panelHi/60` — v1 with transparency                                                      | **Low priority**                                       |
+| 13  | `Toast.tsx`                                       | grep returned no `bg-panel` matches — uses different surface pattern або programmatic style | **No gap confirmed**                                   |
+| 14a | `Tooltip.tsx:254`                                 | `bg-fg text-surface` — inverted colors (foreground bg)                                      | **No gap** — inversion works on any parent             |
+| 14b | `Popover.tsx:242`                                 | `bg-panel border border-line rounded-2xl shadow-float` — real v1 chrome                     | **Medium priority** — appears on mesh hub              |
+
+**Net result:** 4 already-deferred-to-Phase-7 (правильно), 2 low-priority partial v2 (OfflineBanner, Banner), 1 false alarm (Tooltip), 1 unconfirmed (Toast), 1 real medium gap (`Popover` — added to backlog).
+
 ### Q7 — KpiRow vs KpiRowCompact reconcile
 
 **Text:** `execution-plan.md` згадує `KpiRowCompact`; `Hidden tech-debt audit` proposes `KpiRow`. Однакові чи дві granularities? Reconcile docs або визначити boundary.
 **Blocks:** Phase 4 wiring.
 **Resolver:** redesign-v2-planner.
 **Deadline-proxy:** before Phase 4.
+
+**RESOLVED 2026-05-18 (grep verified):** Не два components — один. `apps/web/src/shared/components/ui/KpiRowCompact.tsx` shipped у PR #2969 (Phase 2.0) як «P2 primitive». `KpiRow` (без `Compact`) — це **aspirational name** у `handoff-package/Hidden tech-debt audit.md:216` («KPI mini-grid... сьогодні inline в 4 модулях»). Tech-debt audit написаний **до** P2 primitives bundle shipping; `KpiRow` як «primitive proposal» був superseded шипленням `KpiRowCompact`. Treat names as aliases — `KpiRowCompact` є канонічна реалізація. Tech-debt audit doc оновлено clarification note. Phase 4 wiring використовує `KpiRowCompact` без амбівалентності.
 
 ### Q8 — 5 code orphans: wire or deprecate?
 
@@ -223,6 +247,8 @@ generated_by: council-v4 (5 ролей)
 **Blocks:** brand coherence at landing.
 **Resolver:** mockup-reviewer + DS owner (next session).
 **Deadline-proxy:** this week (тактично).
+
+**RESOLVED 2026-05-18 (theme.css verified):** Inline comments у `apps/web/src/styles/theme.css` уже документують intent: line 278 `cyan-800 — 7.5:1 vs cream`, line 480 `cyan-400` (lighter for dark backgrounds), line 637 (HC light) знову `cyan-800`, line 677 (HC dark) `cyan-300` (ще lighter для high contrast). Це **систематичний contrast pivot pattern** для всіх module chart vars, не fizruk-specific. Додано додатковий блок-коментар на початку `--c-chart-*` секції що пояснює pivot rationale. Landing mockup `v2-bento-modular` використовує `#22d3ee` (cyan-400) як hero gradient stop — це match'ить **dark-mode** var, не light-mode. Якщо landing рендериться у light theme — це brand-coherence gap (cyan-400 brighter than cyan-800 chart). Не bug у theme.css, а design choice у mockup. Marketing-web workstream вирішить direction lock (Q3) — тоді можна align'ити landing з обраною theme.
 
 ### Q11 — flows/shared.css missing — verify
 

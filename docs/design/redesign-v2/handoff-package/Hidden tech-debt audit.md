@@ -213,7 +213,7 @@
 ### Component layer
 
 - `<HeroSurface>` primitive — wraps `Card prominence="hero"` + ring/decoration/CounterReveal. Сьогодні кожен module re-implements.
-- `<KpiRow>` primitive — KPI mini-grid, де кожен tile = label + tnum value + delta. Сьогодні inline в 4 модулях.
+- ~~`<KpiRow>` primitive~~ — **Superseded 2026-05-18** by `KpiRowCompact` shipped у PR #2969 (Phase 2.0 P2 primitives bundle). Aspirational name from this doc; actual implementation lives як `apps/web/src/shared/components/ui/KpiRowCompact.tsx`. Treat as alias. Q7 у [`../alignment-audit-2026-05-18.md`](../alignment-audit-2026-05-18.md) resolves the naming ambiguity.
 - `<ScanModePill>` primitive — Nutrition mode toggle. Recurring pattern.
 
 ### Process
