@@ -1,14 +1,15 @@
 # Sergeant — жорстка прожарка: маркетинг, монетизація, цінність продукту, growth
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Closed (source audit; delivery status moved to revenue PR plan)
 
 > **Скоуп:** маркетинг · монетизація · цінність продукту · потенціал розвитку.
 > **Перспектива:** product-led growth + indie / pre-seed reality check.
 > **Сорс-комміт:** `f684d87e` (main, 2026-05-04).
 >
 > **Cross-refs:**
-> [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) — actionable PR-план, що виходить з цієї прожарки ·
+> [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md) — canonical delivery PR-plan, що виходить з цієї прожарки ·
+> [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) — reference initiative/decision frame ·
 > [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md) — поточна модель ціноутворення (буде оновлена) ·
 > [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md) — поточний GTM (буде звужений) ·
 > [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md) — технічний skeleton білінгу (поки не реалізований) ·

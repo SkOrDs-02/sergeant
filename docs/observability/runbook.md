@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -338,6 +338,7 @@ Status-code mapping:
 ## AI memory activation & Day-30 decision-point
 
 > **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/launch/tech/ai-memory-activation.md`](../launch/tech/ai-memory-activation.md), [`docs/governance/feature-flags.md`](../governance/feature-flags.md), [ADR-0028](../adr/0028-pgvector-ai-memory.md).
+> **Canonical split:** current AI memory behavior lives in [`docs/architecture/ai-memory.md`](../architecture/ai-memory.md); this section is operational response/activation only.
 
 ### Контекст
 

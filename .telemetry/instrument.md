@@ -38,24 +38,24 @@ posthog-js@^1.372.3
 ```typescript
 posthog.init(VITE_POSTHOG_KEY, {
   api_host: VITE_POSTHOG_HOST,
-  autocapture: false,           // disabled — see PageviewTracker.tsx
-  capture_pageview: false,      // custom tracker handles SPA routing
+  autocapture: false, // disabled — see PageviewTracker.tsx
+  capture_pageview: false, // custom tracker handles SPA routing
   capture_pageleave: true,
-  disable_session_recording: !import.meta.env.PROD,  // recommended addition
+  disable_session_recording: !import.meta.env.PROD, // recommended addition
   loaded: (ph) => {
-    if (import.meta.env.MODE === 'development') ph.opt_out_capturing();
+    if (import.meta.env.MODE === "development") ph.opt_out_capturing();
   },
 });
 ```
 
 #### Mobile — add Sentry init (gap fix)
 
-Create [`apps/mobile/src/lib/observability/sentry.ts`](../apps/mobile/src/lib/observability/sentry.ts) — currently missing. Mirror the web sampling profile from [`apps/web/src/core/observability/sentry.ts`](../apps/web/src/core/observability/sentry.ts).
+Create `apps/mobile/src/lib/observability/sentry.ts` — currently missing. Mirror the web sampling profile from [`apps/web/src/core/observability/sentry.ts`](../apps/web/src/core/observability/sentry.ts).
 
 ```typescript
 // apps/mobile/src/lib/observability/sentry.ts (NEW)
-import * as Sentry from '@sentry/react-native';
-import { Platform } from 'react-native';
+import * as Sentry from "@sentry/react-native";
+import { Platform } from "react-native";
 
 let initialized = false;
 
@@ -66,11 +66,12 @@ export function initSentry(): void {
 
   Sentry.init({
     dsn,
-    environment: __DEV__ ? 'development' : 'production',
+    environment: __DEV__ ? "development" : "production",
     release: process.env.EXPO_PUBLIC_RELEASE,
     sendDefaultPii: false,
     tracesSampler: ({ name }) => {
-      if (typeof name === 'string' && name.startsWith('/onboarding')) return 1.0;
+      if (typeof name === "string" && name.startsWith("/onboarding"))
+        return 1.0;
       return __DEV__ ? 0 : 0.05;
     },
     beforeSend: (event) => {
@@ -81,7 +82,7 @@ export function initSentry(): void {
       return event;
     },
   });
-  Sentry.setTag('platform', Platform.OS);
+  Sentry.setTag("platform", Platform.OS);
   initialized = true;
 }
 ```
@@ -90,19 +91,19 @@ Wire from `apps/mobile/app/_layout.tsx` next to `initPostHog`.
 
 ### Environment Variables
 
-| Variable | Surface | Purpose | Required |
-|----------|---------|---------|----------|
-| `VITE_POSTHOG_KEY` | web | project ingestion key | yes |
-| `VITE_POSTHOG_HOST` | web | `https://eu.i.posthog.com` | yes |
-| `VITE_SENTRY_DSN` | web | Sentry DSN | recommended |
-| `EXPO_PUBLIC_POSTHOG_KEY` | mobile | ingestion key | yes |
-| `EXPO_PUBLIC_POSTHOG_HOST` | mobile | EU/US cluster | yes |
-| `EXPO_PUBLIC_SENTRY_DSN` | mobile | Sentry DSN | **NEW — required after Mobile Sentry init lands** |
-| `EXPO_PUBLIC_RELEASE` | mobile | release tag | recommended |
-| `POSTHOG_PROJECT_API_KEY` | server | ingestion key (NOT personal) | yes for capture |
-| `POSTHOG_API_KEY` | server | personal key — GDPR delete only | optional |
-| `POSTHOG_HOST` | server | cluster URL | yes |
-| `SENTRY_DSN` | server | Sentry DSN | yes |
+| Variable                   | Surface | Purpose                         | Required                                          |
+| -------------------------- | ------- | ------------------------------- | ------------------------------------------------- |
+| `VITE_POSTHOG_KEY`         | web     | project ingestion key           | yes                                               |
+| `VITE_POSTHOG_HOST`        | web     | `https://eu.i.posthog.com`      | yes                                               |
+| `VITE_SENTRY_DSN`          | web     | Sentry DSN                      | recommended                                       |
+| `EXPO_PUBLIC_POSTHOG_KEY`  | mobile  | ingestion key                   | yes                                               |
+| `EXPO_PUBLIC_POSTHOG_HOST` | mobile  | EU/US cluster                   | yes                                               |
+| `EXPO_PUBLIC_SENTRY_DSN`   | mobile  | Sentry DSN                      | **NEW — required after Mobile Sentry init lands** |
+| `EXPO_PUBLIC_RELEASE`      | mobile  | release tag                     | recommended                                       |
+| `POSTHOG_PROJECT_API_KEY`  | server  | ingestion key (NOT personal)    | yes for capture                                   |
+| `POSTHOG_API_KEY`          | server  | personal key — GDPR delete only | optional                                          |
+| `POSTHOG_HOST`             | server  | cluster URL                     | yes                                               |
+| `SENTRY_DSN`               | server  | Sentry DSN                      | yes                                               |
 
 ## Identity
 
@@ -129,38 +130,38 @@ resetIdentity(): void
 
 ### User Traits (target — 12 fields from tracking-plan.yaml)
 
-| Trait | Type | PII | Update | Notes |
-|-------|------|-----|--------|-------|
-| `vibe` | string[] | no | on_change | onboarding module picks |
-| `plan` | enum `free`/`pro` | no | on_change | hard-coded `free` until billing live |
-| `locale` | string ≤16 | no | on_change | `navigator.language` |
-| `signup_date` | YYYY-MM-DD | no | once | `user.createdAt` UTC |
-| `is_internal` | boolean | no | once | gate at `trackEvent`; default false |
-| `signup_provider` | enum `apple`/`google`/`email` | no | once | promoted from event property |
-| `pwa_installed` | boolean | no | on_change | set on `pwa_installed` event |
-| `app_lock_enabled` | boolean | no | on_change | set on app-lock setup |
-| `biometric_enabled` | boolean | no | on_change | set on biometric setup |
-| `mono_connected` | boolean | no | on_change | set on `bank_connect_success` |
-| `streak_current` / `streak_longest` / `expenses_count_30d` / `monthly_active_days` / `modules_active` | snapshot | no | daily | server cron — see Snapshot Sync below |
+| Trait                                                                                                 | Type                          | PII | Update    | Notes                                 |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------- | --- | --------- | ------------------------------------- |
+| `vibe`                                                                                                | string[]                      | no  | on_change | onboarding module picks               |
+| `plan`                                                                                                | enum `free`/`pro`             | no  | on_change | hard-coded `free` until billing live  |
+| `locale`                                                                                              | string ≤16                    | no  | on_change | `navigator.language`                  |
+| `signup_date`                                                                                         | YYYY-MM-DD                    | no  | once      | `user.createdAt` UTC                  |
+| `is_internal`                                                                                         | boolean                       | no  | once      | gate at `trackEvent`; default false   |
+| `signup_provider`                                                                                     | enum `apple`/`google`/`email` | no  | once      | promoted from event property          |
+| `pwa_installed`                                                                                       | boolean                       | no  | on_change | set on `pwa_installed` event          |
+| `app_lock_enabled`                                                                                    | boolean                       | no  | on_change | set on app-lock setup                 |
+| `biometric_enabled`                                                                                   | boolean                       | no  | on_change | set on biometric setup                |
+| `mono_connected`                                                                                      | boolean                       | no  | on_change | set on `bank_connect_success`         |
+| `streak_current` / `streak_longest` / `expenses_count_30d` / `monthly_active_days` / `modules_active` | snapshot                      | no  | daily     | server cron — see Snapshot Sync below |
 
 **No PII.** `email`/`name` are intentionally absent. PostHog distinct_id is the Better Auth opaque string; if email is needed in Sentry, fetch it server-side from auth context, do not push from client.
 
 ### When to Call
 
-| Trigger | Where | Action |
-|---------|-------|--------|
-| Sign-in success (existing user) | [`AuthContext.tsx`](../apps/web/src/core/auth/AuthContext.tsx) (web), [`AnalyticsIdentityBridge.tsx`](../apps/mobile/src/features/analytics/AnalyticsIdentityBridge.tsx) (mobile) | `identifyUser(user.id, buildIdentifyTraits(user))` |
-| Sign-up complete | same | `identifyUser(...)` + capture `signup_completed` |
-| Trait change (e.g. plan → pro) | wherever change happens | `setPersonProperties({ plan: 'pro' })` — see snippet below |
-| Sign-out | logout handlers | `resetIdentity()` |
+| Trigger                         | Where                                                                                                                                                                             | Action                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Sign-in success (existing user) | [`AuthContext.tsx`](../apps/web/src/core/auth/AuthContext.tsx) (web), [`AnalyticsIdentityBridge.tsx`](../apps/mobile/src/features/analytics/AnalyticsIdentityBridge.tsx) (mobile) | `identifyUser(user.id, buildIdentifyTraits(user))`         |
+| Sign-up complete                | same                                                                                                                                                                              | `identifyUser(...)` + capture `signup_completed`           |
+| Trait change (e.g. plan → pro)  | wherever change happens                                                                                                                                                           | `setPersonProperties({ plan: 'pro' })` — see snippet below |
+| Sign-out                        | logout handlers                                                                                                                                                                   | `resetIdentity()`                                          |
 
 ### Template — Web identity wrapper
 
 ```typescript
 // apps/web/src/core/observability/identity.ts (NEW — replaces direct identifyPostHogUser usage in features)
-import * as Sentry from '@sentry/react';
-import { identifyPostHogUser, resetPostHog } from './posthog';
-import type { IdentifyTraits } from './identifyTraits';
+import * as Sentry from "@sentry/react";
+import { identifyPostHogUser, resetPostHog } from "./posthog";
+import type { IdentifyTraits } from "./identifyTraits";
 
 let lastIdentifiedId: string | null = null;
 
@@ -176,10 +177,14 @@ export function identifyUser(userId: string, traits: IdentifyTraits): void {
 }
 
 export function setPersonProperties(traits: Partial<IdentifyTraits>): void {
-  if (typeof window === 'undefined') return;
-  import('posthog-js').then(({ default: posthog }) => {
-    posthog.setPersonProperties(traits);
-  }).catch(() => { /* fire-and-forget */ });
+  if (typeof window === "undefined") return;
+  import("posthog-js")
+    .then(({ default: posthog }) => {
+      posthog.setPersonProperties(traits);
+    })
+    .catch(() => {
+      /* fire-and-forget */
+    });
 }
 
 export function resetIdentity(): void {
@@ -197,13 +202,13 @@ Mobile has two bridges today; consolidate to one canonical bridge that calls the
 
 ```typescript
 // apps/mobile/src/features/analytics/identity.ts (NEW)
-import * as Sentry from '@sentry/react-native';
+import * as Sentry from "@sentry/react-native";
 import {
   identifyPostHogUser,
   resetPostHog,
   setPostHogPersonProperties,
-} from '@/lib/observability/posthog';
-import type { IdentifyTraits } from '@/lib/observability/identifyTraits';
+} from "@/lib/observability/posthog";
+import type { IdentifyTraits } from "@/lib/observability/identifyTraits";
 
 let lastIdentifiedId: string | null = null;
 
@@ -229,9 +234,11 @@ export function resetIdentity(): void {
 
 ```typescript
 // add to apps/mobile/src/lib/observability/posthog.ts
-export function setPostHogPersonProperties(traits: Partial<IdentifyTraits>): void {
+export function setPostHogPersonProperties(
+  traits: Partial<IdentifyTraits>,
+): void {
   enqueue({
-    event: '$set',
+    event: "$set",
     properties: { $set: traits },
   });
 }
@@ -245,8 +252,8 @@ Server uses async-context isolation — `Sentry.setUser` must run inside the req
 
 ```typescript
 // apps/server/src/lib/identity.ts (NEW)
-import * as Sentry from '@sentry/node';
-import { posthogCapture } from './posthogCapture';
+import * as Sentry from "@sentry/node";
+import { posthogCapture } from "./posthogCapture";
 
 export function setUserContext(userId: string): void {
   Sentry.getCurrentScope?.().setUser({ id: userId });
@@ -258,7 +265,7 @@ export async function setUserTraits(
 ): Promise<void> {
   await posthogCapture({
     distinctId: userId,
-    event: '$set',
+    event: "$set",
     properties: { $set: traits },
   });
 }
@@ -276,19 +283,19 @@ The current `trackEvent` signature is `(name: AnalyticsEventName, payload?: Reco
 
 ```typescript
 trackEvent(ANALYTICS_EVENTS.EXPENSE_ADDED, {
-  source: 'manual',
+  source: "manual",
   amount_kop: 12500,
-  category: 'food',
+  category: "food",
 });
 ```
 
 **Target (typed):**
 
 ```typescript
-trackEvent('expense_added', {
-  source: 'manual',        // enum-checked at compile
-  amount_kop: 12500,       // integer-checked
-  category: 'food',        // optional
+trackEvent("expense_added", {
+  source: "manual", // enum-checked at compile
+  amount_kop: 12500, // integer-checked
+  category: "food", // optional
 });
 // trackEvent('expense_added', { source: 'voice' });  // ✗ missing amount_kop
 // trackEvent('expense_added', { source: 'sms' });    // ✗ enum violation
@@ -305,17 +312,17 @@ trackEvent('expense_added', {
 
 ```typescript
 // One representative call. All 96 events follow the same shape.
-import { trackEvent } from '@/core/observability/analytics';
+import { trackEvent } from "@/core/observability/analytics";
 
-trackEvent('expense_added', {
-  source: 'manual',
+trackEvent("expense_added", {
+  source: "manual",
   amount_kop: 12500,
-  category: 'food',
+  category: "food",
 });
 
-trackEvent('experiment_exposed', {
-  experiment_id: 'goal_first',
-  variant: 'goal_first',
+trackEvent("experiment_exposed", {
+  experiment_id: "goal_first",
+  variant: "goal_first",
 });
 ```
 
@@ -338,19 +345,12 @@ The copy-paste artifact below is the **target shape** of the web `analytics.ts`,
 import {
   ANALYTICS_EVENTS,
   type AnalyticsEventName,
-} from '@sergeant/shared/lib/analyticsEvents';
-import {
-  initPostHog,
-  capturePostHogEvent,
-} from './posthog';
-import {
-  identifyUser,
-  resetIdentity,
-  setPersonProperties,
-} from './identity';
-import { ringBufferAppend } from './dualWriteTelemetry';
-import { syncToProductMemory } from './productMemorySync';
-import type { IdentifyTraits } from './identifyTraits';
+} from "@sergeant/shared/lib/analyticsEvents";
+import { initPostHog, capturePostHogEvent } from "./posthog";
+import { identifyUser, resetIdentity, setPersonProperties } from "./identity";
+import { ringBufferAppend } from "./dualWriteTelemetry";
+import { syncToProductMemory } from "./productMemorySync";
+import type { IdentifyTraits } from "./identifyTraits";
 
 export { ANALYTICS_EVENTS };
 export type { AnalyticsEventName, IdentifyTraits };
@@ -363,16 +363,16 @@ export { initPostHog, identifyUser, resetIdentity, setPersonProperties };
 
 export type AnalyticsEventMap = {
   expense_added: {
-    source: 'manual' | 'mono_import' | 'voice' | 'hubchat';
+    source: "manual" | "mono_import" | "voice" | "hubchat";
     amount_kop: number;
     category?: string;
   };
-  expense_deleted: { source: 'manual' | 'bulk' };
+  expense_deleted: { source: "manual" | "bulk" };
   budget_set: { category: string; amount_kop: number };
   experiment_exposed: { experiment_id: string; variant: string };
-  signup_completed: { method: 'email' | 'google' | 'apple' };
+  signup_completed: { method: "email" | "google" | "apple" };
   session_started: {
-    platform: 'web' | 'ios' | 'android' | 'pwa';
+    platform: "web" | "ios" | "android" | "pwa";
     cold_start: boolean;
   };
   feature_flag_evaluated: {
@@ -384,7 +384,9 @@ export type AnalyticsEventMap = {
 };
 
 type EventPayload<E extends AnalyticsEventName> =
-  E extends keyof AnalyticsEventMap ? AnalyticsEventMap[E] : Record<string, unknown>;
+  E extends keyof AnalyticsEventMap
+    ? AnalyticsEventMap[E]
+    : Record<string, unknown>;
 
 // ── Internal-user gate ───────────────────────────────────────────────
 let isInternalUser = false;
@@ -394,8 +396,8 @@ export function setInternalUserFlag(internal: boolean): void {
   isInternalUser = internal;
 }
 
-if (typeof window !== 'undefined') {
-  debugForced = window.localStorage.getItem('ph_debug') === '1';
+if (typeof window !== "undefined") {
+  debugForced = window.localStorage.getItem("ph_debug") === "1";
 }
 
 // ── trackEvent ───────────────────────────────────────────────────────
@@ -426,7 +428,11 @@ export function trackFeatureFlagExposure(
   const key = `${flagKey}:${variant}`;
   if (exposedFlags.has(key)) return;
   exposedFlags.add(key);
-  trackEvent('feature_flag_evaluated', { flag_key: flagKey, variant, is_default: isDefault });
+  trackEvent("feature_flag_evaluated", {
+    flag_key: flagKey,
+    variant,
+    is_default: isDefault,
+  });
 }
 
 // ── Session start ────────────────────────────────────────────────────
@@ -436,19 +442,24 @@ let sessionStarted = false;
 export function trackSessionStart(coldStart: boolean): void {
   if (sessionStarted) return;
   sessionStarted = true;
-  const platform: 'web' | 'pwa' =
-    window.matchMedia?.('(display-mode: standalone)').matches ? 'pwa' : 'web';
-  trackEvent('session_started', { platform, cold_start: coldStart });
+  const platform: "web" | "pwa" = window.matchMedia?.(
+    "(display-mode: standalone)",
+  ).matches
+    ? "pwa"
+    : "web";
+  trackEvent("session_started", { platform, cold_start: coldStart });
 }
 
 // ── Shutdown flush ───────────────────────────────────────────────────
 
-if (typeof window !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      import('posthog-js').then(({ default: posthog }) => {
-        posthog._send_request?.({ flush: true });
-      }).catch(() => undefined);
+if (typeof window !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      import("posthog-js")
+        .then(({ default: posthog }) => {
+          posthog._send_request?.({ flush: true });
+        })
+        .catch(() => undefined);
     }
   });
 }
@@ -458,12 +469,12 @@ if (typeof window !== 'undefined') {
 
 ### Client vs Server
 
-| Event family | Where fired | Why |
-|--------------|-------------|-----|
-| Onboarding, FTUX, core_value, retention, education, security, demo | client (web + mobile) | User-driven UI actions |
-| Subscription lifecycle (`subscription_started/renewed/canceled`) | server (Stripe webhook) | Source of truth; not visible to client |
-| `setPersonProperties({ plan })` on plan flip | server | Sync trait the moment Stripe confirms |
-| Feature flag exposure | client | PostHog flags evaluated client-side |
+| Event family                                                       | Where fired             | Why                                    |
+| ------------------------------------------------------------------ | ----------------------- | -------------------------------------- |
+| Onboarding, FTUX, core_value, retention, education, security, demo | client (web + mobile)   | User-driven UI actions                 |
+| Subscription lifecycle (`subscription_started/renewed/canceled`)   | server (Stripe webhook) | Source of truth; not visible to client |
+| `setPersonProperties({ plan })` on plan flip                       | server                  | Sync trait the moment Stripe confirms  |
+| Feature flag exposure                                              | client                  | PostHog flags evaluated client-side    |
 
 Server captures bypass adblock and cookie loss — keep billing events server-only.
 
@@ -474,7 +485,7 @@ Server captures bypass adblock and cookie loss — keep billing events server-on
 - **Server (`posthogCapture`):** per-request fire-and-forget with 5s timeout. **Add SIGTERM hook** in [`apps/server/src/index.ts`](../apps/server/src/index.ts):
 
 ```typescript
-process.on('SIGTERM', async () => {
+process.on("SIGTERM", async () => {
   // Drain any in-flight POSTs (currently each is an awaited fetch with 5s timeout;
   // serverless deploys should set graceful-shutdown ≥ 5s)
   await new Promise((r) => setTimeout(r, 5000));
@@ -484,12 +495,12 @@ process.on('SIGTERM', async () => {
 
 ### Shutdown / Flush
 
-| Surface | Trigger | Action |
-|---------|---------|--------|
-| Web | `visibilitychange === hidden` | flush PostHog batch |
-| Web | `beforeunload` | NOT used (unreliable on mobile browsers) |
-| Mobile | `AppState === 'background'` | enqueue flush via `setTimeout(0)`; rely on next-launch retry |
-| Server | `SIGTERM` | wait 5s for in-flight POSTs, then exit |
+| Surface | Trigger                       | Action                                                       |
+| ------- | ----------------------------- | ------------------------------------------------------------ |
+| Web     | `visibilitychange === hidden` | flush PostHog batch                                          |
+| Web     | `beforeunload`                | NOT used (unreliable on mobile browsers)                     |
+| Mobile  | `AppState === 'background'`   | enqueue flush via `setTimeout(0)`; rely on next-launch retry |
+| Server  | `SIGTERM`                     | wait 5s for in-flight POSTs, then exit                       |
 
 ### Error Handling
 
@@ -505,8 +516,8 @@ Five user traits update on a daily cadence: `streak_current`, `streak_longest`, 
 
 ```typescript
 // apps/server/src/jobs/snapshotPersonProperties.ts (NEW — STUB)
-import { posthogCapture } from '../lib/posthogCapture';
-import { db } from '../lib/db';
+import { posthogCapture } from "../lib/posthogCapture";
+import { db } from "../lib/db";
 
 export async function snapshotAllUsers(): Promise<void> {
   // TODO: replace with batched paged read once user count > 10k
@@ -515,7 +526,7 @@ export async function snapshotAllUsers(): Promise<void> {
     const traits = await computeSnapshotTraits(u.id);
     await posthogCapture({
       distinctId: u.id,
-      event: '$set',
+      event: "$set",
       properties: { $set: traits },
     });
   }
@@ -523,11 +534,11 @@ export async function snapshotAllUsers(): Promise<void> {
 
 async function computeSnapshotTraits(userId: string) {
   return {
-    streak_current: 0,          // TODO: max consecutive activity days
+    streak_current: 0, // TODO: max consecutive activity days
     streak_longest: 0,
-    expenses_count_30d: 0,      // TODO: COUNT(expense) WHERE user_id=$1 AND created_at > now()-30d
-    monthly_active_days: 0,     // TODO: DISTINCT day FROM analytics_event last 30d
-    modules_active: [] as string[],  // TODO: from hub_first_action_completed_v1 KV
+    expenses_count_30d: 0, // TODO: COUNT(expense) WHERE user_id=$1 AND created_at > now()-30d
+    monthly_active_days: 0, // TODO: DISTINCT day FROM analytics_event last 30d
+    modules_active: [] as string[], // TODO: from hub_first_action_completed_v1 KV
   };
 }
 ```
@@ -538,12 +549,12 @@ Wire via cron at Europe/Kyiv 06:00. Stub returns zeros until the aggregation que
 
 ### Confirming Delivery
 
-| Channel | How |
-|---------|-----|
-| PostHog Live Events | https://eu.posthog.com → Activity → Live → filter by distinct_id |
-| Web devtools | Network tab → filter `eu.i.posthog.com/e/` → check 200 + payload |
-| Mobile (dev) | enable `Sentry.logger.debug` on `apps/mobile/.../posthog.ts` flush; logs surface in Expo terminal |
-| Server | `pino` logs from `posthogCapture` — currently silent on failure; add `logger.warn` on non-2xx |
+| Channel             | How                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| PostHog Live Events | https://eu.posthog.com → Activity → Live → filter by distinct_id                                  |
+| Web devtools        | Network tab → filter `eu.i.posthog.com/e/` → check 200 + payload                                  |
+| Mobile (dev)        | enable `Sentry.logger.debug` on `apps/mobile/.../posthog.ts` flush; logs surface in Expo terminal |
+| Server              | `pino` logs from `posthogCapture` — currently silent on failure; add `logger.warn` on non-2xx     |
 
 ### Expected Latency
 
@@ -553,12 +564,12 @@ Wire via cron at Europe/Kyiv 06:00. Stub returns zeros until the aggregation que
 
 ### Success vs Failure
 
-| HTTP | Meaning | Action |
-|------|---------|--------|
-| 200 | accepted | none |
-| 401 | bad key | check `*_POSTHOG_KEY` env |
-| 429 | rate limit | shouldn't happen at current volume; if so, reduce sampling |
-| 5xx | PostHog issue | swallowed; next event retries implicitly |
+| HTTP | Meaning       | Action                                                     |
+| ---- | ------------- | ---------------------------------------------------------- |
+| 200  | accepted      | none                                                       |
+| 401  | bad key       | check `*_POSTHOG_KEY` env                                  |
+| 429  | rate limit    | shouldn't happen at current volume; if so, reduce sampling |
+| 5xx  | PostHog issue | swallowed; next event retries implicitly                   |
 
 ### Development Testing
 
@@ -580,6 +591,7 @@ Follow the phased plan documented in [`delta.md`](delta.md). High level:
 7. **Phase 6 (0.5d):** drop `onboarding_goal_first_shown` after dashboard migration.
 
 **Monitoring during rollout:**
+
 - PostHog Insights → "Events" → group by event name, watch for volume spikes (sign of dual-write left on too long after rename).
 - Sentry Issues → filter `user.id:<test_user_id>` after rolling out `identifyUser` — confirm cross-platform user_id parity.
 - Internal-user gate — verify `@anthropic.com` / `@sergeant.app` distinct_ids stop appearing in cohorts after `is_internal` trait propagates.

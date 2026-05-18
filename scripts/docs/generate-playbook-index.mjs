@@ -36,6 +36,7 @@ const SKIP_FILES = new Set([
 const RE_TRIGGER_LINE = /^\s*\*\*Trigger:\*\*\s*(.+?)\s*$/m;
 const RE_H1 = /^#\s+(?:Playbook:\s*)?(.+?)\s*$/m;
 const RE_DECISION_TREE_MARK = /🌳/;
+const RE_DEPRECATED_STATUS = /^>\s*\*\*Status:\*\*\s*Deprecated\b/im;
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -154,6 +155,9 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
   const out = [];
   for (const file of files) {
     const content = readFileSync(join(dir, file), "utf8");
+    if (RE_DEPRECATED_STATUS.test(content)) {
+      continue;
+    }
     const meta = extractPlaybookMeta(content);
     if (!meta) {
       console.warn(

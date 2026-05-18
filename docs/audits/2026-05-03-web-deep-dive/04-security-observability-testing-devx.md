@@ -1,8 +1,9 @@
 # Web deep-dive — Security, observability, testing & DevX
 
-> **Last validated:** 2026-05-13 by @Skords-01.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex.
+> **Status:** Closed (source audit; CSP follow-up moved to C2 hardening card)
 > **Scope:** PII у логах, Sentry↔requestId correlation, CSP, contract тести, mutation testing, Storybook, C4-діаграми, CHANGELOG, Hard Rules registry, agent onboarding, audit docs status.
+> **Canonical CSP owner:** [`docs/security/hardening/C2-frontend-csp.md`](../../security/hardening/C2-frontend-csp.md).
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/`, `docs/security/`, `docs/agents/`.
 
 Це найширша частина: безпека (2 точки), спостережуваність (3 точки), тестування (3 точки), DevX (3 точки) і документація (3 точки). Всі — high-leverage, низько-середні витрати, **жодна не чіпає продакшн-код**.

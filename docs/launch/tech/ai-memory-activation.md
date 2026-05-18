@@ -1,13 +1,14 @@
 # AI Memory — activation runbook
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
 
 Як перевести pgvector AI memory підсистему з dormant у production-active після
 landing PR1 (foundation) + PR2 (ingestion) + PR3 (retrieval). Усі три PR-и
 змержені dormant: `AI_MEMORY_ENABLED=false` за замовчуванням → `remember()` /
 `recall()` no-op-лять без HTTP до Voyage / БД, нема ніяких side-effects.
 
+Canonical behavior/ownership — [`docs/architecture/ai-memory.md`](../../architecture/ai-memory.md).
 ADR — [`docs/adr/0028-pgvector-ai-memory.md`](../../adr/0028-pgvector-ai-memory.md).
 Інтеграційний doc — [`docs/integrations/voyage-pgvector.md`](../../integrations/voyage-pgvector.md).
 

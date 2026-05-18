@@ -9,6 +9,7 @@
 > [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний аудит зі security-related блокерами ·
 > [`2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — регресійний UX-аудит (CSRF, CORS traceparent, CSP dev, Vercel Analytics bypass) ·
 > [`docs/governance/rules/15-governance-and-doc-language.md`](../governance/rules/15-governance-and-doc-language.md) — Hard Rule #15 (читати governance перед кодом, UA-docs, freshness).
+> **CSP canonical owner:** remaining CSP rollout/parity work lives in [`docs/security/hardening/C2-frontend-csp.md`](../security/hardening/C2-frontend-csp.md); CSP mentions here are source evidence / broader security context.
 
 **Скоуп:** CSP, secrets-handling, Sentry, OpenTelemetry, web-vitals, audit-logs, auth-flow (Better Auth). Cross-app поверхня.
 

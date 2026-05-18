@@ -1,13 +1,14 @@
 # PR-план — Mobile Reliability & UX (із roast 2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Closed (reference execution plan; canonical mobile debt status lives in tech-debt registry)
 
 PR-розклад на closeout відкритих/partial item-ів з прожарки
 [`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../audits/2026-05-13-mobile-reliability-ux-roast.md)
 для скоупу `apps/mobile/**` (Expo 52 + RN 0.76) та `apps/mobile-shell/**`
 (Capacitor 7 wrapper). **Out-of-scope:** SQLite-міграція Stage 8/9
 (трекається у [`storage-roadmap.md`](./storage-roadmap.md) — окремі сесії).
+Canonical mobile debt owner: [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md). Keep this file as source PR-card context only.
 
 ## Cross-refs
 

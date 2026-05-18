@@ -33,7 +33,7 @@ Sergeant має три Railway services:
 - Зміни env-vars трактуй як продуктові зміни: онови canonical-доки.
 - Розрізняй `livez` і `readyz`; readiness може залежати від Postgres.
 - Якщо змінюється поведінка деплою API або auth-у — перевір припущення same-origin proxy через Vercel `/api/*`.
-- **Hard Rule #21 (Pino redaction):** логи не повинні містити PII. Нова поверхня логування → перевір [`docs/governance/logging-redaction-policy.md`](../../../docs/governance/logging-redaction-policy.md).
+- **Hard Rule #21 (Pino redaction):** логи не повинні містити PII. Нова поверхня логування → перевір [`docs/security/logging-redaction-policy.md`](../../../docs/security/logging-redaction-policy.md).
 - Не закривай deploy-роботу без конкретного шляху верифікації.
 
 ## Верифікація
@@ -48,6 +48,6 @@ Sergeant має три Railway services:
 
 - [docs/integrations/railway-vercel.md](../../../docs/integrations/railway-vercel.md)
 - [docs/observability/README.md](../../../docs/observability/README.md)
-- [docs/governance/logging-redaction-policy.md](../../../docs/governance/logging-redaction-policy.md)
+- [docs/security/logging-redaction-policy.md](../../../docs/security/logging-redaction-policy.md)
 - [docs/playbooks/investigate-alert.md](../../../docs/playbooks/investigate-alert.md)
 - [docs/adr/0055-openclaw-external-gateway.md](../../../docs/adr/0055-openclaw-external-gateway.md)

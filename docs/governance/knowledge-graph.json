@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-05-16",
+  "generated_at": "2026-05-18",
   "counts": {
     "adr": 58,
     "audit": 31,
     "hard-rule": 26,
-    "initiative": 49,
+    "initiative": 51,
     "playbook": 54,
-    "pr": 227,
+    "pr": 228,
     "skill": 21
   },
   "nodes": [
@@ -681,7 +681,7 @@
       "type": "audit",
       "title": "Sergeant — жорстка прожарка: маркетинг, монетизація, цінність продукту, growth",
       "path": "docs/audits/2026-05-04-revenue-and-marketing-roast.md",
-      "status": "Active",
+      "status": "Closed (source audit; delivery status moved to revenue PR plan)",
       "tier": "core",
       "meta": {}
     },
@@ -690,7 +690,7 @@
       "type": "audit",
       "title": "Sergeant — dead-code & stale-links аудит (2026-05-05)",
       "path": "docs/audits/2026-05-05-dead-code-and-stale-links-audit.md",
-      "status": "Active",
+      "status": "Closed (superseded by newer dead-code and docs-hygiene trackers)",
       "tier": "core",
       "meta": {}
     },
@@ -699,7 +699,7 @@
       "type": "audit",
       "title": "Sergeant — UX-прожарка для перших користувачів (post-onboarding, 2026-05-06)",
       "path": "docs/audits/2026-05-06-ux-roast.md",
-      "status": "Active",
+      "status": "Closed (source snapshot; execution migrated to PR plan)",
       "tier": "core",
       "meta": {}
     },
@@ -771,7 +771,7 @@
       "type": "audit",
       "title": "FTUX onboarding roast — Day 0-7 (2026-05-13)",
       "path": "docs/audits/2026-05-13-ftux-onboarding-roast.md",
-      "status": "Active",
+      "status": "Closed (source audit; execution/status moved to FTUX master tracker)",
       "tier": "core",
       "meta": {}
     },
@@ -780,7 +780,7 @@
       "type": "audit",
       "title": "Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)",
       "path": "docs/audits/2026-05-13-mobile-reliability-ux-roast.md",
-      "status": "Active",
+      "status": "Closed (source audit; outstanding status moved to mobile tech-debt registry)",
       "tier": "core",
       "meta": {}
     },
@@ -870,7 +870,7 @@
       "type": "audit",
       "title": "Revenue, Monetization & Marketing Roast (2026-05-13)",
       "path": "docs/audits/2026-05-13-revenue-monetization-roast.md",
-      "status": "Active",
+      "status": "Closed (source audit; delivery status moved to revenue PR plan)",
       "tier": "core",
       "meta": {}
     },
@@ -946,9 +946,7 @@
         "number": 1,
         "severity": "blocker",
         "category": "blocker-invariant",
-        "scope": [
-          "apps/server/src/modules/**"
-        ]
+        "scope": ["apps/server/src/modules/**"]
       }
     },
     {
@@ -979,10 +977,7 @@
         "number": 11,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**",
-          "apps/mobile/src/**"
-        ]
+        "scope": ["apps/web/src/**", "apps/mobile/src/**"]
       }
     },
     {
@@ -1013,10 +1008,7 @@
         "number": 13,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**",
-          "apps/mobile/src/**"
-        ]
+        "scope": ["apps/web/src/**", "apps/mobile/src/**"]
       }
     },
     {
@@ -1029,9 +1021,7 @@
         "number": 14,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**"
-        ]
+        "scope": ["apps/web/src/**"]
       }
     },
     {
@@ -1044,9 +1034,7 @@
         "number": 15,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "**/*"
-        ]
+        "scope": ["**/*"]
       }
     },
     {
@@ -1059,10 +1047,7 @@
         "number": 16,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**",
-          "packages/design-tokens/**"
-        ]
+        "scope": ["apps/web/src/**", "packages/design-tokens/**"]
       }
     },
     {
@@ -1075,10 +1060,7 @@
         "number": 17,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**",
-          "packages/design-tokens/**"
-        ]
+        "scope": ["apps/web/src/**", "packages/design-tokens/**"]
       }
     },
     {
@@ -1091,9 +1073,7 @@
         "number": 18,
         "severity": "blocker",
         "category": "active-initiative",
-        "scope": [
-          "apps/web/src/**"
-        ]
+        "scope": ["apps/web/src/**"]
       }
     },
     {
@@ -1106,10 +1086,7 @@
         "number": 19,
         "severity": "blocker",
         "category": "active-initiative",
-        "scope": [
-          "apps/**/tsconfig.json",
-          "packages/**/tsconfig.json"
-        ]
+        "scope": ["apps/**/tsconfig.json", "packages/**/tsconfig.json"]
       }
     },
     {
@@ -1122,10 +1099,7 @@
         "number": 2,
         "severity": "blocker",
         "category": "blocker-invariant",
-        "scope": [
-          "apps/web/src/**",
-          "apps/mobile/src/**"
-        ]
+        "scope": ["apps/web/src/**", "apps/mobile/src/**"]
       }
     },
     {
@@ -1155,10 +1129,7 @@
         "number": 21,
         "severity": "blocker",
         "category": "blocker-invariant",
-        "scope": [
-          "apps/server/src/obs/logger.ts",
-          "apps/server/src/**"
-        ]
+        "scope": ["apps/server/src/obs/logger.ts", "apps/server/src/**"]
       }
     },
     {
@@ -1171,9 +1142,7 @@
         "number": 22,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          ".agents/skills/*/SKILL.md"
-        ]
+        "scope": [".agents/skills/*/SKILL.md"]
       }
     },
     {
@@ -1186,9 +1155,7 @@
         "number": 23,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "docs/**/archive/**/*.md"
-        ]
+        "scope": ["docs/**/archive/**/*.md"]
       }
     },
     {
@@ -1273,9 +1240,7 @@
         "number": 4,
         "severity": "blocker",
         "category": "blocker-invariant",
-        "scope": [
-          "apps/server/src/migrations/**"
-        ]
+        "scope": ["apps/server/src/migrations/**"]
       }
     },
     {
@@ -1288,9 +1253,7 @@
         "number": 5,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "**/*"
-        ]
+        "scope": ["**/*"]
       }
     },
     {
@@ -1303,10 +1266,7 @@
         "number": 6,
         "severity": "blocker",
         "category": "blocker-invariant",
-        "scope": [
-          "main",
-          "master"
-        ]
+        "scope": ["main", "master"]
       }
     },
     {
@@ -1319,9 +1279,7 @@
         "number": 7,
         "severity": "blocker",
         "category": "blocker-invariant",
-        "scope": [
-          "**/*"
-        ]
+        "scope": ["**/*"]
       }
     },
     {
@@ -1334,10 +1292,7 @@
         "number": 8,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**",
-          "packages/design-tokens/**"
-        ]
+        "scope": ["apps/web/src/**", "packages/design-tokens/**"]
       }
     },
     {
@@ -1350,9 +1305,7 @@
         "number": 9,
         "severity": "blocker",
         "category": "lint-enforced-convention",
-        "scope": [
-          "apps/web/src/**"
-        ]
+        "scope": ["apps/web/src/**"]
       }
     },
     {
@@ -1360,7 +1313,7 @@
       "type": "initiative",
       "title": "0002 — Mobile platform decision: lock the deprecation deadline",
       "path": "docs/initiatives/0002-mobile-platform-decision.md",
-      "status": "In progress (Phase 1/2 shipped; sunset schedule superseded — see Update below)",
+      "status": "Closed (superseded by ADR-0052 + initiative 0010; historical reference only)",
       "tier": "core",
       "meta": {
         "number": 2,
@@ -1444,6 +1397,28 @@
         "number": 14,
         "owner": "@Skords-01",
         "priority": "P2"
+      }
+    },
+    {
+      "id": "initiative:0015",
+      "type": "initiative",
+      "title": "0015 — Docs automation for daily ops",
+      "path": "docs/initiatives/0015-docs-automation-daily-ops.md",
+      "status": "In progress",
+      "tier": "core",
+      "meta": {
+        "number": 15
+      }
+    },
+    {
+      "id": "initiative:0016",
+      "type": "initiative",
+      "title": "0016 — CHANGELOG release-cut automation",
+      "path": "docs/initiatives/0016-changelog-release-cut.md",
+      "status": "In progress",
+      "tier": "core",
+      "meta": {
+        "number": 16
       }
     },
     {
@@ -2010,7 +1985,7 @@
       "title": "Grant Privileged Access",
       "path": "docs/playbooks/grant-privileged-access.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -2127,7 +2102,7 @@
       "title": "Release Expo Mobile",
       "path": "docs/playbooks/release-expo-mobile.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -2136,7 +2111,7 @@
       "title": "Release Mobile Shell",
       "path": "docs/playbooks/release-mobile-shell.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -2145,7 +2120,7 @@
       "title": "Release Web and API",
       "path": "docs/playbooks/release-web-and-api.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -2154,7 +2129,7 @@
       "title": "Respond to Suspected Account Compromise",
       "path": "docs/playbooks/respond-to-suspected-account-compromise.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -2181,7 +2156,7 @@
       "title": "Revoke Privileged Access",
       "path": "docs/playbooks/revoke-privileged-access.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -2208,7 +2183,7 @@
       "title": "Run Access Review",
       "path": "docs/playbooks/run-access-review.md",
       "status": "Deprecated",
-      "tier": "core",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -3961,16 +3936,6 @@
       }
     },
     {
-      "id": "pr:2873",
-      "type": "pr",
-      "title": "PR #2873",
-      "tier": "extended",
-      "meta": {
-        "number": 2873,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2873"
-      }
-    },
-    {
       "id": "pr:2874",
       "type": "pr",
       "title": "PR #2874",
@@ -4088,6 +4053,26 @@
       "meta": {
         "number": 2899,
         "url": "https://github.com/Skords-01/Sergeant/pull/2899"
+      }
+    },
+    {
+      "id": "pr:2933",
+      "type": "pr",
+      "title": "PR #2933",
+      "tier": "extended",
+      "meta": {
+        "number": 2933,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2933"
+      }
+    },
+    {
+      "id": "pr:2963",
+      "type": "pr",
+      "title": "PR #2963",
+      "tier": "extended",
+      "meta": {
+        "number": 2963,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2963"
       }
     },
     {
@@ -5493,6 +5478,11 @@
       "type": "touched-by"
     },
     {
+      "from": "audit:2026-05-13-backend-performance-roast",
+      "to": "pr:2933",
+      "type": "touched-by"
+    },
+    {
       "from": "audit:2026-05-13-consolidated-page-audit",
       "to": "hard-rule:10",
       "type": "references"
@@ -5598,8 +5588,8 @@
       "type": "touched-by"
     },
     {
-      "from": "audit:2026-05-13-documentation-hygiene-roast",
-      "to": "pr:13",
+      "from": "audit:2026-05-13-dead-code-hard-rules-roast",
+      "to": "pr:2933",
       "type": "touched-by"
     },
     {
@@ -6204,6 +6194,11 @@
     },
     {
       "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "hard-rule:19",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
       "to": "hard-rule:2",
       "type": "references"
     },
@@ -6230,11 +6225,6 @@
     {
       "from": "audit:2026-05-15-deep-audit-state-of-repo",
       "to": "pr:2872",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-15-deep-audit-state-of-repo",
-      "to": "pr:2873",
       "type": "touched-by"
     },
     {
@@ -6274,6 +6264,11 @@
     },
     {
       "from": "audit:2026-05-15-deep-audit-state-of-repo",
+      "to": "pr:2933",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-15-deep-audit-state-of-repo",
       "to": "pr:52",
       "type": "touched-by"
     },
@@ -6281,6 +6276,11 @@
       "from": "audit:2026-08-XX-sync-engine-roast",
       "to": "pr:2877",
       "type": "touched-by"
+    },
+    {
+      "from": "initiative:0002",
+      "to": "initiative:0010",
+      "type": "references"
     },
     {
       "from": "initiative:0002",
@@ -6620,6 +6620,11 @@
     {
       "from": "initiative:0014",
       "to": "pr:2899",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0016",
+      "to": "pr:2963",
       "type": "touched-by"
     },
     {

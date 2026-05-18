@@ -50,7 +50,7 @@ const RE_PRIORITY = /^>\s*\*\*Priority:\*\*\s*([^\n]+)/m;
 const RE_ADR_SUPERSEDES =
   /^\s*-\s*\*\*Supersedes:\*\*\s*(?:—|-|\(none\))?\s*((?:ADR-\d{4}(?:\s*,\s*ADR-\d{4})*)?)/im;
 const RE_PR_NUMBER = /#(\d{3,5})(?!\d)|\/pull\/(\d{3,5})(?!\d)/g;
-const RE_ADR_REF = /(?<![:\w/])adr[\/\\-_]?(\d{4})\b/gi;
+const RE_ADR_REF = /(?<![:\w/])adr[/\\-_]?(\d{4})\b/gi;
 const RE_HARD_RULE_REF = /\b(?:Hard\s+Rule|HR|hard-rule)\s*#?(\d{1,3})\b/gi;
 const RE_INITIATIVE_REF = /\b(?:initiative|ініціатив[аи])\s*#?-?(\d{4})\b/gi;
 const RE_SKILL_NAME = /^name:\s*([\w-]+)\s*$/m;
@@ -84,9 +84,7 @@ function listMarkdown(dir, { recursive = false, skipUnderscore = true } = {}) {
     if (ent.isDirectory()) {
       if (!recursive) continue;
       if (ent.name === "archive") continue;
-      out.push(
-        ...listMarkdown(childPath, { recursive, skipUnderscore }),
-      );
+      out.push(...listMarkdown(childPath, { recursive, skipUnderscore }));
       continue;
     }
     if (!ent.isFile()) continue;
@@ -112,6 +110,10 @@ function extractStatus(content) {
   const field = RE_FIELD_STATUS.exec(content);
   if (field) return field[1].trim();
   return null;
+}
+
+function tierForPlaybookStatus(status) {
+  return status && /^Deprecated\b/i.test(status) ? "extended" : "core";
 }
 
 function extractPRNumbers(content) {
@@ -168,7 +170,9 @@ function collectInitiatives() {
     const num = base.match(/^(\d{4})/)?.[1];
     const id = num
       ? `initiative:${num}`
-      : `initiative:${relPath(abs).replace(/^docs\/initiatives\//, "").replace(/\.md$/, "")}`;
+      : `initiative:${relPath(abs)
+          .replace(/^docs\/initiatives\//, "")
+          .replace(/\.md$/, "")}`;
     const title = extractTitle(content, base);
     const status = extractStatus(content);
     const owner = RE_OWNER.exec(content)?.[1];
@@ -208,7 +212,7 @@ function collectPlaybooks() {
       title,
       path: relPath(abs),
       ...(status ? { status } : {}),
-      tier: "core",
+      tier: tierForPlaybookStatus(status),
       meta: {},
       _content: content,
     };
@@ -414,7 +418,7 @@ function deriveEdges(nodes) {
 
 // ── Edge derivation: owner / documents ──────────────────────────────────────
 
-function deriveOwnershipEdges(nodes) {
+function deriveOwnershipEdges(_nodes) {
   const edges = [];
   // initiative `owned-by` Owner handle — synthesize a file-node target on demand
   // is overkill for Phase 1; instead embed owner in node.meta and emit a
@@ -555,12 +559,13 @@ function renderMermaidSubgraph(graph, nodeType, edgeFilter) {
   const ids = new Set(nodes.map((n) => n.id));
   const edges = graph.edges.filter(
     (e) =>
-      (ids.has(e.from) || ids.has(e.to)) &&
-      (edgeFilter ? edgeFilter(e) : true),
+      (ids.has(e.from) || ids.has(e.to)) && (edgeFilter ? edgeFilter(e) : true),
   );
   const lines = ["graph LR"];
   for (const n of nodes.slice(0, 30)) {
-    lines.push(`  ${mermaidSafeId(n.id)}["${escapeHtml(n.title.slice(0, 60))}"]`);
+    lines.push(
+      `  ${mermaidSafeId(n.id)}["${escapeHtml(n.title.slice(0, 60))}"]`,
+    );
   }
   for (const e of edges.slice(0, 60)) {
     if (!ids.has(e.from) || !ids.has(e.to)) continue;
@@ -590,7 +595,10 @@ function renderHTML(graph) {
       const meta = n.meta
         ? escapeHtml(
             Object.entries(n.meta)
-              .map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`)
+              .map(
+                ([k, v]) =>
+                  `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`,
+              )
               .join(" · "),
           )
         : "";
@@ -691,8 +699,7 @@ function main() {
       `knowledge-graph: schema validation failed (${errors.length} error${errors.length === 1 ? "" : "s"}):`,
     );
     for (const err of errors.slice(0, 20)) console.error(`  - ${err}`);
-    if (errors.length > 20)
-      console.error(`  ... and ${errors.length - 20} more`);
+    if (errors.length > 20) console.error(`  … and ${errors.length - 20} more`);
     process.exit(1);
   }
 

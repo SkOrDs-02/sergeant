@@ -12,7 +12,7 @@ Chrome) і preview-деплой був тривіальним (Vercel static / N
 
 ## Як це лягає у roadmap
 
-- **Контекст:** [`docs/launch/business/02-go-to-market.md § 2.2 Landing page`](../business/02-go-to-market.md) —
+- **Контекст:** [`docs/launch/business/02-go-to-market.md § 2.2 Landing page`](./business/02-go-to-market.md) —
   T-25 днів до публічного запуску потрібен лендинг з email-збором + countdown.
 - **Не торкаємось `apps/web`:** `apps/web/src/core/LandingPage.tsx` — це in-app маркетинг-сурфейс
   для non-auth юзерів (ADR-0051, Phase 6.1). Ці мокапи — окремий маркетинг-сайт під
@@ -23,8 +23,8 @@ Chrome) і preview-деплой був тривіальним (Vercel static / N
 
 ## Варіанти
 
-| #   | Файл                                                                         | Концепт                 | Hero-CTA                       | Target traffic                                                |
-| --- | ---------------------------------------------------------------------------- | ----------------------- | ------------------------------ | ------------------------------------------------------------- |
+| #   | Файл                                                                                             | Концепт                 | Hero-CTA                       | Target traffic                                                |
+| --- | ------------------------------------------------------------------------------------------------ | ----------------------- | ------------------------------ | ------------------------------------------------------------- |
 | 01  | [`campaigns/ai-coach.html`](../../mockups/landing/campaigns/ai-coach.html)                       | AI Coach hero           | «Хочу в бету» + email          | Twitter/X · DOU.ua · аудиторія, що любить AI                  |
 | 02  | [`campaigns/five-in-one.html`](../../mockups/landing/campaigns/five-in-one.html)                 | 5-в-1 / Before-After    | «Хочу спробувати»              | Product Hunt · Threads · users з SaaS-fatigue                 |
 | 03  | [`campaigns/local-first-privacy.html`](../../mockups/landing/campaigns/local-first-privacy.html) | Local-first manifesto   | «Запит на доступ»              | Hacker News · privacy-aware · Indie Hackers                   |
@@ -66,7 +66,7 @@ python3 -m http.server 8000
    post-launch content marketing.
 3. **Метрики, які треба ловити після deploy-у:** `LANDING_VIEWED` (см. `LandingPage.tsx`
    contract), email-submit rate, referrer split, scroll depth. PostHog event-схема —
-   [`packages/shared/src/lib/analyticsEvents.ts § Landing page`](../../../packages/shared/src/lib/analyticsEvents.ts).
+   [`packages/shared/src/lib/analyticsEvents.ts § Landing page`](../../packages/shared/src/lib/analyticsEvents.ts).
 4. **Після decision-у** — створити PR з обраним variant-ом як основою фінального маркетинг-білду
    (Astro SSG, окремий `marketing/` workspace, або Vercel static), решту перенести у
    `_archive/` (Rule #10 lifecycle marker — `Archived`).
@@ -78,4 +78,4 @@ python3 -m http.server 8000
   marketing-домені.
 - Не повний content. Скриншоти продукту, social-proof testimonials, точні цифри — мокапи
   показують структуру; контент допиливається перед launch-ем за чек-листом
-  [`02-go-to-market.md § 2.1`](../business/02-go-to-market.md).
+  [`02-go-to-market.md § 2.1`](./business/02-go-to-market.md).

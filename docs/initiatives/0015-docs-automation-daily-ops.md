@@ -1,7 +1,7 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-15.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** In progress
 
 ## TL;DR
 
@@ -17,6 +17,7 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 ## Скоуп
 
 ### In scope
+
 - **Phase 1 (Bundle Alpha)** — daily brief generator, WIP limit check, trust badge
 - **Phase 2 (Bundle Beta)** — suggested skill + playbook columns в `open-work.md`, `agent-ready` frontmatter tag
 - Нові pnpm scripts + GitHub Action crons
@@ -24,6 +25,7 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 - Документація для maintainer-а як споживати
 
 ### Out of scope
+
 - Зміни в Hard Rules або AGENTS.md content
 - Перейменування / переміщення існуючих docs
 - Нові ADRs (можуть зʼявитися як побічний продукт)
@@ -35,32 +37,32 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 **Acceptance:** maintainer відкриває `docs/today.md` вранці і отримує 3-5 actionable items без чтення інших файлів.
 
-| PR | Що ввозиться | Файли |
-| --- | --- | --- |
-| **PR-1.1** | `pnpm docs:gen-today` script + `docs/today.md` generated artifact | `scripts/docs/generate-today.mjs`, `docs/today.md` |
-| **PR-1.2** | `pnpm docs:check-wip-limits` — soft warn + hard fail на violation | `scripts/docs/check-wip-limits.mjs`, `docs/governance/wip-limits.json` |
-| **PR-1.3** | Trust badge в `docs/README.md` (auto-updated section) | `scripts/docs/generate-trust-badge.mjs`, `docs/README.md` |
-| **PR-1.4** | GitHub Action cron: daily regen `today.md` + trust badge; weekly WIP audit | `.github/workflows/docs-daily-brief.yml` |
+| PR         | Що ввозиться                                                               | Файли                                                                  |
+| ---------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **PR-1.1** | `pnpm docs:gen-today` script + `docs/today.md` generated artifact          | `scripts/docs/generate-today.mjs`, `docs/today.md`                     |
+| **PR-1.2** | `pnpm docs:check-wip-limits` — soft warn + hard fail на violation          | `scripts/docs/check-wip-limits.mjs`, `docs/governance/wip-limits.json` |
+| **PR-1.3** | Trust badge в `docs/README.md` (auto-updated section)                      | `scripts/docs/generate-trust-badge.mjs`, `docs/README.md`              |
+| **PR-1.4** | GitHub Action cron: daily regen `today.md` + trust badge; weekly WIP audit | `.github/workflows/docs-daily-brief.yml`                               |
 
 **WIP limits (стартові, можна підкручувати):**
 
-| Tracker | Soft | Hard |
-| --- | --- | --- |
-| initiatives | 25 | 30 |
-| audits | 35 | 40 |
-| planning | 28 | 35 |
-| launch | 25 | 30 |
-| tech-debt | 10 | 15 |
-| security/hardening | 20 | 25 |
-| superpowers | 6 | 10 |
+| Tracker            | Soft | Hard |
+| ------------------ | ---- | ---- |
+| initiatives        | 25   | 30   |
+| audits             | 35   | 40   |
+| planning           | 28   | 35   |
+| launch             | 25   | 30   |
+| tech-debt          | 10   | 15   |
+| security/hardening | 20   | 25   |
+| superpowers        | 6    | 10   |
 
 **Trust badge thresholds:**
 
-| Status | Умова |
-| --- | --- |
-| 🟢 healthy | 0 stale docs + 0 WIP violations |
-| 🟡 warning | ≤3 stale OR 1 violation |
-| 🔴 critical | >3 stale OR >1 violation |
+| Status      | Умова                           |
+| ----------- | ------------------------------- |
+| 🟢 healthy  | 0 stale docs + 0 WIP violations |
+| 🟡 warning  | ≤3 stale OR 1 violation         |
+| 🔴 critical | >3 stale OR >1 violation        |
 
 **Priority rule для today.md:** items з `Phase X next` маркером у Status header — top 3 за recency mention.
 
@@ -68,17 +70,18 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 **Acceptance:** maintainer вибирає item з `today.md`, копіює одним блоком "load skill `<X>`, playbook `<Y>`, prompt: `<Z>`" — agent починає виконання без додаткових питань.
 
-| PR | Що ввозиться | Файли |
-| --- | --- | --- |
-| **PR-2.1** | Suggested skill + playbook columns у `open-work.md` (heuristic mapping) | `scripts/docs/generate-open-work.mjs` (extend), `scripts/docs/skill-mapping.json` |
-| **PR-2.2** | `agent-ready: yes / needs-decision / blocked` field у initiative frontmatter + сорtування в `open-work.md` | усі `docs/initiatives/*.md` (1-рядковий додаток frontmatter), generator update |
-| **PR-2.3** | Lint rule: новий initiative MUST мати `agent-ready` field | `scripts/docs/lint-initiative-agent-ready.mjs` |
+| PR         | Що ввозиться                                                                                               | Файли                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **PR-2.1** | Suggested skill + playbook columns у `open-work.md` (heuristic mapping)                                    | `scripts/docs/generate-open-work.mjs` (extend), `scripts/docs/skill-mapping.json` |
+| **PR-2.2** | `agent-ready: yes / needs-decision / blocked` field у initiative frontmatter + сорtування в `open-work.md` | усі `docs/initiatives/*.md` (1-рядковий додаток frontmatter), generator update    |
+| **PR-2.3** | Lint rule: новий initiative MUST мати `agent-ready` field                                                  | `scripts/docs/lint-initiative-agent-ready.mjs`                                    |
 
 **Передумова Phase 2:** **2 тижні daily usage `today.md`** з Phase 1, щоб мапінг initiative→skill будувати на реальних patterns, а не на здогадках.
 
 ## Критерії DONE
 
 ### Phase 1
+
 - [ ] `docs/today.md` генерується щодня cron-ом, містить 3-5 top items + overdue + WIP warnings
 - [ ] `pnpm docs:check-wip-limits` запускається в CI; soft = warn, hard = fail
 - [ ] `docs/README.md` має auto-updated trust badge section з 🟢/🟡/🔴 + лічильник
@@ -86,6 +89,7 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 - [ ] Maintainer звітує що відкривав `today.md` принаймні 5 з 7 днів першого тижня
 
 ### Phase 2
+
 - [ ] `open-work.md` має колонки `Skill` + `Playbook` для кожного item у Ініціативах і Plansах
 - [ ] Усі active initiatives мають `agent-ready` field
 - [ ] Items з `agent-ready: yes` сорtяться першими в open-work tables
@@ -93,13 +97,13 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 ## Ризики
 
-| Ризик | Митигація |
-| --- | --- |
-| **Daily brief стане ще одним dashboard, який maintainer ігнорує** | Якщо за 2 тижні `today.md` не консумиться — Phase 2 не стартує, Phase 1 розбираємо |
-| **WIP limit fails CI на legit work batch (нормальне ramp-up)** | Soft warn на 80% від hard; hard limits ставимо консервативно +5-10 над поточним active count |
-| **Trust badge показує 🔴 без actionable details** | Badge включає 1-рядковий summary "5 stale, 2 WIP violations — see today.md §Overdue"; не голе кольорове коло |
-| **Heuristic skill mapping видає неточні suggestions у Phase 2** | Phase 2 чекає 2 тижні daily-usage feedback; mapping table editable вручну |
-| **Agent-ready field forgotten у нових initiatives** | CI gate `lint:initiative-agent-ready` блокує merge |
+| Ризик                                                             | Митигація                                                                                                    |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Daily brief стане ще одним dashboard, який maintainer ігнорує** | Якщо за 2 тижні `today.md` не консумиться — Phase 2 не стартує, Phase 1 розбираємо                           |
+| **WIP limit fails CI на legit work batch (нормальне ramp-up)**    | Soft warn на 80% від hard; hard limits ставимо консервативно +5-10 над поточним active count                 |
+| **Trust badge показує 🔴 без actionable details**                 | Badge включає 1-рядковий summary "5 stale, 2 WIP violations — see today.md §Overdue"; не голе кольорове коло |
+| **Heuristic skill mapping видає неточні suggestions у Phase 2**   | Phase 2 чекає 2 тижні daily-usage feedback; mapping table editable вручну                                    |
+| **Agent-ready field forgotten у нових initiatives**               | CI gate `lint:initiative-agent-ready` блокує merge                                                           |
 
 ## Власник / ETA
 

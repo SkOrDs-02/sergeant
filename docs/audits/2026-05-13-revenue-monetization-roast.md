@@ -1,9 +1,10 @@
 # Revenue, Monetization & Marketing Roast (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Closed (source audit; delivery status moved to revenue PR plan)
 >
 > _Update 2026-05-13: P1-9 closed — `apps/web/src/core/billing/TrialBanner.tsx` scaffolded + mounted in `HubMainContent` banner stack._
+> **Canonical delivery owner:** [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). Keep this file as evidence/reference only.
 
 ## Cross-refs
 

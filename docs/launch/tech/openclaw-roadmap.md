@@ -1,7 +1,8 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last validated:** 2026-05-12 by Devin. **Next review:** після Stage 4 hook spike.
-> **Status:** Active — **Phase 1 / 1.5 / 2.5 / 4 / 4.5 пeренесено у Gateway-архітектуру (ADR-0055).** Цей файл — історична roadmap внутрішнього grammy-бота `@OpenClaw_sergeant_bot` (Phase 1 → 4.5). Поточний production live на новій Gateway bot-identity з `@sergeant/openclaw-plugin` — single source of truth: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../planning/openclaw-migration-plan.md).
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Closed (historical grammy roadmap; canonical active owner is OpenClaw migration plan).
+> **Canonical active owner:** OpenClaw Gateway/migration work lives in [`docs/planning/openclaw-migration-plan.md`](../../planning/openclaw-migration-plan.md). This file is retained as historical context for the old `@OpenClaw_sergeant_bot` roadmap only; do not add new active migration tasks here.
 
 > **2026-05-12 — Reality update.** Phase 1…4.5 нижче описує feature-set, який raніше працював у grammy `tools/openclaw/src/openclaw/` і паралельно живе у Gateway-плагіні. У Gateway-плагіні станом на сьогодні **переписано тільки read-tools** (Stage 2 — 25 tools); write-tools (Phase 4) + hooks (Phase 4.5 audit/budget) + council orchestration (Phase 2.5) + strategic modes (Phase 3) — лежать у `packages/openclaw-plugin/src/legacy/` і чекають Stage 3/4/5 rewrite на real `openclaw@2026.5.7` SDK. У grammy-боті усі ці фічі залишаються активними як fallback до Phase 7 cutover.
 
@@ -12,8 +13,9 @@
 > ботом (`@OpenClaw_sergeant_bot`, id `8614051263`). Web HubChat **не**
 > використовується (він для end-користувачів додатку).
 >
-> Source-of-truth для майбутніх PR-ів які торкаються OpenClaw — завжди
-> звіряти з цим файлом і з ADR-ами нижче.
+> Historical baseline для старого grammy-бота. Для майбутніх PR-ів, які торкаються
+> Gateway/cutover/deletion, звірятися з [`openclaw-migration-plan.md`](../../planning/openclaw-migration-plan.md)
+> і з ADR-ами нижче.
 >
 > Пов'язане: [ADR-0027](../../adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),
 > [ADR-0028](../../adr/0028-pgvector-ai-memory.md) (pgvector AI memory),

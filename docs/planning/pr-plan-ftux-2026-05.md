@@ -1,7 +1,7 @@
 # FTUX / Onboarding PR-план (з прожарки 2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session, parent prompt 2026-05-13). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Closed (reference execution plan; canonical status lives in FTUX master tracker)
 
 > **Призначення.** Виконавчий план PR-ів за відкритими пунктами FTUX-прожарки [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../audits/2026-05-13-ftux-onboarding-roast.md). Дзеркалить open-items із цієї прожарки у конкретні PR-картки з acceptance, conversion-метриками, розміром (S/M/L), пріоритетом (P1/P2/P3), залежностями та owner-плейсхолдером. **Не** замінює SSOT — `docs/launch/product-os/ftux-master-tracker.md` (master tracker) лишається істиною про статуси; цей файл — execution playbook на наступні 2–4 тижні.
 >

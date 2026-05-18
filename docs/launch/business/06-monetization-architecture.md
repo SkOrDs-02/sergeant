@@ -1,9 +1,10 @@
 # 06. Архітектура монетизації (технічний скелетон v2)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** Active (architecture reference; delivery status lives in revenue PR plan)
 
 > Pre-MVP draft. Розширення [01 — Монетизація і ціноутворення](./01-monetization-and-pricing.md) в бік реальної імплементації: розбивка на PR-и, ADR-рішення, risk register, rollout-plan.
+> Canonical delivery owner: [`docs/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md). PR tables below are architecture context, not the live execution tracker.
 >
 > **Diff проти v1 (skeleton-attachment):** виправлені 5 red flags (idempotency, period_end semantics, cache-invalidation, grandfather policy, aiQuota×requirePlan). Розбивка PR розширена з 6 до 10. Додано: ADR-список рішень, risk register, rollout-план з feature-flag, env-template, контракт-тести.
 >

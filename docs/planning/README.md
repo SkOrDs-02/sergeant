@@ -23,16 +23,16 @@
 
 ### PR-плани з прожарок 2026-05-13
 
-| Документ                                                                               | Скоуп                                                                                                 | Статус |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
-| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency                           | Active |
-| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                                              | Active |
-| [`pr-plan-docs-hygiene-2026-05.md`](./pr-plan-docs-hygiene-2026-05.md)                 | Documentation hygiene follow-up: stale links, discoverability, governance sync gates                  | Active |
-| [`pr-plan-ftux-2026-05.md`](./pr-plan-ftux-2026-05.md)                                 | FTUX / onboarding PR-план за відкритими пунктами прожарки 2026-05-13                                  | Active |
-| [`pr-plan-mobile-reliability-2026-05.md`](./pr-plan-mobile-reliability-2026-05.md)     | 10 PR-карток closeout відкритих/partial items із mobile reliability/UX прожарки, без SQLite Stage 8/9 | Active |
-| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                                              | Active |
-| [`pr-plan-security-obs-2026-05.md`](./pr-plan-security-obs-2026-05.md)                 | Security & observability PR-план: CSP, secrets, Sentry/OTel/web-vitals, audit logs                    | Active |
-| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                                                  | Active |
+| Документ                                                                               | Скоуп                                                                                                  | Статус |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------ |
+| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency                            | Active |
+| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                                               | Active |
+| [`pr-plan-docs-hygiene-2026-05.md`](./pr-plan-docs-hygiene-2026-05.md)                 | Documentation hygiene follow-up: stale links, discoverability, governance sync gates                   | Active |
+| [`pr-plan-ftux-2026-05.md`](./pr-plan-ftux-2026-05.md)                                 | FTUX / onboarding PR-план за відкритими пунктами прожарки 2026-05-13; статуси веде FTUX master tracker | Closed |
+| [`pr-plan-mobile-reliability-2026-05.md`](./pr-plan-mobile-reliability-2026-05.md)     | 10 PR-карток closeout із mobile reliability/UX прожарки; статуси веде mobile tech-debt registry        | Closed |
+| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                                               | Active |
+| [`pr-plan-security-obs-2026-05.md`](./pr-plan-security-obs-2026-05.md)                 | Security & observability PR-план: CSP, secrets, Sentry/OTel/web-vitals, audit logs                     | Active |
+| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                                                   | Active |
 
 ### Дослідження, міграції, рішення
 

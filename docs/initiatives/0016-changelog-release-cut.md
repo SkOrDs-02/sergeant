@@ -1,7 +1,7 @@
 # 0016 — CHANGELOG release-cut automation
 
-> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-15.
-> **Status:** Active
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Status:** In progress
 
 ## TL;DR
 
@@ -19,11 +19,13 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
 ## Скоуп
 
 ### In scope
+
 - **Phase 1** — `pnpm changelog:cut` script: rename Unreleased → dated section, add new empty Unreleased, create git tag, push
 - Видалення застарілого TODO з CHANGELOG.md header
 - Документація як cut release
 
 ### Out of scope (свідомо)
+
 - Auto-generation entries з commit subjects (втратило б manual narrative)
 - SemVer bump automation (немає npm publish; CalVer YYYY-MM-DD достатньо)
 - Daily cron — release cut це ручне рішення maintainer-а, не daily ritual
@@ -35,10 +37,10 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
 
 **Acceptance:** maintainer запускає `pnpm changelog:cut "2026-05-17"` (date arg optional, default = today UTC); скрипт renames `## [Unreleased]` у `## [2026-05-17]`, вставляє fresh empty `## [Unreleased]` згори, створює tag `v2026.05.17`, штовхає у origin.
 
-| PR | Що ввозиться | Файли |
-| --- | --- | --- |
+| PR         | Що ввозиться                                                      | Файли                                               |
+| ---------- | ----------------------------------------------------------------- | --------------------------------------------------- |
 | **PR-1.1** | `scripts/changelog/cut-release.mjs` + `pnpm changelog:cut` script | `scripts/changelog/cut-release.mjs`, `package.json` |
-| **PR-1.2** | Remove TODO з CHANGELOG header; додати release-cut docs link | `CHANGELOG.md` |
+| **PR-1.2** | Remove TODO з CHANGELOG header; додати release-cut docs link      | `CHANGELOG.md`                                      |
 
 **Script behavior:**
 
@@ -60,6 +62,7 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
 ## Критерії DONE
 
 ### Phase 1
+
 - [ ] `pnpm changelog:cut --dry-run` показує що буде зроблено без side-effects
 - [ ] `pnpm changelog:cut` (без dry-run) перейменовує section, додає fresh Unreleased, commit-ить, тегає
 - [ ] Script відмовляється cut-ити порожній Unreleased (validation)
@@ -69,12 +72,12 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
 
 ## Ризики
 
-| Ризик | Митигація |
-| --- | --- |
-| **Maintainer cut-ить порожній release** | Pre-flight check: Unreleased section МАЄ містити ≥1 bullet з реальним контентом (не лише headers `### Added`) |
-| **Tag conflict — двічі cut на той же день** | Validation на `git tag -l <tag>` перед створенням |
-| **Forgot to push tag → orphan** | Print explicit `git push --follow-tags origin main` instruction; не auto-push без явного flag |
-| **CHANGELOG format diverges** | Script працює тільки якщо знайдено exact `## [Unreleased]` header; інакше fail з clear error |
+| Ризик                                       | Митигація                                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Maintainer cut-ить порожній release**     | Pre-flight check: Unreleased section МАЄ містити ≥1 bullet з реальним контентом (не лише headers `### Added`) |
+| **Tag conflict — двічі cut на той же день** | Validation на `git tag -l <tag>` перед створенням                                                             |
+| **Forgot to push tag → orphan**             | Print explicit `git push --follow-tags origin main` instruction; не auto-push без явного flag                 |
+| **CHANGELOG format diverges**               | Script працює тільки якщо знайдено exact `## [Unreleased]` header; інакше fail з clear error                  |
 
 ## Власник / ETA
 
