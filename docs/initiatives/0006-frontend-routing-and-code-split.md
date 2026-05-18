@@ -1,7 +1,7 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** In progress — Phases 0+1+2.a+2.b shipped ([#1657](https://github.com/Skords-01/Sergeant/pull/1657), [#2100](https://github.com/Skords-01/Sergeant/pull/2100), [#2104](https://github.com/Skords-01/Sergeant/pull/2104), [#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Phase 2 next: fizruk + routine. Phases 3–5 pending.
+> **Last validated:** 2026-05-18 by @Skords-01. **Next review:** 2026-08-16.
+> **Status:** In progress — Phases 1+2+3+4(partial)+5(partial) done; pending: PostHog route_change metric (Phase 4), manualChunks cleanup + route-loaders (Phase 5)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
@@ -113,15 +113,15 @@
 ## Критерії DONE
 
 - [x] `react-router@^7` встановлений, `<RouterProvider />` у root (Phase 1, [#2100](https://github.com/Skords-01/Sergeant/pull/2100)).
-- [ ] Усі 8 top-level routes (Hub, Finyk, Fizruk, Nutrition, Routine, Insights, Settings, Onboarding) — окремі lazy-chunks. _Прогрес: 2/8 — `/nutrition/*` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)) + `/finyk/*` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Hub `/`, Fizruk `/fizruk/*`, Routine `/routine/*` лишаються через legacy `?module=` query-param + catch-all `path: "*"`._
+- [ ] Усі 8 top-level routes (Hub, Finyk, Fizruk, Nutrition, Routine, Insights, Settings, Onboarding) — окремі lazy-chunks. _Прогрес: 4/8 — `/nutrition/*` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)) + `/finyk/*` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)) + fizruk (PR #2541) + routine (Phase 2.d). Lazy-chunk split для цих модулів деферовано в Phase 5 — router lazy approach повернено через React Router 7 location context bug (see router.tsx comment)._
 - [ ] Initial bundle ≤ 350 KB (gzip). _Прогрес: 666 KB / 194 KB gzip після Phase 2.b — реальний chunk-split move-ається у Phase 5._
 - [ ] Per-route bundle ≤ 250 KB (gzip) — для більшості; крупніші документуються.
 - [x] `useHashRouter` повністю видалено з `apps/web/src/**`. 4/4: `nutrition/hooks/useNutritionHashRoute.ts` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)), `finyk/hooks/useHashRouter.ts` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)), shared `apps/web/src/shared/hooks/useHashRoute.ts` ([`f5caf1ee`](https://github.com/Skords-01/Sergeant/commit/f5caf1ee) `chore(web): remove unused useHashRoute hook + tests + exports`); fizruk і routine мають власні пер-модульні hooks (`useFizrukRoute.ts`, `useRoutineRoute.ts`).
-- [ ] Hash-URL compat shim тестується e2e (1 Playwright test). _Phase 3._
+- [x] Hash-URL compat shim реалізовано (HashRedirect.tsx + Vitest unit test у Providers). _Playwright e2e тест — pending._
 - [ ] Route-loaders використовуються щонайменше у 4 модулях (prefetch RQ-data). _Phase 2/4 — поточно 0; route-loaders не введені бо Phase 2 PR-и тримали NOOP-міграцію без поведінкових регресій._
 - [ ] PostHog подія `route_change` логується для метрики p95. _Phase 4._
-- [ ] Bundle-size guard оновлено — per-route budgets. _Phase 5._
-- [ ] ESLint rule `no-hash-router-in-modules` — error level. _Phase 5; baseline 18 → 12 warning-ів (всі в `fizruk/`) після Phase 2.b. Promotion гейт: 0 warning-ів у `apps/web/src/modules/**`._
+- [x] Bundle-size guard оновлено — per-route budgets (finyk/150KB, fizruk/180KB, routine/120KB, nutrition/100KB, total/500KB у check-bundle-size.mjs).
+- [x] ESLint rule `no-hash-router-in-modules` — error level. _Phase 5 done; `apps/web/src/modules/**` clean, 0 warnings._
 
 ## Ризики та митиґація
 
@@ -231,6 +231,31 @@ DOR для Phase 1 (`feat-react-router-setup`): після введення `<Ro
 | Hash-router callsites у finyk  | `finyk` колонка baseline-таблиці: 3 callsites → **0** (1 import + 1 виклик хука у `FinykApp.tsx` + 1 `window.location.hash = ...` assignment у `useHashRouter.ts`). 2 inline-`eslint-disable-next-line sergeant-design/no-hash-router-in-modules`-pragma-и у `FinykApp.tsx` видалені. `pnpm --filter @sergeant/web lint` тепер показує 14 hash-router warning-ів (fizruk 14 + routine 0 — routine 1 у baseline вже зник у іншому unrelated PR).                                                                            |
 | Bundle size                    | `pnpm --filter @sergeant/web build`: `index-*.js` = 666 KB / **194 KB gzip** (target ≤ 350 KB) ✓; `FinykApp-*.js` лишається у тому ж per-module chunk-і (поточний `lazyDefault` у `ActiveModuleView` не змінений). `vendor-router-*.js` без приросту, бо `react-router-dom` вже тягнувся з Phase 1. Реальний chunk-split move-ається у Phase 5.                                                                                                                                                                            |
 | Verification                   | `pnpm --filter @sergeant/web typecheck` ✓; `pnpm --filter @sergeant/web lint` — 0 errors; `pnpm --filter @sergeant/web build` ✓; full vitest run — pre-existing 14 file-level failures без приросту (`@sergeant/db-schema/sqlite/migrations` import у dualWrite tests, не зв'язано з Phase 2.b).                                                                                                                                                                                                                           |
+
+### Phase 3 — hash-URL compat shim (2026-05-18)
+
+| Що                                       | Як зафіксовано                                                                                                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/core/app/HashRedirect.tsx` | Монтується в `Providers.tsx`; читає `window.location.hash` на mount, якщо непорожній — `navigate("/"+hash.slice(1), { replace: true })`. Одноразовий ефект (useRef-страж). |
+| `HashRedirect.test.tsx`                  | Vitest/RTL unit test. Playwright e2e тест (старий PWA-link `https://app/#fizruk/workouts` → новий `/fizruk/workouts`) — pending.                                           |
+
+### Phase 4 (partial) — scroll restoration + prefetch (2026-05-18)
+
+| Що                           | Як зафіксовано                                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<ScrollRestoration />`      | Mounted у `Providers.tsx` (line 60). Scroll position відновлюється при back/forward navigation.                                                                     |
+| Prefetch-on-hover            | `apps/web/src/core/hooks/useRoutePrefetch.ts` — `getPagePrefetchProps()` повертає `onMouseEnter`, `onFocus`, `onPointerDown` handlers; wired у `HubBottomNav` tabs. |
+| PostHog `route_change` event | PENDING — `PageviewTracker` fires `$pageview` при pathname change (standard PostHog); кастомний `route_change` + `p95` metric не реалізовані.                       |
+
+### Phase 5 (partial) — bundle-gate + cleanup (2026-05-18)
+
+| Що                              | Як зафіксовано                                                                                                 |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Per-route budgets               | `scripts/check-bundle-size.mjs` — finyk/150KB, fizruk/180KB, routine/120KB, nutrition/100KB, total/500KB gzip. |
+| ESLint rule → error             | `eslint.config.js` — `no-hash-router-in-modules` at `error` level globally for `apps/web/src/modules/**`.      |
+| `useHashRoute.ts` видалено      | Файл не існує.                                                                                                 |
+| `manualChunks` у vite.config.js | PENDING — lines 226–328 лишились (vendor chunking strategy); cleanup слідує за Phase 5 route-loaders.          |
+| Route-loaders                   | PENDING — 0 з 4+ модулів мають route-loaders для prefetch RQ-data.                                             |
 
 ### Що НЕ увійшло у Phase 0 (з обґрунтуванням)
 

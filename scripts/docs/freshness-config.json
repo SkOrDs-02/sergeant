@@ -22,8 +22,15 @@
   "excludeGlobs": [
     "docs/initiatives/follow-ups.md",
     "docs/open-work.md",
-    "scripts/__tests__/fixtures/**"
+    "scripts/__tests__/fixtures/**",
+    ".telemetry/**",
+    "mockups/**"
   ],
   "explicitInclude": [],
-  "explicitExclude": ["ops/openclaw/cheap-router.system.md"]
+  "explicitExclude": [
+    "ops/openclaw/cheap-router.system.md",
+    "docs/design/redesign-v2/handoff.md",
+    "docs/design/redesign-v2/handoff-package/Handoff for Claude Code.md",
+    "docs/design/redesign-v2/handoff-package/Hidden tech-debt audit.md"
+  ]
 }

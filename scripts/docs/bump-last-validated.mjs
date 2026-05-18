@@ -199,6 +199,12 @@ export function bumpFiles({
     const full = resolve(rootDir, rel);
     if (!existsSync(full)) continue;
     const content = readFileSync(full, "utf8");
+    // Auto-generated files own their own freshness header (written by the
+    // generator script). Bumping would diverge them from what --check expects.
+    if (content.includes("<!-- AUTO-GENERATED FILE")) {
+      log(`  skip (auto-generated): ${rel}`);
+      continue;
+    }
     const cadenceDays = getCadenceDays(rel, config);
     const { content: next, changed } = bumpHeader({
       content,
