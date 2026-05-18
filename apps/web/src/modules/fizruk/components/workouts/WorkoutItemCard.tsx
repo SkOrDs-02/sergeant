@@ -4,6 +4,7 @@
  */
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { Segmented } from "@shared/components/ui/Segmented";
 import {
   recoveryConflictsForWorkoutItem,
   type Workout,
@@ -219,12 +220,34 @@ export function WorkoutItemCard({
           <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
             Тип
           </SectionHeading>
-          <select
-            className="input-focus-fizruk w-full h-10 bg-transparent text-sm text-text disabled:opacity-70 rounded-xl"
+          <Segmented
+            variant="fizruk"
+            style="solid"
+            size="md"
+            ariaLabel="Тип вправи"
+            className={isReadOnly ? "opacity-50 pointer-events-none" : ""}
             value={it.type || "strength"}
-            disabled={isReadOnly}
-            onChange={(e) => {
-              const t = e.target.value;
+            items={[
+              {
+                value: "strength",
+                label: "Силова",
+                title: "Силова (кг × повтори × підходи)",
+                ariaLabel: "Силова — кг × повтори × підходи",
+              },
+              {
+                value: "time",
+                label: "Час",
+                title: "Час (секунди)",
+                ariaLabel: "Час — секунди",
+              },
+              {
+                value: "distance",
+                label: "Дист",
+                title: "Дистанція (метри) + час",
+                ariaLabel: "Дистанція — метри та час",
+              },
+            ]}
+            onChange={(t) => {
               if (t === "strength")
                 updateItem(activeWorkout.id, it.id, {
                   type: t,
@@ -247,11 +270,7 @@ export function WorkoutItemCard({
                   sets: undefined,
                 });
             }}
-          >
-            <option value="strength">Силова (кг × повтори × підходи)</option>
-            <option value="time">Час (секунди)</option>
-            <option value="distance">Дистанція (метри) + час</option>
-          </select>
+          />
         </div>
       </div>
 
