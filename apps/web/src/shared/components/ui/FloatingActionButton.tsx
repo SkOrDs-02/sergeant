@@ -261,6 +261,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10 motion-safe:animate-fade-in"
+            role="presentation"
             aria-hidden="true"
           />
 
