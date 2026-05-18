@@ -31,10 +31,9 @@ import { readFileSync, writeFileSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  collectOpenWork,
-  TRACKERS,
-} from "./generate-open-work.mjs";
+import prettier from "prettier";
+
+import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { evaluate, loadLimits } from "./check-wip-limits.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,8 +59,7 @@ const RE_PHASE_NEXT =
   /(?:Phase|Stage)\s+([\d.]+)[^\n]{0,60}?(blocked|next|pending|in\s+progress|todo|to\s+do)/i;
 
 // Detect `Next review:` date in `> **Last validated:** … **Next review:** YYYY-MM-DD …`
-const RE_NEXT_REVIEW =
-  /\*\*Next review:\*\*\s*(\d{4}-\d{2}-\d{2})/;
+const RE_NEXT_REVIEW = /\*\*Next review:\*\*\s*(\d{4}-\d{2}-\d{2})/;
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -250,7 +248,9 @@ function render({ priority, overdue, wipRows }) {
     : wipRows.some((r) => r.severity === "warn")
       ? "warn"
       : "ok";
-  lines.push(`## WIP load — ${worst === "ok" ? "🟢 healthy" : worst === "warn" ? "🟡 over soft" : "🔴 OVER HARD"}`);
+  lines.push(
+    `## WIP load — ${worst === "ok" ? "🟢 healthy" : worst === "warn" ? "🟡 over soft" : "🔴 OVER HARD"}`,
+  );
   lines.push("");
   if (worst === "ok") {
     lines.push(
@@ -273,11 +273,15 @@ function render({ priority, overdue, wipRows }) {
   // ── Quick links ─────────────────────────────────────────────────────────
   lines.push("## Quick links");
   lines.push("");
-  lines.push("- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers");
+  lines.push(
+    "- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers",
+  );
   lines.push(
     "- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — повний freshness огляд",
   );
-  lines.push("- [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing");
+  lines.push(
+    "- [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",
+  );
   lines.push("- [`README.md`](./README.md) — docs index (genre-grouped)");
   lines.push("");
 
@@ -286,14 +290,16 @@ function render({ priority, overdue, wipRows }) {
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
   const report = collectOpenWork(REPO_ROOT, TRACKERS);
   const limits = loadLimits();
   const wipRows = evaluate(report, limits);
 
   const priority = pickPriorityItems(report);
   const overdue = pickOverdueReview(report);
-  const next = render({ priority, overdue, wipRows });
+  const next = await prettier.format(render({ priority, overdue, wipRows }), {
+    parser: "markdown",
+  });
 
   if (CHECK_MODE) {
     let current = "";
@@ -318,4 +324,9 @@ function main() {
 }
 
 const isMain = process.argv[1] === __filename;
-if (isMain) main();
+if (isMain) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack : error}\n`);
+    process.exit(1);
+  });
+}

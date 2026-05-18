@@ -445,7 +445,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   // handle on commit, so match the canonical value the hook will produce.
   // Cadence mirrors `generate-initiative-followups.mjs` (90 days).
   lines.push(
-    `> **Last validated:** ${today} by @Skords-01. **Next review:** ${addDays(today, 90)}.`,
+    `> **Last validated:** ${today} by @codex. **Next review:** ${addDays(today, 90)}.`,
   );
   lines.push("> **Status:** Active");
   lines.push("");

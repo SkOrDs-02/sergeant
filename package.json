@@ -15,6 +15,7 @@
   "scripts": {
     "bootstrap": "node scripts/bootstrap.mjs",
     "bootstrap:check": "node scripts/bootstrap.mjs --check",
+    "codex:status": "node scripts/codex/status.mjs",
     "dev": "turbo run dev --parallel",
     "dev:web": "pnpm --filter @sergeant/web dev",
     "dev:server": "pnpm --filter @sergeant/server dev",

@@ -49,6 +49,7 @@ Each playbook must include:
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [investigate-alert.md](./investigate-alert.md)
 - [release.md](./release.md)
+- [cleanup-codex-branch-after-pr.md](./cleanup-codex-branch-after-pr.md)
 - [declare-incident.md](./declare-incident.md)
 - [restore-from-backup.md](./restore-from-backup.md)
 - [access-governance.md](./access-governance.md)
