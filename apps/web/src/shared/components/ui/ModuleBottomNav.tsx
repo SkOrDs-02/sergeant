@@ -115,7 +115,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     <div
       className={cn("shrink-0 relative z-30", className)}
       style={{
-        paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
       <nav

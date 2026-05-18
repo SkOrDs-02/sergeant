@@ -274,7 +274,7 @@ export function HubBottomNav({
     <div
       className="shrink-0 relative z-30"
       style={{
-        paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-hidden={false}
     >
