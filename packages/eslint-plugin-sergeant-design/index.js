@@ -3166,10 +3166,6 @@ const DEFAULT_REQUIRE_STORIES_PATH_RE =
 //        візуально = `<Spinner>` (вже story).
 //      - `ModulePageLoader.tsx` — module-tinted spinner; чисто loader,
 //        візуально = `<Spinner>` варіанти.
-//      - `SpotlightQueue.tsx` — context provider для `FeatureSpotlight`,
-//        без власного UI.
-//      - `StreakProtection.tsx` — pure-logic компонент (state machine
-//        для streak insurance), UI рендериться через `<Banner>`/`<Modal>`.
 //
 //      Gesture / mobile-only / native-input wrappers:
 //      - `KeyboardAccessory.tsx` — мобільний keyboard-accessory bar,
@@ -3188,9 +3184,7 @@ const DEFAULT_REQUIRE_STORIES_PATH_RE =
 //
 //      Transient / overlay / context-залежні:
 //      - `CelebrationModal.tsx` — повноекранний overlay із 3-сек
-//        animation-ом; візуальна цінність = `<StreakCelebration>` (story).
-//      - `FeatureSpotlight.tsx` — anchor через CSS-selector у DOM-і
-//        host-app-у; не рендериться без real `targetSelector`.
+//        animation-ом; візуальні приклади — story.
 //      - `KeyboardShortcutsModal.tsx` — UI зчитує реєстр гарячих клавіш
 //        host-app-у через context, недоступний у Storybook isolation.
 //      - `VoiceMicButton.tsx` — потребує MediaRecorder + voice-recognition
@@ -3209,8 +3203,6 @@ const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
   "apps/web/src/shared/components/ui/SectionErrorBoundary.tsx",
   "apps/web/src/shared/components/ui/SuspenseWithMinDelay.tsx",
   "apps/web/src/shared/components/ui/ModulePageLoader.tsx",
-  "apps/web/src/shared/components/ui/SpotlightQueue.tsx",
-  "apps/web/src/shared/components/ui/StreakProtection.tsx",
   "apps/web/src/shared/components/ui/KeyboardAccessory.tsx",
   "apps/web/src/shared/components/ui/PullToRefresh.tsx",
   "apps/web/src/shared/components/ui/PullToRefreshIndicator.tsx",
@@ -3218,7 +3210,6 @@ const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
   "apps/web/src/shared/components/ui/SwipeToAction.tsx",
   "apps/web/src/shared/components/ui/QuickActionsMenu.tsx",
   "apps/web/src/shared/components/ui/CelebrationModal.tsx",
-  "apps/web/src/shared/components/ui/FeatureSpotlight.tsx",
   "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
   "apps/web/src/shared/components/ui/VoiceMicButton.tsx",
 ]);
@@ -4148,10 +4139,10 @@ const noConsolePii = {
 // `fixed inset-0` всередині — вони у allowlist (`options.allow`).
 //
 // Чому warn-only: rule покликаний підсвічувати нові регресії на час,
-// поки існуючі offender-и (`QuickActionsMenu`, `StreakCelebration`,
-// `FeatureSpotlight`, …) ще не рефакторені. Файлові виправлення +
-// axe prop-тести — окрема partII (див. audit § F2 «Дії (не в цьому
-// PR)»).
+// поки існуючі offender-и (`QuickActionsMenu`, …) ще не рефакторені.
+// Файлові виправлення + axe prop-тести — окрема partII (див. audit § F2
+// «Дії (не в цьому PR)»). `StreakCelebration` + `FeatureSpotlight`
+// видалено у PR #2998 як unused orphans (alignment audit Q8).
 //
 // What the rule flags (per JSX opening element):
 //   1. The element's `className` (string-literal, template literal,
@@ -4173,10 +4164,9 @@ const noConsolePii = {
 //     intentionally skipped to keep the rule cheap and predictable.
 //
 // Example offenders (audit § F2):
-//   - `apps/web/src/shared/components/ui/StreakCelebration.tsx:138`
-//     `role="alert"` (not in the dialog-role allowlist).
-//   - `apps/web/src/shared/components/ui/FeatureSpotlight.tsx:323`
-//     overlay without role/aria-modal.
+//   - Both pre-existing offenders (`StreakCelebration.tsx:138` &
+//     `FeatureSpotlight.tsx:323`) deleted in PR #2998 as unused orphans.
+//     Future offenders should follow the same `role`/`aria-modal` fix.
 //
 // BAD:
 //   <div className="fixed inset-0 z-50 bg-black/40" />

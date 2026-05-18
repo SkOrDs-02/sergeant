@@ -1,6 +1,6 @@
 # Storybook (apps/web)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-18 by @Skords-01. **Next review:** 2026-08-16.
 > **Status:** Active
 
 Sergeant ships a Storybook 10 (`@storybook/react-vite`) playground for the web design-system. It serves as:
@@ -96,7 +96,7 @@ For domain components (`apps/web/src/modules/<module>/components/`), stories sho
 
 ### Animations + transient overlays
 
-Components that auto-dismiss or rely on `IntersectionObserver` (`<AnimatedNumber>`, `<AnimatedList>`, `<StreakCelebration>`, `<StreakFlame>`) MUST expose a render-only escape hatch:
+Components that auto-dismiss or rely on `IntersectionObserver` (`<AnimatedNumber>`, `<AnimatedList>`, `<StreakFlame>`) MUST expose a render-only escape hatch:
 
 - `immediate: true` (skip count-up animation)
 - `triggerOnView: false` (skip IO trigger)
@@ -118,8 +118,8 @@ When the rule fires on a new component:
 The allowlist is grouped into three sections:
 
 - **Sub-module / barrel** — `index.tsx`, `Icon.paths.*.tsx`, `EmptyStateIllustrations.tsx`.
-- **Utility / wrapper / a11y** — `PageTransition`, `ScreenReaderAnnouncer`, `SkipLink`, `SectionErrorBoundary`, `SuspenseWithMinDelay`, `ModulePageLoader`, `SpotlightQueue`, `StreakProtection`.
-- **Gesture / transient overlay** — `KeyboardAccessory`, `PullToRefresh{,Indicator}`, `OptimizedImage`, `SwipeToAction`, `QuickActionsMenu`, `CelebrationModal`, `FeatureSpotlight`, `KeyboardShortcutsModal`, `VoiceMicButton`.
+- **Utility / wrapper / a11y** — `PageTransition`, `ScreenReaderAnnouncer`, `SkipLink`, `SectionErrorBoundary`, `SuspenseWithMinDelay`, `ModulePageLoader`.
+- **Gesture / transient overlay** — `KeyboardAccessory`, `PullToRefresh{,Indicator}`, `OptimizedImage`, `SwipeToAction`, `QuickActionsMenu`, `CelebrationModal`, `KeyboardShortcutsModal`, `VoiceMicButton`.
 
 If a future component lands in one of those buckets, reuse the same pattern — group + rationale + entry in the `Set`.
 
