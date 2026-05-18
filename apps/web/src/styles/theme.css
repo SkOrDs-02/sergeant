@@ -45,10 +45,23 @@
     --safe-area-left: env(safe-area-inset-left, 0px);
     --safe-area-right: env(safe-area-inset-right, 0px);
   }
-  body {
-    padding-top: var(--safe-area-top);
-    padding-bottom: var(--safe-area-bottom);
-  }
+
+  /* Sergeant v2 redesign (PR-#XXXX, 2026-05-18) — REMOVED the legacy
+     `body { padding-top: var(--safe-area-top); padding-bottom: var(...) }`
+     rule. `viewport-fit=cover` on the `<meta name="viewport">` is what
+     actually makes `env(safe-area-inset-*)` return non-zero on iOS —
+     a body-level padding is not required for that. Every consumer that
+     needs safe-area now applies it at the COMPONENT level:
+       - Hub shell  → `MeshBackground` className `safe-area-pt`
+       - Module shells → `ModuleHeader` `safe-area-pt`
+       - HubBottomNav / ModuleBottomNav → own
+         `padding-bottom: calc(0.75rem + env(safe-area-inset-bottom))`
+       - Standalone routes (`WelcomeScreen`, `AuthPage`,
+         `ResetPasswordPage`) → own inline `paddingTop: max(..., env(...))`
+     The body-level rule was stacking on top of every one of those,
+     producing ~118px of doubled inset above the hub/module headers on
+     Dynamic-Island iPhones (the gap was masked in browser tabs by the
+     Safari URL bar geometry but exposed in PWA standalone mode). */
 
   /* ═══════════════════════════════════════════════════════════════════════
      LIGHT THEME — Warm, Organic, Friendly
