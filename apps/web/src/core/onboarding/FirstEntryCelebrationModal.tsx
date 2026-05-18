@@ -3,7 +3,7 @@
  * Status: Active
  */
 /**
- * CelebrationModal — First entry success celebration
+ * FirstEntryCelebrationModal — First entry success celebration
  *
  * Full-screen modal celebrating the user's first real entry.
  * Shows confetti particles and module-aware copy from
@@ -43,7 +43,7 @@ const CONFETTI_COLORS = [
   "#FBBF24", // amber
 ];
 
-interface CelebrationModalProps {
+interface FirstEntryCelebrationModalProps {
   open: boolean;
   onClose: () => void;
   /** Time-to-value in milliseconds (null if not measured) */
@@ -56,12 +56,12 @@ interface CelebrationModalProps {
   moduleId: DashboardModuleId | null;
 }
 
-export function CelebrationModal({
+export function FirstEntryCelebrationModal({
   open,
   onClose,
   ttvMs,
   moduleId,
-}: CelebrationModalProps) {
+}: FirstEntryCelebrationModalProps) {
   const [visible, setVisible] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -177,6 +177,7 @@ export function CelebrationModal({
       ref={backdropRef}
       role="dialog"
       aria-modal="true"
+      // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- aria-label, pre-existing copy; i18n extraction tracked separately
       aria-label="Вітаємо!"
       className={cn(
         "fixed inset-0 z-9999 flex items-center justify-center",
@@ -190,6 +191,7 @@ export function CelebrationModal({
       <button
         type="button"
         className="absolute inset-0 w-full h-full cursor-default"
+        // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- aria-label, pre-existing copy; i18n extraction tracked separately
         aria-label="Закрити святкування"
         onClick={handleClose}
         onKeyDown={(e) => {
@@ -257,7 +259,7 @@ export function CelebrationModal({
 
         {/* Tips for next steps */}
         <div className="w-full p-3 rounded-xl bg-panelHi/50 border border-line/50 text-left space-y-2">
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional overlay typography */}
+          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift, sergeant-design/no-cyrillic-jsx-literal -- intentional overlay typography + pre-existing copy (i18n extraction tracked separately) */}
           <p className="text-style-caption text-subtle uppercase tracking-wide font-medium">
             Що далі
           </p>

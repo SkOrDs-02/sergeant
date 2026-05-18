@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
-import { CelebrationModal } from "./CelebrationModal";
+import { FirstEntryCelebrationModal } from "./FirstEntryCelebrationModal";
 
 // Stub the analytics sink so the assertion is deterministic — the real
 // impl fan-outs to console + PostHog + AI-memory mirror. We only care
@@ -20,7 +20,7 @@ vi.mock("../observability/analytics", async () => {
 
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
-describe("CelebrationModal — celebration_shown payload (PR-A)", () => {
+describe("FirstEntryCelebrationModal — celebration_shown payload (PR-A)", () => {
   afterEach(cleanup);
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe("CelebrationModal — celebration_shown payload (PR-A)", () => {
     for (const moduleId of moduleIds) {
       vi.mocked(trackEvent).mockClear();
       render(
-        <CelebrationModal
+        <FirstEntryCelebrationModal
           open
           onClose={() => {}}
           ttvMs={42_000}
@@ -60,7 +60,12 @@ describe("CelebrationModal — celebration_shown payload (PR-A)", () => {
 
   it("falls back gracefully when moduleId is null (default copy)", () => {
     render(
-      <CelebrationModal open onClose={() => {}} ttvMs={null} moduleId={null} />,
+      <FirstEntryCelebrationModal
+        open
+        onClose={() => {}}
+        ttvMs={null}
+        moduleId={null}
+      />,
     );
     expect(trackEvent).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.CELEBRATION_SHOWN,

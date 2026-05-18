@@ -50,13 +50,6 @@ export type {
 } from "./EmptyState";
 
 export {
-  FeatureSpotlight,
-  useResetSpotlight,
-  useSpotlightDismissed,
-} from "./FeatureSpotlight";
-export type { FeatureSpotlightProps } from "./FeatureSpotlight";
-
-export {
   KeyboardShortcutsModal,
   useKeyboardShortcutsModal,
   ShortcutRegistryProvider,
@@ -71,9 +64,6 @@ export {
   AnimatedPercent,
 } from "./AnimatedNumber";
 export type {} from "./AnimatedNumber";
-
-export { StreakProtection, useStreakRiskCheck } from "./StreakProtection";
-export type { StreakProtectionProps } from "./StreakProtection";
 
 export { QuickActionsMenu } from "./QuickActionsMenu";
 export type { QuickAction } from "./QuickActionsMenu";
@@ -232,9 +222,6 @@ export type {
   MiniSuccessProps,
   ModuleTheme,
 } from "./CelebrationModal";
-
-export { StreakCelebration, useStreakCelebration } from "./StreakCelebration";
-export type { StreakCelebrationProps } from "./StreakCelebration";
 
 export { AnimatedCheckbox, HabitCheckbox } from "./AnimatedCheckbox";
 export type {

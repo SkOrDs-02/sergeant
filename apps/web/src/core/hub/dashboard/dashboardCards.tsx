@@ -152,12 +152,10 @@ export function StreakIndicator() {
     return streaks[0]?.days ?? 0;
   }, []);
 
-  // Detect streak-milestone crossings on the hub itself rather than
-  // inside the (currently unused) `<StreakCelebration>` modal — that
-  // way the funnel sees `streak_milestone_reached` even when the
-  // celebration UI hasn't been wired into the dashboard yet. We seed
-  // `previousStreakRef` to `streak` on first mount so a returning user
-  // who already crossed a milestone doesn't get double-tracked.
+  // Detect streak-milestone crossings on the hub itself so the funnel
+  // sees `streak_milestone_reached` from the dashboard render path. We
+  // seed `previousStreakRef` to `streak` on first mount so a returning
+  // user who already crossed a milestone doesn't get double-tracked.
   const previousStreakRef = useRef<number | null>(null);
   useEffect(() => {
     if (previousStreakRef.current === null) {
@@ -173,10 +171,9 @@ export function StreakIndicator() {
     if (crossed !== null) {
       trackEvent(ANALYTICS_EVENTS.STREAK_MILESTONE_REACHED, {
         days: crossed,
-        // Hub renders a `<StreakBadge>` for every crossing; the modal
-        // (`<StreakCelebration>`) is a separate UI path that isn't
-        // mounted here yet. Keeping `type` on the payload lets PostHog
-        // segment by surface once the modal lands without a payload-
+        // Hub renders a `<StreakBadge>` for every crossing. Keeping
+        // `type` on the payload lets PostHog segment by surface if a
+        // separate celebration modal is added later without a payload-
         // shape change to chase.
         type: "toast" as const,
       });

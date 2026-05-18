@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-17 by @codex. **Next review:** 2026-08-15.
+> **Last validated:** 2026-05-18 by @Skords-01. **Next review:** 2026-08-16.
 > **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -1298,28 +1298,6 @@ confetti("Готово!", "Онбординг завершено", "high");
 **AutoClose:** 4.5-6 секунд залежно від типу
 **Accessibility:** Focus trap, Escape to close, reduced-motion safe
 
-### FeatureSpotlight
-
-Contextual onboarding hints з spotlight overlay.
-
-```tsx
-import { FeatureSpotlight } from "@shared/components/ui/FeatureSpotlight";
-
-<FeatureSpotlight
-  id="first-transaction"
-  title="Додай першу витрату"
-  description="Натисни + щоб записати витрату"
-  position="bottom"
-  showOnce
->
-  <FABButton />
-</FeatureSpotlight>;
-```
-
-**Position:** `top` | `bottom` | `left` | `right`
-**Storage:** localStorage persist dismissed state per ID
-**Hooks:** `useSpotlightDismissed(id)`, `useResetSpotlight()`
-
 ### ModulePageLoader
 
 Module-specific skeleton loader для lazy-loaded modules.
@@ -1926,6 +1904,5 @@ PR-ами per-модуль. `console.log` + toast «WIP» — навмисна �
   примітиви — окремими PR'ами, по модулю.
 - Додати Storybook-подібну сторінку `/design` з живими прикладами.
 - Розширити WCAG-audit автотестом (axe) у CI.
-- Інтегрувати `FeatureSpotlight` в ключові onboarding touchpoints.
 - Додати більше haptic feedback у key interactions.
 - Profile page з avatar upload.

@@ -4,7 +4,7 @@
  */
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import { DemoModeBanner } from "../onboarding/DemoModeBanner";
-import { CelebrationModal } from "../onboarding/CelebrationModal";
+import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationModal";
 import { MotivationalFooter, StaggerChild } from "./dashboard/dashboardCards";
 import { HubHeroBlock } from "./HubHeroBlock";
 import { HubModulesGrid } from "./HubModulesGrid";
@@ -105,7 +105,7 @@ export function HubDashboard({
 
       <MotivationalFooter />
 
-      <CelebrationModal
+      <FirstEntryCelebrationModal
         open={s.celebration.open}
         onClose={s.celebration.close}
         ttvMs={s.celebration.ttvMs}

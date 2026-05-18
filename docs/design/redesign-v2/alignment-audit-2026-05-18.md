@@ -98,6 +98,8 @@ generated_by: council-v4 (5 ролей)
 **Supporters:** auditor (R1 з file:line), planner (R2 implicit — token не в фазі).
 **Confidence:** 8/10.
 
+**RESOLVED 2026-05-18 (token source inspected):** **D7 framing був неточний — chartHex НЕ є bypass для `--c-chart-nutrition`.** Per `packages/design-tokens/tokens.js:294-302`, `chartHex` = окремий **macro-nutrient palette** (`kcal: orange-500`, `protein: blue-500`, `fat: yellow-500`, `carbs: green-500`) + universal chart roles (`primary: indigo-500`, `limit: red`, `neutral: slate-400`). Заміна на `rgb(var(--c-chart-nutrition))` (один-колір-на-модуль) втратила б differentiation між 4 макросами у Macro Ring / DailyPlanMacros progress bars. Реальне питання — чи треба theme-aware pivot для macro кольорів (orange/blue/yellow/green можуть viglyadat надто saturated у dark mode). Це окрема дизайн-розмова, НЕ просто token swap. **Action:** залишити `chartHex` як є; якщо у dogfooding виявиться dark-mode saturation issue — створити нову задачу «macro contrast pivot» з 4 нових `--c-macro-{kcal,protein,fat,carbs}` × 4 theme scopes. Closing D7 as audit misclassification.
+
 ### D8 — Signup wow-moment = wire `useCelebration()`, не дизайн-запит
 
 **Statement:** Замість «design post-submit celebration» → «wire `useCelebration().success("Ти в списку!", "Перший крок зроблено — чекай на доступ")` on email-submit-success event». 1-PR замість дизайн-цикла.
