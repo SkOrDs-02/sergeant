@@ -224,7 +224,7 @@ export const THEME_CHOICE_LABELS: Record<ThemeChoice, string> = {
 export const THEME_CHOICE_SHORT_LABELS: Record<ThemeChoice, string> = {
   light: "Світла",
   dark: "Темна",
-  system: "Як у системі",
+  system: "Авто",
   hc: "Контраст",
 };
 

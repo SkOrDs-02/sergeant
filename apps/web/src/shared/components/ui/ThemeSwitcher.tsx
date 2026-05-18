@@ -238,7 +238,13 @@ function DropdownSwitcher({
   );
 
   const activeIcon = THEME_CHOICE_ICONS[choice];
-  const activeLabel = THEME_CHOICE_LABELS[choice];
+  // Compact label for the header trigger — full "Висока контрастність"
+  // (20 chars) overflowed the right-cluster on 393px mobile viewports
+  // and pushed the dropdown anchor (and its menu) off-screen. Bug
+  // report 2026-05-18. The full label is still shown inside the
+  // dropdown menu items where there's room.
+  const activeLabel = THEME_CHOICE_SHORT_LABELS[choice];
+  const fullLabel = THEME_CHOICE_LABELS[choice];
 
   return (
     <div className={cn("relative inline-block text-left", className)}>
@@ -248,6 +254,7 @@ function DropdownSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
+        aria-label={`Тема: ${fullLabel}`}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           "inline-flex items-center gap-2 h-10 px-3 rounded-2xl border border-line bg-panel text-style-label text-text hover:bg-panelHi transition-colors motion-reduce:transition-none",
