@@ -23,6 +23,7 @@ interface MacrosEditorProps {
   setForm: Dispatch<SetStateAction<MealFormState>>;
   pickedFood: PickedFood | null;
   setPickedFood: Dispatch<SetStateAction<PickedFood | null>>;
+  pickedGrams: string;
   photoResult?: MealFormPhotoResult | null;
   hasPhotoMacros: boolean;
 }
@@ -33,6 +34,7 @@ export function MacrosEditor({
   setForm,
   pickedFood,
   setPickedFood,
+  pickedGrams,
   photoResult,
   hasPhotoMacros,
 }: MacrosEditorProps) {
@@ -46,7 +48,11 @@ export function MacrosEditor({
   const handleMacroChange =
     (key: MacroFieldKey) => (e: ChangeEvent<HTMLInputElement>) => {
       const v = e.target.value;
-      if (pickedFood) {
+      // Kcal is routinely overridden manually — bypass unlink confirm.
+      // Protein/fat/carbs edits would silently invalidate the food link, so
+      // those still require explicit confirmation before unlinking.
+      const isLinked = Boolean(pickedFood) && Number(pickedGrams) > 0;
+      if (isLinked && key !== "kcal") {
         setPendingUnlink({ key, value: v });
         return;
       }
@@ -116,10 +122,10 @@ export function MacrosEditor({
           </div>
         ))}
       </div>
-      {pickedFood && !pendingUnlink && (
+      {pickedFood && Number(pickedGrams) > 0 && !pendingUnlink && (
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="text-xs text-subtle">
-            Щоб змінити вручну — відʼєднайте продукт
+            Ккал — вільно; для білків/жирів/вуглев. — відʼєднайте
           </span>
           <button
             type="button"

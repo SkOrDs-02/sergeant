@@ -393,6 +393,7 @@ export function AddMealSheet({
               setForm={setForm}
               pickedFood={pickedFood}
               setPickedFood={setPickedFood}
+              pickedGrams={pickedGrams}
               photoResult={photoResult}
               hasPhotoMacros={hasPhotoMacros}
             />
