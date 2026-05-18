@@ -1,12 +1,12 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-18
  * Status: Active
  */
-import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { HeroValueLine } from "@shared/components/ui/HeroValueLine";
+import { KpiRowCompact } from "@shared/components/ui/KpiRowCompact";
+import { CounterReveal } from "@shared/components/ui/CounterReveal";
 import { DayProgressRing } from "./DayProgressRing";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 
 export interface RoutineCalendarHeroProps {
   rangeLabel: string;
@@ -20,15 +20,16 @@ export interface RoutineCalendarHeroProps {
 }
 
 /**
- * Top "hero" card for the Routine calendar tab. Combines the period
- * label, headline date, the daily progress ring (clickable to open
- * the day report sheet), and four KPI tiles: events in range, active
- * habits, completion %, current streak.
+ * Top "hero" card for the Routine calendar tab. Uses the v2 hero Card
+ * shell (prominence="hero" module="routine" radius="r-2xl") with:
  *
- * Layout is intentionally responsive: ring + tiles stack on mobile,
- * lay out side-by-side from `sm:` upwards. The 4 tiles wrap from
- * 2-col → 4-col at `lg:` so the period KPI doesn't compete with the
- * page-tabbar at narrow widths.
+ *   - `HeroValueLine` — narrative sentence (date · progress · streak),
+ *     animated `CounterReveal` metric, and the `DayProgressRing` (ring
+ *     slot, clickable to open the day-report sheet).
+ *   - `KpiRowCompact` — one-row compact meta strip: events in range,
+ *     active habits, completion %, current streak.
+ *
+ * Props interface is unchanged from v1; all call sites remain compatible.
  */
 export function RoutineCalendarHero({
   rangeLabel,
@@ -40,67 +41,46 @@ export function RoutineCalendarHero({
   currentStreak,
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
+  const narrative = `${headlineDate} · ${dayProgress.completed} з ${dayProgress.scheduled} звичок · Серія ${currentStreak} днів`;
+
   return (
     <Card
       as="section"
-      variant="routine"
-      padding="lg"
-      aria-label="Огляд періоду"
+      prominence="hero"
+      module="routine"
+      radius="r-2xl"
+      aria-label={rangeLabel}
     >
-      <p
-        className={cn(
-          // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Calendar hero kicker composed with dynamic C.heroKicker routine tint; see RoutineApp header for the sibling pattern.
-          "text-xs font-bold tracking-widest uppercase",
-          C.heroKicker,
-        )}
-      >
-        {rangeLabel}
-      </p>
-      <p className="text-xs text-subtle mt-1">{headlineDate}</p>
-      <div className="mt-4 flex flex-col sm:flex-row items-center gap-4">
-        <DayProgressRing
-          completed={dayProgress.completed}
-          scheduled={dayProgress.scheduled}
-          onClick={onOpenDayReport}
-        />
-        <div className="flex-1 grid grid-cols-2 gap-2 w-full sm:grid-cols-2 lg:grid-cols-4">
-          <div className={C.statCard}>
-            <SectionHeading as="p" size="xs" variant="subtle">
-              Подій у зрізі
-            </SectionHeading>
-            <p className="text-2xl font-black text-text tabular-nums mt-0.5">
-              {filteredCount}
-            </p>
-          </div>
-          <div className={C.statCard}>
-            <SectionHeading as="p" size="xs" variant="subtle">
-              Звичок активних
-            </SectionHeading>
-            <p className="text-2xl font-black text-text tabular-nums mt-0.5">
-              {activeHabitsCount}
-            </p>
-          </div>
-          <div className={C.statCard}>
-            <SectionHeading as="p" size="xs" variant="subtle">
-              Виконання
-            </SectionHeading>
-            <p className="text-2xl font-black text-text tabular-nums mt-0.5">
-              {Math.round(completionRate.rate * 100)}%
-            </p>
-            <p className="text-style-caption text-subtle tabular-nums">
-              {completionRate.completed}/{completionRate.scheduled}
-            </p>
-          </div>
-          <div className={C.statCard}>
-            <SectionHeading as="p" size="xs" variant="subtle">
-              Поточна серія
-            </SectionHeading>
-            <p className="text-2xl font-black text-text tabular-nums mt-0.5">
-              {currentStreak}
-            </p>
-          </div>
-        </div>
-      </div>
+      <HeroValueLine
+        narrative={narrative}
+        metric={
+          <CounterReveal
+            value={dayProgress.completed}
+            max={dayProgress.scheduled}
+            entranceFrom={0}
+            duration={800}
+          />
+        }
+        ring={
+          <DayProgressRing
+            completed={dayProgress.completed}
+            scheduled={dayProgress.scheduled}
+            onClick={onOpenDayReport}
+          />
+        }
+      />
+      <KpiRowCompact
+        module="routine"
+        items={[
+          { label: "Подій", value: filteredCount },
+          { label: "Звичок", value: activeHabitsCount },
+          {
+            label: "Виконання",
+            value: `${Math.round(completionRate.rate * 100)}%`,
+          },
+          { label: "Серія", value: currentStreak },
+        ]}
+      />
     </Card>
   );
 }
