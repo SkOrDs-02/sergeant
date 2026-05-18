@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { useCallback, useState } from "react";
@@ -8,10 +8,14 @@ import type {
   Workout,
   WorkoutGroup,
   WorkoutItem,
+  WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { Card } from "@shared/components/ui/Card";
 import { useRestSettings } from "../../hooks/useRestSettings";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { useToast } from "@shared/hooks/useToast";
+import { useCelebration } from "@shared/components/ui/CelebrationModal";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import {
   makeDefaultWarmup,
   makeDefaultCooldown,
@@ -85,6 +89,8 @@ export function ActiveWorkoutPanel({
   onCollapse,
 }: ActiveWorkoutPanelProps) {
   const { getDefaultForGroup } = useRestSettings();
+  const toast = useToast();
+  const { CelebrationComponent } = useCelebration();
   const [groupSelectMode, setGroupSelectMode] = useState(false);
   const [groupSelected, setGroupSelected] = useState<Set<string>>(
     () => new Set<string>(),
@@ -155,6 +161,25 @@ export function ActiveWorkoutPanel({
     updateWorkout(activeWorkout.id, { cooldown: makeDefaultCooldown() });
   }, [activeWorkout, updateWorkout]);
 
+  /**
+   * Called by WorkoutItemsList (via WorkoutItemCard) when the user deletes a
+   * set. The card has already called updateItem with the filtered set array;
+   * this handler fires an undo toast that restores the snapshot on
+   * "Скасувати" click. Undo restores sets only — any analytics events
+   * already fired are not rolled back (same policy as workout-level undo).
+   */
+  const handleDeleteSet = useCallback(
+    (workoutId: string, itemId: string, snapshot: WorkoutSet[]) => {
+      showUndoToast(toast, {
+        msg: "Підхід видалено",
+        onUndo: () => {
+          updateItem(workoutId, itemId, { sets: snapshot });
+        },
+      });
+    },
+    [toast, updateItem],
+  );
+
   if (!activeWorkout) return null;
 
   const isReadOnly = Boolean(activeWorkout.endedAt);
@@ -164,81 +189,85 @@ export function ActiveWorkoutPanel({
     !activeWorkout.endedAt && (activeWorkout.items || []).length >= 2;
 
   return (
-    <Card radius="lg">
-      <ActiveWorkoutHeader
-        activeWorkout={activeWorkout}
-        activeDuration={activeDuration}
-        onFinishClick={onFinishClick}
-        onDeleteWorkout={onDeleteWorkout}
-        onCollapse={onCollapse}
-      />
-
-      <WorkoutTimeEditor
-        activeWorkout={activeWorkout}
-        updateWorkout={updateWorkout}
-      />
-
-      <div className="mt-3 space-y-2">
-        <WarmupCooldownChecklist
-          title="Розминка"
-          items={activeWorkout.warmup}
-          onToggle={(id: string) => handleWarmupToggle("warmup", id)}
-          onInit={handleInitWarmup}
-          color={{ border: "border-orange-400/40", text: "text-orange-500" }}
-        />
-      </div>
-
-      <div className="mt-3 space-y-2">
-        {showGroupingControls && (
-          <WorkoutGroupingControls
-            selectedCount={groupSelected.size}
-            selectMode={groupSelectMode}
-            onEnterSelectMode={handleEnterSelectMode}
-            onCancelSelectMode={handleCancelSelectMode}
-            onCreateGroup={handleCreateSuperset}
-          />
-        )}
-        <WorkoutItemsList
+    <>
+      {CelebrationComponent}
+      <Card radius="lg">
+        <ActiveWorkoutHeader
           activeWorkout={activeWorkout}
-          items={items}
-          groups={groups}
-          groupSelectMode={groupSelectMode}
-          groupSelected={groupSelected}
-          isReadOnly={isReadOnly}
-          lastByExerciseId={lastByExerciseId}
-          musclesUk={musclesUk}
-          recBy={recBy}
-          onToggleGroupSelect={handleToggleGroupSelect}
-          removeItem={removeItem}
-          updateItem={updateItem}
+          activeDuration={activeDuration}
+          onFinishClick={onFinishClick}
+          onDeleteWorkout={onDeleteWorkout}
+          onCollapse={onCollapse}
+        />
+
+        <WorkoutTimeEditor
+          activeWorkout={activeWorkout}
           updateWorkout={updateWorkout}
-          setRestTimer={setRestTimer}
-          getDefaultForGroup={getDefaultForGroup}
         />
-      </div>
 
-      <div className="mt-3 space-y-2">
-        <WarmupCooldownChecklist
-          title="Заминка / розтяжка"
-          items={activeWorkout.cooldown}
-          onToggle={(id: string) => handleWarmupToggle("cooldown", id)}
-          onInit={handleInitCooldown}
-          color={{ border: "border-info/40", text: "text-info" }}
-        />
-      </div>
-
-      {!activeWorkout.endedAt && (
-        <div className="mt-3">
-          <textarea
-            className="input-focus-fizruk w-full min-h-[72px] rounded-2xl border border-line bg-bg px-3 py-2.5 text-sm text-text placeholder:text-subtle resize-none"
-            placeholder={`Нотатки до тренування (необов${"'"}язково)…`}
-            value={activeWorkout.note || ""}
-            onChange={(e) =>
-              updateWorkout(activeWorkout.id, { note: e.target.value })
-            }
+        <div className="mt-3 space-y-2">
+          <WarmupCooldownChecklist
+            title="Розминка"
+            items={activeWorkout.warmup}
+            onToggle={(id: string) => handleWarmupToggle("warmup", id)}
+            onInit={handleInitWarmup}
+            color={{ border: "border-orange-400/40", text: "text-orange-500" }}
           />
         </div>
-      )}
-    </Card>
+
+        <div className="mt-3 space-y-2">
+          {showGroupingControls && (
+            <WorkoutGroupingControls
+              selectedCount={groupSelected.size}
+              selectMode={groupSelectMode}
+              onEnterSelectMode={handleEnterSelectMode}
+              onCancelSelectMode={handleCancelSelectMode}
+              onCreateGroup={handleCreateSuperset}
+            />
+          )}
+          <WorkoutItemsList
+            activeWorkout={activeWorkout}
+            items={items}
+            groups={groups}
+            groupSelectMode={groupSelectMode}
+            groupSelected={groupSelected}
+            isReadOnly={isReadOnly}
+            lastByExerciseId={lastByExerciseId}
+            musclesUk={musclesUk}
+            recBy={recBy}
+            onToggleGroupSelect={handleToggleGroupSelect}
+            removeItem={removeItem}
+            updateItem={updateItem}
+            updateWorkout={updateWorkout}
+            setRestTimer={setRestTimer}
+            getDefaultForGroup={getDefaultForGroup}
+            onDeleteSet={handleDeleteSet}
+          />
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <WarmupCooldownChecklist
+            title="Заминка / розтяжка"
+            items={activeWorkout.cooldown}
+            onToggle={(id: string) => handleWarmupToggle("cooldown", id)}
+            onInit={handleInitCooldown}
+            color={{ border: "border-info/40", text: "text-info" }}
+          />
+        </div>
+
+        {!activeWorkout.endedAt && (
+          <div className="mt-3">
+            <textarea
+              className="input-focus-fizruk w-full min-h-[72px] rounded-2xl border border-line bg-bg px-3 py-2.5 text-sm text-text placeholder:text-subtle resize-none"
+              placeholder={`Нотатки до тренування (необов${"'"}язково)…`}
+              value={activeWorkout.note || ""}
+              onChange={(e) =>
+                updateWorkout(activeWorkout.id, { note: e.target.value })
+              }
+            />
+          </div>
+        )}
+      </Card>
+    </>
   );
 }

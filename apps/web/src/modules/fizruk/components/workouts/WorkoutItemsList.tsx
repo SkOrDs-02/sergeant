@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { useCallback, useMemo } from "react";
@@ -7,6 +7,7 @@ import type {
   Workout,
   WorkoutGroup,
   WorkoutItem,
+  WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
@@ -33,6 +34,11 @@ export interface WorkoutItemsListProps {
   updateWorkout: (id: string, patch: Partial<Workout>) => void;
   setRestTimer: (state: RestTimerState | null) => void;
   getDefaultForGroup: (id: string) => number;
+  onDeleteSet: (
+    workoutId: string,
+    itemId: string,
+    snapshot: WorkoutSet[],
+  ) => void;
 }
 
 /**
@@ -60,6 +66,7 @@ export function WorkoutItemsList({
   updateWorkout,
   setRestTimer,
   getDefaultForGroup,
+  onDeleteSet,
 }: WorkoutItemsListProps) {
   const itemIdToGroup = useMemo(() => {
     const m = new Map<string, WorkoutGroup>();
@@ -107,6 +114,7 @@ export function WorkoutItemsList({
         updateItem={updateItem}
         setRestTimer={setRestTimer}
         getDefaultForGroup={getDefaultForGroup}
+        onDeleteSet={onDeleteSet}
       />
     ),
     [
@@ -118,6 +126,7 @@ export function WorkoutItemsList({
       itemIdToGroup,
       lastByExerciseId,
       musclesUk,
+      onDeleteSet,
       onToggleGroupSelect,
       recBy,
       removeItem,

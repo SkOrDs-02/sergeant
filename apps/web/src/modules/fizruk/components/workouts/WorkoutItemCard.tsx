@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -44,6 +44,16 @@ export type WorkoutItemCardProps = {
   ) => void;
   setRestTimer: (state: RestTimerState | null) => void;
   getDefaultForGroup: (primaryGroup: string) => number;
+  /**
+   * Called after updateItem is invoked with the filtered sets array.
+   * Receives the workout id, item id, and the snapshot of the sets array
+   * BEFORE deletion so the parent can fire an undo toast that restores it.
+   */
+  onDeleteSet: (
+    workoutId: string,
+    itemId: string,
+    snapshot: WorkoutSet[],
+  ) => void;
 };
 
 /**
@@ -75,6 +85,7 @@ export function WorkoutItemCard({
   updateItem,
   setRestTimer,
   getDefaultForGroup,
+  onDeleteSet,
 }: WorkoutItemCardProps) {
   // Path-based deep-link into the Exercise detail page. The legacy
   // `window.location.hash = "#exercise/<id>"` callsite became a silent
@@ -300,8 +311,11 @@ export function WorkoutItemCard({
                 className="h-10 rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
                 disabled={isReadOnly}
                 onClick={() => {
-                  const next = (it.sets || []).filter((_, i) => i !== idx);
+                  const currentSets = it.sets || [];
+                  const snapshot = [...currentSets];
+                  const next = currentSets.filter((_, i) => i !== idx);
                   updateItem(activeWorkout.id, it.id, { sets: next });
+                  onDeleteSet(activeWorkout.id, it.id, snapshot);
                 }}
               >
                 Видалити
