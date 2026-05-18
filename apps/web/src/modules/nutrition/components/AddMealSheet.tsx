@@ -1,4 +1,19 @@
-import { useEffect, useState } from "react";
+/**
+ * AddMealSheet — two-step bottom sheet for logging a meal.
+ *
+ * Step flow:
+ *   "source" → user picks where the meal comes from (template, pantry,
+ *              food-search, barcode, photo, or manual entry).
+ *   "fill"   → user edits name, time, macros and saves.
+ *
+ * Auto-skip: when mealTemplates is empty AND there is no initialMeal AND no
+ * photoResult, step "source" has no shortcuts to offer, so the sheet opens
+ * directly at step "fill". A "Обрати джерело ↑" text link in the header lets
+ * the user backtrack if needed.
+ *
+ * @last-validated 2026-05-19
+ */
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -69,7 +84,15 @@ export function AddMealSheet({
   // search / barcode / photo / manual) then "fill" (name, time, macros,
   // save). Editing an existing meal or a photo import skips straight to
   // "fill" since the source is already decided.
+  // When there are no meal templates and no pre-filled content, "source"
+  // offers nothing useful (food-search and barcode still work, but the
+  // picker header is confusing when there are no shortcuts to show).
+  // In that case we start at "fill" directly.
   const [step, setStep] = useState("source");
+  // Tracks whether the current sheet opening auto-skipped the source step,
+  // so we can show the "Обрати джерело ↑" backtrack link instead of the
+  // regular ← arrow that only appears after forward navigation.
+  const skippedSourceRef = useRef(false);
 
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
     useFoodSearch(foodQuery);
@@ -125,14 +148,24 @@ export function AddMealSheet({
       setBarcodeStatus("");
       setScannerOpen(false);
       setFromPantryItem(null);
-      // Jump directly to fill when we already have content to edit.
-      setStep(initialMeal?.id || photoResult ? "fill" : "source");
+      // Jump directly to fill when we already have content to edit, or when
+      // there are no sources to pick from (no templates, no pre-fill, no
+      // photo) — the "source" step would be a pointless click-through.
+      const autoSkip =
+        !initialMeal?.id &&
+        !photoResult &&
+        mealTemplates.length === 0;
+      const initialStep =
+        initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
+      skippedSourceRef.current = autoSkip && initialStep === "fill";
+      setStep(initialStep);
       void ensureSeedFoods();
     }
   }, [
     open,
     photoResult,
     initialMeal,
+    mealTemplates,
     setBarcode,
     setBarcodeStatus,
     setFoodErr,
@@ -224,20 +257,28 @@ export function AddMealSheet({
     ),
   );
 
-  const showBack = step === "fill" && !initialMeal?.id && !photoResult;
+  const canBacktrack = step === "fill" && !initialMeal?.id && !photoResult;
+  // When the user was auto-skipped (no templates/photo/initialMeal), show a
+  // text link "Обрати джерело ↑" inline with the title rather than a ← icon
+  // button, because the icon back button implies "you navigated here" which
+  // would confuse users who never saw the source step.
+  const wasAutoSkipped = canBacktrack && skippedSourceRef.current;
+
+  function handleBacktrack() {
+    // Clear any picked source to prevent the auto-advance effect from
+    // immediately pushing back to "fill" when we return to "source".
+    setPickedFood(null);
+    setFromPantryItem(null);
+    skippedSourceRef.current = false;
+    setStep("source");
+  }
+
   const title = (
     <div className="flex items-center gap-2 min-w-0">
-      {showBack && (
+      {canBacktrack && !wasAutoSkipped && (
         <button
           type="button"
-          onClick={() => {
-            // Also clear any picked source, otherwise the auto-advance
-            // effect immediately pushes us back to "fill" as soon as we
-            // return to "source".
-            setPickedFood(null);
-            setFromPantryItem(null);
-            setStep("source");
-          }}
+          onClick={handleBacktrack}
           className="w-9 h-9 flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
           aria-label="Назад до вибору джерела"
         >
@@ -247,6 +288,15 @@ export function AddMealSheet({
       <span className="truncate">
         {step === "source" ? "Звідки страва?" : "Додати прийом їжі"}
       </span>
+      {wasAutoSkipped && (
+        <button
+          type="button"
+          onClick={handleBacktrack}
+          className="ml-auto shrink-0 text-xs font-semibold text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
+        >
+          Обрати джерело ↑
+        </button>
+      )}
     </div>
   );
 
