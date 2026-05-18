@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -81,6 +81,15 @@
 5. Wait for all 4 reports before synthesizing.
 6. Synthesize: overall status + per-surface table + failure details.
 7. For any failures: load `sergeant-bugfix-and-regression` + `fix-failing-ci.md`.
+
+## 10. Docs Governance Audit / Dedup
+
+1. Start with `sergeant-start-here`.
+2. Load `sergeant-tech-debt` for stale docs / duplicate tracker cleanup, or `sergeant-review-and-merge` for PR-readiness governance checks.
+3. If the user explicitly asks for agents, run `docs-governance-auditor`.
+4. Ask it to inspect active trackers, source audits, canonical-owner links, generated catalogs, and lifecycle/header drift.
+5. Implement only after the auditor returns concrete file/status recommendations.
+6. Regenerate affected generated docs (`docs:gen-open-work`, `docs:gen-playbook-index`, `docs:gen-graph`) and run the matching `--check` scripts.
 
 ## 6. OpenClaw Gateway Change
 
