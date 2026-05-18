@@ -24,6 +24,17 @@
     width: 100%;
     height: 100%;
     height: 100dvh;
+    /* `overflow: hidden` is required to actually disable document-level
+       scroll on iOS Safari. Setting `height: 100dvh` alone caps the box
+       but leaves overflow at the default `visible`, which on html/body
+       triggers a document scroll the moment any descendant transiently
+       exceeds the dynamic viewport — common during iOS URL-bar toggles
+       and Dynamic-Island layout shifts. The internal scrollers
+       (`PullToRefresh` in Hub, per-module scroll regions, the
+       WelcomeScreen page wrapper at `overflow-y-auto + overscroll-contain`)
+       own their own scroll, so disabling body-level scroll here is safe
+       and was already assumed by the WelcomeScreen test docstring. */
+    overflow: hidden;
     overscroll-behavior: none;
   }
 
