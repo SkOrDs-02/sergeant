@@ -156,22 +156,27 @@ const MODULE_PROMINENCE: Record<
   Record<"hero" | "soft" | "tinted", string>
 > = {
   finyk: {
-    hero: "border shadow-card bg-hero-emerald border-finyk-soft-border/50 dark:bg-finyk-soft dark:border-finyk-soft-border/40",
+    // `dark:bg-none` resets the light `bg-hero-emerald` linear-gradient
+    // (a background-image set in tailwind-preset.js:548) which otherwise
+    // renders ON TOP of `dark:bg-finyk-soft` (background-color) and
+    // washes the card bright in dark mode. Same fix applies to all 4
+    // modules below — see screenshot bug report 2026-05-18.
+    hero: "border shadow-card bg-hero-emerald dark:bg-none border-finyk-soft-border/50 dark:bg-finyk-soft dark:border-finyk-soft-border/40",
     soft: "border bg-finyk-soft border-finyk-soft-border backdrop-blur-sm",
     tinted: "bg-panel border border-finyk-soft-border shadow-card",
   },
   fizruk: {
-    hero: "border shadow-card bg-hero-teal border-fizruk-soft-border/50 dark:bg-fizruk-soft dark:border-fizruk-soft-border/40",
+    hero: "border shadow-card bg-hero-teal dark:bg-none border-fizruk-soft-border/50 dark:bg-fizruk-soft dark:border-fizruk-soft-border/40",
     soft: "border bg-fizruk-soft border-fizruk-soft-border backdrop-blur-sm",
     tinted: "bg-panel border border-fizruk-soft-border shadow-card",
   },
   routine: {
-    hero: "border shadow-card bg-hero-coral border-coral-200/50 dark:bg-routine-soft dark:border-routine-soft-border/40",
+    hero: "border shadow-card bg-hero-coral dark:bg-none border-coral-200/50 dark:bg-routine-soft dark:border-routine-soft-border/40",
     soft: "border bg-routine-soft border-routine-soft-border backdrop-blur-sm",
     tinted: "bg-panel border border-routine-soft-border shadow-card",
   },
   nutrition: {
-    hero: "border shadow-card bg-hero-lime border-lime-200/50 dark:bg-nutrition-soft dark:border-nutrition-soft-border/40",
+    hero: "border shadow-card bg-hero-lime dark:bg-none border-lime-200/50 dark:bg-nutrition-soft dark:border-nutrition-soft-border/40",
     soft: "border bg-nutrition-soft border-nutrition-soft-border backdrop-blur-sm",
     tinted: "bg-panel border border-nutrition-soft-border shadow-card",
   },

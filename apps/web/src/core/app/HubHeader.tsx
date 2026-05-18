@@ -88,9 +88,6 @@ export function HubHeader({
         "shrink-0 z-40",
         "pt-6 pb-2.5",
       )}
-      style={{
-        paddingTop: "max(1.5rem, env(safe-area-inset-top))",
-      }}
     >
       {/* ── Row 1: Mark + Wordmark + Action icons ─────────────── */}
       <div className="flex items-center justify-between">
@@ -146,13 +143,15 @@ export function HubHeader({
               dashboard FAB rendered by `HubHomeView`. ⌘K → «Запитати
               асистента» and the `/chat` deep-link continue to work. */}
 
-          {/* Theme switcher: 4-mode (`light` / `dark` / `system` / `hc`)
-              segmented control surfaced as a single-tap header affordance
-              for both signed-in and guest users. Replaced the legacy
-              sun/moon toggle (#057 / Track 9) so OS-level color-scheme
-              changes propagate live and AAA-leaning users get a one-tap
-              path into high-contrast without diving into Settings. */}
-          <ThemeSwitcher className="mx-1" />
+          {/* Theme switcher: 4-mode (`light` / `dark` / `system` / `hc`).
+              Header uses the `dropdown` variant (single trigger, ~50px)
+              so the right-cluster (search + privacy pill + theme + auth)
+              fits on 375px mobile viewports. The segmented variant
+              (4 icons, ~155px wide) clipped past the right edge on
+              narrow phones — see bug report 2026-05-18. Settings →
+              GeneralSection keeps the segmented variant where space
+              allows. */}
+          <ThemeSwitcher variant="dropdown" className="mx-1" />
 
           {/* Sign-in entry-point for guests only. Signed-in users reach
               their account via the `Профіль` bottom-nav tab. */}

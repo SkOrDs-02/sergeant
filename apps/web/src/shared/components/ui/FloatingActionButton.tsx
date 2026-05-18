@@ -190,13 +190,20 @@ export const FloatingActionButton = memo(function FloatingActionButton({
     action.onClick();
   }, []);
 
+  // Bottom offset = 6rem (96px) + safe-area-inset-bottom. Clears the v2
+  // floating glass `ModuleBottomNav` pill (mx-3 mb-3 outer + 60-64px
+  // inner + safe-area-pb) with breathing room above. Per
+  // docs/design/unified-bottom-nav.md the FAB sits 76px above the nav;
+  // we round up to 96 to keep clearance on smaller iPhones where the
+  // nav's own safe-area-pb stacks below the inner height. Pre-fix
+  // (~24px) the FAB clipped the navbar on every module screen.
   const positionClasses: Record<string, string> = {
     "bottom-right":
-      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] right-[max(1.25rem,env(safe-area-inset-right,0px))]",
+      "fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] right-[max(1.25rem,env(safe-area-inset-right,0px))]",
     "bottom-center":
-      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] left-1/2 -translate-x-1/2",
+      "fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2",
     "bottom-left":
-      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] left-[max(1.25rem,env(safe-area-inset-left,0px))]",
+      "fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-[max(1.25rem,env(safe-area-inset-left,0px))]",
   };
 
   const styles = sizeStyles[size];

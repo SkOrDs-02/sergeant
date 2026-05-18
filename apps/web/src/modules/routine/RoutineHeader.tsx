@@ -9,7 +9,6 @@
 
 import {
   ModuleHeader,
-  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -61,7 +60,6 @@ export function RoutineHeader({
           {onOpenSettings && (
             <ModuleHeaderSettingsButton onClick={onOpenSettings} />
           )}
-          <ModuleHeaderAssistantButton />
         </div>
       }
     />

@@ -1,6 +1,5 @@
 import {
   ModuleHeader,
-  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -68,7 +67,6 @@ export function NutritionHeader({
           {onOpenSettings && (
             <ModuleHeaderSettingsButton onClick={onOpenSettings} />
           )}
-          <ModuleHeaderAssistantButton />
         </div>
       }
     />

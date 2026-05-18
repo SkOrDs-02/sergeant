@@ -1,7 +1,6 @@
 import type * as React from "react";
 import {
   ModuleHeader,
-  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -189,7 +188,6 @@ export function FizrukHeader({
           {onOpenSettings && (
             <ModuleHeaderSettingsButton onClick={onOpenSettings} />
           )}
-          <ModuleHeaderAssistantButton />
         </div>
       }
     />

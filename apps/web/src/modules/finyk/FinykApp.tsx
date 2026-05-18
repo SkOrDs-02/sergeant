@@ -13,7 +13,6 @@ import {
   MeshBackground,
   ModuleAccentProvider,
   ModuleHeader,
-  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -353,7 +352,6 @@ export default function App({
               {onOpenSettings && (
                 <ModuleHeaderSettingsButton onClick={onOpenSettings} />
               )}
-              <ModuleHeaderAssistantButton />
             </div>
           }
         />
