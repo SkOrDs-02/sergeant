@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import {
@@ -123,6 +123,9 @@ export function RoutineCalendarPanel({
   // persists the final value.
   type NoteDraft = { habitId: string; dateKey: string; value: string };
   const [noteDrafts, setNoteDrafts] = useState<Record<string, NoteDraft>>({});
+  // Tracks which completion-note inputs are expanded. Keyed by completionNoteKey.
+  // Rows that already have a saved note value start expanded so the user can see it.
+  const [noteExpanded, setNoteExpanded] = useState<Record<string, boolean>>({});
   const noteDraftsRef = useRef(noteDrafts);
   useEffect(() => {
     noteDraftsRef.current = noteDrafts;
@@ -575,24 +578,57 @@ export function RoutineCalendarPanel({
                         (() => {
                           const noteKey = completionNoteKey(e.habitId, e.date);
                           const draft = noteDrafts[noteKey];
+                          const savedValue =
+                            routine.completionNotes?.[noteKey] || "";
                           const value =
-                            draft !== undefined
-                              ? draft.value
-                              : routine.completionNotes?.[noteKey] || "";
+                            draft !== undefined ? draft.value : savedValue;
+                          // Auto-expand if the row already has a note value so
+                          // existing text is never hidden behind the trigger.
+                          const isExpanded =
+                            noteExpanded[noteKey] ?? savedValue.length > 0;
+                          if (isExpanded) {
+                            return (
+                              <Input
+                                className="routine-touch-field w-full min-w-0"
+                                placeholder="Нотатка до відмітки"
+                                value={value}
+                                onChange={(ev) =>
+                                  scheduleNoteFlush(
+                                    e.habitId!,
+                                    e.date,
+                                    ev.target.value,
+                                  )
+                                }
+                                onBlur={() => {
+                                  flushNoteDraft(e.habitId!, e.date);
+                                  // Collapse if the user cleared the note.
+                                  const flushedValue =
+                                    noteDraftsRef.current[noteKey]?.value ??
+                                    savedValue;
+                                  if (flushedValue.trim().length === 0) {
+                                    setNoteExpanded((p) => {
+                                      const next = { ...p };
+                                      delete next[noteKey];
+                                      return next;
+                                    });
+                                  }
+                                }}
+                              />
+                            );
+                          }
                           return (
-                            <Input
-                              className="routine-touch-field w-full min-w-0"
-                              placeholder="Нотатка до відмітки"
-                              value={value}
-                              onChange={(ev) =>
-                                scheduleNoteFlush(
-                                  e.habitId!,
-                                  e.date,
-                                  ev.target.value,
-                                )
+                            <button
+                              type="button"
+                              className="text-style-caption text-subtle min-h-[44px] min-w-[44px] px-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              onClick={() =>
+                                setNoteExpanded((p) => ({
+                                  ...p,
+                                  [noteKey]: true,
+                                }))
                               }
-                              onBlur={() => flushNoteDraft(e.habitId!, e.date)}
-                            />
+                            >
+                              + Нотатка
+                            </button>
                           );
                         })()}
                     </div>
