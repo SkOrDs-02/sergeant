@@ -322,6 +322,25 @@ function checkDanglingRefs() {
     // PRs land. Treat as planned, same shape as `*-pr-plan.md`.
     if (relPath.startsWith("docs/audits/") && relPath.endsWith("-roast.md"))
       return true;
+    // `docs/audits/<date>-page-audit-*.md` and `*-consolidated-page-audit.md`
+    // are dated static-analysis audit reports — same shape as `-roast.md`.
+    // Refs describe code state at audit time; renames/decompositions after
+    // the audit shouldn't fail CI on historical diagnostic notes.
+    if (
+      relPath.startsWith("docs/audits/") &&
+      /(?:^|\/)\d{4}-\d{2}-\d{2}-(consolidated-)?page-audit-?/.test(relPath)
+    )
+      return true;
+    // `docs/audits/README.md` is the audit index — refs may point at
+    // historical audit subjects.
+    if (relPath === "docs/audits/README.md") return true;
+    // Tracker-shaped surfaces (planning, multi-phase rollout). Same
+    // semantics as `docs/initiatives/` — status badge + PR-link table is
+    // the source of truth, inline file refs are descriptive.
+    if (relPath.startsWith("docs/tech-debt/")) return true;
+    if (relPath.startsWith("docs/marketing/")) return true;
+    if (relPath.startsWith("docs/observability/")) return true;
+    if (relPath.startsWith("docs/design/redesign-v2/")) return true;
     return false;
   }
 
@@ -338,6 +357,15 @@ function checkDanglingRefs() {
     if (
       relPath.startsWith("docs/adr/") &&
       /Status:\*?\*?\s*proposed/i.test(content)
+    ) {
+      continue;
+    }
+    // Historical ADRs explicitly flagged with `Note:` indicating
+    // supersession describe legacy file paths. Same semantics as a
+    // proposed ADR — refs are descriptive, not contractual.
+    if (
+      relPath.startsWith("docs/adr/") &&
+      /Note:\*?\*?\s*[Іi]сторичн|Note:\*?\*?\s*[Hh]istorical/.test(content)
     ) {
       continue;
     }

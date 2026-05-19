@@ -1,13 +1,13 @@
 # Sergeant Documentation
 
-> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-15.
+> **Last validated:** 2026-05-19 by @claude. **Next review:** 2026-08-17.
 > **Status:** Active
 
 Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-05-17 via `pnpm docs:gen-trust-badge`_
+> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-05-19 via `pnpm docs:gen-trust-badge`_
 >
 > 0 stale docs · 0 WIP violations — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
 
@@ -17,12 +17,12 @@ Main documentation index for Sergeant.
 
 Три дашборди, що тримають тебе в курсі без чтення всього `docs/` дерева:
 
-| Питання                                  | Документ                                                                                                                                                                                  |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Що мені робити сьогодні?**             | [`today.md`](./today.md) — auto-brief: top-7 actionable items (`Phase X next` / `blocked`), прострочений review, WIP load. Regen `pnpm docs:gen-today`. **Daily ритуал — відкрий вранці.** |
-| **Що НЕ доробленого по всіх trackers?**  | [`open-work.md`](./open-work.md) — auto-rollup усіх `Status: Active / Draft / In progress / Phase *` документів з 7 trackers. Regen `pnpm docs:gen-open-work`; drift gate в CI.           |
-| **Чи документи свіжі?**                  | [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — `Last validated` / `Next review` по всьому tracked-set.                                                  |
-| **Що шипнули у whats-new?**              | [`whats-new/`](./whats-new/README.md) — markdown side; canonical source = `apps/web/src/core/whatsNew/releases.ts` (drift caught by `releases.test.ts`).                                  |
+| Питання                                 | Документ                                                                                                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Що мені робити сьогодні?**            | [`today.md`](./today.md) — auto-brief: top-7 actionable items (`Phase X next` / `blocked`), прострочений review, WIP load. Regen `pnpm docs:gen-today`. **Daily ритуал — відкрий вранці.** |
+| **Що НЕ доробленого по всіх trackers?** | [`open-work.md`](./open-work.md) — auto-rollup усіх `Status: Active / Draft / In progress / Phase *` документів з 7 trackers. Regen `pnpm docs:gen-open-work`; drift gate в CI.            |
+| **Чи документи свіжі?**                 | [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — `Last validated` / `Next review` по всьому tracked-set.                                                   |
+| **Що шипнули у whats-new?**             | [`whats-new/`](./whats-new/README.md) — markdown side; canonical source = `apps/web/src/core/whatsNew/releases.ts` (drift caught by `releases.test.ts`).                                   |
 
 > Чому довіряти: `open-work.md` парсить `> **Status:**` headers (Rule #10) програмно — будь-який drift падає в CI через `pnpm docs:check-open-work`. Якщо документ показується тут зі статусом `Active`, значить його джерело справді у такому стані.
 
