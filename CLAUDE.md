@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-05-19 by @Skords-01. **Next review:** 2026-08-17.
 > **Status:** Active
 
 > **Single source of truth -> [AGENTS.md](./AGENTS.md).** Цей файл — тонкий Claude-specific wrapper. Політика репо, hard rules, skills, playbooks і workflow-дерева живуть в `AGENTS.md` та `docs/`.
@@ -20,3 +20,4 @@
 - Для OpenClaw/Gateway задач використовуй `sergeant-openclaw`, не `sergeant-hubchat`.
 - Для SKILL.md змін спочатку відкрий `sergeant-writing-skills`, потім запускай `pnpm lint:skills && pnpm skills:lock`.
 - Heavy local commands запускай лише коли вони потрібні задачі або користувач прямо попросив.
+- Глобальні subagent-и з [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) (~169 шт.) встановлюються в `~/.claude/agents/` і доступні через `Agent` tool. Repo-owned `sergeant-*` skills мають пріоритет для роботи в монорепо; external subagent-и запускай для self-contained задач (ad copy, generic code review, market research, brand voice), коли під задачу немає specialist skill-у в [`docs/agents/agent-skills-catalog.md`](./docs/agents/agent-skills-catalog.md).
