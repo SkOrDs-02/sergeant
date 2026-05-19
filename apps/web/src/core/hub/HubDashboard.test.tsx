@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import {
   DASHBOARD_MODULE_LABELS,
   FIRST_REAL_ENTRY_KEY,
@@ -291,13 +292,15 @@ function renderDashboard({
   onShowAuth?: () => void;
 } = {}) {
   render(
-    <ToastProvider>
-      <HubDashboard
-        user={null}
-        onOpenModule={onOpenModule}
-        onShowAuth={onShowAuth}
-      />
-    </ToastProvider>,
+    <MemoryRouter>
+      <ToastProvider>
+        <HubDashboard
+          user={null}
+          onOpenModule={onOpenModule}
+          onShowAuth={onShowAuth}
+        />
+      </ToastProvider>
+    </MemoryRouter>,
   );
   return { onOpenModule, onShowAuth };
 }
