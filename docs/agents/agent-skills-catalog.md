@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -13,6 +13,8 @@
 pnpm lint:skills    # перевіряє shape (frontmatter, посилання) + integrity (SHA-256 ↔ skills-lock.json)
 pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json після свідомої зміни вмісту
 ```
+
+Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigger-evals.json). `pnpm eval:skills` перевіряє, що кожен repo-owned skill має 2 trigger, 1 anti-trigger і 1 workflow-compliance prompt; команда входить у `pnpm lint:skills`.
 
 Гейти введено initiative-ою [`0009-agent-os-hardening`](../initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
 
