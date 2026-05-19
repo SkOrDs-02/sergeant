@@ -54,8 +54,8 @@
      needs safe-area now applies it at the COMPONENT level:
        - Hub shell  → `MeshBackground` className `safe-area-pt`
        - Module shells → `ModuleHeader` `safe-area-pt`
-       - HubBottomNav / ModuleBottomNav → own
-         `padding-bottom: calc(0.75rem + env(safe-area-inset-bottom))`
+       - HubBottomNav / ModuleBottomNav → own `safe-area-pb` on an
+         edge-to-edge bottom panel with bottom-aligned controls
        - Standalone routes (`WelcomeScreen`, `AuthPage`,
          `ResetPasswordPage`) → own inline `paddingTop: max(..., env(...))`
      The body-level rule was stacking on top of every one of those,

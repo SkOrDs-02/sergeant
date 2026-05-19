@@ -1,8 +1,27 @@
 // @vitest-environment jsdom
-import { afterEach, describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { HeroCard } from "./HeroCard";
 
+// CounterReveal reads window.matchMedia for prefers-reduced-motion; stub it to
+// return matches:true so the component renders the final value synchronously
+// in tests rather than deferring to requestAnimationFrame.
+beforeEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+});
 afterEach(() => cleanup());
 
 describe("HeroCard", () => {

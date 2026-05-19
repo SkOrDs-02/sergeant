@@ -50,7 +50,7 @@
     "api:check-openapi-types": "node scripts/api/check-openapi-types-fresh.mjs",
     "lint:plugins": "node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs",
     "lint:discoverability": "node scripts/check-discoverability.mjs",
-    "lint:skills": "node scripts/check-skill-shape.mjs && node scripts/check-skills-lock.mjs && node scripts/check-skill-body-security.mjs",
+    "lint:skills": "node scripts/check-skill-shape.mjs && node scripts/check-skills-lock.mjs && node scripts/check-skill-body-security.mjs && pnpm eval:skills",
     "lint:playbook-language": "node scripts/check-playbook-language.mjs",
     "skills:lock": "node scripts/check-skills-lock.mjs --write",
     "typecheck": "turbo run typecheck",
@@ -128,7 +128,9 @@
     "pre-commit:timings": "node scripts/pre-commit-timings-report.mjs",
     "eval:rag": "node scripts/eval-rag-recall.mjs",
     "eval:rag:weekly": "node scripts/rag-eval-weekly.mjs",
-    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs scripts/__tests__/rag-eval-weekly.test.mjs"
+    "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs scripts/__tests__/rag-eval-weekly.test.mjs",
+    "eval:skills": "node scripts/eval-skill-triggers.mjs",
+    "eval:skills:test": "node --test scripts/__tests__/eval-skill-triggers.test.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
