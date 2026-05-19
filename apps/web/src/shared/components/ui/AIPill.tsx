@@ -91,21 +91,55 @@ const DEFAULT_PLACEHOLDER: Record<ModuleAccent | "hub", string> = {
  * affordance reachable but stops it from covering content while the
  * user is reading.
  *
+ * The Sergeant hub/module shells render content inside a flex column
+ * with `<div class="flex-1 overflow-y-auto min-h-0">` as the actual
+ * scroll container — `window` itself almost never scrolls. So a plain
+ * `window` listener never fires under real user gestures (confirmed in
+ * prod via DOM probe: 3 window-scrolls dispatched, hook never toggled).
+ *
+ * Fix: listen in **capture phase** on `document`. `scroll` events don't
+ * bubble, but capture-phase handlers on ancestors still fire for any
+ * descendant scroll source — window, `<html>`, or any inner overflow
+ * container. We then read the scroll position from `event.target`
+ * (or fall back to `window.scrollY` when the document itself scrolled).
+ *
  * Listener is `passive: true` + rAF-throttled so it never blocks the
  * scrolling thread. `lastY` tracks direction so a tiny jitter near the
- * threshold doesn't flicker.
+ * threshold doesn't flicker. `lastTarget` keeps the per-container
+ * baseline so a swap between two scroll hosts doesn't read a negative
+ * `dy` (which would incorrectly snap the pill back open).
  */
 function useCollapseOnScroll(threshold = 80) {
   const [collapsed, setCollapsed] = useState(false);
   const lastY = useRef(0);
+  const lastTarget = useRef<EventTarget | null>(null);
   const ticking = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onScroll = () => {
+    const onScroll = (event: Event) => {
       if (ticking.current) return;
       ticking.current = true;
+      const target = event.target;
       window.requestAnimationFrame(() => {
-        const y = window.scrollY || window.pageYOffset || 0;
+        let y = 0;
+        if (target instanceof Element) {
+          y = target.scrollTop;
+        } else if (target === document || target === document.documentElement) {
+          y = window.scrollY || window.pageYOffset || 0;
+        } else {
+          y = window.scrollY || window.pageYOffset || 0;
+        }
+        // Reset baseline when the user starts scrolling a different
+        // container (e.g. switching between nested scroll hosts).
+        // Without this, switching from a deeply-scrolled host to a
+        // fresh one would emit a huge negative `dy` and snap the pill
+        // back open even though the user is actively scrolling down.
+        if (lastTarget.current !== target) {
+          lastTarget.current = target;
+          lastY.current = y;
+          ticking.current = false;
+          return;
+        }
         const dy = y - lastY.current;
         if (y > threshold && dy > 4) setCollapsed(true);
         else if (dy < -4 || y < threshold / 2) setCollapsed(false);
@@ -113,8 +147,16 @@ function useCollapseOnScroll(threshold = 80) {
         ticking.current = false;
       });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    // Capture phase: scroll events don't bubble, but ancestor capture
+    // handlers DO fire for descendant scroll sources.
+    document.addEventListener("scroll", onScroll, {
+      passive: true,
+      capture: true,
+    });
+    return () =>
+      document.removeEventListener("scroll", onScroll, {
+        capture: true,
+      } as EventListenerOptions);
   }, [threshold]);
   return collapsed;
 }
