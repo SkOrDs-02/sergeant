@@ -3,6 +3,9 @@
  * Status: Active
  */
 import { useMemo, useEffect, useRef } from "react";
+import { InsightCard } from "@shared/components/ui/InsightCard";
+import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
+import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ProgressRing } from "@shared/components/ui/ProgressRing";
@@ -144,6 +147,18 @@ export function NutritionDashboard({
     goal: prefs.dailyTargetCarbs_g || 0,
   };
 
+  // Phase 5d — nutrition insight triggers.
+  // Both hooks return null when their condition is not met; InsightCard
+  // additionally checks the dismissal LS key so dismissed cards stay gone.
+  const proteinLowInsight = useProteinLowInsight(log, prefs);
+  const streakInsight = useStreakSevenDaysInsight(log, prefs);
+
+  // Cap at 2 simultaneous insights. Priority: streak > protein-low so the
+  // positive signal surfaces first when both conditions fire together.
+  const activeInsights = [streakInsight, proteinLowInsight].filter(
+    Boolean,
+  ).slice(0, 2) as NonNullable<typeof proteinLowInsight>[];
+
   return (
     <div className="grid gap-3">
       {/* ── Hero card ── */}
@@ -237,6 +252,27 @@ export function NutritionDashboard({
           )}
         </div>
       </Card>
+
+      {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
+      {activeInsights.map((insight) => (
+        <InsightCard
+          key={insight.id}
+          id={insight.id}
+          title={insight.title}
+          subtitle={insight.subtitle}
+          onActivate={() => {
+            if (insight.action.type === "navigate") {
+              // Map insight paths to in-module navigation callbacks.
+              if (insight.action.path === "/nutrition/log") {
+                onGoToLog?.();
+              } else if (insight.action.path === "/nutrition/menu") {
+                onGoToDailyPlan?.();
+              }
+            }
+          }}
+          className="mx-0"
+        />
+      ))}
 
       <Card className="p-4">
         <div className="flex items-center justify-between mb-2">
