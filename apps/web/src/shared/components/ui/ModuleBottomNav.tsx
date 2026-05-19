@@ -2,37 +2,30 @@ import { memo, type ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
 
 /**
- * Sergeant Design System — ModuleBottomNav (v2)
+ * Sergeant Design System — ModuleBottomNav
  *
  * Shared bottom-navigation shell for Фінік / Фізрук / Рутина /
- * Харчування. v2 (2026-05, PR-8) aligns the shape with `HubBottomNav`
- * — both navs are now floating glass pills (`mx-3`, `rounded-r-2xl`,
- * `shadow-nav`, `bg-surface-strong-glass`) so the whole app reads
- * under one navigation pattern. The only intentional divergence:
- * active-pill background is **module-tinted** (`bg-{module}-strong`)
- * instead of brand-agnostic `bg-ink-strong` — it carries module
- * identity now that the icon-glow + top-pill stripe are gone.
+ * Харчування. Sits edge-to-edge along the screen bottom (matches
+ * `HubBottomNav` shape) so the whole app reads under one navigation
+ * pattern.
  *
- * Migration notes:
- * - v1 flat `border-t bg-panel/95` shell removed.
- * - v1 4px sliding top-pill indicator removed (active background pill
- *   does the same job with less visual noise).
- * - v1 icon `drop-shadow` glow removed (redundant once the pill is
- *   color-tinted). Active state now reads on the pill via
- *   `text-bg-base` (warm cream in light, near-black in dark) like
- *   HubBottomNav. Inactive icons keep `text-muted`.
- * - Labels switched from `text-2xs` (10px) to `text-style-caption`
- *   (12px) to satisfy Hard Rule #16 (12px floor for tab labels).
- * - Layout contract: outer wrapper owns `safe-area-pb` via
- *   `padding-bottom: calc(0.75rem + env(safe-area-inset-bottom))`;
- *   the inner `<nav>` becomes the visible pill. Floating chrome
- *   (`AIPill`, `ActiveWorkoutBanner`, FABs) must clear ≈ 84 px above
- *   the bottom — same offset as HubBottomNav.
+ * Canonical shape:
+ * - Height 60 px (64 px on coarse-pointer devices).
+ * - `safe-area-pb` so iOS home-indicator clears.
+ * - `bg-panel/95 motion-safe:backdrop-blur-xl` translucent surface,
+ *   `border-t border-line` only — no horizontal margin, no rounded
+ *   corners, no shadow.
+ * - Active indicator: thin 4 px sliding stripe (`top-0 h-1 w-10
+ *   rounded-full`) at the top of the active tab, tinted with the
+ *   module's accent gradient. Carries module identity.
+ * - Active icon picks up `tokens.text` (module-colored); label
+ *   stays `text-text`. No drop-shadow glow.
+ * - Labels `text-style-caption` (12px) per Hard Rule #16.
  *
  * Routine special-case (FAB):
  * - Consumers may render an additional center FAB as a sibling of
  *   the nav (NOT nested inside it) at `z-40`, positioned over the
- *   pill's top edge. See `RoutineBottomNav`. The FAB sits in front
+ *   nav's top edge. See `RoutineBottomNav`. The FAB sits in front
  *   of the nav's stacking context and keeps its own coral gradient
  *   per Routine identity.
  *
@@ -70,7 +63,9 @@ export interface ModuleBottomNavProps {
 }
 
 type ColorTokens = {
-  /** Active-pill background. Module-tinted — identity carrier in v2. */
+  /** Active icon tint. Module-colored text token. */
+  text: string;
+  /** Top-stripe gradient — identity carrier. */
   pill: string;
   /** Tiny unread/attention dot color. */
   badge: string;
@@ -78,19 +73,23 @@ type ColorTokens = {
 
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
-    pill: "bg-finyk-strong",
+    text: "text-finyk",
+    pill: "bg-linear-to-r from-brand-400 to-brand-500",
     badge: "bg-finyk",
   },
   fizruk: {
-    pill: "bg-fizruk-strong",
+    text: "text-fizruk",
+    pill: "bg-linear-to-r from-teal-400 to-teal-500",
     badge: "bg-fizruk",
   },
   routine: {
-    pill: "bg-routine-strong",
+    text: "text-routine",
+    pill: "bg-linear-to-r from-coral-400 to-coral-500",
     badge: "bg-routine",
   },
   nutrition: {
-    pill: "bg-nutrition-strong",
+    text: "text-nutrition",
+    pill: "bg-linear-to-r from-lime-400 to-lime-500",
     badge: "bg-nutrition",
   },
 };
@@ -109,100 +108,84 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   const activeIndex = items.findIndex((i) => i.id === activeId);
 
   return (
-    // Outer wrapper owns `safe-area-pb` so the floating pill clears
-    // the iOS home indicator without doubling padding inside `<nav>`
-    // (matches HubBottomNav Phase 1 / M2 fix).
-    <div className={cn("shrink-0 relative z-30", className)}>
-      <nav
-        aria-label={ariaLabel}
-        className={cn(
-          "mx-3",
-          // Phase 1 (M3) — `motion-safe:` guard so prefers-reduced-motion
-          // users get the translucent panel without GPU-heavy blur
-          // (Android Chrome WebView jank). Same treatment as
-          // HubBottomNav v2.
-          "bg-surface-strong-glass motion-safe:backdrop-blur-md",
-          "border border-line",
-          "rounded-r-2xl",
-          "shadow-nav",
-        )}
+    <nav
+      aria-label={ariaLabel}
+      className={cn(
+        "shrink-0 relative z-30 safe-area-pb",
+        "bg-panel/95 motion-safe:backdrop-blur-xl",
+        "border-t border-line",
+        className,
+      )}
+    >
+      <div
+        className="relative flex h-[60px] pointer-coarse:h-[64px]"
+        role={isTablist ? "tablist" : undefined}
       >
-        <div
-          className="relative flex h-[60px] pointer-coarse:h-[64px] p-1"
-          role={isTablist ? "tablist" : undefined}
-        >
-          {/* Active-tab background pill — module-tinted, sits BEHIND the
-           * button content (`z-10` on each button keeps icons + labels
-           * on top). Translates between tabs via `transition-[left]`. */}
-          {activeIndex >= 0 && (
-            <span
-              data-testid="module-bottom-nav-active-indicator"
-              className={cn(
-                "absolute inset-y-1 pointer-events-none",
-                "rounded-xl",
-                tokens.pill,
-                "transition-[left] duration-200 ease-out",
-              )}
-              style={{
-                left: `calc(${activeIndex} * (100% / ${items.length}) + 0.25rem)`,
-                width: `calc(100% / ${items.length} - 0.5rem)`,
-              }}
-              aria-hidden
-            />
-          )}
+        {activeIndex >= 0 && (
+          <span
+            data-testid="module-bottom-nav-active-indicator"
+            className={cn(
+              "absolute top-0 h-1 w-10 rounded-full pointer-events-none",
+              tokens.pill,
+              "shadow-sm",
+              "transition-[left] duration-200 ease-out",
+            )}
+            style={{
+              left: `calc(${activeIndex} * (100% / ${items.length}) + (100% / ${items.length} - 2.5rem) / 2)`,
+            }}
+            aria-hidden
+          />
+        )}
 
-          {items.map((item) => {
-            const active = activeId === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role={isTablist ? "tab" : undefined}
-                id={isTablist ? `${module}-tab-${item.id}` : undefined}
-                aria-selected={isTablist ? active : undefined}
-                aria-current={
-                  !isTablist ? (active ? "page" : undefined) : undefined
-                }
-                aria-controls={isTablist ? item.panelId : undefined}
-                tabIndex={isTablist ? (active ? 0 : -1) : undefined}
-                onClick={() => onChange(item.id)}
+        {items.map((item) => {
+          const active = activeId === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role={isTablist ? "tab" : undefined}
+              id={isTablist ? `${module}-tab-${item.id}` : undefined}
+              aria-selected={isTablist ? active : undefined}
+              aria-current={
+                !isTablist ? (active ? "page" : undefined) : undefined
+              }
+              aria-controls={isTablist ? item.panelId : undefined}
+              tabIndex={isTablist ? (active ? 0 : -1) : undefined}
+              onClick={() => onChange(item.id)}
+              className={cn(
+                "relative flex-1 flex flex-col items-center justify-center gap-1",
+                "min-h-touch-target",
+                "transition-all duration-200",
+                "active:scale-95",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                active ? "text-text" : "text-muted hover:text-text/70",
+              )}
+            >
+              <span
                 className={cn(
-                  // `z-10` lifts the button above the absolutely-positioned
-                  // active background pill so icons + labels stay on top.
-                  "relative z-10 flex-1 flex flex-col items-center justify-center gap-1",
-                  "min-h-touch-target",
-                  "transition-all duration-200",
-                  "active:scale-95",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                  // v2: active label/icon read on the module-strong pill
-                  // background → invert to cream (`bg-base`). Inactive
-                  // stays muted on the glass surface.
-                  active ? "text-bg-base" : "text-muted hover:text-text/70",
+                  "relative transition-all duration-200",
+                  active && tokens.text,
                 )}
+                aria-hidden
               >
-                <span
-                  className="relative transition-all duration-200"
-                  aria-hidden
-                >
-                  {item.icon}
-                  {item.badge && !active && (
-                    <span
-                      className={cn(
-                        "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
-                        tokens.badge,
-                      )}
-                      aria-hidden
-                    />
-                  )}
-                </span>
-                <span className="text-style-caption font-semibold leading-none">
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-    </div>
+                {item.icon}
+                {item.badge && !active && (
+                  <span
+                    className={cn(
+                      "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
+                      tokens.badge,
+                    )}
+                    aria-hidden
+                  />
+                )}
+              </span>
+              <span className="text-style-caption font-semibold leading-none">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 });

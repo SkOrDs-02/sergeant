@@ -5,11 +5,12 @@ import { RoutineBottomNav } from "../../../modules/routine/components/RoutineBot
 
 /**
  * `ModuleBottomNav` — спільна bottom-navigation shell для Finyk /
- * Fizruk / Routine / Nutrition. v2 (PR-8) shape: floating glass pill
- * (`mx-3 rounded-r-2xl shadow-nav bg-surface-strong-glass`) з
- * module-tinted active background pill (`bg-{module}-strong`). Icon
- * glow та top-pill indicator з v1 прибрані — active background pill
- * сам несе module identity.
+ * Fizruk / Routine / Nutrition. Edge-to-edge `border-t` панель flush
+ * з низом екрану (`bg-panel/95`, `motion-safe:backdrop-blur-xl`).
+ * Активний таб маркується тонкою 4 px sliding-стрічкою зверху
+ * (`top-0 h-1 w-10 rounded-full`) з module-tinted градієнтом — це
+ * носій module identity. Активна іконка приймає `tokens.text`, label
+ * лишається `text-text`.
  */
 const meta: Meta<typeof ModuleBottomNav> = {
   title: "Shared / ModuleBottomNav",

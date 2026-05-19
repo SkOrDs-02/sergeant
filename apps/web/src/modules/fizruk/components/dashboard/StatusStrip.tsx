@@ -60,7 +60,6 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
       prominence="glass"
       radius="r-xl"
       padding="none"
-      type="button"
       onClick={onClick}
       aria-label={ariaLabel}
       className="flex-1 min-w-0 active:scale-[0.99] hover:opacity-90 px-3 py-2.5 text-left transition-[opacity,transform]"
