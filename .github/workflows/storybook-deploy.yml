@@ -29,6 +29,7 @@ on:
       - "apps/web/**"
       - "packages/design-tokens/**"
       - ".github/workflows/storybook-deploy.yml"
+      - "mockups/**"
 
 permissions:
   contents: read
