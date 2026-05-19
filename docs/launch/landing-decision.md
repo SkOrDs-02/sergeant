@@ -3,7 +3,9 @@
 > **Файли переміщено** до `mockups/landing/campaigns/` (git history збережено через `git mv`). Посилання нижче оновлено.
 
 > **Last validated:** 2026-05-14 by @Skords-01 / Devin. **Next review:** 2026-08-12.
-> **Status:** Scaffolded
+> **Status:** Reference — archive/source evidence для campaign-мокапів
+
+> **Канон 2026-05-19:** поточна product-owned landing surface — shipped web-app `/` route (`apps/web/src/core/LandingPage.tsx`) + `WaitlistForm` + server `/api/waitlist`. Мокапи нижче лишаються корисними для campaign creative і майбутнього standalone marketing-domain exploration, але це не активний implementation tracker.
 
 8 self-contained HTML-мокапів лендингу для збору waitlist-у закритої бети та паралельного запуску
 рекламних креативів (Twitter/X, Meta Ads, Threads, DOU, Telegram-канали). Кожен файл —

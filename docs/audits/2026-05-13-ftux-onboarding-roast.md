@@ -1,6 +1,6 @@
 # FTUX onboarding roast — Day 0-7 (2026-05-13)
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
 > **Status:** Closed (source audit; execution/status moved to FTUX master tracker)
 > Прожарка #1/10 серії «10 прожарок», запущеної 2026-05-13. Скоуп — `apps/web/src/core/onboarding/**`, `apps/web/src/core/app/WelcomeScreen.tsx`, FTUX hero, peek backdrop, first-run sheets, CelebrationModal та перші 7 днів у хабі. Перспектива — продуктовий UX-аудит очима нового користувача, який дає продукту 30-60 секунд перш ніж піти.
 >
@@ -59,7 +59,7 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P0-1. CelebrationModal — generic «Що далі» tip (B-11) — ✅ Закрито у цьому PR
 
-- **Файл:** [`apps/web/src/core/onboarding/CelebrationModal.tsx:229-244`](../../apps/web/src/core/onboarding/CelebrationModal.tsx) (pre-PR), [`packages/shared/src/lib/onboardingCelebrations.ts`](../../packages/shared/src/lib/onboardingCelebrations.ts) (canonical copy).
+- **Файл:** [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) (post-rename; pre-PR path was `CelebrationModal.tsx`), [`packages/shared/src/lib/onboardingCelebrations.ts`](../../packages/shared/src/lib/onboardingCelebrations.ts) (canonical copy).
 - **Проблема:** після первого реального запису користувач бачив один
   рядок «Продовжуй додавати записи. Після кількох днів отримаєш перші
   інсайти та персональні поради.» — ідентичний для finyk / fizruk /
@@ -75,7 +75,7 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P0-2. CelebrationModal — generic «Продовжити» CTA (P2-15) — ✅ Закрито у цьому PR
 
-- **Файл:** [`apps/web/src/core/onboarding/CelebrationModal.tsx:247-254`](../../apps/web/src/core/onboarding/CelebrationModal.tsx) (pre-PR).
+- **Файл:** [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) (post-rename; pre-PR path was `CelebrationModal.tsx`).
 - **Проблема:** primary CTA повертав «Продовжити» — generic word, що
   ігнорує модуль, який щойно flipped first-real-entry. Audit P2-15 §4
   у 2026-05-03 roast: «крім «продовжити» — обіцяти **наступну дію**

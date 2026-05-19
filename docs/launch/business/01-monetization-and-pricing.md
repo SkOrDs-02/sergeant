@@ -1,9 +1,10 @@
 # 01. Монетизація і ціноутворення
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
 > **Status:** Active
 >
 > **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../adr/0051-pricing-v3-single-tier.md). Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — **Superseded by ADR-0051** (не йдуть у код MVP). Активна модель: **Free + Pro $7/міс / $49/рік**, ₴ UA-only на старті, trial 7 днів без картки.
+> **Канон 2026-05-19:** delivery-статус живе у [`docs/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context, якщо ADR-0051 явно не лишає їх активними. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
 
 > Pricing model лишається орієнтиром для A/B-тестів, але базовий Stripe MVP уже має серверний contract:
 > `POST /api/billing/checkout`, `GET /api/billing/status`, `POST /api/billing/stripe-webhook`.
@@ -186,10 +187,10 @@ Freemium — найкращий вибір для Sergeant, бо:
 ✓ Модульна архітектура              □ Middleware checkPlan() / requirePlan()
 ✓ Push notifications                □ PaywallGate компонент (web)
 ✓ Feature flags (shared)            □ Billing settings page
-                                    □ Customer portal / manage sub
+                                    ✓ Customer portal / manage sub
 ```
 
-**Actual MVP contract:** Stripe Checkout session creation, subscription status read, and webhook idempotency are implemented server-side. Still pending: plan enforcement middleware, customer portal, billing settings, and LiqPay/native IAP follow-up.
+**Actual MVP contract:** Stripe Checkout session creation, subscription status read, Customer Portal session creation, and webhook idempotency are implemented server-side. Still pending: production Stripe account/env rollout, legal/tax readiness, remaining plan enforcement placements, billing settings polish, and LiqPay/native IAP follow-up.
 
 ### 6.1 Pricing UX (як показувати ціну)
 

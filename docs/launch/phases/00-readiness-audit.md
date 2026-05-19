@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **Канон 2026-05-19:** це все ще launch-readiness baseline, але billing/landing rows треба читати з поточним code snapshot: Stripe billing routes і API client уже є; shipped `/` landing + waitlist flow існує в `apps/web`; public launch і далі блокується legal/live Stripe configuration/cookie/store readiness, а не відсутністю billing/landing коду з нуля.
+
 > Read-only zoom-out на готовність 4 продуктових поверхонь (Web, Server, Capacitor shell, Native Expo) + Landing-питання — до запуску з реальними юзерами. Цей документ — baseline для 3 наступних phase-роадмапів (web/Capacitor/native). Зміни статусів — через окремі PR-и.
 
 > **Cross-refs (root-anchors):**
@@ -48,7 +50,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
 - **Security:** CSP report-only активний (CSP/COOP/COEP у [`apps/web/vercel.json`](../../../apps/web/vercel.json)), Permissions-Policy жорстка.
-- **Billing UI:** scaffold уже в коді — `PricingPage`, `core/billing/PaywallModal`, `usePlan()` hook (lazy, FF-gated). **Stripe Checkout-/Customer-Portal-/webhook handler-и ще не реалізовані** (Phase 2–4 ініціативи 0010).
+- **Billing UI/API:** scaffold уже в коді — `PricingPage`, `core/billing/PaywallModal`, `usePlan()` hook, server `/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`, а також API-client billing helpers. **Public launch work — live Stripe env/account/legal rollout + remaining placement polish**, не побудова billing skeleton з нуля.
 - **Висновок для запуску:** web уже **запускається для closed beta з 10–30 запрошеними юзерами** на поточному стеку (без Stripe, з manual «дай людині акаунт» onboard-ом). Public launch потребує: legal-сторінки, cookie-banner, Stripe-Checkout (бо paywall за ADR-0051), Apple/Google SSO, окремого або dedicated landing.
 
 ### 3.2 Server (`apps/server`)
@@ -57,7 +59,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 - **API:** v1 + v2 surfaces; sync v2 (SQLite-WASM + outbox) живе у проді; Voyage daily cost alert, alert-bot 60/120-min escalation, `/ai_cost` slash-команда — все мерджено за останні 50 коммітів.
 - **Auth secrets / Hard Rule #20:** OpenClaw PATs заборонені в проді, ротація через [`docs/playbooks/rotate-secrets.md`](../../playbooks/rotate-secrets.md). `BETTER_AUTH_TOKEN_ENC_KEY` + `NUTRITION_BACKUP_KEY_SECRET` — required у проді (з `.env.example`).
 - **Observability:** Pino JSON + ALS-контекст + redaction policy (Hard Rule #21), Prometheus `prom-client` (`GET /metrics` за `METRICS_TOKEN`), Sentry із trace-sampling-presets, GCS log-retention archive cron, n8n webhook events Grafana dashboard.
-- **Billing schema:** ❗ у `apps/server/src/migrations/` ще **немає** `subscriptions` / `stripe_webhook_events` таблиць — потрібен Phase 2 з 0010 перед public launch.
+- **Billing schema:** `subscriptions` / Stripe webhook-event storage уже є в billing implementation path; перед public launch треба перевірити, що migrations виконані в target Railway DB і Stripe env налаштовано.
 - **Push:** native APNs/FCM register endpoint живе, **fan-out у проді ще потребує credentials** ([`docs/tech-debt/backend.md#push-credentials`](../../tech-debt/backend.md)).
 - **Висновок:** server-side готовий до closed beta «as is»; public launch вимагає `subscriptions` + Stripe webhook + прод push creds.
 

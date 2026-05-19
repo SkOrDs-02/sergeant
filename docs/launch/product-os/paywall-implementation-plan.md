@@ -2,10 +2,12 @@
 
 > **Last validated:** 2026-05-13 by @Skords-01.
 > **Next review:** 2026-08-11 (post-0010 phase 3 review).
-> **Status:** Active — gating doc для tracker `PR-20` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
+> **Status:** Superseded reference — оригінальний PR-20 gate doc; live revenue delivery тепер живе у [`docs/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md), FTUX placement — у [`paywall-ux-placement.md`](./paywall-ux-placement.md).
 > **Owner:** @Skords-01 + Devin (planning session 2026-05-06).
 
 > Цей doc — **продовження** [`paywall-ux-placement.md`](./paywall-ux-placement.md) (PR-19 sketch). PR-19 закрив питання «де/коли/чому». Цей doc закриває «як саме реалізуємо», з якими залежностями, і **в якому порядку шипаємо**. Сам код PR-20 не пишеться у цьому PR — це планувальний gate-doc, що дозволяє наступному PR зайти у repo з мінімумом контексту.
+>
+> **Канон 2026-05-19:** blocker table нижче історична. Billing infrastructure вже landed у коді: `usePlan()` читає `billingKeys.status`, server exposes `/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`, а API client має matching endpoint helpers. Використовуй цей файл тільки як source evidence для original PR-20 reasoning; не трактуй `Missing` rows нижче як поточний open work без перевірки revenue PR plan.
 
 ---
 
@@ -15,7 +17,7 @@
 
 Ця рекомендація — **не імперативна**. Founder може переключитись на **Path B (FF-gated UI-stub now)**, якщо є бажання почати UX iteration на post-FTUX moment до того як billing live. Path A (full impl now) виключений — будь-який Stripe-touching код без 0010 = mock-чейн на 4-х рівнях, з гарантованим refactor-боргом.
 
-**Поточний gate-state (2026-05-06):**
+**Historical gate-state (2026-05-06; superseded by 2026-05-19 canonical note above):**
 
 | Compoнент                                         | Статус            | Blocking PR-20?           |
 | ------------------------------------------------- | ----------------- | ------------------------- |
@@ -116,15 +118,15 @@
 
 ### 3.2. Файли, які edit-уються
 
-| Шлях                                                   | Зміна                                                                                    |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `apps/web/src/core/lib/featureFlags.ts`                | Додати запис `paywall_post_ftux_v1` у `FLAG_REGISTRY` (default false, experimental:true) |
-| `apps/web/src/core/onboarding/CelebrationModal.tsx`    | На close handler — викликати `usePostFtuxPaywallTrigger().request()`                     |
-| `apps/web/src/core/observability/analytics.ts`         | Додати 5 типізованих helpers — `trackPaywallViewed`, etc.                                |
-| `apps/web/src/core/observability/posthog.test.ts`      | Тести на event firing + props shape                                                      |
-| `apps/web/src/core/PricingPage.tsx` (Path A only)      | Recognize `?via=post_ftux&variant=...` query — render attribution banner                 |
-| `docs/launch/product-os/ftux-master-tracker.md`        | Bump §3.4 PR-20 row + §7 decisions log                                                   |
-| `docs/launch/business/06-monetization-architecture.md` | Cross-link до цього doc-у у §1 ADR list (як ADR-1.11 placement-acceptance)               |
+| Шлях                                                          | Зміна                                                                                    |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `apps/web/src/core/lib/featureFlags.ts`                       | Додати запис `paywall_post_ftux_v1` у `FLAG_REGISTRY` (default false, experimental:true) |
+| `apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx` | На close handler — викликати `usePostFtuxPaywallTrigger().request()`                     |
+| `apps/web/src/core/observability/analytics.ts`                | Додати 5 типізованих helpers — `trackPaywallViewed`, etc.                                |
+| `apps/web/src/core/observability/posthog.test.ts`             | Тести на event firing + props shape                                                      |
+| `apps/web/src/core/PricingPage.tsx` (Path A only)             | Recognize `?via=post_ftux&variant=...` query — render attribution banner                 |
+| `docs/launch/product-os/ftux-master-tracker.md`               | Bump §3.4 PR-20 row + §7 decisions log                                                   |
+| `docs/launch/business/06-monetization-architecture.md`        | Cross-link до цього doc-у у §1 ADR list (як ADR-1.11 placement-acceptance)               |
 
 ### 3.3. PostHog dashboard / FF (поза codebase)
 
@@ -209,7 +211,7 @@ PR-20 (last sub-PR before flag-flip) НЕ merge-ається без задово
 - [FTUX master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr) — PR-19/PR-20 у sprint-плані.
 - [FTUX master-tracker §7 → «Paywall»](./ftux-master-tracker.md#7-decisions-log) — decision-log.
 - [`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../apps/web/src/core/onboarding/firstRealEntry.ts) — trigger event.
-- [`apps/web/src/core/onboarding/CelebrationModal.tsx`](../../../apps/web/src/core/onboarding/CelebrationModal.tsx) — hand-off modal.
+- [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — hand-off modal.
 - [`apps/web/src/core/lib/featureFlags.ts`](../../../apps/web/src/core/lib/featureFlags.ts) — `FLAG_REGISTRY` куди реєструємо `paywall_post_ftux_v1`.
 - [`apps/web/src/core/PricingPage.tsx`](../../../apps/web/src/core/PricingPage.tsx) — `/pricing` редирект-таргет.
 

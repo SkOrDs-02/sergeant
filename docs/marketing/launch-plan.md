@@ -2,12 +2,12 @@
 
 > **Last validated:** 2026-05-16 by @Skords-01 (2-round marketing council audit).
 > **Next review:** 2026-08-14.
-> **Status:** Ready to execute.
+> **Status:** Reference — pre-implementation marketing plan; поточне виконання спершу звіряється з shipped `/` landing у `apps/web/src/core/LandingPage.tsx`.
 > **Companion docs:** [`../design/brandbook.md`](../design/brandbook.md) (voice + palette) · [`../design/redesign-v2/execution-plan.md`](../design/redesign-v2/execution-plan.md) (parallel product polish plan).
 
 ## How to use this document
 
-Цей файл — **виконавчий план** для побудови маркетингу Sergeant з нуля. Він написаний так, щоб новий агент/виконавець міг увійти cold і запускати фази без додаткового брифу.
+Цей файл — **pre-implementation план** для побудови маркетингу Sergeant з нуля. Після появи shipped `/` landing + `WaitlistForm` у web-app він більше не є прямим execution owner для landing/waitlist техніки; використовуй його як voice/channel/source-evidence і звіряй конкретну реалізацію з `apps/web/src/core/LandingPage.tsx`, `apps/web/src/core/WaitlistForm.tsx`, server `/api/waitlist`, та [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md).
 
 **Перед першим PR / publish з цього плану — обов'язково:**
 
@@ -29,7 +29,7 @@ Sergeant — це багатомодульний застосунок life manag
 **Стан на момент створення плану:**
 
 - Продукт ще в активній розробці (parallel UI polish описаний у [`redesign-v2-execution-plan.md`](../design/redesign-v2/execution-plan.md)).
-- Landing — greenfield (`apps/` містить server / web / mobile / mobile-shell; немає `apps/marketing`).
+- Landing — shipped in-app surface на `/` у `apps/web/src/core/LandingPage.tsx`; standalone Astro/marketing workspace лишається окремою public-launch опцією, не поточним default.
 - Соцмережі — нуль активних.
 - Брендбук + design system — повні.
 
@@ -90,12 +90,12 @@ Sergeant — це багатомодульний застосунок life manag
 
 ## 4 architectural synergies (multiplier wins)
 
-| Synergy                                                                                     | Components closed                                                                 | Effort |
-| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------ |
-| **Astro static + React island form + n8n webhook + Airtable + Google Sheet (live counter)** | Stack для landing + waitlist + drip + live count + analytics — все одним flow     | M      |
-| **`nanoid(8)` ref-code у Airtable**                                                         | Referral attribution без backend, без JWT. K-факт track. Соц-amplify leaderboard. | S      |
-| **Voice-injected AI generation prompt + automation prepublish checklist**                   | Programmatic SEO scale + brand consistency without per-page heavy human review    | M      |
-| **`localStorage` UTM capture + передача на submit**                                         | Attribution survives тиждень+ delayed signup без cookies/auth                     | XS     |
+| Synergy                                                                   | Components closed                                                                                                  | Effort |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------ |
+| **Standalone Astro/static + external form automation**                    | Історична опція для окремого marketing-domain build; current default — in-app `/` landing + server `/api/waitlist` | M      |
+| **`nanoid(8)` ref-code у Airtable**                                       | Referral attribution без backend, без JWT. K-факт track. Соц-amplify leaderboard.                                  | S      |
+| **Voice-injected AI generation prompt + automation prepublish checklist** | Programmatic SEO scale + brand consistency without per-page heavy human review                                     | M      |
+| **`localStorage` UTM capture + передача на submit**                       | Attribution survives тиждень+ delayed signup без cookies/auth                                                      | XS     |
 
 ## Page architecture (canonical IA)
 

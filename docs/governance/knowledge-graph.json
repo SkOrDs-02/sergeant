@@ -17,7 +17,7 @@
       "type": "adr",
       "title": "ADR-0001: Monetization architecture (16 рішень перед стартом)",
       "path": "docs/adr/0001-monetization-architecture.md",
-      "status": "proposed",
+      "status": "Accepted (історичний архітектурний baseline; pricing/trial уточнено ADR-0051)",
       "tier": "core",
       "meta": {
         "number": 1

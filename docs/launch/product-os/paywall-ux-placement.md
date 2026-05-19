@@ -6,12 +6,14 @@
 > **Owner:** @Skords-01 + Devin (sketch session 2026-05-06).
 
 > Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](../../initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
+>
+> **Канон 2026-05-19:** endpoint/key names в implementation checklist оновлено до shipped billing contract: `/api/billing/checkout`, `/api/billing/status`, `/api/billing/portal`, `billingKeys.status`, `STRIPE_ENABLED`. Історичні згадки `/checkout-session` або `billingKeys.plan()` не є поточними owners.
 
 ---
 
 ## 1. TL;DR
 
-Перший paywall-контакт нового юзера = **post-first-real-entry sheet** (sheet, не модал, не повноекранна wall) з offering 14-day Pro trial, БЕЗ payment method, з очевидним «Залишитись на free» secondary CTA. Тригер — той самий момент, який зараз стріляє `first_real_entry` PostHog event ([`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../apps/web/src/core/onboarding/firstRealEntry.ts)) і відкриває [`CelebrationModal`](../../../apps/web/src/core/onboarding/CelebrationModal.tsx). Sheet з'являється **після** celebration-аніма­ції (4 sec delay), не замість. FF-gated за `paywall_post_ftux_v1` (default OFF до 0010 phase 3).
+Перший paywall-контакт нового юзера = **post-first-real-entry sheet** (sheet, не модал, не повноекранна wall) з offering 14-day Pro trial, БЕЗ payment method, з очевидним «Залишитись на free» secondary CTA. Тригер — той самий момент, який зараз стріляє `first_real_entry` PostHog event ([`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../apps/web/src/core/onboarding/firstRealEntry.ts)) і відкриває [`FirstEntryCelebrationModal`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx). Sheet з'являється **після** celebration-аніма­ції (4 sec delay), не замість. FF-gated за `paywall_post_ftux_v1` (default OFF до 0010 phase 3).
 
 **Чому не «у момент signup»:** [audit-roast 2026-05-03 §B-1](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) і вся `disciplined-helper` рамка PR-04 — paywall до першої цінності = бренд-самогубство. Чекаємо на `first_real_entry` як proof-of-fit signal.
 
@@ -90,7 +92,7 @@ Per `ftux-master-tracker.md` §3.4:
 
 ```ts
 // Стається у CelebrationModal close handler
-// (apps/web/src/core/onboarding/CelebrationModal.tsx)
+// (apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx)
 //
 // 1. CelebrationModal завершує fade-out (≈600ms)
 // 2. Затримка 4 sec → юзер встигає глянути на dashboard
@@ -220,9 +222,9 @@ PR-20 без цих елементів існувати не може:
 | ADR-0001 monetization-architecture              | accepted (06-mon-arch §1) | ❌ ні (вже є)                                        |
 | `subscriptions` table migration                 | proposed                  | ✅ так — потрібен `getUserPlan(userId)`              |
 | `requirePlan` / `requireAiQuota` middleware     | proposed                  | ✅ так — без них paywall не enforce-ить нічого       |
-| `/api/billing/checkout-session` endpoint        | proposed                  | ✅ так — для `PAYWALL_OPENED_CHECKOUT` redirect      |
-| Stripe webhook handler + idempotent event-store | proposed                  | 🟡 для PR-20 — ні (тільки для conversion-метрики)    |
-| `usePlan()` hook + RQ key `billingKeys.plan()`  | proposed                  | ✅ так — sheet gate-ить через `usePlan() === 'free'` |
+| `/api/billing/checkout` endpoint                | shipped contract          | ✅ так — для `PAYWALL_OPENED_CHECKOUT` redirect      |
+| Stripe webhook handler + idempotent event-store | shipped contract          | 🟡 для PR-20 — ні (тільки для conversion-метрики)    |
+| `usePlan()` hook + RQ key `billingKeys.status`  | shipped contract          | ✅ так — sheet gate-ить через `usePlan() === 'free'` |
 | `STRIPE_ENABLED` env-flag                       | accepted, default false   | ✅ так — PR-20 респектує цей flag                    |
 
 **Висновок:** PR-20 у full-impl формі **залежить** від 0010 phases 1-3. Як FF-gated UI-stub з `usePlan()`-stub, що повертає `'free'` — може бути scaffold-ом, але без real conversion-funnel метрика `paywall_conversion_rate ≥ 3%` не вимірюється.
@@ -276,7 +278,7 @@ PR-20 НЕ merge-ається без:
 - [FTUX master-tracker §7 Decisions log → «Paywall»](./ftux-master-tracker.md#7-decisions-log) — sketch-session decision.
 - [Audit roast 2026-05-03 §B-1](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — чому НЕ paywall у signup.
 - [`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../apps/web/src/core/onboarding/firstRealEntry.ts) — trigger event source.
-- [`apps/web/src/core/onboarding/CelebrationModal.tsx`](../../../apps/web/src/core/onboarding/CelebrationModal.tsx) — hand-off modal перед sheet.
+- [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — hand-off modal перед sheet.
 
 ---
 

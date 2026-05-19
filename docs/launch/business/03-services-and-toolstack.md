@@ -1,11 +1,13 @@
 # 03. Сервіси та тулстек
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
 > Кожен запис — з офіційним посиланням, фактичною ціною (Date checked: 2026-04), статусом у Sergeant.
 > Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `railway.toml`, `vercel.json`, `apps/server/src/lib/**`, `apps/server/src/env.ts`, `ops/`.
+>
+> **Канон 2026-05-19:** цей каталог описує service/tool usage, а не live revenue rollout. Stripe уже є в коді (`/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`); open work — production configuration/legal readiness, не “додати Stripe з нуля”. Live delivery owner: [`docs/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md).
 
 ---
 
@@ -57,51 +59,51 @@
 
 ### Верифікація стеку проти кодової бази
 
-| Сервіс / бібліотека         | Де в коді                                                                                                        | Статус    |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------- |
-| Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`                                                                    | in use    |
-| Express + Node 20           | `apps/server/package.json` → `express ^4.22`                                                                     | in use    |
-| PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg16`                         | in use    |
-| Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                   | in use    |
-| Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`                                                                  | in use    |
-| Anthropic Claude            | `apps/server/src/lib/anthropic.ts`                                                                               | in use    |
-| **Voyage AI (embeddings)**  | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                    | in use    |
-| Sentry (web + server)       | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                      | in use    |
-| **PostHog (web + server)**  | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`              | in use    |
-| **PostHog (mobile)**        | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                       | in use    |
-| Vercel Analytics            | `@vercel/analytics ^2.0` у `apps/web`                                                                            | in use    |
-| **OpenTelemetry**           | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                | in use    |
-| Web Push (VAPID)            | `apps/server/package.json` → `web-push ^3.6`                                                                     | in use    |
-| APNs                        | `@parse/node-apn ^8.1`                                                                                           | in use    |
-| FCM                         | `google-auth-library ^10.6`                                                                                      | in use    |
-| Prometheus                  | `prom-client ^15.1`; `ops/prometheus/`                                                                           | in use    |
-| Pino                        | `pino ^10.3`, `pino-http ^11.0`                                                                                  | in use    |
-| Helmet                      | `helmet ^8.1`                                                                                                    | in use    |
-| Resend                      | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                 | in use    |
-| Monobank webhook            | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                       | in use    |
-| USDA / OpenFoodFacts        | `apps/server/src/lib/nutritionResponse.ts`                                                                       | in use    |
-| PWA (vite-plugin-pwa)       | `apps/web/vite.config.js`                                                                                        | in use    |
-| Vercel (Hobby)              | `vercel.json` (root + `apps/web`)                                                                                | in use    |
-| Railway (Dockerfile.api)    | `railway.toml` → `Dockerfile.api`                                                                                | in use    |
-| Turborepo                   | root `package.json` → `turbo ^2.9`                                                                               | in use    |
-| TanStack Query              | `@tanstack/react-query ^5.99`                                                                                    | in use    |
-| Expo 52 + React Native 0.76 | `apps/mobile/package.json`                                                                                       | in use    |
-| Capacitor (mobile-shell)    | `apps/mobile-shell/`                                                                                             | in use    |
-| **BullMQ**                  | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest) | in use    |
-| **Telegram bot (grammy)**   | `tools/openclaw` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                             | in use    |
-| **n8n workflows**           | `ops/n8n-workflows/` — 26 workflow-ів (manifest.json) ; ADR-0026                                                 | in use    |
-| **Grafana + Alloy**         | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                            | in use    |
-| **Storybook + Argos**       | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                  | in use    |
-| **Detox E2E**               | `.github/workflows/detox-{android,ios}.yml`                                                                      | in use    |
-| **Drizzle ORM**             | `packages/db-schema` → `drizzle-orm ^0.45`                                                                       | in use    |
-| Stripe                      | _немає в коді_                                                                                                   | to add    |
-| React Email                 | _немає в коді_                                                                                                   | to add    |
-| Loops (drip)                | _немає в коді_                                                                                                   | to add    |
-| Crisp                       | _немає в коді_                                                                                                   | to add    |
-| Tally                       | _немає в коді_                                                                                                   | to add    |
-| UptimeRobot                 | _не налаштовано_ (згадано в ops-доках)                                                                           | to add    |
-| Termly / CookieYes          | _не використовується_                                                                                            | to add    |
-| Cloudflare R2               | _немає в коді_                                                                                                   | evaluated |
+| Сервіс / бібліотека         | Де в коді                                                                                                                 | Статус                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`                                                                             | in use                       |
+| Express + Node 20           | `apps/server/package.json` → `express ^4.22`                                                                              | in use                       |
+| PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg16`                                  | in use                       |
+| Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                            | in use                       |
+| Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`                                                                           | in use                       |
+| Anthropic Claude            | `apps/server/src/lib/anthropic.ts`                                                                                        | in use                       |
+| **Voyage AI (embeddings)**  | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                             | in use                       |
+| Sentry (web + server)       | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                               | in use                       |
+| **PostHog (web + server)**  | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`                       | in use                       |
+| **PostHog (mobile)**        | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                                | in use                       |
+| Vercel Analytics            | `@vercel/analytics ^2.0` у `apps/web`                                                                                     | in use                       |
+| **OpenTelemetry**           | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                         | in use                       |
+| Web Push (VAPID)            | `apps/server/package.json` → `web-push ^3.6`                                                                              | in use                       |
+| APNs                        | `@parse/node-apn ^8.1`                                                                                                    | in use                       |
+| FCM                         | `google-auth-library ^10.6`                                                                                               | in use                       |
+| Prometheus                  | `prom-client ^15.1`; `ops/prometheus/`                                                                                    | in use                       |
+| Pino                        | `pino ^10.3`, `pino-http ^11.0`                                                                                           | in use                       |
+| Helmet                      | `helmet ^8.1`                                                                                                             | in use                       |
+| Resend                      | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                          | in use                       |
+| Monobank webhook            | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                                | in use                       |
+| USDA / OpenFoodFacts        | `apps/server/src/lib/nutritionResponse.ts`                                                                                | in use                       |
+| PWA (vite-plugin-pwa)       | `apps/web/vite.config.js`                                                                                                 | in use                       |
+| Vercel (Hobby)              | `vercel.json` (root + `apps/web`)                                                                                         | in use                       |
+| Railway (Dockerfile.api)    | `railway.toml` → `Dockerfile.api`                                                                                         | in use                       |
+| Turborepo                   | root `package.json` → `turbo ^2.9`                                                                                        | in use                       |
+| TanStack Query              | `@tanstack/react-query ^5.99`                                                                                             | in use                       |
+| Expo 52 + React Native 0.76 | `apps/mobile/package.json`                                                                                                | in use                       |
+| Capacitor (mobile-shell)    | `apps/mobile-shell/`                                                                                                      | in use                       |
+| **BullMQ**                  | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest)          | in use                       |
+| **Telegram bot (grammy)**   | `tools/openclaw` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                                      | in use                       |
+| **n8n workflows**           | `ops/n8n-workflows/` — 26 workflow-ів (manifest.json) ; ADR-0026                                                          | in use                       |
+| **Grafana + Alloy**         | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                                     | in use                       |
+| **Storybook + Argos**       | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                           | in use                       |
+| **Detox E2E**               | `.github/workflows/detox-{android,ios}.yml`                                                                               | in use                       |
+| **Drizzle ORM**             | `packages/db-schema` → `drizzle-orm ^0.45`                                                                                | in use                       |
+| Stripe                      | `apps/server/src/modules/billing/**`, `apps/server/src/routes/billing.ts`, `packages/api-client/src/endpoints/billing.ts` | in use / prod config pending |
+| React Email                 | _немає в коді_                                                                                                            | to add                       |
+| Loops (drip)                | _немає в коді_                                                                                                            | to add                       |
+| Crisp                       | _немає в коді_                                                                                                            | to add                       |
+| Tally                       | _немає в коді_                                                                                                            | to add                       |
+| UptimeRobot                 | _не налаштовано_ (згадано в ops-доках)                                                                                    | to add                       |
+| Termly / CookieYes          | _не використовується_                                                                                                     | to add                       |
+| Cloudflare R2               | _немає в коді_                                                                                                            | evaluated                    |
 
 ---
 
@@ -135,15 +137,16 @@
 
 ### 2.4 Платежі
 
-| Сервіс     | Сайт                             | Free tier                             | Paid tier                                                                 | Date checked | Why this / Why not                                                                                                                                                                                 | Status |
-| ---------- | -------------------------------- | ------------------------------------- | ------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **Stripe** | [stripe.com](https://stripe.com) | Безкоштовний акаунт, без monthly fees | 2.9% + 30c per tx (US domestic cards). Billing: +0.7%. Disputes: $15 each | 2026-04      | Підписки Pro, Checkout, Customer Portal, webhooks. Глобальний стандарт. Порівняння з LiqPay/Fondy — див. [01-monetization-and-pricing.md](./01-monetization-and-pricing.md#4-платіжні-провайдери). | to add |
+| Сервіс     | Сайт                             | Free tier                             | Paid tier                                                                 | Date checked | Why this / Why not                                                                                                                                                                                                                                           | Status                       |
+| ---------- | -------------------------------- | ------------------------------------- | ------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| **Stripe** | [stripe.com](https://stripe.com) | Безкоштовний акаунт, без monthly fees | 2.9% + 30c per tx (US domestic cards). Billing: +0.7%. Disputes: $15 each | 2026-04      | Підписки Pro, Checkout, Customer Portal, webhooks. Кодова інтеграція вже є; запуск блокується production env/legal/tax readiness. Порівняння з LiqPay/Fondy — див. [01-monetization-and-pricing.md](./01-monetization-and-pricing.md#4-платіжні-провайдери). | in use / prod config pending |
 
-**Що створити для Stripe:**
+**Що вже є / що лишилось для Stripe:**
 
-- Stripe Account + Product + Price (monthly ₴99 + yearly ₴799)
-- `apps/server/src/routes/internal/billing.ts` — checkout, portal, plan endpoints
-- `apps/server/src/routes/stripe-webhook.ts` — webhook handler з `stripe.webhooks.constructEvent()`
+- Код є: `apps/server/src/routes/billing.ts` — `GET /status`, `POST /checkout`, `POST /portal`, `POST /stripe-webhook`.
+- API-client є: `packages/api-client/src/endpoints/billing.ts`.
+- OpenAPI є: `packages/shared/src/openapi/routes.ts` + generated `packages/api-client/src/generated/openapi.d.ts`.
+- Production setup лишається: Stripe Account + Product + Price (`$7/$49` за ADR-0051; UAH equivalent на UA-старті).
 - Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO_MONTHLY`, `STRIPE_PRICE_ID_PRO_YEARLY`
 - Деталі edge cases (chargeback, webhook miss) — див. [04-launch-readiness.md](./04-launch-readiness.md#21-billing-edge-cases)
 
