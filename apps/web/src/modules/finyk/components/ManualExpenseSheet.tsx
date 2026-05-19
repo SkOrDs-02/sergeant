@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-05-20
  * Status: Active
  */
 import { useState, useEffect, useId, useMemo } from "react";
@@ -19,6 +19,7 @@ import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { formatMoney } from "@sergeant/shared";
 import { Icon } from "@shared/components/ui/Icon";
 import type { IconName } from "@shared/components/ui/Icon";
+import { Badge } from "@shared/components/ui/Badge";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
@@ -334,7 +335,27 @@ export function ManualExpenseSheet({
   const description = watch("description");
   const category = watch("category");
   const date = watch("date");
+  const amount = watch("amount");
   const amountError = formState.errors.amount?.message;
+
+  // 6.2 hero preview — show big display-hero typography above the input
+  // once a value is set. Input stays editable below. Parsed defensively
+  // because react-hook-form stores `amount` as string while the schema
+  // validates it as a non-empty numeric string.
+  const amountNumeric = useMemo(() => {
+    if (!amount) return 0;
+    const n = parseFloat(amount);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [amount]);
+  const amountHeroVisible = amountNumeric > 0;
+
+  // 6.3 inline AI suggestion — surfaces the silent merchant-driven
+  // category auto-application as a dismissible badge. Set when a
+  // merchant chip with `suggestedManualCategory` is clicked; cleared on
+  // dismiss OR when the user picks a different category manually OR on
+  // form reset.
+  const [aiAppliedCategory, setAiAppliedCategory] =
+    useState<CategorySlug | null>(null);
 
   // showDateField — UI-only, не частина zod-схеми. Раніше жило в
   // form-state, але то був лиш toggle для видимості поля — без валідації
@@ -390,6 +411,9 @@ export function ManualExpenseSheet({
       setCategoriesExpanded(false);
       setDescFocused(false);
       setShowDateField(false);
+      // 6.3: clear AI-applied state when the sheet reopens — stale
+      // suggestion from a previous session shouldn't carry over.
+      setAiAppliedCategory(null);
     }
     // frequentCategories/initialCategory/initialDescription лише задають
     // стартовий стан при відкритті — навмисно не реагуємо на їхні
@@ -530,6 +554,19 @@ export function ManualExpenseSheet({
                 ))}
               </div>
             )}
+            {/* 6.2: display-hero preview anchors the sheet on the single
+                "must-fill" field. Input stays editable below so users can
+                tap to correct without losing the visual emphasis. Hidden
+                from screen readers (aria-hidden) — the editable input
+                below carries the accessible label + value. */}
+            {amountHeroVisible ? (
+              <div
+                aria-hidden
+                className="text-style-display-hero font-mono tabular-nums text-finyk-strong dark:text-finyk leading-none mb-2 select-none"
+              >
+                {formatMoney(amountNumeric)}
+              </div>
+            ) : null}
             <Input
               id={amountId}
               type="number"
@@ -622,6 +659,10 @@ export function ManualExpenseSheet({
                         : null;
                     if (suggested) {
                       setValue("category", suggested, { shouldDirty: true });
+                      // 6.3: surface the auto-applied category via an AI
+                      // badge near the category section so users can see
+                      // why their category changed and dismiss if wrong.
+                      setAiAppliedCategory(suggested);
                     }
                   }}
                   className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
@@ -667,6 +708,37 @@ export function ManualExpenseSheet({
           >
             Категорія
           </div>
+          {/* 6.3: AI-applied badge surfaces the silent merchant→category
+              auto-application. Renders only when AI applied and current
+              category still matches the AI suggestion (so dismissal +
+              manual overrides hide it). Dismiss = clear local state only;
+              category stays applied (user can still change it via picker
+              below).
+              motion-safe wrappers — reduced-motion users see a static
+              badge without the fade-in. */}
+          {aiAppliedCategory && categorySlug === aiAppliedCategory ? (
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 mb-2">
+              <Badge
+                variant="finyk"
+                tone="soft"
+                size="sm"
+                className="inline-flex items-center gap-1.5"
+              >
+                <Icon name="sparkles" size={12} aria-hidden />
+                AI ·{" "}
+                {CATEGORY_DISPLAY[aiAppliedCategory]?.label ??
+                  aiAppliedCategory}
+                <button
+                  type="button"
+                  onClick={() => setAiAppliedCategory(null)}
+                  aria-label="Сховати AI-підказку"
+                  className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-finyk/20 transition-colors"
+                >
+                  <Icon name="close" size={10} aria-hidden />
+                </button>
+              </Badge>
+            </div>
+          ) : null}
           <div
             className="flex flex-wrap gap-2"
             role="group"
@@ -678,9 +750,15 @@ export function ManualExpenseSheet({
                 <button
                   key={slug}
                   type="button"
-                  onClick={() =>
-                    setValue("category", slug, { shouldDirty: true })
-                  }
+                  onClick={() => {
+                    setValue("category", slug, { shouldDirty: true });
+                    // Manual category pick supersedes any AI suggestion;
+                    // clear the badge so it doesn't linger after an
+                    // explicit user choice.
+                    if (slug !== aiAppliedCategory) {
+                      setAiAppliedCategory(null);
+                    }
+                  }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
                     categorySlug === slug
                       ? "bg-finyk-strong text-white border-finyk-strong shadow-sm"
