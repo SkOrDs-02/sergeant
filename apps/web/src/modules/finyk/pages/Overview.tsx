@@ -9,6 +9,7 @@ import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 
 import { FirstInsightBanner } from "./overview/FirstInsightBanner";
+import { FinykInsightsBlock } from "../components/FinykInsightsBlock";
 import { HeroCard } from "./overview/HeroCard";
 import { MonthPulseCard } from "./overview/MonthPulseCard";
 import { NetworthSection } from "./overview/NetworthSection";
@@ -90,6 +91,17 @@ export function Overview({
               hasExpensePlan={d.hasExpensePlan}
               spendPlanRatio={d.spendPlanRatio}
               showBalance={showBalance}
+            />
+
+            <FinykInsightsBlock
+              transactions={d.realTx}
+              budgets={storage.budgets}
+              subscriptions={storage.subscriptions}
+              dismissedRecurring={storage.dismissedRecurring}
+              txCategories={d.txCategories}
+              txSplits={d.txSplits}
+              customCategories={d.customCategories}
+              excludedTxIds={storage.excludedTxIds}
             />
 
             <MonthPulseCard
