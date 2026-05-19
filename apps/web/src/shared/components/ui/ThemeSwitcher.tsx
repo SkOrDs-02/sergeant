@@ -262,7 +262,12 @@ function DropdownSwitcher({
         )}
       >
         <Icon name={activeIcon} size="md" />
-        <span>{activeLabel}</span>
+        {/* Label visible from `sm:` (640px) up. On mobile the trigger
+            is icon-only + chevron — the full right-cluster (search +
+            «Тільки ти» pill + theme) overflowed the 393 px viewport
+            otherwise, even with `THEME_CHOICE_SHORT_LABELS`. AT users
+            still hear the full label via `aria-label` on the button. */}
+        <span className="hidden sm:inline">{activeLabel}</span>
         {/* Compact "HC" pill — informs the user that HC is layered
             on top of the current choice. Avoids the eyebrow combo
             (no `uppercase`+`tracking-*`+`text-*`) so it stays inside
