@@ -1,6 +1,11 @@
+/**
+ * Last validated: 2026-05-19
+ * Status: Active
+ */
 import { memo } from "react";
 
 import { Card } from "@shared/components/ui/Card";
+import { CounterReveal } from "@shared/components/ui/CounterReveal";
 import { cn } from "@shared/lib/ui/cn";
 
 import { computePulseStyle } from "./pulseStyle";
@@ -54,11 +59,9 @@ const HeroCardImpl = function HeroCard({
     Math.max(0, (daysPassed / daysInMonth) * 100),
   );
 
-  const networthDisplay = showBalance
-    ? `${networth >= 0 ? "" : "−"}${Math.abs(networth).toLocaleString("uk-UA", {
-        maximumFractionDigits: 0,
-      })} ₴`
-    : "••••";
+  // networthDisplay only used for the masked variant; revealed value uses
+  // CounterReveal directly for the entrance tween (W1 / Phase 4b).
+  const networthMasked = "••••";
 
   return (
     <Card
@@ -89,7 +92,24 @@ const HeroCardImpl = function HeroCard({
                 !showBalance && "tracking-widest",
               )}
             >
-              {networthDisplay}
+              {showBalance ? (
+                <>
+                  {networth < 0 ? "−" : ""}
+                  {/* CounterReveal handles prefers-reduced-motion internally */}
+                  <CounterReveal
+                    value={Math.abs(networth)}
+                    entranceFrom={0}
+                    duration={800}
+                    format={(v) =>
+                      new Intl.NumberFormat("uk-UA", {
+                        maximumFractionDigits: 0,
+                      }).format(Math.round(v)) + " ₴"
+                    }
+                  />
+                </>
+              ) : (
+                networthMasked
+              )}
             </p>
           </div>
           <div className="text-right shrink-0">
@@ -135,9 +155,12 @@ const HeroCardImpl = function HeroCard({
         >
           {showBalance ? (
             <>
-              {Math.round(Math.abs(dayBudget)).toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })}
+              {/* CounterReveal handles prefers-reduced-motion internally */}
+              <CounterReveal
+                value={Math.round(Math.abs(dayBudget))}
+                entranceFrom={0}
+                duration={800}
+              />
               <span className="text-2xl font-semibold ml-1 opacity-70">
                 ₴/день
               </span>
