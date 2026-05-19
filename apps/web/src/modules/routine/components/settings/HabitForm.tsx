@@ -53,6 +53,13 @@ export interface HabitFormProps {
    * back up.
    */
   errors?: HabitFormErrors;
+  /**
+   * When the form is embedded inside a dialog host that renders its
+   * own action buttons in a sticky footer, suppress the in-flow
+   * "Скасувати / Додати звичку" row so the user always sees the CTA
+   * without scrolling to the end of the form.
+   */
+  hideActions?: boolean;
 }
 
 const EMOJI_SUGGESTIONS: readonly string[] = [
@@ -84,6 +91,7 @@ export function HabitForm({
   focusTick,
   hideHeading = false,
   errors,
+  hideActions = false,
 }: HabitFormProps) {
   const fieldIds = useId();
   const startId = `${fieldIds}-start`;
@@ -172,7 +180,7 @@ export function HabitForm({
               aria-expanded={showEmojiPicker}
               className={cn(
                 "routine-touch-field w-12 shrink-0 flex items-center justify-center",
-                "rounded-2xl border border-line bg-panelHi text-xl",
+                "rounded-2xl border border-line bg-panelHi text-2xl leading-none font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji','Segoe_UI_Symbol',sans-serif]",
                 "hover:bg-panel transition-colors",
               )}
             >
@@ -183,30 +191,30 @@ export function HabitForm({
                 role="dialog"
                 aria-label="Обрати емодзі"
                 className={cn(
-                  "absolute z-30 mt-2 left-0",
+                  "absolute z-30 mt-2 left-0 w-[17rem]",
                   "rounded-2xl border border-line bg-panel shadow-float p-2",
-                  "grid grid-cols-4 gap-1",
+                  "grid grid-cols-6 gap-1",
                 )}
               >
                 {EMOJI_SUGGESTIONS.map((e) => (
-                  <Button
+                  <button
                     key={e}
-                    iconOnly
-                    size="sm"
-                    variant="ghost"
                     type="button"
                     onClick={() => {
                       setHabitDraft((d) => ({ ...d, emoji: e }));
                       setShowEmojiPicker(false);
                     }}
+                    aria-label={`Емодзі ${e}`}
                     className={cn(
-                      "rounded-xl text-lg!",
+                      "w-10 h-10 flex items-center justify-center rounded-xl",
+                      "leading-none text-2xl font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji','Segoe_UI_Symbol',sans-serif]",
+                      "transition-colors hover:bg-panelHi",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                       habitDraft.emoji === e && "bg-panelHi ring-1 ring-line",
                     )}
-                    aria-label={`Емодзі ${e}`}
                   >
                     <span aria-hidden>{e}</span>
-                  </Button>
+                  </button>
                 ))}
               </div>
             )}
@@ -422,33 +430,35 @@ export function HabitForm({
         </div>
       )}
 
-      <div
-        className={cn(
-          "flex gap-2",
-          // Inside the quick-create dialog the sheet already has an "X"
-          // close in the top-right, so the Cancel button would be
-          // redundant. Stretch the primary save button to fill the row.
-          editingId ? "flex-row" : "flex-col",
-        )}
-      >
-        {editingId && (
+      {!hideActions && (
+        <div
+          className={cn(
+            "flex gap-2",
+            // Inside the quick-create dialog the sheet already has an "X"
+            // close in the top-right, so the Cancel button would be
+            // redundant. Stretch the primary save button to fill the row.
+            editingId ? "flex-row" : "flex-col",
+          )}
+        >
+          {editingId && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={onCancel}
+            >
+              Скасувати
+            </Button>
+          )}
           <Button
             type="button"
-            variant="secondary"
-            className="flex-1"
-            onClick={onCancel}
+            className={cn("w-full", C.primary)}
+            onClick={onSave}
           >
-            Скасувати
+            {editingId ? "Зберегти зміни" : "Додати звичку"}
           </Button>
-        )}
-        <Button
-          type="button"
-          className={cn("flex-1", C.primary)}
-          onClick={onSave}
-        >
-          {editingId ? "Зберегти зміни" : "Додати звичку"}
-        </Button>
-      </div>
+        </div>
+      )}
     </>
   );
 

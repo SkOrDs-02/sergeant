@@ -12,6 +12,8 @@ import {
   routineTodayDate,
 } from "../lib/routineDraftUtils";
 import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
+import { Button } from "@shared/components/ui/Button";
+import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { HabitForm, type HabitFormErrors } from "./settings/HabitForm";
 import type { Habit, HabitDraft, RoutineState } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
@@ -206,7 +208,7 @@ export function HabitQuickCreateDialog({
             </svg>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 pb-5">
+        <div className="flex-1 overflow-y-auto px-5 pb-3">
           {firstRunHint && !editingId && (
             <FirstRunHintBanner
               variant="routine"
@@ -225,8 +227,36 @@ export function HabitQuickCreateDialog({
             onCancel={onClose}
             focusTick={internalFocusTick}
             hideHeading
+            hideActions
             errors={errors}
           />
+        </div>
+        {/* Sticky footer: keeps the primary CTA in the viewport regardless
+            of how long the form scrolls. Without this, a habit with the
+            advanced disclosure open pushes "Додати звичку" below the fold
+            and forces a scroll-hunt on every save. */}
+        <div className="border-t border-line bg-bg px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div
+            className={cn("flex gap-2", editingId ? "flex-row" : "flex-col")}
+          >
+            {editingId && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={onClose}
+              >
+                {messages.actions.cancel}
+              </Button>
+            )}
+            <Button
+              type="button"
+              className={cn("w-full", C.primary)}
+              onClick={handleSave}
+            >
+              {editingId ? "Зберегти зміни" : "Додати звичку"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
