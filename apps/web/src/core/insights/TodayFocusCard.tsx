@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StatusColor } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import {
@@ -178,10 +179,12 @@ export function TodayFocusCard({
       : null;
 
   return (
-    <div
+    <Card
+      prominence="glass"
+      radius="r-lg"
+      padding="none"
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-line bg-panel",
-        "shadow-card p-4",
+        "relative overflow-hidden p-4",
         "bg-hub-hero dark:bg-panel",
         wash,
         severityTone?.border,
@@ -270,6 +273,6 @@ export function TodayFocusCard({
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

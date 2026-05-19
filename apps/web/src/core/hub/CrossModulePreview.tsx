@@ -18,6 +18,7 @@ import {
   getCrossModulePreviewCopy,
   markCrossModulePreviewSeen,
 } from "@sergeant/shared";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -73,8 +74,12 @@ export function CrossModulePreview({
   if (!copy) return null;
 
   return (
-    <section
-      className="relative bg-panel border border-line rounded-2xl p-4 shadow-card overflow-hidden"
+    <Card
+      as="section"
+      prominence="glass"
+      radius="r-lg"
+      padding="md"
+      className="relative overflow-hidden"
       aria-label={messages.hub.crossModulePreviewAria}
       data-testid="cross-module-preview"
     >
@@ -103,6 +108,6 @@ export function CrossModulePreview({
           </div>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

@@ -56,7 +56,7 @@ export function AssistantAdviceCard({
         "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
-      <div className="rounded-[15px] bg-panel overflow-hidden">
+      <div className="rounded-[15px] bg-surface-glass backdrop-blur-md overflow-hidden">
         <button
           type="button"
           onClick={toggle}
