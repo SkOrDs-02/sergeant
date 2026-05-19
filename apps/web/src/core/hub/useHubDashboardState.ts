@@ -38,7 +38,11 @@ import {
   detectFirstRealEntry,
   getFirstRealEntryModule,
 } from "../onboarding/firstRealEntry";
-import { getSessionDays, recordSessionDay } from "../onboarding/vibePicks";
+import {
+  getSessionDays,
+  isFirstRealEntryDone,
+  recordSessionDay,
+} from "../onboarding/vibePicks";
 import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
 import { hasAnyValueBar } from "./ValueProgressBar";
@@ -458,7 +462,17 @@ export function useHubDashboardState(props: {
     !onboardingState.showFirstAction &&
     sessionDays <= 7;
 
-  const insightsDefaultOpen = sessionDays >= 7;
+  // Smart-expand: open insights on first render when the user has at least
+  // one actionable rec, is past FTUX, and is on a viewport wide enough to
+  // benefit from seeing expanded content (>= 390px).
+  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  const hasActionableInsight = rest.length > 0;
+  const insightsDefaultOpen =
+    sessionDays >= 7 ||
+    (hasActionableInsight &&
+      !inFtuxSession &&
+      typeof window !== "undefined" &&
+      window.innerWidth >= 390);
 
   const goals = useMemo(() => getOnboardingGoals(webKVStore), []);
   const hasValueBar = useMemo(
