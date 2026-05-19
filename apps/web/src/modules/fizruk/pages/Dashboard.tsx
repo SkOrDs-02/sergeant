@@ -396,7 +396,12 @@ export function Dashboard({
             const quickTemplates =
               recentlyUsed.length > 0 ? recentlyUsed : templates.slice(0, 3);
             return (
-              <Card as="section" radius="lg" aria-label="Швидкий старт">
+              <Card
+                as="section"
+                prominence="glass"
+                radius="r-lg"
+                aria-label="Швидкий старт"
+              >
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <SectionHeading as="h2" size="sm">
                     Швидкий старт
@@ -416,7 +421,7 @@ export function Dashboard({
                       <button
                         key={tpl.id}
                         type="button"
-                        className="w-full text-left flex items-center gap-3 rounded-2xl border border-line bg-bg hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99]"
+                        className="w-full text-left flex items-center gap-3 rounded-r-lg hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99]"
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >

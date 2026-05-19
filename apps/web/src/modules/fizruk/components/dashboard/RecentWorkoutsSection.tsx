@@ -87,7 +87,7 @@ export function RecentWorkoutsSection({
 
       {recent.length === 0 ? (
         <div
-          className="rounded-2xl border border-dashed border-line p-6 flex flex-col items-center text-center"
+          className="rounded-r-lg border border-dashed border-surface-line p-6 flex flex-col items-center text-center"
           data-testid="fizruk-dashboard-recent-empty"
         >
           <p className="text-style-label text-text">
@@ -102,7 +102,7 @@ export function RecentWorkoutsSection({
           {recent.map((row) => (
             <li
               key={`${row.startedAt}-${row.endedAt ?? "na"}`}
-              className="rounded-2xl border border-line bg-bg p-3 flex items-center justify-between gap-3"
+              className="rounded-r-lg p-3 flex items-center justify-between gap-3"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-style-label text-text truncate">
