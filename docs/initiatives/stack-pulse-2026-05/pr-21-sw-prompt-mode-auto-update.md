@@ -1,7 +1,7 @@
 # PR-21: SW `prompt`-mode auto-update on inactivity
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Shipped — SW prompt-mode auto-update wired in [PR-21 stack-pulse 2026-05](#); `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts` + `apps/server/src/http/buildIdHeader.ts` issues `X-Server-Build-Id` on every response.
+> **Status:** Closed — SW prompt-mode auto-update shipped in [#2309](https://github.com/Skords-01/Sergeant/pull/2309); `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts` + `apps/server/src/http/buildIdHeader.ts` issues `X-Server-Build-Id` on every response.
 
 |                    |                                                                          |
 | ------------------ | ------------------------------------------------------------------------ |

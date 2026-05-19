@@ -1,7 +1,7 @@
 # PR-18: Detox path-trigger пропускає server-shape changes
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** In progress — Detox iOS + Android `paths` extended to include `apps/server/src/routes/**` + `apps/server/src/migrations/**` (the actual server layout — there is no `apps/server/src/modules/**/*.routes.ts` tree as the original card assumed). CONTRIBUTING.md updated. The `scripts/check-api-client-coverage.mjs` drift detector + `lint:api-client` CI gate are deferred to a follow-up: response Zod schemas live in `@sergeant/shared` and are imported into the per-domain routers in `apps/server/src/routes/*.ts`, not exported from a uniform `<X>.routes.ts` module — designing the drift detector against the real shape needs a separate ADR.
+> **Status:** Closed — Detox iOS + Android `paths` extended to include `apps/server/src/routes/**`, `packages/shared/**`, and `apps/server/src/migrations/**` (the actual server layout — there is no `apps/server/src/modules/**/*.routes.ts` tree as the original card assumed). CONTRIBUTING.md updated. A separate `scripts/check-api-client-coverage.mjs` gate was intentionally not added: `api:check-openapi` + `api:check-openapi-types` already cover the generated OpenAPI/api-client freshness path.
 
 |                    |                                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------------- |
@@ -15,7 +15,7 @@
 
 ## Контекст
 
-Detox iOS/Android workflows у `.github/workflows/detox-{ios,android}.yml` запускаються лише при змінах у `apps/mobile/**` або `packages/api-client/**`. Зміна **тільки** у `apps/server/src/modules/<X>/<X>.routes.ts` (response shape) — НЕ тригерить Detox у PR-CI.
+Detox iOS/Android workflows у `.github/workflows/detox-{ios,android}.yml` раніше запускались лише при змінах у `apps/mobile/**` або `packages/api-client/**`. Зміна **тільки** у `apps/server/src/routes/*.ts` або у shared OpenAPI/Zod registry могла оминути Detox у PR-CI.
 
 Поточний flow:
 
@@ -36,8 +36,8 @@ on:
       - "apps/mobile-shell/**"
       - "packages/api-client/**"
       - "packages/shared/**"
-      - "apps/server/src/modules/**/*.routes.ts" # NEW
-      - "apps/server/src/modules/**/serializers/**" # NEW
+      - "apps/server/src/routes/**" # NEW
+      - "apps/server/src/modules/**" # NEW: legacy module paths, if touched
       - "apps/server/src/migrations/**" # NEW (response-shape often follows schema)
 ```
 
@@ -47,13 +47,13 @@ on:
 
 `scripts/check-api-client-coverage.mjs` (новий):
 
-- Парсить `apps/server/src/modules/**/*.routes.ts` для exported response Zod schemas.
+- Парсить `apps/server/src/routes/**` + shared API schemas для exported response Zod schemas.
 - Перевіряє, що `packages/api-client/src/**` має відповідний `.ts` тип.
 - Fail на drift — змусить розробника запустити `pnpm api-client:gen` (або еквівалент).
 
 ### 3. Documented у CONTRIBUTING
 
-Додати у `CONTRIBUTING.md`: «Якщо PR torkає `apps/server/src/modules/**/*.routes.ts` — Detox запускається автоматично; якщо не торкає mobile, але тести впадуть, перегенеруй api-client».
+Додати у `CONTRIBUTING.md`: «Якщо PR торкає `apps/server/src/routes/**`, shared API schemas або generated OpenAPI/api-client contract — Detox запускається автоматично; якщо тести впадуть, перегенеруй api-client».
 
 ## Out of scope
 
@@ -67,8 +67,9 @@ on:
 **1. Path-trigger розширення (зроблено)** — обидва `push:` і `pull_request:` блоки у `.github/workflows/detox-ios.yml` + `detox-android.yml` отримали:
 
 ```yaml
-- "apps/server/src/modules/**/*.routes.ts"
-- "apps/server/src/modules/**/serializers/**"
+- "apps/server/src/routes/**"
+- "apps/server/src/modules/**"
+- "packages/shared/**"
 - "apps/server/src/migrations/**"
 ```
 
@@ -76,7 +77,7 @@ on:
 
 **2. api-client drift detector (вже існує)** — спec пропонував `scripts/check-api-client-coverage.mjs` + `lint:api-client` як новий CI-job. Поточний моноре́по вже має:
 
-- `pnpm api:check-openapi` (`scripts/api/check-openapi-fresh.mjs`) — провіряє, що `docs/api/openapi.json` свіжий відносно `apps/server/src/modules/**/*.routes.ts`.
+- `pnpm api:check-openapi` (`scripts/api/check-openapi-fresh.mjs`) — провіряє, що `docs/api/openapi.json` свіжий відносно server routes and the shared OpenAPI/Zod registry.
 - `pnpm api:check-openapi-types` (`scripts/api/check-openapi-types-fresh.mjs`) — провіряє, що `packages/api-client/src/generated/openapi.d.ts` свіжий відносно `docs/api/openapi.json`.
 
 Обидва gate-и вже у root `lint` script-і → CI запускає їх на кожен PR (`format-lint-test-build` matrix у `.github/workflows/ci.yml`). Тобто будь-який server-shape change, який не сопроводжений `pnpm api:generate-openapi-types`, fail-итиме CI до Detox-а. Додавати paralel `scripts/check-api-client-coverage.mjs` — дублювання: codegen-pipeline уже виконує перевірку, що server-зміна reflected у api-client. Документація для майбутнього розробника, який натрапить на спек і запитає «де `lint:api-client`?»: дивись `api:check-openapi(-types)`.
@@ -91,12 +92,12 @@ on:
 - [x] api-client drift detector — вже покрито `api:check-openapi(-types)` (deduplication, див. § Implementation).
 - [x] CI-job для drift — вже у root `lint` script-і.
 - [x] CONTRIBUTING.md оновлено.
-- [x] Тест: PR що змінює `apps/server/src/modules/finyk/finyk.routes.ts` без зміни `apps/mobile/**` → Detox **запускається** (validated через diff workflow YAML; runtime-validation — наступний server-shape PR після merge цього).
+- [x] Тест: PR що змінює `apps/server/src/routes/*.ts` або shared API schema без зміни `apps/mobile/**` → Detox **запускається** (validated через diff workflow YAML; runtime-validation — наступний server-shape PR після merge цього).
 
 ## Тести
 
 - Workflow YAML diff peer-reviewed — `paths:` блоки у `detox-ios.yml` + `detox-android.yml` синхронні (push + pull_request).
-- Runtime smoke — наступний server-only PR після merge цього (наприклад rename поля у `apps/server/src/modules/finyk/finyk.routes.ts`) має дати GitHub Actions запуск Detox-а; якщо не — re-open spec і реверс.
+- Runtime smoke — наступний server-only PR після merge цього (наприклад rename поля у server route/shared schema) має дати GitHub Actions запуск Detox-а; якщо не — re-open spec і реверс.
 - Drift detector — `pnpm lint` (root) запускає `api:check-openapi` + `api:check-openapi-types`, що ловить codegen-side regression (скрипти live-у `scripts/api/check-openapi-fresh.mjs` + `check-openapi-types-fresh.mjs`).
 
 ## Rollout

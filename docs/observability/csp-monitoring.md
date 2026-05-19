@@ -151,10 +151,13 @@ groups:
           runbook: "https://github.com/Skords-01/Sergeant/blob/main/docs/observability/csp-monitoring.md#response"
 ```
 
-`CspEnforceViolations` only matters once the policy moves from
-`Content-Security-Policy-Report-Only` to `Content-Security-Policy`
-(Phase 2 of [C2 hardening](../security/hardening/C2-frontend-csp.md)).
-Until then, the rule should be `0`.
+`CspEnforceViolations` is the real-user-impact alert for enforced policies.
+For the current frontend Phase-1 rollout, `apps/web/vercel.json` still emits
+`Content-Security-Policy-Report-Only`, so frontend violations should arrive
+with `disposition="report"`. If strict/enforce frontend CSP ships in Phase 2
+of [C2 hardening](../security/hardening/C2-frontend-csp.md), this alert becomes
+actionable for the SPA too; if `CSP_REPORT_ONLY=1` is used as rollback for API
+CSP, expect `disposition="report"` instead.
 
 ## Allowlist (Sentry + PostHog)
 

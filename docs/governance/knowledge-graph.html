@@ -1927,8 +1927,9 @@
             <td>
               Closed — Phase 1 (GitHub App auth-flow) merged
               [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2
-              (default flip + PAT removal + Hard Rule #20) — in review (current
-              PR)
+              (default flip + PAT removal + Hard Rule #20) has landed and is
+              tracked by [Hard Rule
+              #20](../../governance/rules/20-no-openclaw-pats-in-production.md).
             </td>
             <td></td>
           </tr>
@@ -2154,17 +2155,14 @@
               >
             </td>
             <td>
-              In progress — Detox iOS + Android `paths` extended to include
-              `apps/server/src/routes/**` + `apps/server/src/migrations/**` (the
-              actual server layout — there is no
-              `apps/server/src/modules/**/*.routes.ts` tree as the original card
-              assumed). CONTRIBUTING.md updated. The
-              `scripts/check-api-client-coverage.mjs` drift detector +
-              `lint:api-client` CI gate are deferred to a follow-up: response
-              Zod schemas live in `@sergeant/shared` and are imported into the
-              per-domain routers in `apps/server/src/routes/*.ts`, not exported
-              from a uniform `&lt;X&gt;.routes.ts` module — designing the drift
-              detector against the real shape needs a separate ADR.
+              Closed — Detox iOS + Android `paths` extended to include
+              `apps/server/src/routes/**`, `packages/shared/**`, and
+              `apps/server/src/migrations/**` (the actual server layout — there
+              is no `apps/server/src/modules/**/*.routes.ts` tree as the
+              original card assumed). CONTRIBUTING.md updated. A separate
+              `scripts/check-api-client-coverage.mjs` gate was intentionally not
+              added: `api:check-openapi` + `api:check-openapi-types` already
+              cover the generated OpenAPI/api-client freshness path.
             </td>
             <td></td>
           </tr>
@@ -2233,11 +2231,11 @@
               >
             </td>
             <td>
-              Shipped — SW prompt-mode auto-update wired in [PR-21 stack-pulse
-              2026-05](#); `setupAutoUpdate()` lives at
-              `apps/web/src/core/app/autoUpdate.ts` +
-              `apps/server/src/http/buildIdHeader.ts` issues `X-Server-Build-Id`
-              on every response.
+              Closed — SW prompt-mode auto-update shipped in
+              [#2309](https://github.com/Skords-01/Sergeant/pull/2309);
+              `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts`
+              + `apps/server/src/http/buildIdHeader.ts` issues
+              `X-Server-Build-Id` on every response.
             </td>
             <td></td>
           </tr>

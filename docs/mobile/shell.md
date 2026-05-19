@@ -1,13 +1,13 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Active. Shell під deprecation — див. § [Sunset](#sunset).
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
+> **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../apps/mobile/README.md) і [`overview.md`](./overview.md).
 
-## Sunset
+## Historical sunset note
 
-> Capacitor shell — **тимчасова поверхня**. ADR-0010 (status `accepted-with-sunset`) фіксує дедлайн зняття shell-у з продакшну на користь RN-клієнта. Цей розділ — короткий operator-cheatsheet; повний контекст — у [ADR-0010 § Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule) та ініціативі [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md).
+> **Historical only.** ADR-0010 captured a previous shell-sunset plan, but [ADR-0052](../adr/0052-mobile-strategy-capacitor-primary.md) replaced the active strategy: `apps/mobile-shell` remains the primary mobile product until Expo/RN has product parity and a new accepted ADR sets a replacement timeline. Do not use the T0/T1/T2 dates below as active commitments.
 
 | Маркер | Дата       | Що робить мейнтейнер shell-у                                                                                                                                                            |
 | ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -15,9 +15,9 @@
 | **T₁** | 2026-11-30 | Remove-from-store. `mobile-shell-android-release.yml` / `mobile-shell-ios-release.yml` припиняють upload на internal-track. Бета-канал — in-app banner з deep-link на RN-store-listing. |
 | **T₂** | 2026-12-30 | `apps/mobile-shell/` видаляється з репо разом із Android/iOS pipeline-ами (T₁ + 30 днів). Sentry shell-проєкт архівується.                                                              |
 
-**Що це означає для вашого PR-у:**
+**Що це означає для вашого PR-у зараз:**
 
-- **Net-new module у `apps/mobile-shell/src/**`** → блок: ESLint падає на `pnpm lint`із посиланням на ініціативу. Перенесіть фічу в`apps/mobile/src/**`(RN) або`apps/web/src/**`(web). Якщо це справді shell-glue (новий Capacitor-плагін shim), додайте файл у`SHELL_GLUE_ALLOWLIST` у [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js) тим самим PR-ом і прокоментуйте у тілі PR посилання на ADR-0010.
+- **Net-new module у `apps/mobile-shell/src/**`** → дозволений лише коли це справді shell/product work або shell-glue. Для shell-only glue додайте файл у `SHELL_GLUE_ALLOWLIST` у [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js) тим самим PR-ом і прокоментуйте у тілі PR посилання на ADR-0052.
 - **Bug-fix у наявному shell-glue** (наприклад, `auth-storage.ts`, `pushNative.ts`) → ок, ці файли в allowlist; модифікації не блокуються.
 - **Тести** (`*.test.ts`, `*.spec.ts`, `__tests__/**`) у `apps/mobile-shell/src/**` → не блокуються, allowlist не потрібен.
 

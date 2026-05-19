@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-> Закриває **docs portion** з [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI винесений в окремий PR #049b (потребує `RAILWAY_TOKEN` у GH Secrets + dedicated staging instance).
+> Закриває **docs portion** з [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
 >
 > Цей runbook **доповнює** концептуальні playbook-и
 > [`restore-from-backup.md`](../playbooks/restore-from-backup.md) (incident flow) і
@@ -38,7 +38,7 @@ sessions/accounts. Все, що не лежить у `module_data`-blob-ах, л
 
 > **Reality-check.** Сьогодні єдиний staffed backup channel — Railway daily
 > snapshots. Мінімально валідовано: ручний рестор у staging-проект ≤ 1 раз на
-> місяць. Weekly verify CI (PR #049b) формалізує цю цикадру.
+> місяць. Weekly verify CI (PR #049b) автоматизує smoke-verify між ручними drills.
 
 ## 1. Pre-migration snapshot (recommended перед кожним release)
 
@@ -232,10 +232,11 @@ _(PR #049b — LANDED)_ робить:
 1. Pull найновішого Railway dump через CLI (потребує `RAILWAY_TOKEN` у GH Secrets).
 2. Restore у тимчасовий ephemeral pg-instance (testcontainers / Railway temp service).
 3. Прогнати § 4 smoke-test.
-4. Failures → PagerDuty / Sentry alert.
+4. Failures → n8n/Telegram incidents + founder DM for page-level failures, or Sentry/backlog ticket for non-page failures.
 
-До моменту landing-у PR #049b, виконуємо це **вручну** раз на місяць —
-[`test-backup-restore.md`](../playbooks/test-backup-restore.md).
+Manual rehearsal still runs monthly via
+[`test-backup-restore.md`](../playbooks/test-backup-restore.md); the weekly CI
+job is the automated smoke, not a replacement for operator practice.
 
 ## 7. Escalation
 

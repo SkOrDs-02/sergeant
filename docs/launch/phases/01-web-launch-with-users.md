@@ -789,7 +789,7 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 | R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W6)                        | Medium     | Critical | Railway upgrade option known; preemptive load-test у W5 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.                                                             |
 | R-6 | **Beta-юзери відсутні / тихі** — нема фідбеку у W0-W2                               | Medium     | High     | Recruit з 3 каналів одночасно (особисті + Telegram + DOU); follow-up DM через 48h для тихих. Telegram-група має «one post per day» правило.                                   |
 | R-7 | **Activation rate < 20%** на стабільному cohort у W3                                | Low-Medium | Critical | Це fatal — означає FTUX broken. Stop Phase 1, повтор Sprint 1-3 з FTUX-master-tracker. Engage parent session для re-planning.                                                 |
-| R-8 | **Capacitor sunset T₀ (2026-09-01) перекривається з Phase 1 end (W12)**             | High       | Medium   | Phase 2 plan повинен врахувати sunset; Phase 1 exit-gate робить це явним (див. §9 gate 7).                                                                                    |
+| R-8 | **Mobile strategy змінилась після ADR-0010**                                        | Medium     | Medium   | ADR-0052 робить Capacitor primary; Phase 2 brief має перевірити актуальну parity-стратегію, а не старий T₀/T₁/T₂ sunset-графік.                                               |
 
 ### 7.2 Pre-mortem (W12)
 
@@ -901,7 +901,7 @@ Reasonable budget. Lemma: «якщо $50/міс рятує мене 2 годин
 
 - Phase 1 retrospective (1 секція): «що ми дізнались про юзерів, фідбек patterns»
 - Web parity baseline (feature matrix): що в web є, що в shell поки немає (див. [`platforms.md` §0`](../../architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn))
-- Capacitor-specific risks (sunset T₀ 2026-09-01 — час до Phase 3 RN короткий)
+- Capacitor-specific risks (ADR-0052 keeps shell primary; old ADR-0010 T₀/T₁/T₂ dates are historical only)
 - Initial Phase 2 timeline draft (≤ 8 тижнів типово)
 
 ---

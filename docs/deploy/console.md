@@ -1,14 +1,15 @@
 # Deploy `tools/openclaw` (sergeant-openclaw)
 
 > **Status:** Active
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
 > **Власник:** `sergeant-hubchat` skill (HubChat governance).
 > **Railway service:** `sergeant-openclaw` (раніше `sergeant-hubchat`, перейменовано у PR-47 per ADR-0032 / Pain P10 — див. §«Railway service rename runbook» нижче).
 > **Webhook delivery (ADR-0041):** ✅ live in production з 2026-05-03 21:26 UTC. URL `https://sergeant-openclaw-production.up.railway.app/webhook/openclaw` (раніше `sergeant-hubchat-production…`), secret set, healthcheck `GET /healthz`. Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy.
 
 ## Що це
 
-`tools/openclaw` — Node.js процес, що хостить grammy long-poll-боти Sergeant.
+`tools/openclaw` — Node.js процес, що хостить OpenClaw Telegram bot. Production
+uses webhook delivery since 2026-05-03; long-poll is local-dev/backout mode.
 Після [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) активний
 там тільки **`@OpenClaw_sergeant_bot`** (ADR-0031, DM-only co-founder з
 chat + slash-командами + ops/marketing tool-ами). Legacy
@@ -16,8 +17,9 @@ chat + slash-командами + ops/marketing tool-ами). Legacy
 dormant: процес стартує його гілку лише якщо встановлено `CONSOLE_BOT_TOKEN`.
 
 На відміну від `@Sergeant_alert_bot` (push-only, керується n8n через
-`api.telegram.org/sendMessage`), цей процес **обов'язково має крутитись 24/7**,
-бо grammy long-poll опитує Telegram API в нескінченному циклі.
+`api.telegram.org/sendMessage`), цей процес **обов'язково має крутитись 24/7**:
+у production він приймає Telegram webhook HTTP updates і відповідає `/healthz`;
+у local/backout long-poll режимі він сам опитує Telegram API.
 
 ## Розгортання — Railway service `sergeant-openclaw`
 
@@ -89,15 +91,15 @@ mutation {
 
 Ці передаються `apps/server` через `${{Sergeant.*}}` references — bot їх не читає напряму, але вони мають бути виставлені на server-side щоб `get_*_metrics` tools повертали дані замість `notConfigured: true`.
 
-| Variable               | Опис                                                                             |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `STRIPE_SECRET_KEY`    | Без неї `get_stripe_metrics` повертає `{notConfigured:true}`.                    |
-| `SENTRY_AUTH_TOKEN`    | Без неї `get_sentry_issues` повертає `{notConfigured:true}`.                     |
-| `SENTRY_ORG`           | Default `sergeant`. Override якщо org slug інший.                                |
-| `POSTHOG_API_KEY`      | Без неї `get_posthog_stats` повертає `{notConfigured:true}`.                     |
-| `POSTHOG_PROJECT_ID`   | Те саме — обидва потрібні разом для PostHog tool-у.                              |
-| `OPENCLAW_GITHUB_PAT`  | Default — unauthenticated GitHub (60 RPH). PAT піднімає до 5000 RPH.             |
-| `OPENCLAW_GITHUB_REPO` | Default `Skords-01/Sergeant`. Repo, з якого `get_github_releases` бере releases. |
+| Variable               | Опис                                                                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`    | Без неї `get_stripe_metrics` повертає `{notConfigured:true}`.                                                                     |
+| `SENTRY_AUTH_TOKEN`    | Без неї `get_sentry_issues` повертає `{notConfigured:true}`.                                                                      |
+| `SENTRY_ORG`           | Default `sergeant`. Override якщо org slug інший.                                                                                 |
+| `POSTHOG_API_KEY`      | Без неї `get_posthog_stats` повертає `{notConfigured:true}`.                                                                      |
+| `POSTHOG_PROJECT_ID`   | Те саме — обидва потрібні разом для PostHog tool-у.                                                                               |
+| `OPENCLAW_GITHUB_PAT`  | Legacy local/test-only escape hatch. Production rejects `OPENCLAW_GITHUB_PAT` / `Git_PAT` via Hard Rule #20; use GitHub App auth. |
+| `OPENCLAW_GITHUB_REPO` | Default `Skords-01/Sergeant`. Repo, з якого `get_github_releases` бере releases.                                                  |
 
 **Limits / governance (optional з defaults):**
 
@@ -213,7 +215,9 @@ cp .env.example .env       # заповнити CONSOLE_BOT_TOKEN (або dev-bo
 pnpm dev                    # tsx watch src/index.ts
 ```
 
-Локальний run конфліктуватиме з production long-poll якщо токени однакові.
+Локальний run з production token може конфліктувати з production webhook state
+або спожити updates не тим процесом. Створити **окремий dev-bot** через
+@BotFather — рекомендований pattern.
 Створити **окремий dev-bot** через @BotFather — рекомендований pattern.
 
 ## Зв'язані ADR / docs

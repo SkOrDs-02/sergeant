@@ -1,9 +1,9 @@
 # Alertmanager configuration for Sergeant.
 #
-# Routes alerts (defined in ./prometheus/alert_rules.yml) by `severity` label
-# to a single Slack workspace. Two channels:
-#   - severity=page   → #alerts-page    (fast repeat, on-call rotation)
-#   - severity=ticket → #alerts-tickets (slow repeat, async triage)
+# Legacy Alertmanager sample. Current production alert delivery is n8n WF-98 /
+# Telegram incidents + founder DM for `severity=page`, and Sentry/backlog for
+# `severity=ticket` (see ../SLO.md). Keep this file as a deployable Slack
+# fallback only if Alertmanager is introduced.
 #
 # Secrets:
 #   $SLACK_WEBHOOK_URL — Slack incoming-webhook URL.

@@ -2,9 +2,10 @@
 
 - **Status:** accepted
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
-- **Lifecycle:** dual-track with locked sunset (shell deprecation T₀ 2026-09-01 → T₂ 2027-02-28; RN-only after T₀ — див. § Sunset schedule)
+- **Lifecycle:** historical dual-track record. The locked shell-sunset schedule below was superseded operationally by [ADR-0052](./0052-mobile-strategy-capacitor-primary.md), which keeps `apps/mobile-shell` primary until Expo/RN parity and a new accepted replacement decision.
 - **Date:** 2026-04-27
 - **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md)
+- **Updated:** 2026-05-19 — marked the sunset timeline as historical after ADR-0052 made Capacitor primary.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**

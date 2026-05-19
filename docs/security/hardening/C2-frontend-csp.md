@@ -1,7 +1,7 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** In progress — Phase 1 (Report-Only canary + report sink + meta fallback) shipped 2026-05-04; Phase 2 (enforce mode + nonce flow) still open.
+> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
+> **Status:** In progress — frontend Report-Only canary + report sink + meta fallback shipped 2026-05-04; strict/enforce CSP + nonce flow remain open follow-up work.
 
 | Field              | Value                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
@@ -9,18 +9,18 @@
 | **Sprint**         | [Sprint 1](./sprint-1.md)                                                                               |
 | **Owner**          | frontend                                                                                                |
 | **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                                     |
-| **Status**         | Phase 1 closed — Report-Only canary live; Phase 2 (enforce + nonce) tracked below                       |
+| **Status**         | Phase 1 closed — frontend Report-Only canary live; Phase 2 (strict/enforce + nonce) tracked below       |
 | **Discovered**     | 2026-05-03                                                                                              |
 | **Threat model**   | XSS Exfiltration → Account Compromise                                                                   |
 | **Affected files** | `apps/web/vercel.json`, `vercel.json` (root), `apps/web/index.html`, `apps/server/src/http/security.ts` |
 
 ## Summary
 
-`helmet.contentSecurityPolicy` додає `Content-Security-Policy` header **тільки до response-ів API**. Це коректно для JSON-API. Але SPA-фронтенд (`apps/web`) **не має жодного CSP** — ні через Vercel headers (`vercel.json`), ні через inline `<meta http-equiv="Content-Security-Policy" ...>` у `index.html`.
+`helmet.contentSecurityPolicy` додає `Content-Security-Policy` header **тільки до response-ів API**. Це коректно для JSON-API. SPA-фронтенд (`apps/web`) тепер має Phase-1 `Content-Security-Policy-Report-Only` у `apps/web/vercel.json`, report sink `/api/csp-report`, і meta fallback у `apps/web/index.html`; ця картка лишається відкритою лише для strict/enforce CSP + nonce flow.
 
 Це означає: будь-який майбутній XSS у SPA (через залежність, через user-content рендер у `claude-tracker` chat-message-і, через misconfigured library) → повний exfiltration без жодного браузерного guard-у.
 
-## Evidence
+## Historical evidence (before Phase 1)
 
 ```jsonc
 // vercel.json (root) — є COOP/COEP/Permissions-Policy/X-Frame-Options, але НЕМАЄ CSP
