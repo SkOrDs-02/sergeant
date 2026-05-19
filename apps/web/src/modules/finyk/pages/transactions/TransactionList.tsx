@@ -1,8 +1,8 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
-import { useState, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { GroupedVirtuoso } from "react-virtuoso";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
@@ -18,6 +18,8 @@ import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
+import { getOnboardingGoals } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import type {
   Transaction,
   TxCategoriesMap,
@@ -117,6 +119,8 @@ export function TransactionList({
 }: TransactionListProps) {
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
+  // Read onboarding goals once per render — stable across the session.
+  const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
 
   // DataState contract:
   //   - `data === undefined` triggers the skeleton slot. We mark the
@@ -170,7 +174,7 @@ export function TransactionList({
   //     the surface still feels owned by the module.
   const emptyFallback =
     activeTx.length === 0 ? (
-      <ModuleEmptyState module="finyk" />
+      <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState

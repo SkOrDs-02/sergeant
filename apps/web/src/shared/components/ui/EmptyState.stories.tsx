@@ -167,8 +167,8 @@ export const ModuleFinyk: Story = {
 export const ModuleFizruk: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="fizruk" size={120} />,
-    title: "Час тренуватись",
-    description: "Запиши перше тренування або обери готову програму.",
+    title: "Як прогресують мої тренування?",
+    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
     action: (
       <Button variant="fizruk" size="md">
         Почати тренування
@@ -184,8 +184,8 @@ export const ModuleFizruk: Story = {
 export const ModuleRoutine: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="routine" size={120} />,
-    title: "Створи першу звичку",
-    description: "Маленькі кроки щодня ведуть до великих змін.",
+    title: "Що насправді стало звичкою?",
+    description: "Відстежуй щоденні дії — серія днів покаже правду.",
     action: (
       <Button variant="routine" size="md">
         Створити звичку
@@ -202,8 +202,8 @@ export const ModuleRoutine: Story = {
 export const ModuleNutrition: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="nutrition" size={120} />,
-    title: "Залогай перший прийом їжі",
-    description: "Відстежуй що їси і отримай персональні поради.",
+    title: "Що ти їси насправді?",
+    description: "Залогай перший прийом їжі й отримай чесну картину.",
     action: (
       <Button variant="nutrition" size="md">
         Додати їжу
