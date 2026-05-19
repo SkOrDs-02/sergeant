@@ -12,8 +12,10 @@ import { cn } from "../../lib/ui/cn";
  * Canonical shape:
  * - Height 60 px (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - `bg-panel/95 motion-safe:backdrop-blur-xl` translucent surface,
- *   `border-t border-line` only — no horizontal margin, no rounded
+ * - `bg-bg/95 motion-safe:backdrop-blur-xl` translucent surface
+ *   tinted to match the page background (so the nav reads as part
+ *   of the surface, not a separate panel). `border-t border-line`
+ *   provides a subtle delineation; no horizontal margin, no rounded
  *   corners, no shadow.
  * - Active indicator: thin 4 px sliding stripe (`top-0 h-1 w-10
  *   rounded-full`) at the top of the active tab, tinted with the
@@ -112,7 +114,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-label={ariaLabel}
       className={cn(
         "shrink-0 relative z-30 safe-area-pb",
-        "bg-panel/95 motion-safe:backdrop-blur-xl",
+        "bg-bg/95 motion-safe:backdrop-blur-xl",
         "border-t border-line",
         className,
       )}

@@ -6,7 +6,8 @@ import { RoutineBottomNav } from "../../../modules/routine/components/RoutineBot
 /**
  * `ModuleBottomNav` — спільна bottom-navigation shell для Finyk /
  * Fizruk / Routine / Nutrition. Edge-to-edge `border-t` панель flush
- * з низом екрану (`bg-panel/95`, `motion-safe:backdrop-blur-xl`).
+ * з низом екрану. Surface — `bg-bg/95` (matches page background,
+ * щоб nav читалась частиною поверхні, а не окремим panel-ом).
  * Активний таб маркується тонкою 4 px sliding-стрічкою зверху
  * (`top-0 h-1 w-10 rounded-full`) з module-tinted градієнтом — це
  * носій module identity. Активна іконка приймає `tokens.text`, label
