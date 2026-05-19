@@ -360,14 +360,20 @@ function checkDanglingRefs() {
     ) {
       continue;
     }
-    // Historical ADRs explicitly flagged with `Note:` indicating
-    // supersession describe legacy file paths. Same semantics as a
-    // proposed ADR — refs are descriptive, not contractual.
-    if (
-      relPath.startsWith("docs/adr/") &&
-      /Note:\*?\*?\s*[Іi]сторичн|Note:\*?\*?\s*[Hh]istorical/.test(content)
-    ) {
-      continue;
+    // Historical ADRs explicitly flagged with a `- **Note:**`
+    // metadata line in the front-of-file ADR header (first ~30 lines)
+    // indicating supersession describe legacy file paths. Same
+    // semantics as a proposed ADR — refs are descriptive, not
+    // contractual. Scoped to the header so a body-level narrative
+    // mention of "Note: ... historical" can't accidentally exempt
+    // the whole document (CodeRabbit feedback on PR #3026).
+    if (relPath.startsWith("docs/adr/")) {
+      const adrHeader = content.split("\n").slice(0, 30).join("\n");
+      if (
+        /^-\s+\*\*Note:\*\*\s*(?:[Іі]сторичн|[Hh]istorical)/m.test(adrHeader)
+      ) {
+        continue;
+      }
     }
 
     // Check if this is the RN migration tracker (target-state refs are OK)
