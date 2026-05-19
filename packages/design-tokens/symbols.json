@@ -1,12 +1,12 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-05-15",
+  "generated_at": "2026-05-19",
   "package": "@sergeant/design-tokens",
   "entryFile": "packages/design-tokens/index.d.ts",
   "stats": {
     "exportCount": 21,
-    "totalImporters": 19,
+    "totalImporters": 21,
     "deadExports": 19
   },
   "exports": [
@@ -21,17 +21,19 @@
         "apps/web/src/shared/components/layout/ModuleAccentProvider.tsx",
         "apps/web/src/shared/components/layout/ModuleHeader.tsx",
         "apps/web/src/shared/components/layout/ModuleShell.tsx",
+        "apps/web/src/shared/components/ui/AIPill.tsx",
         "apps/web/src/shared/components/ui/Button.tsx",
         "apps/web/src/shared/components/ui/EmptyState.tsx",
         "apps/web/src/shared/components/ui/Skeleton.tsx",
         "apps/web/src/shared/components/ui/Tabs.tsx",
         "apps/web/src/shared/lib/api/queryKeys.ts",
+        "apps/web/src/shared/lib/insights/types.ts",
         "apps/web/src/shared/lib/modules/hubNav.ts",
         "apps/web/src/shared/lib/modules/moduleLabels.ts",
         "packages/insights/src/recommendations/types.ts",
         "packages/shared/src/lib/recommendations.ts"
       ],
-      "usageCount": 16
+      "usageCount": 18
     },
     {
       "name": "ModuleSoftAccent",

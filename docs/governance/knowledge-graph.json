@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-05-18",
+  "generated_at": "2026-05-19",
   "counts": {
     "adr": 58,
     "audit": 31,
     "hard-rule": 26,
     "initiative": 51,
-    "playbook": 54,
-    "pr": 228,
+    "playbook": 55,
+    "pr": 227,
     "skill": 21
   },
   "nodes": [
@@ -1339,7 +1339,7 @@
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
       "path": "docs/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "In progress — Phases 0+1+2.a+2.b shipped ([#1657](https://github.com/Skords-01/Sergeant/pull/1657), [#2100](https://github.com/Skords-01/Sergeant/pull/2100), [#2104](https://github.com/Skords-01/Sergeant/pull/2104), [#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Phase 2 next: fizruk + routine. Phases 3–5 pending.",
+      "status": "In progress — Phases 1+2+3+4(partial)+5(partial) done; pending: PostHog route_change metric (Phase 4), manualChunks cleanup + route-loaders (Phase 5)",
       "tier": "core",
       "meta": {
         "number": 6,
@@ -1352,7 +1352,7 @@
       "type": "initiative",
       "title": "0010 — Revenue-first launch: ship paid, focus wedge",
       "path": "docs/initiatives/0010-revenue-first-launch.md",
-      "status": "In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)",
+      "status": "In progress — Phases 0+1+2+3+4.1+4.2(partial)+4.3(Google)+5.1+5.2+6(partial) done; pending: Apple auth (4.3), PricingPage portal link (4.2), EN locale + sitemap/robots.txt (6)",
       "tier": "core",
       "meta": {
         "number": 10,
@@ -1903,6 +1903,15 @@
       "type": "playbook",
       "title": "Bump Dependency Safely",
       "path": "docs/playbooks/bump-dep-safely.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:cleanup-codex-branch-after-pr",
+      "type": "playbook",
+      "title": "Cleanup Codex branch after PR",
+      "path": "docs/playbooks/cleanup-codex-branch-after-pr.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2683,16 +2692,6 @@
       "meta": {
         "number": 1652,
         "url": "https://github.com/Skords-01/Sergeant/pull/1652"
-      }
-    },
-    {
-      "id": "pr:1657",
-      "type": "pr",
-      "title": "PR #1657",
-      "tier": "extended",
-      "meta": {
-        "number": 1657,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1657"
       }
     },
     {
@@ -6340,11 +6339,6 @@
     {
       "from": "initiative:0003",
       "to": "pr:79",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0006",
-      "to": "pr:1657",
       "type": "touched-by"
     },
     {

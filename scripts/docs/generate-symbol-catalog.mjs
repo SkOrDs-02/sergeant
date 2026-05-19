@@ -19,23 +19,24 @@
 //
 // Exits 1 on `--check` diff or I/O error.
 
-import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from "node:fs";
-import { resolve, dirname, join, relative, sep, basename } from "node:path";
+import {
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+  existsSync,
+  statSync,
+} from "node:fs";
+import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import prettier from "prettier";
 import ts from "typescript";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const OUT_INDEX_JSON = resolve(
-  REPO_ROOT,
-  "docs/governance/symbol-index.json",
-);
-const OUT_INDEX_HTML = resolve(
-  REPO_ROOT,
-  "docs/governance/symbol-index.html",
-);
+const OUT_INDEX_JSON = resolve(REPO_ROOT, "docs/governance/symbol-index.json");
+const OUT_INDEX_HTML = resolve(REPO_ROOT, "docs/governance/symbol-index.html");
 
 const SCHEMA_VERSION = 1;
 
@@ -129,7 +130,12 @@ function resolveEntryFile(pkgDir, pkg) {
   }
   if (typeof pkg.types === "string") candidates.push(pkg.types);
   if (typeof pkg.main === "string") candidates.push(pkg.main);
-  candidates.push("./src/index.ts", "./src/index.tsx", "./index.ts", "./index.tsx");
+  candidates.push(
+    "./src/index.ts",
+    "./src/index.tsx",
+    "./index.ts",
+    "./index.tsx",
+  );
   for (const rel of candidates) {
     const abs = resolve(pkgDir, rel);
     if (existsSync(abs) && statSync(abs).isFile()) return abs;
@@ -158,9 +164,7 @@ function resolveEntryFile(pkgDir, pkg) {
 function extractSymbols(sourceFile) {
   const out = [];
   const isExported = (node) =>
-    node.modifiers?.some(
-      (m) => m.kind === ts.SyntaxKind.ExportKeyword,
-    );
+    node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
 
   for (const stmt of sourceFile.statements) {
     // export { foo, bar } [from "..."]
@@ -282,7 +286,8 @@ function collectImports(workspaceDirs) {
   // We accept both single- and double-quoted module specifiers.
   const RE_IMPORT_FROM =
     /(?:import|export)\s+(?:type\s+)?(?:[\w*{}\s,$]+from\s+)?["'](@sergeant\/[\w-]+)["']/g;
-  const RE_IMPORT_NAMES = /(?:import|export)\s+(?:type\s+)?\{([^}]+)\}\s*from\s+["'](@sergeant\/[\w-]+)["']/g;
+  const RE_IMPORT_NAMES =
+    /(?:import|export)\s+(?:type\s+)?\{([^}]+)\}\s*from\s+["'](@sergeant\/[\w-]+)["']/g;
 
   for (const abs of files) {
     const text = readSafe(abs);
@@ -344,7 +349,10 @@ export function buildSymbolCatalog() {
 
     const totalImporters = new Set(imports.map((i) => i.file)).size;
     const deadExports = exportsWithUsage.filter(
-      (s) => s.usageCount === 0 && s.kind !== "re-export-star" && s.name !== "default",
+      (s) =>
+        s.usageCount === 0 &&
+        s.kind !== "re-export-star" &&
+        s.name !== "default",
     ).length;
 
     perPackage.push({
@@ -367,14 +375,8 @@ export function buildSymbolCatalog() {
     generated_at: todayISO(),
     summary: {
       packages: perPackage.length,
-      totalExports: perPackage.reduce(
-        (n, p) => n + p.stats.exportCount,
-        0,
-      ),
-      totalDeadExports: perPackage.reduce(
-        (n, p) => n + p.stats.deadExports,
-        0,
-      ),
+      totalExports: perPackage.reduce((n, p) => n + p.stats.exportCount, 0),
+      totalDeadExports: perPackage.reduce((n, p) => n + p.stats.deadExports, 0),
     },
     packages: perPackage,
   };
@@ -386,8 +388,7 @@ function renderPerPackageJSON(packageEntry, globalGeneratedAt) {
   // Trim the per-package view: skip the giant `summary`/`packages` block.
   // Each workspace gets its own minimal artifact.
   const body = {
-    $schema:
-      "../../docs/governance/schemas/symbol-catalog.schema.json",
+    $schema: "../../docs/governance/schemas/symbol-catalog.schema.json",
     version: SCHEMA_VERSION,
     generated_at: globalGeneratedAt,
     package: packageEntry.name,
@@ -460,20 +461,42 @@ ${pkgRows}
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
-function main() {
+async function formatGenerated(content, parser, filepath) {
+  const opts = (await prettier.resolveConfig(filepath)) ?? {};
+  return prettier.format(content, { ...opts, parser });
+}
+
+async function main() {
   const args = process.argv.slice(2);
   const wantsCheck = args.includes("--check");
 
   const catalog = buildSymbolCatalog();
 
   // Build per-package outputs first.
-  const perPackagePayloads = catalog.packages.map((p) => ({
-    target: resolve(REPO_ROOT, p.path, "symbols.json"),
-    content: renderPerPackageJSON(p, catalog.generated_at),
-  }));
+  const perPackagePayloads = await Promise.all(
+    catalog.packages.map(async (p) => {
+      const target = resolve(REPO_ROOT, p.path, "symbols.json");
+      return {
+        target,
+        content: await formatGenerated(
+          renderPerPackageJSON(p, catalog.generated_at),
+          "json",
+          target,
+        ),
+      };
+    }),
+  );
 
-  const indexJson = renderIndexJSON(catalog);
-  const indexHtml = renderIndexHTML(catalog);
+  const indexJson = await formatGenerated(
+    renderIndexJSON(catalog),
+    "json",
+    OUT_INDEX_JSON,
+  );
+  const indexHtml = await formatGenerated(
+    renderIndexHTML(catalog),
+    "html",
+    OUT_INDEX_HTML,
+  );
 
   if (wantsCheck) {
     let mismatch = false;
@@ -520,4 +543,9 @@ const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 
-if (isMain) main();
+if (isMain) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack : error}\n`);
+    process.exit(1);
+  });
+}

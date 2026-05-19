@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-05-15",
+  "generated_at": "2026-05-19",
   "summary": {
     "packages": 17,
-    "totalExports": 278,
-    "totalDeadExports": 179
+    "totalExports": 279,
+    "totalDeadExports": 180
   },
   "packages": [
     {
@@ -50,9 +50,7 @@
           "name": "ApiClientConfig",
           "kind": "re-export",
           "fromFile": "./createApiClient",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -91,27 +89,21 @@
           "name": "HttpClient",
           "kind": "re-export",
           "fromFile": "./httpClient",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "HttpClientConfig",
           "kind": "re-export",
           "fromFile": "./httpClient",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "TokenProvider",
           "kind": "re-export",
           "fromFile": "./httpClient",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -150,63 +142,49 @@
           "name": "ApiErrorInit",
           "kind": "re-export",
           "fromFile": "./ApiError",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "ApiErrorKind",
           "kind": "re-export",
           "fromFile": "./ApiError",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "HttpMethod",
           "kind": "re-export",
           "fromFile": "./types",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "ParseMode",
           "kind": "re-export",
           "fromFile": "./types",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "QueryValue",
           "kind": "re-export",
           "fromFile": "./types",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "RequestOptions",
           "kind": "re-export",
           "fromFile": "./types",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "createMeEndpoints",
           "kind": "re-export",
           "fromFile": "./endpoints/me",
-          "usedBy": [
-            "apps/web/src/test/contract/me.contract.test.ts"
-          ],
+          "usedBy": ["apps/web/src/test/contract/me.contract.test.ts"],
           "usageCount": 1
         },
         {
@@ -220,9 +198,7 @@
           "name": "MeResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/me",
-          "usedBy": [
-            "apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts"
-          ],
+          "usedBy": ["apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts"],
           "usageCount": 1
         },
         {
@@ -653,9 +629,7 @@
           "name": "CoachInsightPayload",
           "kind": "re-export",
           "fromFile": "./endpoints/coach",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -669,9 +643,7 @@
           "name": "ChatCallOpts",
           "kind": "re-export",
           "fromFile": "./endpoints/chat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -685,27 +657,21 @@
           "name": "ChatMessage",
           "kind": "re-export",
           "fromFile": "./endpoints/chat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "ChatRequestPayload",
           "kind": "re-export",
           "fromFile": "./endpoints/chat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "ChatResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/chat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -719,9 +685,7 @@
           "name": "PushRegisterRequestSchema",
           "kind": "re-export",
           "fromFile": "./endpoints/push",
-          "usedBy": [
-            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
-          ],
+          "usedBy": ["apps/web/src/shared/hooks/usePushNotifications.test.tsx"],
           "usageCount": 1
         },
         {
@@ -749,9 +713,7 @@
           "name": "PushUnregisterRequestSchema",
           "kind": "re-export",
           "fromFile": "./endpoints/push",
-          "usedBy": [
-            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
-          ],
+          "usedBy": ["apps/web/src/shared/hooks/usePushNotifications.test.tsx"],
           "usageCount": 1
         },
         {
@@ -789,9 +751,7 @@
           "name": "PushRegisterResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/push",
-          "usedBy": [
-            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
-          ],
+          "usedBy": ["apps/web/src/shared/hooks/usePushNotifications.test.tsx"],
           "usageCount": 1
         },
         {
@@ -812,18 +772,14 @@
           "name": "PushUnregisterRequest",
           "kind": "re-export",
           "fromFile": "./endpoints/push",
-          "usedBy": [
-            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
-          ],
+          "usedBy": ["apps/web/src/shared/hooks/usePushNotifications.test.tsx"],
           "usageCount": 1
         },
         {
           "name": "PushUnregisterResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/push",
-          "usedBy": [
-            "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
-          ],
+          "usedBy": ["apps/web/src/shared/hooks/usePushNotifications.test.tsx"],
           "usageCount": 1
         },
         {
@@ -837,54 +793,42 @@
           "name": "NutritionBackupDownloadResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionBackupUploadResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionDayHintResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionDayMeal",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionDayPlan",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionDayPlanResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -898,63 +842,49 @@
           "name": "NutritionMacros",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionMealType",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionPantryItem",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionParsePantryResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionPhotoIngredient",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionPhotoPortion",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionPhotoResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -972,36 +902,28 @@
           "name": "NutritionRecipe",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionRecipesResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionShoppingCategory",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionShoppingItem",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1018,36 +940,28 @@
           "name": "NutritionWeekDay",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionWeekPlan",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "NutritionWeekPlanResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/nutrition",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "createBarcodeEndpoints",
           "kind": "re-export",
           "fromFile": "./endpoints/barcode",
-          "usedBy": [
-            "apps/web/src/test/contract/barcode.contract.test.ts"
-          ],
+          "usedBy": ["apps/web/src/test/contract/barcode.contract.test.ts"],
           "usageCount": 1
         },
         {
@@ -1061,9 +975,7 @@
           "name": "BarcodeLookupResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/barcode",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1096,18 +1008,14 @@
           "name": "FoodSearchProduct",
           "kind": "re-export",
           "fromFile": "./endpoints/foodSearch",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "FoodSearchResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/foodSearch",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1121,54 +1029,42 @@
           "name": "MonoAccount",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoAccountDto",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoBackfillProgress",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoBackfillResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoCashbackType",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoClientInfo",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1182,9 +1078,7 @@
           "name": "MonoConnectionStatus",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1198,45 +1092,35 @@
           "name": "MonoJar",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoSyncState",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoTransactionDto",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoTransactionsPage",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "MonoWebhookEndpoints",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1250,27 +1134,21 @@
           "name": "PrivatBalanceFinalResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/privat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "PrivatBalanceRecord",
           "kind": "re-export",
           "fromFile": "./endpoints/privat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "PrivatCredentials",
           "kind": "re-export",
           "fromFile": "./endpoints/privat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1284,18 +1162,14 @@
           "name": "PrivatStatementEntry",
           "kind": "re-export",
           "fromFile": "./endpoints/privat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "PrivatStatementsResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/privat",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1379,9 +1253,7 @@
           "name": "BillingCheckoutRequest",
           "kind": "re-export",
           "fromFile": "./endpoints/billing",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1398,9 +1270,7 @@
           "name": "BillingEndpoints",
           "kind": "re-export",
           "fromFile": "./endpoints/billing",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1414,9 +1284,7 @@
           "name": "BillingStatusResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/billing",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1447,18 +1315,14 @@
           "name": "WeeklyDigestReport",
           "kind": "re-export",
           "fromFile": "./endpoints/weeklyDigest",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
           "name": "WeeklyDigestResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/weeklyDigest",
-          "usedBy": [
-            "apps/web/src/shared/api/index.ts"
-          ],
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
           "usageCount": 1
         },
         {
@@ -1589,7 +1453,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/src/index.ts",
+      "entryFile": "packages/db-schema/dist/index.d.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -1611,7 +1475,7 @@
       "entryFile": "packages/design-tokens/index.d.ts",
       "stats": {
         "exportCount": 21,
-        "totalImporters": 19,
+        "totalImporters": 21,
         "deadExports": 19
       },
       "exports": [
@@ -1626,17 +1490,19 @@
             "apps/web/src/shared/components/layout/ModuleAccentProvider.tsx",
             "apps/web/src/shared/components/layout/ModuleHeader.tsx",
             "apps/web/src/shared/components/layout/ModuleShell.tsx",
+            "apps/web/src/shared/components/ui/AIPill.tsx",
             "apps/web/src/shared/components/ui/Button.tsx",
             "apps/web/src/shared/components/ui/EmptyState.tsx",
             "apps/web/src/shared/components/ui/Skeleton.tsx",
             "apps/web/src/shared/components/ui/Tabs.tsx",
             "apps/web/src/shared/lib/api/queryKeys.ts",
+            "apps/web/src/shared/lib/insights/types.ts",
             "apps/web/src/shared/lib/modules/hubNav.ts",
             "apps/web/src/shared/lib/modules/moduleLabels.ts",
             "packages/insights/src/recommendations/types.ts",
             "packages/shared/src/lib/recommendations.ts"
           ],
-          "usageCount": 16
+          "usageCount": 18
         },
         {
           "name": "ModuleSoftAccent",
@@ -2141,9 +2007,9 @@
       "path": "packages/eslint-plugin-sergeant-design",
       "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
       "stats": {
-        "exportCount": 32,
+        "exportCount": 33,
         "totalImporters": 0,
-        "deadExports": 31
+        "deadExports": 32
       },
       "exports": [
         {
@@ -2268,6 +2134,12 @@
         },
         {
           "name": "NO_ROUNDED_LG_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_V1_GRADIENT_MESSAGE",
           "kind": "re-export",
           "usedBy": [],
           "usageCount": 0

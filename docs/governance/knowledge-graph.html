@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-05-18)</title>
+    <title>Sergeant — Knowledge Graph (2026-05-19)</title>
     <style>
       body {
         font-family:
@@ -97,7 +97,7 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-05-18 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-05-19 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
@@ -105,13 +105,13 @@
       <span class="chip chip-audit">audit: <b>31</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>51</b></span>
-      <span class="chip chip-playbook">playbook: <b>54</b></span>
-      <span class="chip chip-pr">pr: <b>228</b></span>
+      <span class="chip chip-playbook">playbook: <b>55</b></span>
+      <span class="chip chip-pr">pr: <b>227</b></span>
       <span class="chip chip-skill">skill: <b>21</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (234 core)</summary>
+      <summary>Nodes (235 core)</summary>
       <table>
         <thead>
           <tr>
@@ -1615,12 +1615,9 @@
               >
             </td>
             <td>
-              In progress — Phases 0+1+2.a+2.b shipped
-              ([#1657](https://github.com/Skords-01/Sergeant/pull/1657),
-              [#2100](https://github.com/Skords-01/Sergeant/pull/2100),
-              [#2104](https://github.com/Skords-01/Sergeant/pull/2104),
-              [#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Phase 2
-              next: fizruk + routine. Phases 3–5 pending.
+              In progress — Phases 1+2+3+4(partial)+5(partial) done; pending:
+              PostHog route_change metric (Phase 4), manualChunks cleanup +
+              route-loaders (Phase 5)
             </td>
             <td>number=6 · owner=@Skords-01 · priority=P1 (Sprint 2)</td>
           </tr>
@@ -1633,8 +1630,10 @@
               >
             </td>
             <td>
-              In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted,
-              Phase 5.1 done — activation_v2 metric; Phase 2 next)
+              In progress — Phases
+              0+1+2+3+4.1+4.2(partial)+4.3(Google)+5.1+5.2+6(partial) done;
+              pending: Apple auth (4.3), PricingPage portal link (4.2), EN
+              locale + sitemap/robots.txt (6)
             </td>
             <td>number=10 · owner=@Skords-01 · priority=P0 (Sprint 1–4)</td>
           </tr>
@@ -2763,6 +2762,17 @@
           </tr>
           <tr>
             <td>playbook</td>
+            <td><code>playbook:cleanup-codex-branch-after-pr</code></td>
+            <td>
+              <a href="../../docs/playbooks/cleanup-codex-branch-after-pr.md"
+                >Cleanup Codex branch after PR</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
             <td><code>playbook:cleanup-dead-code</code></td>
             <td>
               <a href="../../docs/playbooks/cleanup-dead-code.md"
@@ -3487,7 +3497,7 @@
     </details>
 
     <details>
-      <summary>Edges (483 total, first 500 core-to-core)</summary>
+      <summary>Edges (482 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>

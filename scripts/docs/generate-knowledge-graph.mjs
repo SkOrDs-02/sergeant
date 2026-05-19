@@ -24,6 +24,7 @@
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve, dirname, join, relative, sep, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import prettier from "prettier";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -687,7 +688,12 @@ ${edgeRows}
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
-function main() {
+async function formatGenerated(content, parser, filepath) {
+  const opts = (await prettier.resolveConfig(filepath)) ?? {};
+  return prettier.format(content, { ...opts, parser });
+}
+
+async function main() {
   const args = process.argv.slice(2);
   const wantsCheck = args.includes("--check");
 
@@ -703,8 +709,8 @@ function main() {
     process.exit(1);
   }
 
-  const nextJson = renderJSON(graph);
-  const nextHtml = renderHTML(graph);
+  const nextJson = await formatGenerated(renderJSON(graph), "json", OUT_JSON);
+  const nextHtml = await formatGenerated(renderHTML(graph), "html", OUT_HTML);
 
   if (wantsCheck) {
     let mismatch = false;
@@ -742,4 +748,9 @@ const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 
-if (isMain) main();
+if (isMain) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack : error}\n`);
+    process.exit(1);
+  });
+}
