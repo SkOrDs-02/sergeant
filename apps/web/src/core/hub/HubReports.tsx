@@ -542,7 +542,7 @@ export function HubReports() {
         />
       </div>
 
-      {insights.length >= 2 ? (
+      {insights.length >= 1 ? (
         <div className="space-y-3">
           <SectionHeading as="p" size="sm">
             Інсайти
