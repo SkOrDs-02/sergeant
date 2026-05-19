@@ -81,6 +81,26 @@
     {
       "pattern": "^https?://(www\\.)?codemzy\\.com(/.*)?$",
       "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
+    },
+    {
+      "pattern": "^https?://agentskill\\.sh(/.*)?$",
+      "reason": "agentskill.sh aborts the request against CI User-Agents (response aborted before body). Cited in docs/agents/skills-evolution-roadmap.md and docs/governance/rules/22-skill-body-security-scan.md as the canonical Agent Skill homepage; page loads in browsers."
+    },
+    {
+      "pattern": "^https?://playwright\\.dev/docs/test-snapshots(/.*)?$",
+      "reason": "playwright.dev/docs/test-snapshots intermittently fails with `fetch failed` from CI runners (network or anti-bot). Cited in docs/initiatives/archive/_0007-design-system-tooling.md as a visual-regression snapshot reference; page loads correctly in browsers."
+    },
+    {
+      "pattern": "^https?://(www\\.)?sigstore\\.dev(/.*)?$",
+      "reason": "sigstore.dev intermittently fails with `fetch failed` from CI runners. Cited in docs/initiatives/archive/_0008-platform-hardening.md as the canonical Sigstore homepage; page loads correctly in browsers."
+    },
+    {
+      "pattern": "^https?://security\\.stackexchange\\.com(/.*)?$",
+      "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
+    },
+    {
+      "pattern": "^https?://cabinet\\.tax\\.gov\\.ua(/.*)?$",
+      "reason": "cabinet.tax.gov.ua (Ukrainian tax office cabinet) returns 503 to non-browser User-Agents and has intermittent uptime issues. Cited in docs/launch/business/04-launch-readiness.md as the canonical tax-cabinet portal; page loads correctly in browsers."
     }
   ]
 }

@@ -243,9 +243,13 @@ describe("TodayFocusCard", () => {
       />,
     );
 
-    // Icon renders as SVG (aria-hidden), not a text glyph.
-    const svgs = container.querySelectorAll("svg[aria-hidden]");
-    expect(svgs.length).toBeGreaterThan(0);
+    // Icon renders via the `vi.mock(..., Icon)` stub above as
+    // `<span data-testid="icon-{name}" />`. We assert by stub id
+    // rather than by real `<svg>` so the test doesn't depend on
+    // shared Icon internals — the contract here is "the focus
+    // recommendation surfaces its icon", not "Icon renders SVG".
+    const icon = container.querySelector("[data-testid='icon-dumbbell']");
+    expect(icon).not.toBeNull();
   });
 
   // -----------------------------------------------------------------------
