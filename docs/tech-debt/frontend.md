@@ -1,9 +1,11 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin (re-audit після Storage-roadmap Stage 7 / 9 — `webKVStore` мігровано на SQLite-backed `kv_store` (PR-и #063 / #064 / #065, 2026-05-07), `localstorage-allowlist-budget.json` production: 0, allowlist `eslint.config.js` лишає тільки test-fixtures; того ж дня декомпозовано `core/onboarding/OnboardingWizard.tsx` (691 → composition root 148 + state hook 283 + WelcomeOneScreen 178 + ModuleRow 130 + picksStorage 74); §7 — production console.\* purged до 3 DEV-only / documented call-sites). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-20 by @Skords-01 (додано §2.5 — Hub Settings & Reports tab cold-mount cost; live audit prod 2026-05-20 через Chrome DevTools MCP підтвердив 10+ s tab-switch latency попри instant chunk download з [PR #3043](https://github.com/Skords-01/Sergeant/pull/3043); план — [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md), 5 PR за 3 спринти). **Next review:** 2026-08-18.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
+
+> **Оновлено 2026-05-20.** Додано §2.5 «Hub Settings & Reports tab cold-mount cost» як новий critical item — user-facing 10+ s freeze при tab-switch, з відкритою [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md). Root cause не у chunk download (вже 31 ms cache-hit), а в синхронному mount-і 14 секцій у одному render burst. План — per-section `React.lazy()` + `useInView` gate на cross-module queries + Web Worker для Reports aggregation (stretch).
 
 > **Оновлено 2026-05-15.** Code-debt audit annex (Claude Opus 4.7 external session, monorepo-wide scan, code-debt category only). **New items для трекера:** (a) `apps/web/src/shared/components/ui/AIPill.tsx:105` — `TODO(PR-8): wire Whisper voice input` (infra-готова: `voice/useGroqVoiceInput.ts` + `voice/PendingVoiceChip.tsx` декомпозовані у попередньому циклі; залишилось wire-up у AIPill); (b) `apps/web/tests/smoke/navigation-offline-sw.spec.ts:103` + `apps/web/tests/a11y/sw-smoke.spec.ts:66` — 2 SW smoke `test.skip(true, 'SW smoke skipped: ...')` без issue link — потрібен re-enable plan; (c) `apps/web/src/core/NotFoundPage.tsx` — JSDoc `@status Deprecated` без явного migration target. **Out-of-scope для quick-wins PR (винесено як follow-up):** Web UI timeout magic-numbers (≈6 sites — `core/ErrorBoundary.tsx:83` 1500ms, `core/app/useIosInstallBanner.ts:30` 3000ms, `core/auth/ResetPasswordPage.tsx:94` 1500ms, `modules/finyk/pages/budgets/Budgets.tsx:244` 3000ms, `modules/nutrition/hooks/usePantryBarcodeScan.ts:70` 4000ms, `shared/components/ui/SwipeToAction.tsx:66` 4000ms) — потребують окремої category-карти (notification fade vs redirect vs hint), окремий PR.
 
@@ -155,6 +157,44 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 `KVStore`-сигнатуру, а бекенд — durable SQLite з cross-tab fanout.
 
 </details>
+
+---
+
+### 2.5. Hub Settings & Reports tab cold-mount cost — 10+ s tab freeze
+
+**Симптом (2026-05-20 prod audit):** клік на bottom-nav таб `?tab=settings` або `?tab=reports` показує `PageLoader` skeleton на 10+ секунд на desktop (mid-range mobile estimate: 25+ с). Chunk download уже **не** проблема — `prefetchHubNavigationPages` без зовнішньої idle-обгортки ([PR #3043](https://github.com/Skords-01/Sergeant/pull/3043)) дає chunks за 31 ms (cache-hit). Затримка — у JS execution та initial mount cost.
+
+**Root cause:**
+
+- [`apps/web/src/core/hub/HubSettingsPage.tsx`](../../apps/web/src/core/hub/HubSettingsPage.tsx) (387 LOC) рендерить 14 секцій active-group одним render burst. Кожна секція (особливо `FinykSection` 614 LOC, `NutritionSection` 284 LOC) тягне свій `useQuery`, `useEffect`, cross-module hooks (`useFinykStorage`, `useMonoBackfillProgress`, `useNutritionDualWriteBoot` тощо).
+- [`apps/web/src/core/hub/HubReports.tsx`](../../apps/web/src/core/hub/HubReports.tsx) (608 LOC) робить heavy `useMemo(aggregateReport)` over всі 4 localStorage shards (`fizruk_workouts_v1`, `finyk_tx_cache`, `hub_routine_v1`, `nutrition_log_v1`) + `generateInsights` рекомендації — все синхронно на main thread.
+- `<SuspenseWithMinDelay>` приховує цю роботу за skeleton, але не прискорює — лише робить flicker менш різким.
+
+**Як ловити нові випадки в CI:**
+
+- Bundle-size gate `scripts/check-bundle-size.mjs` тримає main chunk ≤820 KB — не ловить mount cost. Треба додати окремий PostHog event `hub_tab_switch_perf` як RUM-metric (заплановано у Sprint 0).
+- Lighthouse CI на `/?tab=settings` route — `Total Blocking Time` поріг ≤300 ms (наразі ~7000 ms estimate).
+
+**Guardrail:**
+
+- [`apps/web/src/shared/components/ui/SuspenseWithMinDelay.tsx`](../../apps/web/src/shared/components/ui/SuspenseWithMinDelay.tsx) лишається для уникнення skeleton-flicker, але не плутаємо це з perf-fix-ом.
+- Будь-яка нова Section у `apps/web/src/core/settings/` має `useInView` gate на heavy queries — додамо ESLint правило після Sprint 1 завершення.
+
+**Open Initiative:** [0017 — Hub Settings & Reports mount perf](../initiatives/0017-hub-tabs-mount-perf.md) — 5 PR-ів за 3 спринти:
+
+1. Sprint 0 (`feat/0017-hub-tab-perf-rum`): PostHog `hub_tab_switch_perf` baseline, `PerformanceObserver({type:"longtask"})`.
+2. Sprint 1.1 (`feat/0017-settings-section-skeleton-primitive`): per-section `React.lazy()` + `SectionSkeleton` стабільної висоти.
+3. Sprint 1.2 (`feat/0017-settings-cross-module-defer`): `useInView` gate на heavy queries у sections, dynamic `import()` для cleanup-handler-ів.
+4. Sprint 2 (`feat/0017-reports-per-card-lazy`): HubReports → 5 lazy cards (ExpensesCard / FitnessCard / NutritionCard / RoutineCard / WeeklyDigestCard).
+5. Sprint 3 stretch (`feat/0017-reports-worker-aggregate`): тільки якщо метрики Sprint 2 показують `aggregateReport` P95 > 50 ms — Web Worker для aggregate + generateInsights.
+
+**Target metrics (з 0017 initiative):**
+
+- Settings P50 tab-switch: 10 000 ms → ≤ 1 000 ms.
+- Reports P50: 8 000 ms → ≤ 800 ms.
+- Longtask count P95: невідомо → ≤ 2 per tab-switch.
+
+**Статус:** Active — Sprint 0 PR-у ще нема, чекає на capacity.
 
 ---
 

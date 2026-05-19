@@ -1,0 +1,170 @@
+# 0017 — Hub Settings & Reports mount perf
+
+> **Last validated:** 2026-05-19 by @Skords-01. **Next review:** 2026-08-17.
+> **Status:** In progress — Sprint 0 (observability baseline) not started.
+> **Priority:** P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))
+> **Owner:** `@Skords-01`
+> **ETA:** ~3 weeks (3 sprints × 1 week each, includes observability baseline)
+> **Sources:**
+>
+> - Live audit 2026-05-20 (Chrome DevTools MCP, prod `sergeant.vercel.app`)
+> - User report 2026-05-20 ("дуже довго вантажить сторінки звіти та налаштування")
+> - Follow-up з [PR #3043](https://github.com/Skords-01/Sergeant/pull/3043) — `prefetchHubNavigationPages()` без зовнішньої idle-обгортки (deployed 2026-05-19) — chunk download уже на 31 ms, але tab feels stuck for 10+ s
+
+## TL;DR
+
+Клік на bottom-nav таб «Звіти» / «Налаштування» **виглядає замороженим 10+ секунд** на cold-tab, попри те що chunks завантажуються миттєво (cache-hit, 31 ms). Проблема не в network — **JS execution + initial mount cost** усіх 14 Settings-секцій (та heavy aggregation у HubReports) виконується синхронно у одному render burst. Користувач бачить `<PageLoader />` skeleton, поки React не закінчить mount.
+
+План — 5 PR-ів за 3 спринти, по одному рівню втручання:
+
+1. **Observability baseline** — без цифр ми гадаємо, з цифрами знаємо що ламати.
+2. **Per-section lazy** у HubSettingsPage — кожна Section стає окремим chunk-ом + Suspense зі стабільним skeleton-ом.
+3. **Cross-module hook gating** — секції більше не bootstrap-лять модулі при mount.
+4. **HubReports per-card lazy** — той самий патерн для Reports.
+5. **Stretch: Web Worker aggregation** — якщо main-thread все одно блокується, винести `aggregateReport` + `generateInsights` у worker.
+
+## Чому зараз
+
+- **User-visible regression**: основні таби хабу — `?tab=reports` і `?tab=settings`. Користувачі тапають їх щодня. Зараз tab-switch — це найгірший Touch-Response-Time у застосунку (>10 s на cold cache).
+- **Prefetch вже зроблено** ([PR #3043](https://github.com/Skords-01/Sergeant/pull/3043)) — chunks завантажуються миттєво. Подальша економія з цього напрямку = 0 ms. Залишаються тільки два важеля: **mount cost** і **render cost**.
+- **Mobile users**: Sergeant — PWA-first. На середньому Android (Moto G Power, Snapdragon 680) JS execution ~3× повільніший за desktop. Якщо desktop 10 s, mobile 25-30 s — це fail-state.
+- **Bundle gate ≤820 KB** ([`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)) тримається тільки тому, що ми тримаємо `HubSettingsPage` як один chunk. Якщо ділити на 14 chunk-ів — треба переглянути `manualChunks`.
+- **Не блокує** [0006-frontend-routing-and-code-split](./0006-frontend-routing-and-code-split.md), але **довершує** його логіку: 0006 розділив на per-route chunks, 0017 — на per-section.
+
+## Скоуп
+
+**In:**
+
+1. RUM-instrumentation tab-switch latency у `apps/web/src/core/app/HubMainContent.tsx`:
+   - `performance.mark` на click → `performance.measure` коли panel children render-яться без `aria-busy`
+   - PostHog event `hub_tab_switch_perf` { `tab`, `ttiMs`, `longTaskMs`, `longTaskCount`, `cacheHit` }
+   - `PerformanceObserver({ type: "longtask" })` — sample 100% перші 30 днів, потім 10%.
+2. Per-section `React.lazy()` у `HubSettingsPage.tsx`:
+   - Кожна з 14 секцій (`DashboardSection`, `GeneralSection`, `PlanSection`, `NotificationsSection`, `AIDigestSection`, `AssistantCatalogueSection`, `RoutineSection`, `FizrukSection`, `FinykSection`, `NutritionSection`, `PrivacySection`, `PWASection`, `DataExportSection`, `ExperimentalSection`) — окремий dynamic import.
+   - Spec: `const FinykSection = lazy(() => import("../settings/FinykSection"))`.
+   - Кожна обгорнута у `<Suspense fallback={<SectionSkeleton minH={…} />}>`. `minH` per-section задається статично щоб уникнути CLS.
+   - Active group рендерить тільки свої секції (вже так), але тепер вони не блокують одна одну — кожна стримиться окремо.
+3. **Cross-module bootstrap deferral у Settings sections**:
+   - `FinykSection` зараз імпортує `useFinykStorage` + `useMonoBackfillProgress` + `usePlan` на module-load. Це тягне частину Finyk-модуля у Settings chunk.
+   - План: винести queries за `enabled: visible` flag, динамічно `import()` heavy утиліти всередині handler-ів (`onConnectMono`, `onPurgeCache`).
+   - Аналогічно для `NutritionSection`, `RoutineSection`, `FizrukSection`.
+4. HubReports decomposition:
+   - Розрізати on render-tree: окремі lazy-cards (`ExpensesCard`, `FitnessCard`, `NutritionCard`, `RoutineCard`, `WeeklyDigestCard` — уже існує).
+   - Кожен card сам читає свій localStorage shard + aggregates через свій `useMemo`. Перший paint показує 5 skeleton-ів, кожна картка fills незалежно.
+5. **Bundle-budget update**: оновити `LIMIT` у `scripts/check-bundle-size.mjs` (очікувано: -50 KB main chunk, +14 невеликих chunks по 5-15 KB кожен).
+6. (Sprint 3 stretch) Винести `aggregateReport` + `generateInsights` у Web Worker:
+   - `apps/web/src/core/lib/reportsWorker.ts` — Comlink-wrapped worker.
+   - Main thread postMessage payload із localStorage shards. Worker повертає `ReportData`.
+   - Gating: вмикається тільки якщо `aggregateReport` taking >50 ms на P95 (з PostHog metrics).
+
+**Out:**
+
+- Refactor `HubSettingsPage.tsx` структурно (`GROUPS` + `useMemo(sections)` + Tabs) — це стабільна форма, не міняємо. Тільки code-split.
+- Server-side prefetch (SSR) — Sergeant SPA-only, поза scope.
+- IndexedDB-кешування report-aggregates — окрема ініціатива на storage roadmap.
+- Service-Worker route-prefetch на push — окремий PR після `route-loaders` у 0006.
+
+## Метрики успіху
+
+| Метрика                                                                        | Baseline (2026-05-20 prod, mid-range mobile estimate) | Sprint 1 target | Sprint 2 target | Sprint 3 target |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------- | --------------- | --------------- | --------------- |
+| `hub_tab_switch_perf.ttiMs` P50 — Settings                                     | ~10 000 ms (desktop), ~25 000 ms (mobile est.)        | ≤ 5 000         | ≤ 2 000         | ≤ 1 000         |
+| `hub_tab_switch_perf.ttiMs` P95 — Settings                                     | ~14 000 ms                                            | ≤ 7 000         | ≤ 3 000         | ≤ 1 500         |
+| `hub_tab_switch_perf.ttiMs` P50 — Reports                                      | ~8 000 ms                                             | ≤ 4 000         | ≤ 1 500         | ≤ 800           |
+| longtask count per tab-switch (P95)                                            | unknown                                               | measured        | ≤ 5             | ≤ 2             |
+| `aggregateReport` duration (P95)                                               | unknown                                               | measured        | ≤ 50 ms         | ≤ 16 ms         |
+| Main chunk gzip                                                                | ~200 KB                                               | -50 KB          | -50 KB          | -50 KB          |
+| `pnpm exec tsc` clean після per-section lazy                                   | ✅                                                    | ✅              | ✅              | ✅              |
+| `Suspense fallback` flash <100 ms (немає flicker через `SuspenseWithMinDelay`) | n/a                                                   | ✅              | ✅              | ✅              |
+
+## План змін
+
+### Sprint 0 — Observability baseline (1 PR)
+
+**`feat/0017-hub-tab-perf-rum`** — без цього ми не знаємо чи закрили проблему.
+
+- `apps/web/src/core/app/HubMainContent.tsx`: на click по табу — `performance.mark("tab-start-<id>")`. У `<HubSettingsPage>` / `<HubReports>` — `useEffect(() => performance.mark("tab-ready-<id>"), [])` + `performance.measure(...)`.
+- `apps/web/src/core/lib/hubPerf.ts` (new): `reportTabSwitchPerf({ tab, ttiMs, longTaskMs, longTaskCount, cacheHit })` → PostHog event.
+- `apps/web/src/core/lib/longTaskMonitor.ts` (new): глобальний `PerformanceObserver({ type: "longtask" })`, додає у sliding window per tab-switch.
+- Mount у `App.tsx` після auth ready.
+- **Acceptance**: PostHog dashboard «Hub tab perf» показує P50/P95 для обох табів. Baseline зафіксований у [`docs/observability/hub-perf-baseline.md`](../observability/) (новий файл).
+
+### Sprint 1 — Per-section lazy у Settings (2 PR-и)
+
+**PR-1.1 `feat/0017-settings-section-skeleton-primitive`**:
+
+- `apps/web/src/core/settings/SettingsPrimitives.tsx`: новий `SectionSkeleton` component — стабільний height-placeholder з shimmer.
+- `apps/web/src/core/hub/HubSettingsPage.tsx`: міняємо `render: () => <FinykSection />` на `render: () => <Suspense fallback={<SectionSkeleton id="finyk" />}><FinykSectionLazy /></Suspense>` для кожної з 14 секцій.
+- Per-section `lazy(() => import("./settings/<Name>Section"))` — імпорти на top of file.
+- Skeleton heights калібровані з прод screenshots: Dashboard 180px, Plan 240px, Finyk 320px тощо.
+- Bundle delta вимірюється у PR description.
+
+**PR-1.2 `feat/0017-settings-cross-module-defer`**:
+
+- `FinykSection`: `useMonoBackfillProgress` гейтиться на `useInView()` — query starts тільки коли section проскролився у viewport. Heavy `purgeMonoCache` import → dynamic `import("./finykPurge")` всередині `onConfirmPurge`.
+- Аналогічно `NutritionSection`, `RoutineSection`, `FizrukSection`.
+- `useFinykStorage` — той самий патерн (`useInView` gate).
+- **Перевірка**: відкриваємо Settings, скролимо вниз — Finyk секція mount-иться лише коли проскролилась у видиму область. У DevTools Network — нема `mono_webhook_state` запиту до першого скролу.
+
+### Sprint 2 — HubReports per-card lazy (1 PR)
+
+**PR-2 `feat/0017-reports-per-card-lazy`**:
+
+- `apps/web/src/core/hub/HubReports.tsx` — розрізати на `ExpensesCard`, `FitnessCard`, `NutritionCard`, `RoutineCard` (5 файлів). Кожна — окремий lazy import.
+- `WeeklyDigestCard` уже окремий компонент — лишити без змін, але обгорнути у Suspense якщо ще не обгорнутий.
+- Кожна картка читає свій shard з storage + aggregates через свій `useMemo`. Aggregation залишається синхронно у `useMemo` (Sprint 3 виносимо у worker, якщо метрики покажуть).
+- `hubReports.aggregation.ts` — split на per-domain (`aggregateFinyk`, `aggregateFizruk`, `aggregateNutrition`, `aggregateRoutine`), уже близько до цього у поточному коді.
+- Skeleton fallback per-card: 220px height, 1 shimmer line + 1 chart-placeholder rect.
+
+### Sprint 3 — Web Worker for aggregation (stretch, conditional)
+
+**PR-3 `feat/0017-reports-worker-aggregate`** — тільки якщо Sprint 2 метрики показують `aggregateReport` P95 > 50 ms.
+
+- `apps/web/src/core/lib/reportsWorker.ts` (new) + `apps/web/vite.config.js` worker entry.
+- Comlink-wrapped exposing `aggregate(period, offset, shards)`.
+- Cards підписуються на worker.aggregate(...) через `useQuery({ queryFn: () => worker.aggregate(...) })` — RQ-cache по `[period, offset, shardsVersion]`.
+- Fallback: якщо `Worker` undefined (Safari ≤ 14 PWA standalone) → main-thread inline aggregate.
+
+### Finalize (включається у PR-3 або окремий PR-4 якщо Sprint 3 skipped)
+
+- Bundle budget update: `scripts/check-bundle-size.mjs` `LIMIT` зменшити до нового main + додати окремий per-chunk gate (≤ 25 KB gzip кожен section/card chunk).
+- `docs/tech-debt/frontend.md` `LARGE_FILES` table — `HubReports.tsx` (608 → ~120) і `HubSettingsPage.tsx` (387 → ~150) знімаються з watchlist.
+- Outcome-секція у цьому файлі з фінальними метриками.
+- Status → Done, файл перейменовується у `_0017-hub-tabs-mount-perf.md`.
+
+## Критерії DONE
+
+- [ ] Sprint 0 PR merged, PostHog `hub_tab_switch_perf` event працює, baseline зафіксований у `docs/observability/hub-perf-baseline.md`.
+- [ ] Sprint 1 PR-и merged: 14 секцій — окремі chunk-и, кожна обгорнута у Suspense з SectionSkeleton, cross-module queries gated на `useInView`.
+- [ ] Sprint 2 PR merged: HubReports — 5 lazy-cards.
+- [ ] Sprint 3 PR merged (умовно — тільки якщо метрики > target Sprint 2).
+- [ ] Settings P50 tab-switch ≤ 2 s, P95 ≤ 3 s на mid-range mobile (Moto G Power-class device у Lighthouse mobile profile).
+- [ ] Reports P50 tab-switch ≤ 1.5 s, P95 ≤ 3 s.
+- [ ] Long-task count P95 ≤ 5 per tab-switch.
+- [ ] Bundle gate updated, main chunk -50 KB.
+- [ ] [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — entry для Settings/Reports mount cost закритий.
+
+## Ризики та митиґація
+
+| Ризик                                                                                                                               | Мітигація                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Per-section lazy дає 14 додаткових network requests на швидкому WiFi — навіть кешованих це HTTP/2 push round-trips                  | Vite-build використовує HTTP/2 multiplexing. Усі chunks завантажуються паралельно з `<link rel="modulepreload">`. Якщо overhead вимірний — agregate невеликі секції у 2-3 group-chunks через `manualChunks`.           |
+| Suspense flash flicker (skeleton показується <100 ms, тоді швидко зникає — виглядає як glitch)                                      | `SuspenseWithMinDelay` уже існує у `apps/web/src/shared/components/ui/`. Reuse-имо тут з `minDelayMs=200` — або skeleton не показується взагалі (синхронна resolution), або стоїть мінімум 200 ms для smooth перехода. |
+| `useInView` gate спричиняє «секція пустувала, я проскролив — зараз тільки query стартувала» — фліп з skeleton-у на дані з затримкою | IntersectionObserver `rootMargin: 400px 0px` — query стартує до того як секція реально у viewport. На mobile це buffer ~1 screen.                                                                                      |
+| Cross-module hook gating ламає feature: FinykSection без bootstrap-ed Mono state не показує правильні toggle-и                      | Перед PR-1.2 — Playwright e2e тест «scroll to Finyk section in Settings → Mono toggle shows correct state». Регресія блокує PR.                                                                                        |
+| Worker (Sprint 3) на Safari iOS PWA standalone може не підтримувати OffscreenCanvas / module workers                                | Fallback на inline aggregate (`navigator.userAgent`-detect не використовуємо — feature-detect `typeof Worker !== "undefined"`). Тест на iOS Safari PWA standalone в e2e suite.                                         |
+| Bundle gate fail після split — main chunk -50 KB, але сума всіх chunks +20 KB (немає shared dependencies)                           | Аналіз `pnpm build:analyze` перед PR-1.1. Якщо потрібно — додати `manualChunks: { settings: ['./settings/'] }` для shared section-utilities (наприклад `SettingsPrimitives`).                                          |
+| RUM observer (Sprint 0) сам тригерить longtask (overhead 1-2 ms per measure)                                                        | `requestIdleCallback` для PostHog flush. Sampling 10% після першого місяця.                                                                                                                                            |
+
+## Власник, ревʼюери
+
+**Owner:** `@Skords-01`
+**Реквайрд reviewers:** перформанс-aware — `@Skords-01` + 1 (Claude може брати на ревʼю).
+**Acceptance review:** після кожного Sprint — синк з founder на 15 хв (PostHog dashboard live).
+
+## Зв'язки
+
+- Уточнює: [0006-frontend-routing-and-code-split](./0006-frontend-routing-and-code-split.md) — per-route split вже зроблений, тут per-section split всередині route.
+- Залежить від: [0013-module-decomposition-round-2](./0013-module-decomposition-round-2.md) — Sprint 1 декомпозиція дала чисті imports у sections, без неї cross-module bootstrap було б ще гірше.
+- Може вплинути на: [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs) — gate потребує оновлення.
+- Породжує: [`docs/observability/hub-perf-baseline.md`](../observability/) (new в Sprint 0).
