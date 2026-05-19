@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import type { FizrukPage } from "../shell/fizrukRoute";
@@ -11,6 +11,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useMemo, useState } from "react";
+import type { Insight } from "@shared/lib/insights/types";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { useRecovery } from "../hooks/useRecovery";
@@ -34,6 +35,9 @@ import type {
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
+import { InsightCard } from "@shared/components/ui/InsightCard";
+import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
+import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 
 interface DashboardTodaySession {
   sessionKey: string;
@@ -75,7 +79,7 @@ export function Dashboard({
     month: "long",
   });
   const rec = useRecovery();
-  const { workouts, createWorkout, addItem } = useWorkouts();
+  const { workouts, loaded: workoutsLoaded, createWorkout, addItem } = useWorkouts();
   const { exercises } = useExerciseCatalog();
   const { templates, recentlyUsed, markTemplateUsed } = useWorkoutTemplates();
   const monthlyPlan = useMonthlyPlan();
@@ -236,6 +240,23 @@ export function Dashboard({
   // Each branch returns a fully-typed `HeroCardState` so the hero can
   // decide on layout without re-deriving any data.
   const activeWorkoutId = useActiveFizrukWorkout();
+
+  // ── Insight triggers ────────────────────────────────────────────────
+  // Max 2 shown simultaneously; PR-pending takes priority over rest-day.
+  const restDayInsight = useRestDayOverdueInsight(workouts, workoutsLoaded);
+  const prPendingInsight = usePrPendingInsight({
+    workouts,
+    loaded: workoutsLoaded,
+    activeWorkoutId,
+  });
+  // Collect non-null insights respecting priority order.
+  const activeInsights = useMemo((): Insight[] => {
+    const out: Insight[] = [];
+    if (prPendingInsight) out.push(prPendingInsight);
+    if (restDayInsight && out.length < 2) out.push(restDayInsight);
+    return out;
+  }, [prPendingInsight, restDayInsight]);
+
   const activeWorkout = useMemo(() => {
     if (!activeWorkoutId) return null;
     const w = (workouts || []).find(
@@ -347,6 +368,20 @@ export function Dashboard({
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}
         />
+
+        {activeInsights.map((insight) => (
+          <InsightCard
+            key={insight.id}
+            id={insight.id}
+            title={insight.title}
+            subtitle={insight.subtitle}
+            onActivate={() => {
+              if (insight.action.type === "navigate") {
+                onNavigate("workouts");
+              }
+            }}
+          />
+        ))}
 
         <StatusStrip
           kpis={dashboardKpis}

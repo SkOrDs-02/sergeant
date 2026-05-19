@@ -1,4 +1,7 @@
 /**
+ * Last validated: 2026-05-19
+ * Status: Active
+ *
  * Insights collapsible section for the Hub Dashboard (T1 decomposition).
  *
  * Merged «Підказки + Аналітика» under one wrapper per UX audit
@@ -12,7 +15,6 @@ import { HubInsightsPanel } from "./HubInsightsPanel";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { WeeklyDigestFooter } from "./dashboard/dashboardCards";
 import type { Rec, NudgeDefinition } from "@sergeant/shared";
-import { pluralize } from "./useHubDashboardState";
 
 export interface HubInsightsBlockProps {
   insightsDefaultOpen: boolean;
@@ -63,9 +65,9 @@ export function HubInsightsBlock({
           : coachError
             ? "Не вдалось отримати AI-пораду"
             : rest.length > 0
-              ? `AI-порада · ${rest.length} ${pluralize(rest.length, "інсайт", "інсайти", "інсайтів")}${
-                  digestFresh ? " · свіжий дайджест" : ""
-                }`
+              ? // Show first actionable insight title verbatim so the collapsed
+                // pill carries real value instead of a generic count.
+                rest[0]!.title
               : digestFresh
                 ? "AI-порада + свіжий дайджест"
                 : activeNudge && !reengagementShow
