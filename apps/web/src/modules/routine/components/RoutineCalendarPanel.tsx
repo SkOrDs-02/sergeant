@@ -41,6 +41,9 @@ import {
   useRoutineCalendarActions,
   useRoutineCalendarData,
 } from "../context/RoutineCalendarContext";
+import { InsightCard } from "@shared/components/ui/InsightCard";
+import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
+import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
 
 type GroupedListItem =
@@ -99,6 +102,10 @@ export function RoutineCalendarPanel({
     onBulkMarkDay,
     onOpenQuickAddHabit,
   } = useRoutineCalendarActions();
+
+  const streakInsight = useStreakRecordPendingInsight(routine);
+  const eveningInsight = useTodoEveningInsight(routine);
+
   const [listQueryDraft, setListQueryDraft] = useState(listQuery || "");
   useEffect(() => {
     setListQueryDraft(listQuery || "");
@@ -230,6 +237,30 @@ export function RoutineCalendarPanel({
         currentStreak={currentStreak}
         onOpenDayReport={() => setDayReportOpen(true)}
       />
+
+      {/* Phase 5c — routine insight triggers (streak-record-pending,
+          todo-evening). At most 2 simultaneously; each card is independently
+          dismissible via useInsightDismissal (localStorage-backed). */}
+      {(streakInsight ?? eveningInsight) && (
+        <div className="flex flex-col gap-1.5">
+          {streakInsight && (
+            <InsightCard
+              id={streakInsight.id}
+              title={streakInsight.title}
+              subtitle={streakInsight.subtitle}
+              onActivate={() => applyTimeMode("today")}
+            />
+          )}
+          {eveningInsight && (
+            <InsightCard
+              id={eveningInsight.id}
+              title={eveningInsight.title}
+              subtitle={eveningInsight.subtitle}
+              onActivate={() => applyTimeMode("today")}
+            />
+          )}
+        </div>
+      )}
 
       <DayReportSheet
         open={dayReportOpen}
