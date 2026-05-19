@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { memo, useCallback, useMemo, useState } from "react";
@@ -17,7 +17,7 @@ import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 
 const splitInp =
   "input-focus-finyk flex-1 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-text";
@@ -29,6 +29,35 @@ const INCOME_ICONS: Record<string, string> = {
   in_cashback: "🎁",
   in_pension: "🏛️",
   in_other: "📥",
+};
+
+/**
+ * Maps category IDs to Icon names for the tinted pill.
+ * Falls back to "tag" for any unknown or custom category.
+ * Phase 6.1 — Expensa-inspired category-tinted icon pill.
+ */
+const CATEGORY_ICON_MAP: Record<string, IconName> = {
+  food: "shopping-cart",
+  restaurant: "coffee",
+  transport: "truck",
+  subscriptions: "bell",
+  health: "droplet",
+  shopping: "tag",
+  entertainment: "play",
+  sport: "dumbbell",
+  beauty: "tag",
+  smoking: "tag",
+  education: "package",
+  travel: "trending-up",
+  debt: "credit-card",
+  charity: "hand-coins",
+  [INTERNAL_TRANSFER_ID]: "trending-down",
+  // income
+  in_salary: "briefcase",
+  in_freelance: "briefcase",
+  in_cashback: "tag",
+  in_pension: "briefcase",
+  in_other: "trending-up",
 };
 
 function getAccountShortName(acc: MonoAccount | undefined): string | null {
@@ -120,9 +149,6 @@ function TxRowImpl({
         overrideCatId,
         customCategories as readonly unknown[],
       );
-  const catIcon = isIncome
-    ? INCOME_ICONS[cat.id] || "📥"
-    : cat.label.split(" ")[0];
   const catName = isIncome
     ? cat.label
     : cat.label.slice(cat.label.indexOf(" ") + 1);
@@ -172,11 +198,33 @@ function TxRowImpl({
     setSplitEditor(false);
   }, [draftSplits, onSplitChange, tx.id]);
 
+  // Resolve the icon name for the category pill (Phase 6.1).
+  const pillIconName: IconName =
+    CATEGORY_ICON_MAP[cat.id] ?? "tag";
+
   const mainRowInner = (
     <>
-      <span className="text-xl shrink-0 leading-none">
-        {highlighted ? "✅" : catIcon}
-      </span>
+      {highlighted ? (
+        <span className="text-xl shrink-0 leading-none" aria-hidden="true">
+          ✅
+        </span>
+      ) : (
+        // 28px tinted circle — decorative, non-interactive (aria-hidden).
+        // bg-finyk/[0.08] gives a soft emerald wash; text-finyk-strong
+        // ensures ≥4.5:1 contrast on the bg-panel surface in light mode.
+        // dark:bg-finyk/[0.15] lifts the wash slightly for dark-surface parity.
+        <span
+          aria-hidden="true"
+          className={cn(
+            "shrink-0 inline-flex items-center justify-center rounded-full",
+            "w-7 h-7",
+            "bg-finyk/[0.08] dark:bg-finyk/[0.15]",
+            "text-finyk-strong dark:text-finyk",
+          )}
+        >
+          <Icon name={pillIconName} size={16} strokeWidth={1.75} />
+        </span>
+      )}
       <div className="min-w-0">
         <div
           className={cn(
