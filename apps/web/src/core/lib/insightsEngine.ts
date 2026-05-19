@@ -6,16 +6,19 @@
  * Data sufficiency thresholds (per task spec):
  *   - Each insight requires ≥ 4 weeks of relevant activity OR ≥ 20 relevant events.
  *   - Specific per-insight gates are documented below.
+ *
+ * Last validated: 2026-05-19
  */
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
+import type { IconName } from "@shared/components/ui/Icon";
 
 export interface Insight {
   id: string;
-  emoji: string;
+  iconName: IconName;
   title: string;
   stat: string;
   detail: string;
@@ -105,7 +108,7 @@ function workoutDayInsight(): Insight | null {
 
   return {
     id: "best_workout_day",
-    emoji: "📅",
+    iconName: "calendar",
     title: "Найпродуктивніший день для тренувань",
     stat: DOW_UK[maxIdx]!,
     detail: `${maxCount} з ${workouts.length} тренувань`,
@@ -192,7 +195,7 @@ function activeWeeksSpendingInsight(): Insight | null {
   if (diffPct > 0) {
     return {
       id: "active_weeks_spending",
-      emoji: "💡",
+      iconName: "lightbulb",
       title: `У тижні з 3+ тренуваннями ти витрачаєш на ${diffPct}% менше`,
       stat: `−${diffPct}%`,
       detail: `${Math.round(avgActive).toLocaleString("uk-UA")} ₴ vs ${Math.round(avgRest).toLocaleString("uk-UA")} ₴ витрат/тиж.`,
@@ -202,7 +205,7 @@ function activeWeeksSpendingInsight(): Insight | null {
   const morePct = Math.abs(diffPct);
   return {
     id: "active_weeks_spending",
-    emoji: "💡",
+    iconName: "lightbulb",
     title: `У активні тижні ти витрачаєш на ${morePct}% більше`,
     stat: `+${morePct}%`,
     detail: `${Math.round(avgActive).toLocaleString("uk-UA")} ₴ vs ${Math.round(avgRest).toLocaleString("uk-UA")} ₴ витрат/тиж.`,
@@ -264,7 +267,7 @@ function bestHabitMonthInsight(): Insight | null {
 
   return {
     id: "best_habit_month",
-    emoji: "🔥",
+    iconName: "flame",
     title: "Найпослідовніший місяць за звичками",
     stat: `${bestPct}%`,
     detail: label,
@@ -314,7 +317,7 @@ function workoutKcalInsight(): Insight | null {
   const sign = diff > 0 ? "+" : "";
   return {
     id: "workout_kcal",
-    emoji: "🥗",
+    iconName: "leaf",
     title:
       diff > 0
         ? `У дні тренувань ти їси на ${diff.toLocaleString("uk-UA")} ккал більше`
@@ -399,7 +402,7 @@ function habitWeeksKcalInsight(): Insight | null {
   const sign = diff > 0 ? "+" : "";
   return {
     id: "habit_weeks_kcal",
-    emoji: "📊",
+    iconName: "activity",
     title:
       diff > 0
         ? `У тижні з 70%+ звичок ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал більше`

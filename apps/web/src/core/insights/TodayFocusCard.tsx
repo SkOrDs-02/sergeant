@@ -227,9 +227,12 @@ export function TodayFocusCard({
 
         <h2 className="text-base font-bold text-text leading-snug text-balance">
           {focus.icon && (
-            <span className="mr-1.5" aria-hidden>
-              {focus.icon}
-            </span>
+            <Icon
+              name={focus.icon}
+              size={16}
+              className="inline-block mr-1.5 align-middle text-muted"
+              aria-hidden
+            />
           )}
           {focus.title}
         </h2>

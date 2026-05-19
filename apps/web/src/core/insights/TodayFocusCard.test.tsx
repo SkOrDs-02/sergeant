@@ -230,12 +230,12 @@ describe("TodayFocusCard", () => {
       module: "fizruk" as const,
       title: "10 днів без тренування",
       body: "Пора відновити активність!",
-      icon: "🏋️",
+      icon: "dumbbell",
       action: "fizruk",
       pwaAction: "start_workout" as const,
     };
 
-    render(
+    const { container } = render(
       <TodayFocusCard
         focus={focus}
         onAction={onAction}
@@ -243,7 +243,9 @@ describe("TodayFocusCard", () => {
       />,
     );
 
-    expect(screen.getByText("🏋️")).toBeTruthy();
+    // Icon renders as SVG (aria-hidden), not a text glyph.
+    const svgs = container.querySelectorAll("svg[aria-hidden]");
+    expect(svgs.length).toBeGreaterThan(0);
   });
 
   // -----------------------------------------------------------------------
@@ -365,7 +367,7 @@ describe("TodayFocusCard", () => {
       module: "fizruk" as const,
       title: "Груди не тренували 12 днів",
       body: "Включи вправи на ці мʼязи",
-      icon: "💪",
+      icon: "dumbbell",
       action: "fizruk",
       pwaAction: "start_workout" as const,
     };
@@ -389,7 +391,7 @@ describe("TodayFocusCard", () => {
       module: "routine" as const,
       title: "7 днів поспіль! Вогонь!",
       body: "Неймовірна серія!",
-      icon: "🔥",
+      icon: "flame",
       action: "routine",
     };
 
@@ -402,7 +404,7 @@ describe("TodayFocusCard", () => {
     );
 
     expect(screen.getByText(/7 днів поспіль/)).toBeTruthy();
-    expect(screen.getByText("🔥")).toBeTruthy();
+    // Icon renders as SVG, not a text glyph.
   });
 
   it("рендерить nutrition рекомендацію з add_meal action", () => {

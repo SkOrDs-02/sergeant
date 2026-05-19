@@ -1,9 +1,10 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { useState, useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
@@ -344,16 +345,16 @@ function StatCard({
 }
 
 interface InsightCardProps {
-  emoji: string;
+  iconName: IconName;
   title: string;
   stat: string;
   detail?: string;
 }
 
-function InsightCard({ emoji, title, stat, detail }: InsightCardProps) {
+function InsightCard({ iconName, title, stat, detail }: InsightCardProps) {
   return (
     <div className="bg-panel border border-line rounded-2xl p-4 flex gap-3 items-start">
-      <span className="text-2xl shrink-0 leading-none pt-0.5">{emoji}</span>
+      <Icon name={iconName} size={24} className="shrink-0 text-muted mt-0.5" />
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm text-text leading-snug">{title}</p>
         <div className="flex items-baseline gap-2 flex-wrap">

@@ -69,7 +69,7 @@ describe("generateInsights", () => {
     const result = generateInsights();
     for (const ins of result) {
       expect(ins).toHaveProperty("id");
-      expect(ins).toHaveProperty("emoji");
+      expect(ins).toHaveProperty("iconName");
       expect(ins).toHaveProperty("title");
       expect(ins).toHaveProperty("stat");
       expect(ins).toHaveProperty("detail");
@@ -92,7 +92,7 @@ describe("generateInsights", () => {
     const result = generateInsights();
     const ins = result.find((r) => r.id === "best_workout_day");
     expect(ins).toBeDefined();
-    expect(ins!.emoji).toBe("📅");
+    expect(ins!.iconName).toBe("calendar");
     expect(typeof ins!.stat).toBe("string");
   });
 
