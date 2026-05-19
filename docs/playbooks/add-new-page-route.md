@@ -7,8 +7,8 @@
 
 ## Owner surface
 
-- Primary surface: `apps/web/src/modules`, `apps/web/src/core/pages`
-- Coupled surface: `apps/web/src/App.tsx` (route registration)
+- Primary surface: `apps/web/src/modules/<module>/pages`, `apps/web/src/core` (top-level pages: Landing/Pricing/NotFound/AssistantCatalogue)
+- Coupled surface: `apps/web/src/core/App.tsx` (route registration)
 - Governing skill: `sergeant-web-ui`
 
 ---
@@ -17,7 +17,7 @@
 
 ### 1. Створити компонент сторінки
 
-Створити файл в `apps/web/src/modules/<module>/pages/` або `apps/web/src/core/pages/`:
+Створити файл в `apps/web/src/modules/<module>/pages/` або `apps/web/src/core/` (для top-level сторінок типу Landing/Pricing/NotFound):
 
 ```tsx
 export function NewPage() {

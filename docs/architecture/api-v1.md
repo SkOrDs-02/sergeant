@@ -11,7 +11,7 @@
 - Web-клієнт (div. `apps/web/src/shared/lib/api/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`
 - Mobile/Expo-клієнт — зобов'язаний шле в `/api/v1/*`
 - Жодного дублювання роутерів: сервер переписує `req.url` на канонічний `/api/...` ще до маршрутизації (div. `apiVersionRewrite` у `apps/server/src/app.ts`)
-- **`POST /api/sync` і `GET /api/sync` (v1 blob sync) — повертають `410 Gone`** (ADR-0047). Sync вибудовується виключно через v2: `POST /api/v2/sync/push` і `GET /api/v2/sync/pull`.
+- **v1 blob sync — повертає `410 Gone`** (ADR-0047) на п'яти sub-path-ах: `POST /api/sync/push`, `POST /api/sync/pull`, `GET /api/sync/pull-all`, `POST /api/sync/pull-all`, `POST /api/sync/push-all`. Sync вибудовується виключно через v2: `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream` (SSE long-poll).
 
 ## 🎯 Чому саме так
 
@@ -49,28 +49,34 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 | `/api/v1/me`            | GET      | Уніфікований "хто я" для web (cookie) і mobile (bearer)      |
 | `/api/v1/push/register` | POST     | Реєстрація native push (APNs/FCM)                            |
 | `/api/v1/chat`          | POST     | HubChat streaming (SSE) + tool-use                           |
-| `/api/v1/coach/*`       | GET/POST | Weekly digest, coaching recommendations                      |
+| `/api/v1/coach/memory`  | GET/POST | Coach memory store (recall + write)                          |
+| `/api/v1/coach/insight` | POST     | Coaching insight write                                       |
+| `/api/v1/weekly-digest` | GET/POST | Weekly digest (живе у `routes/weekly-digest.ts`, окремо від coach) |
 | `/api/v1/mono/*`        | GET/POST | Monobank: connect, accounts, transactions, backfill          |
-| `/api/v1/ai-memory/*`   | GET/POST | AI memory ingest / recall                                    |
+| `/api/v1/ai-memory/*`   | GET/POST | AI memory ingest / recall / event-sync                       |
 | `/api/v1/push/send`     | POST     | Internal push send (service-to-service, X-Api-Secret header) |
 | `/api/v1/nutrition/*`   | GET/POST | Nutrition log, barcode, backup                               |
-| `/api/v1/transcribe`    | POST     | Audio → text (Whisper). USD-cap per user/day                 |
+| `/api/v1/transcribe`    | POST     | Audio → text (Groq Whisper). USD-cap per user/day            |
 | `/api/v1/billing/*`     | GET/POST | Stripe checkout, subscription status, webhooks               |
 | `/api/v1/waitlist`      | POST     | Waitlist sign-up                                             |
 
 ### v2 endpoints (новий namespace, не через `apiVersionRewrite`)
 
-| Endpoint            | Method | Опис                                                     |
-| ------------------- | ------ | -------------------------------------------------------- |
-| `/api/v2/sync/push` | POST   | Sync op-log batch push. Body: `{ops, device_id, cursor}` |
-| `/api/v2/sync/pull` | GET    | Pull remote ops. Query: `?since=<cursor>`                |
+| Endpoint              | Method | Опис                                                             |
+| --------------------- | ------ | ---------------------------------------------------------------- |
+| `/api/v2/sync/push`   | POST   | Sync op-log batch push. Body: `{ops, device_id, cursor}`         |
+| `/api/v2/sync/pull`   | GET    | Pull remote ops. Query: `?since=<cursor>`                        |
+| `/api/v2/sync/stream` | GET    | SSE long-poll для realtime pull (PR #041). Окремий rate-limit.   |
 
 ### Знято (410 Gone)
 
-| Endpoint         | Причина                                              |
-| ---------------- | ---------------------------------------------------- |
-| `POST /api/sync` | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
-| `GET /api/sync`  | v1 blob pull знятий (ADR-0047). Повертає `410 Gone`. |
+| Endpoint                   | Причина                                              |
+| -------------------------- | ---------------------------------------------------- |
+| `POST /api/sync/push`      | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
+| `POST /api/sync/pull`      | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
+| `GET /api/sync/pull-all`   | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
+| `POST /api/sync/pull-all`  | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
+| `POST /api/sync/push-all`  | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
 
 ## 🧪 Як ми це тестуємо
 

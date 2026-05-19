@@ -10,7 +10,7 @@
 ## Owner surface
 
 - Primary surface: `apps/server/src/modules/chat`
-- Coupled surface: `apps/server/src/lib/anthropic` (SDK wrapper), Grafana dashboards
+- Coupled surface: `apps/server/src/lib/anthropic.ts` (SDK wrapper), Grafana dashboards
 - Governing skill: `sergeant-hubchat`
 
 ---

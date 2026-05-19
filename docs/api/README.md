@@ -41,11 +41,28 @@ npx @redocly/cli preview-docs docs/api/openapi.json
 
 ## Що зараз покрито
 
-Поточний знімок (auto-перевірено через `node -e` над `openapi.json`): **46 операцій / 44 path-и + 39 named-схем**. Базова Phase 1 (PR-4.D) починалася з 36 endpoint-ів + 26 schemas; з того часу додано mono-webhook, growth/marketing tables, governance audit, n8n failure events, AI memory і додаткові response-схеми. Реальні цифри живуть у [`docs/api/openapi.json`](./openapi.json) — оновлюються через `pnpm api:generate-openapi` (CI-гейт `pnpm api:check-openapi`).
+Поточний знімок (auto-перевірено через `node -e` над `openapi.json`): **47 операцій / 45 path-ів + 40 named-схем**. Базова Phase 1 (PR-4.D) починалася з 36 endpoint-ів + 26 schemas; з того часу додано mono-webhook, growth/marketing tables, governance audit, n8n failure events, AI memory і додаткові response-схеми. Реальні цифри живуть у [`docs/api/openapi.json`](./openapi.json) — оновлюються через `pnpm api:generate-openapi` (CI-гейт `pnpm api:check-openapi`). Якщо ці числа розходяться з фактом — спершу перегенеруй spec, потім онови цей абзац.
 
 - **Request-схеми** — повне покриття для всіх endpoint-ів з `validateBody(...)`.
 - **Response-схеми** — точно описано: `MeResponse`, `PushSendSummary`, `PushTestResponse`, mono-webhook events, growth/marketing payloads. Решта endpoint-ів задокументована як generic `application/json` (Phase 2 додасть точні response-схеми для всіх).
 - **Auth**: `cookieAuth` (web — better-auth session cookie), `bearerAuth` (mobile — Expo bearer token).
+
+### Свідомо НЕ у spec'і (operational / probes)
+
+| Path                                                                 | Чому                                                                                  |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `/livez`, `/readyz`, `/startupz`, `/health`, `/healthz`              | Kubernetes/Railway probes; не product API — споживаються лише оркестратором/uptime.   |
+| `/health/liveness`, `/health/readiness`, `/health/startup`           | Альтернативні шляхи тих самих probe-ів. Семантично дублюються з `*z`-варіантами.      |
+| `/health/workers`                                                    | Внутрішня діагностика воркерів. Не для клієнтів.                                       |
+| `/metrics`                                                           | Prom-scrape endpoint. Не JSON, не для клієнтів.                                        |
+
+### Відомі прогалини (треба додати у `packages/shared/src/openapi/routes.ts` і перегенерувати spec)
+
+- `POST /api/ai-memory/ingest` — є у `apps/server/src/routes/ai-memory.ts:47`, нема у spec.
+- `POST /api/ai-memory/event-sync` — є у `apps/server/src/routes/ai-memory.ts:58`, нема у spec.
+- `GET /api/status` — є у `apps/server/src/routes/status.ts:15`, нема у spec (це product-facing status snapshot, не infra probe).
+
+Після того як ці три рядки додадуть у `routes.ts`, лічильники в абзаці вище треба пересипати.
 
 ## Phase 3 — типізований клієнт
 

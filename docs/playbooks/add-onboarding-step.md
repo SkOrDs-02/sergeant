@@ -8,7 +8,7 @@
 ## Owner surface
 
 - Primary surface: `apps/web/src/core/onboarding`
-- Coupled surface: `packages/shared/src/ftux`
+- Coupled surface: `packages/shared/src/lib/onboarding*`
 - Governing skill: `sergeant-web-ui`
 
 ---

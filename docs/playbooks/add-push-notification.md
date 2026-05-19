@@ -36,7 +36,7 @@ Push-інфраструктура вже зібрана (див. `apps/server/sr
 | Тип тригера                       | Куди вставити                                                                                                                                  |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Реакція на user-action (POST/PUT) | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                                 |
-| Mono webhook event                | `apps/server/src/modules/monoWebhook/`. Див. `add-monobank-event-handler.md` для скелета.                                                      |
+| Mono webhook event                | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                                   |
 | Періодичний (раз на день/тиждень) | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (Railway scheduler / GitHub Action). У репо немає вбудованого in-process scheduler-а. |
 | Side effect AI insight            | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                          |
 

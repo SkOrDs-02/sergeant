@@ -191,7 +191,7 @@ Decision-tree коли щось «не працює»:
 | DB backup smoke-test                           | Тижнева               | [`./database-backup-restore.md`](./database-backup-restore.md)                 |
 | Encryption key rotation                        | Раз на 90 днів        | [`./encryption-key-rotation.md`](./encryption-key-rotation.md)                 |
 | API token rotation (Anthropic / Voyage / Mono) | Раз на 90 днів        | [`docs/playbooks/rotate-secrets.md`](../playbooks/rotate-secrets.md)           |
-| Monobank token re-bind (per-user)              | On-demand (юзер-flow) | `apps/server/src/modules/mono/setup.ts` — endpoint `POST /api/mono/setup`      |
+| Monobank token re-bind (per-user)              | On-demand (юзер-flow) | `apps/server/src/modules/mono/connection.ts` — endpoint `POST /api/mono/connect` (route у `apps/server/src/routes/mono-webhook.ts`) |
 | Renovate PR-batch                              | Тижнева (вівторок)    | [`docs/observability/runbook.md §Renovate`](../observability/runbook.md)       |
 | n8n workflows audit                            | Місячна               | `pnpm ops:n8n:validate` + manual review executions-tab                         |
 | `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                        |

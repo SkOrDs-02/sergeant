@@ -92,7 +92,7 @@ flowchart TD
 1. Тіло PR **обовʼязково** містить:
    - Чому staging неможливо задіяти (наприклад, «лише production Vercel-проєкт має edge-config binding»).
    - План мітигації, якщо зміна поведе себе погано (rollback commit SHA, шлях kill-switch, on-call rotation).
-   - Зобовʼязання написати post-mortem протягом 7 календарних днів, з лінком у `docs/incidents/`.
+   - Зобовʼязання написати post-mortem протягом 7 календарних днів, з лінком у `docs/postmortems/`.
 2. Принаймні один додатковий reviewer від `@Skords-01` (або призначений reviewer) на PR перед merge.
 3. Стеж за prod-логами / Sentry перші 30 хвилин після деплою.
 4. Напиши post-mortem; полінкуй цей PR.

@@ -9,7 +9,7 @@
     "sergeant-bugfix-and-regression": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "655c147206695ebe2c54ad604f2ff97f5216e0ff8a85ba4543be4993f3715149"
+      "computedHash": "742d357918d361550d23aec808f155a9957a0f9f6b3dfd684436e276bf2ef590"
     },
     "sergeant-data-and-migrations": {
       "source": "local",
@@ -19,17 +19,17 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "6ad58ceda725e7d9b9693a695d9b4ac22b6ea39ef0049b8bd0cba5ca922752ed"
+      "computedHash": "3a9e89f3bd25a99dbe7ac963a51f3349d558038e76d2d5ab6d1203ec07984743"
     },
     "sergeant-feature-delivery": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "c2ac280b70d5dd8d37068832535aef53806b64f73807eebcc75304f6670e7ce8"
+      "computedHash": "2635ab56dc38f267f077893893e655c58f349a950be0adaea799c7fe6f7fe3be"
     },
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "0986305b78ca528dff6ec67c3490438afc0f159530f708c5b3ed225ee8ed8881"
+      "computedHash": "84c92ddfa8d1214e3e041cdb1a9b41c75436b1818f280bcfe299e543bfdda52f"
     },
     "sergeant-mobile-expo": {
       "source": "local",
@@ -49,7 +49,7 @@
     "sergeant-server-api": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "6936c34cfa5d44b704e85cc5018d501bc479280cc407f7977bdf8bbe7650eb9d"
+      "computedHash": "9286443dbd8155ea3a425abdedcb07132da2ad8303d4535390cde10aab103c05"
     },
     "sergeant-start-here": {
       "source": "local",
@@ -74,7 +74,7 @@
     "sergeant-security-audit": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "fa866ad140b5ea5293dcf8f526ca256562defbde9a289f7b2a6129849eb53dec"
+      "computedHash": "02dffdda04282077e5e722fc24610388d331303c284a12c5bda154cebc3cf00b"
     },
     "sergeant-e2e-testing": {
       "source": "local",

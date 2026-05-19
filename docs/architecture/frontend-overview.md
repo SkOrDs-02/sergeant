@@ -17,8 +17,8 @@
 
 | Шар     | Технології                                                               |
 | ------- | ------------------------------------------------------------------------ |
-| Збірка  | Vite 6, `@vitejs/plugin-react`                                           |
-| UI      | React 18, Tailwind CSS 3                                                 |
+| Збірка  | Vite 8, `@vitejs/plugin-react`, `@tailwindcss/vite`                       |
+| UI      | React 18, Tailwind CSS 4                                                 |
 | Роутинг | react-router-dom v7                                                      |
 | Дані    | TanStack React Query, workspace `@sergeant/api-client`                   |
 | Auth    | better-auth (клієнт поруч із сервером)                                   |
@@ -56,6 +56,7 @@
 
 - **`packages/design-tokens`**: спільні токени + Tailwind preset для веб і мобайлу
 - **Доменні пакети**: `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `shared`, `insights`
+- **OpenClaw Gateway плагін**: `packages/openclaw-plugin` — споживається Gateway-сервісом (не апами)
 - **`packages/api-client`**: єдиний клієнт API для веб і мобайлу; включає `SyncEnginePushScheduler`, `SyncEngineFlushOnReconnect` для v2 sync
 - **`packages/db-schema`**: Drizzle схеми для Postgres + SQLite-WASM; `sync_op_outbox` + per-domain tables
 

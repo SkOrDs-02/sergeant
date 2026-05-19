@@ -57,13 +57,13 @@ rateLimitExpress({
 - `rate_limit_hits_total{key,outcome="allowed"}` — by 1, незалежно від cost. Лічить сирі call-и (для цього вже існуючий dashboard).
 - `rate_limit_cost_total{key}` — by **resolved cost**. Лічить реальне споживання budget-у. Saturate будь-якого ключа = `sum(rate_limit_cost_total) ≈ limit × users` за window. Наприклад, для `api:chat` з 60-token bucket: 6 streams/min × 10 cost = 60/min на користувача.
 
-> **Prom query** для p95 budget-burn (per key):
+> **Prom query** для cost-burn rate per key (5-min window):
 >
 > ```promql
-> histogram_quantile(0.95,
->   sum by (le, key) (rate(rate_limit_cost_total[5m]))
-> )
+> sum by (key) (rate(rate_limit_cost_total[5m]))
 > ```
+>
+> `rate_limit_cost_total` зареєстровано як `client.Counter` у `apps/server/src/obs/metrics.ts` — не як гістограма, тому `histogram_quantile` тут непридатне (нема `le`-label). Для percentile-burn побудуй окремий `client.Histogram` на стороні app-у і сервери з `le`-bucket'ами.
 >
 > User-level dimension зберігається в bucket-ключі (`subject:u:<userId>`/`subject:ip:<ip>`); surfacing його як Prom-label = cardinality blow-up, тому розрізнюємо тільки на dashboard layer (alert на ключ → drill into logs).
 

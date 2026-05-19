@@ -12,7 +12,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 ## Flow
 
 1. Перечитай `AGENTS.md`, відповідний specialist skill і будь-який relevant playbook у `docs/playbooks/`.
-2. Запиши або онови design/spec у `docs/agents/specs/`, коли зміна нетривіальна або product-facing.
+2. Запиши або онови design/spec у `docs/design/specs/`, коли зміна нетривіальна або product-facing.
 3. Визнач, де живе код, через `sergeant-monorepo-boundaries` ще до додавання файлів.
 4. Спершу додай тести там, де змінюється поведінка: unit, контракт, UI або migration verification — за релевантністю.
 5. Імплементуй мінімальний end-to-end slice.

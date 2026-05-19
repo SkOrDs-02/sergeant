@@ -8,7 +8,7 @@
 ## Owner surface
 
 - Primary surface: `apps/web/src` (callers of `localStorage.*`)
-- Coupled surface: `apps/web/src/shared/lib/typedStore`, `eslint.config.js` allowlist
+- Coupled surface: `apps/web/src/shared/lib/storage/typedStore.ts`, `eslint.config.js` allowlist
 - Governing skill: `sergeant-web-ui`
 
 ---

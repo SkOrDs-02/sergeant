@@ -66,7 +66,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 ## Mobile security (`apps/mobile`)
 
 - MMKV keys holding sensitive data (tokens, PII) must not store plaintext; verify encryption configuration.
-- Deep links in `apps/mobile/src/core/navigation/`: ensure unknown scheme parameters are sanitized before use in routing.
+- Deep links wired via `apps/mobile/app.config.ts` (`scheme: "sergeant"` + Android `intentFilters`) and routed through expo-router under `apps/mobile/app/`: ensure unknown scheme parameters are sanitized before use in routing.
 
 ## Severity triage
 

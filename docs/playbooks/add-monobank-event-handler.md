@@ -7,7 +7,7 @@
 
 ## Owner surface
 
-- Primary surface: `apps/server/src/modules/monobank`
+- Primary surface: `apps/server/src/modules/mono`
 - Coupled surface: `packages/api-client`, `apps/web/src/modules/finyk`
 - Governing skill: `sergeant-server-api`
 
@@ -17,7 +17,7 @@
 
 ### 1. Оновити схему події в server
 
-Знайти типи та схеми в `apps/server/src/modules/monobank/`:
+Знайти типи та схеми в `apps/server/src/modules/mono/`:
 
 ```bash
 # Перевірити поточні типи

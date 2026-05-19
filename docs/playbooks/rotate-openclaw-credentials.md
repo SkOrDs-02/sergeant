@@ -83,7 +83,7 @@ flowchart TD
    - Подивись audit log GitHub App: `Settings → Audit log` → фільтр `actor:sergeant-openclaw[bot]` за останні 7 днів. Усе, що не співпадає з відомою OpenClaw-approved write-дією (Telegram approval message + Postgres-рядок `openclaw_invocations`), — підозріле.
    - Для PATs audit log GitHub-у скупіший; крос-перевір `git log --all --since=2.weeks` на несподівані коміти від автора-PAT-власника.
 5. **Відкрий інцидент.** Слідуй [`declare-incident.md`](./declare-incident.md). Severity мінімум P2 (data exposure risk), P1 — якщо у скомпрометованої credentials був `contents:write` і в audit window є несподіваний push.
-6. **Post-incident review.** Напиши короткий post-mortem у `docs/incidents/`. Включи root-cause (як саме секрет витік — файл у репо, лог, скрін?), detection-lag і конкретну превентивну дію (наприклад посилити secret-scanning, звузити scopes).
+6. **Post-incident review.** Напиши короткий post-mortem у `docs/postmortems/`. Включи root-cause (як саме секрет витік — файл у репо, лог, скрін?), detection-lag і конкретну превентивну дію (наприклад посилити secret-scanning, звузити scopes).
 
 ---
 

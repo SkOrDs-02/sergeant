@@ -27,7 +27,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ### Фаза 2 — Pattern analysis
 
-1. Знайди working example поруч: інший роут у тому ж `apps/server/src/routes/`, інший hook на `finykKeys`, інша міграція в `packages/db/migrations/`. Що в ньому відрізняється?
+1. Знайди working example поруч: інший роут у тому ж `apps/server/src/routes/`, інший hook на `finykKeys`, інша міграція в `apps/server/src/migrations/`. Що в ньому відрізняється?
 2. Якщо реалізуєш канонічний патерн (RQ keys factory, серіалізатор з bigint-coercion, двофазна міграція з DROP, Pino-redaction policy) — прочитай canonical reference повністю, не сканом. Деталь, яку «можна пропустити», — типовий корінь.
 3. Перерахуй усі відмінності між working і broken, навіть «несуттєві». Заздалегідь не вирішуй, що щось не може мати значення.
 

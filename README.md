@@ -70,6 +70,14 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
 | `tools/openclaw`    | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
 
+### Tooling (`tools/`)
+
+Non-app workspaces that support lint / build invariants. Not deployed.
+
+| Directory              | What it is                                         | Stack      |
+| ---------------------- | -------------------------------------------------- | ---------- |
+| `tools/tsconfig-guard` | Strict TS-flag guard (Hard Rule #19); gates `lint` | TypeScript |
+
 ### Packages (`packages/`)
 
 Packages are shared code reused across apps. Instead of copy-pasting between web and mobile, we put shared code in `packages/` and import from there.
@@ -86,7 +94,7 @@ Packages are shared code reused across apps. Instead of copy-pasting between web
 | `@sergeant/nutrition-domain`    | Nutrition domain logic                                       |
 | `@sergeant/routine-domain`      | Habits domain logic                                          |
 | `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                |
-| `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin                          |
+| `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin (Gateway-only — NOT consumed by web/mobile) |
 | `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                    |
 
 Architecture overview lives in [docs/architecture/README.md](./docs/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
