@@ -1,8 +1,13 @@
-import { memo } from "react";
+/**
+ * Last validated: 2026-05-19
+ * Status: Active
+ */
+import { memo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { formatMoney } from "@sergeant/shared";
+import { useCelebration } from "@shared/components/ui/CelebrationModal";
 
 interface GoalBudgetInput {
   id: string;
@@ -42,7 +47,27 @@ function GoalBudgetCardComponent({
   onSave,
   onDelete,
 }: GoalBudgetCardProps) {
+  // W3 — fire goal-completed celebration exactly once per goal id when
+  // progress reaches 100%. celebratedRef persists across re-renders so we
+  // never double-fire even if the component remounts with the same goal.
+  const { goalCompleted, CelebrationComponent } = useCelebration();
+  const celebratedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (pct < 100) return;
+    if (celebratedRef.current === budget.id) return;
+    celebratedRef.current = budget.id;
+    goalCompleted(
+      budget.name ?? "Ціль досягнута!",
+      saved,
+      "₴",
+      "finyk",
+    );
+  }, [pct, budget.id, budget.name, saved, goalCompleted]);
+
   return (
+    <>
+      {CelebrationComponent}
     <Card radius="lg" padding="lg">
       {isEditing ? (
         <div className="space-y-2">
@@ -107,6 +132,7 @@ function GoalBudgetCardComponent({
         </>
       )}
     </Card>
+    </>
   );
 }
 

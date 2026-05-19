@@ -1,8 +1,8 @@
 /**
- * Last validated: 2026-05-18
+ * Last validated: 2026-05-19
  * Status: Active
  */
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ProgressRing } from "@shared/components/ui/ProgressRing";
@@ -18,6 +18,8 @@ import {
   type MacrosRow,
 } from "../lib/nutritionStorage";
 import { WaterTrackerCard } from "./WaterTrackerCard";
+import { useToast } from "@shared/hooks/useToast";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 type WeekRow = MacrosRow;
 
@@ -107,6 +109,27 @@ export function NutritionDashboard({
 
   const kcalConsumed = Math.round(macros.kcal || 0);
   const kcalGoal = prefs.dailyTargetKcal || 0;
+
+  // W4 — fire a success toast once per calendar day when consumed kcal enters
+  // the 95–105% window of the daily goal. Dedupe key is stored via the typed
+  // storage wrapper so it survives page reload and does NOT block any save.
+  const toast = useToast();
+  const toastFiredRef = useRef(false);
+  const LS_KEY = "nutrition:kcal-goal-toast-date";
+  useEffect(() => {
+    if (!hasGoal || kcalGoal <= 0) return;
+    const ratio = kcalConsumed / kcalGoal;
+    if (ratio < 0.95 || ratio > 1.05) return;
+    if (toastFiredRef.current) return;
+
+    // Persist per-day dedup so it survives remounts within the same day.
+    const lastFiredDate = safeReadStringLS(LS_KEY);
+    if (lastFiredDate === today) return;
+
+    toastFiredRef.current = true;
+    safeWriteLS(LS_KEY, today);
+    toast.success("Денну норму виконано");
+  }, [kcalConsumed, kcalGoal, hasGoal, today, toast]);
 
   const protein = {
     consumed: Math.round(macros.protein_g || 0),
