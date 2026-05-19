@@ -155,7 +155,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               tabIndex={isTablist ? (active ? 0 : -1) : undefined}
               onClick={() => onChange(item.id)}
               className={cn(
-                "relative flex-1 flex flex-col items-center justify-center gap-1",
+                "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
                 "min-h-touch-target",
                 "transition-all duration-200",
                 "active:scale-95",

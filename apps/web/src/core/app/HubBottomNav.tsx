@@ -100,7 +100,7 @@ function HubBottomNavTab({
       // accessible name (`label`), і тести з `name: /Звіти/` падали б.
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex flex-col items-center justify-center gap-1",
+        "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
         "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
