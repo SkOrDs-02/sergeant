@@ -1,11 +1,12 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-20
  * Status: Active
  */
 import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { type Meal } from "@sergeant/nutrition-domain";
 import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
 
@@ -60,6 +61,11 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         : macroSource === "productDb"
           ? "DB"
           : "";
+  // 6.4: AI-sourced entries (photoAI / recipeAI) get the nutrition-tinted
+  // sparkles badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
+  // is a deterministic lookup, not AI inference, so it keeps the neutral
+  // soft tone without the sparkles icon.
+  const isAiSourced = macroSource === "photoAI" || macroSource === "recipeAI";
   return (
     <div className="flex items-center gap-3 bg-panelHi rounded-2xl px-3 py-2.5 group">
       <MealThumb mealId={meal.id} />
@@ -82,13 +88,14 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
           )}
           {sourceLabel && (
             <Badge
-              variant="neutral"
+              variant={isAiSourced ? "nutrition" : "neutral"}
               tone="soft"
               size="xs"
-              className="shrink-0 rounded-full uppercase tracking-wider"
+              className="shrink-0 inline-flex items-center gap-1 rounded-full uppercase tracking-wider"
               title="Походження КБЖВ"
             >
-              {sourceLabel}
+              {isAiSourced && <Icon name="sparkles" size={10} aria-hidden />}
+              <span>{sourceLabel}</span>
             </Badge>
           )}
         </div>

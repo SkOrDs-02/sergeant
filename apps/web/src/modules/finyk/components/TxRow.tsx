@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-05-20
  * Status: Active
  */
 import { memo, useCallback, useMemo, useState } from "react";
@@ -18,6 +18,7 @@ import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { Badge } from "@shared/components/ui/Badge";
 
 const splitInp =
   "input-focus-finyk flex-1 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-text";
@@ -199,8 +200,7 @@ function TxRowImpl({
   }, [draftSplits, onSplitChange, tx.id]);
 
   // Resolve the icon name for the category pill (Phase 6.1).
-  const pillIconName: IconName =
-    CATEGORY_ICON_MAP[cat.id] ?? "tag";
+  const pillIconName: IconName = CATEGORY_ICON_MAP[cat.id] ?? "tag";
 
   const mainRowInner = (
     <>
@@ -236,6 +236,34 @@ function TxRowImpl({
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <span className="text-xs text-subtle">{catName}</span>
+          {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
+              so users can tell which categorizations are inferred (MCC +
+              description match) vs explicit (user override, manual entry,
+              splits, transfers, fallback "other"). Sparkles icon-only
+              keeps the row uncluttered — category label is right next to it.
+              Skipped on:
+                – manual expenses (`_manual`): user typed the category
+                – overridden rows: explicit user choice, shows "змін." instead
+                – internal transfers: special routing, not categorization
+                – income rows: handled by separate income flow above
+                – "other" fallback: no real inference happened
+          */}
+          {!tx._manual &&
+            !overrideCatId &&
+            !isIncome &&
+            cat.id !== INTERNAL_TRANSFER_ID &&
+            cat.id !== "other" && (
+              <Badge
+                variant="finyk"
+                tone="soft"
+                size="xs"
+                className="shrink-0 inline-flex items-center gap-1 rounded-full"
+                title="Категорію визначив AI на основі опису + MCC"
+              >
+                <Icon name="sparkles" size={10} aria-hidden />
+                <span>AI</span>
+              </Badge>
+            )}
           {cat.id === INTERNAL_TRANSFER_ID && (
             <span className="text-style-caption bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
               не в статистиці
