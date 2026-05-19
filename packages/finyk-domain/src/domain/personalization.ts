@@ -92,30 +92,29 @@ const MANUAL_CATEGORY_ID_MAP: Record<string, string> = {
   інше: "other",
 };
 
-// Зворотний пошук: canonical id → відповідний manual-label, який є серед
-// кнопок у ManualExpenseSheet (щоб при кліку по картці у dashboard виставляти
-// коректний вибір у списку). Повертаємо нові emoji-labels — `ManualExpenseSheet`
-// also runs them through `upgradeCategory` to stay tolerant of legacy strings.
+// Зворотний пошук: canonical id → category slug used by ManualExpenseSheet.
+// Values are Era 3 slugs (F5b, 2026-05). ManualExpenseSheet's upgradeCategory()
+// accepts any era, so old callers that already pass the result through
+// upgradeCategory() are unaffected.
 export const CANONICAL_TO_MANUAL_LABEL: Record<string, string> = {
-  food: "🍴 їжа",
-  restaurant: "🍔 кафе та ресторани",
-  transport: "🚗 транспорт",
-  entertainment: "🎮 розваги",
-  health: "💊 здоров'я",
-  shopping: "🛍️ покупки",
-  utilities: "🏠 комунальні",
-  subscriptions: "🎵 підписки",
-  sport: "🎮 розваги",
-  beauty: "🛍️ покупки",
-  travel: "✈️ подорожі",
-  education: "📚 навчання",
-  other: "🏷 інше",
+  food: "food",
+  restaurant: "cafe",
+  transport: "transport",
+  entertainment: "entertainment",
+  health: "health",
+  shopping: "shopping",
+  utilities: "utilities",
+  subscriptions: "subscriptions",
+  sport: "entertainment",
+  beauty: "shopping",
+  travel: "travel",
+  education: "education",
+  other: "other",
 };
 
-// Labels in `ManualExpenseSheet` are now emoji-prefixed (e.g. "🍴 їжа").
-// Strip leading non-letter / non-digit runs (emoji, ZWJ sequences,
-// variation selectors, whitespace) before lookup so map keys stay
-// stable across legacy and new entries.
+// manualLabel stored in FrequentCategory may be Era 1 (bare UA), Era 2
+// (emoji-prefixed), or Era 3 (slug). Strip leading non-letter / non-digit
+// runs before lookup so map keys stay stable across all eras.
 function stripLeadingSymbols(str: string): string {
   let i = 0;
   // `str[i]` під strict noUncheckedIndexedAccess — `string | undefined`,
