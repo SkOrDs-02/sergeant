@@ -584,8 +584,12 @@ export default function App({
             // ≥3 dismissals in 14 days or 12 h after the user accepts —
             // see `docs/design/cross-module-prompts.md`.
             const cat = String(expense?.category || "");
+            // Post-F5b (#3049): category persists as typed slug. `restaurant`
+            // → `cafe`; `food` still `food`. The "finyk-restaurant-to-meal"
+            // prompt-id is kept stable for dismissal-cap accounting (LS key
+            // already in users' storage from pre-F5b sessions).
             const promptId =
-              cat === "restaurant"
+              cat === "cafe"
                 ? "finyk-restaurant-to-meal"
                 : cat === "food"
                   ? "finyk-food-to-meal"
@@ -593,7 +597,7 @@ export default function App({
             if (promptId) {
               const msg =
                 promptId === "finyk-restaurant-to-meal"
-                  ? "Додати прийом їжі з ресторану?"
+                  ? "Додати прийом їжі з кафе?"
                   : "Додати прийом їжі з продуктів?";
               tryShowCrossModulePrompt(toast, {
                 id: promptId,
