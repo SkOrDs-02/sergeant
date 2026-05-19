@@ -1,12 +1,14 @@
 /**
- * Last validated: 2026-05-18
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { Card } from "@shared/components/ui/Card";
 import { HeroValueLine } from "@shared/components/ui/HeroValueLine";
 import { KpiRowCompact } from "@shared/components/ui/KpiRowCompact";
 import { CounterReveal } from "@shared/components/ui/CounterReveal";
+import { StreakFlame } from "@shared/components/ui/StreakFlame";
 import { DayProgressRing } from "./DayProgressRing";
+import { useStreakFlame } from "../hooks/useStreakFlame";
 
 export interface RoutineCalendarHeroProps {
   rangeLabel: string;
@@ -42,6 +44,7 @@ export function RoutineCalendarHero({
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
   const narrative = `${headlineDate} · ${dayProgress.completed} з ${dayProgress.scheduled} звичок · Серія ${currentStreak} днів`;
+  const flame = useStreakFlame(currentStreak);
 
   return (
     <Card
@@ -50,7 +53,16 @@ export function RoutineCalendarHero({
       module="routine"
       radius="r-2xl"
       aria-label={rangeLabel}
+      className="relative"
     >
+      {flame.visible && (
+        <span
+          className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <StreakFlame streak={flame.count} size="sm" />
+        </span>
+      )}
       <HeroValueLine
         narrative={narrative}
         metric={
