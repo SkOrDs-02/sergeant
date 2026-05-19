@@ -129,7 +129,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             <div className="mt-4 space-y-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="md"
                 className="w-full"
                 onClick={onContinueWithoutAccount}
