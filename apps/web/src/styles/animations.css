@@ -80,7 +80,7 @@
 }
 .animate-onboarding-enter {
   animation: onboarding-enter var(--motion-duration-slow)
-    var(--motion-ease-overshoot) both;
+    var(--motion-ease-decelerate) both;
 }
 
 /* ── Page transition slide directions (RESPONSE) ─────────────────────── */
