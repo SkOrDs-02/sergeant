@@ -244,7 +244,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   // overflow — зовнішній скролить і вертикально розкриває і верх
   // (логотип), і низ (auth-кнопка + «Згорнути»).
   return (
-    <div className="relative h-dvh overflow-y-auto overscroll-contain bg-bg text-text page-enter">
+    <div className="relative h-dvh overflow-y-auto overscroll-contain bg-mesh text-text page-enter">
       <PeekBackdrop />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
         <div className="w-full max-w-sm space-y-3">

@@ -200,9 +200,15 @@ export function OnboardingWizard({
 
   if (variant === "fullPage") {
     return (
+      // 2026-05-19 — full-page variant rendered transparent (no
+      // `bg-panel`/border/shadow/p-6). The mesh gradient lives on
+      // the WelcomeScreen page wrapper now; the previous card chrome
+      // produced a visible white frame around the gradient (bug
+      // 2026-05-19, PR-#XXXX). The modal variant below keeps its
+      // card chrome — it sits over a translucent backdrop.
       <div
         ref={panelRef}
-        className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
+        className="relative w-full max-w-sm animate-onboarding-enter"
         aria-label="Вітальний екран"
       >
         {content}

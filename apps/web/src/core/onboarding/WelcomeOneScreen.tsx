@@ -2,7 +2,6 @@ import type { RefObject } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import { OnboardingProgress } from "./OnboardingProgress";
 import { ALL_MODULES } from "./vibePicks";
@@ -91,7 +90,11 @@ export function WelcomeOneScreen({
   ctaBusy?: boolean;
 }) {
   return (
-    <MeshBackground>
+    // 2026-05-19 — removed inner `<MeshBackground>` wrapper. The mesh
+    // gradient is now applied at the page level (WelcomeScreen page
+    // wrapper uses `bg-mesh`), so wrapping content here created a
+    // visible "card-on-card" effect with the parent OnboardingWizard
+    // card chrome (bug 2026-05-19, PR-#XXXX).
     <div className="flex flex-col items-center text-center space-y-5">
       <div className="space-y-2">
         <BrandLogo size="md" variant="inline" className="mx-auto" />
@@ -200,6 +203,5 @@ export function WelcomeOneScreen({
         {expanded ? "Згорнути" : "Що це за розділи?"}
       </button>
     </div>
-    </MeshBackground>
   );
 }
