@@ -49,6 +49,7 @@
  * себе якщо змонтований.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { Icon } from "@shared/components/ui/Icon";
@@ -83,6 +84,41 @@ const DEFAULT_PLACEHOLDER: Record<ModuleAccent | "hub", string> = {
   hub: "Запитай Sergeant…",
 };
 
+/**
+ * Auto-hide hook: collapses the pill into a compact pip when the user
+ * scrolls down past `threshold`, restores it when they scroll back up.
+ * Pattern matches Material's bottom-bar shrink-on-scroll — keeps the
+ * affordance reachable but stops it from covering content while the
+ * user is reading.
+ *
+ * Listener is `passive: true` + rAF-throttled so it never blocks the
+ * scrolling thread. `lastY` tracks direction so a tiny jitter near the
+ * threshold doesn't flicker.
+ */
+function useCollapseOnScroll(threshold = 80) {
+  const [collapsed, setCollapsed] = useState(false);
+  const lastY = useRef(0);
+  const ticking = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY || window.pageYOffset || 0;
+        const dy = y - lastY.current;
+        if (y > threshold && dy > 4) setCollapsed(true);
+        else if (dy < -4 || y < threshold / 2) setCollapsed(false);
+        lastY.current = y;
+        ticking.current = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [threshold]);
+  return collapsed;
+}
+
 export function AIPill({
   module = null,
   placeholder,
@@ -92,6 +128,7 @@ export function AIPill({
 }: AIPillProps) {
   const navigate = useNavigate();
   const placeholderText = placeholder ?? DEFAULT_PLACEHOLDER[module ?? "hub"];
+  const collapsed = useCollapseOnScroll();
 
   const openChat = () => {
     hapticTap();
@@ -108,17 +145,24 @@ export function AIPill({
     <div
       role="group"
       aria-label={messages.nav.openAssistant}
+      data-collapsed={collapsed ? "true" : undefined}
       style={{ bottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))` }}
       className={cn(
-        // Fixed pill positioning. `right-[4.5rem]` leaves space for the
-        // module FAB on the right edge so they never overlap.
-        "fixed left-3.5 right-[4.5rem] z-sticky",
+        // Fixed pill positioning. Collapsed state shrinks to a circular
+        // pip on the right edge so the content underneath stays
+        // readable; expanded state spans `left-3.5 right-[4.5rem]` and
+        // leaves space for the module FAB.
+        "fixed z-sticky",
+        "transition-[left,width,padding,box-shadow] duration-200 ease-out motion-reduce:transition-none",
+        collapsed
+          ? "left-auto right-[4.5rem] w-11 pl-1 pr-1"
+          : "left-3.5 right-[4.5rem] pl-2.5 pr-2",
         // Visual chrome — translucent glass surface with v2 pill shadow.
         // `surface-strong-glass` is alpha-baked (0.93 light / 0.10 dark /
         // 1.0 HC) so HC mode reads as a solid pill.
         "h-11 bg-surface-strong-glass backdrop-blur-md",
         "border border-line rounded-full shadow-pill",
-        "flex items-center gap-2 pl-2.5 pr-2",
+        "flex items-center gap-2",
         className,
       )}
     >
@@ -129,7 +173,8 @@ export function AIPill({
         onClick={openChat}
         aria-label={messages.nav.openAssistant}
         className={cn(
-          "flex-1 flex items-center gap-2 min-w-0",
+          "flex items-center gap-2 min-w-0",
+          collapsed ? "flex-none" : "flex-1",
           "focus:outline-none focus-visible:rounded-full focus-visible:ring-2",
           "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
           "focus-visible:ring-offset-bg",
@@ -145,29 +190,34 @@ export function AIPill({
         >
           <Icon name="sparkle" size={14} strokeWidth={2.2} />
         </span>
-        <span className="flex-1 text-left text-style-body-sm text-muted truncate min-w-0">
-          {placeholderText}
-        </span>
+        {!collapsed && (
+          <span className="flex-1 text-left text-style-body-sm text-muted truncate min-w-0">
+            {placeholderText}
+          </span>
+        )}
       </button>
 
       {/* Mic button — sibling, not nested. Keyboard Tab order: primary
-          chat button first, then mic. */}
-      <button
-        type="button"
-        onClick={handleMic}
-        aria-label={messages.nav.voiceInput}
-        className={cn(
-          "w-7 h-7 rounded-full shrink-0",
-          "flex items-center justify-center",
-          "text-muted hover:text-text hover:bg-panel",
-          "transition-colors",
-          "focus:outline-none focus-visible:ring-2",
-          "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
-          "focus-visible:ring-offset-bg",
-        )}
-      >
-        <Icon name="mic" size={15} strokeWidth={2} />
-      </button>
+          chat button first, then mic. Hidden in collapsed mode so the
+          pip stays tap-target-clean and unambiguous. */}
+      {!collapsed && (
+        <button
+          type="button"
+          onClick={handleMic}
+          aria-label={messages.nav.voiceInput}
+          className={cn(
+            "w-7 h-7 rounded-full shrink-0",
+            "flex items-center justify-center",
+            "text-muted hover:text-text hover:bg-panel",
+            "transition-colors",
+            "focus:outline-none focus-visible:ring-2",
+            "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
+            "focus-visible:ring-offset-bg",
+          )}
+        >
+          <Icon name="mic" size={15} strokeWidth={2} />
+        </button>
+      )}
     </div>
   );
 }

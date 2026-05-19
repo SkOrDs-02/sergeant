@@ -60,13 +60,15 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // Safari ≤ 16 has no `requestIdleCallback`, so we keep the original
   // 2 s fallback for it.
   useEffect(() => {
+    // Hub navigation pages (Reports + Settings) are primary tabs. Kick
+    // their chunks off immediately so a tap on the bottom-nav lands on
+    // a hydrated component instead of the Suspense skeleton. The inner
+    // `prefetchHubNavigationPages` still wraps each import in
+    // `requestIdleCallback` (with its own 3 s timeout), so this stays
+    // non-blocking — we just drop the outer idle wrap that was stacking
+    // on top and pushing first-touch latency past the user's tap.
+    prefetchHubNavigationPages();
     if ("requestIdleCallback" in window) {
-      const pageId = requestIdleCallback(
-        () => {
-          prefetchHubNavigationPages();
-        },
-        { timeout: 4000 },
-      );
       const moduleId = requestIdleCallback(
         () => {
           prefetchCriticalModules();
@@ -74,18 +76,13 @@ export function useAppEffects(deps: AppEffectsDeps): void {
         { timeout: 6000 },
       );
       return () => {
-        cancelIdleCallback(pageId);
         cancelIdleCallback(moduleId);
       };
     }
-    const pageTimer = setTimeout(() => {
-      prefetchHubNavigationPages();
-    }, 2000);
     const moduleTimer = setTimeout(() => {
       prefetchCriticalModules();
     }, 3000);
     return () => {
-      clearTimeout(pageTimer);
       clearTimeout(moduleTimer);
     };
   }, []);
