@@ -94,7 +94,7 @@ export function WelcomeOneScreen({
     // gradient is now applied at the page level (WelcomeScreen page
     // wrapper uses `bg-mesh`), so wrapping content here created a
     // visible "card-on-card" effect with the parent OnboardingWizard
-    // card chrome (bug 2026-05-19, PR-#XXXX).
+    // card chrome (bug 2026-05-19, PR-#3022).
     <div className="flex flex-col items-center text-center space-y-5">
       <div className="space-y-2">
         <BrandLogo size="md" variant="inline" className="mx-auto" />

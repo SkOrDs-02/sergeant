@@ -15,5 +15,9 @@ export function RedirectTo({ to }: { to: string }) {
   useEffect(() => {
     navigate(to, { replace: true });
   }, [navigate, to]);
-  return <span className="sr-only" role="status" aria-live="polite" />;
+  return (
+    <span className="sr-only" role="status" aria-live="polite">
+      Перенаправлення…
+    </span>
+  );
 }

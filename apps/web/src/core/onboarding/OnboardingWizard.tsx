@@ -204,7 +204,7 @@ export function OnboardingWizard({
       // `bg-panel`/border/shadow/p-6). The mesh gradient lives on
       // the WelcomeScreen page wrapper now; the previous card chrome
       // produced a visible white frame around the gradient (bug
-      // 2026-05-19, PR-#XXXX). The modal variant below keeps its
+      // 2026-05-19, PR-#3022). The modal variant below keeps its
       // card chrome — it sits over a translucent backdrop.
       <div
         ref={panelRef}
