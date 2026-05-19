@@ -173,13 +173,37 @@ void (async () => {
   storageManager.runAll();
   void bootSyncEngineWriter({ captureException });
 
+  // Sentry SDK ініт-имо ДО mount, через `void` (chunk dynamic-import-иться
+  // і не блокує первинний рендер). Сенс — закрити обсерваційний gap:
+  // до цієї правки `initSentry` сидів у `requestIdleCallback` після
+  // mount-у, тому всі mount-time React invariants (#426 / #418 / #185 —
+  // саме ті, які трапляються під час першого commit-у) ніколи не
+  // доходили до Sentry. WebVitals / PostHog ініт лишаються в idle —
+  // вони не observability для крашів.
+  void initSentry();
+
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorBoundary fallback={ErrorFallback}>
       <PersistQueryClientProvider
         client={queryClient}
         persistOptions={persistOptions}
       >
-        <RouterProvider router={router} />
+        {/*
+         * Suspense навколо `RouterProvider` — лікар React error #426
+         * ("This Suspense boundary received an update before it finished
+         * hydrating"). `createBrowserRouter` v6.4+ не має зовнішнього
+         * Suspense-обгортання за замовчуванням, а `PersistQueryClientProvider`
+         * під капотом викликає `useSyncExternalStore`-emit-и при відновленні
+         * кешу з IDB. Якщо це збігається з першим mount-ом RouterProvider —
+         * React фіксує update до завершення внутрішньої hydration-фази
+         * роутера і кидає invariant #426 у проді (vendor frames
+         * `throwException → completeUnitOfWork → flushSync`). Зовнішній
+         * Suspense дає роутеру свою власну межу, на якій ці ранні
+         * update-и безпечно зливаються.
+         */}
+        <Suspense fallback={null}>
+          <RouterProvider router={router} />
+        </Suspense>
         {shouldRenderVercelAnalytics() ? <Analytics /> : null}
         {ReactQueryDevtools ? (
           <Suspense fallback={null}>
@@ -194,14 +218,15 @@ void (async () => {
   );
 })();
 
-// Sentry init + web-vitals збір відкладаємо до після hydration — SDK Sentry
-// (~30–40 KB gzip) і `web-vitals` (~1 KB gzip) не повинні блокувати TTI.
-// До ініта Sentry `captureException` у локальному ErrorBoundary — no-op.
-// Web-vitals слухачі мають бути на місці ДО першого hidden/pagehide, але
-// `onLCP`/`onFCP` самі реєструють свої PerformanceObserver якомога раніше
-// в межах тіку виклику, тож idle-timeout 2s прийнятний.
+// Web-vitals + PostHog збір відкладаємо до після hydration — їх chunks
+// (~1 KB gzip web-vitals, ~10 KB PostHog) не повинні блокувати TTI, і
+// це pure observability, не critical-path. `onLCP`/`onFCP` самі
+// реєструють свої PerformanceObserver якомога раніше в межах тіку
+// виклику, тож idle-timeout 2s прийнятний.
+//
+// Sentry init перенесено ВИЩЕ (синхронно перед mount-ом, але через
+// `void`) — щоб мати mount-time invariants під observability.
 const scheduleInit = () => {
-  void initSentry();
   void initWebVitals();
   void initPostHog();
 };
