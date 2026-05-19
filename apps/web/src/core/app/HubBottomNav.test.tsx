@@ -95,6 +95,20 @@ describe("HubBottomNav", () => {
     expect(onChange).toHaveBeenCalledWith("settings");
   });
 
+  it("keeps the PWA nav edge-to-edge with bottom-aligned controls", () => {
+    renderNav({});
+    const nav = screen.getByRole("navigation");
+    const settingsTab = screen.getByRole("tab", { name: /Налаштування/ });
+
+    expect(nav.className).toContain("safe-area-pb");
+    expect(nav.className).not.toContain("mx-3");
+    expect(nav.className).not.toContain("mb-3");
+    expect(nav.className).not.toContain("rounded");
+    expect(nav.className).not.toContain("shadow-nav");
+    expect(settingsTab.className).toContain("justify-end");
+    expect(settingsTab.className).toContain("pb-1.5");
+  });
+
   it("tablist semantics: кожен таб має aria-controls", () => {
     renderNav({});
     const tabs = screen.getAllByRole("tab");

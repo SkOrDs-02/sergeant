@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 /**
@@ -52,6 +52,7 @@
  */
 import type { ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import type { OnboardingGoals } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
@@ -400,6 +401,14 @@ export interface ModuleEmptyStateProps {
   dismissible?: boolean;
   onDismiss?: () => void;
   description?: string;
+  /**
+   * Onboarding goals snapshot from `getOnboardingGoals(webKVStore)`.
+   * When provided, the description adapts to the user's saved goal
+   * (e.g. budget amount, weekly training target) so the copy feels
+   * personal rather than generic. Callers should pass this whenever
+   * the module goal state is already available in their render scope.
+   */
+  goalContext?: OnboardingGoals;
   className?: string;
 }
 
@@ -420,8 +429,8 @@ const MODULE_EMPTY_CONFIG: Record<
 > = {
   finyk: {
     icon: "credit-card",
-    title: "Почни вести фінанси",
-    description: "Додай першу витрату і побач куди йдуть гроші.",
+    title: "Куди йдуть твої гроші?",
+    description: "Додай першу витрату і побач реальну картину бюджету.",
     hint: "Порада: Підключи Monobank для автоматичного імпорту",
     actionLabel: "Додати витрату",
     accent: "text-finyk bg-finyk-soft dark:bg-finyk/10",
@@ -430,8 +439,8 @@ const MODULE_EMPTY_CONFIG: Record<
   },
   fizruk: {
     icon: "dumbbell",
-    title: "Час тренуватись",
-    description: "Запиши першу тренування або обери готову програму.",
+    title: "Як прогресують мої тренування?",
+    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
     hint: "Порада: Почни з 10-хвилинної розминки",
     actionLabel: "Почати тренування",
     accent: "text-fizruk bg-fizruk-soft dark:bg-fizruk/10",
@@ -440,8 +449,8 @@ const MODULE_EMPTY_CONFIG: Record<
   },
   routine: {
     icon: "check-circle",
-    title: "Створи першу звичку",
-    description: "Маленькі кроки щодня ведуть до великих змін.",
+    title: "Що насправді стало звичкою?",
+    description: "Відстежуй щоденні дії — серія днів покаже правду.",
     hint: "Порада: Почни з однієї звички, яку точно виконаєш",
     actionLabel: "Створити звичку",
     accent: "text-routine bg-routine-surface dark:bg-routine/10",
@@ -450,8 +459,8 @@ const MODULE_EMPTY_CONFIG: Record<
   },
   nutrition: {
     icon: "utensils",
-    title: "Залогай перший прийом їжі",
-    description: "Відстежуй що їси і отримай персональні поради.",
+    title: "Що ти їси насправді?",
+    description: "Залогай перший прийом їжі й отримай чесну картину.",
     hint: "Порада: Сфоткай страву — AI порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
@@ -459,6 +468,45 @@ const MODULE_EMPTY_CONFIG: Record<
     exampleLine2: "420 ккал · Б: 15г | Ж: 12г | В: 58г",
   },
 };
+
+/**
+ * Derives a goal-personalised description for the module's empty state.
+ * Mirrors the `getGoalAwareDesc` logic in `FirstActionSheet` — when the
+ * user set a concrete goal during onboarding, the copy anchors on that
+ * goal; when no goal is recorded, the generic outcome description is
+ * returned unchanged.
+ */
+function resolveGoalAwareDesc(
+  moduleId: ModuleEmptyStateProps["module"],
+  fallback: string,
+  goals: OnboardingGoals,
+): string {
+  if (moduleId === "finyk" && goals.finykBudget) {
+    return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴ — додай першу витрату.`;
+  }
+  if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
+    return `${goals.fizrukWeeklyGoal}× на тиждень — починай із першого тренування.`;
+  }
+  if (moduleId === "routine" && goals.routineFirstHabit) {
+    const habitLabels: Record<string, string> = {
+      water: "«Пити воду»",
+      exercise: "«Зарядка»",
+      reading: "«Читання»",
+    };
+    const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
+    return `Відстеж ${label} — серія днів покаже правду.`;
+  }
+  if (moduleId === "nutrition" && goals.nutritionGoal) {
+    const goalLabels: Record<string, string> = {
+      lose: "схуднути",
+      gain: "набрати масу",
+      maintain: "підтримувати вагу",
+    };
+    const goalLabel = goalLabels[goals.nutritionGoal] ?? goals.nutritionGoal;
+    return `Ціль «${goalLabel}» — залогай перший прийом їжі.`;
+  }
+  return fallback;
+}
 
 export function ModuleEmptyState({
   module,
@@ -468,10 +516,19 @@ export function ModuleEmptyState({
   dismissible = false,
   onDismiss,
   description: descriptionOverride,
+  goalContext,
   className,
 }: ModuleEmptyStateProps) {
   const config = MODULE_EMPTY_CONFIG[module];
   const compact = variant === "compact";
+
+  // Explicit `description` override wins; otherwise use goal-aware copy
+  // when caller provided `goalContext`, falling back to config default.
+  const resolvedDescription =
+    descriptionOverride ??
+    (goalContext
+      ? resolveGoalAwareDesc(module, config.description, goalContext)
+      : config.description);
 
   const examplePreview = (
     <div className="flex items-center gap-3 text-left">
@@ -532,7 +589,7 @@ export function ModuleEmptyState({
           )
         }
         title={config.title}
-        description={descriptionOverride ?? config.description}
+        description={resolvedDescription}
         hint={config.hint}
         examplePreview={!compact ? examplePreview : undefined}
         size={compact ? "sm" : "md"}
