@@ -7,7 +7,7 @@ import {
   waitFor,
   cleanup,
 } from "@testing-library/react";
-import { ManualExpenseSheet } from "./ManualExpenseSheet";
+import { ManualExpenseSheet, upgradeCategory } from "./ManualExpenseSheet";
 
 // Web Speech API check inside `VoiceMicButton` short-circuits to null when
 // SpeechRecognition isn't on `window`, which is exactly what jsdom gives
@@ -28,6 +28,41 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+});
+
+// ─── upgradeCategory unit tests — all 3 storage eras ─────────────────────────
+describe("upgradeCategory — era detection", () => {
+  it("Era 3: known slug passes through unchanged", () => {
+    expect(upgradeCategory("food")).toBe("food");
+    expect(upgradeCategory("transport")).toBe("transport");
+    expect(upgradeCategory("other")).toBe("other");
+  });
+
+  it("Era 2: emoji-prefixed strings upgrade to slug", () => {
+    expect(upgradeCategory("🍴 їжа")).toBe("food");
+    expect(upgradeCategory("🚗 транспорт")).toBe("transport");
+    expect(upgradeCategory("🏷 інше")).toBe("other");
+    expect(upgradeCategory("🍔 кафе та ресторани")).toBe("cafe");
+    expect(upgradeCategory("💊 здоров'я")).toBe("health");
+  });
+
+  it("Era 1: bare UA labels upgrade to slug", () => {
+    expect(upgradeCategory("їжа")).toBe("food");
+    expect(upgradeCategory("транспорт")).toBe("transport");
+    expect(upgradeCategory("розваги")).toBe("entertainment");
+    expect(upgradeCategory("здоров'я")).toBe("health");
+    expect(upgradeCategory("одяг")).toBe("shopping");
+    expect(upgradeCategory("комунальні")).toBe("utilities");
+    expect(upgradeCategory("техніка")).toBe("tech");
+    expect(upgradeCategory("інше")).toBe("other");
+  });
+
+  it("null / undefined / unknown value falls back to 'other'", () => {
+    expect(upgradeCategory(null)).toBe("other");
+    expect(upgradeCategory(undefined)).toBe("other");
+    expect(upgradeCategory("")).toBe("other");
+    expect(upgradeCategory("🤷 невідоме")).toBe("other");
+  });
 });
 
 describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
@@ -74,20 +109,21 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     };
     expect(call.amount).toBe(120.5);
     expect(call.description).toBe("Кава");
-    // Default category is "🏷 інше" — matches DEFAULT_CATEGORY у компоненті.
-    expect(call.category).toBe("🏷 інше");
+    // Default category is now slug "other" (F5b — was "🏷 інше").
+    expect(call.category).toBe("other");
     // ISO-8601 date string ('YYYY-MM-DDTHH:mm:ss.sssZ').
     expect(call.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("falls back to category-derived description when name is empty", async () => {
+  it("falls back to category display label when name is empty (Era 2 initialCategory)", async () => {
     const onSave = vi.fn();
     render(
       <ManualExpenseSheet
         open
         onClose={() => {}}
         onSave={onSave}
+        // Era 2 emoji string — upgraded to slug "food" at read-time.
         initialCategory="🍴 їжа"
       />,
     );
@@ -100,8 +136,41 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1);
     });
-    const call = onSave.mock.calls[0]![0] as { description: string };
-    // stripEmoji("🍴 їжа") → "їжа".
-    expect(call.description).toBe("їжа");
+    const call = onSave.mock.calls[0]![0] as {
+      description: string;
+      category: string;
+    };
+    // CATEGORY_DISPLAY["food"].label = "Їжа" (capitalised, no emoji).
+    expect(call.description).toBe("Їжа");
+    // Write path always emits slug.
+    expect(call.category).toBe("food");
+  });
+
+  it("falls back to category display label when name is empty (Era 1 initialCategory)", async () => {
+    const onSave = vi.fn();
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        onSave={onSave}
+        // Era 1 bare UA label — upgraded to slug "transport" at read-time.
+        initialCategory="транспорт"
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+    const call = onSave.mock.calls[0]![0] as {
+      description: string;
+      category: string;
+    };
+    expect(call.description).toBe("Транспорт");
+    expect(call.category).toBe("transport");
   });
 });

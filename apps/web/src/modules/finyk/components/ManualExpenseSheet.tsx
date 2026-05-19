@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-05-19
  * Status: Active
  */
 import { useState, useEffect, useId, useMemo } from "react";
@@ -17,68 +17,172 @@ import {
 } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { formatMoney } from "@sergeant/shared";
+import { Icon } from "@shared/components/ui/Icon";
+import type { IconName } from "@shared/components/ui/Icon";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
   type FrequentMerchant,
 } from "@sergeant/finyk-domain/domain/personalization";
 
-// Manual-expense categories. Labels map to the MCC canonical ids used
-// across the rest of Finyk (see `MANUAL_CATEGORY_ID_MAP`), so manual
-// entries and bank transactions share one taxonomy for analytics and
-// budgets. Emojis mirror the MCC labels for visual consistency.
-const CATEGORIES = [
-  "🍴 їжа",
-  "🛍 продукти",
-  "🍔 кафе та ресторани",
-  "🚗 транспорт",
-  "🎮 розваги",
-  "💊 здоров'я",
-  "🛍️ покупки",
-  "🏠 комунальні",
-  "📱 техніка",
-  "🎵 підписки",
-  "📚 навчання",
-  "✈️ подорожі",
-  "🏷 інше",
-];
-const DEFAULT_CATEGORY = "🏷 інше";
+// ─── Category slug system (F5b, 2026-05) ────────────────────────────────────
+//
+// Era 1 — pre-emoji (legacy): category stored as bare UA label, e.g. "їжа",
+//   "транспорт". Upgraded at read-time via LEGACY_RAW_TO_SLUG.
+//
+// Era 2 — emoji-prefixed (legacy): "🍴 їжа", "🚗 транспорт". Upgraded at
+//   read-time by stripping leading emoji, then mapping the UA label to slug
+//   via UA_LABEL_TO_SLUG.
+//
+// Era 3 — slug (current): "food", "transport", "groceries", etc. Used
+//   directly. Write path always emits a slug.
+//
+// Historical records in localStorage are NOT batch-migrated. upgradeCategory()
+// normalises them on every read, then the result (always a slug) is stored
+// on submit.
 
-// Legacy labels (pre-emoji). Old manual expenses stored category as e.g.
-// "їжа". When loaded for edit, we upgrade the string to its emoji
-// counterpart so the picker highlights it; saved value still round-trips
-// through `MANUAL_CATEGORY_ID_MAP` for personalization/analytics.
-const LEGACY_CATEGORY_UPGRADE: Record<string, string> = {
-  їжа: "🍴 їжа",
-  транспорт: "🚗 транспорт",
-  розваги: "🎮 розваги",
-  "здоров'я": "💊 здоров'я",
-  одяг: "🛍️ покупки",
-  комунальні: "🏠 комунальні",
-  техніка: "📱 техніка",
-  інше: "🏷 інше",
-};
+/** Typed category slugs. */
+export type CategorySlug =
+  | "food"
+  | "groceries"
+  | "cafe"
+  | "transport"
+  | "entertainment"
+  | "health"
+  | "shopping"
+  | "utilities"
+  | "tech"
+  | "subscriptions"
+  | "education"
+  | "travel"
+  | "other";
 
-function upgradeCategory(raw: string | null | undefined) {
-  if (!raw) return DEFAULT_CATEGORY;
-  if (CATEGORIES.includes(raw)) return raw;
-  const up = LEGACY_CATEGORY_UPGRADE[raw];
-  return up || raw;
+interface CategoryDisplay {
+  iconName: IconName;
+  /** Human-readable Ukrainian label shown in the chip. */
+  label: string;
 }
 
-// Strips leading emoji + space so "🍴 їжа" → "їжа", used as a human-readable
-// fallback description when the user leaves the name empty. We accept any
-// run of non-letter / non-digit grapheme chunks so compound emoji (zwj
-// sequences, variation selectors) all get peeled off.
-function stripEmoji(label: string) {
-  const str = String(label || "");
+/**
+ * Canonical display map: slug → { iconName, label }.
+ * Single source of truth for rendering. No emoji — icons only.
+ */
+export const CATEGORY_DISPLAY: Record<CategorySlug, CategoryDisplay> = {
+  food: { iconName: "utensils", label: "Їжа" },
+  groceries: { iconName: "shopping-cart", label: "Продукти" },
+  cafe: { iconName: "coffee", label: "Кафе та ресторани" },
+  transport: { iconName: "truck", label: "Транспорт" },
+  entertainment: { iconName: "sparkles", label: "Розваги" },
+  health: { iconName: "heart", label: "Здоров'я" },
+  shopping: { iconName: "tag", label: "Покупки" },
+  utilities: { iconName: "home", label: "Комунальні" },
+  tech: { iconName: "monitor", label: "Техніка" },
+  subscriptions: { iconName: "repeat", label: "Підписки" },
+  education: { iconName: "book", label: "Навчання" },
+  travel: { iconName: "compass", label: "Подорожі" },
+  other: { iconName: "tag", label: "Інше" },
+};
+
+/**
+ * The ordered list of slugs used for the category picker.
+ * Matches the former CATEGORIES array in display order.
+ */
+const CATEGORY_SLUGS: CategorySlug[] = [
+  "food",
+  "groceries",
+  "cafe",
+  "transport",
+  "entertainment",
+  "health",
+  "shopping",
+  "utilities",
+  "tech",
+  "subscriptions",
+  "education",
+  "travel",
+  "other",
+];
+
+const DEFAULT_CATEGORY: CategorySlug = "other";
+
+// Era 1 upgrade map: bare UA label (lower-case) → slug.
+// Covers all the pre-emoji strings that were stored before the emoji era.
+const LEGACY_RAW_TO_SLUG: Record<string, CategorySlug> = {
+  їжа: "food",
+  продукти: "groceries",
+  "кафе та ресторани": "cafe",
+  кафе: "cafe",
+  транспорт: "transport",
+  розваги: "entertainment",
+  "здоров'я": "health",
+  здоров: "health",
+  одяг: "shopping",
+  покупки: "shopping",
+  комунальні: "utilities",
+  техніка: "tech",
+  підписки: "subscriptions",
+  навчання: "education",
+  подорожі: "travel",
+  інше: "other",
+};
+
+// Era 2 upgrade map: stripped UA label from emoji string → slug.
+// Keys are the labels that appear AFTER the emoji prefix (lower-case).
+// Identical to LEGACY_RAW_TO_SLUG — the strip makes them equivalent,
+// so we reuse the same map for both eras.
+const UA_LABEL_TO_SLUG = LEGACY_RAW_TO_SLUG;
+
+/** Returns true if the value is a known slug. */
+function isCategorySlug(value: string): value is CategorySlug {
+  return Object.prototype.hasOwnProperty.call(CATEGORY_DISPLAY, value);
+}
+
+/**
+ * Strips leading emoji + space so "🍴 їжа" → "їжа".
+ * Accepts any run of non-letter / non-digit grapheme chunks so compound
+ * emoji (ZWJ sequences, variation selectors) are all peeled off.
+ */
+function stripLeadingEmoji(str: string): string {
+  const s = String(str || "");
   let i = 0;
-  while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i]!)) i++;
-  return str.slice(i).trim();
+  while (i < s.length && !/[\p{L}\p{N}]/u.test(s[i]!)) i++;
+  return s.slice(i).trim();
+}
+
+/**
+ * Normalises any stored category value to a CategorySlug.
+ *
+ * Era 3 (slug): returned directly if recognised.
+ * Era 2 (emoji-prefixed): emoji stripped, UA label looked up in UA_LABEL_TO_SLUG.
+ * Era 1 (bare UA label): looked up directly in LEGACY_RAW_TO_SLUG.
+ * Unknown: falls back to "other".
+ *
+ * @example
+ * upgradeCategory("food")      // Era 3 → "food"
+ * upgradeCategory("🍴 їжа")   // Era 2 → "food"
+ * upgradeCategory("їжа")       // Era 1 → "food"
+ * upgradeCategory(null)         // → "other"
+ */
+export function upgradeCategory(raw: string | null | undefined): CategorySlug {
+  if (!raw) return DEFAULT_CATEGORY;
+
+  const trimmed = raw.trim();
+
+  // Era 3: known slug — use directly.
+  if (isCategorySlug(trimmed)) return trimmed;
+
+  // Era 2: emoji-prefixed string — strip emoji then map the UA label.
+  // Era 1: bare UA label — also matched by the stripped path (no-op strip).
+  const stripped = stripLeadingEmoji(trimmed).toLocaleLowerCase("uk-UA");
+  const fromLabel = UA_LABEL_TO_SLUG[stripped];
+  if (fromLabel) return fromLabel;
+
+  // Unknown legacy value — graceful fallback.
+  return DEFAULT_CATEGORY;
 }
 
 // Amount suggestion pills. Defaults give a first-run user sane round
-// values; personalised «часті» amounts (from top merchants’ average
+// values; personalised «часті» amounts (from top merchants' average
 // spend) are merged into the same row and rendered first, marked with
 // a small dot so the user can still tell which suggestion is based on
 // their own history. One row instead of two separately-labelled rows
@@ -124,31 +228,34 @@ type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
 function sortCategoriesByFrequency(
   frequentCategories: FrequentCategory[] = [],
-) {
-  if (!frequentCategories.length) return CATEGORIES;
-  // Перетворюємо частотну статистику на індекс manual-label → rank.
-  // Для canonical id беремо відповідний manual-label; для custom / невідомих —
-  // використовуємо original manualLabel, якщо він є у списку кнопок.
-  const rank = new Map<string, number>();
+): CategorySlug[] {
+  if (!frequentCategories.length) return CATEGORY_SLUGS;
+  // Перетворюємо частотну статистику на індекс slug → rank.
+  // manualLabel може зберігати будь-яку з 3 ер — upgradeCategory нормалізує.
+  // CANONICAL_TO_MANUAL_LABEL повертає slug (F5b), тож подвійне upgradeCategory
+  // — no-op для Era 3; безпечно для Era 2/1.
+  const rank = new Map<CategorySlug, number>();
   frequentCategories.forEach((cat, idx) => {
-    const label =
-      cat.manualLabel && CATEGORIES.includes(cat.manualLabel)
-        ? cat.manualLabel
-        : CANONICAL_TO_MANUAL_LABEL[cat.id];
-    if (label && CATEGORIES.includes(label) && !rank.has(label)) {
-      rank.set(label, idx);
+    const rawLabel = cat.manualLabel
+      ? upgradeCategory(cat.manualLabel)
+      : cat.id
+        ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
+        : null;
+    const slug = rawLabel && isCategorySlug(rawLabel) ? rawLabel : null;
+    if (slug && CATEGORY_SLUGS.includes(slug) && !rank.has(slug)) {
+      rank.set(slug, idx);
     }
   });
-  const withRank = CATEGORIES.map((c, originalIdx) => ({
-    label: c,
-    rank: rank.has(c) ? (rank.get(c) ?? Infinity) : Infinity,
+  const withRank = CATEGORY_SLUGS.map((slug, originalIdx) => ({
+    slug,
+    rank: rank.has(slug) ? (rank.get(slug) ?? Infinity) : Infinity,
     originalIdx,
   }));
   withRank.sort((a, b) => {
     if (a.rank !== b.rank) return a.rank - b.rank;
     return a.originalIdx - b.originalIdx;
   });
-  return withRank.map((x) => x.label);
+  return withRank.map((x) => x.slug);
 }
 
 interface ManualExpenseSheetProps {
@@ -202,14 +309,18 @@ export function ManualExpenseSheet({
         date: toLocalISODate(),
       },
       onSubmit: async (values) => {
+        const slug = upgradeCategory(values.category);
         const trimmedDesc = values.description.trim();
-        const description = trimmedDesc || stripEmoji(values.category);
+        // Fallback description uses the UA label from the display map.
+        const description =
+          trimmedDesc || (CATEGORY_DISPLAY[slug]?.label ?? slug);
         hapticSuccess();
         onSave?.({
           ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
           description,
           amount: parseFloat(values.amount),
-          category: values.category,
+          // Write path: always emit slug (Era 3).
+          category: slug,
           // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
           // Ставимо полудень, щоб стабільно зберігати правильний день.
           date: values.date
@@ -241,26 +352,27 @@ export function ManualExpenseSheet({
           description: String(initialExpense.description || ""),
           amount:
             initialExpense.amount != null ? String(initialExpense.amount) : "",
+          // upgradeCategory handles Era 1/2/3 stored values.
           category: upgradeCategory(initialExpense.category),
           date: toLocalISODate(d),
         });
       } else {
         // Пріоритет: явна initialCategory (клік з дашборду) > найчастіша
-        // категорія з статистики > дефолт ("інше"). Будь-яка legacy
-        // мітка ("їжа", "транспорт") оновлюється до emoji-версії.
-        let startCategory = DEFAULT_CATEGORY;
+        // категорія з статистики > дефолт ("other"). Будь-яка legacy
+        // мітка (Era 1/2) оновлюється до slug (Era 3).
+        let startCategory: CategorySlug = DEFAULT_CATEGORY;
         if (initialCategory) {
           startCategory = upgradeCategory(initialCategory);
         } else if (frequentCategories.length > 0) {
           const top = frequentCategories[0];
-          const topLabel =
-            top!.manualLabel! && typeof top!.manualLabel! === "string"
-              ? upgradeCategory(top!.manualLabel!)
+          const topSlug =
+            top!.manualLabel && typeof top!.manualLabel === "string"
+              ? upgradeCategory(top!.manualLabel)
               : CANONICAL_TO_MANUAL_LABEL[top!.id!]
                 ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[top!.id!])
                 : null;
-          if (topLabel && CATEGORIES.includes(topLabel)) {
-            startCategory = topLabel;
+          if (topSlug && CATEGORY_SLUGS.includes(topSlug)) {
+            startCategory = topSlug;
           }
         }
         reset({
@@ -295,14 +407,19 @@ export function ManualExpenseSheet({
   // залишався видимим і не плутав користувача при відкритті аркуша.
   const CATEGORY_COLLAPSED_COUNT = 6;
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+
+  // Normalise the watched category value so comparison against slug list is
+  // stable even if a legacy value slips through.
+  const categorySlug = upgradeCategory(category);
+
   const visibleCategories = useMemo(() => {
     if (categoriesExpanded) return sortedCategories;
     const base = sortedCategories.slice(0, CATEGORY_COLLAPSED_COUNT);
-    if (category && !base.includes(category)) {
-      return [category, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
+    if (categorySlug && !base.includes(categorySlug)) {
+      return [categorySlug, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
     }
     return base;
-  }, [sortedCategories, categoriesExpanded, category]);
+  }, [sortedCategories, categoriesExpanded, categorySlug]);
   const hasHiddenCategories =
     sortedCategories.length > CATEGORY_COLLAPSED_COUNT;
 
@@ -495,10 +612,13 @@ export function ManualExpenseSheet({
                     setValue("description", m.name, { shouldDirty: true });
                     // Якщо є впевнений підпис manual-категорії для цього
                     // мерчанта — підставляємо його, щоб економити тапи.
+                    // suggestedManualCategory може бути Era 1/2/3 — upgradeCategory
+                    // нормалізує до slug.
+                    const suggestedRaw = m.suggestedManualCategory;
                     const suggested =
-                      m.suggestedManualCategory &&
-                      CATEGORIES.includes(m.suggestedManualCategory)
-                        ? m.suggestedManualCategory
+                      suggestedRaw &&
+                      CATEGORY_SLUGS.includes(upgradeCategory(suggestedRaw))
+                        ? upgradeCategory(suggestedRaw)
                         : null;
                     if (suggested) {
                       setValue("category", suggested, { shouldDirty: true });
@@ -552,20 +672,30 @@ export function ManualExpenseSheet({
             role="group"
             aria-labelledby={catLabelId}
           >
-            {visibleCategories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setValue("category", cat, { shouldDirty: true })}
-                className={`px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
-                  category === cat
-                    ? "bg-finyk-strong text-white border-finyk-strong shadow-sm"
-                    : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            {visibleCategories.map((slug) => {
+              const display = CATEGORY_DISPLAY[slug];
+              return (
+                <button
+                  key={slug}
+                  type="button"
+                  onClick={() =>
+                    setValue("category", slug, { shouldDirty: true })
+                  }
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
+                    categorySlug === slug
+                      ? "bg-finyk-strong text-white border-finyk-strong shadow-sm"
+                      : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
+                  }`}
+                >
+                  <Icon
+                    name={display?.iconName ?? "tag"}
+                    size="xs"
+                    aria-hidden
+                  />
+                  {display?.label ?? slug}
+                </button>
+              );
+            })}
             {hasHiddenCategories && (
               <button
                 type="button"
