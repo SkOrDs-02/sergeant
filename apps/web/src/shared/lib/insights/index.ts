@@ -16,3 +16,8 @@ export {
   useInsightDismissal,
   type UseInsightDismissalResult,
 } from "./useInsightDismissal";
+
+export {
+  useAllInsights,
+  type UseAllInsightsOptions,
+} from "./useAllInsights";
