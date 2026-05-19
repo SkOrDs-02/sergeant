@@ -85,7 +85,7 @@ describe("HubBottomNav", () => {
       ),
     ).toHaveLength(1);
     expect(indicator).toHaveStyle({
-      left: "calc(2 * (100% / 3) + 0.25rem)",
+      left: "calc(2 * (100% / 3) + (100% / 3 - 2.5rem) / 2)",
     });
   });
 

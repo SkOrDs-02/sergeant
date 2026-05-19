@@ -13,22 +13,26 @@ import { messages } from "@shared/i18n/uk";
 /**
  * Sergeant Design System — `HubBottomNav`
  *
- * Hub-level bottom navigation. Replaces the earlier top-positioned
- * `HubTabs` so the whole app lives under a single navigation pattern:
- * everything (hub + 4 modules) reads bottom-up, not bottom-down for
- * modules and top-down for the hub.
+ * Hub-level bottom navigation. Sits as an edge-to-edge `border-t`
+ * panel flush with the screen bottom — matches `ModuleBottomNav` so
+ * the whole app reads under one navigation pattern.
  *
- * Shape mirrors `ModuleBottomNav` for visual consistency:
+ * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - Active indicator pill (`w-10 h-1`) at the top, brand-colored
- *   instead of module-colored (the hub is module-agnostic).
+ * - `bg-panel/95 motion-safe:backdrop-blur-xl` translucent surface,
+ *   `border-t border-line` only — no horizontal margin, no rounded
+ *   corners, no shadow (no floating-card look).
+ * - Active indicator: thin 4 px sliding stripe (`top-0 h-1 w-10
+ *   rounded-full`) at the top of the active tab, `bg-ink-strong`
+ *   (brand) — module-agnostic by design.
+ * - Active label + icon: `text-ink-strong`; inactive: `text-muted`.
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
  * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
  *   `ActiveWorkoutBanner` and other floating chrome must offset
- *   their `bottom:` by 76 px + safe-area-inset-bottom to sit above it.
+ *   their `bottom:` by 60 px + safe-area-inset-bottom to sit above it.
  *
  * The reports-tab reveal behavior (a single bounce-in animation when
  * the tab first appears) is preserved from the old `HubTabs` — see
@@ -94,16 +98,11 @@ function HubBottomNavTab({
       // accessible name (`label`), і тести з `name: /Звіти/` падали б.
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        // `z-10` ставить кнопку поверх absolutely-positioned active-tab
-        // background pill (added in PR-5 v2 redesign).
-        "relative z-10 flex-1 flex flex-col items-center justify-center gap-1",
+        "relative flex-1 flex flex-col items-center justify-center gap-1",
         "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-        // v2 redesign: active tab reads on the ink-strong background pill
-        // → text inverts to `bg-base` (warm cream in light, dark in dark);
-        // inactive stays muted on the glass surface.
-        active ? "text-bg-base" : "text-muted hover:text-text/70",
+        active ? "text-ink-strong" : "text-muted hover:text-text/70",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}
@@ -255,72 +254,48 @@ export function HubBottomNav({
   const activeIndex = tabs.findIndex((tab) => tab.active);
 
   return (
-    // Sergeant v2 redesign (2026-05, PR-5) — transformed from flat
-    // `border-t` panel to a floating glass pill (`mx-3 mb-3`,
-    // `rounded-r-2xl`, `shadow-nav`). The outer wrapper preserves
-    // `safe-area-pb` so iOS home-indicator clears; the inner `<nav>`
-    // becomes the visible pill. Active indicator changed from a top
-    // 1-px stripe to a full-cell `bg-ink-strong` background pill
-    // sitting BEHIND the active tab content.
-    //
-    // Phase 1 (M2) — bottom inset math moved from `mb-3` on the nav
-    // to the wrapper as `padding-bottom: calc(0.75rem +
-    // env(safe-area-inset-bottom))`. Putting `mb-3` on the nav while
-    // the wrapper also applied `safe-area-pb` stacked both margins on
-    // iPhone notch devices, pushing the pill into the home indicator.
-    // Phase 1 (M3) — `backdrop-blur-md` → `motion-safe:backdrop-blur-md`
-    // so `prefers-reduced-motion` users get the clearer translucent
-    // surface without the GPU-heavy blur (Android Chrome WebView jank).
-    <div
-      className="shrink-0 relative z-30"
-      aria-hidden={false}
+    <nav
+      aria-label={messages.nav.hubSections}
+      className={cn(
+        "shrink-0 relative z-30 safe-area-pb",
+        "bg-panel/95 motion-safe:backdrop-blur-xl",
+        "border-t border-line",
+      )}
     >
-      <nav
-        aria-label={messages.nav.hubSections}
-        className={cn(
-          "mx-3",
-          "bg-surface-strong-glass motion-safe:backdrop-blur-md",
-          "border border-line",
-          "rounded-r-2xl",
-          "shadow-nav",
-        )}
+      <div
+        role="tablist"
+        className="relative flex h-[60px] pointer-coarse:h-[64px]"
       >
-        <div
-          role="tablist"
-          className="relative flex h-[60px] pointer-coarse:h-[64px] p-1"
-        >
-          {activeIndex >= 0 && (
-            <span
-              data-testid="hub-bottom-nav-active-indicator"
-              className={cn(
-                "absolute inset-y-1 pointer-events-none",
-                "rounded-xl bg-ink-strong",
-                "transition-[left] duration-200 ease-out",
-              )}
-              style={{
-                left: `calc(${activeIndex} * (100% / ${tabs.length}) + 0.25rem)`,
-                width: `calc(100% / ${tabs.length} - 0.5rem)`,
-              }}
-              aria-hidden
-            />
-          )}
+        {activeIndex >= 0 && (
+          <span
+            data-testid="hub-bottom-nav-active-indicator"
+            className={cn(
+              "absolute top-0 h-1 w-10 rounded-full pointer-events-none",
+              "bg-ink-strong shadow-sm",
+              "transition-[left] duration-200 ease-out",
+            )}
+            style={{
+              left: `calc(${activeIndex} * (100% / ${tabs.length}) + (100% / ${tabs.length} - 2.5rem) / 2)`,
+            }}
+            aria-hidden
+          />
+        )}
 
-          {tabs.map((tab) => (
-            <HubBottomNavTab
-              key={tab.key}
-              id={tab.id}
-              panelId={tab.panelId}
-              active={tab.active}
-              onClick={tab.onClick}
-              iconName={tab.iconName}
-              label={tab.label}
-              className={tab.className}
-              prefetchPage={tab.prefetchPage}
-              hiddenSlot={tab.hiddenSlot}
-            />
-          ))}
-        </div>
-      </nav>
-    </div>
+        {tabs.map((tab) => (
+          <HubBottomNavTab
+            key={tab.key}
+            id={tab.id}
+            panelId={tab.panelId}
+            active={tab.active}
+            onClick={tab.onClick}
+            iconName={tab.iconName}
+            label={tab.label}
+            className={tab.className}
+            prefetchPage={tab.prefetchPage}
+            hiddenSlot={tab.hiddenSlot}
+          />
+        ))}
+      </div>
+    </nav>
   );
 }
