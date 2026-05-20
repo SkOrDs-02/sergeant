@@ -33,6 +33,7 @@ function lint(code, filename) {
       languageOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
+        parserOptions: { ecmaFeatures: { jsx: true } },
       },
     },
     { filename },
@@ -181,5 +182,102 @@ describe("no-foreign-module-accent", () => {
     // that legitimately render whichever accent the current module
     // needs (e.g. ModuleErrorBoundary), so the rule must stay quiet.
     assert.equal(messages.length, 0);
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // D-4 expansion (P2-2 in 2026-05-13-testing-devx-roast.md): cover
+  // every shape contributors realistically write a foreign-accent
+  // utility into. Each case below is a BAD fixture — the rule must
+  // emit exactly the expected `messages.length`.
+  // ─────────────────────────────────────────────────────────────────
+
+  it('flags foreign accent inside a JSX `className="…"` attribute', () => {
+    // Contributors most often inline the literal directly on JSX. The
+    // rule walks every Literal regardless of position, so this must
+    // fire even when the string never escapes a JSXAttribute.
+    const messages = lint(
+      `export function Card() { return <div className="rounded ring-routine" />; }`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /ring-routine/);
+  });
+
+  it("flags foreign accent inside a `clsx(…)` argument", () => {
+    // `clsx` is the other widely-used utility (alongside `cn`). The
+    // existing test only covers `cn`; add explicit `clsx` coverage
+    // so a future refactor splitting the two paths cannot regress.
+    const messages = lint(
+      `const c = clsx("rounded", isActive && "text-routine-strong", "mt-2");`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /text-routine-strong/);
+  });
+
+  it("flags foreign accent inside a `cva(…)` variant value", () => {
+    // CVA variant maps are the third common shape (used by Button,
+    // Badge, Stat primitives). The accent literal lives deep inside
+    // an ObjectExpression → Property → Literal chain — confirm the
+    // rule still sees it.
+    const messages = lint(
+      [
+        `const stat = cva("rounded-xl", {`,
+        `  variants: { intent: { primary: "bg-nutrition-surface", danger: "bg-rose-50" } },`,
+        `});`,
+      ].join("\n"),
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /bg-nutrition-surface/);
+  });
+
+  it("flags foreign accent inside a `twMerge(…)` theme-utility wrapper", () => {
+    // Some primitives delegate to `twMerge` to dedupe Tailwind classes
+    // before forwarding to the underlying element. The rule has to
+    // walk the string argument the same way it walks `cn`/`clsx`.
+    const messages = lint(
+      `const c = twMerge("px-3 py-2", "bg-finyk-surface");`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /bg-finyk-surface/);
+  });
+
+  it("flags foreign accent across both branches of a conditional ternary", () => {
+    // A common shape: `flag ? "ring-routine" : "ring-fizruk"`. Both
+    // branches are independent Literal nodes; only the foreign one
+    // (`ring-routine` in a fizruk file) must be reported.
+    const messages = lint(
+      `const c = isActive ? "ring-routine ring-2" : "ring-fizruk ring-2";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /ring-routine/);
+  });
+
+  it("flags foreign accent under a stacked `dark:hover:focus-visible:` variant chain", () => {
+    // The existing `dark:` / `hover:` / `lg:` test only covers one
+    // variant per token. Stack three of them and confirm the regex
+    // still matches the trailing utility.
+    const messages = lint(
+      `const c = "dark:hover:focus-visible:bg-routine-strong";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /bg-routine-strong/);
+  });
+
+  it("flags foreign accent inside an object-literal `className` slot", () => {
+    // Object literals that carry a className value (e.g.
+    // `<Component {...{ className: "text-routine" }} />` or factory
+    // builders) are still plain Literal nodes — confirm the rule
+    // does not depend on a JSXAttribute parent.
+    const messages = lint(
+      `const props = { className: "text-routine-strong", "data-state": "on" };`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /text-routine-strong/);
   });
 });

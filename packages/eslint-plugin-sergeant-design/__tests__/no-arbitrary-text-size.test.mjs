@@ -192,4 +192,83 @@ describe("no-arbitrary-text-size", () => {
     );
     assert.equal(msgs.length, 0);
   });
+
+  // ─────────────────────────────────────────────────────────────────
+  // D-4 expansion (P2-2 in 2026-05-13-testing-devx-roast.md): tighten
+  // coverage on the shapes contributors realistically write a
+  // text-size literal into, plus a scope-doc case that pins down the
+  // rule's `text-[…]` regex contract.
+  // ─────────────────────────────────────────────────────────────────
+
+  it('flags `text-[18px]` inside a JSX `className="…"` attribute', () => {
+    // The existing test only covers the `const c = "…"` shape. Most
+    // contributors land arbitrary sizes directly on JSX, so pin a
+    // JSXAttribute-shaped fixture explicitly.
+    const msgs = lint(
+      `export function Pill() { return <span className="px-2 text-[18px] text-subtle" />; }`,
+    );
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[18px\]/);
+  });
+
+  it("flags `text-[12px]` inside a `clsx(…)` argument (custom-utility wrapper)", () => {
+    // `clsx` / `cn` / `twMerge` wrappers are the most common way an
+    // arbitrary size slips past code review (the literal lives a few
+    // arguments deep). The rule walks every Literal regardless of
+    // call-site shape — confirm that here.
+    const msgs = lint(
+      `const c = clsx("base", isCompact && "text-[12px]", "mt-1");`,
+    );
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[12px\]/);
+  });
+
+  it("flags `text-[14px]` inside a `cva(…)` variant value", () => {
+    // Design-system primitives that use cva to encode size variants
+    // are the second-most-common shape for size literals. Confirm
+    // the rule reaches into ObjectExpression → Property → Literal.
+    const msgs = lint(
+      [
+        `const button = cva("inline-flex", {`,
+        `  variants: { size: { sm: "text-[14px] py-1", md: "text-sm py-2" } },`,
+        `});`,
+      ].join("\n"),
+    );
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[14px\]/);
+  });
+
+  it("flags `text-[1.125rem]` (Tailwind preset edge — decimal rem)", () => {
+    // `text-[1.125rem]` is the typical “we want something *between*
+    // `text-base` and `text-lg`” hack — the regex specifically
+    // accepts decimal `\d+\.\d+` so the rule still catches it.
+    const msgs = lint(`const c = "text-[1.125rem] leading-snug";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[1\.125rem\]/);
+  });
+
+  it("flags mixed-units in one literal (`text-[10px] sm:text-[1rem]`)", () => {
+    // The two values are different sizes, so the rule must report
+    // each distinct size separately even when one uses px and the
+    // other rem. Guards against a future de-dup regression that
+    // accidentally collapses across unit suffixes.
+    const msgs = lint(`const c = "text-[10px] sm:text-[1rem]";`);
+    assert.equal(msgs.length, 2);
+    const joined = msgs.map((m) => m.message).join(" | ");
+    assert.match(joined, /text-\[10px\]/);
+    assert.match(joined, /text-\[1rem\]/);
+  });
+
+  it("does NOT flag inline `style={{ fontSize: 10 }}` (out of regex scope)", () => {
+    // Scope-doc fixture: the rule's regex is `text-\[Npx|rem|em\]`,
+    // so JSX inline-style `fontSize` numbers are intentionally out
+    // of scope (a separate `react/no-inline-styles` or design-token
+    // rule would own that). Lock the contract here so a future
+    // overreach refactor (“let's also check fontSize”) breaks this
+    // test and forces an explicit design discussion.
+    const msgs = lint(
+      `export function Caption() { return <span style={{ fontSize: 10 }}>x</span>; }`,
+    );
+    assert.equal(msgs.length, 0);
+  });
 });
