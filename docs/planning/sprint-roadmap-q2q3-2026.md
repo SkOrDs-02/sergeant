@@ -32,11 +32,11 @@
 | ID  | Задача                             | Деталь                                                                     | Статус                                                                                                                                                                                                      |
 | --- | ---------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | T1  | HubDashboard decomposition         | `HubDashboard.tsx` 837 → 115 LOC                                           | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5)                                                                                                                     |
-| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                                       | ❌ Не почато (Sprint 7)                                                                                                                                                                                     |
+| T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                                       | ✅ Done ([PR #2538](https://github.com/Skords-01/Sergeant/pull/2538), `c57fad3d`)                                                                                                                     |
 | T3  | Великі файли (батч 3)              | `Workouts.tsx` 744→213, `LogCard.tsx` 736→216, `NutritionApp.tsx` 728→<250 | ✅ Done ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) NutritionApp; [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) Workouts+LogCard)                                    |
 | T4  | Bundle size                        | 856 KB (brotli) → 870 KB ceiling; eager-only 374→342 kB (T4-A+B)           | 🚧 T4-A shipped (lazy WelcomeScreen+OnboardingWizard, `onboardingGate` thin barrel). T4-B partial: react-markdown → inline parser (−30 kB total). Continued cuts → Sprint 10.                               |
 | T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | ✅ First pass shipped (warn-only) — [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (2026-05-13). Tightening LCP `warn` → `error` 3000 ms — baseline-gathered follow-up. |
-| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ⏳ Очікує Sprint 8                                                                                                                                                                                          |
+| T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ✅ Done ([PR #2542](https://github.com/Skords-01/Sergeant/pull/2542), `73edb9cf`)                                                                                                                     |
 | T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | 🚧 Verification job shipped — [`.github/workflows/mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml). Baseline: чекає на перший 20-run pass.                                        |
 
 ### 1.2. Продуктові задачі (відкриті)
@@ -483,8 +483,8 @@ apps/web/src/core/hub/
 | -------- | ----------------- | ------------------ | ---------------- |
 | Спринт 5 | O1, O2, O5        | T7                 | ~5–6 днів        |
 | Спринт 6 | O3, O4, O9        | T1                 | ~8–10 днів       |
-| Спринт 7 | O6, O7            | T2                 | ~7–9 днів        |
-| Спринт 8 | O8-start          | T4 (T4-A done), T6 | ~8–10 днів       |
+| Спринт 7 | O6, O7            | ~~T2~~ (done)      | ~7–9 днів        |
+| Спринт 8 | O8-start          | T4 (T4-A done)     | ~8–10 днів       |
 
 ---
 
