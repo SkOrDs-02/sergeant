@@ -277,14 +277,14 @@
 
 ### D-3 · Parallel `pnpm check` (typecheck + test concurrent)
 
-- **Items covered:** P2-5 з прожарки.
+- **Status:** ✅ Виконано — `pnpm check` тепер викликає `pnpm check:typecheck-and-test`, який запускає `turbo run typecheck test` одним інвокейшеном; turbo фанить обидва pipeline-и паралельно у межах ліміту concurrency. `package.json:62-63`, `AGENTS.md:21,29,158`.
 - **Priority:** P2 · **Size:** S (~30 LoC у `package.json` + турбо conf) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-deploy-and-observability`.
 - **Scope:**
   - Розбити `package.json` → `scripts.check` на 2 phase-и:
     - Phase 1 (serial — лінтер блокує тести): `pnpm format:check && pnpm lint`.
-    - Phase 2 (parallel — незалежні): `pnpm -r --parallel run typecheck && pnpm -r --parallel run test`.
-  - Не змінювати `turbo.json` — Turborepo сам деleguє per-workspace concurrency через `--parallel`.
+    - Phase 2 (parallel — незалежні): єдиний `turbo run typecheck test` (через новий `check:typecheck-and-test`) замість послідовного `pnpm typecheck && pnpm test`. Turbo фанить task-и `typecheck` і `test` у межах того самого scheduler-а, тому workspace-и обох pipeline-ів виконуються конкурентно (а не один pipeline за іншим).
+  - Не змінювати `turbo.json` — обидва таски вже мають однаковий `dependsOn: ["^build"]` та `cache: true`, тому шедулер сам обчислює DAG без ручної конфігурації.
 - **Acceptance:**
   - `pnpm check` локально завершується за **≤ 60%** baseline-часу (виміри: до 2:30 на M1, після ~1:30).
   - CI job `format-lint-test-build` показує schar-час `Total: X` step summary; новий час фіксується у `.github/workflows/ci.yml` як коментар-baseline.
