@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
+> **Last validated:** 2026-05-20 by @Skords-01. **Next review:** 2026-08-18.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -18,7 +18,7 @@ Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUD
 
 ## Quick commands
 
-> **One-liner pre-PR check:** `pnpm check` (= `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`). Same matrix runs in CI — full breakdown in [`§ Verification before PR`](#verification-before-pr).
+> **One-liner pre-PR check:** `pnpm check` (= `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build`, where `check:typecheck-and-test` runs `turbo run typecheck test` so the two task pipelines fan out concurrently). Same matrix runs in CI — full breakdown in [`§ Verification before PR`](#verification-before-pr).
 
 ```bash
 pnpm install --frozen-lockfile        # exact deps from lockfile (Hard Rule — see CONTRIBUTING.md)
@@ -26,7 +26,7 @@ pnpm dev:db                           # docker postgres + run migrations
 pnpm dev:server                       # backend  → http://localhost:3000
 pnpm dev:web                          # frontend → http://localhost:5173
 
-pnpm format:check && pnpm lint && pnpm typecheck && pnpm test   # = pnpm check
+pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build  # = pnpm check
 pnpm --filter @sergeant/web test      # focus a single workspace
 ```
 
@@ -155,7 +155,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Verification before PR
 
-`pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` (= `pnpm check`). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/governance/release-policy.md`](./docs/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/governance/external-link-allowlist.json`](./docs/governance/external-link-allowlist.json).
+`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](./docs/planning/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/governance/release-policy.md`](./docs/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/governance/external-link-allowlist.json`](./docs/governance/external-link-allowlist.json).
 
 ## Deployment & test users
 
