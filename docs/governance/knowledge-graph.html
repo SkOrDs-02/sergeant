@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-05-19)</title>
+    <title>Sergeant — Knowledge Graph (2026-05-21)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-05-19 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-05-21 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>58</b></span>
       <span class="chip chip-audit">audit: <b>31</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>51</b></span>
+      <span class="chip chip-initiative">initiative: <b>52</b></span>
       <span class="chip chip-playbook">playbook: <b>55</b></span>
-      <span class="chip chip-pr">pr: <b>227</b></span>
+      <span class="chip chip-pr">pr: <b>231</b></span>
       <span class="chip chip-skill">skill: <b>21</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (235 core)</summary>
+      <summary>Nodes (236 core)</summary>
       <table>
         <thead>
           <tr>
@@ -132,10 +132,7 @@
                 стартом)</a
               >
             </td>
-            <td>
-              Accepted (історичний архітектурний baseline; pricing/trial
-              уточнено ADR-0051)
-            </td>
+            <td>Accepted</td>
             <td>number=1</td>
           </tr>
           <tr>
@@ -1151,7 +1148,7 @@
                 #3/10)</a
               >
             </td>
-            <td></td>
+            <td>Active</td>
             <td></td>
           </tr>
           <tr>
@@ -1651,8 +1648,8 @@
               >
             </td>
             <td>
-              In progress — **Phases 1 + 2 complete; Phase 4 closed через
-              handoff у 0007**. **Phase 1** (4/4):
+              Done — **Phases 1 + 2 complete; Phase 4 closed через handoff у
+              0007**. **Phase 1** (4/4):
               [#1688](https://github.com/Skords-01/Sergeant/pull/1688)
               `validate-pr-body.mjs` Hard Rule #15 strict 3-of-3,
               [#1691](https://github.com/Skords-01/Sergeant/pull/1691)
@@ -1687,8 +1684,22 @@
               ADR-0046, `sergeant-design/require-stories-for-ui-components`
               severity = `error`
               [#1812](https://github.com/Skords-01/Sergeant/pull/1812)). **Phase
-              3** (hardening verification + email-verification sweep) —
-              пост-0010-launch ≥ 2026-06-02.
+              3 complete 2026-05-06…20** (4/4 PR-ів merged достроково,
+              пост-0010-launch вікно 2026-06-23 не використано): PR 3.1
+              [#2113](https://github.com/Skords-01/Sergeant/pull/2113) pen-test
+              sweep для H5/H6/H8/H9
+              (`docs/security/pen-tests/2026-05-hardening-sweep.md` +
+              `docs/playbooks/security-pen-test-checklist.md`); PR 3.2
+              [#2123](https://github.com/Skords-01/Sergeant/pull/2123)
+              session-protection coverage via Express router introspection
+              (`apps/server/src/__tests__/session-protection.integration.test.ts`,
+              Testcontainers); PR 3.3
+              [#2126](https://github.com/Skords-01/Sergeant/pull/2126)
+              transcribe USD-cap e2e з реальним 5s WAV fixture
+              (`apps/server/src/modules/transcribe/__tests__/transcribe-usd-cap.e2e.test.ts`
+              + `__fixtures__/silence-5s.wav`); PR 3.4 (цей PR) —
+              `docs/launch/email-verification-sweep.md` decision-doc для legacy
+              soft-gate.
             </td>
             <td>
               number=11 · owner=@Skords-01 · priority=P1 (subordinate to
@@ -1757,6 +1768,22 @@
             </td>
             <td>In progress</td>
             <td>number=16</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0017</code></td>
+            <td>
+              <a href="../../docs/initiatives/0017-hub-tabs-mount-perf.md"
+                >0017 — Hub Settings &amp; Reports mount perf</a
+              >
+            </td>
+            <td>
+              In progress — Sprint 0 (observability baseline) not started.
+            </td>
+            <td>
+              number=17 · owner=@Skords-01 · priority=P1 (Sprint 1 candidate
+              after [0016](./0016-changelog-release-cut.md))
+            </td>
           </tr>
           <tr>
             <td>initiative</td>
@@ -3498,7 +3525,7 @@
     </details>
 
     <details>
-      <summary>Edges (482 total, first 500 core-to-core)</summary>
+      <summary>Edges (487 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
