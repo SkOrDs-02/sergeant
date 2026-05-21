@@ -40,7 +40,10 @@ export function useProteinLowInsight(
       title: `Білку: ${consumed} з ${goal}г`,
       subtitle: `Час додати джерело білка?`,
       action: { type: "navigate", path: "/nutrition/log" },
-      showOn: "module",
+      // Hub surface promoted post-Phase 5e: end-of-day protein gap is an
+      // actionable nudge that doesn't require in-Nutrition context — single
+      // "log a meal" navigation closes the loop.
+      showOn: "both",
     } satisfies Insight;
   }, [log, prefs]);
 }

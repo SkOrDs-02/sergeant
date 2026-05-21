@@ -88,7 +88,9 @@ export function useBudgetOverrunInsight({
         type: "navigate",
         path: `/finyk/budgets?cat=${budget.categoryId}`,
       },
-      showOn: "module",
+      // Hub surface promoted post-Phase 5e: budget overrun is urgent + simple
+      // (one navigate, no in-Finyk preview required to understand stakes).
+      showOn: "both",
     };
   }, [budgets, transactions, txCategories, txSplits, customCategories]);
 }

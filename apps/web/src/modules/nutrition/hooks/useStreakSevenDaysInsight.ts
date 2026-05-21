@@ -65,7 +65,10 @@ export function useStreakSevenDaysInsight(
       title: `7 днів у нормі калорій`,
       subtitle: `Хочеш план на наступний тиждень?`,
       action: { type: "navigate", path: "/nutrition/menu" },
-      showOn: "module",
+      // Hub surface promoted post-Phase 5e: 7-day streak achievement +
+      // next-week-plan upsell is cross-module relevant — celebration belongs
+      // on the Hub where it can co-occur with other module progress signals.
+      showOn: "both",
     } satisfies Insight;
   }, [log, prefs]);
 }

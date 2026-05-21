@@ -64,7 +64,10 @@ export function useRestDayOverdueInsight(
       title: `${dayLabel} днів без тренування`,
       subtitle: "Час повернутися?",
       action: { type: "navigate", path: "/fizruk/workouts" },
-      showOn: "module",
+      // Hub surface promoted post-Phase 5e: rest-day overdue is the canonical
+      // cross-module re-engagement signal — needs Hub visibility to actually
+      // catch a user who is busy in finyk/routine/nutrition.
+      showOn: "both",
     };
   }, [workouts, loaded]);
 }

@@ -74,6 +74,9 @@ export function useRecurringDetectedInsight({
       title: `Знайшов повторення: ${merchantName}`,
       subtitle: `~${amountDisplay} ${symbol} щомісяця. Зробити recurring правилом?`,
       action: { type: "navigate", path: "/finyk/assets" },
+      // Stays "module" post-Phase 5e: recurring-detection prompt needs the
+      // in-Finyk tx history preview to be persuasive — surfacing on Hub
+      // without the merchant pattern context = weak conversion.
       showOn: "module",
     };
   }, [transactions, subscriptions, dismissedRecurring, excludedTxIds]);

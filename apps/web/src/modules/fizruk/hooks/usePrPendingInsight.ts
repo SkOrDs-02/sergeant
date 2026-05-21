@@ -139,7 +139,9 @@ export function usePrPendingInsight({
         title: `PR близько на ${exerciseName}`,
         subtitle: `Спробуй ${targetKg} кг сьогодні?`,
         action: { type: "navigate", path: "/fizruk/workouts" },
-        showOn: "module",
+        // Hub surface promoted post-Phase 5e: PR-close is motivational tickler,
+        // works as a Hub re-engagement nudge even when user is in another module.
+        showOn: "both",
       };
     }
 

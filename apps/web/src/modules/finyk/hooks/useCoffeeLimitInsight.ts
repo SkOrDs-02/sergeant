@@ -127,7 +127,10 @@ export function useCoffeeLimitInsight({
       title: `Витрати на каву ↑ ${pct}%`,
       subtitle: `Це ${amount.toLocaleString("uk-UA")} грн. Встановити ліміт?`,
       action: { type: "navigate", path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}` },
-      showOn: "module",
+      // Hub surface promoted post-Phase 5e: spending awareness is useful
+      // cross-module — user may not be in Finyk when threshold matters, and
+      // the "Встановити ліміт?" action navigates with full context.
+      showOn: "both",
     };
   }, [transactions, txCategories, txSplits, customCategories]);
 }
