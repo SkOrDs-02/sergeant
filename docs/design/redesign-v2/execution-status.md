@@ -1,7 +1,7 @@
 # Sergeant v2 — Execution Status (live tracker)
 
-> **Last validated:** 2026-05-20 by @Skords-01 (Phase 6 fully shipped — 5 PRs + F5b merged; redesign-v2 effectively closed; hub-glass + fizruk-dashboard cleanup batch in flight).
-> **Next review:** after backlog cleanup batch merge → trigger v2 retrospective.
+> **Last validated:** 2026-05-21 by @Skords-01 (v2 close-out batch merged — #3055 doc closure, #3056 Fizruk dashboard glass, #3057 Finyk slug fix, #3058 Hub glass batch. **Redesign-v2 fully closed.** Next pickup: v2 retrospective + Phase 7 prioritization session).
+> **Next review:** v2 retrospective scheduled (Phase 7 product-call session).
 > **Status:** Active.
 > **Companion docs:** [`execution-brief.md`](./execution-brief.md) (orchestration contract — how to run the work) · [`execution-plan.md`](./execution-plan.md) (intent — what we plan to do) · [`governance.md`](./governance.md) (governance) · [`migration.md`](./migration.md) (BEFORE/AFTER tokens) · [`handoff-package/`](./handoff-package/) (canvas mockups + locked decisions, 2026-05-17).
 
