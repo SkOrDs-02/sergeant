@@ -118,11 +118,10 @@ export default [
       // `prefer-text-style` — semantic typography over hand-rolled combos.
       // Replace (text-sm font-medium) with text-style-label etc.
       // See docs/design/design-system.md § Typography.
-      // TODO(redesign-v2 T5): ramp to "error" for `apps/web/src/modules/**`
-      // after the baseline-cleanup PR lands. Current recon (2026-05-17)
-      // shows 80+ candidate violations — flipping severity before cleanup
-      // would break CI. See docs/design/redesign-v2-execution-plan.md
-      // § Phase 0 → T5.
+      //
+      // Severity flow: global `warn` here (covers `apps/web/src/{core,shared}/**`,
+      // packages, tools) → scoped `error` for `apps/web/src/modules/**` below
+      // (ramped 2026-05-21 in #3070 after T5 baseline cleanup landed).
       "sergeant-design/prefer-text-style": "warn",
       // `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` /
       // `text-[Nrem]` literals; route every call-site through a named
@@ -302,6 +301,13 @@ export default [
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
       "sergeant-design/prefer-data-state": "error",
+      // T5 ramp completed 2026-05-21 in #3070 (101 violations migrated across
+      // 65 files; 1 eslint-disable escape with TODO(T5) for responsive
+      // sm:text-sm in PushupsWidget.tsx). Severity promoted to `error` here
+      // so any new module call-site that hand-rolls `text-{size} font-{weight}`
+      // fails CI. Other surfaces (`apps/web/src/{core,shared}/**`, packages,
+      // tools) still inherit the global `warn` from above.
+      "sergeant-design/prefer-text-style": "error",
     },
   },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`

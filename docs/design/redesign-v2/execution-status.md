@@ -34,7 +34,7 @@
 | T2  | `--c-chart-{module}` CSS vars × 4 themes          | ✅          | `apps/web/src/styles/theme.css`: `:root` + `.dark` + `html.hc` + `html.hc.dark`. Дзеркалить Tailwind preset values |
 | T3  | `Sheet` `variant="glass"`                         | ✅          | Default лишається `default`. `GlassVariant` story додано                                                           |
 | T4  | v1 gradient `@deprecated` + `no-v1-gradient` rule | ✅          | Rule severity `error` — recon показав zero consumers, безпечно                                                     |
-| T5  | `prefer-text-style` → `error` для `modules/**`    | ⚠️ Deferred | ~80 baseline violations. Cleanup PR spawn-tasked окремо. TODO у `eslint.config.js` посилається сюди                |
+| T5  | `prefer-text-style` → `error` для `modules/**`    | ✅          | Baseline cleanup [#3070](https://github.com/Skords-01/Sergeant/pull/3070) (65 files, 101 ins/100 del, 1 TODO escape у `PushupsWidget.tsx:124` для responsive `sm:text-sm`) + severity flip окремим follow-up. Closed 2026-05-21. |
 | T6  | `min-h-touch-target` + `[data-touch-target]`      | ✅          | Tailwind utility (always-on) + opt-in attribute selector у `mobile.css`                                            |
 
 ### Phase 1 — Quick wins (tasks)
