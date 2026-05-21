@@ -5,10 +5,9 @@
  * Canonical `/404` (page-not-found) surface. Composed entirely from the
  * design-system `<EmptyState>` primitive + the curated `NotFoundIllustration`,
  * so the same focus contract, motion budget, and SR announcement
- * shipped by the primitive ship here for free. Replaces the inline
- * `apps/web/src/core/NotFoundPage.tsx` (kept as a re-export shim) so
- * route renderers can land on `@core/errors/NotFoundPage` and get the
- * polished surface without per-call drift.
+ * shipped by the primitive ship here for free. Route renderers land here
+ * via `@core/errors/NotFoundPage` (was previously a re-export shim at
+ * `apps/web/src/core/NotFoundPage.tsx` — deleted 2026-05-21).
  */
 import { useNavigate } from "react-router-dom";
 import { Button, EmptyState, Icon } from "@shared/components/ui";

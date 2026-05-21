@@ -5,9 +5,7 @@
  *           (`apps/web/src/core/App.tsx`) and `OfflinePage` into
  *           `StandaloneRoutes.tsx` / the SW offline navigation fallback
  *           (`sw.ts`). Once consumers import through this barrel, drop the
- *           tag. `NotFoundPage` is currently re-exported via the
- *           `core/NotFoundPage.tsx` back-compat shim — migrate that callsite
- *           to `@/core/errors` first.
+ *           tag.
  *
  * Public entry point for the canonical error/empty-state surfaces. See
  * AGENTS.md → Hard Rule #10.

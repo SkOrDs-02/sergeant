@@ -53,7 +53,7 @@ const HubChatPage = lazyImport(
   "HubChatPage",
 );
 const NotFoundPage = lazyImport(
-  () => import("../NotFoundPage"),
+  () => import("../errors/NotFoundPage"),
   "NotFoundPage",
 );
 
