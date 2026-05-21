@@ -33,6 +33,7 @@ import {
 import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
+import { initLongTaskMonitor } from "./core/lib/longTaskMonitor";
 import { maybeRunOnboarding } from "./core/onboarding/index.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
@@ -229,6 +230,11 @@ void (async () => {
 const scheduleInit = () => {
   void initWebVitals();
   void initPostHog();
+  // Initiative 0017 Sprint 0 — global longtask observer feeds
+  // `hub_tab_switch_perf` RUM events plus any future surface that wants
+  // attribution. `buffered: true` inside the monitor recovers any
+  // long-tasks that fired between hydration and idle.
+  initLongTaskMonitor();
 };
 if (typeof window !== "undefined") {
   if ("requestIdleCallback" in window) {

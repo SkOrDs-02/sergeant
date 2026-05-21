@@ -8,6 +8,11 @@ import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { lazyImport } from "../lib/lazyImport";
+import {
+  beginHubTabSwitch,
+  endHubTabSwitch,
+  type TrackedHubTab,
+} from "../lib/hubPerf";
 import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 import type { HubView } from "../hooks/useHubUIState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
@@ -15,6 +20,29 @@ import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 import { TrialBanner } from "../billing/TrialBanner";
+
+/**
+ * Mounts only after the parent Suspense boundary resolves. Inside a
+ * `useEffect` we defer through two `requestAnimationFrame` ticks so
+ * the browser has had a chance to commit + paint the actual panel
+ * content — the resulting `ttiMs` reflects post-paint reachability,
+ * not just commit time. See [Initiative 0017](../../../docs/initiatives/0017-hub-tabs-mount-perf.md).
+ */
+function TabReadyProbe({ tab }: { tab: TrackedHubTab }) {
+  useEffect(() => {
+    let innerHandle: number | null = null;
+    const outerHandle = requestAnimationFrame(() => {
+      innerHandle = requestAnimationFrame(() => {
+        endHubTabSwitch(tab);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outerHandle);
+      if (innerHandle !== null) cancelAnimationFrame(innerHandle);
+    };
+  }, [tab]);
+  return null;
+}
 
 // Profile/Reports/Settings code-split out of the main hub bundle. Static
 // imports defeat `useRoutePrefetch.prefetchPage("profile")` (Vite warns
@@ -145,6 +173,22 @@ export const HubMainContent = memo(function HubMainContent({
     prevHubViewRef.current = hubView;
   }, [hubView]);
 
+  // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches. Fire
+  // `beginHubTabSwitch` here (after React commits the new `hubView`)
+  // and pair it with `<TabReadyProbe>` mounted inside each tab's
+  // Suspense boundary below; the probe fires `endHubTabSwitch` once
+  // the chunk has resolved and the panel content has painted.
+  // `dashboard` is excluded — no Suspense, no meaningful TTI.
+  useEffect(() => {
+    if (
+      hubView === "reports" ||
+      hubView === "settings" ||
+      hubView === "profile"
+    ) {
+      beginHubTabSwitch(hubView);
+    }
+  }, [hubView]);
+
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: coachKeys.all }),
@@ -250,6 +294,7 @@ export const HubMainContent = memo(function HubMainContent({
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubReports />
+                <TabReadyProbe tab="reports" />
               </SuspenseWithMinDelay>
             </div>
           </ErrorBoundary>
@@ -265,6 +310,7 @@ export const HubMainContent = memo(function HubMainContent({
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <ProfilePage />
+                <TabReadyProbe tab="profile" />
               </SuspenseWithMinDelay>
             </div>
           </ErrorBoundary>
@@ -279,6 +325,7 @@ export const HubMainContent = memo(function HubMainContent({
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubSettingsPage user={user} />
+                <TabReadyProbe tab="settings" />
               </SuspenseWithMinDelay>
             </div>
           </ErrorBoundary>

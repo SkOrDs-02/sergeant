@@ -1,7 +1,7 @@
 # 0017 — Hub Settings & Reports mount perf
 
-> **Last validated:** 2026-05-19 by @Skords-01. **Next review:** 2026-08-17.
-> **Status:** In progress — Sprint 0 (observability baseline) not started.
+> **Last validated:** 2026-05-21 by @Skords-01. **Next review:** 2026-08-19.
+> **Status:** In progress — Sprint 0 (observability baseline) **shipped**; Sprint 1 not started.
 > **Priority:** P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))
 > **Owner:** `@Skords-01`
 > **ETA:** ~3 weeks (3 sprints × 1 week each, includes observability baseline)
@@ -79,15 +79,19 @@
 
 ## План змін
 
-### Sprint 0 — Observability baseline (1 PR)
+### Sprint 0 — Observability baseline (1 PR) — **shipped 2026-05-20**
 
-**`feat/0017-hub-tab-perf-rum`** — без цього ми не знаємо чи закрили проблему.
+**`feat/0017-hub-tab-perf-rum`** — реалізовано:
 
-- `apps/web/src/core/app/HubMainContent.tsx`: на click по табу — `performance.mark("tab-start-<id>")`. У `<HubSettingsPage>` / `<HubReports>` — `useEffect(() => performance.mark("tab-ready-<id>"), [])` + `performance.measure(...)`.
-- `apps/web/src/core/lib/hubPerf.ts` (new): `reportTabSwitchPerf({ tab, ttiMs, longTaskMs, longTaskCount, cacheHit })` → PostHog event.
-- `apps/web/src/core/lib/longTaskMonitor.ts` (new): глобальний `PerformanceObserver({ type: "longtask" })`, додає у sliding window per tab-switch.
-- Mount у `App.tsx` після auth ready.
-- **Acceptance**: PostHog dashboard «Hub tab perf» показує P50/P95 для обох табів. Baseline зафіксований у [`docs/observability/hub-perf-baseline.md`](../observability/) (новий файл).
+- [`apps/web/src/core/lib/longTaskMonitor.ts`](../../apps/web/src/core/lib/longTaskMonitor.ts) (new): глобальний `PerformanceObserver({ type: "longtask", buffered: true })` + ring-buffer на 200 entries + `getLongTasksSince(startTime)` API.
+- [`apps/web/src/core/lib/hubPerf.ts`](../../apps/web/src/core/lib/hubPerf.ts) (new): `beginHubTabSwitch(tab)` + `endHubTabSwitch(tab)` шлють `HUB_TAB_SWITCH_PERF` через `trackEvent` → PostHog.
+- [`apps/web/src/core/app/HubMainContent.tsx`](../../apps/web/src/core/app/HubMainContent.tsx): `useEffect` на `hubView` change → `beginHubTabSwitch`; `<TabReadyProbe tab="…" />` всередині кожного `<Suspense>` boundary → `endHubTabSwitch` після 2×rAF (post-paint).
+- [`apps/web/src/main.tsx`](../../apps/web/src/main.tsx): `initLongTaskMonitor()` в тому ж idle slot що `initPostHog()`.
+- [`packages/shared/src/lib/analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts): `ANALYTICS_EVENTS.HUB_TAB_SWITCH_PERF`.
+- Tests: [`longTaskMonitor.test.ts`](../../apps/web/src/core/lib/longTaskMonitor.test.ts) (idempotent init, buffered:true, ring-buffer bound, Safari fallback), [`hubPerf.test.ts`](../../apps/web/src/core/lib/hubPerf.test.ts) (begin/end flow, longtask aggregation, cacheHit detection, edge cases).
+- Baseline runbook: [`docs/observability/hub-perf-baseline.md`](../observability/hub-perf-baseline.md) — PostHog dashboard spec + target таблиця per Sprint + carry-over пункти.
+
+**Acceptance**: Sampling 100% перші 30 днів (за runbook-ом), потім 10%. Перша перевірка baseline-таблиці — 2026-05-27.
 
 ### Sprint 1 — Per-section lazy у Settings (2 PR-и)
 

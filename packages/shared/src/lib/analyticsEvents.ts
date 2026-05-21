@@ -369,6 +369,26 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // is single-select so each user contributes at most one event.
   ONBOARDING_GOAL_FIRST_SHOWN: "onboarding_goal_first_shown",
   ONBOARDING_GOAL_FIRST_PICKED: "onboarding_goal_first_picked",
+
+  // [Initiative 0017](../../../../docs/initiatives/0017-hub-tabs-mount-perf.md)
+  // Sprint 0 — RUM baseline for `?tab=reports` / `?tab=settings` /
+  // `?tab=profile` cold tab switches. Fires once per tab-switch when the
+  // panel's Suspense boundary resolves and its content has mounted past
+  // the skeleton fallback.
+  //
+  //   HUB_TAB_SWITCH_PERF {
+  //     tab: "reports" | "settings" | "profile",
+  //     ttiMs: number,        // ms from view-change commit → panel mounted
+  //     longTaskMs: number,   // sum of `longtask` PerformanceEntry durations
+  //                           // observed during this tab-switch window
+  //     longTaskCount: number,// count of those entries
+  //     cacheHit: boolean,    // chunk already in module cache when switch began
+  //   }
+  //
+  // Target P50 / P95 thresholds tracked in
+  // `docs/observability/hub-perf-baseline.md` — sampling 100 % for the
+  // first 30 days, then 10 % once Sprint 1+2 optimisations land.
+  HUB_TAB_SWITCH_PERF: "hub_tab_switch_perf",
 } as const);
 
 export type AnalyticsEventName =
