@@ -27,9 +27,15 @@
 //   node scripts/docs/bump-last-validated.mjs path/to/file.md [...]
 //   SERGEANT_NO_BUMP=1 git commit -am 'docs: typo'   # bypass bump, keep hook
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { execSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
+import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -44,6 +50,21 @@ const REPO_ROOT = resolve(__dirname, "../..");
 const AUTHOR_MAP_PATH = resolve(__dirname, "author-map.json");
 
 const HEADER_LINE_LIMIT = 15;
+
+// Per-stage timing emission for the pre-commit timing wrapper. The wrapper
+// (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
+// scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
+// summary shows per-stage breakdown. Best-effort — never block a commit.
+// Contract documented in `docs/development/pre-commit-timing.md`.
+function emitStageTiming(stage, ms) {
+  const log = process.env.SERGEANT_TIMING_LOG;
+  if (!log) return;
+  try {
+    appendFileSync(log, `${JSON.stringify({ stage, ms })}\n`);
+  } catch {
+    // Timing emission must never block a commit. Swallow silently.
+  }
+}
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -237,6 +258,7 @@ if (isMain) {
   const paths = process.argv.slice(2).filter((a) => a && !a.startsWith("-"));
   if (paths.length === 0) process.exit(0);
 
+  const __startedAt = performance.now();
   const config = readConfigFile();
   const emailToHandle = loadAuthorMap();
   const email = getCommitterEmail();
@@ -250,6 +272,8 @@ if (isMain) {
     config,
     log: (msg) => console.log(`[bump-last-validated] ${msg}`),
   });
+
+  emitStageTiming("bump-last-validated", performance.now() - __startedAt);
 
   if (modified.length > 0) {
     // Re-stage the files so lint-staged sees the bumped content. lint-staged

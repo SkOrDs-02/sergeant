@@ -1,6 +1,6 @@
 # Pre-commit timing — як читати і чим міряти
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-20 by @Skords-01. **Next review:** 2026-08-18.
 > **Status:** Active
 
 > Закриває P1-5 з [`docs/audits/2026-05-13-testing-devx-roast.md`](../audits/2026-05-13-testing-devx-roast.md) — «Pre-commit timing не вимірюється».
@@ -92,7 +92,39 @@ if (log) {
 
 Помилки запису — best-effort: коментуй `catch {}` і не валі commit з-за них.
 
-Інструментація staged-stage-ів (eslint+prettier per file, staged-typecheck, bump-last-validated) — окремий follow-up; контракт уже стабільний і чекає його. Поки активний лише `total` row, що покриває весь pre-commit pipeline.
+Активні емітери (D-1 follow-up, 2026-05-20):
+
+- `staged-typecheck` — `scripts/staged-typecheck.mjs` емітить один запис per pre-commit-виклик навколо `main()` (агрегований wall-clock усіх `tsc-files` груп, виключаючи скіп-кейси).
+- `bump-last-validated` — `scripts/docs/bump-last-validated.mjs` емітить один запис per pre-commit-виклик навколо CLI-секції (виключаючи `SERGEANT_NO_BUMP=1` opt-out шлях, який повертає миттєво).
+
+Решта lint-staged стейджів (ESLint `--fix`, Prettier `--write`) залишаються "off-the-shelf" — їх wall-clock зливається у `total`. Якщо колись постане потреба у per-file timing для них, лінт-стейджед-плагіну `@trivago/precommit-time` НЕ беремо: він додає dependency, а нам достатньо JSONL-контракту нижче.
+
+## Як прогнати без commit-у — `pnpm precommit:bench`
+
+`scripts/precommit-bench.mjs` — мок-ранер, що синтезує N (default 20) staged-style файлів і прогонить ту саму pipeline без `git`-side-effects.
+
+```bash
+pnpm precommit:bench               # default N = 20 mock .ts files + 5 .md
+pnpm precommit:bench -- --count 50 # custom N
+```
+
+Вивід — таблиця з `wall-clock` (зовнішнє spawn-time) + `inner (script)` (час, який сам wrapper-script виміряв через `SERGEANT_TIMING_LOG`) + `exit` per stage. Приклад:
+
+```
+⏱  precommit-bench summary  (N=20 mock files)
+
+    stage                   wall-clock   inner (script)   exit
+    ─────                   ──────────   ──────────────   ────
+    prettier                    553 ms                —      0
+    staged-typecheck            823 ms           792 ms      0
+    bump-last-validated          57 ms             7 ms      0
+    ─────
+    total                       1.44 s
+```
+
+Side-effects: створює і одразу прибирає `.husky/.bench-tmp/run-XXX/` (gitignored). Жодного `git`-запису.
+
+Коли використовувати: підбираєш N, який характерний для твого workflow (10–100), запускаєш 3–5 разів, дивишся, чи якийсь stage росте. Прибирає необхідність робити справжній dummy-commit для профілювання.
 
 ## Куди записується лог
 
@@ -131,6 +163,9 @@ git pipe-ить stdout pre-commit-у, і ми не хочемо забрудни
 
 - `scripts/pre-commit-timing.mjs` — wrapper (опис у файлі-header).
 - `scripts/pre-commit-timings-report.mjs` — aggregator для `pnpm pre-commit:timings`.
+- `scripts/precommit-bench.mjs` — мок-ранер для `pnpm precommit:bench` (D-1 follow-up).
+- `scripts/staged-typecheck.mjs` — емітить `{ stage: "staged-typecheck", ms }`.
+- `scripts/docs/bump-last-validated.mjs` — емітить `{ stage: "bump-last-validated", ms }`.
 - [`.husky/pre-commit`](../../.husky/pre-commit) — точка входу.
 - [`docs/audits/2026-05-13-testing-devx-roast.md` § P1-5](../audits/2026-05-13-testing-devx-roast.md#p1-5-pre-commit-timing-не-вимірюється) — origin audit item.
 - [`docs/governance/rules/07-pre-commit-hooks-via-husky.md`](../governance/rules/07-pre-commit-hooks-via-husky.md) — Hard Rule #7.

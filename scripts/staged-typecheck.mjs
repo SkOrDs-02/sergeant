@@ -32,13 +32,29 @@
 //   0 — all groups type-checked clean (or no TS files passed).
 //   1 — at least one group failed (the specific tsc errors are streamed).
 
-import { existsSync } from "node:fs";
+import { appendFileSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
+
+// Per-stage timing emission for the pre-commit timing wrapper. The wrapper
+// (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
+// scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
+// summary shows per-stage breakdown. Pure best-effort — never block a commit.
+// Contract documented in `docs/development/pre-commit-timing.md`.
+function emitStageTiming(stage, ms) {
+  const log = process.env.SERGEANT_TIMING_LOG;
+  if (!log) return;
+  try {
+    appendFileSync(log, `${JSON.stringify({ stage, ms })}\n`);
+  } catch {
+    // Timing emission must never block a commit. Swallow silently.
+  }
+}
 
 /** Walk up from `absFile` until a directory containing `tsconfig.json` is found. */
 function findTsconfig(absFile) {
@@ -183,4 +199,7 @@ function main() {
   return aggregate;
 }
 
-process.exit(main());
+const __startedAt = performance.now();
+const __exit = main();
+emitStageTiming("staged-typecheck", performance.now() - __startedAt);
+process.exit(__exit);

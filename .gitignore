@@ -60,5 +60,9 @@ artifacts/
 # `pnpm pre-commit:timings`.
 .husky/.pre-commit-timings.log
 
+# Mock-runner workspace for `pnpm precommit:bench` (D-1 follow-up).
+# Created/cleaned by `scripts/precommit-bench.mjs`. Never committed.
+.husky/.bench-tmp/
+
 # Claude Code agent worktrees (temporary, auto-cleaned)
 .claude/worktrees/
