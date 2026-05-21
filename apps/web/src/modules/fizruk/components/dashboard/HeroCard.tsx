@@ -94,6 +94,13 @@ export interface HeroCardProps {
   readonly onOpenTemplates: () => void;
   /** Invoked for the empty state's secondary "Програми" CTA. */
   readonly onOpenPrograms: () => void;
+  /**
+   * Optional top-right slot — Phase 6.7 mounts the persistent PR badge
+   * here. Positioned by the slot itself (`absolute top-3 right-3`); the
+   * shell only provides the relative wrapper. Pass `null` to keep the
+   * corner empty.
+   */
+  readonly cornerSlot?: ReactNode;
 }
 
 /**
@@ -107,9 +114,11 @@ export interface HeroCardProps {
 function HeroShell({
   ariaLabel,
   children,
+  cornerSlot,
 }: {
   readonly ariaLabel: string;
   readonly children: ReactNode;
+  readonly cornerSlot?: ReactNode;
 }) {
   return (
     <Card
@@ -130,6 +139,7 @@ function HeroShell({
         }}
       />
       <div className="relative p-6">{children}</div>
+      {cornerSlot}
     </Card>
   );
 }
@@ -262,11 +272,13 @@ function ActiveState({
   greeting,
   today,
   onResume,
+  cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "active" }>;
   readonly greeting: string;
   readonly today: string;
   readonly onResume: () => void;
+  readonly cornerSlot?: ReactNode;
 }) {
   const elapsedSec = useElapsedSec(state.startedAtIso);
   const meta =
@@ -274,7 +286,7 @@ function ActiveState({
       ? `${state.itemsCount} вправ у сесії`
       : "Сесія відкрита — підходи й таймер чекають";
   return (
-    <HeroShell ariaLabel="Активне тренування">
+    <HeroShell ariaLabel="Активне тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Тренування триває</HeroStateLabel>
       <p
@@ -317,17 +329,19 @@ function TodayState({
   greeting,
   today,
   onStartToday,
+  cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "today" }>;
   readonly greeting: string;
   readonly today: string;
   readonly onStartToday: () => void;
+  readonly cornerSlot?: ReactNode;
 }) {
   const metaParts: string[] = [`${state.exerciseCount} вправ`];
   if (state.estimatedMin) metaParts.push(`~${state.estimatedMin} хв`);
   if (state.hint) metaParts.push(state.hint);
   return (
-    <HeroShell ariaLabel="Сьогоднішнє тренування">
+    <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Сьогоднішнє тренування</HeroStateLabel>
       <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight truncate">
@@ -368,11 +382,13 @@ function UpcomingState({
   greeting,
   today,
   onOpenPlan,
+  cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "upcoming" }>;
   readonly greeting: string;
   readonly today: string;
   readonly onOpenPlan: () => void;
+  readonly cornerSlot?: ReactNode;
 }) {
   const metaParts: string[] = [
     formatDaysAway(state.daysFromNow),
@@ -382,7 +398,7 @@ function UpcomingState({
     metaParts.push(`${state.exerciseCount} вправ`);
   }
   return (
-    <HeroShell ariaLabel="Наступне тренування">
+    <HeroShell ariaLabel="Наступне тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Наступне тренування</HeroStateLabel>
       <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight truncate">
@@ -411,16 +427,18 @@ function EmptyState({
   today,
   onOpenTemplates,
   onOpenPrograms,
+  cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "empty" }>;
   readonly greeting: string;
   readonly today: string;
   readonly onOpenTemplates: () => void;
   readonly onOpenPrograms: () => void;
+  readonly cornerSlot?: ReactNode;
 }) {
   const primaryLabel = state.hasTemplates ? "Обрати шаблон" : "Створити шаблон";
   return (
-    <HeroShell ariaLabel="План на сьогодні порожній">
+    <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>План порожній</HeroStateLabel>
       <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight">
@@ -465,7 +483,7 @@ function EmptyState({
  * component renders the right layout.
  */
 export function HeroCard(props: HeroCardProps) {
-  const { state, greeting, today } = props;
+  const { state, greeting, today, cornerSlot } = props;
   switch (state.kind) {
     case "active":
       return (
@@ -474,6 +492,7 @@ export function HeroCard(props: HeroCardProps) {
           greeting={greeting}
           today={today}
           onResume={props.onResume}
+          cornerSlot={cornerSlot}
         />
       );
     case "today":
@@ -483,6 +502,7 @@ export function HeroCard(props: HeroCardProps) {
           greeting={greeting}
           today={today}
           onStartToday={props.onStartToday}
+          cornerSlot={cornerSlot}
         />
       );
     case "upcoming":
@@ -492,6 +512,7 @@ export function HeroCard(props: HeroCardProps) {
           greeting={greeting}
           today={today}
           onOpenPlan={props.onOpenPlan}
+          cornerSlot={cornerSlot}
         />
       );
     case "empty":
@@ -502,6 +523,7 @@ export function HeroCard(props: HeroCardProps) {
           today={today}
           onOpenTemplates={props.onOpenTemplates}
           onOpenPrograms={props.onOpenPrograms}
+          cornerSlot={cornerSlot}
         />
       );
   }

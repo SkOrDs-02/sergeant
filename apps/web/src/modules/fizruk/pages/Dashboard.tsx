@@ -19,6 +19,7 @@ import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
 import { HeroCard, type HeroCardState } from "../components/dashboard/HeroCard";
+import { PrBadge } from "../components/dashboard/PrBadge";
 import { RecentWorkoutsSection } from "../components/dashboard/RecentWorkoutsSection";
 import { StatusStrip } from "../components/dashboard/StatusStrip";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
@@ -38,6 +39,7 @@ import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
+import { usePrLatest } from "../hooks/usePrLatest";
 
 interface DashboardTodaySession {
   sessionKey: string;
@@ -249,6 +251,10 @@ export function Dashboard({
     loaded: workoutsLoaded,
     activeWorkoutId,
   });
+  // Phase 6.7 — persistent PR summary surfaced on the hero corner.
+  // Independent of the proximity-driven `pr-pending` insight: this
+  // is a "what did you actually hit recently" read-only summary.
+  const prLatest = usePrLatest({ workouts, loaded: workoutsLoaded });
   // Collect non-null insights respecting priority order.
   const activeInsights = useMemo((): Insight[] => {
     const out: Insight[] = [];
@@ -367,6 +373,7 @@ export function Dashboard({
           onOpenPlan={openPlan}
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}
+          cornerSlot={<PrBadge pr={prLatest} />}
         />
 
         {activeInsights.map((insight) => (
