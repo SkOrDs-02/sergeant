@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "20.x",
+    "node": "22.x",
     "pnpm": "9.x"
   },
   "packageManager": "pnpm@9.15.1",
   "volta": {
-    "node": "20.20.2",
+    "node": "22.19.0",
     "pnpm": "9.15.1"
   },
   "scripts": {
