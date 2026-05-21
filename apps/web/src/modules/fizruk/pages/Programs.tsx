@@ -63,7 +63,7 @@ export function Programs({
               variant="secondary"
               size="sm"
               onClick={deactivateProgram}
-              className="text-xs font-semibold text-subtle hover:text-text"
+              className="text-style-caption text-subtle hover:text-text"
             >
               Зупинити
             </Button>
@@ -90,7 +90,7 @@ export function Programs({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-sm font-bold text-text">
+                        <h2 className="text-style-label text-text">
                           {prog.name}
                         </h2>
                         {isActive && (

@@ -302,7 +302,7 @@ function ActiveState({
             <SectionHeading as="span" size="xs" className="block text-white/70">
               Продовжити
             </SectionHeading>
-            <span className="block text-base font-black leading-tight">
+            <span className="block text-style-subtitle leading-tight">
               Повернутись у сесію
             </span>
           </span>
@@ -353,7 +353,7 @@ function TodayState({
             <SectionHeading as="span" size="xs" className="block text-white/70">
               Почати
             </SectionHeading>
-            <span className="block text-base font-black truncate leading-tight">
+            <span className="block text-style-subtitle truncate leading-tight">
               {state.label}
             </span>
           </span>

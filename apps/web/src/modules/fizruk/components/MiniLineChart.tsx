@@ -222,7 +222,7 @@ export function MiniLineChart({
         </span>
         {delta !== 0 && (
           <span
-            className={`text-xs font-semibold ${delta > 0 ? "text-warning" : "text-success"}`}
+            className={`text-style-caption ${delta > 0 ? "text-warning" : "text-success"}`}
           >
             {delta > 0 ? "+" : ""}
             {delta.toFixed(1)} {unit}

@@ -357,7 +357,7 @@ function TxRowImpl({
                 openSplitEditor();
               }}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-xl transition-colors text-sm font-bold",
+                "w-9 h-9 flex items-center justify-center rounded-xl transition-colors text-style-label",
                 splitEditor
                   ? "text-primary bg-primary/8"
                   : existingSplits.length > 0

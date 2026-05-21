@@ -58,7 +58,7 @@ export function StatTile({
         </span>
         <span className="truncate">{label}</span>
       </div>
-      <div className="text-sm font-bold text-text mt-1 truncate">{value}</div>
+      <div className="text-style-label text-text mt-1 truncate">{value}</div>
       {hint && (
         <div className="text-meta text-subtle mt-0.5 truncate">{hint}</div>
       )}

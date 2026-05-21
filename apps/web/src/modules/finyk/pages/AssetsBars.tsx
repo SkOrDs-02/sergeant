@@ -155,7 +155,7 @@ export function SectionBar({
           <Icon name={iconName} size={18} />
         </span>
         <div className="min-w-0">
-          <div className="text-sm font-bold text-text truncate">{title}</div>
+          <div className="text-style-label text-text truncate">{title}</div>
           {summary && (
             <div className="text-xs text-muted mt-0.5 truncate tabular-nums">
               {summary}

@@ -76,7 +76,7 @@ export function LogCardSearch({
                     setSearchQuery("");
                   }}
                 >
-                  <div className="text-xs font-semibold text-text truncate">
+                  <div className="text-style-caption text-text truncate">
                     {meal.name}
                   </div>
                   <div className="flex gap-1.5 mt-0.5 flex-wrap">

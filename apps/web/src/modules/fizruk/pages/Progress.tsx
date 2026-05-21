@@ -490,7 +490,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                     type="button"
                     onClick={() => setPrFilter("all")}
                     className={cn(
-                      "shrink-0 px-3 h-7 rounded-full text-xs font-semibold transition-colors border",
+                      "shrink-0 px-3 h-7 rounded-full text-style-caption transition-colors border",
                       prFilter === "all"
                         ? "bg-fizruk-strong text-white border-fizruk-strong"
                         : "bg-panel border-line text-subtle hover:text-text",
@@ -504,7 +504,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                       type="button"
                       onClick={() => setPrFilter(g === prFilter ? "all" : g)}
                       className={cn(
-                        "shrink-0 px-3 h-7 rounded-full text-xs font-semibold transition-colors border whitespace-nowrap",
+                        "shrink-0 px-3 h-7 rounded-full text-style-caption transition-colors border whitespace-nowrap",
                         prFilter === g
                           ? "bg-fizruk-strong text-white border-fizruk-strong"
                           : "bg-panel border-line text-subtle hover:text-text",
@@ -558,7 +558,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                               {p.name}
                             </div>
                           </div>
-                          <div className="shrink-0 text-sm font-bold text-text tabular-nums">
+                          <div className="shrink-0 text-style-label text-text tabular-nums">
                             {p.best1rm.toFixed(0)} кг
                           </div>
                         </div>

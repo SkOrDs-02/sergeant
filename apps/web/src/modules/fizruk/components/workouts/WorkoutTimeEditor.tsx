@@ -32,7 +32,7 @@ export function WorkoutTimeEditor({
 
   return (
     <details className="mt-3 rounded-xl border border-line bg-panelHi/50 px-3 py-2">
-      <summary className="text-xs font-semibold text-subtle cursor-pointer select-none">
+      <summary className="text-style-caption text-subtle cursor-pointer select-none">
         Час тренування
       </summary>
       <div className="mt-2 space-y-2">

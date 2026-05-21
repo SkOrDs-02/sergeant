@@ -190,7 +190,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <div className="flex items-center gap-2.5 rounded-2xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3">
             <span className="text-xl leading-none">🏆</span>
             <div>
-              <p className="text-sm font-bold text-warning-strong dark:text-warning">
+              <p className="text-style-label text-warning-strong dark:text-warning">
                 Новий особистий рекорд!
               </p>
               <p className="text-xs text-warning-strong/80 dark:text-warning/70">

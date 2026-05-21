@@ -69,7 +69,7 @@ export function CollapsibleTrendCard({
               {latestValue} {latestUnit}
             </span>
             {delta != null && delta !== 0 && (
-              <span className={cn("text-xs font-semibold", deltaClass)}>
+              <span className={cn("text-style-caption", deltaClass)}>
                 {deltaLabel}
               </span>
             )}

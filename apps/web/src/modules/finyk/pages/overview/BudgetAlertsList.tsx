@@ -60,7 +60,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             </span>
             <span
               className={cn(
-                "text-sm font-bold tabular-nums",
+                "text-style-label tabular-nums",
                 pct >= 100 ? "text-danger" : "text-warning",
               )}
             >

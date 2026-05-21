@@ -43,7 +43,7 @@ export function WarmupCooldownChecklist({
       <div
         className={`rounded-xl border border-dashed ${color.border} px-3 py-2.5 flex items-center justify-between gap-2`}
       >
-        <span className={`text-xs font-semibold ${color.text}`}>{title}</span>
+        <span className={`text-style-caption ${color.text}`}>{title}</span>
         <button
           type="button"
           className={`text-xs px-3 py-1.5 rounded-xl border ${color.border} ${color.text} hover:opacity-80 transition-opacity`}
@@ -64,7 +64,7 @@ export function WarmupCooldownChecklist({
       open={doneCount < total}
     >
       <summary
-        className={`text-xs font-semibold ${color.text} cursor-pointer select-none flex items-center justify-between`}
+        className={`text-style-caption ${color.text} cursor-pointer select-none flex items-center justify-between`}
       >
         <span>{title}</span>
         <span

@@ -39,7 +39,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
           <button
             type="button"
             onClick={onSetBudget}
-            className="px-3 py-1.5 rounded-xl bg-finyk-strong text-white text-xs font-semibold hover:bg-finyk-strong/80 transition"
+            className="px-3 py-1.5 rounded-xl bg-finyk-strong text-white text-style-caption hover:bg-finyk-strong/80 transition"
           >
             Поставити бюджет
           </button>

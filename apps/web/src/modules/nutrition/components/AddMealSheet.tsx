@@ -292,7 +292,7 @@ export function AddMealSheet({
         <button
           type="button"
           onClick={handleBacktrack}
-          className="ml-auto shrink-0 text-xs font-semibold text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
+          className="ml-auto shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
         >
           Обрати джерело ↑
         </button>
@@ -338,7 +338,7 @@ export function AddMealSheet({
               <button
                 type="button"
                 onClick={() => setStep("fill")}
-                className="shrink-0 text-xs font-semibold text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[36px] px-1"
+                className="shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[36px] px-1"
               >
                 Ввести вручну →
               </button>

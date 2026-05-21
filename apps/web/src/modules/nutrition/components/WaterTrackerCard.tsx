@@ -133,7 +133,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             type="button"
             onClick={() => handleAdd(ml)}
             className={cn(
-              "h-9 rounded-xl text-xs font-semibold transition-colors",
+              "h-9 rounded-xl text-style-caption transition-colors",
               "bg-info-soft text-info-strong dark:text-info border border-info/20",
               "hover:bg-info/20 active:scale-95",
             )}
@@ -164,7 +164,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           onClick={handleCustomAdd}
           disabled={!customMl || Number(customMl) <= 0}
           className={cn(
-            "h-9 px-3 rounded-xl text-xs font-semibold transition-colors",
+            "h-9 px-3 rounded-xl text-style-caption transition-colors",
             "bg-info-soft text-info-strong dark:text-info border border-info/20",
             "hover:bg-info/20 disabled:opacity-50 active:scale-95",
           )}
@@ -175,7 +175,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           <button
             type="button"
             onClick={handleUndo}
-            className="h-9 px-3 rounded-xl text-xs font-semibold text-subtle hover:text-text border border-line transition-colors"
+            className="h-9 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors"
             aria-label={`Відмінити останнє додавання (${lastAddedMl} мл)`}
           >
             ↶ {lastAddedMl}

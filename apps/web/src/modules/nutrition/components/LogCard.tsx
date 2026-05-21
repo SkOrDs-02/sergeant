@@ -121,7 +121,7 @@ export function LogCard({
           <button
             type="button"
             onClick={() => setDuplicateConfirm(true)}
-            className="w-full h-10 rounded-2xl border border-line bg-panel/40 px-3 text-xs font-semibold text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full h-10 rounded-2xl border border-line bg-panel/40 px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
           >
             Скопіювати з попереднього дня ({previousDayIso})
           </button>

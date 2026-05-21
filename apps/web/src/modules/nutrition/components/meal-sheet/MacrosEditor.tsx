@@ -130,7 +130,7 @@ export function MacrosEditor({
           <button
             type="button"
             onClick={() => setPendingUnlink({ key: null, value: null })}
-            className="text-xs font-semibold text-nutrition-strong dark:text-nutrition hover:underline shrink-0"
+            className="text-style-caption text-nutrition-strong dark:text-nutrition hover:underline shrink-0"
           >
             Відʼєднати
           </button>

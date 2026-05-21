@@ -125,7 +125,7 @@ export function PhotoAnalyzeCard({
         <div className="mt-4 grid gap-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-sm font-bold text-text">
+              <div className="text-style-label text-text">
                 {photoResult.dishName || "Страва"}
               </div>
               {photoResult.confidence != null && (

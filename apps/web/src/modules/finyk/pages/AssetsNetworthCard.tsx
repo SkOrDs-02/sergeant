@@ -42,7 +42,7 @@ export function AssetsNetworthCard({
               {networth.toLocaleString("uk-UA", { maximumFractionDigits: 0 })}
               <span
                 className={cn(
-                  "text-2xl font-semibold ml-1",
+                  "text-style-headline ml-1",
                   isNegative ? "text-danger/60" : "text-finyk/60",
                 )}
               >

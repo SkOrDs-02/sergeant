@@ -33,7 +33,7 @@ export function WeeklyVolumeChart({
     return (
       <div className={cn("w-full", className)}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-text">
+          <span className="text-style-caption text-text">
             Тижневий обʼєм
           </span>
           <span
@@ -88,7 +88,7 @@ export function WeeklyVolumeChart({
   return (
     <div className={cn("w-full", className)}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-text">Тижневий обʼєм</span>
+        <span className="text-style-caption text-text">Тижневий обʼєм</span>
         <span
           className="text-style-caption text-subtle flex items-center gap-1.5"
           aria-hidden

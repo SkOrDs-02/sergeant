@@ -73,7 +73,7 @@ export function WorkoutsHome({
         <div className="rounded-xl border border-fizruk-ring/40 bg-fizruk/10 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-semibold text-fizruk-strong">
+              <div className="text-style-caption text-fizruk-strong">
                 Активне тренування
               </div>
               <div className="mt-1 text-sm text-text">
@@ -125,7 +125,7 @@ export function WorkoutsHome({
           {recentWorkouts.length > 0 ? (
             <button
               type="button"
-              className="text-xs font-semibold text-fizruk-strong hover:underline active:opacity-70"
+              className="text-style-caption text-fizruk-strong hover:underline active:opacity-70"
               onClick={onOpenJournal}
             >
               Всі →

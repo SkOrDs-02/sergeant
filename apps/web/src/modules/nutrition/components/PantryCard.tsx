@@ -284,7 +284,7 @@ export function PantryCard({
                   type="button"
                   onClick={() => setMode(m.id)}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
+                    "px-3 py-1.5 rounded-xl text-style-caption transition-colors",
                     mode === m.id
                       ? "bg-nutrition-strong text-white shadow-sm"
                       : "text-subtle hover:text-text",

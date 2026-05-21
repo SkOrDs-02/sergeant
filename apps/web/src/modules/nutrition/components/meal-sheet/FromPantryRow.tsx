@@ -56,7 +56,7 @@ export function FromPantryRow({
                 }
               }}
               className={cn(
-                "px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-[background-color,border-color,color,opacity]",
+                "px-2.5 py-1.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 isActive
                   ? "bg-nutrition-strong text-white border-nutrition"
                   : "bg-panelHi text-text border-line hover:border-nutrition/50",

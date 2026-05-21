@@ -243,7 +243,7 @@ export function HabitDetailSheet({
         </SectionHeading>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className={C.statCard}>
-            <p className="text-2xl font-black text-text tabular-nums">
+            <p className="text-style-headline text-text tabular-nums">
               {currentStreak}
             </p>
             <p className="text-style-caption text-subtle mt-0.5">
@@ -251,13 +251,13 @@ export function HabitDetailSheet({
             </p>
           </div>
           <div className={C.statCard}>
-            <p className="text-2xl font-black text-text tabular-nums">
+            <p className="text-style-headline text-text tabular-nums">
               {bestStreak}
             </p>
             <p className="text-style-caption text-subtle mt-0.5">Макс серія</p>
           </div>
           <div className={C.statCard}>
-            <p className="text-2xl font-black text-text tabular-nums">
+            <p className="text-style-headline text-text tabular-nums">
               {totalDone}
             </p>
             <p className="text-style-caption text-subtle mt-0.5">
@@ -267,7 +267,7 @@ export function HabitDetailSheet({
           <div className={C.statCard}>
             <div className="flex items-baseline justify-center gap-1.5">
               {pct7 !== null && (
-                <span className="text-sm font-bold text-text tabular-nums">
+                <span className="text-style-label text-text tabular-nums">
                   {pct7}%
                 </span>
               )}
@@ -307,7 +307,7 @@ export function HabitDetailSheet({
             >
               ‹
             </IconButton>
-            <span className="text-xs font-semibold text-text min-w-28 text-center capitalize">
+            <span className="text-style-caption text-text min-w-28 text-center capitalize">
               {calMonthTitle}
             </span>
             <IconButton

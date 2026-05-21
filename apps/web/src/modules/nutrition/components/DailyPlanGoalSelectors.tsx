@@ -175,7 +175,7 @@ export function DailyPlanGoalSelectors({
           aria-expanded={tdeeMenuOpen}
           title={tdeeTargets ? undefined : TDEE_COPY.triggerHint}
           className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
+            "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
             "border-nutrition/50 text-nutrition-strong dark:text-nutrition",
             "hover:border-nutrition hover:bg-nutrition/10",
             "disabled:opacity-50 transition-colors",
@@ -244,7 +244,7 @@ export function DailyPlanGoalSelectors({
           aria-haspopup="menu"
           aria-expanded={presetMenuOpen}
           className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
+            "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
             "border-line/70 text-subtle hover:text-text hover:border-nutrition/50",
             "disabled:opacity-50 transition-colors",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",

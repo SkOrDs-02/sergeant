@@ -90,7 +90,7 @@ export function ShoppingListCard({
               onClick={() => setSource("recipes")}
               disabled={shoppingBusy}
               className={cn(
-                "flex-1 py-2 px-3 rounded-xl text-xs font-semibold border transition-[background-color,border-color,color,opacity]",
+                "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 source === "recipes"
                   ? "bg-nutrition-strong text-white border-nutrition"
                   : "border-line text-text hover:border-nutrition/50",
@@ -106,7 +106,7 @@ export function ShoppingListCard({
               onClick={() => setSource("weekplan")}
               disabled={shoppingBusy}
               className={cn(
-                "flex-1 py-2 px-3 rounded-xl text-xs font-semibold border transition-[background-color,border-color,color,opacity]",
+                "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 source === "weekplan"
                   ? "bg-nutrition-strong text-white border-nutrition"
                   : "border-line text-text hover:border-nutrition/50",
@@ -200,7 +200,7 @@ export function ShoppingListCard({
                       <span className="text-base leading-none" aria-hidden>
                         {getCategoryIcon(cat.name)}
                       </span>
-                      <span className="text-xs font-semibold text-text">
+                      <span className="text-style-caption text-text">
                         {cat.name}
                       </span>
                       <span className="text-xs text-muted ml-auto">

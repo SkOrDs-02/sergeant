@@ -348,7 +348,7 @@ export function WorkoutJournalSection({
           {retroOpen && (
             <div className="px-4 py-3 border-b border-line bg-bg space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold text-text">
+                <p className="text-style-caption text-text">
                   Записати тренування заднім числом
                 </p>
                 <Button

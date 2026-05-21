@@ -107,7 +107,7 @@ export function RecoveryFocusCard({
             ▾
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold text-text">
+            <h2 className="text-style-subtitle text-text">
               Відновлення й фокус
             </h2>
             <p className="text-xs text-subtle mt-1 leading-snug">

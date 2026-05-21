@@ -64,7 +64,7 @@ function DebtCardComponent({
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <span
             className={cn(
-              "text-sm font-bold tabular-nums",
+              "text-style-label tabular-nums",
               isReceivable ? "text-success" : "text-danger",
             )}
           >

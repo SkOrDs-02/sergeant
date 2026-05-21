@@ -113,7 +113,7 @@ export function Measurements() {
             <Stat
               label="Останній"
               value={
-                <span className="text-sm font-bold">{stats.latestAt}</span>
+                <span className="text-style-label">{stats.latestAt}</span>
               }
               size="sm"
               align="center"
@@ -213,7 +213,7 @@ export function Measurements() {
                   {deltas[f.id] != null && (
                     <div
                       className={cn(
-                        "text-xs font-semibold mt-1",
+                        "text-style-caption mt-1",
                         deltas[f.id]! > 0 ? "text-warning" : "text-success",
                       )}
                     >

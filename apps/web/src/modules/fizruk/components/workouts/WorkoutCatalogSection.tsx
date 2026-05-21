@@ -81,7 +81,7 @@ export function WorkoutCatalogSection({
 
       {equipmentUk && Object.keys(equipmentUk).length > 0 && (
         <div className="mb-3">
-          <div className="text-xs font-semibold text-subtle mb-1.5">
+          <div className="text-style-caption text-subtle mb-1.5">
             Обладнання
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -145,7 +145,7 @@ export function WorkoutCatalogSection({
                   onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))}
                   className="w-full flex items-center justify-between px-4 py-3 bg-panelHi/60 hover:bg-panelHi transition-colors"
                 >
-                  <div className="text-sm font-bold text-text">{g.label}</div>
+                  <div className="text-style-label text-text">{g.label}</div>
                   <div className="text-xs text-muted flex items-center gap-2">
                     <span>{g.total}</span>
                     <span className="text-lg leading-none">

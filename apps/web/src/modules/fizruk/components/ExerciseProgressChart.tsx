@@ -150,7 +150,7 @@ export function ExerciseProgressChart({
         {delta !== 0 && Number.isFinite(delta) && (
           <span
             className={cn(
-              "text-xs font-semibold",
+              "text-style-caption",
               delta > 0 ? "text-success" : "text-warning",
             )}
           >

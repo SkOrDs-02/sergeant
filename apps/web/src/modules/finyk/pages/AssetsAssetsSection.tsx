@@ -78,7 +78,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-sm font-bold tabular-nums text-text">
+                <div className="text-style-label tabular-nums text-text">
                   {showBalance
                     ? `${((a.balance ?? 0) / 100).toLocaleString("uk-UA", {
                         minimumFractionDigits: 2,
@@ -208,7 +208,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-sm font-bold tabular-nums text-success">
+            <span className="text-style-label tabular-nums text-success">
               {showBalance
                 ? `${Number(a.amount).toLocaleString("uk-UA")} ${
                     a.currency === "UAH"

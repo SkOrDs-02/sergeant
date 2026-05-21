@@ -92,7 +92,7 @@ export function FizrukDayPlanSheet({
                   <SectionHeading as="p" size="xs" variant="subtle">
                     Призначений шаблон
                   </SectionHeading>
-                  <p className="text-base font-bold text-text mt-0.5">
+                  <p className="text-style-subtitle text-text mt-0.5">
                     {currentTemplate.name}
                   </p>
                 </div>

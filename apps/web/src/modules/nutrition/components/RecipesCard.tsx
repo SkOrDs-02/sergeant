@@ -212,7 +212,7 @@ export function RecipesCard({
           <div className="flex items-center gap-2">
             <span className="text-style-label text-text">Мої рецепти</span>
             {!savedBusy && saved.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-nutrition/15 text-nutrition-strong dark:text-nutrition">
+              <span className="px-2 py-0.5 rounded-full text-style-caption bg-nutrition/15 text-nutrition-strong dark:text-nutrition">
                 {saved.length}
               </span>
             )}

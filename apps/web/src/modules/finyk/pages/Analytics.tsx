@@ -387,13 +387,13 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
                 <div className="text-style-caption text-subtle mb-1">
                   Витрати
                 </div>
-                <div className="text-sm font-bold tabular-nums text-danger">
+                <div className="text-style-label tabular-nums text-danger">
                   {summary.spent.toLocaleString("uk-UA")} ₴
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">Дохід</div>
-                <div className="text-sm font-bold tabular-nums text-success-strong dark:text-success">
+                <div className="text-style-label tabular-nums text-success-strong dark:text-success">
                   {summary.income.toLocaleString("uk-UA")} ₴
                 </div>
               </div>
@@ -403,7 +403,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
                 </div>
                 <div
                   className={cn(
-                    "text-sm font-bold tabular-nums",
+                    "text-style-label tabular-nums",
                     signedDeltaClass(summary.balance),
                   )}
                 >

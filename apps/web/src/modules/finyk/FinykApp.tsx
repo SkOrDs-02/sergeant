@@ -533,7 +533,7 @@ export default function App({
                 {onBackToHub && (
                   <button
                     onClick={onBackToHub}
-                    className="text-xs font-semibold text-primary mt-2 hover:underline"
+                    className="text-style-caption text-primary mt-2 hover:underline"
                   >
                     Оновити токен у Налаштуваннях Hub
                   </button>

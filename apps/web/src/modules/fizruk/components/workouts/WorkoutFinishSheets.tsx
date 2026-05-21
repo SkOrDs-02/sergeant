@@ -70,7 +70,7 @@ export function WorkoutFinishSheets({
           >
             <div
               id="fizruk-wellbeing-title"
-              className="text-sm font-bold text-text"
+              className="text-style-label text-text"
             >
               Самопочуття
             </div>
@@ -203,7 +203,7 @@ export function WorkoutFinishSheets({
                   <SectionHeading size="sm" variant="fizruk" as="div">
                     Завершено
                   </SectionHeading>
-                  <div className="text-lg font-black text-teal-900 dark:text-white mt-1 leading-tight">
+                  <div className="text-style-title text-teal-900 dark:text-white mt-1 leading-tight">
                     Тренування виконано
                   </div>
                 </div>

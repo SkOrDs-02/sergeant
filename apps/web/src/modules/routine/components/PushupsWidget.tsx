@@ -38,7 +38,7 @@ export function PushupsWidget() {
             <SectionHeading as="p" size="sm">
               Відтискання сьогодні
             </SectionHeading>
-            <p className="text-4xl font-black text-text tabular-nums mt-1">
+            <p className="text-style-display text-text tabular-nums mt-1">
               {todayCount}
             </p>
           </div>
@@ -121,6 +121,7 @@ export function PushupsWidget() {
                 addReps(n);
                 setOpen(false);
               }}
+              // eslint-disable-next-line sergeant-design/prefer-text-style -- TODO(T5): responsive sm:text-sm override differs from fluid clamp() in text-style-caption; keep manual ramp.
               className="min-h-[44px] rounded-2xl border border-routine-line/80 dark:border-routine-border-dark/30 bg-routine-surface dark:bg-routine-surface-dark/10 px-1 py-2.5 text-center text-xs font-bold text-routine-strong dark:text-routine transition-colors active:opacity-90 sm:px-2 sm:text-sm"
             >
               +{n}
@@ -154,7 +155,7 @@ export function PushupsWidget() {
           <button
             type="button"
             className={cn(
-              "min-h-[48px] w-full shrink-0 rounded-2xl px-6 text-base font-bold disabled:opacity-40 sm:w-auto sm:min-w-28",
+              "min-h-[48px] w-full shrink-0 rounded-2xl px-6 text-style-subtitle disabled:opacity-40 sm:w-auto sm:min-w-28",
               C.primary,
             )}
             disabled={!input || Number(input) <= 0}

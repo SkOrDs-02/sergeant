@@ -41,7 +41,7 @@ export function TransactionDayHeader({
       onClick={() => onToggle(dayKey)}
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? messages.actions.expand : messages.actions.collapse} ${label}`}
-      className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-bg/95 backdrop-blur-sm border-b border-line text-xs font-semibold text-text tracking-wide hover:bg-panelHi transition-colors"
+      className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-bg/95 backdrop-blur-sm border-b border-line text-style-caption text-text tracking-wide hover:bg-panelHi transition-colors"
     >
       <span className="flex items-center gap-2 min-w-0">
         <svg

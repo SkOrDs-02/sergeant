@@ -235,7 +235,7 @@ function SubCardComponent({
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         {amount != null ? (
-          <div className="text-sm font-bold">
+          <div className="text-style-label">
             {showBalance
               ? `${amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })}${currency}`
               : "••••"}

@@ -59,7 +59,7 @@ export function DayProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-lg font-black text-text tabular-nums">
+          <span className="text-style-title text-text tabular-nums">
             {completed}/{scheduled}
           </span>
         </div>

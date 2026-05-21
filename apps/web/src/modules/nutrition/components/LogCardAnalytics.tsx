@@ -52,7 +52,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
               type="button"
               onClick={() => setStatsRange(d)}
               className={cn(
-                "px-2 py-1 rounded-xl text-xs font-semibold border",
+                "px-2 py-1 rounded-xl text-style-caption border",
                 statsRange === d
                   ? "border-nutrition/60 text-nutrition-strong dark:text-nutrition bg-nutrition/10"
                   : "border-line text-subtle bg-panelHi",

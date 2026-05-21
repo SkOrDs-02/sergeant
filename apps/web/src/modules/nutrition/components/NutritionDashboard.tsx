@@ -298,7 +298,7 @@ export function NutritionDashboard({
               type="button"
               onClick={onFetchDayHint}
               disabled={dayHintBusy}
-              className="shrink-0 px-3 h-8 rounded-xl text-xs font-semibold bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50"
+              className="shrink-0 px-3 h-8 rounded-xl text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50"
             >
               {dayHintBusy ? "…" : "Отримати"}
             </button>

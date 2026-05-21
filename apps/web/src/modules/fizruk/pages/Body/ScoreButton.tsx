@@ -35,7 +35,7 @@ export function ScoreButton({
       type="button"
       onClick={() => onClick(value)}
       className={cn(
-        "flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-semibold transition-[background-color,border-color,color,opacity]",
+        "flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-style-caption transition-[background-color,border-color,color,opacity]",
         selected
           ? "bg-success-strong text-white border-success-strong"
           : "border-line text-subtle hover:border-success/50 hover:text-text",

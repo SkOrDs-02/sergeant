@@ -29,7 +29,7 @@ export function ActiveWorkoutHeader({
   return (
     <div className="flex items-center justify-between gap-2">
       <div>
-        <div className="text-sm font-bold text-text">
+        <div className="text-style-label text-text">
           {activeWorkout.endedAt
             ? "Завершене тренування"
             : "Активне тренування"}

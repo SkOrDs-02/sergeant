@@ -103,7 +103,7 @@ export function RecurringSuggestions({
         <div className="flex items-center gap-2">
           <span className="text-lg">💡</span>
           <div>
-            <div className="text-sm font-bold text-text">
+            <div className="text-style-label text-text">
               Можливі підписки
               <span className="ml-2 text-style-caption text-muted">
                 ({candidates.length})

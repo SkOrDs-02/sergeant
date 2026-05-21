@@ -157,7 +157,7 @@ export function FoodPickerSection({
           {/* Назва + скинути */}
           <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
             <div className="min-w-0">
-              <div className="text-sm font-bold text-text truncate">
+              <div className="text-style-label text-text truncate">
                 {[pickedFood.name, pickedFood.brand]
                   .filter(Boolean)
                   .join(" · ")}
@@ -216,7 +216,7 @@ export function FoodPickerSection({
                   min={1}
                   onChange={(e) => setPickedGrams(e.target.value)}
                   aria-label="Грами"
-                  className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-sm font-bold text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
                   г
@@ -242,7 +242,7 @@ export function FoodPickerSection({
                   type="button"
                   onClick={() => setPickedGrams(String(g))}
                   className={cn(
-                    "px-2 py-0.5 rounded-xl text-xs font-semibold border transition-[background-color,border-color,color,opacity]",
+                    "px-2 py-0.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                     Number(pickedGrams) === g
                       ? "bg-nutrition-strong text-white border-nutrition"
                       : "bg-panelHi text-subtle border-line hover:border-nutrition/40",

@@ -161,7 +161,7 @@ const HeroCardImpl = function HeroCard({
                 entranceFrom={0}
                 duration={800}
               />
-              <span className="text-2xl font-semibold ml-1 opacity-70">
+              <span className="text-style-headline ml-1 opacity-70">
                 ₴/день
               </span>
             </>

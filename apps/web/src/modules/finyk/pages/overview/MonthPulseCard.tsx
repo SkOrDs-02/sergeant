@@ -89,7 +89,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
               ? spent.toLocaleString("uk-UA", { maximumFractionDigits: 0 })
               : "••••"}
             {showBalance && (
-              <span className="text-base font-medium text-muted ml-1">₴</span>
+              <span className="text-style-body-lg text-muted ml-1">₴</span>
             )}
           </div>
         </div>
@@ -102,7 +102,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
                 {income.toLocaleString("uk-UA", {
                   maximumFractionDigits: 0,
                 })}
-                <span className="text-base font-medium text-brand-700 dark:text-success/70 ml-1">
+                <span className="text-style-body-lg text-brand-700 dark:text-success/70 ml-1">
                   ₴
                 </span>
               </>

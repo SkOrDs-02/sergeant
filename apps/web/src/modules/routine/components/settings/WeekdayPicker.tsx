@@ -42,7 +42,7 @@ export const WeekdayPicker = memo(function WeekdayPicker({
                 onChange(cur);
               }}
               className={cn(
-                "min-h-[44px] min-w-[44px] px-3 rounded-xl text-xs font-semibold border transition-colors",
+                "min-h-[44px] min-w-[44px] px-3 rounded-xl text-style-caption border transition-colors",
                 on ? C.chipOn : C.chipOff,
               )}
             >

@@ -183,7 +183,7 @@ export function HabitQuickCreateDialog({
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
           <h2
             id="habit-quick-create-title"
-            className="text-base font-bold text-text"
+            className="text-style-subtitle text-text"
           >
             {title}
           </h2>

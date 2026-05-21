@@ -294,7 +294,7 @@ export function PantryManagerSheet({
                 onClick={onBeginDelete}
                 disabled={busy}
                 className={cn(
-                  "mt-3 inline-flex items-center gap-1.5 text-xs font-semibold",
+                  "mt-3 inline-flex items-center gap-1.5 text-style-caption",
                   "text-danger hover:text-danger/80 disabled:opacity-50",
                   "transition-colors",
                 )}

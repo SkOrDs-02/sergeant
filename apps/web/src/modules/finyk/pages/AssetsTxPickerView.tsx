@@ -131,7 +131,7 @@ export function AssetsTxPickerView({
           >
             ← Назад
           </button>
-          <span className="text-sm font-bold">Погашення: {label}</span>
+          <span className="text-style-label">Погашення: {label}</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
@@ -224,7 +224,7 @@ export function AssetsTxPickerView({
           >
             ← Назад
           </button>
-          <span className="text-sm font-bold">Транзакція для «{sub.name}»</span>
+          <span className="text-style-label">Транзакція для «{sub.name}»</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
@@ -324,7 +324,7 @@ export function AssetsTxPickerView({
         >
           ← Назад
         </button>
-        <span className="text-sm font-bold">
+        <span className="text-style-label">
           {isDebt ? "Транзакції по пасиву" : "Транзакції по активу"}
         </span>
       </div>
@@ -355,7 +355,7 @@ export function AssetsTxPickerView({
               <div key={i}>
                 {isLinked && role && (
                   <div
-                    className="text-xs font-bold px-1 py-1"
+                    className="text-style-caption px-1 py-1"
                     style={{ color: role.color }}
                   >
                     {role.label}

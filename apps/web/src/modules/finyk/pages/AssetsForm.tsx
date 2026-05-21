@@ -222,7 +222,7 @@ export function AssetForm({
       className="space-y-3"
     >
       <div>
-        <div className="text-sm font-bold text-text">Новий актив</div>
+        <div className="text-style-label text-text">Новий актив</div>
         <div className="text-xs text-muted mt-0.5">
           Готівка, брокерський рахунок, крипта тощо.
         </div>
@@ -328,7 +328,7 @@ export function DebtForm({
       className="space-y-3 mb-2 border-danger/30 bg-danger-soft/40 dark:bg-danger/10"
     >
       <div>
-        <div className="text-sm font-bold text-danger-strong dark:text-danger">
+        <div className="text-style-label text-danger-strong dark:text-danger">
           Новий пасив
         </div>
         <div className="text-xs text-muted mt-0.5">

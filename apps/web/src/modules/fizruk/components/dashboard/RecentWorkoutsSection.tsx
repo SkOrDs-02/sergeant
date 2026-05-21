@@ -77,7 +77,7 @@ export function RecentWorkoutsSection({
           <button
             type="button"
             onClick={onSeeAll}
-            className="text-xs font-semibold text-fizruk-strong hover:underline active:opacity-70"
+            className="text-style-caption text-fizruk-strong hover:underline active:opacity-70"
             aria-label="Усі тренування"
           >
             Усі →
@@ -114,7 +114,7 @@ export function RecentWorkoutsSection({
                 </p>
               </div>
               <div className="flex flex-col items-end shrink-0">
-                <span className="text-sm font-bold text-fizruk-strong">
+                <span className="text-style-label text-fizruk-strong">
                   {formatTonnage(row.tonnageKg)}
                 </span>
                 <span className="text-style-caption text-subtle">тоннаж</span>

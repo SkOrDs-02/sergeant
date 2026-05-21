@@ -60,7 +60,7 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
             )}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className={cn("text-xs font-bold", zone.color)}>
+              <span className={cn("text-style-caption", zone.color)}>
                 {zone.goal}
               </span>
               <span className="text-style-caption text-subtle">
@@ -78,7 +78,7 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
                     <div className="text-style-caption text-subtle leading-none mb-0.5">
                       {pct}%
                     </div>
-                    <div className="text-sm font-bold text-text tabular-nums leading-tight">
+                    <div className="text-style-label text-text tabular-nums leading-tight">
                       {kg > 0 ? `${kg}` : "—"}
                     </div>
                     <div className="text-style-caption text-muted leading-none">
