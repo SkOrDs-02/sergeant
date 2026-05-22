@@ -1,7 +1,7 @@
 # Sprint 1 — Critical + найгірші High
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Active (in flight — H2 closed, C2 Phase 1 closed, **C1 Phase 1 closed (2026-05-04)**, **H1 Phase 1 closed (2026-05-04)**; Phase 2 для C1 pending Monobank coordination, Phase 2 для H1 (TTL + device-binding) tracked в H3)
+> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
+> **Status:** Active — Phase 2 pending (C1: Monobank path→header + rotation; H1: TTL + device-binding → H3). Closed: H2, C2 Phase 1, C1 Phase 1 (2026-05-04), H1 Phase 1 (2026-05-04).
 
 **Тривалість:** 1–2 тижні (target close: 2026-05-17).
 **Сумарний effort:** ~2.5 person-days.
