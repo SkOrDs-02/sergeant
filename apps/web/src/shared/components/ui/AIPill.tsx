@@ -135,7 +135,7 @@ const VOICE_PROMPT_HINT: Record<ModuleAccent | "hub", string> = {
  * `dy` (which would incorrectly snap the pill back open).
  */
 function useCollapseOnScroll(threshold = 80) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const lastY = useRef(0);
   const lastTarget = useRef<EventTarget | null>(null);
   const ticking = useRef(false);
@@ -167,7 +167,7 @@ function useCollapseOnScroll(threshold = 80) {
         }
         const dy = y - lastY.current;
         if (y > threshold && dy > 4) setCollapsed(true);
-        else if (dy < -4 || y < threshold / 2) setCollapsed(false);
+        else if (dy < -4) setCollapsed(false);
         lastY.current = y;
         ticking.current = false;
       });
@@ -225,9 +225,16 @@ export function AIPill({
     setPending({ text: trimmed, anchorRect: rect });
   }, []);
 
+  // Ref lets handleError access voice.toggle without a circular dep
+  // (handleError is defined before voice is initialised below).
+  const voiceToggleRef = useRef<(() => void) | null>(null);
+
   const handleError = useCallback(
     (message: string) => {
-      toast.error(message);
+      toast.error(message, undefined, {
+        label: "Спробувати знову",
+        onClick: () => voiceToggleRef.current?.(),
+      });
     },
     [toast],
   );
@@ -238,6 +245,7 @@ export function AIPill({
     onResult: handleTranscript,
     onError: handleError,
   });
+  voiceToggleRef.current = voice.toggle;
 
   const commitPending = useCallback(() => {
     setPending((curr) => {

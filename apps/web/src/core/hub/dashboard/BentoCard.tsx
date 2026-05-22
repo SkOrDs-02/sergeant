@@ -116,7 +116,7 @@ export const BentoCard = memo(function BentoCard({
         }
         data-inactive={inactive ? "true" : undefined}
         className={cn(
-          "group relative flex flex-col w-full h-full rounded-3xl border border-line",
+          "group relative flex flex-col w-full h-full rounded-3xl border border-line overflow-hidden",
           "p-3.5 pointer-coarse:p-4",
           "min-h-[120px] pointer-coarse:min-h-[132px]",
           "shadow-card transition-interactive text-left",
@@ -153,7 +153,7 @@ export const BentoCard = memo(function BentoCard({
             inactive ? "text-muted" : "text-text",
           )}
         >
-          {config.emoji} {config.label}
+          {config.label}
         </span>
 
         {!inactive && (
