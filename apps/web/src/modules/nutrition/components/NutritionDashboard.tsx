@@ -6,13 +6,22 @@ import { useMemo, useEffect, useRef } from "react";
 import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
+import {
+  useNutritionQuickChips,
+  type QuickChip,
+} from "../hooks/useNutritionQuickChips";
+import { QuickAddChips } from "./QuickAddChips";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ProgressRing } from "@shared/components/ui/ProgressRing";
 import { MacroBarRow } from "@shared/components/ui/MacroBarRow";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
-import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
+import type {
+  NutritionLog,
+  NutritionPrefs,
+  PantryItem,
+} from "@sergeant/nutrition-domain";
 import {
   getDayMacros,
   getDaySummary,
@@ -121,6 +130,16 @@ interface NutritionDashboardProps {
   onFetchDayHint?: () => void | Promise<void>;
   dayHintText?: string;
   dayHintBusy?: boolean;
+  /**
+   * Pantry items for chip dedupe — meals whose normalized name matches a
+   * stocked pantry item are tagged as `source: "pantry"` and surfaced first.
+   */
+  pantryItems?: readonly PantryItem[];
+  /**
+   * Phase 6.6 — one-tap add for a quick-chip. The parent owns the storage
+   * write (reuse the same path `AddMealSheet` calls on submit).
+   */
+  onQuickAddMeal?: (chip: QuickChip) => void;
 }
 
 export function NutritionDashboard({
@@ -132,6 +151,8 @@ export function NutritionDashboard({
   onFetchDayHint,
   dayHintText,
   dayHintBusy,
+  pantryItems,
+  onQuickAddMeal,
 }: NutritionDashboardProps) {
   const today = todayISO();
 
@@ -181,6 +202,11 @@ export function NutritionDashboard({
     goal: prefs.dailyTargetCarbs_g || 0,
   };
 
+  // Phase 6.6 — pantry-aware quick-add chips. Hook returns `[]` when no
+  // candidates exist (zero recent meals with macros), so we render `null`
+  // for first-time users via QuickAddChips' own empty guard.
+  const quickChips = useNutritionQuickChips(log, pantryItems ?? []);
+
   // Phase 5d — nutrition insight triggers.
   // Both hooks return null when their condition is not met; InsightCard
   // additionally checks the dismissal LS key so dismissed cards stay gone.
@@ -222,6 +248,12 @@ export function NutritionDashboard({
               + Додати
             </button>
           </div>
+
+          {onQuickAddMeal && quickChips.length > 0 && (
+            <div className="mb-3">
+              <QuickAddChips chips={quickChips} onTap={onQuickAddMeal} />
+            </div>
+          )}
 
           {hasGoal ? (
             <div className="flex flex-col gap-4">

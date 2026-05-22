@@ -1,10 +1,11 @@
 import type { Dispatch, Ref, SetStateAction } from "react";
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { NutritionDashboard } from "../components/NutritionDashboard";
 import { PhotoAnalyzeCard } from "../components/PhotoAnalyzeCard";
+import type { QuickChip } from "../hooks/useNutritionQuickChips";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
 import type { usePhotoAnalysis } from "../hooks/usePhotoAnalysis";
 import type { NutritionPage } from "../lib/nutritionRouter";
@@ -29,6 +30,8 @@ interface NutritionStartPageProps {
   photoCardForceOpen: boolean;
   setPhotoCardForceOpen: Dispatch<SetStateAction<boolean>>;
   onSaveToLog: () => void;
+  pantryItems?: readonly PantryItem[];
+  onQuickAddMeal?: (chip: QuickChip) => void;
 }
 
 export function NutritionStartPage({
@@ -44,6 +47,8 @@ export function NutritionStartPage({
   photoCardForceOpen,
   setPhotoCardForceOpen,
   onSaveToLog,
+  pantryItems,
+  onQuickAddMeal,
 }: NutritionStartPageProps) {
   return (
     <SectionErrorBoundary
@@ -54,6 +59,8 @@ export function NutritionStartPage({
         <NutritionDashboard
           log={log.nutritionLog}
           prefs={prefs}
+          pantryItems={pantryItems}
+          onQuickAddMeal={onQuickAddMeal}
           onGoToLog={() => setActivePageAndHash("log")}
           onGoToDailyPlan={() => {
             setActivePageAndHash("menu");

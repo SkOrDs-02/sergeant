@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
+import { MEAL_TYPES } from "@sergeant/nutrition-domain";
+import type { QuickChip } from "./hooks/useNutritionQuickChips";
+import { currentTime } from "./components/meal-sheet/mealFormUtils";
 import {
   SkeletonMealCard,
   SkeletonText,
@@ -347,6 +350,62 @@ export default function NutritionApp({
     [editingMeal, log, photo.fileRef, setEditingMeal, toast],
   );
 
+  // Phase 6.6 — one-tap add from a hero quick-chip. Reuses `log.handleAddMeal`
+  // (the exact storage write `AddMealSheet.onSave` → `wrappedSaveMeal` lands
+  // on, see NutritionApp.tsx:335) so we do not write a parallel persistence
+  // layer. Undo points at the same `handleRemoveMeal` that journal swipe-to-
+  // delete uses, keeping behaviour symmetric with the rest of Nutrition.
+  const handleQuickAddMealFromChip = useCallback(
+    (chip: QuickChip) => {
+      const hour = new Date().getHours();
+      const mealTypeId =
+        hour >= 5 && hour < 11
+          ? "breakfast"
+          : hour >= 11 && hour < 16
+            ? "lunch"
+            : hour >= 16 && hour < 22
+              ? "dinner"
+              : "snack";
+      const mealLabel =
+        MEAL_TYPES.find((m) => m.id === mealTypeId)?.label || "Прийом їжі";
+      const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      const meal: Meal = {
+        id,
+        name: chip.label,
+        time: currentTime(),
+        mealType: mealTypeId,
+        label: mealLabel,
+        macros: {
+          kcal: chip.macros.kcal,
+          protein_g: chip.macros.protein_g,
+          fat_g: chip.macros.fat_g,
+          carbs_g: chip.macros.carbs_g,
+        },
+        // Quick-chip is a synthetic re-log; treat it as manual so existing
+        // analytics / dual-write paths handle it like any keyboard entry.
+        // `MealMacroSource` enum has no "pantry" member — the chip's pantry
+        // affinity is a display hint only, not a persisted classification.
+        source: "manual",
+        macroSource: "manual",
+        amount_g: chip.grams,
+        foodId: null,
+      };
+      const dateForLog = log.selectedDate;
+      log.handleAddMeal(meal);
+      toast.success(
+        `${chip.label} додано — ${chip.macros.kcal} ккал`,
+        undefined,
+        {
+          label: "Скасувати",
+          onClick: () => {
+            log.handleRemoveMeal(dateForLog, id);
+          },
+        },
+      );
+    },
+    [log, toast],
+  );
+
   const storageBanner = [
     log.storageErr,
     pantry.pantryStorageErr,
@@ -452,6 +511,8 @@ export default function NutritionApp({
                 photoCardForceOpen={photoCardForceOpen}
                 setPhotoCardForceOpen={setPhotoCardForceOpen}
                 onSaveToLog={handleSaveToLog}
+                pantryItems={pantry.effectiveItems}
+                onQuickAddMeal={handleQuickAddMealFromChip}
               />
             )}
 
