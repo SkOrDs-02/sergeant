@@ -1,7 +1,7 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last validated:** 2026-05-18 by @Skords-01. **Next review:** 2026-08-16.
-> **Status:** In progress — Phases 1+2+3+4(partial)+5(partial) done; pending: PostHog route_change metric (Phase 4), manualChunks cleanup + route-loaders (Phase 5)
+> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
+> **Status:** In progress — Phases 1+2+3+4+5(partial) done; Phase 4 closed with `route_change` PostHog metric landed 2026-05-22 (this branch). Pending: manualChunks cleanup + route-loaders (Phase 5)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
@@ -119,7 +119,7 @@
 - [x] `useHashRouter` повністю видалено з `apps/web/src/**`. 4/4: `nutrition/hooks/useNutritionHashRoute.ts` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)), `finyk/hooks/useHashRouter.ts` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)), shared `apps/web/src/shared/hooks/useHashRoute.ts` ([`f5caf1ee`](https://github.com/Skords-01/Sergeant/commit/f5caf1ee) `chore(web): remove unused useHashRoute hook + tests + exports`); fizruk і routine мають власні пер-модульні hooks (`useFizrukRoute.ts`, `useRoutineRoute.ts`).
 - [x] Hash-URL compat shim реалізовано (HashRedirect.tsx + Vitest unit test у Providers). _Playwright e2e тест — pending._
 - [ ] Route-loaders використовуються щонайменше у 4 модулях (prefetch RQ-data). _Phase 2/4 — поточно 0; route-loaders не введені бо Phase 2 PR-и тримали NOOP-міграцію без поведінкових регресій._
-- [ ] PostHog подія `route_change` логується для метрики p95. _Phase 4._
+- [x] PostHog подія `route_change` логується для метрики p95. _Phase 4 closed 2026-05-22 — `apps/web/src/core/lib/routeChangePerf.ts` + `apps/web/src/core/observability/RouteChangeTracker.tsx`, mounted in `Providers.tsx` next to `PageviewTracker`. Mirrors `hubPerf` begin/end shape, includes long-task attribution, 2×rAF defer for post-paint TTI._
 - [x] Bundle-size guard оновлено — per-route budgets (finyk/150KB, fizruk/180KB, routine/120KB, nutrition/100KB, total/500KB у check-bundle-size.mjs).
 - [x] ESLint rule `no-hash-router-in-modules` — error level. _Phase 5 done; `apps/web/src/modules/**` clean, 0 warnings._
 

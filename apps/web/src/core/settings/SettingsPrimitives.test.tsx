@@ -6,7 +6,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-import { SettingsGroup, SettingsSubGroup, ToggleRow, ConfirmModal } from "./SettingsPrimitives";
+import {
+  SettingsGroup,
+  SettingsSubGroup,
+  ToggleRow,
+  ConfirmModal,
+  SectionSkeleton,
+} from "./SettingsPrimitives";
 
 // Icon is a thin wrapper; stub it so tests don't need an SVG sprite.
 vi.mock("@shared/components/ui/Icon", () => ({
@@ -43,8 +49,7 @@ describe("SettingsGroup — icon prop", () => {
     );
 
     // emoji span has text-lg class; should not appear when icon wins
-    const emojiSpan = document
-      .querySelector("span.text-lg");
+    const emojiSpan = document.querySelector("span.text-lg");
     expect(emojiSpan).toBeNull();
   });
 
@@ -119,7 +124,9 @@ describe("ToggleRow", () => {
     );
 
     // Switch renders an input[type=checkbox] inside the label.
-    const input = document.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+    const input = document.querySelector(
+      'input[type="checkbox"]',
+    ) as HTMLInputElement | null;
     if (!input) throw new Error("Switch input not found");
     fireEvent.click(input);
     expect(onChange).toHaveBeenCalled();
@@ -178,5 +185,32 @@ describe("ConfirmModal", () => {
     if (!backdrop) throw new Error("backdrop button not found");
     fireEvent.click(backdrop);
     expect(onCancel).toHaveBeenCalled();
+  });
+});
+
+describe("SectionSkeleton — Suspense fallback (0017 Sprint 1.1)", () => {
+  it("renders with default minHeight 72px and aria-busy", () => {
+    render(<SectionSkeleton />);
+    const status = screen.getByRole("status");
+    expect(status.getAttribute("aria-busy")).toBe("true");
+    expect(status.style.minHeight).toBe("72px");
+  });
+
+  it("honours a custom minH for tall sections that should not cause CLS", () => {
+    render(<SectionSkeleton minH={240} />);
+    const status = screen.getByRole("status");
+    expect(status.style.minHeight).toBe("240px");
+  });
+
+  it("uses the default localized aria-label when none provided", () => {
+    render(<SectionSkeleton />);
+    const status = screen.getByRole("status");
+    expect(status.getAttribute("aria-label")).toBe("Завантажую розділ");
+  });
+
+  it("uses a caller-provided aria-label when given (e.g. section-specific copy)", () => {
+    render(<SectionSkeleton ariaLabel="Завантажую розділ Finyk" />);
+    const status = screen.getByRole("status");
+    expect(status.getAttribute("aria-label")).toBe("Завантажую розділ Finyk");
   });
 });

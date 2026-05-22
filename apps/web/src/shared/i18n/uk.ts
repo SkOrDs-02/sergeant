@@ -328,8 +328,7 @@ export const messages = {
   // scannable at the 2-col mobile breakpoint without truncation.
   welcomeModulePicker: {
     heading: "З чого почнемо?",
-    subtitle:
-      "Обери модулі, з яких хочеш почати. Решту можна додати пізніше.",
+    subtitle: "Обери модулі, з яких хочеш почати. Решту можна додати пізніше.",
     gridAriaLabel: "Модулі для старту",
     cta: "Почати",
     emptyHint: "Обери хоча б один модуль, щоб продовжити.",
@@ -355,6 +354,12 @@ export const messages = {
     // (`Завантаження сторінки`) щоб не плутати з inline-spinner-ом
     // (`status.loading` = `Завантаження…`).
     pageLoading: "Завантаження сторінки",
+    // Initiative 0017 Sprint 1.1 — generic announcement for a
+    // Suspense-deferred Settings section. Used as the default
+    // `aria-label` of `<SectionSkeleton>` so screen readers do not
+    // expose the skeleton chrome before the real section heading
+    // resolves.
+    loadingSection: "Завантажую розділ",
   },
 
   loadingActions: {

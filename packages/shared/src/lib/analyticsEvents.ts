@@ -389,6 +389,26 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // `docs/observability/hub-perf-baseline.md` — sampling 100 % for the
   // first 30 days, then 10 % once Sprint 1+2 optimisations land.
   HUB_TAB_SWITCH_PERF: "hub_tab_switch_perf",
+
+  // [Initiative 0006](../../../../docs/initiatives/0006-frontend-routing-and-code-split.md)
+  // Phase 4 — RUM baseline for `route_change_p95_latency_ms`. Fires once
+  // per top-level pathname change, after the next two animation frames so
+  // the measurement spans React commit + first paint of the new route.
+  //
+  //   ROUTE_CHANGE {
+  //     from: string,         // previous `location.pathname` (e.g. "/finyk")
+  //     to: string,           // new `location.pathname` (e.g. "/fizruk")
+  //     durationMs: number,   // pathname-change → post-paint TTI
+  //     longTaskMs: number,   // sum of `longtask` PerformanceEntry durations
+  //                           // observed during this route-change window
+  //     longTaskCount: number,// count of those entries
+  //   }
+  //
+  // Target P95 ≤ 600 ms (with prefetch). Sampled 100 % until the Phase 4
+  // ScrollRestoration + prefetch=hover wiring is fully rolled out, then
+  // 10 %. The first event after page-load is suppressed (initial mount,
+  // not a route change).
+  ROUTE_CHANGE: "route_change",
 } as const);
 
 export type AnalyticsEventName =

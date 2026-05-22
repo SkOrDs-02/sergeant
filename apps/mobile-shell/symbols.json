@@ -1,7 +1,7 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-05-19",
+  "generated_at": "2026-05-22",
   "package": "@sergeant/mobile-shell",
   "entryFile": "apps/mobile-shell/src/index.ts",
   "stats": {

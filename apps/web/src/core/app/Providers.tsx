@@ -15,6 +15,7 @@ import { AuthProvider } from "../auth/AuthContext";
 import { AppLockProvider } from "../security/AppLockContext";
 import { HashRedirect } from "./HashRedirect";
 import { PageviewTracker } from "../observability/PageviewTracker";
+import { RouteChangeTracker } from "../observability/RouteChangeTracker";
 import { ShellDeepLinkBridge } from "./ShellDeepLinkBridge";
 
 /**
@@ -59,6 +60,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <HashRedirect />
         <ScrollRestoration />
         <PageviewTracker />
+        <RouteChangeTracker />
         <ScreenReaderAnnouncerProvider>
           <ApiClientProvider client={apiClient}>
             <AuthProvider>

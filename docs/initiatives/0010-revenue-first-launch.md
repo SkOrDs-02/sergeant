@@ -1,7 +1,7 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-18 by @Skords-01. **Next review:** 2026-08-16.
-> **Status:** In progress — Phases 0+1+2+3+4.1+4.2(partial)+4.3(Google)+5.1+5.2+6(partial) done; pending: Apple auth (4.3), PricingPage portal link (4.2), EN locale + sitemap/robots.txt (6)
+> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
+> **Status:** In progress — Phases 0+1+2+3+4.1+4.2(partial)+4.3(Google)+5.1+5.2+6(partial) done; sitemap.xml + robots.txt landed 2026-05-22 (this branch). Pending: Apple auth (4.3), PricingPage portal link (4.2), EN locale (6)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)

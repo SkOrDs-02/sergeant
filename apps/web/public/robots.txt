@@ -1,0 +1,29 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /welcome
+
+# Auth + onboarding internals — no SEO value, no crawl budget waste.
+Disallow: /sign-in
+Disallow: /reset-password
+Disallow: /profile
+Disallow: /chat
+Disallow: /assistant
+Disallow: /status
+Disallow: /design
+
+# Module deep-links live behind the auth wall and are not crawlable
+# anonymously. Excluding them keeps the index honest.
+Disallow: /finyk/
+Disallow: /fizruk/
+Disallow: /nutrition/
+Disallow: /routine/
+Disallow: /insights/
+Disallow: /settings/
+Disallow: /onboarding/
+
+# Service-worker, manifest, internal asset bundles — let Google read
+# them (no `Disallow: /assets/`) but skip the dev-friendly fingerprint
+# query strings; nothing to do here, just for the record.
+
+Sitemap: https://sergeant.vercel.app/sitemap.xml

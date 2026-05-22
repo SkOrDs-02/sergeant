@@ -35,6 +35,9 @@ vi.mock("./app/HashRedirect", () => ({
 vi.mock("./observability/PageviewTracker", () => ({
   PageviewTracker: () => null,
 }));
+vi.mock("./observability/RouteChangeTracker", () => ({
+  RouteChangeTracker: () => null,
+}));
 vi.mock("./auth/authClient", () => ({
   signIn: { email: vi.fn(), social: vi.fn() },
   signUp: { email: vi.fn() },

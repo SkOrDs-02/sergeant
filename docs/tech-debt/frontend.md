@@ -233,9 +233,9 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 4 файли (тільки `apps/web/src`) — **Initiative 0001 closed; majority of carry-over decomposed**
+### 4. Великі файли (>600 рядків) — 3 файли (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 Sprint 2 done; 1 regression open**
 
-> **Status (2026-05-04):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
+> **Status (2026-05-22):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
 > закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
 > запланованих топ-1 моноліт-файлів декомпоновано — `useStorage.ts`,
 > `chatActions/types.ts`, `Icon.tsx`, `sw.ts`, `RoutineApp.tsx`) і Phase 3
@@ -243,17 +243,24 @@ Codemod ідемпотентний: повторний запуск дасть `
 [error, 600]` для `apps/web/src/**/*.{ts,tsx}` залишається активним —
 > будь-який новий файл `apps/web/src/**` ≥ 600 LOC далі падає на `pnpm lint`.
 >
-> Carry-over status (2026-05-13). З 12 файлів, які Initiative 0001 переніс у
-> successor, **10 вже декомпозовано** після 2026-05-04: `Workouts.tsx`,
-> `LogCard.tsx`, `NutritionApp.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`,
-> `Exercise.tsx`, `Progress.tsx`, `AssetsTable.tsx`, плюс decomposition
-> `HubDashboard.tsx` (676 → 115 LOC) і `hubChatContext.ts` (681 → 32 LOC,
-> PR #2517 round-2 0013). `max-lines` allowlist у `eslint.config.js` тепер
-> **порожній**. Активних carry-over залишилось **2**: `FinykApp.tsx`
-> (640 LOC) і `RoutineCalendarPanel.tsx` (602 LOC). Плюс **2 нових leakers**,
-> які з'явились після audit-у 0001: `AuthPage.tsx`, `dualWrite/adapter.ts` —
-> поки що під `skipBlankLines + skipComments` max-lines lint не падає
-> (LOC > 600 raw, але <600 не-blank/не-comment), моніторити окремо.
+> Carry-over status (2026-05-22). З 12 файлів, які Initiative 0001 переніс у
+> successor, **усі 12 вже декомпозовано**: `Workouts.tsx`, `LogCard.tsx`,
+> `NutritionApp.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`, `Exercise.tsx`,
+> `Progress.tsx`, `AssetsTable.tsx`, `HubDashboard.tsx` (676 → 115 LOC),
+> `hubChatContext.ts` (681 → 32 LOC, PR #2517), `FinykApp.tsx` (640 raw, 537
+> effective — passes rule), `RoutineCalendarPanel.tsx` (602 → 575 effective
+> as of 2026-05-09). `max-lines` allowlist у `eslint.config.js` **порожній**.
+>
+> **Активних регресій (2026-05-22): 1.** `RoutineCalendarPanel.tsx` re-grew
+> 602→686 raw / 575→645 effective LOC і знов падає `pnpm lint` (rule
+> `max-lines:600` без override). Власник — Initiative 0013, відкривається
+> окремим PR `decomp-r2-routinecalendarpanel` перед фінальним
+> `decomp-r2-finalize`.
+>
+> Плюс **2 нових leakers**, які з'явились після audit-у 0001:
+> `AuthPage.tsx` (хоча зараз 157 LOC raw — теж не leaker після 2026-Q2),
+> `dualWrite/adapter.ts` — поки що під `skipBlankLines + skipComments`
+> max-lines lint не падає (642 raw, <600 effective), моніторити окремо.
 > Третій leaker з цієї когорти — `OnboardingWizard.tsx` (691 raw) —
 > декомпозовано (composition root + state-machine hook + WelcomeOneScreen +
 > ModuleRow + picksStorage; кожен файл <300 LOC raw). Деталі — в Outcome секції
@@ -366,12 +373,11 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
 > (mobile tracker — `docs/tech-debt/mobile.md`).
 
-| Рядків | Файл                                                  | Категорія                       |
-| ------ | ----------------------------------------------------- | ------------------------------- |
-| 694    | `core/auth/AuthPage.tsx`                              | Новий leaker (не в Init. 0001)  |
-| 641    | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001)  |
-| 640    | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over (активне) |
-| 602    | `modules/routine/components/RoutineCalendarPanel.tsx` | Init. 0001 carry-over (активне) |
+| Рядків (raw / effective) | Файл                                                  | Категорія                                                                                        |
+| ------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 686 / **645** (FAIL)     | `modules/routine/components/RoutineCalendarPanel.tsx` | 0013 регресія (raw зріс після ревізії 2026-05-09); власник — `decomp-r2-routinecalendarpanel` PR |
+| 661 / 559                | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over — passes rule, monitor                                                     |
+| 642 / 567                | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001) — passes rule, monitor                                            |
 
 **Імпакт:** повільніший code review, важче тестувати окремі частини, можливі
 circular deps.

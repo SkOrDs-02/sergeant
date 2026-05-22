@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-05-21",
+  "generated_at": "2026-05-22",
   "counts": {
     "adr": 58,
     "audit": 31,
@@ -1427,7 +1427,7 @@
       "type": "initiative",
       "title": "0017 — Hub Settings & Reports mount perf",
       "path": "docs/initiatives/0017-hub-tabs-mount-perf.md",
-      "status": "In progress — Sprint 0 (observability baseline) not started.",
+      "status": "In progress — Sprint 0 (observability baseline) **shipped**; Sprint 1 not started.",
       "tier": "core",
       "meta": {
         "number": 17,

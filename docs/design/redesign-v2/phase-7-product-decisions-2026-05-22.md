@@ -1,5 +1,6 @@
 # Sergeant v2 Phase 7 — Product Decisions (2026-05-22)
 
+> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
 > **Author:** @Skords-01 (decisions) + Claude Code (recording)
 > **Date:** 2026-05-22
 > **Status:** Active — these are locked product calls that unblock Phase 7 implementation
@@ -9,14 +10,14 @@
 
 Six strategic blockers held Phase 7 hostage at v2 retrospective close-out (2026-05-21). One product prioritization session (~30 min) cleared them. Implementation can now spawn parallel agents per decision.
 
-| # | Decision | Locked choice |
-|---|---|---|
-| D1 | AuthPage v2 scope | **Visual refresh only** (no flow change) |
-| D2 | PaywallModal trigger | **Feature gates** (touch premium feature → modal) |
-| D3 | Pricing tiers | **One paid tier** (Free → Premium €X/mo) |
-| D4 | WelcomeScreen v2 | **Preset picker first** (modules selected before Hub) |
-| D5 | HubChat route | **Bottom sheet expandable** to full-screen |
-| D6 | Phase 8 RN parity | **Deferred indefinitely** — out of Phase 7 scope |
+| #   | Decision             | Locked choice                                         |
+| --- | -------------------- | ----------------------------------------------------- |
+| D1  | AuthPage v2 scope    | **Visual refresh only** (no flow change)              |
+| D2  | PaywallModal trigger | **Feature gates** (touch premium feature → modal)     |
+| D3  | Pricing tiers        | **One paid tier** (Free → Premium €X/mo)              |
+| D4  | WelcomeScreen v2     | **Preset picker first** (modules selected before Hub) |
+| D5  | HubChat route        | **Bottom sheet expandable** to full-screen            |
+| D6  | Phase 8 RN parity    | **Deferred indefinitely** — out of Phase 7 scope      |
 
 ## D1 — AuthPage v2 scope
 
@@ -68,6 +69,7 @@ Single PR ~M-size. Pattern proven by Phase 2.1 / 2.3 hero migrations: keep behav
 ### Premium feature list (TBD in implementation PR)
 
 Will need a flat list of which features sit behind the gate. Initial candidates from existing surfaces:
+
 - AI macro photo analysis (Nutrition)
 - AI categorization (Finyk) beyond first 30/month
 - Multi-currency support (Finyk)
@@ -209,13 +211,13 @@ These will be locked in dedicated pricing PR with market research input.
 
 ## Tactical follow-ups unblocked by these decisions
 
-| Tactical item | Unblocked by |
-|---|---|
-| Premium feature gate inventory PR | D2 |
-| Pricing page copy + tiers UI | D3 |
-| WelcomeScreen preset picker component | D4 |
-| HubChat bottom-sheet refactor | D5 |
-| AuthPage v2 visual refresh PR | D1 |
+| Tactical item                         | Unblocked by |
+| ------------------------------------- | ------------ |
+| Premium feature gate inventory PR     | D2           |
+| Pricing page copy + tiers UI          | D3           |
+| WelcomeScreen preset picker component | D4           |
+| HubChat bottom-sheet refactor         | D5           |
+| AuthPage v2 visual refresh PR         | D1           |
 
 These will be addressed as separate PRs through Phase 7 cycle. Order TBD by user.
 

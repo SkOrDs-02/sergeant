@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-05-19",
+  "generated_at": "2026-05-22",
   "summary": {
     "packages": 17,
     "totalExports": 279,
@@ -1453,7 +1453,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/dist/index.d.ts",
+      "entryFile": "packages/db-schema/src/index.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -1766,7 +1766,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 66,
+        "totalImporters": 71,
         "deadExports": 0
       },
       "exports": [
@@ -1948,7 +1948,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 49,
+        "totalImporters": 50,
         "deadExports": 0
       },
       "exports": [
@@ -1978,7 +1978,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 297,
+        "totalImporters": 305,
         "deadExports": 0
       },
       "exports": [

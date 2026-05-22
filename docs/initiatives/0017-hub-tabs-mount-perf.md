@@ -1,7 +1,7 @@
 # 0017 — Hub Settings & Reports mount perf
 
-> **Last validated:** 2026-05-21 by @Skords-01. **Next review:** 2026-08-19.
-> **Status:** In progress — Sprint 0 (observability baseline) **shipped**; Sprint 1 not started.
+> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
+> **Status:** In progress — Sprint 0 (observability baseline) shipped. Sprint 1 PR-1.1 (`SectionSkeleton` primitive in `SettingsPrimitives.tsx`) landed 2026-05-22 (this branch); per-section lazy wiring in `HubSettingsPage` is the next PR.
 > **Priority:** P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))
 > **Owner:** `@Skords-01`
 > **ETA:** ~3 weeks (3 sprints × 1 week each, includes observability baseline)

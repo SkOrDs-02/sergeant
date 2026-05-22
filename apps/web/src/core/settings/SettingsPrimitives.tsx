@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
+import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { messages } from "@shared/i18n/uk";
 
@@ -99,7 +106,12 @@ export function SettingsGroup({
   const moduleBg = module != null ? (MODULE_ICON_BG[module] ?? "") : "";
 
   return (
-    <Card prominence="glass" radius="r-lg" padding="none" className="overflow-hidden">
+    <Card
+      prominence="glass"
+      radius="r-lg"
+      padding="none"
+      className="overflow-hidden"
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -115,7 +127,8 @@ export function SettingsGroup({
             <span
               className={cn(
                 "rounded-r-md p-1.5 border flex items-center justify-center shrink-0",
-                moduleBg || "bg-surface-soft-glass border-surface-line text-muted-v2",
+                moduleBg ||
+                  "bg-surface-soft-glass border-surface-line text-muted-v2",
               )}
             >
               <Icon name={resolvedIcon} size={18} />
@@ -314,5 +327,70 @@ export function ConfirmModal({
         </div>
       </div>
     </div>
+  );
+}
+
+export interface SectionSkeletonProps {
+  /**
+   * Minimum height in pixels. Mirrors the real section's collapsed-state
+   * height so the Suspense fallback does not cause Cumulative Layout
+   * Shift when the lazy chunk resolves and the real section paints.
+   *
+   * Per-section values are owned by the caller — each `<Suspense>`
+   * boundary in `HubSettingsPage` passes the height it knows for its
+   * section. A default of 72 px matches the closed-header shape of
+   * `<SettingsGroup>` (icon badge + title row + chrome padding).
+   */
+  minH?: number;
+  /**
+   * Aria label for the placeholder card. Visible-text-only screen
+   * readers see this in place of the real section title until the lazy
+   * chunk resolves. Defaults to a generic "loading section" string.
+   */
+  ariaLabel?: string;
+}
+
+/**
+ * Stable height-placeholder for a `<Suspense>`-deferred `<SettingsGroup>`
+ * (Initiative 0017 Sprint 1.1 — per-section lazy in HubSettingsPage).
+ *
+ * Shape mirrors the closed-state `<SettingsGroup>` header chrome —
+ * icon badge slot + title bar + chevron — so the swap from fallback to
+ * real section is visually a no-op for the user. Shimmer (not pulse)
+ * matches the "premium loading" feel chosen by the design tokens, and
+ * collapses to a static block under `prefers-reduced-motion: reduce`
+ * (handled inside `Skeleton`).
+ *
+ * Always `aria-hidden`-effective: the placeholder is decorative; the
+ * meaningful announcement is the section's real heading once it loads.
+ * `ariaLabel` is exposed only for the rare case where the placeholder
+ * remains on screen long enough for screen readers to focus it — the
+ * fallback is then announced as "loading <ariaLabel>" rather than
+ * leaking the skeleton chrome.
+ */
+export function SectionSkeleton({
+  minH = 72,
+  ariaLabel,
+}: SectionSkeletonProps) {
+  const style: CSSProperties = { minHeight: `${minH}px` };
+  return (
+    <Card
+      prominence="glass"
+      radius="r-lg"
+      padding="none"
+      className="overflow-hidden"
+      role="status"
+      aria-label={ariaLabel ?? messages.loaders.loadingSection}
+      aria-busy="true"
+      style={style}
+    >
+      <div className="w-full px-4 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Skeleton shimmer className="w-9 h-9 rounded-r-md shrink-0" />
+          <SkeletonText shimmer className="w-1/3 max-w-[180px]" />
+        </div>
+        <Skeleton shimmer className="w-4 h-4 rounded-sm shrink-0" />
+      </div>
+    </Card>
   );
 }
