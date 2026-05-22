@@ -106,7 +106,13 @@ export default [
       // `no-bare-empty-text` — enforce empty-state tier discipline.
       // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
       // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
-      "sergeant-design/no-bare-empty-text": "warn",
+      //
+      // Promoted to `error` 2026-05-22 (audit-2026-05-15 closure): baseline
+      // cleanup complete. Remaining call-sites either live inside an
+      // <EmptyState>/<ModuleEmptyState> ancestor (rule auto-exempts) or
+      // carry a targeted `eslint-disable-next-line` with a WHY for the
+      // narrow tier-3/hero-shell exceptions documented per call-site.
+      "sergeant-design/no-bare-empty-text": "error",
       // `no-cyrillic-jsx-literal` — i18n burndown gate (item #18 Phase 3).
       // New cyrillic JSX text or attribute string literals must reference
       // `messages.<group>.<key>` from `apps/web/src/shared/i18n/uk.ts`.
