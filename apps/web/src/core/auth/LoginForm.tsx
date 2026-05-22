@@ -91,7 +91,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
           <button
             type="button"
             onClick={() => onForgotPassword(emailValue)}
-            className="text-xs text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded"
+            className="text-style-caption text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-1"
           >
             Забули пароль?
           </button>
@@ -124,7 +124,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
       {authError && !showForgot && (
         <div
           role="alert"
-          className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
+          className="text-style-caption text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
         >
           {authError}
         </div>

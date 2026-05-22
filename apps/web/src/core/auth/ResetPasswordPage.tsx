@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
@@ -109,22 +110,29 @@ export function ResetPasswordPage() {
     lastResponse !== undefined ? "done" : isSubmitting ? "sending" : "idle";
 
   return (
-    <div
-      className="min-h-dvh bg-bg flex flex-col items-center justify-center px-5"
+    // Phase 7 D1 — visual refresh. Pre-module surface, so MeshBackground
+    // is mounted without `<ModuleAccentProvider>` (auth is module-agnostic).
+    <MeshBackground
+      className="items-center px-5 overflow-y-auto"
       style={{
         paddingTop: "max(1.25rem, env(safe-area-inset-top))",
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
       }}
     >
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
         <div className="text-center mb-6">
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
 
-        <Card variant="elevated" radius="xl" padding="lg" className="space-y-5">
+        <Card
+          prominence="hero"
+          radius="r-2xl"
+          padding="lg"
+          className="space-y-5"
+        >
           <div className="text-center">
-            <h2 className="text-style-title text-text">Новий пароль</h2>
-            <p className="text-xs text-subtle mt-1">
+            <h2 className="text-style-display-hero text-text">Новий пароль</h2>
+            <p className="text-style-body-sm text-subtle mt-2">
               Встанови новий пароль для свого акаунта.
             </p>
           </div>
@@ -132,7 +140,7 @@ export function ResetPasswordPage() {
           {!token ? (
             <div
               role="alert"
-              className="text-sm text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
+              className="text-style-body-sm text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
             >
               <p>
                 Посилання на скидання пароля неповне або протерміноване. Відкрий
@@ -176,7 +184,7 @@ export function ResetPasswordPage() {
                   <p
                     id="reset-pw-error"
                     role="alert"
-                    className="text-xs text-danger"
+                    className="text-style-caption text-danger"
                   >
                     {formState.errors.password.message}
                   </p>
@@ -207,7 +215,7 @@ export function ResetPasswordPage() {
                   <p
                     id="reset-confirm-error"
                     role="alert"
-                    className="text-xs text-danger"
+                    className="text-style-caption text-danger"
                   >
                     {formState.errors.confirm.message}
                   </p>
@@ -219,8 +227,8 @@ export function ResetPasswordPage() {
                   role={serverError ? "alert" : "status"}
                   className={
                     serverError
-                      ? "text-xs text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
-                      : "text-xs text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
+                      ? "text-style-caption text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
+                      : "text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
                   }
                 >
                   {serverError || "Пароль оновлено. Зараз перенесу на вхід…"}
@@ -245,6 +253,6 @@ export function ResetPasswordPage() {
           )}
         </Card>
       </div>
-    </div>
+    </MeshBackground>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
+import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
 import { LoginForm } from "./LoginForm";
@@ -43,29 +44,36 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
   return (
     <>
       {CelebrationComponent}
-      <div
-        className="min-h-dvh bg-bg flex flex-col items-center justify-center px-5"
+      {/*
+        Phase 7 D1 — visual refresh. MeshBackground wraps the whole auth
+        shell (auth is pre-module, so no `<ModuleAccentProvider>` here);
+        BrandLogo sits ABOVE the hero card per the redesign brief.
+        Flow logic is intentionally untouched — see
+        `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
+      */}
+      <MeshBackground
+        className="items-center px-5 overflow-y-auto"
         style={{
           paddingTop: "max(1.25rem, env(safe-area-inset-top))",
           paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
         }}
       >
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
           <div className="text-center mb-6">
             <BrandLogo as="h1" size="md" className="justify-center" />
           </div>
 
           <Card
-            variant="elevated"
-            radius="xl"
+            prominence="hero"
+            radius="r-2xl"
             padding="lg"
             className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
           >
             <div className="text-center">
-              <h2 className="text-style-title text-text">
-                {mode === "login" ? "Вхід в акаунт" : "Створення акаунту"}
+              <h2 className="text-style-display-hero text-text">
+                {mode === "login" ? "З поверненням" : "Створити акаунт"}
               </h2>
-              <p className="text-xs text-subtle mt-1">
+              <p className="text-style-body-sm text-subtle mt-2">
                 {mode === "login"
                   ? "Email і пароль або Google"
                   : "Email і пароль — мінімум 10 символів"}
@@ -101,7 +109,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             Inline "або" divider between two <span> rules — structurally
             a delimiter, not a heading, so SectionHeading is the wrong
             abstraction. */}
-            <div className="my-6 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
+            <div className="my-6 flex items-center gap-3 text-style-overline text-muted">
               <span className="flex-1 h-px bg-line" />
               або
               <span className="flex-1 h-px bg-line" />
@@ -116,7 +124,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <button
                 type="button"
                 onClick={switchMode}
-                className="text-sm text-brand-strong dark:text-brand-400 hover:underline px-2 py-1 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                className="min-h-touch-target text-style-label text-brand-strong dark:text-brand-400 hover:underline px-3 py-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               >
                 {mode === "login"
                   ? "Немає акаунту? Зареєструватися"
@@ -136,14 +144,14 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               >
                 Поки що пропустити
               </Button>
-              <p className="text-center text-xs text-subtle leading-relaxed px-2">
+              <p className="text-center text-style-caption text-subtle leading-relaxed px-2">
                 Все працює локально. Акаунт потрібен лише для синхронізації між
                 пристроями.
               </p>
             </div>
           )}
         </div>
-      </div>
+      </MeshBackground>
     </>
   );
 }
