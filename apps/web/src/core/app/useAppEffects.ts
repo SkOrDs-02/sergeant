@@ -19,7 +19,7 @@ import {
   prefetchCriticalModules,
   prefetchHubNavigationPages,
 } from "../lib/useRoutePrefetch";
-import { CHAT_PATH } from "./appPaths";
+import { useHubChatOverlay } from "../hub/useHubChatOverlay";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
@@ -48,6 +48,7 @@ export function useAppEffects(deps: AppEffectsDeps): void {
     validActions,
   } = deps;
   const { hubView, setHubView } = ui;
+  const { openChat } = useHubChatOverlay();
 
   // Prefetch hub-navigation pages first, then let heavier module chunks
   // follow on a later idle slot. Reports and Settings are primary tabs,
@@ -135,20 +136,22 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   }, []);
 
   // Global signal to open chat from any page (e.g. ProfilePage memory
-  // bank, AssistantCataloguePage, hint toasts). Now routes to the
-  // dedicated `/chat` route — replaces the previous fullscreen-modal
-  // overlay. The `?q=` / `?autoSend=` URL shape is the single source of
-  // truth; `HubChatPage` reads those params on mount.
+  // bank, AssistantCataloguePage, hint toasts). Sergeant v2 Phase 7 D5:
+  // open the in-memory bottom-sheet overlay rather than navigating to
+  // `/chat` — keeps the user's current route (and scroll position) so
+  // "ask AI about this expense" surfaces don't tear down the surface
+  // beneath. Deep links (notifications, AIPill voice commit) still hit
+  // the full-screen `/chat` route via `HubChatPage`, which is mounted
+  // by `StandaloneRoutes.tsx` and reads `?q=` / `?autoSend=1` directly.
   useEffect(
     () =>
       onHubBus("openChat", (detail) => {
-        const params = new URLSearchParams();
-        if (detail.message) params.set("q", detail.message);
-        if (detail.autoSend) params.set("autoSend", "1");
-        const search = params.toString();
-        navigate(search ? `${CHAT_PATH}?${search}` : CHAT_PATH);
+        openChat({
+          initialMessage: detail.message ?? "",
+          autoSend: detail.autoSend ?? false,
+        });
       }),
-    [navigate],
+    [openChat],
   );
 
   // Global signal to open HubSearch from any surface (used by hint

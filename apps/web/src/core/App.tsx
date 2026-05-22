@@ -12,6 +12,11 @@ import { setFlag, useFlag } from "./lib/featureFlags";
 import { useDemoCommands } from "./app/useDemoCommands";
 import { ActiveModuleView } from "./app/ActiveModuleView";
 import { HubHomeView } from "./app/HubHomeView";
+import { HubChatOverlay } from "./hub/HubChatOverlay";
+import {
+  HubChatOverlayProvider,
+  useHubChatOverlayState,
+} from "./hub/useHubChatOverlay";
 import { Providers } from "./app/Providers";
 import { RedirectTo } from "./app/RedirectTo";
 import { renderStandaloneRoute } from "./app/StandaloneRoutes";
@@ -45,8 +50,16 @@ export default function App() {
 
 function AppInnerWithLock() {
   const appLock = useAppLockContext();
+  // Sergeant v2 Phase 7 D5 — HubChat now opens as a bottom-sheet
+  // overlay on top of the current route instead of navigating to
+  // `/chat`. Provider lives above `<AppInner />` so `useAppEffects`
+  // (hub-bus `openChat` handler) and any descendant trigger
+  // (`AIPill`, `ModuleHeaderAssistantButton`) share one in-memory
+  // overlay state. The `/chat` route remains mounted for deep-link
+  // backward-compat — see `HubChatOverlay.tsx` for the rationale.
+  const chatOverlay = useHubChatOverlayState();
   return (
-    <>
+    <HubChatOverlayProvider value={chatOverlay}>
       <AppLock
         state={appLock.state}
         onUnlock={appLock.unlock}
@@ -58,7 +71,8 @@ function AppInnerWithLock() {
         }}
       />
       <AppInner />
-    </>
+      <HubChatOverlay />
+    </HubChatOverlayProvider>
   );
 }
 

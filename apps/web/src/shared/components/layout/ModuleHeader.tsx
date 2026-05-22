@@ -3,10 +3,10 @@
  * Status: Active
  */
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import {
   MODULE_LABELS,
@@ -217,26 +217,29 @@ export interface ModuleHeaderAssistantButtonProps {
 }
 
 /**
- * Sparkle button that opens the AI-assistant route (`/chat`). Lives next
- * to module-specific chrome in the header `right` slot so the assistant
- * is one tap away from every module — mirrors the dashboard FAB without
+ * Sparkle button that opens the AI-assistant. Lives next to
+ * module-specific chrome in the header `right` slot so the assistant is
+ * one tap away from every module — mirrors the dashboard FAB without
  * adding another floating affordance on top of module-level FABs
- * (Фінік / Рутина quick-add). The hard-coded `/chat` literal mirrors
- * `CHAT_PATH` in `core/app/appPaths.ts`; importing from `core/app`
- * inside `shared/` would cross the layering boundary.
+ * (Фінік / Рутина quick-add).
+ *
+ * Sergeant v2 Phase 7 D5 — tapping no longer navigates to `/chat`; it
+ * emits `openChat` on the hub bus so `useAppEffects` opens the bottom-
+ * sheet overlay over the current module surface. The `/chat` route
+ * remains mounted for deep-link / notification entry — see
+ * `HubChatOverlay.tsx` for the rationale.
  */
 export function ModuleHeaderAssistantButton({
   ariaLabel = "Відкрити AI-асистента",
   title,
   className,
 }: ModuleHeaderAssistantButtonProps = {}) {
-  const navigate = useNavigate();
   return (
     <button
       type="button"
       onClick={() => {
         hapticTap();
-        navigate("/chat");
+        emitHubBus("openChat", { message: null, autoSend: false });
       }}
       className={cn(
         "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",

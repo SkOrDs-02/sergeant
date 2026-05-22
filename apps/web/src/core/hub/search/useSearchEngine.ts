@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { hapticTap } from "@shared/lib/adapters/haptic";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import {
   clearRecentQueries,
@@ -125,11 +126,14 @@ export function useSearchEngine({
   const escalateToChat = (prompt: string) => {
     inlineAi.reset();
     onClose();
-    // Hand off to the dedicated `/chat` route. `autoSend=0` keeps the
-    // user in control: the chat opens with the prompt prefilled, ready
-    // to edit before sending. Matches `AssistantCataloguePage`'s
-    // "Try in chat" CTA shape so deep-links share one URL surface.
-    navigate(`/chat?q=${encodeURIComponent(prompt)}`);
+    // Sergeant v2 Phase 7 D5 — open the chat overlay with the prompt
+    // prefilled. `autoSend=false` keeps the user in control: chat
+    // opens with the prompt ready to edit before sending. Matches
+    // `AssistantCataloguePage`'s "Try in chat" CTA shape; the bus
+    // handler in `useAppEffects` routes to the bottom-sheet overlay,
+    // and the full-screen `/chat?q=…` URL stays a valid deep-link via
+    // `HubChatPage`.
+    emitHubBus("openChat", { message: prompt, autoSend: false });
   };
 
   const openHit = (hit: Hit) => {
@@ -173,9 +177,10 @@ export function useSearchEngine({
         const cap = hit.target.capability;
         const example = cap?.examples?.[0];
         if (example) {
-          // Match AssistantCataloguePage's "Try in chat" CTA: prefill
-          // without auto-sending so the user keeps full control.
-          navigate(`/chat?q=${encodeURIComponent(example)}`);
+          // Phase 7 D5 — open overlay with the example prefilled.
+          // Mirrors `AssistantCataloguePage`'s "Try in chat" CTA which
+          // also routes through the hub bus.
+          emitHubBus("openChat", { message: example, autoSend: false });
         } else {
           navigate("/assistant");
         }

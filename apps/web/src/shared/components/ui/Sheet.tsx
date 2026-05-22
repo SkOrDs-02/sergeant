@@ -52,6 +52,18 @@ export interface SheetProps {
   headerRight?: ReactNode;
   /** Hide the drag-handle pill. */
   hideHandle?: boolean;
+  /**
+   * Hide the built-in title + close-button row.
+   *
+   * Used by surfaces whose body already owns a header (e.g. HubChat's
+   * `<HubChatHeader>` ships with its own title popover + close pill —
+   * stacking the Sheet's header on top would render two close buttons
+   * and break the visual hierarchy). The drag-handle pill stays
+   * available as the swipe-to-dismiss target, and `title` is still
+   * wired to `aria-labelledby` for screen readers via a visually-hidden
+   * node so the dialog remains labelled.
+   */
+  hideHeader?: boolean;
   /** Keyboard (visual viewport) inset in px — shifts panel up when an on-screen keyboard is visible. */
   kbInsetPx?: number;
   /** Sheet z-index. Defaults to 50 — raise for nested sheets. */
@@ -83,6 +95,7 @@ export function Sheet({
   footer,
   headerRight,
   hideHandle = false,
+  hideHeader = false,
   kbInsetPx,
   zIndex = 50,
   closeLabel = "Закрити",
@@ -215,37 +228,46 @@ export function Sheet({
             />
           </div>
         )}
-        <div
-          className="flex items-start justify-between gap-3 px-5 pt-1 pb-3 shrink-0 touch-pan-y"
-          {...swipe.bind}
-        >
-          <div className="min-w-0 flex-1">
-            <div
-              id={titleId}
-              className="text-lg font-extrabold text-text leading-tight"
-            >
-              {title}
-            </div>
-            {description && (
-              <div className="text-xs text-subtle mt-1">{description}</div>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {headerRight}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={closeLabel}
-              className={cn(
-                "flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full",
-                "bg-panelHi text-muted hover:text-text transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+        {hideHeader ? (
+          // Body owns its own header — render only a visually-hidden
+          // label so `aria-labelledby` stays valid. The drag-handle row
+          // above remains the swipe-to-dismiss target.
+          <span id={titleId} className="sr-only">
+            {title}
+          </span>
+        ) : (
+          <div
+            className="flex items-start justify-between gap-3 px-5 pt-1 pb-3 shrink-0 touch-pan-y"
+            {...swipe.bind}
+          >
+            <div className="min-w-0 flex-1">
+              <div
+                id={titleId}
+                className="text-lg font-extrabold text-text leading-tight"
+              >
+                {title}
+              </div>
+              {description && (
+                <div className="text-xs text-subtle mt-1">{description}</div>
               )}
-            >
-              <Icon name="close" size={16} aria-hidden />
-            </button>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {headerRight}
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={closeLabel}
+                className={cn(
+                  "flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full",
+                  "bg-panelHi text-muted hover:text-text transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                )}
+              >
+                <Icon name="close" size={16} aria-hidden />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         <div
           className={cn(
             // `overscroll-contain` prevents rubber-band scroll from

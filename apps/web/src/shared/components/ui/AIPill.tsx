@@ -63,6 +63,7 @@ import { Icon } from "@shared/components/ui/Icon";
 // using a relative path matches the established pattern (HubHomeView
 // itself imports `./appPaths`).
 import { CHAT_PATH } from "../../../core/app/appPaths";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -265,7 +266,14 @@ export function AIPill({
 
   const openChat = () => {
     hapticTap();
-    navigate(CHAT_PATH);
+    // Sergeant v2 Phase 7 D5 — emit the bus event instead of
+    // `navigate(CHAT_PATH)`. `useAppEffects` listens and opens the
+    // bottom-sheet overlay over the current route (preserves scroll
+    // position, doesn't tear down the surface beneath). The voice
+    // commit flow above still navigates to `/chat?q=…` so the
+    // transcript prefill arrives via URL — that path lands on the
+    // full-screen `HubChatPage` and remains the deep-link contract.
+    emitHubBus("openChat", { message: null, autoSend: false });
   };
 
   const handleMic = () => {
