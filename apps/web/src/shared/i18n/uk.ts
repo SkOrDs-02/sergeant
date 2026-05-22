@@ -587,6 +587,31 @@ export const messages = {
     badge: "Що нового",
     dismiss: "Зрозуміло",
   },
+
+  // Phase 7 D2 — paywall feature gates. Per-feature copy used by the
+  // shared `<PaywallModal>` when a call-site gates an action via
+  // `useFeatureGate(featureId)`. Keep `name` short enough to plug
+  // into «Розблокувати {name}» (≤ 35 chars).
+  paywall: {
+    "ai-photo-analysis": {
+      name: "AI-аналіз фото їжі",
+      title: "AI-аналіз фото — у Premium",
+      description:
+        "ШІ визначить КБЖВ та порцію за фото страви. Доступно у Premium підписці.",
+    },
+    "multi-currency": {
+      name: "Кілька валют",
+      title: "Мульти-валюта — у Premium",
+      description:
+        "Активи у USD, EUR, BTC і конвертація в гривню — тільки на Premium плані.",
+    },
+    "analytics-export-pdf": {
+      name: "Експорт PDF",
+      title: "PDF-звіти — у Premium",
+      description:
+        "Розширені звіти між модулями та експорт PDF — у Premium підписці.",
+    },
+  },
 } as const satisfies MessageCatalog;
 
 /**

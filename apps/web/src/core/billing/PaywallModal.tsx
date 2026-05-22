@@ -87,6 +87,13 @@ export function PaywallModal({
       size="md"
       title={title}
       description={description}
+      // v2 visual refresh (Phase 7 D2). Panel inherits `bg-surface` from
+      // <Modal>; the extra `bg-gradient` overlay lifts the paywall to a
+      // brand-accented hero tone so the upsell does not look like a
+      // generic system dialog. Scrim + backdrop-blur (AMBIENT motion
+      // slot per Motion #17) live inside <Modal>; we add no new ambient
+      // here. The CTA hover state is the single RESPONSE.
+      panelClassName="bg-gradient-to-b from-brand/8 to-surface border-brand/20"
       footer={
         <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button variant="ghost" size="md" onClick={onClose}>
@@ -98,7 +105,7 @@ export function PaywallModal({
         </div>
       }
     >
-      <ul className="space-y-2 text-sm text-text">
+      <ul className="space-y-2 text-style-body-sm text-text">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2">
             <span aria-hidden className="text-brand-strong mt-0.5">

@@ -3,6 +3,8 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
+import { PaywallModal, useFeatureGate } from "../../../core/billing";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import type {
   Debt,
@@ -214,7 +216,16 @@ export function AssetForm({
   assetFormRef: React.RefObject<HTMLElement | null>;
   assetNameInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  // Phase 7 D2 — multi-currency assets (non-UAH) are gated to Premium.
+  // UAH stays free for everyone; touching the picker to switch off UAH
+  // opens the paywall and reverts the selection.
+  const currencyGate = useFeatureGate("multi-currency");
+  const onCurrencyChange = (next: string) => {
+    if (next !== "UAH" && !currencyGate.requireAccess()) return;
+    setNewAsset((a) => ({ ...a, currency: next }));
+  };
   return (
+    <>
     <Card
       ref={assetFormRef as React.Ref<HTMLElement>}
       variant="finyk-soft"
@@ -242,9 +253,7 @@ export function AssetForm({
       <select
         className="input-focus-finyk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text"
         value={newAsset.currency}
-        onChange={(e) =>
-          setNewAsset((a) => ({ ...a, currency: e.target.value }))
-        }
+        onChange={(e) => onCurrencyChange(e.target.value)}
       >
         <option>UAH</option>
         <option>USD</option>
@@ -294,6 +303,14 @@ export function AssetForm({
         </Button>
       </div>
     </Card>
+    <PaywallModal
+      open={currencyGate.paywallOpen}
+      onClose={currencyGate.closePaywall}
+      surface={currencyGate.paywallSurface}
+      title={messages.paywall["multi-currency"].title}
+      description={messages.paywall["multi-currency"].description}
+    />
+    </>
   );
 }
 

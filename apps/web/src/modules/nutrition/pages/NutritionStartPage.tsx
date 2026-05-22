@@ -3,6 +3,8 @@ import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
+import { messages } from "@shared/i18n/uk";
+import { PaywallModal, useFeatureGate } from "../../../core/billing";
 import { NutritionDashboard } from "../components/NutritionDashboard";
 import { PhotoAnalyzeCard } from "../components/PhotoAnalyzeCard";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
@@ -50,6 +52,15 @@ export function NutritionStartPage({
   pantryItems,
   onQuickAddMeal,
 }: NutritionStartPageProps) {
+  // Phase 7 D2 — gate AI-powered photo macro analysis behind Premium.
+  // The hook owns paywall-open state; we proxy `analyzePhoto` through
+  // `requireAccess()` so non-Pro users hit the modal instead of the
+  // mutation.
+  const photoGate = useFeatureGate("ai-photo-analysis");
+  const gatedAnalyzePhoto = () => {
+    if (!photoGate.requireAccess()) return;
+    void photo.analyzePhoto();
+  };
   return (
     <SectionErrorBoundary
       key="page-start"
@@ -126,7 +137,7 @@ export function NutritionStartPage({
           <div className="pt-2">
             <PhotoAnalyzeCard
               busy={busy}
-              analyzePhoto={photo.analyzePhoto}
+              analyzePhoto={gatedAnalyzePhoto}
               fileRef={photo.fileRef as Ref<HTMLInputElement>}
               onPickPhoto={photo.onPickPhoto}
               photoPreviewUrl={photo.photoPreviewUrl}
@@ -141,6 +152,13 @@ export function NutritionStartPage({
             />
           </div>
         </details>
+        <PaywallModal
+          open={photoGate.paywallOpen}
+          onClose={photoGate.closePaywall}
+          surface={photoGate.paywallSurface}
+          title={messages.paywall["ai-photo-analysis"].title}
+          description={messages.paywall["ai-photo-analysis"].description}
+        />
       </>
     </SectionErrorBoundary>
   );

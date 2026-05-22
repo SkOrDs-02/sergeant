@@ -2,14 +2,17 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
+import { exportToPDF } from "@shared/lib/ui/export";
+import { messages } from "@shared/i18n/uk";
 import { generateInsights } from "../lib/insightsEngine";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
+import { PaywallModal, useFeatureGate } from "../billing";
 import {
   getFinykExcludedTxIdsFromStorage,
   getFinykTxSplitsFromStorage,
@@ -381,6 +384,24 @@ export function HubReports() {
   const dates = data.period.dates;
   const insights = useMemo(() => generateInsights(), []);
 
+  // Phase 7 D2 — cross-module PDF export is Premium. Free users see
+  // the button but tapping it opens the paywall instead of generating
+  // the report.
+  const exportGate = useFeatureGate("analytics-export-pdf");
+  const handleExportPdf = useCallback(() => {
+    if (!exportGate.requireAccess()) return;
+    exportToPDF({
+      title: "Sergeant — звіт",
+      subtitle: label,
+      sections: [
+        {
+          title: "Період",
+          content: `<p>${label}</p>`,
+        },
+      ],
+    });
+  }, [exportGate, label]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -603,6 +624,30 @@ export function HubReports() {
             )}
         </div>
       </div>
+
+      {/* Phase 7 D2 — Premium-gated cross-module PDF export. Sits at the
+          end of the reports view so it does not crowd the period picker;
+          tap opens the paywall for free users (`useFeatureGate`). */}
+      <button
+        type="button"
+        onClick={handleExportPdf}
+        className={cn(
+          "w-full h-11 rounded-2xl border border-line bg-panelHi",
+          "text-style-label text-text hover:bg-panel transition-colors",
+          "flex items-center justify-center gap-2",
+        )}
+      >
+        <Icon name="download" size={16} aria-hidden />
+        Експортувати PDF
+      </button>
+
+      <PaywallModal
+        open={exportGate.paywallOpen}
+        onClose={exportGate.closePaywall}
+        surface={exportGate.paywallSurface}
+        title={messages.paywall["analytics-export-pdf"].title}
+        description={messages.paywall["analytics-export-pdf"].description}
+      />
     </div>
   );
 }
