@@ -30,6 +30,40 @@ function todayISO(): string {
   return toLocalISODate(new Date());
 }
 
+/**
+ * Outcome-framed sub-label for macro stats. Replaces neutral "X / Y г"
+ * with gap- or surplus-aware text on the Nutrition hero. Returns only
+ * the right-hand outcome portion — the macro name is rendered separately
+ * by MacroBarRow's `label` slot. Bands mirror the Phase 4.2 onboarding
+ * outcome-copy heuristic but stay Nutrition-local.
+ *
+ * Bands:
+ *  - hit window: consumed ∈ [goal, goal*1.05]  → "ціль виконано"
+ *  - overshoot:  consumed > goal*1.05          → "+N г понад ціль"
+ *  - on-track:   consumed >= goal*0.6          → "N г запас"
+ *  - lagging:    else                           → "N г до цілі"
+ *
+ * Returns `undefined` when goal is not set so the primitive falls back
+ * to its default "value / max" rendering.
+ */
+function formatMacroOutcome(
+  consumed: number,
+  goal: number,
+): string | undefined {
+  if (goal <= 0) return undefined;
+  if (consumed >= goal && consumed <= goal * 1.05) {
+    return "ціль виконано";
+  }
+  if (consumed > goal * 1.05) {
+    return `+${Math.round(consumed - goal)} г понад ціль`;
+  }
+  const gap = goal - consumed;
+  if (consumed >= goal * 0.6) {
+    return `${Math.round(gap)} г запас`;
+  }
+  return `${Math.round(gap)} г до цілі`;
+}
+
 function MiniBar({
   rows,
   targetKcal,
@@ -218,6 +252,10 @@ export function NutritionDashboard({
                     max: protein.goal,
                     accent: "nutrition",
                     unit: "г",
+                    valueDisplay: formatMacroOutcome(
+                      protein.consumed,
+                      protein.goal,
+                    ),
                   },
                   {
                     label: "Жири",
@@ -225,6 +263,10 @@ export function NutritionDashboard({
                     max: fat.goal,
                     accent: "warning",
                     unit: "г",
+                    valueDisplay: formatMacroOutcome(
+                      fat.consumed,
+                      fat.goal,
+                    ),
                   },
                   {
                     label: "Вугл.",
@@ -232,6 +274,10 @@ export function NutritionDashboard({
                     max: carbs.goal,
                     accent: "routine",
                     unit: "г",
+                    valueDisplay: formatMacroOutcome(
+                      carbs.consumed,
+                      carbs.goal,
+                    ),
                   },
                 ]}
               />

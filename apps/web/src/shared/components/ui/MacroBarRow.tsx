@@ -35,6 +35,13 @@ export interface MacroItem {
   accent: MacroAccent;
   /** Optional unit suffix on the value (e.g. "г", "kcal"). */
   unit?: string;
+  /**
+   * Optional outcome-framed text shown in place of the default
+   * "value / max unit" string on the right-hand side (e.g. "48 г до цілі",
+   * "ціль виконано"). Consumers compute this so the primitive stays
+   * presentation-only. ARIA-label also reflects this when provided.
+   */
+  valueDisplay?: string;
 }
 
 export interface MacroBarRowProps {
@@ -63,9 +70,10 @@ export function MacroBarRow({ macros, className }: MacroBarRowProps) {
         const safeMax = macro.max > 0 ? macro.max : 1;
         const clamped = Math.max(0, Math.min(macro.value, safeMax));
         const pct = (clamped / safeMax) * 100;
-        const valueLabel = macro.unit
+        const defaultValueLabel = macro.unit
           ? `${macro.value} / ${macro.max} ${macro.unit}`
           : `${macro.value} / ${macro.max}`;
+        const valueLabel = macro.valueDisplay ?? defaultValueLabel;
 
         return (
           <li
