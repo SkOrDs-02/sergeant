@@ -8,8 +8,11 @@
  * Двi окремi кнопки в одному visual pill:
  *   - **Primary** (зліва) — tap → navigate(/chat). Висить як "глобальний"
  *     entry-point до chat sheet з контекстним placeholder per module.
- *   - **Mic** (справа) — tap → trigger voice input handler (TODO у PR-8;
- *     поки фігурує як placeholder for Whisper-API wiring).
+ *   - **Mic** (справа) — tap → Groq Whisper voice input (PR-8). Recording
+ *     state pulses red, transcript surfaces у `<PendingVoiceChip>` для
+ *     3-сек confirm, then navigates до `/chat?q=<transcript>` для редагування
+ *     і ручного submit. `onMicTap` prop лишається escape-hatch для caller,
+ *     що хоче кастомний handler (stories / experiments).
  *
  * ## A11y refactor vs. handoff JSX
  *
@@ -49,7 +52,7 @@
  * себе якщо змонтований.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { Icon } from "@shared/components/ui/Icon";
@@ -63,6 +66,9 @@ import { CHAT_PATH } from "../../../core/app/appPaths";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { useToast } from "@shared/hooks/useToast";
+import { PendingVoiceChip } from "./voice/PendingVoiceChip";
+import { useGroqVoiceInput } from "./voice/useGroqVoiceInput";
 
 export interface AIPillProps {
   /** Module context that drives the placeholder copy. `null` = hub. */
@@ -71,7 +77,12 @@ export interface AIPillProps {
   placeholder?: string;
   /** Bottom offset in px (default 84 — sits above ModuleBottomNav). */
   bottom?: number;
-  /** Voice input callback (PR-8 will wire Whisper). */
+  /**
+   * Optional override for the mic button. When provided, completely
+   * replaces the built-in Whisper flow — the caller becomes responsible
+   * for capturing audio / transcription. Leave undefined для default
+   * Groq Whisper → `/chat?q=…` pipeline.
+   */
   onMicTap?: () => void;
   className?: string;
 }
@@ -82,6 +93,19 @@ const DEFAULT_PLACEHOLDER: Record<ModuleAccent | "hub", string> = {
   routine: "Запитай про звички…",
   nutrition: "Що приготувати?",
   hub: "Запитай Sergeant…",
+};
+
+/**
+ * Whisper-specific domain prompts per module. Покращує точність на
+ * специфічній лексиці модуля (Hard Rule #voice). Тримаємо короткі — Groq
+ * `prompt` truncates >1024 chars анівсе одно.
+ */
+const VOICE_PROMPT_HINT: Record<ModuleAccent | "hub", string> = {
+  finyk: "витрати, кафе, продукти, транспорт, кава, обід, такси, гривні",
+  fizruk: "присід, жим, тяга, підтягування, віджимання, кардіо, тренування",
+  routine: "звичка, ранкова рутина, медитація, читання, вода, сон",
+  nutrition: "сніданок, обід, вечеря, гречка, яйце, овочі, білок, калорії",
+  hub: "Sergeant, фінанси, тренування, звички, харчування",
 };
 
 /**
@@ -169,8 +193,75 @@ export function AIPill({
   className,
 }: AIPillProps) {
   const navigate = useNavigate();
+  const toast = useToast();
   const placeholderText = placeholder ?? DEFAULT_PLACEHOLDER[module ?? "hub"];
   const collapsed = useCollapseOnScroll();
+
+  // Voice wiring (PR-8). Pattern mirrors `VoiceMicButton`:
+  //   1. Hold mic → Groq Whisper records.
+  //   2. Release → upload, fire `onResult(transcript)`.
+  //   3. `<PendingVoiceChip>` shows transcript with a 3-second
+  //      auto-confirm timer. User can tap to commit instantly, ✕ to
+  //      cancel, or wait out the timer.
+  //   4. On commit → navigate to `/chat?q=<transcript>` so user lands in
+  //      chat with the prompt pre-filled and editable (does NOT auto-send;
+  //      `autoSend` query param стає `0` за замовчуванням у HubChatPage).
+  // Anchor-rect для чипа знімається з mic-кнопки в момент успішного
+  // транскрипту, бо чип рендериться у portal і йому потрібно
+  // позиціонуватися відносно в'юпорта.
+  const micButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [pending, setPending] = useState<{
+    text: string;
+    anchorRect: DOMRect;
+  } | null>(null);
+
+  const handleTranscript = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return; // empty/silence — silent dismiss per spec
+    const rect =
+      micButtonRef.current?.getBoundingClientRect() ??
+      new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0);
+    setPending({ text: trimmed, anchorRect: rect });
+  }, []);
+
+  const handleError = useCallback(
+    (message: string) => {
+      toast.error(message);
+    },
+    [toast],
+  );
+
+  const voice = useGroqVoiceInput({
+    lang: "uk-UA",
+    promptHint: VOICE_PROMPT_HINT[module ?? "hub"],
+    onResult: handleTranscript,
+    onError: handleError,
+  });
+
+  const commitPending = useCallback(() => {
+    setPending((curr) => {
+      if (!curr) return null;
+      hapticTap();
+      // Land in chat with the transcript ready to edit. `autoSend=0` is
+      // the default — user must tap Send themselves (per spec: "don't
+      // auto-submit transcript").
+      const search = new URLSearchParams({ q: curr.text }).toString();
+      navigate(`${CHAT_PATH}?${search}`);
+      return null;
+    });
+  }, [navigate]);
+
+  const cancelPending = useCallback(() => {
+    setPending(null);
+  }, []);
+
+  // Anmount safety — if AIPill is unmounted while a pending chip is
+  // visible (route change, parent re-mount), discard rather than commit.
+  useEffect(() => {
+    return () => {
+      setPending(null);
+    };
+  }, []);
 
   const openChat = () => {
     hapticTap();
@@ -179,87 +270,123 @@ export function AIPill({
 
   const handleMic = () => {
     hapticTap();
-    onMicTap?.();
-    // TODO(PR-8): wire Whisper voice input when onMicTap is undefined.
+    // Discard any in-flight pending chip — explicit press = "retry / new take".
+    if (pending) setPending(null);
+    // Legacy escape hatch: caller may inject its own `onMicTap` (used by
+    // stories / experiments). When provided it wins and we skip the
+    // Whisper flow entirely.
+    if (onMicTap) {
+      onMicTap();
+      return;
+    }
+    voice.toggle();
   };
 
+  const recording = voice.listening || voice.uploading;
+  const micAriaLabel = voice.listening
+    ? "Зупинити запис"
+    : voice.uploading
+      ? "Розпізнаю…"
+      : messages.nav.voiceInput;
+
   return (
-    <div
-      role="group"
-      aria-label={messages.nav.openAssistant}
-      data-collapsed={collapsed ? "true" : undefined}
-      style={{ bottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))` }}
-      className={cn(
-        // Fixed pill positioning. Collapsed state shrinks to a circular
-        // pip on the right edge so the content underneath stays
-        // readable; expanded state spans `left-3.5 right-[4.5rem]` and
-        // leaves space for the module FAB.
-        "fixed z-sticky",
-        "transition-[left,width,padding,box-shadow] duration-200 ease-out motion-reduce:transition-none",
-        collapsed
-          ? "left-auto right-[4.5rem] w-11 pl-1 pr-1"
-          : "left-3.5 right-[4.5rem] pl-2.5 pr-2",
-        // Visual chrome — translucent glass surface with v2 pill shadow.
-        // `surface-strong-glass` is alpha-baked (0.93 light / 0.10 dark /
-        // 1.0 HC) so HC mode reads as a solid pill.
-        "h-11 bg-surface-strong-glass backdrop-blur-md",
-        "border border-line rounded-full shadow-pill",
-        "flex items-center gap-2",
-        className,
-      )}
-    >
-      {/* Primary tap target — opens chat sheet. Takes the full remaining
-          width so the entire pill body feels tappable. */}
-      <button
-        type="button"
-        onClick={openChat}
+    <>
+      <div
+        role="group"
         aria-label={messages.nav.openAssistant}
+        data-collapsed={collapsed ? "true" : undefined}
+        style={{ bottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))` }}
         className={cn(
-          "flex items-center gap-2 min-w-0",
-          collapsed ? "flex-none" : "flex-1",
-          "focus:outline-none focus-visible:rounded-full focus-visible:ring-2",
-          "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
-          "focus-visible:ring-offset-bg",
+          // Fixed pill positioning. Collapsed state shrinks to a circular
+          // pip on the right edge so the content underneath stays
+          // readable; expanded state spans `left-3.5 right-[4.5rem]` and
+          // leaves space for the module FAB.
+          "fixed z-sticky",
+          "transition-[left,width,padding,box-shadow] duration-200 ease-out motion-reduce:transition-none",
+          collapsed
+            ? "left-auto right-[4.5rem] w-11 pl-1 pr-1"
+            : "left-3.5 right-[4.5rem] pl-2.5 pr-2",
+          // Visual chrome — translucent glass surface with v2 pill shadow.
+          // `surface-strong-glass` is alpha-baked (0.93 light / 0.10 dark /
+          // 1.0 HC) so HC mode reads as a solid pill.
+          "h-11 bg-surface-strong-glass backdrop-blur-md",
+          "border border-line rounded-full shadow-pill",
+          "flex items-center gap-2",
+          className,
         )}
       >
-        <span
-          aria-hidden
-          className={cn(
-            "w-7 h-7 rounded-full shrink-0 text-white",
-            "flex items-center justify-center",
-            "bg-gradient-to-br from-brand-400 to-brand-strong",
-          )}
-        >
-          <Icon name="sparkle" size={14} strokeWidth={2.2} />
-        </span>
-        {!collapsed && (
-          <span className="flex-1 text-left text-style-body-sm text-muted truncate min-w-0">
-            {placeholderText}
-          </span>
-        )}
-      </button>
-
-      {/* Mic button — sibling, not nested. Keyboard Tab order: primary
-          chat button first, then mic. Hidden in collapsed mode so the
-          pip stays tap-target-clean and unambiguous. */}
-      {!collapsed && (
+        {/* Primary tap target — opens chat sheet. Takes the full remaining
+            width so the entire pill body feels tappable. */}
         <button
           type="button"
-          onClick={handleMic}
-          aria-label={messages.nav.voiceInput}
+          onClick={openChat}
+          aria-label={messages.nav.openAssistant}
           className={cn(
-            "w-7 h-7 rounded-full shrink-0",
-            "flex items-center justify-center",
-            "text-muted hover:text-text hover:bg-panel",
-            "transition-colors",
-            "focus:outline-none focus-visible:ring-2",
+            "flex items-center gap-2 min-w-0",
+            collapsed ? "flex-none" : "flex-1",
+            "focus:outline-none focus-visible:rounded-full focus-visible:ring-2",
             "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
             "focus-visible:ring-offset-bg",
           )}
         >
-          <Icon name="mic" size={15} strokeWidth={2} />
+          <span
+            aria-hidden
+            className={cn(
+              "w-7 h-7 rounded-full shrink-0 text-white",
+              "flex items-center justify-center",
+              "bg-gradient-to-br from-brand-400 to-brand-strong",
+            )}
+          >
+            <Icon name="sparkle" size={14} strokeWidth={2.2} />
+          </span>
+          {!collapsed && (
+            <span className="flex-1 text-left text-style-body-sm text-muted truncate min-w-0">
+              {placeholderText}
+            </span>
+          )}
         </button>
+
+        {/* Mic button — sibling, not nested. Keyboard Tab order: primary
+            chat button first, then mic. Hidden in collapsed mode so the
+            pip stays tap-target-clean and unambiguous.
+
+            Coarse-pointer min 44×44 via `min-h-touch-target` /
+            `min-w-touch-target` keeps the WCAG tap-target rule even with
+            the visual 28px glyph circle. */}
+        {!collapsed && (
+          <button
+            ref={micButtonRef}
+            type="button"
+            onClick={handleMic}
+            disabled={voice.uploading}
+            aria-label={micAriaLabel}
+            aria-pressed={voice.listening || undefined}
+            className={cn(
+              "w-7 h-7 rounded-full shrink-0",
+              "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
+              "flex items-center justify-center",
+              "transition-colors",
+              recording
+                ? "bg-danger/15 text-danger motion-safe:animate-pulse"
+                : "text-muted hover:text-text hover:bg-panel",
+              voice.uploading && "opacity-60",
+              "focus:outline-none focus-visible:ring-2",
+              "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
+              "focus-visible:ring-offset-bg",
+            )}
+          >
+            <Icon name="mic" size={15} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+      {pending && (
+        <PendingVoiceChip
+          text={pending.text}
+          anchorRect={pending.anchorRect}
+          onConfirm={commitPending}
+          onCancel={cancelPending}
+        />
       )}
-    </div>
+    </>
   );
 }
