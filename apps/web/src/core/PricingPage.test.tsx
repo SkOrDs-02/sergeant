@@ -85,7 +85,7 @@ function renderPricing(initialUrl = "/pricing", queryClient = makeClient()) {
   return { ...view, queryClient };
 }
 
-describe("PricingPage (ADR-0051 2-tier pricing)", () => {
+describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
   beforeEach(() => {
     submitMock.mockClear();
     createCheckoutMock.mockClear();
@@ -96,7 +96,7 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
   });
   afterEach(() => cleanup());
 
-  it("fires PRICING_VIEWED on mount and renders two tier cards (Free + Pro)", () => {
+  it("fires PRICING_VIEWED on mount and renders two tier cards (Free + Premium)", () => {
     renderPricing();
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PRICING_VIEWED,
@@ -105,10 +105,13 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
     expect(
       screen.getByRole("heading", { level: 3, name: "Free" }),
     ).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 3, name: "Pro" })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Premium" }),
+    ).toBeTruthy();
     expect(
       screen.queryByRole("heading", { level: 3, name: "Plus" }),
     ).toBeNull();
+    expect(screen.queryByRole("heading", { level: 3, name: "Pro" })).toBeNull();
   });
 
   it("submits the waitlist form and tracks the WAITLIST_SUBMITTED event", async () => {
@@ -168,7 +171,9 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
       value: { ...window.location, assign: assignMock },
     });
     renderPricing();
-    fireEvent.click(screen.getByRole("button", { name: /Перейти до оплати/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Спробувати Premium/i }),
+    );
     await waitFor(() => {
       expect(createCheckoutMock).toHaveBeenCalledWith({ plan: "pro" });
     });
@@ -189,7 +194,7 @@ describe("PricingPage (ADR-0051 2-tier pricing)", () => {
     createCheckoutMock.mockRejectedValueOnce(new Error("billing down"));
     renderPricing();
     fireEvent.click(
-      screen.getAllByRole("button", { name: /Перейти до оплати/i })[0]!,
+      screen.getAllByRole("button", { name: /Спробувати Premium/i })[0]!,
     );
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /Оплата тимчасово недоступна/i,
