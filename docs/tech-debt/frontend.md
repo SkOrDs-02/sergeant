@@ -33,7 +33,7 @@
 > `core/auth/AuthPage.tsx` (694), `modules/fizruk/lib/dualWrite/adapter.ts` (641).
 > `core/onboarding/OnboardingWizard.tsx` (691) декомпозовано в цьому ж циклі
 > (див. лог нижче). Початково запланований carry-over
-> з Initiative 0001 — лише `FinykApp.tsx` і `RoutineCalendarPanel.tsx` досі активні.
+> з Initiative 0001: `RoutineCalendarPanel.tsx` декомпоновано 2026-05-22 (`useCompletionNoteDrafts` extraction, 645 → 589 effective LOC); `FinykApp.tsx` тримається у raw>600 але <600 effective, monitor-only.
 > Розділ 9 (`any` типи) — таблиця з 10 файлів **повністю закрита**
 > (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452) + закриття
 > `useAnalytics.ts` / `usePrivatbank.ts` через PR #1475). `grep ': any\b|<any>'` на
@@ -233,7 +233,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 3 файли (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 Sprint 2 done; 1 regression open**
+### 4. Великі файли (>600 рядків) — 2 файли (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 Sprint 2 done; 0 regressions**
 
 > **Status (2026-05-22):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
 > закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
@@ -248,14 +248,11 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `NutritionApp.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`, `Exercise.tsx`,
 > `Progress.tsx`, `AssetsTable.tsx`, `HubDashboard.tsx` (676 → 115 LOC),
 > `hubChatContext.ts` (681 → 32 LOC, PR #2517), `FinykApp.tsx` (640 raw, 537
-> effective — passes rule), `RoutineCalendarPanel.tsx` (602 → 575 effective
-> as of 2026-05-09). `max-lines` allowlist у `eslint.config.js` **порожній**.
+> effective — passes rule), `RoutineCalendarPanel.tsx` (686 → 621 raw /
+> 645 → 589 effective — `useCompletionNoteDrafts` extraction, PR #3091
+> follow-up). `max-lines` allowlist у `eslint.config.js` **порожній**.
 >
-> **Активних регресій (2026-05-22): 1.** `RoutineCalendarPanel.tsx` re-grew
-> 602→686 raw / 575→645 effective LOC і знов падає `pnpm lint` (rule
-> `max-lines:600` без override). Власник — Initiative 0013, відкривається
-> окремим PR `decomp-r2-routinecalendarpanel` перед фінальним
-> `decomp-r2-finalize`.
+> **Активних регресій (2026-05-22): 0.** Всі carry-over під threshold.
 >
 > Плюс **2 нових leakers**, які з'явились після audit-у 0001:
 > `AuthPage.tsx` (хоча зараз 157 LOC raw — теж не leaker після 2026-Q2),
@@ -373,11 +370,10 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
 > (mobile tracker — `docs/tech-debt/mobile.md`).
 
-| Рядків (raw / effective) | Файл                                                  | Категорія                                                                                        |
-| ------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 686 / **645** (FAIL)     | `modules/routine/components/RoutineCalendarPanel.tsx` | 0013 регресія (raw зріс після ревізії 2026-05-09); власник — `decomp-r2-routinecalendarpanel` PR |
-| 661 / 559                | `modules/finyk/FinykApp.tsx`                          | Init. 0001 carry-over — passes rule, monitor                                                     |
-| 642 / 567                | `modules/fizruk/lib/dualWrite/adapter.ts`             | Новий leaker (не в Init. 0001) — passes rule, monitor                                            |
+| Рядків (raw / effective) | Файл                                      | Категорія                                             |
+| ------------------------ | ----------------------------------------- | ----------------------------------------------------- |
+| 661 / 559                | `modules/finyk/FinykApp.tsx`              | Init. 0001 carry-over — passes rule, monitor          |
+| 642 / 567                | `modules/fizruk/lib/dualWrite/adapter.ts` | Новий leaker (не в Init. 0001) — passes rule, monitor |
 
 **Імпакт:** повільніший code review, важче тестувати окремі частини, можливі
 circular deps.

@@ -99,7 +99,7 @@ describe("HubSettingsPage", () => {
     );
   });
 
-  it("reveals and scrolls to a hash-linked settings section", () => {
+  it("reveals and scrolls to a hash-linked settings section", async () => {
     window.history.replaceState(null, "", "/?tab=settings#settings-finyk");
 
     renderWithBrowserToast(
@@ -117,7 +117,11 @@ describe("HubSettingsPage", () => {
 
     const finyk = document.getElementById("settings-finyk");
 
-    expect(screen.getByText("Finyk section")).toBeInTheDocument();
+    // `FinykSection` is React.lazy() per Initiative 0017 Sprint 1.1
+    // PR-1.2 — the Suspense fallback (`SectionSkeleton`) is on screen
+    // first; the mock resolves on the next microtask. `findByText`
+    // waits for that swap instead of asserting against the skeleton.
+    expect(await screen.findByText("Finyk section")).toBeInTheDocument();
     expect(finyk).toBeInTheDocument();
     expect(finyk?.scrollIntoView).toHaveBeenCalledWith({
       block: "start",
@@ -125,7 +129,7 @@ describe("HubSettingsPage", () => {
     });
   });
 
-  it("mirrors the inner group tab to ?group= so reload keeps the user on Розділи", () => {
+  it("mirrors the inner group tab to ?group= so reload keeps the user on Розділи", async () => {
     window.history.replaceState(null, "", "/?tab=settings&group=modules");
 
     renderWithToast(
@@ -141,16 +145,15 @@ describe("HubSettingsPage", () => {
       />,
     );
 
-    // The «Розділи» tab renders module-scoped sections only. The
-    // default `general` tab would render `GeneralSection`, not
-    // `Routine section` / `Finyk section`, so the assertion confirms
-    // the inner tab was hydrated from the URL.
-    expect(screen.getByText("Routine section")).toBeInTheDocument();
-    expect(screen.getByText("Finyk section")).toBeInTheDocument();
+    // The «Розділи» tab renders module-scoped sections only. They are
+    // React.lazy() now (PR-1.2), so we await the Suspense resolution
+    // before asserting the content swap.
+    expect(await screen.findByText("Routine section")).toBeInTheDocument();
+    expect(await screen.findByText("Finyk section")).toBeInTheDocument();
     expect(screen.queryByText("General section")).not.toBeInTheDocument();
   });
 
-  it("keeps ?tab=settings when switching inner groups", () => {
+  it("keeps ?tab=settings when switching inner groups", async () => {
     window.history.replaceState(null, "", "/?tab=settings");
 
     renderWithBrowserToast(
@@ -170,7 +173,8 @@ describe("HubSettingsPage", () => {
 
     expect(window.location.search).toContain("tab=settings");
     expect(window.location.search).toContain("group=modules");
-    expect(screen.getByText("Routine section")).toBeInTheDocument();
+    // `RoutineSection` is React.lazy() — await Suspense resolution.
+    expect(await screen.findByText("Routine section")).toBeInTheDocument();
   });
 
   it("auto-expands the Дашборд section when navigated via #settings-dashboard", () => {

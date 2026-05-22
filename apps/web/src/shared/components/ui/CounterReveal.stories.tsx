@@ -43,27 +43,36 @@ export const Default: Story = {
   ),
 };
 
+/**
+ * `LiveUpdatesDemo` lives outside the story config so the hooks here are
+ * recognised by `react-hooks/rules-of-hooks` (a Storybook `render: (args)
+ * => JSX` arrow is not seen as a React function component because its
+ * name is lowercase). Same runtime behaviour — `LiveUpdates.render` just
+ * returns `<LiveUpdatesDemo />`.
+ */
+function LiveUpdatesDemo() {
+  const [value, setValue] = useState(120);
+  useEffect(() => {
+    const t = setInterval(
+      () => setValue((v) => v + Math.floor(Math.random() * 80) - 30),
+      1500,
+    );
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="text-style-display-hero text-text">
+      <CounterReveal
+        value={value}
+        duration={600}
+        format={(n) =>
+          `₴ ${new Intl.NumberFormat("uk-UA").format(Math.round(n))}`
+        }
+      />
+    </div>
+  );
+}
+
 /** Edge case — live updates tween between successive values (every 1.5s). */
 export const LiveUpdates: Story = {
-  render: () => {
-    const [value, setValue] = useState(120);
-    useEffect(() => {
-      const t = setInterval(
-        () => setValue((v) => v + Math.floor(Math.random() * 80) - 30),
-        1500,
-      );
-      return () => clearInterval(t);
-    }, []);
-    return (
-      <div className="text-style-display-hero text-text">
-        <CounterReveal
-          value={value}
-          duration={600}
-          format={(n) =>
-            `₴ ${new Intl.NumberFormat("uk-UA").format(Math.round(n))}`
-          }
-        />
-      </div>
-    );
-  },
+  render: () => <LiveUpdatesDemo />,
 };

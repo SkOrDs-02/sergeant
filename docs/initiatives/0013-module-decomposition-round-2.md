@@ -1,7 +1,7 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
 > **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
-> **Status:** In progress — Sprint 1 done. Sprint 2 effectively done: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→614 raw / 518 effective (incremental refactors, passes rule). `max-lines:600` allowlist in `eslint.config.js` empty. **Regression flagged 2026-05-22:** `RoutineCalendarPanel.tsx` re-grew 602→686 raw / 645 effective and now FAILS the rule — owned as Sprint 3 carry-over before `decomp-r2-finalize` closure.
+> **Status:** In progress — Sprint 1 done. Sprint 2 effectively done: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→614 raw / 518 effective (incremental refactors, passes rule), `RoutineCalendarPanel.tsx` 645→589 effective ([PR #3091](https://github.com/Skords-01/Sergeant/pull/3091) follow-up commits, `useCompletionNoteDrafts` extraction). `max-lines:600` allowlist in `eslint.config.js` empty. **All Sprint 2 files now under the threshold — ready for `decomp-r2-finalize` closure PR.**
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
@@ -82,13 +82,11 @@ PR-и:
 
 ### Sprint 3 — finalize (1 PR — replanned 2026-05-22)
 
-**Ревізія 2026-05-22:** Sprint 2 closed out — `hubChatContext` / `fizrukActions` / `AssetsTable` / `HubDashboard` decomposed, `NutritionApp` passes via incremental refactors. Allowlist in `eslint.config.js` is already empty, so the formal "drop allowlist" sub-task is a no-op.
+**Ревізія 2026-05-22:** Sprint 2 closed out — `hubChatContext` / `fizrukActions` / `AssetsTable` / `HubDashboard` decomposed, `NutritionApp` passes via incremental refactors. Allowlist in `eslint.config.js` is already empty.
 
-**Open carry-over before closure (1 file):**
+**`RoutineCalendarPanel.tsx` regression resolved 2026-05-22:** the 645-effective-LOC regression flagged earlier in this initiative was fixed by extracting the completion-note draft store into a new `hooks/useCompletionNoteDrafts.ts` hook (76 effective LOC removed from the panel — 645 → 589). All 12 Initiative-0001 carry-over files plus the 2026-05-09 ревізія drifts are now under the threshold.
 
-- `apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx` (686 raw / 645 effective LOC). Was removed from allowlist in 2026-05-09 ревізія when it passed the rule (602/575 LOC); has since re-grown past the threshold without an override and now fails `pnpm lint` when run directly against the file. Needs one decomp PR (`decomp-r2-routinecalendarpanel`) before `decomp-r2-finalize` can close the initiative as Done. Candidates for extraction surveyed 2026-05-22: completion-note draft state (rows 109–250) and the grouped-list virtualisation rows are obvious seams.
-
-- `decomp-r2-finalize` — when the regression above is fixed: update `LARGE_FILES` (`docs/tech-debt/frontend.md`), move 0013 → `Done` in `docs/initiatives/README.md`, write Outcome with Sprint 1/2/3 final metrics.
+- `decomp-r2-finalize` — when this branch merges, the only remaining task is: update `LARGE_FILES` (`docs/tech-debt/frontend.md`), move 0013 → `Done` in `docs/initiatives/README.md`, write Outcome with Sprint 1/2/3 final metrics. Can be a tiny follow-up PR or rolled into the next docs-pass.
 
 ## Критерії DONE
 

@@ -1,30 +1,77 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
+import { SectionSkeleton } from "../settings/SettingsPrimitives";
 import { AIDigestSection } from "../settings/AIDigestSection";
 import { AssistantCatalogueSection } from "../settings/AssistantCatalogueSection";
 import { DashboardSection } from "../settings/DashboardSection";
 import { DataExportSection } from "../settings/DataExportSection";
 import { ExperimentalSection } from "../settings/ExperimentalSection";
-import { FinykSection } from "../settings/FinykSection";
-import { FizrukSection } from "../settings/FizrukSection";
 import { GeneralSection } from "../settings/GeneralSection";
 import { NotificationsSection } from "../settings/NotificationsSection";
-import { NutritionSection } from "../settings/NutritionSection";
 import { PlanSection } from "../settings/PlanSection";
 import { PrivacySection } from "../settings/PrivacySection";
 import { PWASection } from "../settings/PWASection";
-import { RoutineSection } from "../settings/RoutineSection";
+
+// Initiative 0017 Sprint 1.1 PR-1.2 — the four module-scoped sections
+// (`Finyk`/`Fizruk`/`Nutrition`/`Routine`) bootstrap heavy cross-module
+// hooks (`useFinykStorage`, `useMonoBackfillProgress`, `usePlan` …) on
+// mount. Lazy-loading them lets the cold open of the Settings tab paint
+// the header chrome immediately and stream in the per-module section
+// chunks as they resolve, instead of blocking on a single synchronous
+// render burst. The other 10 sections are light and stay eager — moving
+// them is the next PR after we have RUM numbers proving the win.
+//
+// `.then((m) => ({ default: m.X }))` is the named-export-to-default
+// wrapper — the section files still export named functions so the rest
+// of the codebase (and tests) can keep importing them directly.
+const FinykSection = lazy(() =>
+  import("../settings/FinykSection").then((m) => ({
+    default: m.FinykSection,
+  })),
+);
+const FizrukSection = lazy(() =>
+  import("../settings/FizrukSection").then((m) => ({
+    default: m.FizrukSection,
+  })),
+);
+const NutritionSection = lazy(() =>
+  import("../settings/NutritionSection").then((m) => ({
+    default: m.NutritionSection,
+  })),
+);
+const RoutineSection = lazy(() =>
+  import("../settings/RoutineSection").then((m) => ({
+    default: m.RoutineSection,
+  })),
+);
 
 interface SettingsSection {
   id: string;
   title: string;
   keywords: string;
   render: () => React.JSX.Element;
+  /**
+   * When true, the section is React.lazy() and renders inside a
+   * `<Suspense>` boundary with a `<SectionSkeleton>` fallback. Used by
+   * the heavy module-scoped sections (Initiative 0017 Sprint 1.1 PR-1.2).
+   * `minH` is the expected collapsed-state height in pixels — keeps the
+   * skeleton stable so the Suspense → real section swap does not cause
+   * Cumulative Layout Shift.
+   */
+  lazy?: { minH: number };
 }
 
 // Group definitions: each tab collects related sections. Search terms are
@@ -204,12 +251,14 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         title: "Рутина",
         keywords: "звички рутина habits streak ціль reset",
         render: () => <RoutineSection />,
+        lazy: { minH: 72 },
       },
       {
         id: "fizruk",
         title: "Фізрук",
         keywords: "фізрук тренування кардіо вага workouts gym fitness",
         render: () => <FizrukSection />,
+        lazy: { minH: 72 },
       },
       {
         id: "finyk",
@@ -217,6 +266,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "фінанси фінік finyk monobank privatbank token api transactions budget",
         render: () => <FinykSection />,
+        lazy: { minH: 72 },
       },
       {
         id: "nutrition",
@@ -224,6 +274,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
         render: () => <NutritionSection />,
+        lazy: { minH: 72 },
       },
       {
         id: "privacy",
@@ -377,7 +428,20 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
               // landed section.
               className="scroll-mt-32"
             >
-              {s.render()}
+              {s.lazy ? (
+                <Suspense
+                  fallback={
+                    <SectionSkeleton
+                      minH={s.lazy.minH}
+                      ariaLabel={`Завантажую ${s.title}`}
+                    />
+                  }
+                >
+                  {s.render()}
+                </Suspense>
+              ) : (
+                s.render()
+              )}
             </div>
           ))
         )}

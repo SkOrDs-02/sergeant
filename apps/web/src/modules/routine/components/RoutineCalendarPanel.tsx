@@ -2,14 +2,7 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -23,6 +16,7 @@ import { HabitDetailSheet } from "./HabitDetailSheet";
 import { FizrukDayPlanSheet } from "./FizrukDayPlanSheet";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { completionNoteKey } from "../lib/completionNoteKey";
+import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";
 import { DayReportSheet } from "./DayReportSheet";
 import { RoutineCalendarHero } from "./RoutineCalendarHero";
 import { RoutineCalendarMonthGrid } from "./RoutineCalendarMonthGrid";
@@ -36,7 +30,6 @@ import {
   ROUTINE_TIME_MODES as TIME_MODES,
   type RoutineTimeModeId,
 } from "../lib/routineConstants";
-import { setCompletionNote } from "../lib/routineStorage";
 import {
   useRoutineCalendarActions,
   useRoutineCalendarData,
@@ -120,82 +113,18 @@ export function RoutineCalendarPanel({
     null,
   );
 
-  // Completion-note drafts. Typing into the "Нотатка до відмітки" input used
-  // to call `setRoutine` → `saveRoutineState` → `localStorage.setItem`
-  // (serialising the entire routine) on every keystroke, which also
-  // triggered a `postMessage` to the service worker and a re-read of the
-  // full routine state via `ROUTINE_EVENT`. On larger states (many habits /
-  // many completions) that produced visible input lag, especially on
-  // mobile. Now keystrokes only touch local state; a debounced flush
-  // persists the final value.
-  type NoteDraft = { habitId: string; dateKey: string; value: string };
-  const [noteDrafts, setNoteDrafts] = useState<Record<string, NoteDraft>>({});
-  // Tracks which completion-note inputs are expanded. Keyed by completionNoteKey.
-  // Rows that already have a saved note value start expanded so the user can see it.
-  const [noteExpanded, setNoteExpanded] = useState<Record<string, boolean>>({});
-  const noteDraftsRef = useRef(noteDrafts);
-  useEffect(() => {
-    noteDraftsRef.current = noteDrafts;
-  }, [noteDrafts]);
-  const noteTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map(),
-  );
-  const flushNoteDraft = useCallback(
-    (habitId: string, dateKey: string) => {
-      const key = completionNoteKey(habitId, dateKey);
-      const draft = noteDraftsRef.current[key];
-      if (!draft) return;
-      setRoutine((s) =>
-        setCompletionNote(s, draft.habitId, draft.dateKey, draft.value),
-      );
-      setNoteDrafts((prev) => {
-        if (!(key in prev)) return prev;
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
-    },
-    [setRoutine],
-  );
-  const scheduleNoteFlush = useCallback(
-    (habitId: string, dateKey: string, value: string) => {
-      const key = completionNoteKey(habitId, dateKey);
-      setNoteDrafts((prev) => ({
-        ...prev,
-        [key]: { habitId, dateKey, value },
-      }));
-      const timers = noteTimersRef.current;
-      const prior = timers.get(key);
-      if (prior) clearTimeout(prior);
-      timers.set(
-        key,
-        setTimeout(() => {
-          timers.delete(key);
-          flushNoteDraft(habitId, dateKey);
-        }, 300),
-      );
-    },
-    [flushNoteDraft],
-  );
-  useEffect(() => {
-    const timers = noteTimersRef.current;
-    return () => {
-      // Flush any outstanding drafts synchronously on unmount so nothing is
-      // silently dropped when the user navigates away mid-typing.
-      const drafts = Object.values(noteDraftsRef.current);
-      if (drafts.length > 0) {
-        setRoutine((s) => {
-          let next = s;
-          for (const d of drafts) {
-            next = setCompletionNote(next, d.habitId, d.dateKey, d.value);
-          }
-          return next;
-        });
-      }
-      for (const timer of timers.values()) clearTimeout(timer);
-      timers.clear();
-    };
-  }, [setRoutine]);
+  // Completion-note draft store (debounced 300 ms flush + unmount safety)
+  // lives in `hooks/useCompletionNoteDrafts.ts` so this panel stays under
+  // the `max-lines:600` Hard Rule. See the hook for the WHY (keystroke
+  // localStorage thrash) and unmount-flush invariant.
+  const {
+    noteDrafts,
+    noteDraftsRef,
+    noteExpanded,
+    setNoteExpanded,
+    scheduleNoteFlush,
+    flushNoteDraft,
+  } = useCompletionNoteDrafts(setRoutine);
 
   const flatGroupedItems = useMemo<GroupedListItem[]>(() => {
     const items: GroupedListItem[] = [];
