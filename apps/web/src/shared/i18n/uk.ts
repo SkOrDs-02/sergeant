@@ -322,6 +322,28 @@ export const messages = {
     goalFirstAriaLabel: "Цілі онбордингу",
   },
 
+  // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
+  // replaces the row-based OnboardingWizard as the `/welcome` cold-start
+  // surface. Taglines are kept short (~5-7 words each) so the cards stay
+  // scannable at the 2-col mobile breakpoint without truncation.
+  welcomeModulePicker: {
+    heading: "З чого почнемо?",
+    subtitle:
+      "Обери модулі, з яких хочеш почати. Решту можна додати пізніше.",
+    gridAriaLabel: "Модулі для старту",
+    cta: "Почати",
+    emptyHint: "Обери хоча б один модуль, щоб продовжити.",
+    lateHint: "Можна додати пізніше у налаштуваннях.",
+    demoCta: "Подивитись приклад",
+    haveAccount: "У мене вже є акаунт",
+    taglines: {
+      finyk: "Витрати, бюджети та тренди",
+      fizruk: "Тренування, прогрес і виміри",
+      routine: "Звички, серії днів і нагадування",
+      nutrition: "Калорії, AI-аналіз фото та план",
+    },
+  },
+
   form: {
     // Round 16 — generic form-shell labels. `quickFill` — keyboard-accessory
     // ("autocomplete") header, з'являється над клавіатурою на мобілці.

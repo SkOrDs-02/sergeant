@@ -4,10 +4,17 @@
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { OnboardingWizard } from "../onboarding/OnboardingWizard";
 import { seedDemoData } from "../onboarding/seedDemoData";
+import { saveVibePicks } from "../onboarding/vibePicks";
+import {
+  isOnboardingCompletedFired,
+  markOnboardingCompletedFired,
+  markOnboardingDone,
+} from "../onboarding/onboardingGate";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { useCallback } from "react";
+import { WelcomeModulePicker } from "./WelcomeModulePicker";
+import type { DashboardModuleId } from "@sergeant/shared";
 
 // Static preview of the populated hub that sits behind the splash card on
 // `/welcome`. Renders a 2×2 bento grid matching `HubDashboard`'s module
@@ -199,14 +206,22 @@ interface WelcomeScreenProps {
 
 /**
  * Full-page cold-start at `/welcome`. Owns the page chrome + peek
- * backdrop and delegates the splash card to `OnboardingWizard` in
- * `fullPage` mode.
+ * backdrop and delegates the splash card to `WelcomeModulePicker`.
  *
- * PR-05 promotes the demo entry to a first-class CTA *inside* the
- * splash card via `OnboardingWizard`'s `onSecondaryAction` prop, so
- * the "просто подивитись" cohort no longer has to scan past the
- * wizard card. Pre-PR-05 this CTA was a separate button under the
- * card — visually demoted to "third option" and largely ignored.
+ * Phase 7 D4 (2026-05-22) swapped the row-based `OnboardingWizard`
+ * splash for a preset-first 2x2 module-card grid — see
+ * `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
+ * § D4. The wizard component still ships for tour-replay launched
+ * from Settings → «Переглянути вступну екскурсію»; only this
+ * `/welcome` cold-start surface swapped. Persistence still flows
+ * through `vibePicks` + `onboardingGate` so HubDashboard,
+ * `getActiveModules`, and `productMemorySync` observe the same
+ * downstream state regardless of which welcome surface ran.
+ *
+ * PR-05 promoted the demo entry to a first-class CTA *inside* the
+ * splash card — the picker keeps that contract via
+ * `onSecondaryAction` so the "просто подивитись" cohort still
+ * lands on the same demo seeder without scanning past the card.
  */
 export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   // S4.1 + PR-05 demo handler. Seeds a synthetic hub payload across
@@ -223,6 +238,32 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
       /* noop */
     }
   }, []);
+
+  // Phase 7 D4 preset-picker submit path. Persists the user's module
+  // selection, marks onboarding done, fires the canonical analytics
+  // funnel and bubbles the picks up to App-level navigation. Mirrors
+  // `useOnboardingWizardState.finish()` so legacy consumers
+  // (onboardingGate, productMemorySync) see identical state.
+  const handlePicksComplete = useCallback(
+    (picks: DashboardModuleId[]) => {
+      saveVibePicks(picks);
+      markOnboardingDone();
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
+        picks,
+        picksCount: picks.length,
+        intent: "preset_picker",
+      });
+      if (!isOnboardingCompletedFired()) {
+        trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+          intent: "preset_picker",
+          picksCount: picks.length,
+        });
+        markOnboardingCompletedFired();
+      }
+      onDone(null, { intent: "preset_picker", picks });
+    },
+    [onDone],
+  );
 
   // 2026-05-08 — окремий scroll-шар на page-wrapper'і.
   // `html, body, #root` усі зафіксовані на `height: 100dvh`
@@ -247,31 +288,16 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     <div className="relative h-dvh overflow-y-auto overscroll-contain bg-mesh text-text page-enter">
       <PeekBackdrop />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
-        <div className="w-full max-w-sm space-y-3">
-          <OnboardingWizard
-            onDone={onDone}
-            variant="fullPage"
+        <div className="w-full max-w-md space-y-3">
+          {/* Phase 7 D4 — preset picker replaces the row-based
+              OnboardingWizard as the cold-start surface. The wizard
+              still ships for tour-replay (Settings → "Подивитись
+              екскурсію"); only this `/welcome` entry point swaps. */}
+          <WelcomeModulePicker
+            onComplete={handlePicksComplete}
+            onOpenAuth={onOpenAuth}
             onSecondaryAction={startDemoAndGoHome}
           />
-          {/* Returning-user entry. The previous text-xs muted underline was
-              almost invisible on a fresh device — users who already had an
-              account were dropped into onboarding. Promoted to a secondary
-              button so the "у мене є акаунт" path is visible without
-              competing with the primary splash CTA. */}
-          <button
-            type="button"
-            onClick={onOpenAuth}
-            className={cn(
-              "w-full flex items-center justify-center gap-2",
-              "h-11 min-h-[44px] rounded-2xl border border-line bg-panel/60",
-              "text-style-label text-text",
-              "hover:bg-panelHi hover:border-brand-500/40 transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-            )}
-          >
-            <Icon name="user" size={16} strokeWidth={2} aria-hidden />
-            <span>У мене вже є акаунт</span>
-          </button>
         </div>
       </div>
     </div>
