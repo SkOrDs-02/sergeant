@@ -1,0 +1,1556 @@
+<!doctype html>
+<html lang="uk" data-style="soft" data-accent="emerald">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant — Pitch Deck (концепт v1)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="../_shared/components/deck-stage.js"></script>
+
+  <style>
+    /* ============ TOKENS ============ */
+    :root {
+      /* Module palette (canonical, from design-system tokens.css) */
+      --finyk:     #047857;
+      --finyk-50:  #ecfdf5;
+      --fizruk:    #0e7490;
+      --fizruk-50: #ecfeff;
+      --routine:   #c23a3a;
+      --routine-50:#fff5f3;
+      --nutrition: #466212;
+      --nutrition-50:#f8fee7;
+
+      /* Type scale — 1920×1080 */
+      --type-hero:     128px;
+      --type-display:  96px;
+      --type-title:    72px;
+      --type-subtitle: 44px;
+      --type-lead:     38px;
+      --type-body:     30px;
+      --type-small:    24px;
+      --type-micro:    24px;
+
+      /* Spacing */
+      --pad-x: 120px;
+      --pad-top: 100px;
+      --pad-bottom: 120px;
+      --gap-block: 56px;
+      --gap-item: 28px;
+    }
+
+    /* ====== STYLE A: SOFT ORGANIC (default — brandbook) ====== */
+    html[data-style="soft"] {
+      --font-sans: "Manrope", system-ui, sans-serif;
+      --font-serif: "Lora", "Source Serif Pro", serif;
+      --font-mono: "JetBrains Mono", monospace;
+
+      --bg: #fdf9f3;
+      --bg-alt: #faf7f1;
+      --surface: #ffffff;
+      --surface-muted: #f5ead8;
+      --border: #ebe4da;
+      --border-strong: #d0c8bc;
+
+      --text: #1c1917;
+      --text-strong: #0a0a09;
+      --muted: #57534e;
+      --subtle: #a8a29e;
+
+      --accent: var(--finyk);
+      --accent-soft: var(--finyk-50);
+
+      --r-card: 24px;
+      --r-pill: 9999px;
+      --shadow-card: 0 1px 3px rgba(28,25,23,.04), 0 4px 16px rgba(28,25,23,.08);
+      --shadow-float: 0 2px 8px rgba(28,25,23,.06), 0 12px 40px rgba(28,25,23,.12);
+      --hairline: 1px solid var(--border);
+
+      --title-family: var(--font-sans);
+      --title-weight: 700;
+      --title-tracking: -0.02em;
+      --title-leading: 1.02;
+      --body-family: var(--font-sans);
+      --body-weight: 400;
+      --eyebrow-family: var(--font-mono);
+      --eyebrow-letterspacing: 0.18em;
+      --eyebrow-transform: uppercase;
+      --eyebrow-weight: 500;
+      --quote-family: var(--font-serif);
+    }
+
+    /* ====== STYLE B: EDITORIAL (clean, serious) ====== */
+    html[data-style="editorial"] {
+      --font-sans: "Manrope", system-ui, sans-serif;
+      --font-serif: "Fraunces", "Lora", serif;
+      --font-mono: "JetBrains Mono", monospace;
+
+      --bg: #ffffff;
+      --bg-alt: #f6f5f2;
+      --surface: #ffffff;
+      --surface-muted: #f0eee9;
+      --border: #1c1917;
+      --border-strong: #1c1917;
+
+      --text: #0a0a09;
+      --text-strong: #000000;
+      --muted: #44403c;
+      --subtle: #78716c;
+
+      --accent: var(--finyk);
+      --accent-soft: var(--finyk-50);
+
+      --r-card: 0px;
+      --r-pill: 9999px;
+      --shadow-card: none;
+      --shadow-float: none;
+      --hairline: 1px solid #1c1917;
+
+      --title-family: var(--font-serif);
+      --title-weight: 500;
+      --title-tracking: -0.025em;
+      --title-leading: 0.96;
+      --body-family: var(--font-sans);
+      --body-weight: 400;
+      --eyebrow-family: var(--font-mono);
+      --eyebrow-letterspacing: 0.22em;
+      --eyebrow-transform: uppercase;
+      --eyebrow-weight: 500;
+      --quote-family: var(--font-serif);
+    }
+
+    /* ====== ACCENT SWITCHER ====== */
+    html[data-accent="emerald"]  { --accent: var(--finyk);     --accent-soft: var(--finyk-50); }
+    html[data-accent="cyan"]     { --accent: var(--fizruk);    --accent-soft: var(--fizruk-50); }
+    html[data-accent="coral"]    { --accent: var(--routine);   --accent-soft: var(--routine-50); }
+    html[data-accent="lime"]     { --accent: var(--nutrition); --accent-soft: var(--nutrition-50); }
+
+    /* ============ BASE ============ */
+    html, body { margin: 0; padding: 0; background: #0a0a09; }
+    body {
+      font-family: var(--body-family);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "ss01", "cv11";
+    }
+    * { box-sizing: border-box; }
+
+    deck-stage { display: block; width: 100vw; height: 100vh; }
+
+    /* ============ SLIDE FRAME ============ */
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: var(--bg);
+      color: var(--text);
+      padding: var(--pad-top) var(--pad-x) var(--pad-bottom);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      font-family: var(--body-family);
+    }
+    .slide.alt { background: var(--bg-alt); }
+    .slide.dark { background: #14110f; color: #faf7f1; --text: #faf7f1; --muted: #b4aea9; --subtle: #878079; --border: #2a2622; --surface: #1f1b18; --surface-muted: #2a2622; }
+
+    /* Brand chip (top-left) */
+    .chip {
+      position: absolute;
+      top: 56px;
+      left: var(--pad-x);
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      font-family: var(--eyebrow-family);
+      font-size: var(--type-micro);
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      color: var(--muted);
+      font-weight: var(--eyebrow-weight);
+    }
+    .chip .mark {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 24px;
+    }
+    html[data-style="editorial"] .chip .mark { border-radius: 0; }
+
+    /* Page counter (top-right) */
+    .pgnum {
+      position: absolute;
+      top: 56px;
+      right: var(--pad-x);
+      font-family: var(--eyebrow-family);
+      font-size: var(--type-micro);
+      color: var(--subtle);
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      font-weight: var(--eyebrow-weight);
+    }
+
+    /* Eyebrow label */
+    .eyebrow {
+      font-family: var(--eyebrow-family);
+      font-size: var(--type-micro);
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      font-weight: var(--eyebrow-weight);
+      color: var(--accent);
+    }
+
+    /* Titles */
+    .title {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: var(--type-title);
+      line-height: var(--title-leading);
+      letter-spacing: var(--title-tracking);
+      color: var(--text-strong);
+      margin: 0;
+      text-wrap: balance;
+    }
+    .title-hero {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: var(--type-hero);
+      line-height: 0.98;
+      letter-spacing: var(--title-tracking);
+      color: var(--text-strong);
+      margin: 0;
+      text-wrap: balance;
+    }
+    .title-display {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: var(--type-display);
+      line-height: 1.0;
+      letter-spacing: var(--title-tracking);
+      color: var(--text-strong);
+      margin: 0;
+      text-wrap: balance;
+    }
+
+    .subtitle {
+      font-family: var(--body-family);
+      font-size: var(--type-subtitle);
+      line-height: 1.22;
+      color: var(--muted);
+      margin: 0;
+      font-weight: 400;
+      text-wrap: pretty;
+    }
+    .lead {
+      font-size: var(--type-lead);
+      line-height: 1.32;
+      color: var(--text);
+      font-weight: 400;
+      margin: 0;
+    }
+    .body {
+      font-size: var(--type-body);
+      line-height: 1.42;
+      color: var(--text);
+      margin: 0;
+    }
+    .small {
+      font-size: var(--type-small);
+      line-height: 1.42;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: var(--hairline);
+      border-radius: var(--r-card);
+      padding: 44px;
+      box-shadow: var(--shadow-card);
+    }
+    .card.flat { box-shadow: none; }
+
+    /* Pill */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      border-radius: var(--r-pill);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: var(--type-small);
+      font-weight: 600;
+      border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+    }
+    html[data-style="editorial"] .pill { border-radius: 9999px; }
+
+    .dot { width: 10px; height: 10px; border-radius: 9999px; background: currentColor; display: inline-block; }
+
+    /* Module dot */
+    .mdot { width: 18px; height: 18px; border-radius: 6px; display: inline-block; }
+    html[data-style="editorial"] .mdot { border-radius: 0; }
+
+    /* Footer line */
+    .footline {
+      position: absolute;
+      bottom: 56px;
+      left: var(--pad-x);
+      right: var(--pad-x);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--eyebrow-family);
+      font-size: var(--type-micro);
+      color: var(--subtle);
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      pointer-events: none;
+    }
+
+    /* Stat number */
+    .stat-num {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 112px;
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      color: var(--text-strong);
+    }
+    .stat-num.accent { color: var(--accent); }
+
+    /* Grid helpers */
+    .row { display: flex; gap: var(--gap-item); }
+    .col { display: flex; flex-direction: column; gap: var(--gap-item); }
+    .grow { flex: 1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-item); }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--gap-item); }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+    .stack-sm { display: flex; flex-direction: column; gap: 18px; }
+    .stack-md { display: flex; flex-direction: column; gap: 32px; }
+    .stack-lg { display: flex; flex-direction: column; gap: 56px; }
+
+    /* Editorial rules */
+    .rule { height: 1px; background: var(--border); width: 100%; }
+    html[data-style="editorial"] .rule { background: var(--border-strong); height: 2px; }
+
+    /* ============ SLIDE-SPECIFIC ============ */
+
+    /* Cover */
+    .cover-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(1200px 800px at 85% 110%, color-mix(in oklab, var(--accent) 22%, transparent) 0%, transparent 60%),
+        radial-gradient(900px 600px at 0% 0%, color-mix(in oklab, var(--accent) 8%, transparent) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    html[data-style="editorial"] .cover-bg { display: none; }
+
+    .cover-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(to right, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px);
+      background-size: calc((1920px - 2*var(--pad-x)) / 12) 100%;
+      background-position: var(--pad-x) 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    html[data-style="editorial"] .cover-grid { opacity: 0.35; }
+
+    /* Problem slide visual */
+    .app-icons { display: flex; gap: 22px; flex-wrap: wrap; }
+    .app-icon {
+      width: 132px; height: 132px;
+      border-radius: 28px;
+      background: var(--surface);
+      border: var(--hairline);
+      box-shadow: var(--shadow-card);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--muted);
+      position: relative;
+      flex-shrink: 0;
+    }
+    html[data-style="editorial"] .app-icon { border-radius: 0; }
+    .app-icon .tag {
+      position: absolute;
+      bottom: -40px;
+      font-size: 24px;
+      color: var(--subtle);
+      font-family: var(--font-sans);
+      white-space: nowrap;
+    }
+    .app-icon.disc {
+      background: color-mix(in oklab, currentColor 8%, var(--surface));
+      color: var(--text);
+    }
+
+    /* Module card */
+    .module-card {
+      background: var(--surface);
+      border: var(--hairline);
+      border-radius: var(--r-card);
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+      min-height: 380px;
+    }
+    .module-card .swatch {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: var(--m, var(--accent));
+    }
+    html[data-style="editorial"] .module-card .swatch { border-radius: 0; }
+    .module-card h3 {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 44px;
+      line-height: 1.05;
+      letter-spacing: var(--title-tracking);
+      margin: 0;
+      color: var(--text-strong);
+    }
+    .module-card .role {
+      font-family: var(--eyebrow-family);
+      font-size: 24px;
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      color: var(--m, var(--accent));
+      font-weight: var(--eyebrow-weight);
+    }
+    .module-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .module-card li {
+      font-size: var(--type-small);
+      color: var(--muted);
+      line-height: 1.4;
+      padding-left: 22px;
+      position: relative;
+    }
+    .module-card li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 12px;
+      width: 10px; height: 2px;
+      background: var(--m, var(--accent));
+    }
+
+    /* AI radial diagram */
+    .ai-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ai-core {
+      width: 280px; height: 280px;
+      border-radius: 9999px;
+      background: var(--text-strong);
+      color: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px;
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 48px;
+      letter-spacing: var(--title-tracking);
+      z-index: 2;
+    }
+    .ai-core .sub {
+      font-family: var(--eyebrow-family);
+      font-size: 24px;
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      color: color-mix(in oklab, var(--bg) 70%, transparent);
+      font-weight: var(--eyebrow-weight);
+    }
+    .ai-orbit {
+      position: absolute;
+      width: 760px; height: 760px;
+      border-radius: 9999px;
+      border: 1px dashed var(--border-strong);
+    }
+    html[data-style="editorial"] .ai-orbit { border-style: solid; border-color: #1c1917; }
+    .ai-node {
+      position: absolute;
+      width: 240px;
+      padding: 20px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 18px;
+      box-shadow: var(--shadow-card);
+    }
+    html[data-style="editorial"] .ai-node { border-radius: 0; box-shadow: none; border-color: #1c1917; }
+    .ai-node .lbl {
+      font-family: var(--eyebrow-family);
+      font-size: 24px;
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      color: var(--m, var(--muted));
+      font-weight: var(--eyebrow-weight);
+      margin-bottom: 8px;
+    }
+    .ai-node .val {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 26px;
+      letter-spacing: -0.01em;
+      color: var(--text-strong);
+      line-height: 1.15;
+    }
+
+    /* Competitor row */
+    .comp-row {
+      display: grid;
+      grid-template-columns: 2.4fr 1fr 2.4fr;
+      align-items: center;
+      gap: 32px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .comp-row:last-child { border-bottom: none; }
+    .comp-name {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--text-strong);
+      font-family: var(--title-family);
+      letter-spacing: var(--title-tracking);
+      line-height: 1.1;
+    }
+    .comp-price {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      color: var(--muted);
+      font-weight: 500;
+      text-align: center;
+    }
+    .comp-scope {
+      font-size: var(--type-small);
+      color: var(--subtle);
+    }
+    .comp-row.us .comp-name { color: var(--accent); font-size: 36px; }
+    .comp-row.us .comp-price { color: var(--accent); font-weight: 700; font-size: 32px; }
+
+    /* Pricing tier */
+    .tier {
+      background: var(--surface);
+      border: var(--hairline);
+      border-radius: var(--r-card);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: var(--shadow-card);
+      min-height: 580px;
+    }
+    .tier.pro {
+      background: var(--text-strong);
+      color: var(--bg);
+      border-color: var(--text-strong);
+    }
+    .tier.pro .tier-name,
+    .tier.pro .tier-price,
+    .tier.pro .tier-features li { color: var(--bg); }
+    .tier.pro .tier-features li::before { background: var(--accent); }
+    .tier-name {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 56px;
+      letter-spacing: var(--title-tracking);
+      color: var(--text-strong);
+      margin: 0;
+      line-height: 1;
+    }
+    .tier-price {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 80px;
+      letter-spacing: -0.03em;
+      color: var(--text-strong);
+      line-height: 1;
+    }
+    .tier-price .per {
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--muted);
+      font-family: var(--font-sans);
+      letter-spacing: 0;
+    }
+    .tier.pro .tier-price .per { color: color-mix(in oklab, var(--bg) 70%, transparent); }
+    .tier-features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .tier-features li {
+      font-size: var(--type-small);
+      color: var(--text);
+      padding-left: 28px;
+      position: relative;
+      line-height: 1.4;
+    }
+    .tier-features li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 13px;
+      width: 14px; height: 2px;
+      background: var(--text);
+    }
+
+    /* Roadmap timeline */
+    .timeline { display: flex; flex-direction: column; gap: 28px; }
+    .tl-row {
+      display: grid;
+      grid-template-columns: 200px 24px 1fr;
+      align-items: start;
+      gap: 32px;
+    }
+    .tl-phase {
+      font-family: var(--eyebrow-family);
+      font-size: var(--type-small);
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      color: var(--muted);
+      font-weight: var(--eyebrow-weight);
+      padding-top: 6px;
+    }
+    .tl-dot {
+      width: 18px; height: 18px;
+      border-radius: 9999px;
+      background: var(--surface);
+      border: 3px solid var(--accent);
+      margin-top: 10px;
+    }
+    .tl-row.done .tl-dot { background: var(--accent); }
+    .tl-row.now .tl-dot { box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent) 22%, transparent); }
+    .tl-row.future .tl-dot { border-color: var(--border-strong); }
+    .tl-title {
+      font-size: var(--type-lead);
+      font-weight: 600;
+      color: var(--text-strong);
+      font-family: var(--title-family);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      margin: 0 0 6px;
+    }
+    .tl-desc { font-size: var(--type-small); color: var(--muted); line-height: 1.35; margin: 0; }
+    .tl-row.future .tl-title { color: var(--muted); }
+
+    /* Big quote */
+    .quote {
+      font-family: var(--quote-family);
+      font-size: 88px;
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      color: var(--text-strong);
+      font-weight: 500;
+      font-style: italic;
+      margin: 0;
+      text-wrap: balance;
+    }
+    html[data-style="editorial"] .quote { font-style: italic; font-weight: 400; }
+
+    /* Phone mock */
+    .phone {
+      width: 320px;
+      height: 660px;
+      background: var(--surface);
+      border: var(--hairline);
+      border-radius: 38px;
+      padding: 18px;
+      box-shadow: var(--shadow-float);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    html[data-style="editorial"] .phone { border-radius: 0; box-shadow: none; }
+    .phone-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--font-mono); font-size: 12px; color: var(--subtle);
+      padding: 2px 8px;
+    }
+    .phone-card {
+      background: var(--bg-alt);
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    html[data-style="editorial"] .phone-card { border-radius: 0; }
+    .phone-card .lbl { font-size: 12px; color: var(--subtle); margin-bottom: 6px; font-family: var(--eyebrow-family); letter-spacing: 0.12em; text-transform: uppercase; }
+    .phone-card .val { font-size: 28px; font-weight: 700; color: var(--text-strong); font-family: var(--title-family); letter-spacing: -0.01em; }
+    .phone-card .meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* KPI box */
+    .kpi {
+      background: var(--surface);
+      border: var(--hairline);
+      border-radius: var(--r-card);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 240px;
+      box-shadow: var(--shadow-card);
+    }
+    .kpi .label {
+      font-family: var(--eyebrow-family);
+      font-size: var(--type-micro);
+      letter-spacing: var(--eyebrow-letterspacing);
+      text-transform: var(--eyebrow-transform);
+      color: var(--muted);
+      font-weight: var(--eyebrow-weight);
+    }
+    .kpi .value {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 72px;
+      letter-spacing: -0.025em;
+      line-height: 0.98;
+      color: var(--text-strong);
+    }
+    .kpi .value .unit {
+      font-size: 32px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0;
+      font-family: var(--font-sans);
+    }
+    .kpi .caption {
+      font-size: var(--type-small);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* Privacy slide visual: lock + dotted lines */
+    .privacy-vis {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+    .data-flow {
+      background: var(--surface);
+      border: var(--hairline);
+      border-radius: var(--r-card);
+      padding: 36px 44px;
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      box-shadow: var(--shadow-card);
+    }
+    .data-flow .node {
+      font-family: var(--title-family);
+      font-weight: var(--title-weight);
+      font-size: 30px;
+      letter-spacing: var(--title-tracking);
+      color: var(--text-strong);
+      padding: 16px 26px;
+      border: 2px solid var(--text-strong);
+      border-radius: 16px;
+    }
+    html[data-style="editorial"] .data-flow .node { border-radius: 0; }
+    .data-flow .arrow {
+      flex: 1;
+      height: 2px;
+      background: repeating-linear-gradient(to right, var(--text-strong) 0, var(--text-strong) 10px, transparent 10px, transparent 20px);
+      position: relative;
+    }
+    .data-flow .arrow .x {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--danger, #c23a3a);
+      color: #fff;
+      width: 64px; height: 64px;
+      border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--title-family);
+      font-weight: 700;
+      font-size: 32px;
+    }
+    html[data-style="editorial"] .data-flow .arrow .x { border-radius: 0; background: #1c1917; }
+
+    /* Section colour blocks */
+    .accent-block {
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--r-card);
+      padding: 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .accent-block .small,
+    .accent-block .subtitle { color: color-mix(in oklab, #fff 80%, transparent); }
+    .accent-block .title-display { color: #fff; }
+
+    /* Hide chip on cover slide */
+    .slide.cover .chip { display: none; }
+    .slide.cover .pgnum { display: none; }
+    .slide.cover .footline { display: none; }
+
+    /* Editorial slide: tighter padding-top so big titles read */
+    html[data-style="editorial"] .slide {
+      padding-top: 120px;
+    }
+  </style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+  <!-- ============ 01 — COVER ============ -->
+  <section data-screen-label="01 Cover" class="slide cover">
+    <div class="cover-bg"></div>
+    <div class="cover-grid"></div>
+
+    <div style="position: absolute; top: 56px; left: var(--pad-x); display: flex; align-items: center; gap: 14px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 24px;">S</div>
+      <span style="font-family: var(--title-family); font-weight: 700; font-size: 32px; letter-spacing: -0.01em; color: var(--text-strong);">Sergeant</span>
+    </div>
+
+    <div style="position: absolute; top: 76px; right: var(--pad-x); font-family: var(--eyebrow-family); font-size: var(--type-micro); letter-spacing: var(--eyebrow-letterspacing); text-transform: uppercase; color: var(--subtle); font-weight: 500;">
+      Pitch deck · концепт v0.1 · 2026
+    </div>
+
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 48px;">
+      <div class="eyebrow">Один додаток. Чотири модулі. Один AI.</div>
+      <h1 class="title-hero">
+        Твій персональний<br />
+        <span style="color: var(--accent);">хаб життя.</span>
+      </h1>
+      <p class="subtitle" style="max-width: 1100px;">
+        Гроші, тіло, звички, їжа — в одному додатку з AI-коучем, що бачить усю картину твого дня. Local-first. Приватно. Зроблено в Україні.
+      </p>
+    </div>
+
+    <div style="position: absolute; bottom: 80px; right: var(--pad-x); display: flex; gap: 16px; align-items: center;">
+      <span class="mdot" style="background: var(--finyk);"></span>
+      <span class="mdot" style="background: var(--fizruk);"></span>
+      <span class="mdot" style="background: var(--routine);"></span>
+      <span class="mdot" style="background: var(--nutrition);"></span>
+      <span style="font-family: var(--font-mono); font-size: var(--type-micro); color: var(--muted); margin-left: 8px; letter-spacing: 0.12em; text-transform: uppercase;">4 модулі</span>
+    </div>
+  </section>
+
+  <!-- ============ 02 — ПРОБЛЕМА ============ -->
+  <section data-screen-label="02 Problem" class="slide">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">02 / 12</div>
+
+    <div style="margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: center; flex: 1;">
+      <div class="stack-md">
+        <div class="eyebrow">Проблема</div>
+        <h2 class="title-display">
+          П'ять додатків.<br />
+          Нуль контексту.
+        </h2>
+        <p class="lead" style="max-width: 600px; color: var(--muted);">
+          Фітнес-трекер не знає, що ти на дієті. Бюджет-додаток не знає, що ти витратив ₴2K на спортзал. Habits-app не знає, що ти не спав.
+        </p>
+        <p class="lead" style="max-width: 600px;">
+          Дані живуть у силосах. AI бачить лише частину. Юзер втомлюється і кидає.
+        </p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 60px; align-items: flex-end;">
+        <div class="app-icons" style="justify-content: flex-end;">
+          <div class="app-icon" style="color: #ff6b35; font-size: 26px;">Mono<span class="tag" style="font-size: 24px;">фінанси</span></div>
+          <div class="app-icon" style="color: #0066ff; font-size: 26px;">MFP<span class="tag" style="font-size: 24px;">їжа</span></div>
+          <div class="app-icon" style="color: #fc4c02; font-size: 26px;">Strava<span class="tag" style="font-size: 24px;">тренування</span></div>
+          <div class="app-icon" style="color: #d63384; font-size: 26px;">Fab<span class="tag" style="font-size: 24px;">звички</span></div>
+          <div class="app-icon" style="color: #6f42c1; font-size: 26px;">YNAB<span class="tag" style="font-size: 24px;">бюджет</span></div>
+        </div>
+        <div class="card" style="max-width: 540px;">
+          <div class="eyebrow" style="margin-bottom: 14px;">Що каже ринок</div>
+          <p class="body" style="margin: 0;">
+            «Я використовував 5 додатків — і жоден не знав про інші.»
+          </p>
+          <p class="small" style="margin-top: 12px;">— з 14 custdev-інтерв'ю, Q1 2026</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Проблема</span>
+    </div>
+  </section>
+
+  <!-- ============ 03 — РІШЕННЯ ============ -->
+  <section data-screen-label="03 Solution" class="slide alt">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">03 / 12</div>
+
+    <div style="margin-top: 80px; display: flex; flex-direction: column; gap: 80px; flex: 1;">
+      <div class="stack-sm" style="max-width: 1400px;">
+        <div class="eyebrow">Рішення</div>
+        <h2 class="title-display">
+          Один хаб для дисциплінованої щоденки.
+        </h2>
+        <p class="subtitle" style="max-width: 1200px;">
+          Sergeant об'єднує те, що раніше жило в окремих додатках. AI читає крос-модульний контекст і дає поради, які бачать усю картину.
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card flat" style="background: transparent; border-color: var(--border);">
+          <div class="eyebrow" style="margin-bottom: 16px;">01 — Об'єднання</div>
+          <h3 class="title" style="font-size: 40px; margin-bottom: 14px;">4 модулі в одному</h3>
+          <p class="body" style="color: var(--muted);">
+            Фінанси, фітнес, звички, харчування. Один UI, одна навігація, один логін.
+          </p>
+        </div>
+        <div class="card flat" style="background: transparent; border-color: var(--border);">
+          <div class="eyebrow" style="margin-bottom: 16px;">02 — Контекст</div>
+          <h3 class="title" style="font-size: 40px; margin-bottom: 14px;">AI бачить усе</h3>
+          <p class="body" style="color: var(--muted);">
+            HubChat читає дані з усіх модулів і відповідає, ніби знає твій тиждень напам'ять.
+          </p>
+        </div>
+        <div class="card flat" style="background: transparent; border-color: var(--border);">
+          <div class="eyebrow" style="margin-bottom: 16px;">03 — Приватність</div>
+          <h3 class="title" style="font-size: 40px; margin-bottom: 14px;">Local-first</h3>
+          <p class="body" style="color: var(--muted);">
+            Дані живуть на пристрої. Працює офлайн. Sync — опція, не вимога.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Рішення</span>
+    </div>
+  </section>
+
+  <!-- ============ 04 — 4 МОДУЛІ ============ -->
+  <section data-screen-label="04 Modules" class="slide">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">04 / 12</div>
+
+    <div style="margin-top: 70px; display: flex; flex-direction: column; gap: 48px; flex: 1;">
+      <div class="stack-sm">
+        <div class="eyebrow">Продукт · 4 модулі</div>
+        <h2 class="title">Що замінює Sergeant.</h2>
+      </div>
+
+      <div class="grid-4" style="flex: 1;">
+        <div class="module-card" style="--m: var(--finyk);">
+          <div class="swatch"></div>
+          <div>
+            <div class="role">01 · Фінанси</div>
+            <h3>Фінік</h3>
+          </div>
+          <ul>
+            <li>Monobank-інтеграція</li>
+            <li>Бюджети, борги, цілі</li>
+            <li>AI-категоризація</li>
+            <li>Тижневі звіти</li>
+          </ul>
+          <div class="small" style="margin-top: auto; color: var(--subtle);">vs Monobank · YNAB</div>
+        </div>
+
+        <div class="module-card" style="--m: var(--fizruk);">
+          <div class="swatch"></div>
+          <div>
+            <div class="role">02 · Тіло</div>
+            <h3>Фізрук</h3>
+          </div>
+          <ul>
+            <li>Тренування, підходи, тоннаж</li>
+            <li>Біометрія, вага, кардіо</li>
+            <li>Готові програми</li>
+            <li>AI-резюме тижня</li>
+          </ul>
+          <div class="small" style="margin-top: auto; color: var(--subtle);">vs Strong · Hevy</div>
+        </div>
+
+        <div class="module-card" style="--m: var(--routine);">
+          <div class="swatch"></div>
+          <div>
+            <div class="role">03 · Звички</div>
+            <h3>Рутина</h3>
+          </div>
+          <ul>
+            <li>Habit-трекер, стріки</li>
+            <li>Календар-heatmap</li>
+            <li>Розумні нагадування</li>
+            <li>Челенджі з друзями</li>
+          </ul>
+          <div class="small" style="margin-top: auto; color: var(--subtle);">vs Streaks · Fabulous</div>
+        </div>
+
+        <div class="module-card" style="--m: var(--nutrition);">
+          <div class="swatch"></div>
+          <div>
+            <div class="role">04 · Їжа</div>
+            <h3>Харчування</h3>
+          </div>
+          <ul>
+            <li>Сканер штрих-кодів</li>
+            <li>AI-фото їжі → калорії</li>
+            <li>База 500K+ продуктів</li>
+            <li>Макро-цілі та meal-плани</li>
+          </ul>
+          <div class="small" style="margin-top: auto; color: var(--subtle);">vs MyFitnessPal · Yazio</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Модулі</span>
+    </div>
+  </section>
+
+  <!-- ============ 05 — AI-КОУЧ ============ -->
+  <section data-screen-label="05 AI Coach" class="slide alt">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">05 / 12</div>
+
+    <div style="margin-top: 60px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px; flex: 1; padding-bottom: 60px;">
+      <div class="stack-md" style="justify-content: center;">
+        <div class="eyebrow">Диференціатор · HubChat</div>
+        <h2 class="title" style="font-size: 84px;">AI, який<br />бачить увесь<br />твій день.</h2>
+        <p class="body" style="color: var(--muted); max-width: 620px;">
+          Інші фітнес-AI знають твої тренування. Інші фін-AI — твої транзакції. Sergeant читає всі 4 модулі одразу — і дає поради, які поєднують контекст.
+        </p>
+
+        <div class="card" style="background: var(--text-strong); color: var(--bg); border-color: var(--text-strong); margin-top: 8px; padding: 32px 36px;">
+          <div class="eyebrow" style="color: color-mix(in oklab, var(--bg) 70%, transparent); margin-bottom: 12px;">Приклад інсайту</div>
+          <p style="font-family: var(--quote-family); font-style: italic; font-size: 26px; line-height: 1.3; margin: 0; color: var(--bg);">
+            «Ти витратив ₴2 400 на доставку цього тижня — і пропустив 3 тренування. Запропонувати meal-prep на неділю?»
+          </p>
+          <p class="small" style="color: color-mix(in oklab, var(--bg) 60%, transparent); margin-top: 12px;">— HubChat, понеділок ранок</p>
+        </div>
+      </div>
+
+      <div class="ai-stage">
+        <div class="ai-orbit"></div>
+        <div class="ai-core">
+          AI
+          <span class="sub">HubChat</span>
+        </div>
+
+        <div class="ai-node" style="--m: var(--finyk); top: 80px; left: 40px;">
+          <div class="lbl">Фінік · 7 днів</div>
+          <div class="val">−₴2 400<br/>доставка</div>
+        </div>
+        <div class="ai-node" style="--m: var(--fizruk); top: 80px; right: 0;">
+          <div class="lbl">Фізрук · план</div>
+          <div class="val">3 з 5<br/>тренувань</div>
+        </div>
+        <div class="ai-node" style="--m: var(--routine); bottom: 120px; left: 0;">
+          <div class="lbl">Рутина · стрік</div>
+          <div class="val">14 днів<br/>at risk</div>
+        </div>
+        <div class="ai-node" style="--m: var(--nutrition); bottom: 120px; right: 30px;">
+          <div class="lbl">Їжа · макро</div>
+          <div class="val">+18 %<br/>калорій</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>AI-коуч</span>
+    </div>
+  </section>
+
+  <!-- ============ 06 — LOCAL-FIRST / PRIVACY ============ -->
+  <section data-screen-label="06 Privacy" class="slide dark">
+    <div class="chip" style="color: color-mix(in oklab, #faf7f1 60%, transparent);">
+      <span class="mark" style="background: var(--accent);">S</span>
+      <span>Sergeant · Pitch v0.1</span>
+    </div>
+    <div class="pgnum" style="color: color-mix(in oklab, #faf7f1 50%, transparent);">06 / 12</div>
+
+    <div style="margin-top: 60px; display: flex; flex-direction: column; gap: 40px; flex: 1; justify-content: center; padding-bottom: 40px;">
+      <div class="stack-sm" style="max-width: 1500px;">
+        <div class="eyebrow" style="color: var(--accent);">Privacy · Local-first</div>
+        <h2 class="title" style="color: #faf7f1; font-size: 88px;">Дані живуть у тебе.<br/>Не в нас.</h2>
+        <p class="subtitle" style="color: #b4aea9; max-width: 1200px;">
+          Sergeant зберігає все локально (localStorage / MMKV). Sync — опція з end-to-end шифруванням. Ми не продаємо інсайти і не годуємо рекламу.
+        </p>
+      </div>
+
+      <div class="data-flow" style="background: #1f1b18; border-color: #2a2622;">
+        <div class="node" style="color: #faf7f1; border-color: var(--accent);">Твій пристрій</div>
+        <div class="arrow" style="background: repeating-linear-gradient(to right, #524a41 0, #524a41 10px, transparent 10px, transparent 20px);">
+          <div class="x">×</div>
+        </div>
+        <div class="node" style="color: #878079; border-color: #524a41; opacity: 0.5;">Наші сервери</div>
+      </div>
+
+      <div class="grid-3" style="margin-top: 8px;">
+        <div>
+          <div style="font-family: var(--title-family); font-weight: 700; font-size: 48px; color: var(--accent); letter-spacing: -0.02em; line-height: 1;">100 %</div>
+          <div class="small" style="color: #b4aea9; margin-top: 10px;">даних на пристрої</div>
+        </div>
+        <div>
+          <div style="font-family: var(--title-family); font-weight: 700; font-size: 48px; color: var(--accent); letter-spacing: -0.02em; line-height: 1;">Offline</div>
+          <div class="small" style="color: #b4aea9; margin-top: 10px;">працює без інтернету</div>
+        </div>
+        <div>
+          <div style="font-family: var(--title-family); font-weight: 700; font-size: 48px; color: var(--accent); letter-spacing: -0.02em; line-height: 1;">E2E</div>
+          <div class="small" style="color: #b4aea9; margin-top: 10px;">опційний шифрований sync</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline" style="color: #878079;">
+      <span>Sergeant · концепт</span>
+      <span>Privacy</span>
+    </div>
+  </section>
+
+  <!-- ============ 07 — РИНОК ============ -->
+  <section data-screen-label="07 Market" class="slide">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">07 / 12</div>
+
+    <div style="margin-top: 70px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; flex: 1;">
+      <div class="stack-md">
+        <div class="eyebrow">Ринок</div>
+        <h2 class="title-display">UA-first.<br />Потім PL і EN.</h2>
+        <p class="lead" style="color: var(--muted); max-width: 620px;">
+          Українець + Mono-екосистема = унікальний first-mover-плацдарм. Гривневі ціни знижують поріг входу. EN-ринок дає margin, PL — діаспору.
+        </p>
+
+        <div class="stack-sm" style="margin-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--border);">
+            <span class="mdot" style="background: var(--accent); width: 24px; height: 24px;"></span>
+            <span class="lead" style="flex: 1; font-size: 32px;">🇺🇦 Україна</span>
+            <span class="body" style="color: var(--muted); font-family: var(--font-mono); font-size: 26px;">phase 1 · ₴99/міс</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--border);">
+            <span class="mdot" style="background: var(--border-strong); width: 24px; height: 24px;"></span>
+            <span class="lead" style="flex: 1; color: var(--muted); font-size: 32px;">🇵🇱 Польща (UA-діаспора)</span>
+            <span class="body" style="color: var(--subtle); font-family: var(--font-mono); font-size: 26px;">phase 2</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 20px; padding: 14px 0;">
+            <span class="mdot" style="background: var(--border-strong); width: 24px; height: 24px;"></span>
+            <span class="lead" style="flex: 1; color: var(--muted); font-size: 32px;">🇬🇧 Англомовний ринок</span>
+            <span class="body" style="color: var(--subtle); font-family: var(--font-mono); font-size: 26px;">phase 3 · $4.99/мо</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack-md" style="justify-content: center;">
+        <div class="kpi">
+          <div class="label">Mono-юзери в UA</div>
+          <div class="value">7M<span class="unit">+</span></div>
+          <div class="caption">Готовий audience зі знайомим UX і платіжкою. Природний дистрибуційний канал через інтеграцію.</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="kpi" style="min-height: 240px;">
+            <div class="label">UA Activated DAU target</div>
+            <div class="value" style="font-size: 72px;">10K</div>
+            <div class="caption">через 12 міс. після public launch.</div>
+          </div>
+          <div class="kpi" style="min-height: 240px;">
+            <div class="label">SAM (UA + PL + EN early)</div>
+            <div class="value" style="font-size: 72px;">$120M</div>
+            <div class="caption">consumer life-tracking subscriptions.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Ринок</span>
+    </div>
+  </section>
+
+  <!-- ============ 08 — КОНКУРЕНТИ ============ -->
+  <section data-screen-label="08 Competition" class="slide alt">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">08 / 12</div>
+
+    <div style="margin-top: 70px; display: flex; flex-direction: column; gap: 56px; flex: 1;">
+      <div class="stack-sm" style="max-width: 1400px;">
+        <div class="eyebrow">Конкуренти · ціновий контраст</div>
+        <h2 class="title-display">$50+/міс у п'яти додатках.<br />$2.25 в одному.</h2>
+        <p class="subtitle" style="color: var(--muted); max-width: 1200px;">
+          Конкуренти вужчі за нас і дорожчі. Sergeant Pro покриває 5 категорій за ціну однієї підписки.
+        </p>
+      </div>
+
+      <div style="background: var(--surface); border: var(--hairline); border-radius: var(--r-card); padding: 16px 44px; box-shadow: var(--shadow-card);">
+        <div class="comp-row" style="border-bottom-color: var(--border-strong);">
+          <div class="comp-scope" style="font-family: var(--eyebrow-family); letter-spacing: 0.18em; text-transform: uppercase; font-size: 24px; color: var(--subtle); font-weight: 500;">Продукт</div>
+          <div class="comp-scope" style="font-family: var(--eyebrow-family); letter-spacing: 0.18em; text-transform: uppercase; font-size: 24px; color: var(--subtle); font-weight: 500; text-align: center;">Ціна</div>
+          <div class="comp-scope" style="font-family: var(--eyebrow-family); letter-spacing: 0.18em; text-transform: uppercase; font-size: 24px; color: var(--subtle); font-weight: 500;">Покриває</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-name">MyFitnessPal Premium</div>
+          <div class="comp-price">$19.99 /мо</div>
+          <div class="comp-scope">Тільки їжа + базовий фітнес</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-name">YNAB</div>
+          <div class="comp-price">$14.99 /мо</div>
+          <div class="comp-scope">Тільки фінанси · нема free tier</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-name">Fabulous Premium</div>
+          <div class="comp-price">$3.33 /мо</div>
+          <div class="comp-scope">Тільки звички</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-name">Strong Pro</div>
+          <div class="comp-price">$4.99 /мо</div>
+          <div class="comp-scope">Тільки силові тренування</div>
+        </div>
+        <div class="comp-row us">
+          <div class="comp-name">Sergeant Pro</div>
+          <div class="comp-price">$2.25 /мо</div>
+          <div class="comp-scope" style="color: var(--text-strong); font-weight: 600;">Усі 4 модулі + AI-коуч</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Конкуренти</span>
+    </div>
+  </section>
+
+  <!-- ============ 09 — БІЗНЕС-МОДЕЛЬ ============ -->
+  <section data-screen-label="09 Business Model" class="slide">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">09 / 12</div>
+
+    <div style="margin-top: 70px; display: flex; flex-direction: column; gap: 48px; flex: 1;">
+      <div class="stack-sm">
+        <div class="eyebrow">Бізнес-модель · Freemium</div>
+        <h2 class="title">Безкоштовно дає цінність. Pro дає глибину.</h2>
+      </div>
+
+      <div class="grid-2" style="flex: 1;">
+        <div class="tier">
+          <div>
+            <h3 class="tier-name">Free</h3>
+            <div class="tier-price" style="margin-top: 14px;">₴0</div>
+          </div>
+          <ul class="tier-features">
+            <li>Усі 4 модулі базово</li>
+            <li>AI-чат · 5 повідомлень/день</li>
+            <li>AI-фото їжі · 3/день</li>
+            <li>Push-нагадування · 2 звички</li>
+            <li>Monobank · ручна синхронізація</li>
+            <li>Локальне зберігання</li>
+          </ul>
+          <div class="small" style="margin-top: auto; color: var(--subtle);">Activation hook — реальна цінність без картки.</div>
+        </div>
+
+        <div class="tier pro">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <h3 class="tier-name">Pro</h3>
+              <div class="tier-price" style="margin-top: 14px;">₴99<span class="per"> /міс</span></div>
+              <div class="small" style="color: color-mix(in oklab, var(--bg) 70%, transparent); margin-top: 6px;">або ₴799/рік ≈ ₴67/міс · ~$2.25/мо</div>
+            </div>
+            <span class="pill" style="background: var(--accent); color: #fff; border-color: var(--accent);">7 днів trial</span>
+          </div>
+          <ul class="tier-features">
+            <li>Безлімітний AI-чат + щоденний брифінг</li>
+            <li>AI-фото їжі · безлімітно</li>
+            <li>CloudSync між пристроями (E2E)</li>
+            <li>Крос-модульні звіти та тренди</li>
+            <li>Monobank · авто-синхронізація</li>
+            <li>Експорт CSV / PDF · теми</li>
+          </ul>
+          <div class="small" style="margin-top: auto; color: color-mix(in oklab, var(--bg) 70%, transparent);">Conversion target: 3–5 % free → Pro (індустрія: 3.7 % для fintech).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Бізнес-модель</span>
+    </div>
+  </section>
+
+  <!-- ============ 10 — UNIT ECONOMICS ============ -->
+  <section data-screen-label="10 Unit Economics" class="slide alt">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">10 / 12</div>
+
+    <div style="margin-top: 60px; display: flex; flex-direction: column; gap: 36px; flex: 1; padding-bottom: 60px;">
+      <div class="stack-sm">
+        <div class="eyebrow">Юніт-економіка</div>
+        <h2 class="title" style="font-size: 84px;">35 Pro-підписників = breakeven.</h2>
+        <p class="body" style="color: var(--muted); max-width: 1200px;">
+          Низькі фіксовані витрати + PWA без 30% store-комісії = висока маржа з перших платників.
+        </p>
+      </div>
+
+      <div class="grid-4" style="flex: 1;">
+        <div class="kpi">
+          <div class="label">ARPU (blended)</div>
+          <div class="value">₴80<span class="unit">/міс</span></div>
+          <div class="caption">40 % monthly / 60 % annual mix.</div>
+        </div>
+        <div class="kpi">
+          <div class="label">LTV (consrv · 8мо)</div>
+          <div class="value" style="color: var(--accent);">₴792</div>
+          <div class="caption">При 8-місячному lifetime. Оптимістичний — ₴1 596 (20 міс).</div>
+        </div>
+        <div class="kpi">
+          <div class="label">CAC (blended)</div>
+          <div class="value">₴20<span class="unit">–40</span></div>
+          <div class="caption">70 % organic / 30 % paid суміш.</div>
+        </div>
+        <div class="kpi">
+          <div class="label">LTV : CAC</div>
+          <div class="value" style="color: var(--accent);">20:1<span class="unit"> +</span></div>
+          <div class="caption">Здорово &gt; 3:1. Відмінно &gt; 5:1.</div>
+        </div>
+      </div>
+
+      <div class="card" style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 36px; align-items: center; padding: 24px 36px;">
+        <div>
+          <div class="eyebrow" style="margin-bottom: 8px;">Breakeven</div>
+          <p class="small" style="margin: 0; max-width: 540px; color: var(--text); font-size: 26px;">
+            ₴3 168/міс фіксовані · ₴91 net/Pro
+          </p>
+        </div>
+        <div style="text-align: center;">
+          <div class="stat-num accent" style="font-size: 80px;">35</div>
+          <div class="small" style="margin-top: 8px;">Pro → breakeven</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="stat-num" style="font-size: 80px;">100</div>
+          <div class="small" style="margin-top: 8px;">Pro = +₴5.9K/міс</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Юніт-економіка</span>
+    </div>
+  </section>
+
+  <!-- ============ 11 — TRACTION / ROADMAP ============ -->
+  <section data-screen-label="11 Roadmap" class="slide">
+    <div class="chip"><span class="mark">S</span><span>Sergeant · Pitch v0.1</span></div>
+    <div class="pgnum">11 / 12</div>
+
+    <div style="margin-top: 70px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; flex: 1;">
+      <div class="stack-md">
+        <div class="eyebrow">Стан · Roadmap</div>
+        <h2 class="title-display">Де ми зараз<br />і куди йдемо.</h2>
+        <p class="lead" style="color: var(--muted); max-width: 580px;">
+          Продукт активний у розробці. Архітектура монорепо (web + server + mobile) готова, дизайн-система v2 завершена, FTUX-онбординг у фінальному спринті.
+        </p>
+
+        <div class="grid-2" style="margin-top: 16px;">
+          <div>
+            <div class="stat-num accent" style="font-size: 96px;">v0.9</div>
+            <div class="small" style="margin-top: 12px;">Web PWA готовий до closed beta</div>
+          </div>
+          <div>
+            <div class="stat-num" style="font-size: 96px;">4/4</div>
+            <div class="small" style="margin-top: 12px;">модулі повністю функціональні</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline" style="align-self: center;">
+        <div class="tl-row done">
+          <div class="tl-phase">Q4 2025</div>
+          <div class="tl-dot"></div>
+          <div>
+            <h4 class="tl-title">Архітектура · 4 модулі · дизайн-система v2</h4>
+            <p class="tl-desc">Монорепо, CloudSync engine, AI-катаклог, brand v2.</p>
+          </div>
+        </div>
+        <div class="tl-row now">
+          <div class="tl-phase">Q2 2026 · зараз</div>
+          <div class="tl-dot"></div>
+          <div>
+            <h4 class="tl-title">FTUX · paywall · closed beta</h4>
+            <p class="tl-desc">Onboarding-флоу, Stripe + LiqPay, 100–200 ранніх тестерів.</p>
+          </div>
+        </div>
+        <div class="tl-row future">
+          <div class="tl-phase">Q3 2026</div>
+          <div class="tl-dot"></div>
+          <div>
+            <h4 class="tl-title">Public launch · Product Hunt · DOU</h4>
+            <p class="tl-desc">PWA-запуск, waitlist 1K+, перші 35 Pro = breakeven.</p>
+          </div>
+        </div>
+        <div class="tl-row future">
+          <div class="tl-phase">Q4 2026</div>
+          <div class="tl-dot"></div>
+          <div>
+            <h4 class="tl-title">Native iOS / Android · Capacitor · Expo</h4>
+            <p class="tl-desc">App Store та Google Play distribution.</p>
+          </div>
+        </div>
+        <div class="tl-row future">
+          <div class="tl-phase">2027</div>
+          <div class="tl-dot"></div>
+          <div>
+            <h4 class="tl-title">EN/PL ринки · Telegram Mini App · партнерства</h4>
+            <p class="tl-desc">Expansion-фаза, B2B-corporate-wellness pilot.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footline">
+      <span>Sergeant · концепт</span>
+      <span>Roadmap</span>
+    </div>
+  </section>
+
+  <!-- ============ 12 — ASK / CONTACT ============ -->
+  <section data-screen-label="12 Ask" class="slide">
+    <div class="cover-bg"></div>
+    <div class="cover-grid"></div>
+
+    <div style="position: absolute; top: 56px; left: var(--pad-x); display: flex; align-items: center; gap: 14px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 24px;">S</div>
+      <span style="font-family: var(--title-family); font-weight: 700; font-size: 32px; letter-spacing: -0.01em; color: var(--text-strong);">Sergeant</span>
+    </div>
+    <div class="pgnum">12 / 12</div>
+
+    <div style="margin-top: auto; margin-bottom: auto; display: flex; flex-direction: column; gap: 56px;">
+      <div class="eyebrow">Що шукаємо</div>
+      <h2 class="title-hero">
+        Pre-seed раунд<br/>
+        для <span style="color: var(--accent);">public launch.</span>
+      </h2>
+
+      <div class="grid-3" style="margin-top: 24px;">
+        <div>
+          <div class="eyebrow" style="margin-bottom: 12px; color: var(--muted);">Сума</div>
+          <div class="title" style="font-size: 56px;">$80–150K</div>
+          <p class="small" style="margin-top: 10px;">12-місячний runway</p>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom: 12px; color: var(--muted);">На що</div>
+          <div class="body" style="font-weight: 600; color: var(--text-strong);">Marketing · AI compute</div>
+          <p class="small" style="margin-top: 10px;">PH-launch, paid acquisition UA, Claude API.</p>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom: 12px; color: var(--muted);">Ціль раунду</div>
+          <div class="body" style="font-weight: 600; color: var(--text-strong);">1K Pro · $30K MRR</div>
+          <p class="small" style="margin-top: 10px;">За 12 місяців. Готовність до seed.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="position: absolute; bottom: 80px; left: var(--pad-x); right: var(--pad-x); display: flex; justify-content: space-between; align-items: flex-end;">
+      <div>
+        <div class="eyebrow" style="color: var(--muted); margin-bottom: 10px;">Контакт</div>
+        <div class="lead" style="font-weight: 600; color: var(--text-strong);">github.com/Skords-01/Sergeant</div>
+        <div class="small" style="margin-top: 6px;">Засновник · Skords-01 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d3a3baa7b0bb93a0b6a1b4b6b2bda7fdb0bcbefda6b2">[email&#160;protected]</a></div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <span class="mdot" style="background: var(--finyk);"></span>
+        <span class="mdot" style="background: var(--fizruk);"></span>
+        <span class="mdot" style="background: var(--routine);"></span>
+        <span class="mdot" style="background: var(--nutrition);"></span>
+        <span style="font-family: var(--font-mono); font-size: var(--type-micro); color: var(--muted); margin-left: 8px; letter-spacing: 0.12em; text-transform: uppercase;">Зроблено в 🇺🇦</span>
+      </div>
+    </div>
+  </section>
+
+</deck-stage>
+
+<!-- ============ TWEAKS ============ -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/babel" src="../_shared/components/tweaks-panel.jsx"></script>
+<script type="text/babel">
+  const { useEffect } = React;
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "style": "soft",
+    "accent": "cyan"
+  }/*EDITMODE-END*/;
+
+  function PitchTweaks() {
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+    const HEX_TO_ACCENT = {
+      '#047857': 'emerald',
+      '#0e7490': 'cyan',
+      '#c23a3a': 'coral',
+      '#466212': 'lime',
+    };
+    const ACCENT_TO_HEX = {
+      emerald: '#047857',
+      cyan:    '#0e7490',
+      coral:   '#c23a3a',
+      lime:    '#466212',
+    };
+
+    useEffect(() => {
+      document.documentElement.dataset.style = t.style;
+      document.documentElement.dataset.accent = t.accent;
+    }, [t.style, t.accent]);
+
+    return (
+      <TweaksPanel title="Стиль презентації">
+        <TweakSection label="Візуальний напрямок">
+          <TweakRadio
+            label="Стиль"
+            value={t.style}
+            onChange={(v) => setTweak('style', v)}
+            options={[
+              { value: 'soft', label: 'Soft' },
+              { value: 'editorial', label: 'Editorial' },
+            ]}
+          />
+        </TweakSection>
+        <TweakSection label="Акцентний колір (модуль)">
+          <TweakColor
+            label="Акцент"
+            value={ACCENT_TO_HEX[t.accent] || '#047857'}
+            onChange={(hex) => setTweak('accent', HEX_TO_ACCENT[String(hex).toLowerCase()] || 'emerald')}
+            options={['#047857', '#0e7490', '#c23a3a', '#466212']}
+          />
+        </TweakSection>
+      </TweaksPanel>
+    );
+  }
+
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  ReactDOM.createRoot(root).render(<PitchTweaks />);
+</script>
+
+</body>
+</html>

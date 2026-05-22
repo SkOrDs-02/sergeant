@@ -75,6 +75,11 @@ export const baselineIgnores = {
     // own bundled lint/sandbox — eslint here would only produce false
     // positives. Prettier still formats them via lint-staged.
     "ops/n8n-workflows/_lib/**",
+    // `mockups/_shared/components/*` holds no-build-step CDN-React helpers
+    // (deck-stage Web Component, design-canvas, tweaks-panel, motion-variants).
+    // They reference `React` as a CDN global, use catch-param stubs, and are
+    // never bundled — linting them produces only false positives.
+    "mockups/_shared/components/**",
   ],
 };
 

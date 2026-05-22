@@ -54,3 +54,16 @@ docs/open-work.md
 docs/today.md
 docs/initiatives/follow-ups.md
 docs/governance/freshness-dashboard.html
+
+# Mockup HTML files — inline styles on long lines; Prettier would break
+# the formatting and make diffs unreadable. See mockups/_shared/components/README.md.
+mockups/pitch/
+mockups/motion/
+mockups/product/splash/
+mockups/marketing/wrapped-2026.html
+mockups/marketing/app-store-screens.html
+mockups/landing/pricing.html
+mockups/_shared/components/deck-stage.js
+mockups/_shared/components/design-canvas.jsx
+mockups/_shared/components/tweaks-panel.jsx
+mockups/_shared/components/motion-variants.jsx

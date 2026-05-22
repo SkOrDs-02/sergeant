@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant — App Store / Play Store screenshots</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --finyk: #047857;
+      --finyk-light: #34d399;
+      --finyk-soft: #ecfdf5;
+      --fizruk: #0e7490;
+      --fizruk-light: #22d3ee;
+      --fizruk-soft: #ecfeff;
+      --routine: #c23a3a;
+      --routine-light: #f97066;
+      --routine-soft: #fff5f3;
+      --nutrition: #466212;
+      --nutrition-light: #92cc17;
+      --nutrition-soft: #f8fee7;
+      --bg-cream: #fdf9f3;
+      --text: #1c1917;
+      --muted: #57534e;
+      --subtle: #a8a29e;
+    }
+
+    html, body { margin: 0; padding: 0; background: #14110f; font-family: "Manrope", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+
+    /* ── Screen frame · 1290 × 2796 logical, rendered at 540 × 1170 for canvas ── */
+    .scr {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 56px 44px 0;
+      color: var(--text);
+      font-family: "Manrope", sans-serif;
+    }
+    .scr.dark { color: #faf7f1; }
+
+    /* Headline block */
+    .head {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(28,25,23,0.06);
+      color: var(--text);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 500;
+      align-self: flex-start;
+    }
+    .dark .pill { background: rgba(255,255,255,0.12); color: #faf7f1; }
+    .pill .dot { width: 8px; height: 8px; border-radius: 9999px; background: currentColor; }
+
+    .head h1 {
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 56px;
+      line-height: 1.0;
+      letter-spacing: -0.035em;
+      margin: 0;
+      color: inherit;
+      text-wrap: balance;
+    }
+    .head h1 .accent { display: inline; }
+    .head p {
+      font-family: "Manrope", sans-serif;
+      font-size: 24px;
+      line-height: 1.32;
+      letter-spacing: -0.005em;
+      color: inherit;
+      opacity: 0.7;
+      margin: 0;
+      font-weight: 500;
+      max-width: 420px;
+    }
+    .dark .head p { opacity: 0.78; }
+
+    /* Phone mockup container — sits in lower portion */
+    .phone {
+      position: absolute;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 380px;
+      height: 700px;
+      background: #14110f;
+      border-radius: 50px;
+      padding: 10px;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.35),
+        0 12px 32px rgba(0,0,0,0.2),
+        inset 0 0 0 2px rgba(255,255,255,0.06);
+    }
+    .phone .screen {
+      width: 100%; height: 100%;
+      background: var(--bg-cream);
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone .notch {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 26px;
+      background: #14110f;
+      border-radius: 9999px;
+      z-index: 10;
+    }
+    .phone .status {
+      padding: 18px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .phone .pcontent {
+      flex: 1;
+      padding: 18px 22px 0;
+      overflow: hidden;
+    }
+
+    /* Generic phone UI bits */
+    .puiHdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      margin-bottom: 16px;
+    }
+    .puiHdr .ttl {
+      font-family: "Manrope", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .puiHdr .sub {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      margin-top: 4px;
+    }
+    .puiHdr .icon {
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      background: var(--bg-cream);
+      border: 1px solid #ebe4da;
+    }
+
+    .puiCard {
+      background: #ffffff;
+      border: 1px solid #ebe4da;
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(28,25,23,0.04);
+    }
+    .puiCard + .puiCard { margin-top: 10px; }
+
+    .pHero {
+      border-radius: 22px;
+      padding: 18px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 16px rgba(28,25,23,0.1);
+    }
+    .pHero .lbl {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+    .pHero .v {
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 44px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .pHero .v .ccy { font-size: 24px; font-weight: 500; opacity: 0.7; }
+    .pHero .cap {
+      font-size: 12px;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+
+    /* Module mini cards on dashboard */
+    .modGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .modMini {
+      border-radius: 16px;
+      padding: 12px;
+      color: #fff;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(28,25,23,0.06);
+    }
+    .modMini .nm {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+    .modMini .nv {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .modMini .nc {
+      font-size: 11px;
+      opacity: 0.85;
+    }
+
+    /* Bar chart */
+    .pBars {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      align-items: flex-end;
+      height: 70px;
+      margin-top: 8px;
+    }
+    .pBars .b {
+      background: var(--finyk);
+      border-radius: 4px 4px 0 0;
+      opacity: 0.7;
+    }
+    .pBars .b.hi { opacity: 1; }
+
+    /* Heatmap */
+    .pHeat {
+      display: grid;
+      grid-template-columns: repeat(14, 1fr);
+      gap: 3px;
+      margin-top: 12px;
+    }
+    .pHeat .c {
+      aspect-ratio: 1;
+      border-radius: 3px;
+      background: #f5ead8;
+    }
+    .pHeat .c.l1 { background: rgba(194,58,58,0.3); }
+    .pHeat .c.l2 { background: rgba(194,58,58,0.6); }
+    .pHeat .c.l3 { background: rgba(194,58,58,0.95); }
+
+    /* Workout sets list */
+    .setRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #ebe4da;
+    }
+    .setRow:last-child { border-bottom: none; }
+    .setRow .nm {
+      font-family: "Manrope", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .setRow .nm small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+    .setRow .v {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .setRow .v.done {
+      color: var(--fizruk);
+    }
+
+    /* Meal photo */
+    .mealCard {
+      background: linear-gradient(135deg, #f8fee7 0%, #dff99d 100%);
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .mealCard .photo {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--nutrition-light) 0%, var(--nutrition) 100%);
+      flex-shrink: 0;
+      position: relative;
+    }
+    .mealCard .photo::after {
+      content: '';
+      position: absolute;
+      inset: 16px;
+      background: rgba(250,247,241,0.4);
+      border-radius: 8px;
+    }
+    .mealCard .info { flex: 1; }
+    .mealCard .info .nm {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+    }
+    .mealCard .info .macros {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--nutrition-dark, var(--nutrition));
+      margin-top: 4px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .mealCard .kcal {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--nutrition);
+      letter-spacing: -0.01em;
+    }
+
+    /* AI chat */
+    .aiBubble {
+      background: #14110f;
+      color: #faf7f1;
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      max-width: 90%;
+    }
+    .aiBubble .who {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .aiBubble .txt {
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 500;
+    }
+    .userBubble {
+      background: var(--finyk-soft);
+      color: var(--text);
+      border-radius: 18px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      margin-left: auto;
+      max-width: 75%;
+    }
+    .userBubble .txt {
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 500;
+    }
+
+    /* Lock / privacy icon */
+    .lockMark {
+      width: 220px;
+      height: 220px;
+      margin: 60px auto 30px;
+      border-radius: 56px;
+      background: linear-gradient(135deg, var(--finyk) 0%, #064e3b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #faf7f1;
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 100px;
+      letter-spacing: -0.04em;
+      box-shadow: 0 30px 60px rgba(4,120,87,0.35);
+      position: relative;
+    }
+    .lockMark::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 44px;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    /* QR placeholder */
+    .qr {
+      width: 130px; height: 130px;
+      background:
+        linear-gradient(45deg, transparent 48%, currentColor 48%, currentColor 52%, transparent 52%),
+        linear-gradient(-45deg, transparent 48%, currentColor 48%, currentColor 52%, transparent 52%),
+        repeating-linear-gradient(0deg, currentColor 0 8%, transparent 8% 16%),
+        repeating-linear-gradient(90deg, currentColor 0 8%, transparent 8% 16%);
+      background-blend-mode: multiply;
+      border-radius: 14px;
+      color: var(--text);
+      margin: 0 auto;
+    }
+
+    /* Backgrounds for each screen */
+    .bg-1 { background: linear-gradient(170deg, var(--bg-cream) 0%, #ecfdf5 50%, #d1fae5 100%); }
+    .bg-2 { background: linear-gradient(170deg, #ecfdf5 0%, #34d399 100%); }
+    .bg-3 { background: linear-gradient(170deg, #ecfeff 0%, #22d3ee 100%); }
+    .bg-4 { background: linear-gradient(170deg, #fff5f3 0%, #f97066 100%); }
+    .bg-5 { background: linear-gradient(170deg, #f8fee7 0%, #92cc17 100%); }
+    .bg-6 { background: linear-gradient(170deg, #14110f 0%, #1f3a2e 50%, #0a0a09 100%); }
+    .bg-7 { background: linear-gradient(170deg, #fdf9f3 0%, #f5ead8 100%); }
+
+    /* Lockup */
+    .footMark {
+      position: absolute;
+      bottom: 28px;
+      left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      z-index: 5;
+    }
+    .footMark .mk {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1px;
+      padding: 2px;
+      background: var(--text);
+    }
+    .dark .footMark .mk { background: #faf7f1; }
+    .footMark .mk span { border-radius: 2px; }
+    .footMark .mk .a { background: var(--finyk-light); }
+    .footMark .mk .b { background: var(--fizruk-light); }
+    .footMark .mk .c { background: var(--routine-light); }
+    .footMark .mk .d { background: var(--nutrition-light); }
+    .footMark .word {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    .dark .footMark .word { color: #faf7f1; }
+
+    /* Streak number large */
+    .bigStreak {
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 60px;
+      letter-spacing: -0.04em;
+      color: var(--routine);
+      line-height: 1;
+    }
+    .bigStreak small {
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: -0.005em;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="../_shared/components/design-canvas.jsx"></script>
+
+  <script type="text/babel">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    /* ═══════════════════════════════════════════════════════
+       S1 — HERO: "One app instead of five"
+       ═══════════════════════════════════════════════════ */
+    function S1() {
+      return (
+        <div className="scr bg-1">
+          <div className="head">
+            <span className="pill"><span className="dot"/>Sergeant · Hub</span>
+            <h1>Один додаток<br/>замість <span className="accent" style={{ color: 'var(--finyk)' }}>п'яти</span>.</h1>
+            <p>Гроші, тіло, звички, їжа — в одному, з AI-коучем, який бачить усе.</p>
+          </div>
+
+          <div className="phone">
+            <div className="screen">
+              <div className="notch"/>
+              <div className="status"><span>9:41</span><span>Sergeant</span></div>
+              <div className="pcontent">
+                <div className="puiHdr">
+                  <div>
+                    <div className="ttl">Сьогодні</div>
+                    <div className="sub">Вівторок · 13 травня</div>
+                  </div>
+                  <div className="icon"/>
+                </div>
+
+                <div className="pHero" style={{ background: 'linear-gradient(135deg, #047857 0%, #0e7490 100%)' }}>
+                  <div className="lbl">Денний підсумок</div>
+                  <div className="v">−<span className="ccy">₴</span>340</div>
+                  <div className="cap">3 транзакції · в межах бюджету</div>
+                </div>
+
+                <div className="modGrid">
+                  <div className="modMini" style={{ background: 'var(--fizruk)' }}>
+                    <div className="nm">Фізрук</div>
+                    <div className="nv">45 хв</div>
+                    <div className="nc">Chest day · 4.2 т</div>
+                  </div>
+                  <div className="modMini" style={{ background: 'var(--routine)' }}>
+                    <div className="nm">Рутина</div>
+                    <div className="nv">14 🔥</div>
+                    <div className="nc">3 з 4 звичок</div>
+                  </div>
+                  <div className="modMini" style={{ background: 'var(--nutrition)' }}>
+                    <div className="nm">Харчування</div>
+                    <div className="nv">1 840</div>
+                    <div className="nc">ккал · −160</div>
+                  </div>
+                  <div className="modMini" style={{ background: 'var(--finyk)' }}>
+                    <div className="nm">Фінік</div>
+                    <div className="nv">₴12.4K</div>
+                    <div className="nc">бюджету лишилось</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       S2 — FINYK: Money
+       ═══════════════════════════════════════════════════ */
+    function S2() {
+      return (
+        <div className="scr bg-2">
+          <div className="head">
+            <span className="pill"><span className="dot"/>Модуль · Фінік</span>
+            <h1>Гроші, що знаходять<br/>себе самі.</h1>
+            <p>Mono-sync · AI-категорії · бюджети, які працюють.</p>
+          </div>
+
+          <div className="phone">
+            <div className="screen">
+              <div className="notch"/>
+              <div className="status"><span>9:41</span><span>Фінік</span></div>
+              <div className="pcontent">
+                <div className="puiHdr">
+                  <div>
+                    <div className="ttl">Травень</div>
+                    <div className="sub">Залишок · ₴18 240</div>
+                  </div>
+                </div>
+
+                <div className="pHero" style={{ background: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)' }}>
+                  <div className="lbl">Витрати цього тижня</div>
+                  <div className="v"><span className="ccy">₴</span>4 280</div>
+                  <div className="cap">−12 % vs минулий тиждень</div>
+                </div>
+
+                <div className="pBars" style={{ marginTop: 10 }}>
+                  <div className="b" style={{ height: '40%' }}/>
+                  <div className="b" style={{ height: '55%' }}/>
+                  <div className="b" style={{ height: '70%' }}/>
+                  <div className="b" style={{ height: '45%' }}/>
+                  <div className="b hi" style={{ height: '100%' }}/>
+                  <div className="b" style={{ height: '60%' }}/>
+                  <div className="b" style={{ height: '35%' }}/>
+                </div>
+
+                <div className="puiCard" style={{ marginTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>Aroma · кава</div>
+                      <div style={{ fontSize: 10, color: 'var(--subtle)', marginTop: 2, fontFamily: 'JetBrains Mono', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Сьогодні · 13:24</div>
+                    </div>
+                    <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>−₴89</div>
+                  </div>
+                </div>
+                <div className="puiCard">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>Сільпо · продукти</div>
+                      <div style={{ fontSize: 10, color: 'var(--subtle)', marginTop: 2, fontFamily: 'JetBrains Mono', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Сьогодні · 11:08</div>
+                    </div>
+                    <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>−₴824</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       S3 — FIZRUK: Workouts
+       ═══════════════════════════════════════════════════ */
+    function S3() {
+      return (
+        <div className="scr bg-3">
+          <div className="head">
+            <span className="pill"><span className="dot"/>Модуль · Фізрук</span>
+            <h1>Кожен підхід<br/>запам'ятається.</h1>
+            <p>Тоннаж · PR · готові програми · AI-резюме тренування.</p>
+          </div>
+
+          <div className="phone">
+            <div className="screen">
+              <div className="notch"/>
+              <div className="status"><span>9:41</span><span>Фізрук</span></div>
+              <div className="pcontent">
+                <div className="puiHdr">
+                  <div>
+                    <div className="ttl">Chest Day</div>
+                    <div className="sub">45 хв · 12 вправ · 4.2 т</div>
+                  </div>
+                </div>
+
+                <div className="pHero" style={{ background: 'linear-gradient(135deg, #0e7490 0%, #134e4a 100%)' }}>
+                  <div className="lbl">Сьогоднішній тоннаж</div>
+                  <div className="v">4.2<span className="ccy"> т</span></div>
+                  <div className="cap">PR у жимі лежачи · +6 %</div>
+                </div>
+
+                <div className="puiCard" style={{ marginTop: 12 }}>
+                  <div className="setRow">
+                    <div className="nm">Жим лежачи <small>4 × 8</small></div>
+                    <div className="v done">85 кг ✓</div>
+                  </div>
+                  <div className="setRow">
+                    <div className="nm">Розводка з гантелями <small>3 × 12</small></div>
+                    <div className="v done">22 кг ✓</div>
+                  </div>
+                  <div className="setRow">
+                    <div className="nm">Брусся <small>3 × до відмови</small></div>
+                    <div className="v done">+8 ✓</div>
+                  </div>
+                  <div className="setRow">
+                    <div className="nm">Пуловер <small>3 × 15</small></div>
+                    <div className="v" style={{ color: 'var(--subtle)' }}>26 кг</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       S4 — ROUTINE: Habits
+       ═══════════════════════════════════════════════════ */
+    function S4() {
+      const cells = Array.from({ length: 14 * 8 }).map((_, i) => {
+        const r = (i * 9301 + 49297) % 233280 / 233280;
+        if (r > 0.85) return 'l3';
+        if (r > 0.55) return 'l2';
+        if (r > 0.3) return 'l1';
+        return '';
+      });
+      return (
+        <div className="scr bg-4">
+          <div className="head">
+            <span className="pill"><span className="dot"/>Модуль · Рутина</span>
+            <h1>Звички, що<br/>залишаються.</h1>
+            <p>Стріки · heatmap · нагадування, що знають твій ритм.</p>
+          </div>
+
+          <div className="phone">
+            <div className="screen">
+              <div className="notch"/>
+              <div className="status"><span>9:41</span><span>Рутина</span></div>
+              <div className="pcontent">
+                <div className="puiHdr">
+                  <div>
+                    <div className="ttl">Ранкова рутина</div>
+                    <div className="sub">14 днів поспіль</div>
+                  </div>
+                </div>
+
+                <div className="pHero" style={{ background: 'linear-gradient(135deg, #f97066 0%, #c23a3a 100%)' }}>
+                  <div className="lbl">Найдовший стрік</div>
+                  <div className="v">47</div>
+                  <div className="cap">днів поспіль · березень</div>
+                </div>
+
+                <div className="pHeat">
+                  {cells.map((c, i) => <span key={i} className={'c ' + c}/>)}
+                </div>
+
+                <div className="puiCard" style={{ marginTop: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>Стакан води зранку</div>
+                      <div style={{ fontSize: 11, color: 'var(--subtle)', marginTop: 3, fontFamily: 'JetBrains Mono', letterSpacing: '0.06em' }}>Чекнуто · 06:40</div>
+                    </div>
+                    <div style={{ width: 28, height: 28, borderRadius: 9999, background: 'var(--routine)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, fontWeight: 700 }}>✓</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       S5 — NUTRITION: Photo → calories
+       ═══════════════════════════════════════════════════ */
+    function S5() {
+      return (
+        <div className="scr bg-5">
+          <div className="head">
+            <span className="pill"><span className="dot"/>Модуль · Харчування</span>
+            <h1>Сфотографуй —<br/>AI порахує.</h1>
+            <p>Сканер штрих-кодів · 500K продуктів · макро-цілі.</p>
+          </div>
+
+          <div className="phone">
+            <div className="screen">
+              <div className="notch"/>
+              <div className="status"><span>9:41</span><span>Харчування</span></div>
+              <div className="pcontent">
+                <div className="puiHdr">
+                  <div>
+                    <div className="ttl">Сьогодні</div>
+                    <div className="sub">1 840 / 2 000 ккал</div>
+                  </div>
+                </div>
+
+                <div className="pHero" style={{ background: 'linear-gradient(135deg, #92cc17 0%, #466212 100%)' }}>
+                  <div className="lbl">Залишок до ліміту</div>
+                  <div className="v">160<span className="ccy"> ккал</span></div>
+                  <div className="cap">38P · 64C · 22F · на трекі</div>
+                </div>
+
+                <div style={{ marginTop: 14 }}>
+                  <div className="mealCard">
+                    <div className="photo"/>
+                    <div className="info">
+                      <div className="nm">Лосось з кіноа</div>
+                      <div className="macros">P 38 · C 42 · F 18</div>
+                    </div>
+                    <div className="kcal">540</div>
+                  </div>
+                  <div className="mealCard">
+                    <div className="photo" style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' }}/>
+                    <div className="info">
+                      <div className="nm">Вівсянка з ягодами</div>
+                      <div className="macros">P 12 · C 64 · F 8</div>
+                    </div>
+                    <div className="kcal">380</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       S6 — AI: HubChat insight
+       ═══════════════════════════════════════════════════ */
+    function S6() {
+      return (
+        <div className="scr bg-6 dark">
+          <div className="head">
+            <span className="pill"><span className="dot" style={{ background: '#34d399' }}/>HubChat · AI</span>
+            <h1>AI, який бачить<br/><span style={{ color: '#34d399' }}>ввесь твій день.</span></h1>
+            <p>Крос-модульні поради. Не звичайний чат — реальний контекст.</p>
+          </div>
+
+          <div className="phone">
+            <div className="screen" style={{ background: '#0a0a09' }}>
+              <div className="notch"/>
+              <div className="status" style={{ color: '#faf7f1' }}><span>9:41</span><span>HubChat</span></div>
+              <div className="pcontent" style={{ color: '#faf7f1' }}>
+                <div className="puiHdr">
+                  <div>
+                    <div className="ttl" style={{ color: '#faf7f1' }}>Sergeant AI</div>
+                    <div className="sub" style={{ color: 'rgba(250,247,241,0.5)' }}>Дивиться всі 4 модулі</div>
+                  </div>
+                  <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(135deg, #34d399 0%, #047857 100%)' }}/>
+                </div>
+
+                <div className="userBubble" style={{ background: 'rgba(52,211,153,0.15)', color: '#faf7f1' }}>
+                  <div className="txt">Сержанте, що порадиш цього тижня?</div>
+                </div>
+
+                <div className="aiBubble" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div className="who" style={{ color: '#34d399' }}>Sergeant · понеділок</div>
+                  <div className="txt">
+                    Ти витратив <strong>₴2 400 на доставку</strong> цього тижня і пропустив <strong>3 тренування</strong>. Бачу патерн — стрес у середу. Запропонувати meal-prep на неділю?
+                  </div>
+                </div>
+
+                <div className="aiBubble" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div className="who" style={{ color: '#34d399' }}>Бонус-інсайт</div>
+                  <div className="txt">
+                    У дні з тренуваннями ти витрачаєш на <strong>22 % менше</strong> на їжу. Sergeant Pro покаже повну картину.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       S7 — PRIVACY · CTA
+       ═══════════════════════════════════════════════════ */
+    function S7() {
+      return (
+        <div className="scr bg-7">
+          <div className="head">
+            <span className="pill"><span className="dot" style={{ background: 'var(--finyk)' }}/>Local-first · Приватно</span>
+            <h1>Твої дані.<br/>На <span style={{ color: 'var(--finyk)' }}>твоєму</span> пристрої.</h1>
+            <p>Працює офлайн. Sync між пристроями — E2E. Ми не продаємо інсайти.</p>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0 100px', position: 'relative' }}>
+            <div className="lockMark">⌘</div>
+
+            <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+              <div style={{ background: '#fff', border: '1px solid #ebe4da', borderRadius: 18, padding: '14px 18px', textAlign: 'center', minWidth: 110, boxShadow: '0 1px 3px rgba(28,25,23,0.04)' }}>
+                <div style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 32, color: 'var(--finyk)', letterSpacing: '-0.02em', lineHeight: 1 }}>100%</div>
+                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: 6 }}>на пристрої</div>
+              </div>
+              <div style={{ background: '#fff', border: '1px solid #ebe4da', borderRadius: 18, padding: '14px 18px', textAlign: 'center', minWidth: 110, boxShadow: '0 1px 3px rgba(28,25,23,0.04)' }}>
+                <div style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 32, color: 'var(--finyk)', letterSpacing: '-0.02em', lineHeight: 1 }}>Offline</div>
+                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: 6 }}>працює без мережі</div>
+              </div>
+              <div style={{ background: '#fff', border: '1px solid #ebe4da', borderRadius: 18, padding: '14px 18px', textAlign: 'center', minWidth: 110, boxShadow: '0 1px 3px rgba(28,25,23,0.04)' }}>
+                <div style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 32, color: 'var(--finyk)', letterSpacing: '-0.02em', lineHeight: 1 }}>E2E</div>
+                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: 6 }}>шифрований sync</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 40, textAlign: 'center' }}>
+              <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 28, letterSpacing: '-0.02em', color: 'var(--text)' }}>Спробуй безкоштовно</div>
+              <div style={{ fontFamily: 'JetBrains Mono', fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: 6 }}>Sergeant Free · без картки · UA</div>
+            </div>
+          </div>
+
+          <div className="footMark">
+            <span className="mk"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       Canvas
+       ═══════════════════════════════════════════════════ */
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="screens"
+            title="Sergeant — App Store / Play Store screens"
+            subtitle="7 готових маркетингових скрінів під лістинг (1290 × 2796). Кожен — окремий хук: один екран = одне обіцяння + UI-доказ."
+          >
+            <DCArtboard id="s1" label="01 · Hub — один замість п'яти" width={540} height={1170}><S1/></DCArtboard>
+            <DCArtboard id="s2" label="02 · Фінік — гроші"            width={540} height={1170}><S2/></DCArtboard>
+            <DCArtboard id="s3" label="03 · Фізрук — тренування"      width={540} height={1170}><S3/></DCArtboard>
+            <DCArtboard id="s4" label="04 · Рутина — стріки"           width={540} height={1170}><S4/></DCArtboard>
+            <DCArtboard id="s5" label="05 · Харчування — AI-фото"      width={540} height={1170}><S5/></DCArtboard>
+            <DCArtboard id="s6" label="06 · HubChat — AI бачить усе"   width={540} height={1170}><S6/></DCArtboard>
+            <DCArtboard id="s7" label="07 · Privacy / CTA"             width={540} height={1170}><S7/></DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

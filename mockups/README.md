@@ -15,24 +15,39 @@
 
 ```
 mockups/
-├ index.html              ← портал · 4 кластери, фільтр і пошук
+├ index.html              ← портал · 6 кластерів, фільтр і пошук
 ├ README.md               ← цей файл
 │
 ├ _shared/                ← одне джерело токенів і стилів
 │  ├ tokens.css           ← дзеркало docs/design/design-system.md
 │  ├ marketing.css        ← кремові розкладки (лендинг, маркетинг)
 │  ├ product.css          ← темні скляні v2-поверхні
-│  └ code-references.md   ← мапа: який мокап ↔ який файл коду
+│  ├ code-references.md   ← мапа: який мокап ↔ який файл коду
+│  └ components/          ← шаред JS/JSX без build-step
+│     ├ deck-stage.js     ← Web Component: slide-deck shell
+│     ├ design-canvas.jsx ← pan/zoom canvas (Figma-подібний)
+│     ├ tweaks-panel.jsx  ← in-deck tweak controls
+│     └ motion-variants.jsx ← 5 анімованих сцен
+│
+├ pitch/                  ← pitch для інвесторів
+│  ├ deck-v1.html         ← investor deck v1 (слайди + навігація)
+│  ├ one-pager.html       ← pre-seed one-pager для VC
+│  └ ph-launch-storyboard.html ← Product Hunt 90s walkthrough
+│
+├ motion/                 ← motion concepts
+│  └ concepts.html        ← 5 зациклених сцен
 │
 ├ landing/                ← лендинги
+│  ├ pricing.html         ← сторінка тарифів
 │  ├ directions/          ← 3 брендові напрямки
 │  └ campaigns/           ← 8 рекламних варіантів
 │
 ├ marketing/              ← поза-лендингові маркетинг-поверхні
-│   (email-drip, social-posts, og-cards, brand-sheet, …)
+│   (email-drip, social-posts, og-cards, brand-sheet, wrapped-2026, app-store-screens, …)
 │
 ├ product/                ← екрани всередині застосунку
 │  ├ index.html           ← легенда трьох станів + 4 модулі
+│  ├ splash/              ← iOS + Android + in-app splash screens
 │  ├ finyk/ fizruk/ routine/ nutrition/   ← по модулях
 │  ├ onboarding/          ← первинне знайомство, 6 кроків
 │  ├ states/              ← пустий / помилка / нуль на сьогодні
@@ -57,19 +72,19 @@ mockups/
 
 ### Статус — у трьох кольорах
 
-| Маркер | Що означає |
-| --- | --- |
-| 🟢 **у продукті** | Файл існує, відкривається. Готовий до перегляду або передачі у код. |
-| 🟡 **у роботі** | Файл є, але текст або структура поки змінюються. Чернетка. |
+| Маркер             | Що означає                                                                       |
+| ------------------ | -------------------------------------------------------------------------------- |
+| 🟢 **у продукті**  | Файл існує, відкривається. Готовий до перегляду або передачі у код.              |
+| 🟡 **у роботі**    | Файл є, але текст або структура поки змінюються. Чернетка.                       |
 | ⚪️ **заплановано** | Картка показує, що поверхня потрібна. Самого файлу ще немає. Штрихована заливка. |
 
 ### Пріоритет — для запланованих (3 рівні)
 
-| Маркер | Коли застосовується |
-| --- | --- |
+| Маркер              | Коли застосовується                                            |
+| ------------------- | -------------------------------------------------------------- |
 | 🔴 **1 — критично** | На launch-критичному шляху. Без цього beta-ціль не вистрілить. |
-| 🟠 **2 — високо** | Сильно покращує знайомство або повернення. Бажано до launch. |
-| 🔵 **3 — середньо** | Корисне, але можна після launch. Не блокує жоден шлях. |
+| 🟠 **2 — високо**   | Сильно покращує знайомство або повернення. Бажано до launch.   |
+| 🔵 **3 — середньо** | Корисне, але можна після launch. Не блокує жоден шлях.         |
 
 ---
 
@@ -79,11 +94,11 @@ mockups/
 **3-state-формат**. Конвенція успадкована з `redesign-v2/handoff-package/`
 і застосовується до кожного екрана:
 
-| Стан | Що показує | Звідки джерело |
-| --- | --- | --- |
-| **Зараз** *(coral)* | Те, що користувач бачить сьогодні у проді | Реальний код `apps/web/src/...` |
-| **Планується** *(green)* | Те, що описано у планах, founder апрувнув | `docs/launch/...`, `docs/design/redesign-v2/...` |
-| **Рекомендую** *(cyan)* | Мої доповнення поверх плану — на обговорення | Цей файл · обговорення з founder-ом |
+| Стан                     | Що показує                                   | Звідки джерело                                   |
+| ------------------------ | -------------------------------------------- | ------------------------------------------------ |
+| **Зараз** _(coral)_      | Те, що користувач бачить сьогодні у проді    | Реальний код `apps/web/src/...`                  |
+| **Планується** _(green)_ | Те, що описано у планах, founder апрувнув    | `docs/launch/...`, `docs/design/redesign-v2/...` |
+| **Рекомендую** _(cyan)_  | Мої доповнення поверх плану — на обговорення | Цей файл · обговорення з founder-ом              |
 
 > **Важливо.** «Рекомендую» — пропозиція, **не** контракт. Її **не** треба
 > імплементувати без додаткового погодження. Це матеріал для розмови.
@@ -202,6 +217,17 @@ dashboard_outcome_card_v1) — у docs/launch/product-os/ftux-master-tracker.md
 
 ---
 
+### Shared components
+
+The `_shared/components/` folder holds vendored helpers used by multiple
+mockup HTML files (deck-stage shell, design canvas, tweaks panel, motion
+variants). These are pure JS/JSX with no build step — included via plain
+`<script src>` tags relative to the mockup that uses them. Do not edit
+without updating every consumer; see `_shared/components/README.md` for
+the contract.
+
+---
+
 ## Що НЕ є мокапами тут
 
 - **Готовий код.** Це окремий світ. Якщо ти редагуєш мокап, ти не
@@ -224,8 +250,9 @@ dashboard_outcome_card_v1) — у docs/launch/product-os/ftux-master-tracker.md
 
 ## Коротка історія версій
 
-| Дата | Що додано |
-| --- | --- |
-| 2026-05-17 | Портал v0.2 · `product/states/` · `product/onboarding/` |
-| 2026-05-18 | `product/paywall/` · `product/hubchat/` · цей README · `mockups-backlog.md` |
-| 2026-05-18 | `product/settings/` · `product/quick-add/` · `product/push/` · `flows/telegram-bot.html` — **вся первинна бібліотека закрита** |
+| Дата       | Що додано                                                                                                                                                                                                                                                                         |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-17 | Портал v0.2 · `product/states/` · `product/onboarding/`                                                                                                                                                                                                                           |
+| 2026-05-18 | `product/paywall/` · `product/hubchat/` · цей README · `mockups-backlog.md`                                                                                                                                                                                                       |
+| 2026-05-18 | `product/settings/` · `product/quick-add/` · `product/push/` · `flows/telegram-bot.html` — **вся первинна бібліотека закрита**                                                                                                                                                    |
+| 2026-05-22 | `pitch/` (deck-v1, one-pager, ph-launch-storyboard) · `motion/concepts.html` · `marketing/wrapped-2026.html` · `marketing/app-store-screens.html` · `landing/pricing.html` · `product/splash/` · `_shared/components/` (deck-stage, design-canvas, tweaks-panel, motion-variants) |

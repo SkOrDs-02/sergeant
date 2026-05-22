@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant · Pricing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --finyk: #047857;
+      --finyk-light: #34d399;
+      --finyk-soft: #ecfdf5;
+      --fizruk: #0e7490;
+      --fizruk-light: #22d3ee;
+      --routine: #c23a3a;
+      --routine-light: #f97066;
+      --nutrition: #466212;
+      --nutrition-light: #92cc17;
+
+      --bg: #fdf9f3;
+      --bg-alt: #faf7f1;
+      --surface: #ffffff;
+      --border: #ebe4da;
+      --border-strong: #d0c8bc;
+      --text: #1c1917;
+      --text-strong: #0a0a09;
+      --muted: #57534e;
+      --subtle: #a8a29e;
+
+      --font-sans: "Manrope", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --font-serif: "Fraunces", serif;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      font-family: var(--font-sans);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "ss01";
+    }
+    * { box-sizing: border-box; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+      background: rgba(253,249,243,0.88);
+    }
+    nav .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mark {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 2px;
+      padding: 3px;
+      background: var(--text-strong);
+    }
+    .mark span { border-radius: 3px; }
+    .mark .a { background: var(--finyk-light); }
+    .mark .b { background: var(--fizruk-light); }
+    .mark .c { background: var(--routine-light); }
+    .mark .d { background: var(--nutrition-light); }
+    .wordmark {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 24px;
+      letter-spacing: -0.025em;
+      color: var(--text-strong);
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 36px;
+      margin: 0;
+      padding: 0;
+    }
+    nav ul a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+    }
+    nav ul a.active { color: var(--text-strong); font-weight: 600; }
+    nav .cta {
+      background: var(--text-strong);
+      color: #faf7f1;
+      border: none;
+      padding: 11px 18px;
+      border-radius: 9999px;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.005em;
+      cursor: pointer;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 0 64px;
+      text-align: center;
+    }
+    .hero .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--finyk-soft);
+      color: var(--finyk);
+      border: 1px solid color-mix(in oklab, var(--finyk) 22%, transparent);
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+    .hero .badge .dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--finyk); }
+    .hero h1 {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 84px;
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+      color: var(--text-strong);
+      margin: 0 0 24px;
+      text-wrap: balance;
+    }
+    .hero h1 .accent { color: var(--finyk); }
+    .hero p {
+      font-family: var(--font-sans);
+      font-size: 22px;
+      line-height: 1.32;
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+    }
+
+    /* ── Toggle ── */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 40px;
+    }
+    .toggle {
+      display: inline-flex;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .toggle button {
+      background: transparent;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 9999px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.005em;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .toggle button.on {
+      background: var(--text-strong);
+      color: #faf7f1;
+    }
+    .save-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 11px;
+      border-radius: 9999px;
+      background: var(--routine-light);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* ── PLANS ── */
+    .plans {
+      padding: 48px 0 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      box-shadow: 0 1px 3px rgba(28,25,23,0.04);
+    }
+    .plan.pro {
+      background: var(--text-strong);
+      color: #faf7f1;
+      border-color: var(--text-strong);
+      position: relative;
+      overflow: hidden;
+    }
+    .plan.pro::before {
+      content: '';
+      position: absolute;
+      top: -60%; right: -30%;
+      width: 600px; height: 600px;
+      background: radial-gradient(closest-side, rgba(52,211,153,0.18), transparent);
+      pointer-events: none;
+    }
+
+    .plan .ribbon {
+      align-self: flex-start;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      background: var(--bg-alt);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .plan.pro .ribbon {
+      background: var(--finyk);
+      color: #fff;
+      border-color: var(--finyk);
+    }
+
+    .plan h3 {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 56px;
+      letter-spacing: -0.035em;
+      margin: 0;
+      line-height: 1;
+      color: var(--text-strong);
+    }
+    .plan.pro h3 { color: #faf7f1; }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .price {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 84px;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--text-strong);
+    }
+    .plan.pro .price { color: #faf7f1; }
+    .price .ccy { font-size: 38px; vertical-align: top; line-height: 1; }
+    .price-per {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .plan.pro .price-per { color: rgba(250,247,241,0.6); }
+    .price-meta {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .plan.pro .price-meta { color: rgba(250,247,241,0.55); }
+
+    .plan .blurb {
+      font-family: var(--font-sans);
+      font-size: 17px;
+      line-height: 1.45;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .plan.pro .blurb { color: rgba(250,247,241,0.78); }
+
+    .plan ul.feat {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .plan ul.feat li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.4;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .plan.pro ul.feat li { color: #faf7f1; }
+    .plan ul.feat li::before {
+      content: '';
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      margin-top: 4px;
+      border-radius: 6px;
+      background: var(--finyk-soft);
+      position: relative;
+    }
+    .plan ul.feat li::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      width: 8px; height: 4px;
+      border-left: 2px solid var(--finyk);
+      border-bottom: 2px solid var(--finyk);
+      transform: rotate(-45deg) translate(0, -2px);
+      margin-top: 7px;
+    }
+    .plan ul.feat li { position: relative; padding-left: 0; }
+
+    .plan .cta-btn {
+      align-self: stretch;
+      padding: 18px 24px;
+      border-radius: 16px;
+      border: none;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.005em;
+      cursor: pointer;
+      margin-top: auto;
+      transition: transform 0.15s ease;
+    }
+    .plan.free .cta-btn {
+      background: var(--bg-alt);
+      color: var(--text-strong);
+      border: 1px solid var(--border-strong);
+    }
+    .plan.pro .cta-btn {
+      background: var(--finyk-light);
+      color: var(--text-strong);
+    }
+    .plan .cta-foot {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      margin-top: -16px;
+    }
+    .plan.pro .cta-foot { color: rgba(250,247,241,0.55); }
+
+    /* ── Trust strip ── */
+    .trust {
+      padding: 48px 0 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+    }
+    .trust .item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .trust .ic {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--finyk-soft);
+      color: var(--finyk);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+    .trust .ic.two { background: #ecfeff; color: var(--fizruk); }
+    .trust .ic.three { background: var(--bg-alt); color: var(--text-strong); border: 1px solid var(--border); }
+    .trust h4 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.015em;
+      color: var(--text-strong);
+      margin: 4px 0 4px;
+    }
+    .trust p {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--muted);
+      font-weight: 500;
+      margin: 0;
+    }
+
+    /* ── Compare ── */
+    section.compare {
+      padding: 96px 0 64px;
+      border-top: 1px solid var(--border);
+    }
+    section.compare h2 {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 56px;
+      letter-spacing: -0.035em;
+      color: var(--text-strong);
+      margin: 0 0 16px;
+      line-height: 1;
+    }
+    section.compare .sub {
+      font-family: var(--font-sans);
+      font-size: 20px;
+      color: var(--muted);
+      margin: 0 0 48px;
+      max-width: 560px;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+    .compare-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .ctr {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      align-items: center;
+      padding: 18px 28px;
+      gap: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ctr:last-child { border-bottom: none; }
+    .ctr.head {
+      background: var(--bg-alt);
+      border-bottom: 1.5px solid var(--border-strong);
+    }
+    .ctr.head .col {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .ctr.head .col.pro { color: var(--finyk); }
+    .ctr.section-head {
+      background: var(--bg);
+      padding: 14px 28px;
+    }
+    .ctr.section-head .col {
+      grid-column: 1 / -1;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-strong);
+      font-weight: 700;
+    }
+    .ctr .feat-name {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      color: var(--text);
+      font-weight: 500;
+      letter-spacing: -0.005em;
+    }
+    .ctr .feat-name small {
+      display: block;
+      color: var(--subtle);
+      font-size: 13px;
+      margin-top: 3px;
+      font-weight: 400;
+    }
+    .ctr .v {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .ctr .v.no { color: var(--subtle); }
+    .ctr .v.yes { color: var(--finyk); font-weight: 600; }
+    .ctr .v.pro-yes { color: var(--finyk); font-weight: 700; }
+
+    /* ── FAQ ── */
+    section.faq {
+      padding: 96px 0;
+      border-top: 1px solid var(--border);
+    }
+    .faq-row {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 48px;
+    }
+    .faq-row h2 {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 56px;
+      letter-spacing: -0.035em;
+      color: var(--text-strong);
+      margin: 0;
+      line-height: 1;
+    }
+    .faq-row .sub {
+      font-family: var(--font-sans);
+      font-size: 18px;
+      color: var(--muted);
+      margin-top: 18px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 26px 28px;
+    }
+    .faq-item h3 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 19px;
+      letter-spacing: -0.015em;
+      color: var(--text-strong);
+      margin: 0 0 10px;
+    }
+    .faq-item p {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 0;
+      font-weight: 500;
+    }
+
+    /* ── Footer band ── */
+    .footer-band {
+      background: var(--text-strong);
+      color: #faf7f1;
+      padding: 80px 0 48px;
+      margin-top: 48px;
+    }
+    .footer-band h2 {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 56px;
+      letter-spacing: -0.035em;
+      margin: 0 0 18px;
+      text-wrap: balance;
+      line-height: 1;
+    }
+    .footer-band h2 .accent { color: var(--finyk-light); }
+    .footer-band p {
+      font-family: var(--font-sans);
+      font-size: 20px;
+      color: rgba(250,247,241,0.7);
+      margin: 0 0 32px;
+      max-width: 540px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .footer-band .ctas { display: flex; gap: 14px; }
+    .footer-band .ctas button {
+      padding: 16px 26px;
+      border-radius: 9999px;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+    }
+    .footer-band .ctas .primary {
+      background: var(--finyk-light);
+      color: var(--text-strong);
+    }
+    .footer-band .ctas .secondary {
+      background: rgba(255,255,255,0.08);
+      color: #faf7f1;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .footer-band .legal {
+      margin-top: 56px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(250,247,241,0.4);
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function App() {
+      const [annual, setAnnual] = useState(true);
+      const proPrice = annual ? 67 : 99;
+      const annualEquiv = 799;
+
+      return (
+        <>
+          {/* NAV */}
+          <nav>
+            <div className="container row">
+              <div className="lockup">
+                <span className="mark">
+                  <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+                </span>
+                <span className="wordmark">Sergeant</span>
+              </div>
+              <ul>
+                <li><a href="#">Продукт</a></li>
+                <li><a href="#" className="active">Pricing</a></li>
+                <li><a href="#">Privacy</a></li>
+                <li><a href="#">Блог</a></li>
+                <li><a href="#">GitHub</a></li>
+              </ul>
+              <button className="cta">Спробувати безкоштовно</button>
+            </div>
+          </nav>
+
+          {/* HERO */}
+          <section className="hero container">
+            <span className="badge"><span className="dot"/>UA · trial 7 днів · без картки</span>
+            <h1>Один план.<br/><span className="accent">Усе всередині.</span></h1>
+            <p>Sergeant Free дає тобі цінність із першого дня. Pro знімає ліміти й вмикає крос-модульний AI. Без приховань — і без 30% Apple-комісії.</p>
+
+            <div className="toggle-wrap">
+              <div className="toggle">
+                <button className={annual ? '' : 'on'} onClick={() => setAnnual(false)}>Помісячно</button>
+                <button className={annual ? 'on' : ''} onClick={() => setAnnual(true)}>Річно</button>
+              </div>
+              {annual && <span className="save-pill">Економія 33%</span>}
+            </div>
+          </section>
+
+          {/* PLANS */}
+          <section className="plans container">
+            {/* FREE */}
+            <div className="plan free">
+              <span className="ribbon">Безкоштовно · назавжди</span>
+              <div>
+                <h3>Free</h3>
+                <div className="price-row" style={{ marginTop: 12 }}>
+                  <span className="price"><span className="ccy">₴</span>0</span>
+                  <span className="price-per">завжди</span>
+                </div>
+                <div className="price-meta" style={{ marginTop: 6 }}>Без картки · без trial-обмежень</div>
+              </div>
+              <p className="blurb">Усі 4 модулі базово. Достатньо, щоб налагодити щоденку — і зрозуміти, чи Sergeant твій.</p>
+
+              <ul className="feat">
+                <li>Усі 4 модулі базово</li>
+                <li>AI-чат — 5 повідомлень / день</li>
+                <li>AI-фото їжі — 3 / день</li>
+                <li>Push-нагадування — 2 звички</li>
+                <li>Monobank — ручна синхронізація</li>
+                <li>Локальне зберігання · працює офлайн</li>
+              </ul>
+
+              <button className="cta-btn">Почати безкоштовно</button>
+              <p className="cta-foot">Без картки. Без email-spam. Без бубну.</p>
+            </div>
+
+            {/* PRO */}
+            <div className="plan pro">
+              <span className="ribbon">Recommended · 7 днів free trial</span>
+              <div>
+                <h3>Pro</h3>
+                <div className="price-row" style={{ marginTop: 12 }}>
+                  <span className="price"><span className="ccy">₴</span>{proPrice}</span>
+                  <span className="price-per">/ міс {annual && ' · ₴' + annualEquiv + '/рік'}</span>
+                </div>
+                <div className="price-meta" style={{ marginTop: 6 }}>
+                  {annual ? '~$0.07 / день · LiqPay або Stripe' : 'Або ₴' + annualEquiv + '/рік · −33%'}
+                </div>
+              </div>
+              <p className="blurb">Безлімітний AI. Sync між пристроями. Крос-модульні звіти. Усе, заради чого ти спробував.</p>
+
+              <ul className="feat">
+                <li>Усе з Free, без лімітів</li>
+                <li>Безлімітний AI-чат + щоденний брифінг</li>
+                <li>AI-фото їжі без обмежень</li>
+                <li>CloudSync між пристроями (E2E)</li>
+                <li>Крос-модульні звіти та тренди</li>
+                <li>Monobank — авто-sync · auto-категорії</li>
+                <li>Експорт CSV / PDF · теми · кастомізація</li>
+              </ul>
+
+              <button className="cta-btn">Спробувати Pro 7 днів</button>
+              <p className="cta-foot">Auto-renews. Cancel anytime — 30 днів money-back.</p>
+            </div>
+          </section>
+
+          {/* TRUST */}
+          <section className="trust container">
+            <div className="item">
+              <div className="ic">🔒</div>
+              <div>
+                <h4>Local-first · твої дані вдома</h4>
+                <p>Зберігаємо локально на пристрої. Sync — опція, з end-to-end шифруванням. Ми не продаємо інсайти. Точка.</p>
+              </div>
+            </div>
+            <div className="item">
+              <div className="ic two">↺</div>
+              <div>
+                <h4>30 днів money-back</h4>
+                <p>Не сподобалось — поверни гроші без питань і пояснень. Email на pitch@sergeant.com.ua і повернемо все 100%.</p>
+              </div>
+            </div>
+            <div className="item">
+              <div className="ic three">🇺🇦</div>
+              <div>
+                <h4>Зроблено в Україні</h4>
+                <p>UA ФОП-команда, гривневі ціни, LiqPay і Stripe. Без обкладинки Apple/Google · без 30% store-комісії в маржі.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* COMPARE */}
+          <section className="compare">
+            <div className="container">
+              <h2>Що в кожному плані.</h2>
+              <p className="sub">Без зірочок, без «*обмежено в певних регіонах». Один список — два стовпці.</p>
+
+              <div className="compare-table">
+                <div className="ctr head">
+                  <div className="col">Можливість</div>
+                  <div className="col">Free</div>
+                  <div className="col pro">Pro</div>
+                </div>
+
+                <div className="ctr section-head"><div className="col">Фінік · Гроші</div></div>
+                <div className="ctr">
+                  <div className="feat-name">Monobank-синхронізація</div>
+                  <div className="v">Ручна</div>
+                  <div className="v pro-yes">Авто + multi-банк</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">AI-категоризація транзакцій</div>
+                  <div className="v">Базова</div>
+                  <div className="v pro-yes">Розширена + правила</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Бюджети та цілі</div>
+                  <div className="v yes">До 3</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+
+                <div className="ctr section-head"><div className="col">Фізрук · Тіло</div></div>
+                <div className="ctr">
+                  <div className="feat-name">Тренування та підходи</div>
+                  <div className="v yes">Безліміт</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Готові програми</div>
+                  <div className="v">1 активна</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">AI-резюме тренування</div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+
+                <div className="ctr section-head"><div className="col">Рутина · Звички</div></div>
+                <div className="ctr">
+                  <div className="feat-name">Стріки, heatmap</div>
+                  <div className="v yes">Безліміт</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Push-нагадування</div>
+                  <div className="v">2 звички</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Спільні челенджі з друзями</div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+
+                <div className="ctr section-head"><div className="col">Харчування · Їжа</div></div>
+                <div className="ctr">
+                  <div className="feat-name">AI-розпізнавання з фото</div>
+                  <div className="v">3 / день</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Сканер штрих-кодів · база 500K</div>
+                  <div className="v yes">Так</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Meal-plan генератор</div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+
+                <div className="ctr section-head"><div className="col">HubChat · AI</div></div>
+                <div className="ctr">
+                  <div className="feat-name">AI-чат з контекстом усіх модулів</div>
+                  <div className="v">5 / день</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Щоденний AI-брифінг</div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Крос-модульні звіти</div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+
+                <div className="ctr section-head"><div className="col">Загальне</div></div>
+                <div className="ctr">
+                  <div className="feat-name">CloudSync між пристроями <small>End-to-end шифрування</small></div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Експорт CSV / PDF</div>
+                  <div className="v no">—</div>
+                  <div className="v pro-yes">Так</div>
+                </div>
+                <div className="ctr">
+                  <div className="feat-name">Теми + кастомізація</div>
+                  <div className="v">Стандартна</div>
+                  <div className="v pro-yes">Безліміт</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* FAQ */}
+          <section className="faq">
+            <div className="container">
+              <div className="faq-row">
+                <div>
+                  <h2>Поширені питання.</h2>
+                  <p className="sub">Не знайшов відповідь — пиши на <a href="mailto:hi@sergeant.com.ua" style={{ color: 'var(--finyk)', textDecoration: 'none', fontWeight: 600 }}>hi@sergeant.com.ua</a>, ми відповідаємо за добу.</p>
+                </div>
+
+                <div className="faq-list">
+                  <div className="faq-item">
+                    <h3>Чи можна скасувати в будь-який момент?</h3>
+                    <p>Так. Один клік у Settings → Billing → Cancel. Жодних retention-pop-up-ів. Якщо менше 30 днів — повертаємо повну суму, без питань.</p>
+                  </div>
+
+                  <div className="faq-item">
+                    <h3>Що буде з моїми даними, якщо я даунгрейджу до Free?</h3>
+                    <p>Усе залишається. Дані живуть локально на пристрої. Просто вимкнеться CloudSync та крос-модульні звіти. Restart Pro — і вони знову там.</p>
+                  </div>
+
+                  <div className="faq-item">
+                    <h3>Чому ₴99, а не $14.99 як у конкурентів?</h3>
+                    <p>Бо local-first архітектура коштує нам менше. Бо PWA — нема 30% Apple-take. Бо ми хочемо, щоб українець міг це собі дозволити. Конкурентна перевага — наш ціновий поріг.</p>
+                  </div>
+
+                  <div className="faq-item">
+                    <h3>Що з англомовним ринком?</h3>
+                    <p>Phase 3 (Q4 2026). EN-pricing буде $4.99/міс. Поки фокус на Україні — гривня знижує поріг входу і Mono-екосистема дає природний канал.</p>
+                  </div>
+
+                  <div className="faq-item">
+                    <h3>Чи можна тільки одну функцію (тільки AI чи тільки CloudSync)?</h3>
+                    <p>Pay-per-feature ми тестували, але результат показав — простіше «все включено». Якщо у тебе сильний кейс — напиши, послухаємо.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* FOOTER BAND */}
+          <section className="footer-band">
+            <div className="container">
+              <h2>Готовий до того, що бачить твій <span className="accent">день цілком?</span></h2>
+              <p>Sergeant Free — назавжди безкоштовно. Sergeant Pro — 7 днів trial без картки.</p>
+              <div className="ctas">
+                <button className="primary">Почати безкоштовно</button>
+                <button className="secondary">Подивитись демо · 90 с</button>
+              </div>
+
+              <div className="legal">
+                <span>© 2026 Sergeant · UA ФОП</span>
+                <span>Privacy · Terms · Status · github.com/Skords-01/Sergeant</span>
+              </div>
+            </div>
+          </section>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

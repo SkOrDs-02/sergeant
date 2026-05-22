@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant Wrapped 2026 · твій рік у даних</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --finyk: #047857;
+      --finyk-light: #34d399;
+      --fizruk: #0e7490;
+      --fizruk-light: #22d3ee;
+      --routine: #c23a3a;
+      --routine-light: #f97066;
+      --nutrition: #466212;
+      --nutrition-light: #92cc17;
+
+      --bg-cream: #fdf9f3;
+      --text: #1c1917;
+      --muted: #57534e;
+    }
+
+    html, body { margin: 0; padding: 0; background: #14110f; font-family: "Manrope", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+
+    /* Story card frame — every artboard is a 390×844 phone-style card */
+    .wcard {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 60px 32px 48px;
+      color: #faf7f1;
+      font-family: "Manrope", system-ui, sans-serif;
+    }
+    .wcard.light { color: var(--text); }
+
+    /* Story progress bars at top */
+    .progress {
+      position: absolute;
+      top: 16px; left: 16px; right: 16px;
+      display: flex;
+      gap: 4px;
+      z-index: 5;
+    }
+    .progress .seg {
+      flex: 1;
+      height: 3px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .progress .seg.done { background: rgba(255,255,255,0.85); }
+    .progress .seg.active { background: rgba(255,255,255,0.85); }
+    .light .progress .seg { background: rgba(28,25,23,0.15); }
+    .light .progress .seg.done,
+    .light .progress .seg.active { background: rgba(28,25,23,0.85); }
+
+    /* Header row */
+    .whdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-top: 24px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .whdr .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .whdr .brand .mark {
+      width: 18px; height: 18px;
+      border-radius: 5px;
+      background: currentColor;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1px;
+      padding: 2px;
+    }
+    .whdr .brand .mark span { background: currentColor; border-radius: 1px; opacity: 0.0; }
+    .whdr .brand .mark .a { background: var(--finyk-light); opacity: 1; }
+    .whdr .brand .mark .b { background: var(--fizruk-light); opacity: 1; }
+    .whdr .brand .mark .c { background: var(--routine-light); opacity: 1; }
+    .whdr .brand .mark .d { background: var(--nutrition-light); opacity: 1; }
+
+    /* Eyebrow */
+    .weyebrow {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 500;
+      opacity: 0.85;
+    }
+
+    /* Numbers/copy */
+    .whuge {
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 100px;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      margin: 0;
+    }
+    .whuge.smaller { font-size: 84px; }
+    .whuge.smallest { font-size: 70px; }
+
+    .wbig {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 38px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .wbody {
+      font-family: "Manrope", sans-serif;
+      font-weight: 500;
+      font-size: 17px;
+      line-height: 1.4;
+      letter-spacing: -0.005em;
+      margin: 0;
+      opacity: 0.85;
+    }
+    .wcap {
+      font-family: "Manrope", sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0.7;
+      letter-spacing: 0.02em;
+    }
+
+    /* Spacing helpers */
+    .wspace { flex: 1; }
+    .wstack { display: flex; flex-direction: column; }
+    .wstack.gap-sm { gap: 10px; }
+    .wstack.gap-md { gap: 18px; }
+    .wstack.gap-lg { gap: 32px; }
+
+    /* Module pill */
+    .mpill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 500;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      align-self: flex-start;
+    }
+    .light .mpill { background: rgba(28,25,23,0.08); color: var(--text); border-color: rgba(28,25,23,0.12); }
+    .mpill .dot { width: 8px; height: 8px; border-radius: 9999px; background: currentColor; }
+
+    /* Card-specific backgrounds */
+    .wc-1 { background: radial-gradient(800px 600px at 30% 20%, #1f1b18 0%, #0a0a09 60%); }
+    .wc-2 { background: linear-gradient(165deg, #10b981 0%, #047857 50%, #064e3b 100%); }
+    .wc-3 { background: linear-gradient(165deg, #f97066 0%, #c23a3a 50%, #7f1d1d 100%); }
+    .wc-4 { background: linear-gradient(165deg, #22d3ee 0%, #0e7490 50%, #134e4a 100%); }
+    .wc-5 { background: linear-gradient(165deg, #a3e635 0%, #65a30d 45%, #365314 100%); }
+    .wc-6 { background: radial-gradient(900px 700px at 70% 80%, #047857 0%, #0a0a09 55%); }
+    .wc-7 { background:
+              radial-gradient(400px 400px at 20% 20%, rgba(16,185,129,0.55) 0%, transparent 50%),
+              radial-gradient(400px 400px at 80% 25%, rgba(14,116,144,0.55) 0%, transparent 50%),
+              radial-gradient(400px 400px at 20% 80%, rgba(194,58,58,0.55) 0%, transparent 50%),
+              radial-gradient(400px 400px at 80% 80%, rgba(146,204,23,0.55) 0%, transparent 50%),
+              #0a0a09;
+    }
+    .wc-8 { background: linear-gradient(180deg, #1e1b4b 0%, #312e81 60%, #1e1b4b 100%); }
+    .wc-9 { background: linear-gradient(165deg, #fdf9f3 0%, #f5ead8 100%); }
+
+    /* Card 1 — Cover */
+    .c1-year {
+      font-family: "Manrope", sans-serif;
+      font-weight: 900;
+      font-size: 140px;
+      line-height: 0.85;
+      letter-spacing: -0.06em;
+      margin: 0;
+      background: linear-gradient(180deg, #faf7f1 0%, #faf7f1 60%, rgba(250,247,241,0.4) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .c1-strip {
+      display: flex;
+      gap: 6px;
+      margin-top: 24px;
+    }
+    .c1-strip span {
+      height: 6px;
+      flex: 1;
+      border-radius: 9999px;
+    }
+
+    /* Card 3 — heatmap */
+    .heatmap {
+      display: grid;
+      grid-template-columns: repeat(53, 1fr);
+      gap: 2px;
+      margin-top: 16px;
+    }
+    .heatmap .cell {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.12);
+      border-radius: 2px;
+    }
+    .heatmap .cell.l1 { background: rgba(255,255,255,0.3); }
+    .heatmap .cell.l2 { background: rgba(255,255,255,0.55); }
+    .heatmap .cell.l3 { background: rgba(255,255,255,0.85); }
+
+    /* Card 4 — bar viz */
+    .bars {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 6px;
+      align-items: flex-end;
+      height: 120px;
+      margin-top: 16px;
+    }
+    .bars .bar {
+      background: rgba(255,255,255,0.85);
+      border-radius: 4px 4px 0 0;
+    }
+
+    /* Card 5 — favourite meal */
+    .fav-card {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 16px 18px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .fav-card .ic {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Fraunces", serif;
+      font-size: 26px;
+      font-weight: 600;
+      color: #fff;
+      font-style: italic;
+    }
+
+    /* Card 6 — AI bubble */
+    .ai-bubble {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 24px;
+      padding: 22px;
+      margin-top: 16px;
+      backdrop-filter: blur(12px);
+    }
+    .ai-bubble .from {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-bottom: 10px;
+    }
+    .ai-bubble .msg {
+      font-family: "Fraunces", serif;
+      font-style: italic;
+      font-size: 21px;
+      line-height: 1.32;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    /* Card 7 — discovery diagram */
+    .discovery {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 24px;
+      padding: 22px;
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      backdrop-filter: blur(20px);
+    }
+    .discovery .node {
+      flex: 1;
+      text-align: center;
+    }
+    .discovery .node .sw {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      margin: 0 auto 8px;
+    }
+    .discovery .node .lbl {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+    .discovery .arrow {
+      font-family: "Manrope", sans-serif;
+      font-size: 24px;
+      font-weight: 300;
+      opacity: 0.6;
+    }
+
+    /* Card 8 — year dots */
+    .yeardots {
+      display: grid;
+      grid-template-columns: repeat(19, 1fr);
+      gap: 4px;
+      margin-top: 16px;
+    }
+    .yeardots .d {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.12);
+      border-radius: 9999px;
+    }
+    .yeardots .d.on { background: #c7d2fe; }
+
+    /* Card 9 — share buttons mock */
+    .share-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .share-btn {
+      background: var(--text);
+      color: #faf7f1;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-family: "Manrope", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .share-btn.secondary {
+      background: rgba(28,25,23,0.08);
+      color: var(--text);
+    }
+    .lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .lockup .mark {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1px;
+      padding: 2px;
+      background: var(--text);
+    }
+    .lockup .mark span { border-radius: 2px; }
+    .lockup .mark .a { background: var(--finyk-light); }
+    .lockup .mark .b { background: var(--fizruk-light); }
+    .lockup .mark .c { background: var(--routine-light); }
+    .lockup .mark .d { background: var(--nutrition-light); }
+    .lockup .word {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    /* Mini stats */
+    .ministat {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-top: 12px;
+      backdrop-filter: blur(8px);
+    }
+    .ministat .lbl {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
+    .ministat .val {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.01em;
+    }
+
+    /* Year header (top edge of every card incl. progress) — drawn over all */
+    .progress-9 .seg:nth-child(-n+1) { background: rgba(255,255,255,0.85); }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="../_shared/components/design-canvas.jsx"></script>
+
+  <script type="text/babel">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    /* ── Reusable bits ───────────────────────────────────── */
+    function Progress({ index }) {
+      return (
+        <div className="progress">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <span
+              key={i}
+              className={'seg ' + (i < index ? 'done' : i === index ? 'active' : '')}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    function Hdr({ idx }) {
+      return (
+        <div className="whdr">
+          <div className="brand">
+            <span className="mark"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span>Sergeant · Wrapped 2026</span>
+          </div>
+          <span>{idx} / 9</span>
+        </div>
+      );
+    }
+
+    /* ── Cards ───────────────────────────────────────────── */
+    function Card1() {
+      return (
+        <div className="wcard wc-1">
+          <Progress index={0} />
+          <Hdr idx="01" />
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <span className="weyebrow" style={{ color: '#a7f3d0' }}>Твій рік у даних</span>
+            <p className="c1-year">2026</p>
+            <p className="wbody" style={{ maxWidth: 280 }}>
+              365 днів. 4 модулі. 1 хаб. Подивись, як ти прожив цей рік разом із Sergeant.
+            </p>
+          </div>
+
+          <div className="c1-strip">
+            <span style={{ background: 'var(--finyk-light)' }} />
+            <span style={{ background: 'var(--fizruk-light)' }} />
+            <span style={{ background: 'var(--routine-light)' }} />
+            <span style={{ background: 'var(--nutrition-light)' }} />
+          </div>
+        </div>
+      );
+    }
+
+    function Card2() {
+      return (
+        <div className="wcard wc-2">
+          <Progress index={1} />
+          <Hdr idx="02" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill"><span className="dot"/>Фінік · гроші</span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody" style={{ opacity: 0.9 }}>За 2026 ти зекономив</p>
+            <p className="whuge smaller">₴18.4K</p>
+            <p className="wbig" style={{ fontWeight: 500, opacity: 0.9, fontSize: 22 }}>
+              порівняно з 2025-м.
+            </p>
+          </div>
+
+          <div className="ministat">
+            <div className="lbl">Топ категорія, де порізав</div>
+            <div className="val">Доставка їжі · −₴4 280</div>
+          </div>
+
+          <div className="wspace" />
+
+          <p className="wcap">Sergeant побачив патерн у середу.</p>
+        </div>
+      );
+    }
+
+    function Card3() {
+      const cells = Array.from({ length: 53 * 7 }).map((_, i) => {
+        const r = (i * 9301 + 49297) % 233280 / 233280;
+        let cls = '';
+        if (r > 0.85) cls = 'l3';
+        else if (r > 0.65) cls = 'l2';
+        else if (r > 0.4) cls = 'l1';
+        return cls;
+      });
+      return (
+        <div className="wcard wc-3">
+          <Progress index={2} />
+          <Hdr idx="03" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill"><span className="dot"/>Рутина · стрік</span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody">Найдовший стрік звичок</p>
+            <p className="whuge">47</p>
+            <p className="wbig" style={{ fontSize: 26 }}>днів поспіль · березень</p>
+          </div>
+
+          <div className="heatmap">
+            {cells.map((c, i) => <span key={i} className={'cell ' + c} />)}
+          </div>
+
+          <div className="wstack" style={{ marginTop: 14, opacity: 0.85, fontSize: 13 }}>
+            <span className="wcap">Січ · Лют · Бер · Кві · Тра · Чер · Лип · Сер · Вер · Жов · Лис · Гру</span>
+          </div>
+        </div>
+      );
+    }
+
+    function Card4() {
+      const bars = [38, 52, 64, 71, 58, 76, 84, 92, 78, 88, 95, 100];
+      return (
+        <div className="wcard wc-4">
+          <Progress index={3} />
+          <Hdr idx="04" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill"><span className="dot"/>Фізрук · тренування</span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody">Загальний тоннаж</p>
+            <p className="whuge smaller">312 т</p>
+            <p className="wbig" style={{ fontSize: 22, fontWeight: 500, opacity: 0.9 }}>
+              це 4 повних літаки Boeing 737.
+            </p>
+          </div>
+
+          <div className="bars">
+            {bars.map((h, i) => (
+              <div key={i} className="bar" style={{ height: h + '%' }} />
+            ))}
+          </div>
+
+          <div className="ministat">
+            <div className="lbl">Тренувань цього року</div>
+            <div className="val">127 · PR у листопаді</div>
+          </div>
+        </div>
+      );
+    }
+
+    function Card5() {
+      return (
+        <div className="wcard wc-5">
+          <Progress index={4} />
+          <Hdr idx="05" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill"><span className="dot"/>Харчування · записи</span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody">Страв задокументовано</p>
+            <p className="whuge smaller">1 240</p>
+            <p className="wbig" style={{ fontSize: 22, opacity: 0.9, fontWeight: 500 }}>
+              ти зробив фото 3.4 рази на день.
+            </p>
+          </div>
+
+          <div className="fav-card">
+            <div className="ic">★</div>
+            <div>
+              <div className="wcap" style={{ fontSize: 11, opacity: 0.8 }}>УЛЮБЛЕНА СТРАВА</div>
+              <div className="wbig" style={{ fontSize: 18, marginTop: 2 }}>Вівсянка з ягодами</div>
+              <div className="wcap" style={{ fontSize: 12, marginTop: 4 }}>записана 42 рази</div>
+            </div>
+          </div>
+
+          <div className="ministat">
+            <div className="lbl">Середній день</div>
+            <div className="val">1 840 ккал · 38P / 64C / 22F</div>
+          </div>
+        </div>
+      );
+    }
+
+    function Card6() {
+      return (
+        <div className="wcard wc-6">
+          <Progress index={5} />
+          <Hdr idx="06" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill" style={{ background: 'rgba(52,211,153,0.18)', borderColor: 'rgba(52,211,153,0.35)', color: '#a7f3d0' }}>
+              <span className="dot"/>HubChat · AI
+            </span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody">Інсайтів від AI</p>
+            <p className="whuge" style={{ color: '#a7f3d0' }}>73</p>
+            <p className="wbig" style={{ fontSize: 22, fontWeight: 500, opacity: 0.9 }}>
+              крос-модульних порад за рік.
+            </p>
+          </div>
+
+          <div className="ai-bubble">
+            <div className="from">Найкорисніша · 14 жовтня</div>
+            <p className="msg">
+              «Кава в Aroma коштує тобі на 18% більше у понеділок. Куплю пакет на тиждень? Економія ₴280/міс.»
+            </p>
+          </div>
+
+          <p className="wcap" style={{ marginTop: 14 }}>Ти прийняв 51 з 73 пропозицій.</p>
+        </div>
+      );
+    }
+
+    function Card7() {
+      return (
+        <div className="wcard wc-7">
+          <Progress index={6} />
+          <Hdr idx="07" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill">Крос-модульне відкриття</span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody" style={{ opacity: 0.9 }}>Sergeant побачив у тобі патерн</p>
+            <p className="wbig" style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.025em' }}>
+              У дні з тренуваннями ти витрачаєш на <span style={{ color: '#34d399' }}>22% менше</span> на доставку їжі.
+            </p>
+          </div>
+
+          <div className="discovery">
+            <div className="node">
+              <div className="sw" style={{ background: 'var(--fizruk-light)' }} />
+              <div className="lbl">Фізрук</div>
+            </div>
+            <div className="arrow">→</div>
+            <div className="node">
+              <div className="sw" style={{ background: 'var(--finyk-light)' }} />
+              <div className="lbl">Фінік</div>
+            </div>
+          </div>
+
+          <p className="wcap" style={{ marginTop: 18, opacity: 0.7 }}>
+            Жоден інший трекер цього не побачив.
+          </p>
+        </div>
+      );
+    }
+
+    function Card8() {
+      const days = Array.from({ length: 365 }).map((_, i) => {
+        // Mark 284 days as "on", spread across the year with a few gaps
+        const r = (i * 9301 + 49297) % 233280 / 233280;
+        return r < 0.78;
+      });
+      return (
+        <div className="wcard wc-8">
+          <Progress index={7} />
+          <Hdr idx="08" />
+
+          <div className="wstack gap-sm" style={{ marginTop: 16 }}>
+            <span className="mpill" style={{ background: 'rgba(199,210,254,0.18)', borderColor: 'rgba(199,210,254,0.32)' }}>
+              Активні дні
+            </span>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <p className="wbody">Днів з Sergeant у 2026</p>
+            <p className="whuge" style={{ color: '#c7d2fe' }}>284</p>
+            <p className="wbig" style={{ fontSize: 22, fontWeight: 500, opacity: 0.9 }}>
+              з 365 · це 78% року.
+            </p>
+          </div>
+
+          <div className="yeardots">
+            {days.map((on, i) => <span key={i} className={'d ' + (on ? 'on' : '')} />)}
+          </div>
+
+          <p className="wcap" style={{ marginTop: 14 }}>1.6× частіше за середнього юзера Sergeant.</p>
+        </div>
+      );
+    }
+
+    function Card9() {
+      return (
+        <div className="wcard wc-9 light">
+          <Progress index={8} />
+          <Hdr idx="09" />
+
+          <div className="wspace" />
+
+          <div className="wstack gap-md">
+            <span className="weyebrow" style={{ color: 'var(--muted)' }}>До зустрічі у 2027</span>
+            <p className="wbig" style={{ fontSize: 46, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+              Дякую, що прожив цей рік<br/>зі мною.
+            </p>
+            <p className="wbody" style={{ color: 'var(--muted)', opacity: 1 }}>
+              4 модулі. Один AI. Один хаб, що бачить тебе цілком.
+            </p>
+          </div>
+
+          <div className="wspace" />
+
+          <div className="lockup" style={{ marginBottom: 12 }}>
+            <span className="mark"><span className="a"/><span className="b"/><span className="c"/><span className="d"/></span>
+            <span className="word">Sergeant</span>
+          </div>
+
+          <div className="share-row">
+            <button className="share-btn">↗ Поділитись</button>
+            <button className="share-btn secondary">Зберегти PNG</button>
+          </div>
+
+          <p className="wcap" style={{ color: 'var(--muted)', textAlign: 'center', marginTop: 14, fontSize: 12 }}>
+            sergeant.com.ua · wrapped.sergeant.com.ua
+          </p>
+        </div>
+      );
+    }
+
+    /* ── Canvas layout ───────────────────────────────────── */
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="story"
+            title="Sergeant Wrapped 2026"
+            subtitle="9 swipeable stories — твій рік у даних. Спродиковані з ваших же модулів. Гачок для вірусного шерингу + емоційний доказ крос-модульної тези."
+          >
+            <DCArtboard id="c1" label="01 · Cover"            width={390} height={844}><Card1/></DCArtboard>
+            <DCArtboard id="c2" label="02 · Money · Фінік"    width={390} height={844}><Card2/></DCArtboard>
+            <DCArtboard id="c3" label="03 · Streak · Рутина"  width={390} height={844}><Card3/></DCArtboard>
+            <DCArtboard id="c4" label="04 · Tonnage · Фізрук" width={390} height={844}><Card4/></DCArtboard>
+            <DCArtboard id="c5" label="05 · Meals · Харч."    width={390} height={844}><Card5/></DCArtboard>
+            <DCArtboard id="c6" label="06 · AI insights"      width={390} height={844}><Card6/></DCArtboard>
+            <DCArtboard id="c7" label="07 · Discovery · крос" width={390} height={844}><Card7/></DCArtboard>
+            <DCArtboard id="c8" label="08 · Days active"      width={390} height={844}><Card8/></DCArtboard>
+            <DCArtboard id="c9" label="09 · Closing / Share"  width={390} height={844}><Card9/></DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

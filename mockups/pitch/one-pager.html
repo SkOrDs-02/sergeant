@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant · Investor one-pager · Pre-seed 2026</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --finyk: #047857;
+      --finyk-light: #34d399;
+      --finyk-soft: #ecfdf5;
+      --fizruk: #0e7490;
+      --fizruk-light: #22d3ee;
+      --routine: #c23a3a;
+      --routine-light: #f97066;
+      --nutrition: #466212;
+      --nutrition-light: #92cc17;
+
+      --bg-cream: #fdf9f3;
+      --bg-alt: #faf7f1;
+      --surface: #ffffff;
+      --border: #ebe4da;
+      --border-strong: #d0c8bc;
+      --text: #1c1917;
+      --text-strong: #0a0a09;
+      --muted: #57534e;
+      --subtle: #a8a29e;
+
+      --font-sans: "Manrope", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --font-serif: "Fraunces", serif;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #1c1917;
+      font-family: var(--font-sans);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    * { box-sizing: border-box; }
+
+    /* ── Backdrop (screen view) ── */
+    .stage {
+      min-height: 100vh;
+      padding: 48px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 48px;
+    }
+
+    /* ── A4 page · 794 × 1123 px @ 96dpi ── */
+    .page {
+      width: 794px;
+      height: 1123px;
+      background: var(--bg-cream);
+      box-shadow:
+        0 30px 80px rgba(0,0,0,0.5),
+        0 8px 24px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .page-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(560px 360px at 90% 0%, #d1fae5 0%, transparent 60%),
+        radial-gradient(420px 300px at 0% 100%, #ecfeff 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .page-inner {
+      position: absolute;
+      inset: 48px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Header ── */
+    .hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 18px;
+      border-bottom: 1.5px solid var(--text-strong);
+    }
+    .lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mark {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 2px;
+      padding: 3px;
+      background: var(--text-strong);
+    }
+    .mark span { border-radius: 3px; }
+    .mark .a { background: var(--finyk-light); }
+    .mark .b { background: var(--fizruk-light); }
+    .mark .c { background: var(--routine-light); }
+    .mark .d { background: var(--nutrition-light); }
+    .word {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 26px;
+      letter-spacing: -0.025em;
+      color: var(--text-strong);
+      line-height: 1;
+    }
+    .word + .tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .hdr-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 9999px;
+      background: var(--text-strong);
+      color: #faf7f1;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .badge .dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--finyk-light); }
+    .hdr-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      font-weight: 500;
+    }
+
+    /* ── Eyebrow + section heading pattern ── */
+    .eb {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--finyk);
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    h2.sect {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      color: var(--text-strong);
+      margin: 0 0 6px;
+      line-height: 1.1;
+    }
+
+    /* ── Hero block ── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .hero h1 {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 38px;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      color: var(--text-strong);
+      margin: 4px 0 0;
+      text-wrap: balance;
+    }
+    .hero h1 .accent { color: var(--finyk); }
+    .hero p {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+      margin: 4px 0 0;
+    }
+    .hero p + p { margin-top: 8px; }
+
+    /* ── 4-module strip ── */
+    .modstrip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .modcard {
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      min-height: 110px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .modcard.finyk     { background: linear-gradient(150deg, #10b981 0%, #047857 100%); }
+    .modcard.fizruk    { background: linear-gradient(150deg, #22d3ee 0%, #0e7490 100%); }
+    .modcard.routine   { background: linear-gradient(150deg, #f97066 0%, #c23a3a 100%); }
+    .modcard.nutrition { background: linear-gradient(150deg, #92cc17 0%, #466212 100%); }
+    .modcard .role {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+    .modcard .name {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .modcard .desc {
+      font-size: 10px;
+      line-height: 1.3;
+      opacity: 0.88;
+      font-weight: 500;
+    }
+    .modcard .vs {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      opacity: 0.72;
+      font-weight: 500;
+    }
+
+    /* ── Three-column metrics row ── */
+    .threecol {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .panel .stat {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 30px;
+      letter-spacing: -0.03em;
+      color: var(--text-strong);
+      line-height: 1;
+    }
+    .panel .stat .unit {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+    .panel .stat.accent { color: var(--finyk); }
+    .panel .lbl {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .panel .desc {
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Comp table ── */
+    .comptable {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px 14px;
+    }
+    .comprow {
+      display: grid;
+      grid-template-columns: 2fr 1fr 2fr;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .comprow:last-child { border-bottom: none; }
+    .comprow .nm {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-strong);
+      letter-spacing: -0.01em;
+    }
+    .comprow .pr {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 500;
+    }
+    .comprow .sc {
+      font-size: 10px;
+      color: var(--subtle);
+      line-height: 1.3;
+    }
+    .comprow.us { background: var(--finyk-soft); border-bottom: none; border-radius: 8px; padding: 8px 10px; margin: 2px -10px; }
+    .comprow.us .nm { color: var(--finyk); font-size: 13px; font-weight: 700; }
+    .comprow.us .pr { color: var(--finyk); font-weight: 700; font-size: 13px; }
+    .comprow.us .sc { color: var(--text); font-weight: 600; }
+    .comprow.head .nm,
+    .comprow.head .pr,
+    .comprow.head .sc {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      font-weight: 600;
+    }
+    .comprow.head { border-bottom: 1.5px solid var(--border-strong); }
+
+    /* ── Ask block ── */
+    .ask {
+      background: var(--text-strong);
+      color: #faf7f1;
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+    .ask .eb { color: var(--finyk-light); margin-bottom: 4px; }
+    .ask .stat { color: #faf7f1; font-family: var(--font-sans); font-weight: 800; font-size: 32px; letter-spacing: -0.03em; line-height: 1; }
+    .ask .stat .unit { font-size: 14px; font-weight: 500; opacity: 0.65; letter-spacing: 0; }
+    .ask .desc { font-size: 11px; line-height: 1.35; opacity: 0.78; margin-top: 4px; }
+    .ask h3 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+      color: #faf7f1;
+      margin: 0 0 4px;
+    }
+
+    /* ── Footer ── */
+    .foot {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1.5px solid var(--text-strong);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .foot a { color: inherit; text-decoration: none; }
+    .foot .left { display: flex; gap: 18px; }
+
+    /* ── Block label header ── */
+    .blockhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    /* ── Print ── */
+    @media print {
+      html, body { background: white; }
+      .stage { padding: 0; min-height: auto; display: block; }
+      .page { box-shadow: none; }
+      .help { display: none !important; }
+      @page { size: A4 portrait; margin: 0; }
+    }
+
+    /* ── Help card next to page (screen only) ── */
+    .help {
+      width: 260px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 22px;
+      color: #faf7f1;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      flex-shrink: 0;
+      backdrop-filter: blur(12px);
+    }
+    .help h4 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 15px;
+      margin: 0 0 8px;
+      letter-spacing: -0.01em;
+    }
+    .help .key {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .help p { opacity: 0.78; margin: 0 0 12px; }
+  </style>
+</head>
+
+<body>
+  <div class="stage">
+    <!-- ═════════════ A4 PAGE ═════════════ -->
+    <div class="page">
+      <div class="page-bg"></div>
+      <div class="page-inner">
+
+        <!-- HEADER -->
+        <header class="hdr">
+          <div class="lockup">
+            <span class="mark"><span class="a"></span><span class="b"></span><span class="c"></span><span class="d"></span></span>
+            <div>
+              <div class="word">Sergeant</div>
+              <div class="tag">Твій персональний хаб життя</div>
+            </div>
+          </div>
+          <div class="hdr-right">
+            <span class="badge"><span class="dot"></span>Pre-seed · $80–150K</span>
+            <span class="hdr-meta">Investor one-pager · 2026</span>
+          </div>
+        </header>
+
+        <!-- HERO -->
+        <section class="hero">
+          <div>
+            <p class="eb">Проблема</p>
+            <h1>П'ять додатків.<br/><span class="accent">Нуль контексту.</span></h1>
+          </div>
+          <div>
+            <p class="eb">Рішення</p>
+            <p style="font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--text-strong); margin: 4px 0 6px; line-height: 1.25; letter-spacing: -0.015em;">
+              Один local-first хаб для фінансів, тіла, звичок і харчування + AI-коуч з крос-модульним контекстом.
+            </p>
+            <p>
+              Фітнес-AI не знає про твою дієту. Бюджет-додаток не бачить спортзал. Sergeant читає всі 4 модулі одразу — і дає поради, які бачать день цілком.
+            </p>
+          </div>
+        </section>
+
+        <!-- 4 MODULES -->
+        <section>
+          <div class="blockhead">
+            <h2 class="sect">Продукт</h2>
+            <span class="hdr-meta">Local-first · PWA + native</span>
+          </div>
+          <div class="modstrip">
+            <div class="modcard finyk">
+              <div>
+                <div class="role">01 · Гроші</div>
+                <div class="name">Фінік</div>
+              </div>
+              <div class="desc">Mono-sync · AI-категорії · бюджети · цілі</div>
+              <div class="vs">vs Monobank · YNAB</div>
+            </div>
+            <div class="modcard fizruk">
+              <div>
+                <div class="role">02 · Тіло</div>
+                <div class="name">Фізрук</div>
+              </div>
+              <div class="desc">Тренування · тоннаж · PR · програми</div>
+              <div class="vs">vs Strong · Hevy</div>
+            </div>
+            <div class="modcard routine">
+              <div>
+                <div class="role">03 · Звички</div>
+                <div class="name">Рутина</div>
+              </div>
+              <div class="desc">Стріки · heatmap · push-нагадування</div>
+              <div class="vs">vs Streaks · Fabulous</div>
+            </div>
+            <div class="modcard nutrition">
+              <div>
+                <div class="role">04 · Їжа</div>
+                <div class="name">Харчування</div>
+              </div>
+              <div class="desc">AI-фото · сканер · 500K продуктів</div>
+              <div class="vs">vs MyFitnessPal · Yazio</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- METRICS ROW -->
+        <section class="threecol">
+          <div class="panel">
+            <span class="lbl">Ринок · UA-first</span>
+            <div class="stat">7M<span class="unit"> +</span></div>
+            <div class="desc">Mono-юзерів в UA з знайомим UX і платіжкою. Природний дистрибуційний канал.</div>
+          </div>
+          <div class="panel">
+            <span class="lbl">Юніт-економіка</span>
+            <div class="stat accent">20 : 1</div>
+            <div class="desc">LTV/CAC (consrv). ARPU ₴80/міс · LTV ₴792. Breakeven — 35 Pro-підписників.</div>
+          </div>
+          <div class="panel">
+            <span class="lbl">Стан розробки</span>
+            <div class="stat">v0.9</div>
+            <div class="desc">Архітектура + 4 модулі + design system v2 готові. FTUX + paywall — Q2 2026.</div>
+          </div>
+        </section>
+
+        <!-- COMPETITION + AI -->
+        <section class="threecol" style="grid-template-columns: 1.6fr 1fr;">
+          <div>
+            <div class="blockhead">
+              <h2 class="sect">Конкуренти · цінова перевага</h2>
+              <span class="hdr-meta">UA ₴99 · ~$2.25/мо</span>
+            </div>
+            <div class="comptable" style="margin-top: 6px;">
+              <div class="comprow head">
+                <div class="nm">Продукт</div>
+                <div class="pr">Ціна</div>
+                <div class="sc">Що покриває</div>
+              </div>
+              <div class="comprow">
+                <div class="nm">MyFitnessPal Premium</div>
+                <div class="pr">$19.99 /мо</div>
+                <div class="sc">Тільки їжа + базовий фітнес</div>
+              </div>
+              <div class="comprow">
+                <div class="nm">YNAB</div>
+                <div class="pr">$14.99 /мо</div>
+                <div class="sc">Тільки фінанси · нема free</div>
+              </div>
+              <div class="comprow">
+                <div class="nm">Fabulous Premium</div>
+                <div class="pr">$3.33 /мо</div>
+                <div class="sc">Тільки звички</div>
+              </div>
+              <div class="comprow us">
+                <div class="nm">Sergeant Pro</div>
+                <div class="pr">$2.25 /мо</div>
+                <div class="sc">Усі 4 модулі + AI-коуч</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 class="sect">Диференціатор</h2>
+            <div class="panel" style="background: var(--text-strong); border: none;">
+              <span class="lbl" style="color: var(--finyk-light); letter-spacing: 0.2em;">HubChat · AI</span>
+              <div style="font-family: var(--font-serif); font-style: italic; font-size: 13px; line-height: 1.35; color: #faf7f1; margin-top: 6px; font-weight: 500;">
+                «Ти витратив ₴2 400 на доставку — і пропустив 3 тренування. Запропонувати meal-prep на неділю?»
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(250,247,241,0.55); margin-top: 8px; font-weight: 500;">
+                Жоден інший трекер цього не бачить
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ASK -->
+        <section class="ask">
+          <div>
+            <p class="eb">Що шукаємо</p>
+            <h3>Pre-seed раунд для public launch.</h3>
+            <p style="font-size: 11px; line-height: 1.35; opacity: 0.78; margin: 0;">
+              12-місячний runway · marketing · AI compute · operations. Ціль раунду: 1K Pro-підписників і $30K MRR за 12 місяців. Готовність до seed.
+            </p>
+          </div>
+          <div>
+            <span class="lbl" style="color: rgba(250,247,241,0.55); letter-spacing: 0.18em;">Сума</span>
+            <div class="stat">$80–150<span class="unit"> K</span></div>
+            <div class="desc">SAFE · post-money cap обговорюється</div>
+          </div>
+          <div>
+            <span class="lbl" style="color: rgba(250,247,241,0.55); letter-spacing: 0.18em;">Ціль 12 міс</span>
+            <div class="stat">1K · $30K</div>
+            <div class="desc">Pro-підписники · MRR на момент seed</div>
+          </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="foot">
+          <div class="left">
+            <span>github.com/Skords-01/Sergeant</span>
+            <span>sergeant.com.ua</span>
+          </div>
+          <div>
+            <span>Skords-01 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ef9f869b8c87af9c8a9d888a8e819bc18c8082c19a8e">[email&#160;protected]</a></span>
+            <span style="margin-left: 16px; color: var(--finyk);">🇺🇦 Зроблено в Україні</span>
+          </div>
+        </footer>
+
+      </div>
+    </div>
+
+    <!-- Print helper card (screen-only) -->
+    <aside class="help">
+      <h4>Готовий до друку</h4>
+      <p>A4 · 794×1123 px. Натисни <span class="key">⌘P</span> (Mac) або <span class="key">Ctrl+P</span> (Win) → <em>Save as PDF</em> для розсилки інвесторам.</p>
+      <h4 style="margin-top: 16px;">Як читати</h4>
+      <p>Один екран = повна історія. Топ — problem/solution. Середина — продукт + ринок. Низ — ask + контакт. Скан за ~30 секунд.</p>
+      <h4 style="margin-top: 16px;">Що змінити</h4>
+      <p>Цифри в quote-блоці HubChat, suma раунду в Ask-блоці, контактні поля у footer — це найочевидніші точки персоналізації.</p>
+    </aside>
+  </div>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>

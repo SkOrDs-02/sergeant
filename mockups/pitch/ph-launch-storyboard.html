@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant · Product Hunt launch storyboard · 90s walkthrough</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --finyk: #047857;
+      --finyk-light: #34d399;
+      --fizruk: #0e7490;
+      --fizruk-light: #22d3ee;
+      --routine: #c23a3a;
+      --routine-light: #f97066;
+      --nutrition: #466212;
+      --nutrition-light: #92cc17;
+
+      --bg-cream: #fdf9f3;
+      --bg-alt: #faf7f1;
+      --surface: #ffffff;
+      --border: #ebe4da;
+      --text: #1c1917;
+      --muted: #57534e;
+      --subtle: #a8a29e;
+
+      --font-sans: "Manrope", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --font-serif: "Fraunces", serif;
+    }
+
+    html, body { margin: 0; padding: 0; background: #14110f; font-family: var(--font-sans); }
+    * { box-sizing: border-box; }
+
+    /* ── Storyboard panel · 600 × 660 ── */
+    .panel {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-cream);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 4px;
+      font-family: var(--font-sans);
+      color: var(--text);
+    }
+
+    /* Top metadata strip */
+    .panel-meta {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--text);
+      color: #faf7f1;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .panel-meta .left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .panel-meta .id {
+      background: rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 3px 8px;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .panel-meta .duration { color: var(--finyk-light); font-weight: 600; }
+
+    /* 16:9 frame area */
+    .frame {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1.5px solid var(--text);
+    }
+
+    /* Frame caption overlay (what shows on-screen during this beat) */
+    .on-screen {
+      position: absolute;
+      bottom: 12px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(250,247,241,0.7);
+      font-weight: 500;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .on-screen.dark { color: rgba(28,25,23,0.55); }
+    .on-screen .tag {
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      border-radius: 5px;
+      color: rgba(250,247,241,0.95);
+    }
+    .on-screen.dark .tag { background: rgba(255,255,255,0.78); color: rgba(28,25,23,0.85); }
+
+    /* Bottom info block */
+    .info {
+      flex: 1;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #ffffff;
+    }
+    .info-row { display: flex; gap: 14px; align-items: flex-start; }
+    .info-tag {
+      width: 72px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      font-weight: 600;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+    .info-text {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.4;
+      color: var(--text);
+      font-weight: 500;
+      flex: 1;
+    }
+    .info-text.vo {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 500;
+    }
+
+    /* ── Generic phone frame used inside many panels ── */
+    .ph {
+      width: 200px;
+      aspect-ratio: 9 / 19.5;
+      background: #14110f;
+      border-radius: 26px;
+      padding: 6px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.25);
+    }
+    .ph .scr {
+      width: 100%; height: 100%;
+      background: var(--bg-cream);
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 10px;
+    }
+    .ph .notch {
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px; height: 14px;
+      background: #14110f;
+      border-radius: 9999px;
+      z-index: 2;
+    }
+    .ph .stat {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: var(--text);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    .ph-ttl {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 10px;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+    .ph-sub {
+      font-family: var(--font-mono);
+      font-size: 6.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    .ph-hero {
+      border-radius: 10px;
+      padding: 8px 10px;
+      color: #fff;
+      margin-top: 8px;
+    }
+    .ph-hero .l {
+      font-family: var(--font-mono);
+      font-size: 6.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+    .ph-hero .v {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      margin-top: 3px;
+    }
+    .ph-hero .c { font-size: 7.5px; opacity: 0.85; margin-top: 2px; }
+
+    .ph-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 4px;
+    }
+    .ph-row .nm { font-size: 8.5px; font-weight: 600; color: var(--text); }
+    .ph-row .v { font-family: var(--font-mono); font-size: 8px; font-weight: 600; }
+
+    .ph-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .ph-mod {
+      border-radius: 7px;
+      padding: 5px 7px;
+      color: #fff;
+      min-height: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ph-mod .n {
+      font-family: var(--font-mono);
+      font-size: 5.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+    .ph-mod .vv { font-family: var(--font-sans); font-weight: 800; font-size: 12px; letter-spacing: -0.02em; line-height: 1; }
+    .ph-mod .cc { font-size: 5.5px; opacity: 0.85; }
+
+    /* Heatmap (small) */
+    .mini-heat {
+      display: grid;
+      grid-template-columns: repeat(14, 1fr);
+      gap: 1.5px;
+      margin-top: 6px;
+    }
+    .mini-heat .c {
+      aspect-ratio: 1;
+      background: #f5ead8;
+      border-radius: 1.5px;
+    }
+    .mini-heat .c.l1 { background: rgba(194,58,58,0.3); }
+    .mini-heat .c.l2 { background: rgba(194,58,58,0.6); }
+    .mini-heat .c.l3 { background: var(--routine); }
+
+    /* ── PANEL 01 · Hook ─────────────────────────────── */
+    .scene-hook {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #14110f 0%, #1f1b18 100%);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .scene-hook .question {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 500;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      color: #faf7f1;
+      max-width: 480px;
+      text-align: center;
+      text-wrap: balance;
+    }
+    .scene-hook .question b { color: var(--finyk-light); font-style: normal; font-weight: 700; font-family: var(--font-sans); letter-spacing: -0.025em; }
+    .scene-hook .apps {
+      position: absolute;
+      inset: auto 0 0 0;
+      bottom: 36px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    .scene-hook .apps .a {
+      width: 38px; height: 38px;
+      border-radius: 9px;
+      background: #2a2622;
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    /* ── PANEL 02 · Dashboard ────────────────────────── */
+    .scene-dashboard {
+      width: 100%; height: 100%;
+      background: linear-gradient(170deg, #ecfdf5 0%, #d1fae5 100%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 0 40px;
+    }
+    .scene-dashboard .caption {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 30px;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1.05;
+      text-wrap: balance;
+    }
+    .scene-dashboard .caption .accent { color: var(--finyk); }
+    .scene-dashboard .ph-wrap { display: flex; justify-content: center; }
+
+    /* ── PANEL 03–06: action shots ───────────────────── */
+    .scene-mod {
+      width: 100%; height: 100%;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      align-items: center;
+      padding: 0 30px 0 36px;
+    }
+    .scene-mod.finyk     { background: linear-gradient(170deg, #ecfdf5 0%, #d1fae5 100%); }
+    .scene-mod.fizruk    { background: linear-gradient(170deg, #ecfeff 0%, #cffafe 100%); }
+    .scene-mod.routine   { background: linear-gradient(170deg, #fff5f3 0%, #ffe4e1 100%); }
+    .scene-mod.nutrition { background: linear-gradient(170deg, #f8fee7 0%, #ecfccb 100%); }
+    .scene-mod .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .scene-mod.finyk     .label { color: var(--finyk); }
+    .scene-mod.fizruk    .label { color: var(--fizruk); }
+    .scene-mod.routine   .label { color: var(--routine); }
+    .scene-mod.nutrition .label { color: var(--nutrition); }
+    .scene-mod .headline {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 26px;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      line-height: 1.05;
+      margin-bottom: 10px;
+      text-wrap: balance;
+    }
+    .scene-mod .substep {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.55;
+    }
+    .scene-mod .substep .step { color: var(--text); font-weight: 600; }
+    .scene-mod .ph-wrap { display: flex; justify-content: center; }
+
+    /* ── PANEL 07 · HubChat AI ───────────────────────── */
+    .scene-ai {
+      width: 100%; height: 100%;
+      background: radial-gradient(900px 600px at 70% 80%, #047857 0%, #14110f 60%);
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      align-items: center;
+      padding: 0 30px 0 36px;
+      position: relative;
+    }
+    .scene-ai .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--finyk-light);
+      margin-bottom: 10px;
+    }
+    .scene-ai .headline {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+      color: #faf7f1;
+      line-height: 1.0;
+      margin-bottom: 14px;
+      text-wrap: balance;
+    }
+    .scene-ai .insight {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 14px;
+      padding: 14px 16px;
+      backdrop-filter: blur(12px);
+    }
+    .scene-ai .insight .who {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--finyk-light);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .scene-ai .insight .msg {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 14px;
+      line-height: 1.32;
+      color: #faf7f1;
+      font-weight: 500;
+    }
+    .scene-ai .ph-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── PANEL 08 · CTA ──────────────────────────────── */
+    .scene-cta {
+      width: 100%; height: 100%;
+      background: var(--bg-cream);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      position: relative;
+    }
+    .scene-cta .ttl {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 44px;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .scene-cta .ttl .accent { color: var(--finyk); }
+    .scene-cta .url {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      padding: 8px 18px;
+      border: 2px solid var(--text);
+      border-radius: 9999px;
+    }
+    .scene-cta .strip {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .scene-cta .strip span {
+      width: 32px; height: 5px; border-radius: 9999px;
+    }
+
+    /* ── PANEL 09 · Logo end-card ─────────────────────── */
+    .scene-logo {
+      width: 100%; height: 100%;
+      background: #14110f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+    .scene-logo .mark {
+      width: 70px; height: 70px;
+      border-radius: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 3px;
+      padding: 5px;
+      background: rgba(255,255,255,0.04);
+    }
+    .scene-logo .mark span { border-radius: 5px; }
+    .scene-logo .mark .a { background: var(--finyk-light); }
+    .scene-logo .mark .b { background: var(--fizruk-light); }
+    .scene-logo .mark .c { background: var(--routine-light); }
+    .scene-logo .mark .d { background: var(--nutrition-light); }
+    .scene-logo .word {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 56px;
+      letter-spacing: -0.04em;
+      color: #faf7f1;
+      line-height: 1;
+    }
+    .scene-logo .corner {
+      position: absolute;
+      bottom: 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(250,247,241,0.4);
+      font-weight: 500;
+    }
+
+    /* Subtle cursor / tap dot for action shots */
+    .tap-dot {
+      position: absolute;
+      width: 22px; height: 22px;
+      border-radius: 9999px;
+      background: rgba(4,120,87,0.18);
+      border: 2px solid var(--finyk);
+      box-shadow: 0 0 0 6px rgba(4,120,87,0.12);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="../_shared/components/design-canvas.jsx"></script>
+
+  <script type="text/babel">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    /* Reusable storyboard panel shell */
+    function Panel({ idx, time, dur, scene, frame, vo, caption, onScreen, onScreenDark }) {
+      return (
+        <div className="panel">
+          <div className="panel-meta">
+            <div className="left">
+              <span className="id">{idx}</span>
+              <span>{time}</span>
+              <span>·</span>
+              <span>{scene}</span>
+            </div>
+            <span className="duration">{dur}</span>
+          </div>
+          <div className="frame">
+            {frame}
+            {onScreen && (
+              <div className={"on-screen " + (onScreenDark ? "dark" : "")}>
+                <span className="tag">{onScreen[0]}</span>
+                {onScreen[1] && <span className="tag">{onScreen[1]}</span>}
+              </div>
+            )}
+          </div>
+          <div className="info">
+            <div className="info-row">
+              <span className="info-tag">VO · UA</span>
+              <span className="info-text vo">{vo}</span>
+            </div>
+            {caption && (
+              <div className="info-row">
+                <span className="info-tag">Action</span>
+                <span className="info-text" style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>{caption}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* Mini phones used inside frames */
+    function PhDashboard() {
+      return (
+        <div className="ph">
+          <div className="scr">
+            <div className="notch"/>
+            <div className="stat"><span>9:41</span><span>Sergeant</span></div>
+            <div className="ph-ttl">Сьогодні</div>
+            <div className="ph-sub">Вт · 13 травня</div>
+            <div className="ph-hero" style={{ background: 'linear-gradient(135deg, #047857, #0e7490)' }}>
+              <div className="l">Денний підсумок</div>
+              <div className="v">−₴340</div>
+              <div className="c">3 транз. · в межах бюджету</div>
+            </div>
+            <div className="ph-grid">
+              <div className="ph-mod" style={{ background: 'var(--fizruk)' }}><div className="n">Фізрук</div><div className="vv">45 хв</div><div className="cc">Chest day</div></div>
+              <div className="ph-mod" style={{ background: 'var(--routine)' }}><div className="n">Рутина</div><div className="vv">14 🔥</div><div className="cc">3 / 4 звичок</div></div>
+              <div className="ph-mod" style={{ background: 'var(--nutrition)' }}><div className="n">Їжа</div><div className="vv">1 840</div><div className="cc">ккал · −160</div></div>
+              <div className="ph-mod" style={{ background: 'var(--finyk)' }}><div className="n">Фінік</div><div className="vv">₴12K</div><div className="cc">бюджету</div></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PhFinyk() {
+      return (
+        <div className="ph" style={{ position: 'relative' }}>
+          <div className="scr">
+            <div className="notch"/>
+            <div className="stat"><span>9:41</span><span>Фінік</span></div>
+            <div className="ph-ttl">Транзакції</div>
+            <div className="ph-sub">Mono · щойно</div>
+            <div className="ph-hero" style={{ background: 'linear-gradient(135deg, #047857, #065f46)' }}>
+              <div className="l">Aroma · кава</div>
+              <div className="v">−₴89</div>
+              <div className="c">авто-категорія · напої</div>
+            </div>
+            <div className="ph-row" style={{ marginTop: 6 }}><div className="nm">Сільпо</div><div className="v">−₴824</div></div>
+            <div className="ph-row"><div className="nm">Uklon</div><div className="v">−₴145</div></div>
+            <div className="ph-row"><div className="nm">Зарплата</div><div className="v" style={{ color: 'var(--finyk)' }}>+₴42 800</div></div>
+          </div>
+          <span className="tap-dot" style={{ top: '32%', left: '38%' }}/>
+        </div>
+      );
+    }
+
+    function PhFizruk() {
+      return (
+        <div className="ph">
+          <div className="scr">
+            <div className="notch"/>
+            <div className="stat"><span>9:41</span><span>Фізрук</span></div>
+            <div className="ph-ttl">Chest Day</div>
+            <div className="ph-sub">45 хв · 4.2 т</div>
+            <div className="ph-hero" style={{ background: 'linear-gradient(135deg, #0e7490, #134e4a)' }}>
+              <div className="l">Жим лежачи · сет 3/4</div>
+              <div className="v">85 <span style={{ fontSize: 12, opacity: 0.7 }}>кг × 8</span></div>
+              <div className="c">PR ✓ +6 %</div>
+            </div>
+            <div className="ph-row" style={{ marginTop: 6 }}><div className="nm">Розводка</div><div className="v" style={{ color: 'var(--fizruk)' }}>✓ 22 кг</div></div>
+            <div className="ph-row"><div className="nm">Брусся</div><div className="v" style={{ color: 'var(--fizruk)' }}>✓ +8</div></div>
+            <div className="ph-row"><div className="nm">Пуловер</div><div className="v" style={{ color: 'var(--subtle)' }}>26 кг</div></div>
+          </div>
+        </div>
+      );
+    }
+
+    function PhRoutine() {
+      const cells = Array.from({ length: 14 * 8 }).map((_, i) => {
+        const r = (i * 9301 + 49297) % 233280 / 233280;
+        if (r > 0.85) return 'l3';
+        if (r > 0.55) return 'l2';
+        if (r > 0.3) return 'l1';
+        return '';
+      });
+      return (
+        <div className="ph">
+          <div className="scr">
+            <div className="notch"/>
+            <div className="stat"><span>9:41</span><span>Рутина</span></div>
+            <div className="ph-ttl">Ранкова рутина</div>
+            <div className="ph-sub">14 днів поспіль 🔥</div>
+            <div className="ph-hero" style={{ background: 'linear-gradient(135deg, #f97066, #c23a3a)' }}>
+              <div className="l">Стрік</div>
+              <div className="v">14<span style={{ fontSize: 11, opacity: 0.8, fontWeight: 500 }}> днів</span></div>
+              <div className="c">найдовший: 47 · березень</div>
+            </div>
+            <div className="mini-heat">
+              {cells.map((c, i) => <span key={i} className={'c ' + c}/>)}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PhNutrition() {
+      return (
+        <div className="ph">
+          <div className="scr">
+            <div className="notch"/>
+            <div className="stat"><span>9:41</span><span>Їжа</span></div>
+            <div className="ph-ttl">Обід</div>
+            <div className="ph-sub">AI розпізнав · 0.6 с</div>
+            <div style={{
+              borderRadius: 10, padding: 8, marginTop: 8, color: '#fff',
+              background: 'linear-gradient(135deg, #92cc17, #466212)'
+            }}>
+              <div style={{ fontFamily: 'JetBrains Mono', fontSize: 6.5, letterSpacing: '0.16em', textTransform: 'uppercase', opacity: 0.85, fontWeight: 500 }}>540 ккал</div>
+              <div style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em', lineHeight: 1, marginTop: 3 }}>Лосось<br/>з кіноа</div>
+              <div style={{ fontFamily: 'JetBrains Mono', fontSize: 7, marginTop: 4, opacity: 0.9 }}>P 38 · C 42 · F 18</div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '6px 8px', background: '#fff', border: '1px solid var(--border)', borderRadius: 8 }}>
+              <span style={{ fontSize: 8, fontWeight: 600 }}>Сьогодні</span>
+              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 8, color: 'var(--nutrition)', fontWeight: 600 }}>1 840 / 2 000</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PhAIChat() {
+      return (
+        <div className="ph">
+          <div className="scr" style={{ background: '#0a0a09' }}>
+            <div className="notch"/>
+            <div className="stat" style={{ color: '#faf7f1' }}><span>9:41</span><span>HubChat</span></div>
+            <div className="ph-ttl" style={{ color: '#faf7f1' }}>Sergeant AI</div>
+            <div className="ph-sub" style={{ color: 'rgba(250,247,241,0.5)' }}>Бачить всі 4 модулі</div>
+
+            <div style={{
+              marginTop: 8,
+              padding: '7px 10px',
+              background: 'rgba(52,211,153,0.18)',
+              borderRadius: 10,
+              marginLeft: 'auto',
+              maxWidth: '80%',
+              color: '#faf7f1',
+              fontSize: 8,
+              fontWeight: 500,
+              lineHeight: 1.3,
+            }}>Сержанте, що порадиш?</div>
+
+            <div style={{
+              marginTop: 5,
+              padding: '8px 10px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: 10,
+              color: '#faf7f1',
+              fontSize: 7.5,
+              fontWeight: 500,
+              lineHeight: 1.32,
+            }}>
+              <div style={{ fontFamily: 'JetBrains Mono', fontSize: 6, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--finyk-light)', marginBottom: 4 }}>понеділок ранок</div>
+              Ти витратив <b>₴2 400 на доставку</b> і пропустив <b>3 тренування</b>. Запропонувати meal-prep на неділю?
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════ FRAMES ═══════════════════════ */
+
+    const F01 = (
+      <div className="scene-hook">
+        <div className="apps">
+          <div className="a">Mono</div>
+          <div className="a">MFP</div>
+          <div className="a">Stva</div>
+          <div className="a">Fab</div>
+          <div className="a">YNAB</div>
+        </div>
+        <div className="question">
+          Скільки додатків ти відкриваєш, щоб <b>прожити свій день</b>?
+        </div>
+      </div>
+    );
+
+    const F02 = (
+      <div className="scene-dashboard">
+        <div className="caption">
+          Тепер усе в <span className="accent">одному.</span>
+        </div>
+        <div className="ph-wrap"><PhDashboard/></div>
+      </div>
+    );
+
+    const F03 = (
+      <div className="scene-mod finyk">
+        <div>
+          <div className="label">01 · Фінік · фінанси</div>
+          <div className="headline">Mono-sync і AI ловлять категорію.</div>
+          <div className="substep">
+            <span className="step">→</span> Кава в Aroma · −₴89<br/>
+            <span className="step">→</span> AI: «напої»<br/>
+            <span className="step">→</span> бюджет оновлено
+          </div>
+        </div>
+        <div className="ph-wrap"><PhFinyk/></div>
+      </div>
+    );
+
+    const F04 = (
+      <div className="scene-mod fizruk">
+        <div>
+          <div className="label">02 · Фізрук · тіло</div>
+          <div className="headline">Жим — і нова PR.</div>
+          <div className="substep">
+            <span className="step">→</span> Сет 3/4 · 85 кг × 8<br/>
+            <span className="step">→</span> +6 % vs минулий тиждень<br/>
+            <span className="step">→</span> AI пише резюме
+          </div>
+        </div>
+        <div className="ph-wrap"><PhFizruk/></div>
+      </div>
+    );
+
+    const F05 = (
+      <div className="scene-mod routine">
+        <div>
+          <div className="label">03 · Рутина · звички</div>
+          <div className="headline">Стрік 14 днів — не зламано.</div>
+          <div className="substep">
+            <span className="step">→</span> Чекнуто: вода · медитація<br/>
+            <span className="step">→</span> Стрік + 1<br/>
+            <span className="step">→</span> Heatmap наповнюється
+          </div>
+        </div>
+        <div className="ph-wrap"><PhRoutine/></div>
+      </div>
+    );
+
+    const F06 = (
+      <div className="scene-mod nutrition">
+        <div>
+          <div className="label">04 · Харчування · їжа</div>
+          <div className="headline">Фото обіду — AI рахує сам.</div>
+          <div className="substep">
+            <span className="step">→</span> Лосось + кіноа · 540 ккал<br/>
+            <span className="step">→</span> Макро автоматом<br/>
+            <span className="step">→</span> Денний таргет: на трекі
+          </div>
+        </div>
+        <div className="ph-wrap"><PhNutrition/></div>
+      </div>
+    );
+
+    const F07 = (
+      <div className="scene-ai">
+        <div>
+          <div className="label">HubChat · крос-модульний AI</div>
+          <div className="headline">AI бачить ввесь твій день.</div>
+          <div className="insight">
+            <div className="who">Sergeant · понеділок ранок</div>
+            <div className="msg">«Ти витратив ₴2 400 на доставку — і пропустив 3 тренування. Запропонувати meal-prep на неділю?»</div>
+          </div>
+        </div>
+        <div className="ph-wrap"><PhAIChat/></div>
+      </div>
+    );
+
+    const F08 = (
+      <div className="scene-cta">
+        <div style={{
+          fontFamily: 'JetBrains Mono', fontSize: 11, letterSpacing: '0.22em',
+          textTransform: 'uppercase', color: 'var(--finyk)', fontWeight: 600,
+        }}>Доступно зараз · 🇺🇦</div>
+        <div className="ttl">Спробуй <span className="accent">безкоштовно.</span></div>
+        <div className="url">sergeant.com.ua</div>
+        <div className="strip">
+          <span style={{ background: 'var(--finyk)' }}/>
+          <span style={{ background: 'var(--fizruk)' }}/>
+          <span style={{ background: 'var(--routine)' }}/>
+          <span style={{ background: 'var(--nutrition)' }}/>
+        </div>
+      </div>
+    );
+
+    const F09 = (
+      <div className="scene-logo">
+        <div className="mark">
+          <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+        </div>
+        <div className="word">Sergeant</div>
+        <div className="corner">Твій персональний хаб життя · 🇺🇦</div>
+      </div>
+    );
+
+    /* ═══════════════════════ APP ═══════════════════════ */
+
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="storyboard"
+            title="Product Hunt launch · 90s storyboard"
+            subtitle="9 кадрів для launch-відео. VO українською · англомовну версію продублювати після переозвучки. Чорнові тривалості з docs/launch/business/02-go-to-market.md §4.1."
+          >
+            <DCArtboard id="01" label="01 · Hook"        width={600} height={660}>
+              <Panel idx="01" time="0:00 — 0:05" dur="5s" scene="Hook"
+                frame={F01}
+                onScreen={["Pre-roll · question", "Cold open"]}
+                vo={'«Скільки додатків ти відкриваєш, щоб прожити свій день? А якщо все це — в одному?»'}
+                caption="Чорний фон. 5 app-tile силуетів спливають знизу. Питання набирається серіфом, ключове слово підсвічене. Тиша 1с → перший такт музики."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="02" label="02 · Dashboard"   width={600} height={660}>
+              <Panel idx="02" time="0:05 — 0:20" dur="15s" scene="Dashboard"
+                frame={F02}
+                onScreen={["LCD reveal", "Tagline"]}
+                onScreenDark
+                vo={'«Sergeant — твій персональний хаб для фінансів, тіла, звичок і харчування. Усе в одному екрані.»'}
+                caption="Фейд із чорного на cream. Фраза «Тепер усе в одному» спадає зверху, телефон в'їжджає знизу з пружинкою. 4 модулі-картки розгортаються поетапно (200 мс кожен)."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="03" label="03 · Фінік"        width={600} height={660}>
+              <Panel idx="03" time="0:20 — 0:40" dur="20s" scene="Фінік · фінанси"
+                frame={F03}
+                onScreen={["Screen recording", "Mono · sync"]}
+                onScreenDark
+                vo={'«Фінік знає про твої гроші. Кава в Aroma — Mono синхронізує транзакцію, AI ставить категорію, бюджет оновлюється сам.»'}
+                caption="Тап-індикатор пульсує на транзакції. Smooth pan-в на сільпо-рядок. На 0:35 — швидкий cut на тижневий графік (zoom-out)."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="04" label="04 · Фізрук"       width={600} height={660}>
+              <Panel idx="04" time="0:40 — 0:55" dur="15s" scene="Фізрук · тіло"
+                frame={F04}
+                onScreen={["Workout log", "PR ✓ +6 %"]}
+                onScreenDark
+                vo={'«Фізрук пам'ятає кожен підхід. Сет за сетом — і AI говорить, що це нова PR.»'}
+                caption="Закінчуючи сет, юзер свайпає сет-картку — анімація «✓». PR-бейдж спалахує coral-кольором із bounce-easing. Музичний хіт у момент PR."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="05" label="05 · Рутина"       width={600} height={660}>
+              <Panel idx="05" time="0:55 — 1:05" dur="10s" scene="Рутина · звички"
+                frame={F05}
+                onScreen={["Streak: 14", "Heatmap fills"]}
+                onScreenDark
+                vo={'«Рутина тримає твій стрік. 14 днів поспіль — і кожна клітинка хітмепа знає чому.»'}
+                caption="Анімований fill heatmap-у зліва-направо. Великий «14» — щемить duolingo-pulse. Звук cheering chime."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="06" label="06 · Харчування"   width={600} height={660}>
+              <Panel idx="06" time="1:05 — 1:20" dur="15s" scene="Харчування · їжа"
+                frame={F06}
+                onScreen={["AI photo", "0.6 s recognition"]}
+                onScreenDark
+                vo={'«Сфотографуй обід — AI розпізнає лосось і кіноа за пів секунди. Калорії, макро, ціль — усе само.»'}
+                caption="Камера-shutter звук → flash → photo-thumbnail fade-in зліва, а справа підраховується «540 ккал» рулеткою (rolling number)."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="07" label="07 · HubChat · AI" width={600} height={660}>
+              <Panel idx="07" time="1:20 — 1:35" dur="15s" scene="HubChat · AI"
+                frame={F07}
+                onScreen={["AI sees all 4", "Key moment"]}
+                vo={'«А це — серце Sergeant. AI читає всі чотири модулі одразу. І дає поради, які бачать твій день цілком. Жоден інший трекер цього не бачить.»'}
+                caption="Перехід через темний whip-cut. Insight-картка набирається type-on. На фразі «жоден інший» — bg pulse acceleration. Підняти музику до плато."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="08" label="08 · CTA"          width={600} height={660}>
+              <Panel idx="08" time="1:35 — 1:45" dur="10s" scene="CTA"
+                frame={F08}
+                onScreen={["Try free", "sergeant.com.ua"]}
+                onScreenDark
+                vo={'«Спробуй безкоштовно. Sergeant — один додаток замість п'яти.»'}
+                caption="URL-pill з'являється з лівого боку sliding-easing. 4-кольоровий strip знизу drum-roll-у анімація. Логомузика наростає."
+              />
+            </DCArtboard>
+
+            <DCArtboard id="09" label="09 · Logo end-card" width={600} height={660}>
+              <Panel idx="09" time="1:45 — 1:50" dur="5s" scene="Logo"
+                frame={F09}
+                onScreen={["Brand"]}
+                vo={'(пауза · фінальний акорд)'}
+                caption="Mark зливається з 4-х колірних кутів у центр. Wordmark пливе праворуч. Слоган бавиться внизу. Музика обривається — тиша → лого тримається 0.5с → cut."
+              />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Sergeant · Splash / loading screens · iOS + Android</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --finyk: #047857;
+      --finyk-light: #34d399;
+      --finyk-soft: #ecfdf5;
+      --fizruk: #0e7490;
+      --fizruk-light: #22d3ee;
+      --routine: #c23a3a;
+      --routine-light: #f97066;
+      --nutrition: #466212;
+      --nutrition-light: #92cc17;
+
+      --bg-cream: #fdf9f3;
+      --text: #1c1917;
+      --muted: #57534e;
+
+      --font-sans: "Manrope", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+    html, body { margin: 0; padding: 0; background: #14110f; font-family: var(--font-sans); }
+    * { box-sizing: border-box; }
+
+    /* ── Splash screen base ── */
+    .splash {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      overflow: hidden;
+      font-family: var(--font-sans);
+    }
+
+    /* iOS notch (visual reminder of target device) */
+    .ios-notch {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 36px;
+      background: #14110f;
+      border-radius: 9999px;
+    }
+    .ios-status {
+      position: absolute;
+      top: 26px;
+      left: 32px;
+      right: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      z-index: 2;
+    }
+    .ios-status .ind {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .ios-status .battery {
+      width: 28px; height: 13px;
+      border-radius: 4px;
+      border: 1px solid currentColor;
+      position: relative;
+      opacity: 0.6;
+    }
+    .ios-status .battery::after {
+      content: '';
+      position: absolute;
+      right: -3px; top: 3px;
+      width: 2px; height: 5px;
+      background: currentColor;
+      border-radius: 1px;
+    }
+
+    /* Android status bar (Material 12 only shows tiny icons) */
+    .android-status {
+      position: absolute;
+      top: 16px;
+      left: 24px;
+      right: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-sans);
+      font-size: 17px;
+      font-weight: 600;
+      z-index: 2;
+    }
+
+    /* Home indicator (iOS) */
+    .home-ind {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 8px;
+      background: rgba(28,25,23,0.3);
+      border-radius: 9999px;
+    }
+    .home-ind.dark { background: rgba(255,255,255,0.4); }
+
+    /* Mark (square 4-quadrant logo) */
+    .smark {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 36px;
+    }
+    .smark span {
+      border-radius: 16px;
+    }
+    .smark.lg {
+      width: 220px; height: 220px;
+      gap: 10px;
+      padding: 14px;
+    }
+    .smark.xl {
+      width: 280px; height: 280px;
+      gap: 12px;
+      padding: 18px;
+      border-radius: 50px;
+    }
+    .smark.xl span { border-radius: 22px; }
+
+    .smark .a { background: var(--finyk); }
+    .smark .b { background: var(--fizruk); }
+    .smark .c { background: var(--routine); }
+    .smark .d { background: var(--nutrition); }
+
+    /* Light variant has more vivid pop on accent */
+    .smark.bright .a { background: var(--finyk-light); }
+    .smark.bright .b { background: var(--fizruk-light); }
+    .smark.bright .c { background: var(--routine-light); }
+    .smark.bright .d { background: var(--nutrition-light); }
+
+    .swordmark {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 64px;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--text);
+    }
+    .swordmark.dark-on-light { color: var(--text); }
+    .swordmark.light-on-dark { color: #faf7f1; }
+
+    .stagline {
+      font-family: var(--font-sans);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: -0.005em;
+      text-align: center;
+      max-width: 380px;
+      line-height: 1.3;
+    }
+    .stagline.dark { color: rgba(250,247,241,0.55); }
+
+    /* Loading dots */
+    .dots {
+      display: flex;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    .dots span {
+      width: 14px; height: 14px;
+      border-radius: 9999px;
+      background: var(--text);
+      opacity: 0.25;
+    }
+    .dots span:nth-child(1) { opacity: 1; }
+    .dots span:nth-child(2) { opacity: 0.6; }
+    .dots span:nth-child(3) { opacity: 0.25; }
+    .dots.dark span { background: #faf7f1; }
+
+    /* Status text (loading state) */
+    .stat-text {
+      position: absolute;
+      bottom: 120px;
+      left: 0; right: 0;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .stat-text.dark { color: rgba(250,247,241,0.55); }
+    .stat-text .accent { color: var(--finyk); }
+
+    /* ── Progress ring (sync state) ── */
+    .ring-wrap {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-wrap .ring-svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+    .ring-wrap .ring-svg .track {
+      fill: none;
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 6;
+    }
+    .ring-wrap .ring-svg .fill {
+      fill: none;
+      stroke: var(--finyk-light);
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 880;
+      stroke-dashoffset: 350;
+    }
+
+    /* Material 12 splash spec compliance: just centered mark on solid bg */
+    .android-mat {
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .android-mat::after {
+      /* navigation indicator */
+      content: '';
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 4px;
+      border-radius: 9999px;
+      background: rgba(28,25,23,0.25);
+    }
+    .android-mat.dark::after { background: rgba(255,255,255,0.3); }
+
+    /* Background variants */
+    .bg-light    { background: var(--bg-cream); color: var(--text); }
+    .bg-dark     { background: #0a0a09; color: #faf7f1; }
+    .bg-finyk    { background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%); color: var(--text); }
+    .bg-sync     { background: radial-gradient(900px 700px at 50% 50%, #0a3a2e 0%, #0a0a09 75%); color: #faf7f1; }
+    .bg-warm     { background: var(--bg-cream); color: var(--text); }
+
+    /* Optional version chip in corner */
+    .ver {
+      position: absolute;
+      bottom: 64px;
+      left: 0; right: 0;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      opacity: 0.5;
+    }
+    .ver.dark { color: rgba(250,247,241,0.4); }
+
+    /* Tiny label on bottom of artboard (designer notes) — outside the screen */
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="../../_shared/components/design-canvas.jsx"></script>
+
+  <script type="text/babel">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    /* ═══════════ V1 · iOS · Light · cold start ═══════════ */
+    function S_iOS_Light() {
+      return (
+        <div className="splash bg-light">
+          <div className="ios-notch"/>
+          <div className="ios-status" style={{ color: 'var(--text)' }}>
+            <span>9:41</span>
+            <div className="ind">
+              <span style={{ fontSize: 14 }}>●●●●</span>
+              <span style={{ fontSize: 14, letterSpacing: '0.04em' }}>Wi-Fi</span>
+              <div className="battery"/>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 36 }}>
+            <span className="smark lg">
+              <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+            </span>
+            <div className="swordmark dark-on-light">Sergeant</div>
+          </div>
+
+          <div className="home-ind"/>
+        </div>
+      );
+    }
+
+    /* ═══════════ V2 · iOS · Dark · cold start ═══════════ */
+    function S_iOS_Dark() {
+      return (
+        <div className="splash bg-dark">
+          <div className="ios-notch" style={{ background: '#000' }}/>
+          <div className="ios-status" style={{ color: '#faf7f1' }}>
+            <span>9:41</span>
+            <div className="ind">
+              <span style={{ fontSize: 14 }}>●●●●</span>
+              <span style={{ fontSize: 14, letterSpacing: '0.04em' }}>Wi-Fi</span>
+              <div className="battery"/>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 36 }}>
+            <span className="smark lg bright">
+              <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+            </span>
+            <div className="swordmark light-on-dark">Sergeant</div>
+          </div>
+
+          <div className="home-ind dark"/>
+        </div>
+      );
+    }
+
+    /* ═══════════ V3 · iOS · Light · loading w/ tagline ═══════════ */
+    function S_iOS_Loading() {
+      return (
+        <div className="splash bg-finyk">
+          <div className="ios-notch"/>
+          <div className="ios-status" style={{ color: 'var(--text)' }}>
+            <span>9:41</span>
+            <div className="ind">
+              <span style={{ fontSize: 14 }}>●●●●</span>
+              <span style={{ fontSize: 14, letterSpacing: '0.04em' }}>Wi-Fi</span>
+              <div className="battery"/>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 30 }}>
+            <span className="smark lg">
+              <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+            </span>
+            <div className="swordmark dark-on-light">Sergeant</div>
+            <div className="stagline">Твій персональний хаб життя.</div>
+            <div className="dots">
+              <span/><span/><span/>
+            </div>
+          </div>
+
+          <div className="ver">v0.9 · Build 142</div>
+          <div className="home-ind"/>
+        </div>
+      );
+    }
+
+    /* ═══════════ V4 · iOS · Dark · syncing state ═══════════ */
+    function S_iOS_Sync() {
+      return (
+        <div className="splash bg-sync">
+          <div className="ios-notch" style={{ background: '#000' }}/>
+          <div className="ios-status" style={{ color: '#faf7f1' }}>
+            <span>9:41</span>
+            <div className="ind">
+              <span style={{ fontSize: 14 }}>●●●●</span>
+              <span style={{ fontSize: 14, letterSpacing: '0.04em' }}>Wi-Fi</span>
+              <div className="battery"/>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32 }}>
+            <div className="ring-wrap">
+              <svg className="ring-svg" viewBox="0 0 320 320">
+                <circle className="track" cx="160" cy="160" r="140"/>
+                <circle className="fill"  cx="160" cy="160" r="140"/>
+              </svg>
+              <span className="smark lg bright">
+                <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+              </span>
+            </div>
+            <div className="swordmark light-on-dark">Sergeant</div>
+          </div>
+
+          <div className="stat-text dark">
+            <div>Синхронізую дані</div>
+            <div style={{ marginTop: 8, fontFamily: 'var(--font-sans)', fontSize: 18, textTransform: 'none', letterSpacing: '-0.005em', fontWeight: 500, color: '#faf7f1', opacity: 0.85 }}>
+              <span className="accent">CloudSync · 38 з 47</span>
+            </div>
+          </div>
+
+          <div className="home-ind dark"/>
+        </div>
+      );
+    }
+
+    /* ═══════════ V5 · Android · Material 12 · Light ═══════════ */
+    function S_Android_Light() {
+      return (
+        <div className="splash bg-light">
+          <div className="android-status" style={{ color: 'var(--text)' }}>
+            <span>9:41</span>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 17 }}>
+              <span>📶</span>
+              <span>🔋</span>
+            </div>
+          </div>
+
+          <div className="android-mat">
+            <span className="smark xl">
+              <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════ V6 · Android · Material 12 · Dark ═══════════ */
+    function S_Android_Dark() {
+      return (
+        <div className="splash bg-dark">
+          <div className="android-status" style={{ color: '#faf7f1' }}>
+            <span>9:41</span>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 17 }}>
+              <span>📶</span>
+              <span>🔋</span>
+            </div>
+          </div>
+
+          <div className="android-mat dark">
+            <span className="smark xl bright">
+              <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════ V7 · Update screen (in-app overlay) ═══════════ */
+    function S_Update() {
+      return (
+        <div className="splash bg-warm">
+          <div className="ios-notch"/>
+          <div className="ios-status" style={{ color: 'var(--text)' }}>
+            <span>9:41</span>
+            <div className="ind">
+              <span style={{ fontSize: 14 }}>●●●●</span>
+              <span style={{ fontSize: 14, letterSpacing: '0.04em' }}>Wi-Fi</span>
+              <div className="battery"/>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 30 }}>
+            <span className="smark lg">
+              <span className="a"/><span className="b"/><span className="c"/><span className="d"/>
+            </span>
+            <div className="swordmark dark-on-light" style={{ fontSize: 52 }}>Версія 0.10</div>
+            <div className="stagline">
+              <strong style={{ color: 'var(--text)', fontWeight: 600 }}>HubChat · крос-модульний AI.</strong><br/>
+              Бачить твій тиждень цілком — і пише поради, які поєднують модулі.
+            </div>
+          </div>
+
+          <div className="ver">
+            <span style={{ background: 'var(--text)', color: '#faf7f1', padding: '8px 18px', borderRadius: 9999, fontWeight: 700, letterSpacing: '-0.005em', textTransform: 'none', fontFamily: 'var(--font-sans)', fontSize: 17 }}>
+              Подивитись що нового →
+            </span>
+          </div>
+          <div className="home-ind"/>
+        </div>
+      );
+    }
+
+    /* ═══════════ App ═══════════ */
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="ios"
+            title="iOS splash · 4 стани"
+            subtitle="Розмір asset: 1290 × 2796 (iPhone 6.7'') · 1170 × 2532 (iPhone 6.1''). Тут показано в авторських 540 × 1170 для канви."
+          >
+            <DCArtboard id="ios-light" label="01 · iOS · Light · cold"     width={540} height={1170}><S_iOS_Light/></DCArtboard>
+            <DCArtboard id="ios-dark"  label="02 · iOS · Dark · cold"      width={540} height={1170}><S_iOS_Dark/></DCArtboard>
+            <DCArtboard id="ios-load"  label="03 · iOS · Light · loading"  width={540} height={1170}><S_iOS_Loading/></DCArtboard>
+            <DCArtboard id="ios-sync"  label="04 · iOS · Dark · syncing"   width={540} height={1170}><S_iOS_Sync/></DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="android"
+            title="Android · Material 12 splash"
+            subtitle="Material 12 запроваджує splash як ОS-керований overlay: лише icon (без wordmark) на solid bg. Розмір: 1080 × 2400."
+          >
+            <DCArtboard id="and-light" label="05 · Android · Light"        width={540} height={1170}><S_Android_Light/></DCArtboard>
+            <DCArtboard id="and-dark"  label="06 · Android · Dark"         width={540} height={1170}><S_Android_Dark/></DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="update"
+            title="In-app launch overlay · «що нового»"
+            subtitle="Не splash-asset, а post-launch screen на першому запуску після оновлення. Анонсує великі релізи (HubChat v0.10)."
+          >
+            <DCArtboard id="update" label="07 · iOS · Update overlay"      width={540} height={1170}><S_Update/></DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
