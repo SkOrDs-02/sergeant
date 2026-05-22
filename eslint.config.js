@@ -87,10 +87,13 @@ export default [
       // pseudo-class equivalent.
       "sergeant-design/prefer-focus-visible": "error",
       // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier.
+      // Severity promoted to `error` 2026-05-21. Audit showed zero un-disabled
+      // call-sites in `apps/web/src/{core,modules,shared}/**` (one explicit
+      // `eslint-disable-next-line` with tech-debt ref in `SearchResults.tsx:104`).
       // `rounded-lg` sits between Marker (6 px) and Control (12 px) without a
       // semantic role; use `rounded-md` or `rounded-xl` instead.
       // See docs/design/radius-rhythm.md.
-      "sergeant-design/no-rounded-lg": "warn",
+      "sergeant-design/no-rounded-lg": "error",
       // `no-v1-gradient` — Sergeant v2 redesign (2026-05) replaced v1 module
       // gradient vars (`--gradient-{module}`, `--gradient-card-{module}-dark`)
       // and their `bg-card-{module}-dark` Tailwind utilities with the
