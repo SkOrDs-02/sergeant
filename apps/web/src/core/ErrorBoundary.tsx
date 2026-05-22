@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { captureException } from "./observability/sentry";
 import { isChunkLoadError, reloadOnceForChunkError } from "./lib/chunkReload";
+import { CONFIRM_FLASH_MS } from "@shared/lib/ui/timeouts";
 
 interface FallbackProps {
   error: Error;
@@ -80,7 +81,7 @@ export class ErrorBoundary extends Component<
       };
       const finish = () => {
         this.setState({ copied: true });
-        setTimeout(() => this.setState({ copied: false }), 1500);
+        setTimeout(() => this.setState({ copied: false }), CONFIRM_FLASH_MS);
       };
       try {
         if (

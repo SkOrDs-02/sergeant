@@ -10,6 +10,7 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { HINT_AUTO_HIDE_MS, HINT_REVEAL_DELAY_MS } from "@shared/lib/ui/timeouts";
 
 const SWIPE_THRESHOLD = 60;
 const MAX_SWIPE = 100;
@@ -62,9 +63,8 @@ function SwipeToActionImpl({
       // Show hint after a short delay
       const timer = setTimeout(() => {
         setHintVisible(true);
-        // Auto-hide after 4 seconds
-        setTimeout(() => setHintVisible(false), 4000);
-      }, 2000);
+        setTimeout(() => setHintVisible(false), HINT_AUTO_HIDE_MS);
+      }, HINT_REVEAL_DELAY_MS);
       return () => clearTimeout(timer);
     }
     return undefined;

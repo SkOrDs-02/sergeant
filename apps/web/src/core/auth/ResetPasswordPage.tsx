@@ -10,6 +10,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
 import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
 import { translateAuthError } from "./AuthContext";
@@ -91,7 +92,10 @@ export function ResetPasswordPage() {
     },
     onSuccess: () => {
       toast.success("Пароль оновлено");
-      window.setTimeout(() => navigate("/sign-in", { replace: true }), 1500);
+      window.setTimeout(
+        () => navigate("/sign-in", { replace: true }),
+        POST_SUCCESS_REDIRECT_MS,
+      );
     },
   });
 

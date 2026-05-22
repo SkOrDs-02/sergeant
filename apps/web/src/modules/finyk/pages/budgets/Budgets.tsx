@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
+import { HIGHLIGHT_CLEAR_MS } from "@shared/lib/ui/timeouts";
 import {
   DataState,
   type DataStateQueryLike,
@@ -241,7 +242,7 @@ export function Budgets({
   }, [focusLimitCategoryId, limitsOpen]);
   useEffect(() => {
     if (!highlightedCategoryId) return;
-    const t = setTimeout(() => setHighlightedCategoryId(null), 3000);
+    const t = setTimeout(() => setHighlightedCategoryId(null), HIGHLIGHT_CLEAR_MS);
     return () => clearTimeout(t);
   }, [highlightedCategoryId]);
   const toggleGoals = useCallback(() => {

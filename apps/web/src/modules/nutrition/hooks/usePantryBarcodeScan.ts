@@ -1,5 +1,6 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { isApiError } from "@shared/api";
+import { STATUS_AUTO_HIDE_MS } from "@shared/lib/ui/timeouts";
 import { useBarcodeProductLookup } from "./useBarcodeProduct";
 
 export interface PantryBarcodeScanApi {
@@ -67,7 +68,7 @@ export function usePantryBarcodeScan({
       } else {
         setPantryScanStatus(`Додано: ${label} \u2714`);
       }
-      setTimeout(() => setPantryScanStatus(""), 4000);
+      setTimeout(() => setPantryScanStatus(""), STATUS_AUTO_HIDE_MS);
     },
     [lookupProduct, pantry, setPantryScanStatus, setPantryScannerOpen],
   );

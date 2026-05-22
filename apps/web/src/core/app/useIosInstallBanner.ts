@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { PROMO_BANNER_REVEAL_MS } from "@shared/lib/ui/timeouts";
 import { trackEvent } from "../observability/analytics";
 
 const IOS_BANNER_DISMISSED_KEY = "ios_install_banner_dismissed";
@@ -27,7 +28,7 @@ export function useIosInstallBanner() {
       (window.navigator as Navigator & { standalone?: boolean }).standalone ===
         true;
     if (isIOS && !isStandalone) {
-      const timer = setTimeout(() => setVisible(true), 3000);
+      const timer = setTimeout(() => setVisible(true), PROMO_BANNER_REVEAL_MS);
       return () => clearTimeout(timer);
     }
     return undefined;
