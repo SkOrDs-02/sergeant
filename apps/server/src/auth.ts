@@ -196,6 +196,29 @@ async function getSocialProviders(): Promise<SocialProvidersConfig | undefined> 
     }
   }
 
+  // Boot-time visibility — без цього operator дізнається про missing Apple/Google
+  // env лише коли користувач натисне кнопку і отримає PROVIDER_NOT_FOUND.
+  // Structured log дає одразу: який провайдер enabled, які env vars missing для
+  // disabled, плюс implicit signal "env усі є, але JWT failed" коли missing-array
+  // порожній а enabled=false (cross-check з existing auth.apple.client_secret.generate_failed).
+  const googleMissing: string[] = [];
+  if (!process.env["GOOGLE_CLIENT_ID"]) googleMissing.push("GOOGLE_CLIENT_ID");
+  if (!process.env["GOOGLE_CLIENT_SECRET"])
+    googleMissing.push("GOOGLE_CLIENT_SECRET");
+  const appleMissing: string[] = [];
+  if (!process.env["APPLE_CLIENT_ID"]) appleMissing.push("APPLE_CLIENT_ID");
+  if (!process.env["APPLE_TEAM_ID"]) appleMissing.push("APPLE_TEAM_ID");
+  if (!process.env["APPLE_KEY_ID"]) appleMissing.push("APPLE_KEY_ID");
+  if (!process.env["APPLE_PRIVATE_KEY"])
+    appleMissing.push("APPLE_PRIVATE_KEY");
+  logger.info({
+    msg: "auth_social_providers_status",
+    google_enabled: Boolean(config.google),
+    google_missing_env: googleMissing,
+    apple_enabled: Boolean(config.apple),
+    apple_missing_env: appleMissing,
+  });
+
   if (!config.google && !config.apple) return undefined;
   return config;
 }
