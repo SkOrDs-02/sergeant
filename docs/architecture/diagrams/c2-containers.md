@@ -96,7 +96,7 @@ flowchart TB
 
 | Module          | Endpoint prefix                      | Опис                                                                                  |
 | --------------- | ------------------------------------ | ------------------------------------------------------------------------------------- |
-| `billing`       | `/api/billing/*`                     | Stripe checkout + subscription state. `billing_subscriptions` table (047).            |
+| `billing`       | `/api/billing/*`                     | Stripe checkout + subscription state. `subscriptions` table (056) — canonical; legacy `billing_subscriptions` (047) orphan.            |
 | `transcribe`    | `/api/transcribe`                    | Whisper audio → text з USD-cap per user/day (bucket `transcribe:<model>`, fixed 049). |
 | `waitlist`      | `/api/waitlist`                      | Waitlist sign-up і management.                                                        |
 | `openclaw`      | internal (console bot)               | GitHub App-flow авторизація (Hard Rule #20) + tools для co-founder bot.               |

@@ -9,7 +9,7 @@
 
 Sergeant зараз має **v2-first data-архітектуру**:
 
-- **Server-first для централізованих і чутливих речей:** Better Auth, Monobank, AI usage, push devices, sync audit, AI memory, normalized domain tables (`routine_entries`, `routine_streaks`, `fizruk_workouts` і т.д.), `coach_memory`, `billing_subscriptions`, `tg_topic_archive` — зберігаються у PostgreSQL.
+- **Server-first для централізованих і чутливих речей:** Better Auth, Monobank, AI usage, push devices, sync audit, AI memory, normalized domain tables (`routine_entries`, `routine_streaks`, `fizruk_workouts` і т.д.), `coach_memory`, `subscriptions` (m056; legacy `billing_subscriptions` m047 — orphan, без writers), `tg_topic_archive` — зберігаються у PostgreSQL.
 - **Local-first для продуктового стану модулів:** web пише у SQLite-WASM (OPFS / kvvfs), mobile — у MMKV; cloud sync переносить операції через `sync_op_outbox` → `/api/v2/sync/*`.
 - **CloudSync v1 повністю знятий (ADR-0047):** старі `/api/sync/*` endpoints повертають `410 Gone`. v1 engine (`dirtyMap`, `collectQueued`, `offlineQueue`, `resolver`) видалений з web і mobile кодових баз. `module_data` blob-таблиця дропнута міграцією 046.
 - **v2 op-log sync — єдиний sync-шлях для всіх доменів:** `routine`, `fizruk`, `finyk`, `nutrition`, `profile` — усі через `sync_op_outbox` (web SQLite outbox) → `/api/v2/sync/push` → Postgres per-row tables.
@@ -72,9 +72,10 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 
 ### 2.7. Billing
 
-- `billing_subscriptions` — Stripe subscription state (міграція 047): `user_id`, `provider`, `plan` (`plus`/`pro`), `status`, `stripe_*_id`, `current_period_end`.
-- Вебхуки Stripe ідемпотентно ресолвляться через `webhook_events` (міграція 011).
-- Checkout-сесія → `billing_subscriptions` через `apps/server/src/modules/billing/stripe.ts`.
+- `subscriptions` — canonical multi-provider subscription state (міграція 056): `user_id`, `provider` (`manual`/`stripe`/`apple`/`google`), `plan` (`free`/`pro` per ADR-0051), `status`, `provider_*_id`, `current_period_end`, `cancel_at_period_end`. Unique partial index `subscriptions_user_active_idx` гарантує максимум один active/trialing/past_due row на user.
+- Legacy: `billing_subscriptions` (міграція 047) — Stripe-only попередник з stale `plan IN ('plus','pro')` CHECK. **Orphan: 0 writers, 0 readers** у production code (audit 2026-05-24). Залишається в schema до двохфазового DROP (Hard Rule #4) у post-launch ADR.
+- Вебхуки Stripe ідемпотентно ресолвляться через `stripe_webhook_events` (міграція 057; раніше `webhook_events` з міграції 011 — generic).
+- Checkout-сесія → `subscriptions` через `apps/server/src/modules/billing/stripe.ts` (`processStripeWebhook` → `INSERT INTO subscriptions` на `checkout.session.completed`).
 - Pricing page: `apps/web/src/core/pricing/WaitlistForm.tsx` (раніше `PricingPage.tsx`, перейменовано в pricing → waitlist UX-roast).
 
 ### 2.8. Nutrition backup
@@ -104,7 +105,7 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 - Sync audit: `sync_audit_log` (023).
 - AI memory: `ai_memories`, partitioned + HNSW (025).
 - Coach state: `coach_memory` — per-user JSONB, замінила `module_data.coach` (045).
-- Billing: `billing_subscriptions` — Stripe subscription state (047).
+- Billing: `subscriptions` (056) — canonical multi-provider. Legacy `billing_subscriptions` (047) orphan, deprecated.
 - Ops/Telegram: `tg_topic_archive` — append-only message history для Sergeant_ops supergroup topics (048).
 - AI usage: `ai_usage_daily` — bucket pattern розширено до `transcribe:<model>` (049).
 - Push audit: `push_send_audit` (041).
@@ -206,8 +207,8 @@ PostgreSQL `BIGINT` приходить з `pg` як string. Repo має hard rul
    - Export/import per module.
    - Per-user purge з audit.
 
-8. **`billing_subscriptions` feature gating.**
-   - Замикати features на `plan=plus/pro` — потребує middleware-gate у server routes.
+8. **`subscriptions` feature gating.**
+   - Замикати features на `plan='pro'` (per ADR-0051) — потребує middleware-gate у server routes (`requirePlan()` у `apps/server/src/modules/billing/requirePlan.ts`).
 
 ## 6. Практичний підсумок
 

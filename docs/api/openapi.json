@@ -5450,7 +5450,7 @@
           "subscription"
         ],
         "additionalProperties": false,
-        "description": "Поточний subscription state користувача, серіалізований з billing_subscriptions."
+        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056)."
       },
       "BillingPortalResponse": {
         "type": "object",

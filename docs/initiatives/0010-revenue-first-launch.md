@@ -303,7 +303,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - [x] PR-и фази 0 і фази 1 змерджені ([#2080](https://github.com/Skords-01/Sergeant/pull/2080)).
 - [ ] PR-и фаз 2–6 змерджені.
 - [ ] Перший Stripe webhook у проді записаний у `webhook_events` (source='stripe').
-- [ ] Перший платний користувач: `billing_subscriptions.plan = 'pro'` AND `billing_subscriptions.status IN ('active','trialing')` AND `billing_subscriptions.current_period_end > NOW()`.
+- [ ] Перший платний користувач: `subscriptions.plan = 'pro'` AND `subscriptions.status IN ('active','trialing')` AND `subscriptions.current_period_end > NOW()`. (Canonical table — m056; legacy `billing_subscriptions` (m047) — orphan, без writers, не використовуй у verification queries.)
 - [ ] `/pricing` показує реальні CTA → Stripe Checkout (не waitlist), test mode + live mode обидва зелені у smoke-e2e. **₴ UA-only.**
 - [~] Google + Email sign-in активні (GoogleSignInButton.tsx + Better Auth provider). Apple sign-in — pending (немає Apple provider у auth.ts).
 - [x] Mobile-strategy ADR-0052 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
