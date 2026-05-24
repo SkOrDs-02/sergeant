@@ -21,28 +21,41 @@ import { fileURLToPath } from "node:url";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const DIST_PATH = join(__dirname, "../apps/web/dist/assets");
 
-// Budget definitions (in KB, gzipped estimates)
-const BUDGETS = {
+// Budget definitions (in KB, gzipped estimates).
+//
+// Prefixes must match the real Rollup output filenames. Module entries
+// land as `<ModuleName>App-<hash>.js` (e.g. `FinykApp-abc123.js`) because
+// the lazy import in `apps/web/src/core/app/ActiveModuleView.tsx`
+// (`import("../../modules/finyk/FinykApp")`) becomes the chunk's
+// nameless default and Rollup derives the filename from the source
+// module. Vendor chunks come from `manualChunks(id)` in
+// `apps/web/vite.config.js` and are explicitly named `vendor-<name>`.
+//
+// Tested in `scripts/__tests__/check-bundle-size.test.mjs` against
+// fixture filenames so a future Vite chunk-naming change makes the
+// gate fail loud instead of silently matching nothing.
+export const BUDGETS = {
   // Main entry chunks
   "index-": { maxSize: 80, description: "Main entry" },
 
-  // React vendor chunk
-  "react-": { maxSize: 50, description: "React runtime" },
+  // Vendor chunks (named by manualChunks in vite.config.js).
+  "vendor-react-": { maxSize: 50, description: "React runtime" },
+  "vendor-router-": { maxSize: 25, description: "React Router" },
+  "vendor-react-query-": { maxSize: 30, description: "TanStack Query" },
+  "vendor-sentry-": { maxSize: 80, description: "Sentry SDK" },
+  "vendor-virtuoso-": { maxSize: 40, description: "Virtuoso list" },
+  "vendor-auth-": { maxSize: 80, description: "Better Auth client" },
+  "vendor-zod-": { maxSize: 20, description: "Zod + resolvers" },
+  "vendor-zxing-": { maxSize: 250, description: "ZXing barcode scanner" },
+  "vendor-sqlite-": { maxSize: 280, description: "sqlite-wasm + drizzle" },
+  "vendor-web-vitals-": { maxSize: 5, description: "Web Vitals" },
+  "vendor-": { maxSize: 120, description: "Misc vendor (catch-all)" },
 
-  // Router chunk
-  "router-": { maxSize: 25, description: "React Router" },
-
-  // Module chunks (lazy loaded)
-  "finyk-": { maxSize: 150, description: "Finyk module" },
-  "fizruk-": { maxSize: 180, description: "Fizruk module" },
-  "routine-": { maxSize: 120, description: "Routine module" },
-  "nutrition-": { maxSize: 100, description: "Nutrition module" },
-
-  // Vendor chunks
-  "sentry-": { maxSize: 80, description: "Sentry SDK" },
-  "virtuoso-": { maxSize: 40, description: "Virtuoso list" },
-  "recharts-": { maxSize: 120, description: "Recharts library" },
-  "tanstack-": { maxSize: 30, description: "TanStack Query" },
+  // Module chunks (lazy loaded via React.lazy in ActiveModuleView).
+  "FinykApp-": { maxSize: 150, description: "Finyk module" },
+  "FizrukApp-": { maxSize: 180, description: "Fizruk module" },
+  "RoutineApp-": { maxSize: 120, description: "Routine module" },
+  "NutritionApp-": { maxSize: 100, description: "Nutrition module" },
 
   // Total JS budget
   _total: { maxSize: 500, description: "Total initial JS" },
@@ -63,11 +76,16 @@ function formatGzipSize(bytes) {
   return formatSize(bytes * GZIP_RATIO);
 }
 
-function getChunkCategory(filename) {
-  for (const [prefix, config] of Object.entries(BUDGETS)) {
-    if (prefix === "_total") continue;
+// Sorted longest-first so `vendor-react-query-` wins over `vendor-react-`
+// (and `vendor-` catch-all always loses to specific prefixes).
+const SORTED_PREFIXES = Object.keys(BUDGETS)
+  .filter((p) => p !== "_total")
+  .sort((a, b) => b.length - a.length);
+
+export function getChunkCategory(filename) {
+  for (const prefix of SORTED_PREFIXES) {
     if (filename.startsWith(prefix)) {
-      return { prefix, ...config };
+      return { prefix, ...BUDGETS[prefix] };
     }
   }
   return null;
@@ -224,11 +242,12 @@ function printReport(analysis, budgetCheck) {
   }
 }
 
-// Main
-const analysis = analyzeBundle();
-const budgetCheck = checkBudgets(analysis);
-
-printReport(analysis, budgetCheck);
-
-// Exit with error code if violations
-process.exit(budgetCheck.violations.length > 0 ? 1 : 0);
+// Main — only run when executed directly (not when imported by tests).
+const invokedDirectly =
+  process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (invokedDirectly) {
+  const analysis = analyzeBundle();
+  const budgetCheck = checkBudgets(analysis);
+  printReport(analysis, budgetCheck);
+  process.exit(budgetCheck.violations.length > 0 ? 1 : 0);
+}
