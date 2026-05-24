@@ -8,6 +8,7 @@ import ModuleErrorBoundary from "../ModuleErrorBoundary";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
+import { useModuleRouteLoader } from "../lib/useModuleRouteLoader";
 import type { HubNavigation, HubModuleId } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 import type { PwaAction } from "../hooks/usePwaActions";
@@ -62,6 +63,11 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
     shortcutsOpen,
     onCloseShortcuts,
   } = props;
+
+  // Route-loader: warm the React Query cache for the active module before
+  // the lazy chunk finishes loading (initiative 0006 Phase 5). Fire-and-forget;
+  // never blocks navigation. See `core/lib/useModuleRouteLoader.ts`.
+  useModuleRouteLoader(activeModule);
 
   // Skip-link target. We render `<main>` by default so every screen
   // exposes a `main` landmark for AT users. One exception: the
