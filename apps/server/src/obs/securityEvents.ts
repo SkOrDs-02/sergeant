@@ -27,6 +27,7 @@ import { logger } from "./logger.js";
 
 export type SecurityEventName =
   | "mono_webhook_bad_payload"
+  | "stripe_webhook_bad_sig"
   | "auth_session_ua_drift"
   | "prompt_injection_attempt"
   | "transcribe_usd_cap_hit"

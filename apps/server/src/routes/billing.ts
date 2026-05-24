@@ -23,6 +23,7 @@ import {
   processStripeWebhook,
   verifyStripeSignature,
 } from "../modules/billing/stripe.js";
+import { emitSecurityEvent } from "../obs/securityEvents.js";
 
 type AuthedRequest = Request & {
   user?: { id: string; email?: string | null };
@@ -131,6 +132,14 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
           ? req.headers["stripe-signature"]
           : undefined;
       if (!verifyStripeSignature(raw, signature)) {
+        emitSecurityEvent({
+          event: "stripe_webhook_bad_sig",
+          severity: "high",
+          details:
+            signature === undefined
+              ? "stripe signature header missing"
+              : "stripe signature mismatch",
+        });
         res.status(400).json({ error: "Invalid Stripe signature" });
         return;
       }

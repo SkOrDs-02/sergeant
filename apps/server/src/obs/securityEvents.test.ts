@@ -286,6 +286,7 @@ describe("securityEvents emitter", () => {
   it("emits all defined event names without throwing", () => {
     const events: Array<SecurityEvent["event"]> = [
       "mono_webhook_bad_payload",
+      "stripe_webhook_bad_sig",
       "auth_session_ua_drift",
       "prompt_injection_attempt",
       "transcribe_usd_cap_hit",
