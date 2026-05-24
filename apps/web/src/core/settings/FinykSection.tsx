@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInView } from "@shared/hooks/useInView";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { Button } from "@shared/components/ui/Button";
@@ -44,6 +45,15 @@ interface FinykStorageShape {
 }
 
 export function FinykSection() {
+  // Initiative 0017 Sprint 1 PR-1.2 — defer Monobank webhook queries
+  // until the Finyk section actually scrolls into view. On a cold open
+  // of the Settings tab the user typically lands on the «Загальні»
+  // group; bootstrapping the Monobank sync-state query + the 2s backfill
+  // poller against an off-screen accordion costs a network round-trip
+  // and a longtask we never get back. `useInView` flips once and stays
+  // true, so the existing query lifecycle (RQ cache, focus refetch) is
+  // unchanged after the first scroll.
+  const [sectionRef, inView] = useInView();
   const queryClient = useQueryClient();
   const { isPro } = usePlan();
   const { customCategories, addCustomCategory, removeCustomCategory } =
@@ -147,6 +157,10 @@ export function FinykSection() {
   const syncStateQuery = useQuery<MonoSyncState>({
     queryKey: finykKeys.monoSyncState,
     queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
+    // `inView` gate — query is dormant until the section enters the
+    // viewport (PR-1.2). 30s staleTime + window-focus refetch keep the
+    // post-mount behaviour identical once enabled.
+    enabled: inView,
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
@@ -154,10 +168,11 @@ export function FinykSection() {
   const webhookConnected =
     webhookSyncState != null && webhookSyncState.status !== "disconnected";
 
-  // Backfill progress: only worth polling once Monobank is connected. The
-  // hook itself decides when to stop polling (server flips out of `running`).
+  // Backfill progress: only worth polling once Monobank is connected AND
+  // the section is in the viewport. The hook itself decides when to stop
+  // polling (server flips out of `running`).
   const { progress: backfillProgress } = useMonoBackfillProgress({
-    enabled: webhookConnected,
+    enabled: inView && webhookConnected,
   });
 
   const connectWebhook = async () => {
@@ -266,6 +281,11 @@ export function FinykSection() {
     "input-focus-finyk flex-1 min-w-0 h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text";
 
   return (
+    // `sectionRef` is the IntersectionObserver sentinel — wrapping the
+    // SettingsGroup keeps the DOM shape backward-compatible (HubSettings
+    // already mounts each section inside its own `id="settings-finyk"`
+    // anchor div, this is one extra inert wrapper just for the observer).
+    <div ref={sectionRef}>
     <SettingsGroup title="Фінік" emoji="💳">
       <PaywallModal
         open={paywallOpen}
@@ -610,5 +630,6 @@ export function FinykSection() {
         </SettingsSubGroup>
       )}
     </SettingsGroup>
+    </div>
   );
 }
