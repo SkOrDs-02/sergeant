@@ -20,7 +20,16 @@ import type { RequestHandler } from "express";
  *   - `/api/auth/*` (Better Auth + OAuth callbacks) — Better Auth має
  *     свої CSRF-механізми (PKCE для OAuth, signed-state cookies), і
  *     OAuth-redirect-и приходять як top-level GET без можливості
- *     виставити XRW.
+ *     виставити XRW. Audited against `better-auth@1.6.9` (2026-05-25):
+ *     32-char crypto-random `state` + 128-char PKCE `codeVerifier`
+ *     генеруються у `node_modules/better-auth/dist/oauth2/state.mjs`,
+ *     state зберігається у `verification` table (Drizzle adapter →
+ *     `storeStateStrategy = "database"` default) з 10-min TTL та
+ *     defense-in-depth signed cookie. `parseState(c)` викликається
+ *     unconditional у `dist/api/routes/callback.mjs:58` (НЕ opt-in),
+ *     verification row DELETED after consumption (anti-replay). Sergeant
+ *     config: `account.skipStateCookieCheck` НЕ заданий — signed-cookie
+ *     check лишається active.
  *   - `/api/mono/webhook[/...]` — Monobank сервер шле POST з HMAC у
  *     header-і; CSRF-токен від нашого фронту тут нерелевантний.
  *   - `/api/csp-report` — браузерний `report-uri` POST без custom
