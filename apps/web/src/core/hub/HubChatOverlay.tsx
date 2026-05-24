@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { PageLoader } from "../app/PageLoader";
@@ -28,10 +29,34 @@ const HubChat = lazyDefault(() => import("./HubChat"));
 export function HubChatOverlay() {
   const { open, initialMessage, autoSendInitial, closeChat } =
     useHubChatOverlay();
+  const location = useLocation();
 
   const handleClose = useCallback(() => {
     closeChat();
   }, [closeChat]);
+
+  // Auto-dismiss on route change. Without this, any `navigate()` triggered
+  // from a child of the sheet (PaywallModal CTA → `/pricing`, action-card
+  // deep-link, etc.) routes the page underneath while the glass sheet stays
+  // mounted — the user sees the chat panel hovering over a fresh route.
+  // The sheet's open-state lives in app-root context (in-memory `useState`
+  // inside `useHubChatOverlayState`) and survives navigations by design;
+  // this effect is the single hook that links route lifecycle back to
+  // overlay state. `firstRenderRef` skips the very first run so the
+  // overlay opens on the route where the user invoked it, then closes only
+  // on subsequent navigations.
+  const firstRenderRef = useRef(true);
+  useEffect(() => {
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false;
+      return;
+    }
+    if (open) closeChat();
+    // We intentionally do NOT depend on `open` / `closeChat` — pathname is
+    // the trigger. Re-running on `open` toggles would close the overlay we
+    // just opened in the same render tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   if (!open) return null;
 
