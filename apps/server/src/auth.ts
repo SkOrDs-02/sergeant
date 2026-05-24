@@ -5,6 +5,7 @@ import { createAuthMiddleware } from "better-auth/api";
 import { fromNodeHeaders } from "better-auth/node";
 import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
+import { importPKCS8, SignJWT } from "jose";
 import type { Request } from "express";
 import { env } from "./env/env.js";
 import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
@@ -82,31 +83,122 @@ function getAdvancedCookieOptions(): AdvancedCookieOptions | null {
 const advancedCookies = getAdvancedCookieOptions();
 
 /**
- * Збираємо `socialProviders` тільки коли пара
- * `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` обидві задані. Якщо
- * хоча б одна порожня — кидати конфіг до Better Auth не можна
- * (він зразу падає при старті, бо валідатор сприймає це як
- * misconfigured provider). Тому у dev/CI без credentials просто не
- * вмикаємо провайдера: фронтова кнопка отримає `Provider not
- * configured` через стандартний `authError` (див. `loginWithGoogle`
- * у `apps/web/src/core/auth/AuthContext.tsx`), а сервер стартує без
- * сюрпризів.
+ * Generates the Apple `client_secret` JWT. Apple does not issue a long-lived
+ * shared secret — instead, you upload a `.p8` private key in Apple Developer
+ * Console and sign a short-lived JWT per OAuth handshake using ES256. Better
+ * Auth treats this JWT as the static `clientSecret` for the provider; we
+ * regenerate it on server boot with a 180-day expiry (Apple's hard ceiling)
+ * and re-sign on each restart. Long-running Railway deployments → schedule
+ * a restart before T+180d (доки немає auto-refresh у Better Auth — issue
+ * tracked in better-auth#TBD). Implementation mirrors Better Auth docs:
+ * https://better-auth.com/docs/authentication/apple
  */
-function getSocialProviders():
-  | { google: { clientId: string; clientSecret: string } }
-  | undefined {
-  const clientId = process.env["GOOGLE_CLIENT_ID"];
-  const clientSecret = process.env["GOOGLE_CLIENT_SECRET"];
-  if (!clientId || !clientSecret) return undefined;
-  return {
-    google: {
-      clientId,
-      clientSecret,
-    },
-  };
+async function generateAppleClientSecret(
+  clientId: string,
+  teamId: string,
+  keyId: string,
+  privateKey: string,
+): Promise<string> {
+  const key = await importPKCS8(privateKey, "ES256");
+  const now = Math.floor(Date.now() / 1000);
+  return new SignJWT({})
+    .setProtectedHeader({ alg: "ES256", kid: keyId })
+    .setIssuer(teamId)
+    .setSubject(clientId)
+    .setAudience("https://appleid.apple.com")
+    .setIssuedAt(now)
+    .setExpirationTime(now + 180 * 24 * 60 * 60)
+    .sign(key);
 }
 
-const socialProviders = getSocialProviders();
+interface GoogleProviderConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
+interface AppleProviderConfig {
+  clientId: string;
+  clientSecret: string;
+  appBundleIdentifier?: string;
+}
+
+interface SocialProvidersConfig {
+  google?: GoogleProviderConfig;
+  apple?: AppleProviderConfig;
+}
+
+/**
+ * Збираємо `socialProviders` тільки коли всі обов'язкові env-и пари
+ * присутні. Якщо хоч одна порожня — провайдер не вмикаємо і фронтова кнопка
+ * отримає `PROVIDER_NOT_FOUND` через стандартний `authError` (див.
+ * `loginWithGoogle` у `apps/web/src/core/auth/AuthContext.tsx`), а сервер
+ * стартує без сюрпризів.
+ *
+ * Google потребує пари `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`.
+ *
+ * Apple потребує квартета: `APPLE_CLIENT_ID` (Services ID, наприклад
+ * `com.sergeant.app.web`), `APPLE_TEAM_ID` (10-symbol Team ID з Apple
+ * Developer), `APPLE_KEY_ID` (10-symbol Sign In with Apple key ID) і
+ * `APPLE_PRIVATE_KEY` (PEM-зміст `.p8`-файлу, перенесений з реальними
+ * `\n` newlines — Railway/Vercel приймає multi-line secret values).
+ * `APPLE_APP_BUNDLE_IDENTIFIER` — опціонально, потрібен лише для native
+ * iOS ID-token flow (Capacitor). На Apple-стороні налаштовується Sign In
+ * with Apple capability + Services ID + Return URL =
+ * `${BETTER_AUTH_URL}/api/auth/callback/apple`.
+ */
+async function getSocialProviders(): Promise<SocialProvidersConfig | undefined> {
+  const config: SocialProvidersConfig = {};
+
+  const googleClientId = process.env["GOOGLE_CLIENT_ID"];
+  const googleClientSecret = process.env["GOOGLE_CLIENT_SECRET"];
+  if (googleClientId && googleClientSecret) {
+    config.google = {
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+    };
+  }
+
+  const appleClientId = process.env["APPLE_CLIENT_ID"];
+  const appleTeamId = process.env["APPLE_TEAM_ID"];
+  const appleKeyId = process.env["APPLE_KEY_ID"];
+  const applePrivateKey = process.env["APPLE_PRIVATE_KEY"];
+  const appleBundleId = process.env["APPLE_APP_BUNDLE_IDENTIFIER"];
+  if (appleClientId && appleTeamId && appleKeyId && applePrivateKey) {
+    try {
+      const clientSecret = await generateAppleClientSecret(
+        appleClientId,
+        appleTeamId,
+        appleKeyId,
+        applePrivateKey,
+      );
+      const apple: AppleProviderConfig = {
+        clientId: appleClientId,
+        clientSecret,
+      };
+      if (appleBundleId) {
+        apple.appBundleIdentifier = appleBundleId;
+      }
+      config.apple = apple;
+    } catch (err) {
+      // Misformatted `.p8` (e.g. missing PEM headers) — fail-open so the
+      // server starts and email/Google still work; surface the issue via
+      // logger so ops sees it on first boot rather than learning at the
+      // first user click.
+      logger.error(
+        {
+          event: "auth.apple.client_secret.generate_failed",
+          err: err instanceof Error ? err.message : String(err),
+        },
+        "Failed to generate Apple client_secret JWT — Apple provider disabled",
+      );
+    }
+  }
+
+  if (!config.google && !config.apple) return undefined;
+  return config;
+}
+
+const socialProviders = await getSocialProviders();
 
 /**
  * `accessToken` / `refreshToken` / `idToken` стовпці в `account` за
@@ -428,6 +520,11 @@ function getTrustedOrigins(): string[] {
     "http://localhost:5000",
     "http://localhost:5173",
     "http://localhost:8081",
+    // Apple Sign-In form-posts the OAuth response from `appleid.apple.com`
+    // back to our callback URL; Better Auth checks `Origin` against this
+    // list and otherwise 403s the callback. Safe to leave on even when
+    // Apple provider is not configured — it's just an allowlist entry.
+    "https://appleid.apple.com",
     ...getTrustedNativeSchemes(),
   ];
   if (process.env["REPLIT_DEV_DOMAIN"]) {

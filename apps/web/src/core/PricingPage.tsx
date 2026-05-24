@@ -112,6 +112,8 @@ export function PricingPage() {
   const [checkoutResult, setCheckoutResult] =
     useState<BillingCheckoutResponse | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
   const { isPro: isPremiumActive } = usePlan();
 
   // Pageview-аналітика. Window.location.search парситься щоб ми могли
@@ -202,6 +204,46 @@ export function PricingPage() {
     // Free-тір вже доступний за замовчуванням — нікуди не ведемо.
   }
 
+  // Stripe Customer Portal — initiative 0010 Phase 4.2 residual. Активний
+  // subscriber бачить "Керувати підпискою" замість "Спробувати Premium":
+  // POST /api/billing/portal -> short-lived URL -> redirect. 409
+  // `NO_BILLING_CUSTOMER` означає, що у юзера є локальний plan='pro', але
+  // нема `provider_customer_id` (manual upgrade через internal endpoint,
+  // або pre-Stripe legacy) — кажемо звернутись у саппорт. 503 = billing
+  // вимкнено (Stripe env-и не задані), показуємо нейтральний fallback.
+  async function handleManageSubscription(): Promise<void> {
+    trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
+      tier: "pro",
+      cta: "stripe_portal",
+    });
+    setPortalLoading(true);
+    setPortalError(null);
+    try {
+      const { url } = await billingApi.createPortal();
+      window.location.assign(url);
+    } catch (err) {
+      const status =
+        err && typeof err === "object" && "status" in err
+          ? (err as { status?: unknown }).status
+          : undefined;
+      if (status === 409) {
+        setPortalError(
+          "Не знайдено платіжний профіль Stripe. Напиши у підтримку — підключимо вручну.",
+        );
+      } else if (status === 503) {
+        setPortalError(
+          "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
+        );
+      } else {
+        setPortalError(
+          "Не вдалося відкрити портал. Перевір зв'язок і спробуй ще раз.",
+        );
+      }
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
   return (
     <MeshBackground
       className="overflow-y-auto"
@@ -245,6 +287,11 @@ export function PricingPage() {
                 {checkoutError}
               </p>
             ) : null}
+            {portalError ? (
+              <p className="text-style-body-sm text-danger-strong" role="alert">
+                {portalError}
+              </p>
+            ) : null}
           </section>
 
           <section
@@ -257,21 +304,33 @@ export function PricingPage() {
                 (isPremium && isPremiumActive) ||
                 (!isPremium && !isPremiumActive);
               const checkoutLoading = checkoutPlan === tier.id;
+              // Для активного Premium-юзера Premium-CTA веде у Stripe
+              // Customer Portal (керування підпискою / скасування /
+              // оновлення картки) — це закриває Phase 4.2 residual з
+              // initiative 0010. Для не-subscriber це звичайний
+              // checkout-flow.
               const ctaLabel = isPremium
-                ? checkoutLoading
-                  ? "Відкриваємо checkout…"
-                  : isPremiumActive
-                    ? "Зараз ваш план"
+                ? isPremiumActive
+                  ? portalLoading
+                    ? "Відкриваємо портал…"
+                    : "Керувати підпискою"
+                  : checkoutLoading
+                    ? "Відкриваємо checkout…"
                     : "Спробувати Premium"
                 : isPremiumActive
                   ? "Перейти на Free"
                   : "Зараз ваш план";
               const ctaDisabled = isPremium
-                ? checkoutLoading || isPremiumActive
+                ? isPremiumActive
+                  ? portalLoading
+                  : checkoutLoading
                 : // Free CTA: disabled both для активного Free-юзера
                   // (вже ваш план) і для Premium-юзера (downgrade flow
                   // живе у Stripe portal через Settings, не тут).
                   true;
+              const onPremiumClick = isPremiumActive
+                ? handleManageSubscription
+                : handlePremiumCta;
 
               return (
                 <Card
@@ -341,7 +400,7 @@ export function PricingPage() {
                   <Button
                     variant={isPremium ? "primary" : "secondary"}
                     size="md"
-                    onClick={isPremium ? handlePremiumCta : handleFreeCta}
+                    onClick={isPremium ? onPremiumClick : handleFreeCta}
                     disabled={ctaDisabled}
                   >
                     {ctaLabel}

@@ -345,6 +345,41 @@ describe("AuthContext", () => {
     expect(result.current.authError).toBe("Provider not configured");
   });
 
+  it("loginWithApple delegates to signIn.social with provider=apple", async () => {
+    setUser({ data: undefined });
+    const { Wrapper, invalidateSpy } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const okResult = await result.current.loginWithApple();
+      expect(okResult).toBe(true);
+    });
+    expect(signInSocial).toHaveBeenCalledWith({
+      provider: "apple",
+      callbackURL: "/",
+    });
+    // Successful Apple sign-in normally redirects to appleid.apple.com;
+    // me-cache invalidation happens after the callback round-trips, not
+    // on the kickoff. Same contract as Google.
+    expect(invalidateSpy).not.toHaveBeenCalledWith({
+      queryKey: apiQueryKeys.me.current(),
+    });
+  });
+
+  it("loginWithApple surfaces provider errors via authError", async () => {
+    setUser({ data: undefined });
+    signInSocial.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Provider not configured" },
+    } as unknown as Awaited<ReturnType<typeof signInSocial>>);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const okResult = await result.current.loginWithApple();
+      expect(okResult).toBe(false);
+    });
+    expect(result.current.authError).toBe("Provider not configured");
+  });
+
   it("useAuth() throws when used outside AuthProvider", () => {
     setUser({ data: undefined });
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});

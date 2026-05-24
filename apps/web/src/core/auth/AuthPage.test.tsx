@@ -24,6 +24,7 @@ import {
 const loginMock = vi.fn();
 const registerMock = vi.fn();
 const loginWithGoogleMock = vi.fn();
+const loginWithAppleMock = vi.fn();
 const requestPasswordResetMock = vi.fn();
 const setAuthErrorMock = vi.fn();
 
@@ -37,6 +38,7 @@ vi.mock("./AuthContext", () => ({
     login: loginMock,
     register: registerMock,
     loginWithGoogle: loginWithGoogleMock,
+    loginWithApple: loginWithAppleMock,
     requestPasswordReset: requestPasswordResetMock,
     authError: authErrorState,
     setAuthError: setAuthErrorMock,
@@ -68,6 +70,7 @@ beforeEach(() => {
   loginMock.mockReset();
   registerMock.mockReset();
   loginWithGoogleMock.mockReset();
+  loginWithAppleMock.mockReset();
   requestPasswordResetMock.mockReset();
   setAuthErrorMock.mockReset();
   toastSuccessMock.mockReset();

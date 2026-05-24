@@ -9,17 +9,21 @@ import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 import { ForgotPasswordPanel } from "./ForgotPasswordPanel";
 import { GoogleSignInButton } from "./GoogleSignInButton";
+import { AppleSignInButton } from "./AppleSignInButton";
 import { useForgotPassword } from "./useForgotPassword";
+import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 interface AuthPageProps {
   onContinueWithoutAccount?: () => void;
 }
 
 export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
-  const { loginWithGoogle, authError, setAuthError } = useAuth();
+  const { loginWithGoogle, loginWithApple, authError, setAuthError } =
+    useAuth();
   const { CelebrationComponent } = useCelebration();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const forgot = useForgotPassword();
 
   const switchMode = () => {
@@ -28,13 +32,33 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
     forgot.closePanel();
   };
 
+  // `surface` дозволяє PostHog розщепити drop-off між sign_in vs sign_up;
+  // подія летить ДО редіректу на провайдера, бо після
+  // `window.location` redirect React-life-cycle ламається і
+  // `trackEvent` може не встигнути долетіти до PostHog (їх SDK
+  // дебаунсить flush). Див. ADR-0010 PR-4.3 / `SIGNUP_PROVIDER_SELECTED`
+  // payload contract в `packages/shared/src/lib/analyticsEvents.ts`.
   const handleGoogleSignIn = async () => {
+    trackEvent(ANALYTICS_EVENTS.SIGNUP_PROVIDER_SELECTED, {
+      provider: "google",
+      surface: mode === "login" ? "sign_in" : "sign_up",
+    });
     setGoogleLoading(true);
     await loginWithGoogle();
     // У сценарії success браузер вже перейшов на Google і цей код не
     // виконається. Скидаємо локальний спіннер тільки на випадок, якщо
     // OAuth не запустився (помилка вже в `authError`).
     setGoogleLoading(false);
+  };
+
+  const handleAppleSignIn = async () => {
+    trackEvent(ANALYTICS_EVENTS.SIGNUP_PROVIDER_SELECTED, {
+      provider: "apple",
+      surface: mode === "login" ? "sign_in" : "sign_up",
+    });
+    setAppleLoading(true);
+    await loginWithApple();
+    setAppleLoading(false);
   };
 
   const onAlreadyRegistered = () => {
@@ -75,7 +99,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               </h2>
               <p className="text-style-body-sm text-subtle mt-2">
                 {mode === "login"
-                  ? "Email і пароль або Google"
+                  ? "Email і пароль, Google або Apple"
                   : "Email і пароль — мінімум 10 символів"}
               </p>
             </div>
@@ -115,10 +139,16 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <span className="flex-1 h-px bg-line" />
             </div>
 
-            <GoogleSignInButton
-              loading={googleLoading}
-              onClick={handleGoogleSignIn}
-            />
+            <div className="space-y-3">
+              <GoogleSignInButton
+                loading={googleLoading}
+                onClick={handleGoogleSignIn}
+              />
+              <AppleSignInButton
+                loading={appleLoading}
+                onClick={handleAppleSignIn}
+              />
+            </div>
 
             <div className="text-center pt-1">
               <button

@@ -159,6 +159,7 @@ interface AuthContextValue {
   setAuthError: (msg: string | null) => void;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
+  loginWithApple: () => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
@@ -245,6 +246,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
         translateAuthError(
           asAuthErrorLike(err),
           "Не вдалося увійти через Google",
+        ),
+      );
+      return false;
+    }
+  }, []);
+
+  // Apple Sign-In — initiative 0010 Phase 4.3. Mirrors `loginWithGoogle`:
+  // `signIn.social` redirects to `appleid.apple.com`, browser посилає
+  // form-post назад на `/api/auth/callback/apple`, далі сесія
+  // встановлюється через cookie. `PROVIDER_NOT_FOUND` означає, що
+  // server-side Apple env-и (`APPLE_CLIENT_ID` / `APPLE_TEAM_ID` /
+  // `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY`) ще не задані — фронт показує
+  // зрозуміле повідомлення з `messages.auth.providerNotFound`.
+  const loginWithApple = useCallback(async () => {
+    setAuthError(null);
+    try {
+      const result = await signIn.social({
+        provider: "apple",
+        callbackURL: "/",
+      });
+      if (result?.error) {
+        setAuthError(
+          translateAuthError(result.error, "Не вдалося увійти через Apple"),
+        );
+        return false;
+      }
+      return true;
+    } catch (err) {
+      setAuthError(
+        translateAuthError(
+          asAuthErrorLike(err),
+          "Не вдалося увійти через Apple",
         ),
       );
       return false;
@@ -361,6 +394,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setAuthError,
       login,
       loginWithGoogle,
+      loginWithApple,
       register,
       logout,
       requestPasswordReset,
@@ -373,6 +407,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       authError,
       login,
       loginWithGoogle,
+      loginWithApple,
       register,
       logout,
       requestPasswordReset,

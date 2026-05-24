@@ -14,6 +14,8 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 const {
   submitMock,
   createCheckoutMock,
+  createPortalMock,
+  statusMock,
   toastSuccessMock,
   toastErrorMock,
   toastInfoMock,
@@ -29,6 +31,19 @@ const {
       url: string;
     }>
   >(),
+  createPortalMock: vi.fn<() => Promise<{ ok: true; url: string }>>(),
+  statusMock: vi.fn<
+    () => Promise<{
+      subscription: {
+        active: boolean;
+        id: string | null;
+        plan: "plus" | "pro" | null;
+        status: string | null;
+        currentPeriodEnd: string | null;
+        cancelAtPeriodEnd: boolean;
+      };
+    }>
+  >(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
   toastInfoMock: vi.fn(),
@@ -42,10 +57,28 @@ createCheckoutMock.mockResolvedValue({
   sessionId: "cs_test_123",
   url: "https://checkout.stripe.com/c/pay/cs_test_123",
 });
+createPortalMock.mockResolvedValue({
+  ok: true,
+  url: "https://billing.stripe.com/session/test_portal_abc",
+});
+statusMock.mockResolvedValue({
+  subscription: {
+    active: false,
+    id: null,
+    plan: null,
+    status: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+  },
+});
 
 vi.mock("@shared/api", () => ({
   waitlistApi: { submit: submitMock },
-  billingApi: { createCheckout: createCheckoutMock, status: vi.fn() },
+  billingApi: {
+    createCheckout: createCheckoutMock,
+    createPortal: createPortalMock,
+    status: statusMock,
+  },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -89,10 +122,22 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
   beforeEach(() => {
     submitMock.mockClear();
     createCheckoutMock.mockClear();
+    createPortalMock.mockClear();
+    statusMock.mockClear();
     toastSuccessMock.mockClear();
     toastErrorMock.mockClear();
     toastInfoMock.mockClear();
     trackEventMock.mockClear();
+    statusMock.mockResolvedValue({
+      subscription: {
+        active: false,
+        id: null,
+        plan: null,
+        status: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      },
+    });
   });
   afterEach(() => cleanup());
 
@@ -286,6 +331,76 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       renderPricing("/pricing");
       expect(toastSuccessMock).not.toHaveBeenCalled();
       expect(toastInfoMock).not.toHaveBeenCalled();
+    });
+  });
+
+  // Initiative 0010 Phase 4.2 residual — active Premium subscriber sees a
+  // "Керувати підпискою" CTA that redirects to the Stripe Customer Portal
+  // (`POST /api/billing/portal` → short-lived URL). Free-tier users keep
+  // the "Спробувати Premium" checkout CTA.
+  describe("Customer Portal CTA (Phase 4.2 residual)", () => {
+    function withActiveSubscription(): void {
+      statusMock.mockResolvedValue({
+        subscription: {
+          active: true,
+          id: "sub_test_abc",
+          plan: "pro",
+          status: "active",
+          currentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
+          cancelAtPeriodEnd: false,
+        },
+      });
+    }
+
+    it("renders 'Керувати підпискою' on the Premium card when subscriber is active", async () => {
+      withActiveSubscription();
+      renderPricing();
+      const portalBtn = await screen.findByRole("button", {
+        name: /Керувати підпискою/i,
+      });
+      expect(portalBtn).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: /Спробувати Premium/i }),
+      ).toBeNull();
+    });
+
+    it("opens Stripe Customer Portal when Premium subscriber clicks 'Керувати підпискою'", async () => {
+      withActiveSubscription();
+      const assignMock = vi.fn();
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: { ...window.location, assign: assignMock },
+      });
+      renderPricing();
+      const portalBtn = await screen.findByRole("button", {
+        name: /Керувати підпискою/i,
+      });
+      fireEvent.click(portalBtn);
+      await waitFor(() => {
+        expect(createPortalMock).toHaveBeenCalledTimes(1);
+      });
+      expect(assignMock).toHaveBeenCalledWith(
+        "https://billing.stripe.com/session/test_portal_abc",
+      );
+      expect(trackEventMock).toHaveBeenCalledWith(
+        ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
+        expect.objectContaining({ cta: "stripe_portal" }),
+      );
+    });
+
+    it("shows a specific message on 409 NO_BILLING_CUSTOMER", async () => {
+      withActiveSubscription();
+      const err = Object.assign(new Error("no billing customer"), {
+        status: 409,
+      });
+      createPortalMock.mockRejectedValueOnce(err);
+      renderPricing();
+      const portalBtn = await screen.findByRole("button", {
+        name: /Керувати підпискою/i,
+      });
+      fireEvent.click(portalBtn);
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/платіжний профіль Stripe/i);
     });
   });
 });

@@ -169,6 +169,55 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     }
   });
 
+  it("Apple провайдер вимкнений без повного квартета APPLE_* env-ів (3 з 4)", async () => {
+    vi.resetModules();
+    vi.stubEnv("APPLE_CLIENT_ID", "com.sergeant.web");
+    vi.stubEnv("APPLE_TEAM_ID", "TEAM123456");
+    vi.stubEnv("APPLE_KEY_ID", "KEY1234567");
+    // APPLE_PRIVATE_KEY missing → провайдер не реєструється
+    try {
+      const { auth: authNoApple } = await import("./auth.js");
+      const options = (
+        authNoApple as unknown as {
+          options: { socialProviders?: { apple?: unknown } };
+        }
+      ).options;
+      expect(options.socialProviders?.apple).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("Apple провайдер з malformed PRIVATE_KEY логує помилку і не реєструється (fail-open)", async () => {
+    vi.resetModules();
+    vi.stubEnv("APPLE_CLIENT_ID", "com.sergeant.web");
+    vi.stubEnv("APPLE_TEAM_ID", "TEAM123456");
+    vi.stubEnv("APPLE_KEY_ID", "KEY1234567");
+    vi.stubEnv("APPLE_PRIVATE_KEY", "not-a-valid-pkcs8-key");
+    try {
+      const { auth: authBadApple } = await import("./auth.js");
+      const options = (
+        authBadApple as unknown as {
+          options: { socialProviders?: { apple?: unknown } };
+        }
+      ).options;
+      // Сервер стартує без Apple провайдера; помилка генерації client_secret
+      // логнута через `logger.error`. Краще, ніж crash на boot.
+      expect(options.socialProviders?.apple).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("trustedOrigins завжди містять https://appleid.apple.com для Apple OAuth callback", () => {
+    const options = (
+      auth as unknown as { options: { trustedOrigins?: string[] } }
+    ).options;
+    expect(options.trustedOrigins).toContain("https://appleid.apple.com");
+  });
+
   it("налаштовані sendResetPassword та emailVerification (Resend у рантаймі)", () => {
     const options = (
       auth as unknown as {
