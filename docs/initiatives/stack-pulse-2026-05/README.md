@@ -1,11 +1,14 @@
 # Stack pulse — 2026-05
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-24 by @Skords-01. **Next review:** 2026-08-22.
 > **Status:** Active
 
 Серія планів-PR-ів для виправлення слабких місць стеку Sergeant, виявлених
 під час глибокого зрізу 2026-05-03. Кожен файл — самостійний executable
 план для одного PR-а: scope, acceptance criteria, тести, rollout, risks.
+
+> **Обсяг програми:** 39 PR-планів за 4 severity tier-и — Critical (PR-01..06), High (PR-07..16), Medium (PR-17..27), Low (PR-28..39).
+> **Прогрес (2026-05-24):** Critical 6/6 closed ✓, High 10/10 closed ✓, Medium 4/11 closed (решта trigger-gated `Planned` — активується при відповідній event-тригері з таблиці), Low 8/12 fully closed + 3 partial. **~27/39 fully closed + 3 partial.** Tail (Planned / Trigger-gated items) не є комітментом на найближчий спринт — вони чекають триггерної події (нова env-зміна, contract-bug, stalled-worker incident і т.д.).
 
 > **Це не аудит.** Аудити лежать у [`docs/audits/`](../../audits/README.md).
 > Тут — дорожня карта **наступних кроків**: «що, де, чому, як перевірити».
