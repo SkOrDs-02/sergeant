@@ -128,6 +128,105 @@ the header from `Content-Security-Policy-Report-Only` to enforced
 4. PostHog session-replay / Sentry session-replay compatibility re-tested
    with strict CSP — see _Open questions_ below.
 
+#### Phase 2 — research findings (2026-05-24)
+
+Done as a planning pass before any code lands (no deps installed, no
+deploy). Evidence in the repo, not assumptions.
+
+**Inline `<script>` audit.** `apps/web/index.html` contains exactly one
+`<script type="module" src="/src/main.tsx">` — external src, not inline,
+covered by `script-src 'self'`. Vite 8 only injects inline `<script>` for
+the legacy plugin (`@vitejs/plugin-legacy`), which is not in
+`apps/web/package.json`. VitePWA uses `injectManifest` + `registerType:
+"prompt"` and the SW is registered from `main.tsx` (line 294,
+`import("virtual:pwa-register")`) — no inline shim in HTML. Sentry vite
+plugin only injects a debug-id comment into bundles, not inline HTML.
+**Conclusion:** the production HTML has no inline scripts today, so
+`'unsafe-inline'` can be dropped from `script-src` immediately without a
+nonce flow.
+
+**`wasm-unsafe-eval` audit.** `@sqlite.org/sqlite-wasm` (`vendor-sqlite`
+chunk) requires `WebAssembly.compile` on a streamed buffer — Chrome/Edge
+gate this behind `script-src 'wasm-unsafe-eval'`. **Keep the directive.**
+
+**`style-src 'unsafe-inline'` audit.** Tailwind v4 emits a single
+external `.css` artifact in the production build, but runtime-injected
+inline `<style>` blocks are likely from at least three sources in the
+bundle: `@dnd-kit/core` (drag-overlay positioning), `react-virtuoso`
+(viewport sizing) and `posthog-js`/Sentry-replay (overlay UI). A
+nonce-or-hash style-src is the right answer, but Vite has no first-class
+nonce hook — would require `index-html-transform` plugin work that
+risks SW precache invalidation (sw hashes the transformed HTML). For
+this phase, **keep `'unsafe-inline'` in `style-src`** and add a TODO
+tracked separately; CSP-style XSS via inline `<style>` is far lower
+impact than script XSS, and the W3C explicitly allows the split.
+
+**Third-party CSP compatibility.**
+
+- **Stripe** — only used via hosted Checkout/Billing-portal redirect
+  (`window.location.href = session.url`); `js.stripe.com` is **not**
+  loaded. No `frame-src`/`script-src` allowlist needed.
+- **PostHog** — `autocapture: false`, no `session_recording` flag set
+  (default off as of `posthog-js@1.372`). Only the script bundle and
+  `connect-src https://*.posthog.com` are needed. **No `worker-src`
+  blob: dependency** for analytics.
+- **Sentry replay** (`replayIntegration` in
+  `apps/web/src/core/observability/sentry.ts:313`) — requires
+  `worker-src blob:` (already present) and `connect-src` to
+  `*.ingest.sentry.io` (already present). Replay does not inject inline
+  scripts; uses existing SDK bundle.
+
+**Nonce strategy (deferred).** Vite does not expose a build-time
+`script-nonce` plugin out of the box. The two viable options are
+(a) `vite-plugin-csp-guard` (community, ~400 weekly downloads, MIT) —
+hash-based, no per-request nonce, fits a CDN-cached SPA; or
+(b) a custom `transformIndexHtml` plugin that emits a deterministic
+build-time hash for each `<script>`. **Recommendation:** prefer (a)
+*only if* we re-introduce inline scripts; today's bundle does not need
+either. The Phase-2 enforce policy can ship without a nonce flow.
+
+**Proposed enforce policy (drop-in replacement for the Report-Only header
+in root `vercel.json`, gated behind an env-driven `vercel.json` swap or a
+hand-flip after the 24h soak).**
+
+```json
+{
+  "key": "Content-Security-Policy",
+  "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com wss:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.app/api/csp-report; report-to csp-endpoint"
+}
+```
+
+Diff vs Phase-1 Report-Only header:
+
+- **Removed** `'unsafe-inline'` from `script-src` (audit above confirms
+  no inline scripts in production HTML).
+- **Removed** `http://localhost:3000` / `http://127.0.0.1:3000` from
+  `connect-src` (dev-only — leaving them on a production enforce header
+  is a needless allowlist surface).
+- **Removed** `ws:` from `connect-src` (kept `wss:` only — production
+  WebSocket must be TLS; `ws:` is a dev artefact).
+- `style-src 'unsafe-inline'` retained (see audit above; tracked as
+  separate follow-up).
+
+**Rollout plan (no code change in this PR — planning only).**
+
+1. Wait for ≥24h of Report-Only soak with the current header (already
+   shipped 2026-05-04). Confirm `csp_violation_total{disposition="report"}`
+   shows only known directives.
+2. PR with both headers side-by-side: keep
+   `Content-Security-Policy-Report-Only` (existing), add
+   `Content-Security-Policy` (new, enforce). Browsers honour both
+   simultaneously — `report-only` keeps logging, `enforce` starts
+   blocking. This is the safest cutover (no env toggle needed; toggle
+   is a `git revert` if anything fires).
+3. Monitor for 24h: `csp_violation_total{disposition="enforce"}` must
+   stay flat. If it spikes, revert the PR.
+4. After 7 days clean, remove the Report-Only header in a follow-up PR.
+
+**Status:** research complete, no code changed in this pass. The
+side-by-side PR is unblocked and can land whenever the founder
+confirms the soak window has passed.
+
 ## Cross-references
 
 - [docs/security/hardening/sprint-1.md](./sprint-1.md) — sprint context.
