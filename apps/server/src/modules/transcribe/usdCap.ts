@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import pool from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { transcribeUsdCapEventsTotal } from "../../obs/metrics.js";
+import { emitSecurityEvent } from "../../obs/securityEvents.js";
 
 /**
  * H9 — per-user-per-day USD cap on `/api/transcribe`.
@@ -183,6 +184,11 @@ export async function assertTranscribeUsdCap(
       estimated_micros: estimate,
       cap_micros: cap,
       audio_bytes: audioBytes,
+    });
+    emitSecurityEvent({
+      event: "transcribe_usd_cap_hit",
+      severity: "medium",
+      details: `bucket=${bucket} day=${day} spent_micros=${spent} cap_micros=${cap}`,
     });
     res.status(402).json({
       error:

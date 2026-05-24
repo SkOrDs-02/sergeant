@@ -21,6 +21,8 @@ import {
   authAttemptsTotal,
   authSessionLookupDurationMs,
 } from "./obs/metrics.js";
+import { emitSecurityEvent } from "./obs/securityEvents.js";
+import { hashUserId } from "./lib/userIdHash.js";
 
 /**
  * Короткий fingerprint email-у для логів. Той самий патерн (sha256 → 12 hex),
@@ -600,6 +602,12 @@ export async function getSessionUser(
             },
             "session fingerprint drift detected",
           );
+          emitSecurityEvent({
+            event: "auth_session_ua_drift",
+            severity: "medium",
+            userIdHash: hashUserId(user.id) ?? undefined,
+            details: `ua_changed=${drift.ua} ip_changed=${drift.ip} stored_ip=${drift.storedIpPrefix ?? "null"} current_ip=${drift.currentIpPrefix ?? "null"}`,
+          });
         }
       }
       // Ліниво прив'язуємо сесію до request-context і Sentry-scope. Завдяки

@@ -12,6 +12,7 @@ import type { PushPayload } from "../../push/types.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { categorizeMcc } from "./mccCategories.js";
 import { webhookSecretHash } from "./crypto.js";
+import { emitSecurityEvent } from "../../obs/securityEvents.js";
 
 /**
  * POST /api/mono/webhook/:secret? — public Monobank delivery endpoint.
@@ -262,6 +263,11 @@ export async function webhookHandler(
         path: i.path.join("."),
         code: i.code,
       })),
+    });
+    emitSecurityEvent({
+      event: "mono_webhook_bad_payload",
+      severity: "high",
+      details: `Zod validation failed: ${parsed.error.issues.map((i) => i.path.join(".") + ":" + i.code).join(", ")}`,
     });
     res.status(400).json({ error: "Invalid payload" });
     return;

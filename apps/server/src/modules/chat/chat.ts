@@ -20,7 +20,11 @@ import { truncateToolResults } from "./toolResultTruncation.js";
 import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
 import { als } from "../../obs/requestContext.js";
 import { ExternalServiceError } from "../../obs/errors.js";
-import { chatToolIterationCapHitTotal } from "../../obs/metrics.js";
+import {
+  chatToolIterationCapHitTotal,
+  chatPromptInjectionAttemptTotal,
+} from "../../obs/metrics.js";
+import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getSessionUser } from "../../auth.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 
@@ -199,6 +203,11 @@ function rejectWithToolIterationCap(
   observed: number,
 ): void {
   chatToolIterationCapHitTotal.inc({ boundary });
+  emitSecurityEvent({
+    event: "chat_tool_cap_hit",
+    severity: boundary === "client_request" ? "high" : "medium",
+    details: `boundary=${boundary} observed=${observed} max=${MAX_TOOL_ITERATIONS}`,
+  });
   res.status(422).json({
     error: "Перевищено ліміт tool-ітерацій у запиті",
     code: "MAX_TOOL_ITERATIONS",
@@ -397,6 +406,20 @@ export default async function handler(
     const wrappedToolResults = wrapAndScanToolResults(
       normalizedToolResults,
       tool_calls_raw,
+      {
+        recordInjectionAttempt: (labels) => {
+          try {
+            chatPromptInjectionAttemptTotal.inc(labels);
+          } catch {
+            /* ignore */
+          }
+          emitSecurityEvent({
+            event: "prompt_injection_attempt",
+            severity: "high",
+            details: `tool=${labels.tool}`,
+          });
+        },
+      },
     );
     const toolResultMessages = wrappedToolResults.map((r) => ({
       type: "tool_result" as const,

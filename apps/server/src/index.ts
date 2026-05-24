@@ -70,6 +70,7 @@ import {
 } from "./obs/metrics.js";
 import { applyInfraMonthlyCosts, applyVoyageDailyBudget } from "./obs/cost.js";
 import { anthropicBudgetGuard } from "./obs/anthropicBudgetGuard.js";
+import { registerSecurityEventsRoom } from "./obs/securityEventsRoom.js";
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { Sentry } from "./sentry.js";
@@ -98,6 +99,10 @@ connectRedis();
 // Idempotency через Redis `SET NX EX` з fallback на in-memory Set.
 // No-op коли `ANTHROPIC_BUDGET_ALERT_ENABLED=false`.
 anthropicBudgetGuard.start();
+// I7 — Register security events Telegram push listener.
+// Must run after process env is fully loaded (assertStartupEnv runs before
+// this point via app.ts). Fail-open: errors are logged, never fatal.
+registerSecurityEventsRoom();
 
 // Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.
 // Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:
