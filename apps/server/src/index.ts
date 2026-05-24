@@ -70,7 +70,10 @@ import {
 } from "./obs/metrics.js";
 import { applyInfraMonthlyCosts, applyVoyageDailyBudget } from "./obs/cost.js";
 import { anthropicBudgetGuard } from "./obs/anthropicBudgetGuard.js";
-import { registerSecurityEventsRoom } from "./obs/securityEventsRoom.js";
+import {
+  pingSecurityRoom,
+  registerSecurityEventsRoom,
+} from "./obs/securityEventsRoom.js";
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { Sentry } from "./sentry.js";
@@ -103,6 +106,21 @@ anthropicBudgetGuard.start();
 // Must run after process env is fully loaded (assertStartupEnv runs before
 // this point via app.ts). Fail-open: errors are logged, never fatal.
 registerSecurityEventsRoom();
+
+// I7 follow-on — preflight reachability check for the Telegram push channel
+// via `getMe`. Surfaces rotated/expired bot tokens or unset env at boot,
+// instead of silently when the first security event fires. Counter bumps
+// fan out to Grafana (`security_room_unreachable_total`).
+void pingSecurityRoom().then(({ ok, reason }) => {
+  if (ok) {
+    logger.info({
+      msg: "security_events_room_reachable",
+      ...(reason ? { reason } : {}),
+    });
+  } else {
+    logger.error({ msg: "security_events_room_unreachable", reason });
+  }
+});
 
 // Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.
 // Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:

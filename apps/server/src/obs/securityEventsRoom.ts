@@ -17,6 +17,7 @@
  */
 
 import { logger } from "./logger.js";
+import { securityRoomUnreachableTotal } from "./metrics.js";
 import { onSecurityEvent, type ResolvedSecurityEvent } from "./securityEvents.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,6 +79,9 @@ async function sendToTelegram(event: ResolvedSecurityEvent): Promise<void> {
   );
   if (!res.ok) {
     const desc = await res.text().catch(() => `HTTP ${res.status}`);
+    securityRoomUnreachableTotal.inc({
+      reason: res.status >= 500 ? "http_5xx" : "http_4xx",
+    });
     logger.warn({
       msg: "security_event_telegram_push_failed",
       event: event.event,
@@ -98,6 +102,7 @@ async function sendToTelegram(event: ResolvedSecurityEvent): Promise<void> {
 export function registerSecurityEventsRoom(): () => void {
   return onSecurityEvent((event) => {
     sendToTelegram(event).catch((err: unknown) => {
+      securityRoomUnreachableTotal.inc({ reason: "fetch_error" });
       logger.warn({
         msg: "security_event_telegram_push_error",
         event: event.event,
@@ -105,4 +110,51 @@ export function registerSecurityEventsRoom(): () => void {
       });
     });
   });
+}
+
+/**
+ * Boot-time reachability check for the security events Telegram push channel.
+ *
+ * Uses Telegram `getMe` — canonical health-check endpoint that validates the
+ * bot token without sending any message (no chat side-effect, no spam at
+ * startup). Returns `ok: true` even when muted via `SECURITY_EVENTS_MUTED=1`
+ * (muting is intentional config, not unreachability).
+ *
+ * Caller (server `index.ts`) logs at `info` on success and `error` on failure,
+ * which surfaces a misconfigured/rotated bot token immediately at boot rather
+ * than silently when the first security event fires. Counter bumps fan out
+ * to Grafana for dashboards.
+ */
+export async function pingSecurityRoom(): Promise<{
+  ok: boolean;
+  reason?: string;
+}> {
+  if (process.env["SECURITY_EVENTS_MUTED"] === "1") {
+    return { ok: true, reason: "muted" };
+  }
+  const botToken = process.env["SERGEANT_ALERT_BOT_TOKEN"];
+  const chatId = process.env["SERGEANT_OPS_CHAT_ID"];
+  if (!botToken) {
+    securityRoomUnreachableTotal.inc({ reason: "bot_token_missing" });
+    return { ok: false, reason: "bot_token_missing" };
+  }
+  if (!chatId) {
+    securityRoomUnreachableTotal.inc({ reason: "chat_id_missing" });
+    return { ok: false, reason: "chat_id_missing" };
+  }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+    if (!res.ok) {
+      const reason = res.status >= 500 ? "http_5xx" : "http_4xx";
+      securityRoomUnreachableTotal.inc({ reason });
+      return { ok: false, reason: `${reason}:${res.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    securityRoomUnreachableTotal.inc({ reason: "fetch_error" });
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
