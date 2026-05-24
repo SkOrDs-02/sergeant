@@ -1002,3 +1002,135 @@ describe("rateLimitExpress — fail-closed mode", () => {
     expect(status).not.toHaveBeenCalledWith(503);
   });
 });
+
+describe("secondary IP bucket (M9)", () => {
+  // All tests use the in-memory path (Redis=null, Postgres rejects) so we
+  // can reason about bucket state without mocking Redis eval sequences.
+  function makeAuthReq(userId: string, ip: string): Request {
+    return {
+      ip,
+      headers: {},
+      user: { id: userId },
+    } as unknown as Request;
+  }
+
+  function makeAnonReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  function makeRes() {
+    const json = vi.fn();
+    const setHeader = vi.fn();
+    const status = vi.fn().mockReturnThis();
+    const res = { setHeader, status, json } as never;
+    return { res, json, status };
+  }
+
+  beforeEach(() => {
+    vi.mocked(getRedis).mockReturnValue(null);
+    redisEvalMock.mockReset();
+    pgQueryMock.mockReset();
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+    loggerWarnMock.mockReset();
+    __resetRateLimitPgWarnForTests();
+  });
+
+  it("passes when authenticated user under both user and IP limits", async () => {
+    const key = `m9_pass_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({
+      key,
+      limit: 10,
+      windowMs: 60_000,
+      ipLimit: 20,
+    });
+    const req = makeAuthReq("user-a", "1.2.3.4");
+    const { res } = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("blocks when IP limit exceeded even though individual user limit not reached", async () => {
+    // 5 different users from the same IP, each at ipLimit/5 requests → total
+    // hits ipLimit → next request from any of them should be blocked.
+    const key = `m9_block_${Math.random().toString(36).slice(2)}`;
+    const ipLimit = 5;
+    const userLimit = 10; // each user individually well under limit
+    const ip = "5.6.7.8";
+
+    const middleware = rateLimitExpress({
+      key,
+      limit: userLimit,
+      windowMs: 60_000,
+      ipLimit,
+    });
+
+    // 5 different users, 1 request each → exhausts IP bucket (ipLimit=5)
+    for (let i = 0; i < ipLimit; i++) {
+      const req = makeAuthReq(`user-m9-${i}`, ip);
+      const { res } = makeRes();
+      const next = vi.fn();
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+    }
+
+    // The 6th request from any user at that IP must be blocked (IP bucket full)
+    const req = makeAuthReq("user-m9-0", ip);
+    const { res, status, json } = makeRes();
+    const next = vi.fn();
+    await middleware(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(429);
+    const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body).toMatchObject({ code: "RATE_LIMIT" });
+  });
+
+  it("does not apply secondary bucket to anonymous requests", async () => {
+    // Anonymous requests key by IP on the primary bucket already.
+    // The secondary bucket must NOT activate for ip: subjects.
+    const key = `m9_anon_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({
+      key,
+      limit: 10,
+      windowMs: 60_000,
+      ipLimit: 1, // would immediately block if applied to anon
+    });
+
+    const ip = "9.9.9.9";
+    // Two anonymous requests from the same IP — ipLimit=1 would block the
+    // second if the secondary bucket were applied, but it must not be.
+    for (let i = 0; i < 2; i++) {
+      const req = makeAnonReq(ip);
+      const { res } = makeRes();
+      const next = vi.fn();
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+    }
+  });
+
+  it("skips secondary check when ipLimit not set", async () => {
+    // Routes without ipLimit must see zero extra bucket interactions —
+    // specifically no extra in-memory bucket writes with the `:ip` suffix.
+    const key = `m9_nolimit_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({
+      key,
+      limit: 2,
+      windowMs: 60_000,
+      // no ipLimit
+    });
+
+    // Two requests from different user accounts on the same IP — without
+    // ipLimit they should both pass since per-user buckets are independent.
+    const ip = "11.22.33.44";
+    for (let userId = 0; userId < 2; userId++) {
+      const req = makeAuthReq(`user-nolimit-${userId}`, ip);
+      const { res } = makeRes();
+      const next = vi.fn();
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+    }
+  });
+});

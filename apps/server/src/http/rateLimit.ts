@@ -163,6 +163,23 @@ export interface RateLimitOptions {
    * cost models aligned.
    */
   cost?: ((req: Request) => number) | undefined;
+  /**
+   * When set and the request is authenticated (subject starts with `u:`),
+   * also enforce a secondary per-IP bucket with this limit (same windowMs).
+   *
+   * **Why this exists (M9).** The primary per-user bucket prevents a single
+   * account from exceeding `limit` within `windowMs`. But an attacker who
+   * registers N free accounts gets N independent user buckets from the same
+   * machine — multiplying effective throughput by N. A secondary per-IP
+   * bucket collapses all those accounts into a shared IP-scoped cap so the
+   * machine-level rate stays bounded regardless of how many accounts the
+   * attacker controls.
+   *
+   * The secondary bucket only applies when the primary subject is `u:*`
+   * (authenticated). Anonymous requests already key by IP on the primary
+   * bucket and are unaffected.
+   */
+  ipLimit?: number;
 }
 
 export interface RateLimitResult {
@@ -530,12 +547,39 @@ function checkRateLimitBySubject(
   };
 }
 
+/**
+ * Runs a secondary per-IP bucket check using the same Redis→Pg→in-memory
+ * fallback chain as the primary check. Used by {@link rateLimitExpress} for
+ * the M9 fix: prevents an attacker with N authenticated accounts from
+ * multiplying effective throughput by N from a single machine.
+ */
+async function checkSecondaryIpBucket(
+  ipSubject: string,
+  ipOpts: { key: string; limit: number; windowMs: number },
+): Promise<RateLimitResult | null> {
+  const redis = getRedis();
+  if (redis) {
+    try {
+      return await checkRateLimitRedisBySubject(redis, ipSubject, ipOpts, 1);
+    } catch {
+      // Redis unavailable — try Postgres next.
+    }
+  }
+  try {
+    return await checkRateLimitPgBySubject(ipSubject, ipOpts, 1);
+  } catch {
+    // Postgres unavailable — degrade to in-memory.
+  }
+  return checkRateLimitBySubject(ipSubject, ipOpts, 1);
+}
+
 export function rateLimitExpress({
   key,
   limit,
   windowMs,
   failMode = "open",
   cost,
+  ipLimit,
 }: RateLimitOptions): RequestHandler {
   return async (req, res, next) => {
     const redis = getRedis();
@@ -582,6 +626,22 @@ export function rateLimitExpress({
       }
       recordRateLimitDegraded(key, "inmem");
       rl = checkRateLimit(req, options);
+    }
+
+    // M9: secondary per-IP bucket for authenticated requests.
+    // Primary per-user bucket passed; now enforce the shared IP cap so an
+    // attacker with N accounts cannot multiply effective throughput by N.
+    if (rl.ok && ipLimit !== undefined) {
+      const subject = rateLimitSubject(req);
+      if (subject.startsWith("u:")) {
+        const ipSubject = `ip:${getIp(req)}`;
+        const ipOpts = { key: `${key}:ip`, limit: ipLimit, windowMs };
+        const ipRl = await checkSecondaryIpBucket(ipSubject, ipOpts);
+        if (ipRl && !ipRl.ok) {
+          // Secondary IP bucket exhausted — treat as primary block.
+          rl = ipRl;
+        }
+      }
     }
 
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table
