@@ -1,7 +1,7 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
-> **Status:** In progress — frontend Report-Only canary + report sink + meta fallback shipped 2026-05-04; strict/enforce CSP + nonce flow remain open follow-up work.
+> **Last validated:** 2026-05-24 by @Skords-01. **Next review:** 2026-08-22.
+> **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only.
 
 | Field              | Value                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
@@ -226,6 +226,36 @@ Diff vs Phase-1 Report-Only header:
 **Status:** research complete, no code changed in this pass. The
 side-by-side PR is unblocked and can land whenever the founder
 confirms the soak window has passed.
+
+#### Phase 2 — side-by-side enforce rolled out (2026-05-24)
+
+Step 2 з rollout plan виконано: `apps/web/vercel.json` тепер emits
+**both** `Content-Security-Policy-Report-Only` (existing, retained for
+regression tracking) **and** `Content-Security-Policy` (new, enforce).
+Browsers honour both simultaneously per W3C — Report-Only keeps logging,
+enforce starts blocking. Cutover-safety: rollback = `git revert` single
+PR.
+
+Diff vs Phase-1 Report-Only header in the new enforce header:
+
+- **Removed** `'unsafe-inline'` from `script-src` (audit above:
+  `apps/web/index.html` has zero inline scripts; production HTML is
+  external-only via `/src/main.tsx`).
+- **Removed** `http://localhost:3000` / `http://127.0.0.1:3000` from
+  `connect-src` (dev-only — needless allowlist surface in prod enforce).
+- **Removed** `ws:` from `connect-src` (kept `wss:` — production
+  WebSocket must be TLS; `ws:` is a dev artefact).
+- `style-src 'unsafe-inline'` retained — tracked as separate follow-up
+  (see audit; nonce-or-hash style-src needs Vite `transformIndexHtml`
+  work that risks SW precache invalidation).
+
+**Next steps (post-merge, sequential):**
+
+1. **24h soak:** monitor `csp_violation_total{disposition="enforce"}`.
+   Must stay flat. If it spikes — revert this PR immediately.
+2. **7-day clean window:** if no novel directive fires for 7 days, open
+   follow-up PR to remove the Report-Only header (the enforce header
+   handles both blocking and reporting via the same `report-uri`).
 
 ## Cross-references
 
