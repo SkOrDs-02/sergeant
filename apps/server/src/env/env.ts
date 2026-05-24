@@ -1257,6 +1257,18 @@ export function assertStartupEnv(): void {
         "STRIPE_PRICE_ID_PRO_MONTHLY is required in production when STRIPE_SECRET_KEY is set. Without it `/api/billing/checkout` throws BillingConfigurationError → 503 the first time a user clicks Upgrade. Copy the value from Stripe Dashboard → Products → Pro → Pricing (must match `price_*` format).",
       );
     }
+    // Security Engineer council finding: replay-window guard. `verifyStripeSignature`
+    // в `apps/server/src/modules/billing/stripe.ts` пропускає timestamp check якщо
+    // tolerance <= 0 (Stripe `constructEvent` semantics). Це означає що unattended
+    // staging/preview config з `STRIPE_WEBHOOK_TOLERANCE_SECONDS=0` перетворює
+    // captured signed webhook payload в unbounded replay primitive проти billing
+    // endpoint — атакуючий може повторити стару `checkout.session.completed` подію
+    // через дні/тижні і mutate-нути subscription state.
+    if (env.STRIPE_WEBHOOK_TOLERANCE_SECONDS <= 0) {
+      throw new Error(
+        "STRIPE_WEBHOOK_TOLERANCE_SECONDS must be > 0 in production when STRIPE_SECRET_KEY is set. A value of 0 (or negative) disables the timestamp replay-window check entirely, turning any captured signed webhook payload into an unbounded replay primitive against the billing endpoint. Default 300s; only set explicitly if your platform has unusual clock skew, and never set <= 0 in production. See https://stripe.com/docs/webhooks/signatures § 'Preventing replay attacks'.",
+      );
+    }
   }
 
   // D3 (2026-05-15 deep-audit): mirror the Stripe wired-without-secret

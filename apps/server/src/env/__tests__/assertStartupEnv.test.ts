@@ -238,6 +238,49 @@ describe("assertStartupEnv — STRIPE_WEBHOOK_SECRET hard-fail (T2 audit #1)", (
     });
     expect(() => assertStartupEnv()).not.toThrow();
   });
+
+  // Security Engineer council finding — `STRIPE_WEBHOOK_TOLERANCE_SECONDS<=0`
+  // disables `verifyStripeSignature` timestamp replay-window check entirely.
+  // An unattended staging/preview config with this value turns any captured
+  // signed webhook payload into an unbounded replay primitive against the
+  // billing endpoint. Guard must hard-fail at boot in production-with-billing.
+  it("throws in production when STRIPE_WEBHOOK_TOLERANCE_SECONDS is 0 (replay-window disabled)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...STRIPE_BASELINE,
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+      STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
+      STRIPE_WEBHOOK_TOLERANCE_SECONDS: "0",
+    });
+    expect(() => assertStartupEnv()).toThrow(
+      /STRIPE_WEBHOOK_TOLERANCE_SECONDS/,
+    );
+  });
+
+  it("throws in production when STRIPE_WEBHOOK_TOLERANCE_SECONDS is negative", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...STRIPE_BASELINE,
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+      STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
+      STRIPE_WEBHOOK_TOLERANCE_SECONDS: "-1",
+    });
+    expect(() => assertStartupEnv()).toThrow(
+      /STRIPE_WEBHOOK_TOLERANCE_SECONDS/,
+    );
+  });
+
+  it("does NOT throw in NODE_ENV=development when STRIPE_WEBHOOK_TOLERANCE_SECONDS is 0", async () => {
+    // Dev tolerance: local mock-webhook tests may set tolerance=0 deliberately
+    // to avoid clock-skew false-negatives during replay. Guard is production-
+    // only.
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      STRIPE_SECRET_KEY: "sk_test_xxx",
+      STRIPE_WEBHOOK_TOLERANCE_SECONDS: "0",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
 });
 
 describe("assertStartupEnv — STRIPE_PRICE_ID_PRO_MONTHLY (P0-7)", () => {
