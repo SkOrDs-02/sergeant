@@ -121,6 +121,15 @@ export const OPENCLAW_BOT_COMMANDS: ReadonlyArray<BotCommandSpec> = [
     description: "Pause bot pings (30m/1h/4h/8h/until-morning, off, status)",
   },
   { command: "reset", description: "Start a new cofounder session" },
+  // PR-35 follow-up: runtime debug-window toggle.
+  {
+    command: "debug_window",
+    description: "Enable debug log window for 15 min",
+  },
+  {
+    command: "debug_window_status",
+    description: "Current log level and debug window remaining time",
+  },
 ];
 
 /**

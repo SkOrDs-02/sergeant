@@ -28,6 +28,11 @@ import {
   type PendingAlertItem,
 } from "./alerts-format.js";
 import { executeMuteCommand } from "./mute-runner.js";
+import {
+  executeDebugWindowEnable,
+  executeDebugWindowStatus,
+  type DebugWindowFetcher,
+} from "./debug-window-runner.js";
 import { executeRitualCommand } from "./ritual-runner.js";
 import { executeOpenclawStatusCommand } from "./status-runner.js";
 import { parseOpenclawCommand } from "./status-format.js";
@@ -854,6 +859,84 @@ export function registerInfoCommands(ctx: HandlerContext): void {
       },
       addBreadcrumb: (b) => Sentry.addBreadcrumb(b),
     });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
+  });
+
+  // PR-35 follow-up: `/debug_window` — enable the server-side debug log window
+  // for 15 minutes without a restart. Telegram command names use underscores
+  // (hyphens are rejected by the Telegram Bot API regex `^[a-z0-9_]{1,32}$`).
+  bot.command("debug_window", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+
+    const fetcher: DebugWindowFetcher = {
+      async enable(input) {
+        const r = await postJson<{ ok: boolean; remainingMs: number }>(
+          `${serverUrl}/api/internal/debug-window/enable`,
+          internalApiKey,
+          input,
+        );
+        return { ok: r.ok, status: r.status, data: r.data };
+      },
+      async disable() {
+        const r = await postJson(
+          `${serverUrl}/api/internal/debug-window/disable`,
+          internalApiKey,
+          {},
+        );
+        return { ok: r.ok, status: r.status };
+      },
+      async status() {
+        const r = await postJson<{ level: string; remainingMs: number }>(
+          `${serverUrl}/api/internal/debug-window/status`,
+          internalApiKey,
+          {},
+        );
+        return { ok: r.ok, status: r.status, data: r.data };
+      },
+    };
+
+    const result = await executeDebugWindowEnable({
+      founderUserId,
+      founderTgUserId: c.from?.id ?? 0,
+      fetcher,
+    });
+
+    await c.reply(result.reply, { parse_mode: "HTML" });
+  });
+
+  // `/debug_window_status` — read-only check: current log level + remaining window.
+  bot.command("debug_window_status", async (c) => {
+    if (!isAllowedDmContext(c)) return;
+
+    const fetcher: DebugWindowFetcher = {
+      async enable(input) {
+        const r = await postJson<{ ok: boolean; remainingMs: number }>(
+          `${serverUrl}/api/internal/debug-window/enable`,
+          internalApiKey,
+          input,
+        );
+        return { ok: r.ok, status: r.status, data: r.data };
+      },
+      async disable() {
+        const r = await postJson(
+          `${serverUrl}/api/internal/debug-window/disable`,
+          internalApiKey,
+          {},
+        );
+        return { ok: r.ok, status: r.status };
+      },
+      async status() {
+        const r = await postJson<{ level: string; remainingMs: number }>(
+          `${serverUrl}/api/internal/debug-window/status`,
+          internalApiKey,
+          {},
+        );
+        return { ok: r.ok, status: r.status, data: r.data };
+      },
+    };
+
+    const result = await executeDebugWindowStatus({ fetcher });
 
     await c.reply(result.reply, { parse_mode: "HTML" });
   });
