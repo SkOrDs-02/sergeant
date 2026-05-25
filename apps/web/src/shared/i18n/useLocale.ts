@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DEFAULT_LOCALE,
   type Locale,
+  type LocalizedMessages,
   parseLocale,
   getMessages,
-  type MessageCatalog,
 } from "./index";
 
 /**
@@ -50,8 +50,12 @@ function readInitialLocale(): Locale {
 export interface UseLocaleResult {
   /** Currently resolved locale ('uk' or 'en'). */
   locale: Locale;
-  /** Fully-resolved message catalog for the current locale. */
-  messages: MessageCatalog;
+  /**
+   * Fully-resolved message catalog for the current locale. Uses the precise
+   * literal type from `uk.ts` so consumers retain narrow autocomplete and
+   * deep-key access (`messages.paywall["foo"].title`) without casts.
+   */
+  messages: LocalizedMessages;
   /** Imperative setter — persists to localStorage + cleans up `?lang` URL param. */
   setLocale: (next: Locale) => void;
 }

@@ -17,13 +17,19 @@
  * UA-mode для всього group. Shallow merge — explicit choice між languages
  * на рівні surface-area.
  *
- * Type-safety: `getMessages()` повертає тип `MessageCatalog`, той самий що
- * `messages` (uk-default). Consumers не платять type cost за multi-locale —
- * autocompletion і narrowing працюють як зараз.
+ * Type-safety: `getMessages()` повертає тип `typeof uk` (precise literal
+ * shape з `as const`), той самий що direct `import { messages } from "./uk"`.
+ * Consumers платять нуль type cost за multi-locale — autocompletion і
+ * `.paywall["foo"].title` narrowing працюють як зараз. EN values — runtime
+ * overrides of same structural shape; cast у `getMessages` is safe бо
+ * `en.ts` typed as `Partial<MessageCatalog>` що гарантує shape compatibility.
  */
 
 import { messages as uk, type MessageCatalog } from "./uk";
 import { messagesEn } from "./en";
+
+/** Canonical narrow type — the precise literal shape of the uk catalog. */
+export type LocalizedMessages = typeof uk;
 
 export type Locale = "uk" | "en";
 export const SUPPORTED_LOCALES: ReadonlyArray<Locale> = ["uk", "en"];
@@ -52,11 +58,14 @@ export { messagesEn } from "./en";
  * downstream code (caching pattern matches `Object.freeze(ANALYTICS_EVENTS)`
  * у `packages/shared/src/lib/analyticsEvents.ts`).
  */
-export function getMessages(lang: Locale): MessageCatalog {
+export function getMessages(lang: Locale): LocalizedMessages {
   if (lang === "uk") return uk;
   // Shallow merge: each top-level key in `messagesEn` fully replaces UK.
-  // Missing keys (most of the catalog right now) inherit from UK.
-  return Object.freeze({ ...uk, ...messagesEn }) as MessageCatalog;
+  // Missing keys (most of the catalog right now) inherit from UK. Cast to
+  // `LocalizedMessages` is safe: `messagesEn` is `Partial<MessageCatalog>`
+  // shape-compatible with `uk`, and shallow-merge preserves structural
+  // identity for non-overridden groups.
+  return Object.freeze({ ...uk, ...messagesEn }) as unknown as LocalizedMessages;
 }
 
 /**

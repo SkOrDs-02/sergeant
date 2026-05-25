@@ -12,6 +12,7 @@ import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { exportToPDF } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
+import { useLocale } from "@shared/i18n/useLocale";
 import { generateInsights } from "../lib/insightsEngine";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { PaywallModal, useFeatureGate } from "../billing";
@@ -91,6 +92,11 @@ function InsightCard({ iconName, title, stat, detail }: InsightCardProps) {
 export function HubReports() {
   const [period, setPeriod] = useState<Period>("week");
   const [offset, setOffset] = useState(0);
+  // Locale-resolved paywall copy. `loadingSection` aria-label у CardSkeleton
+  // (module-scope) лишається на UK fallback — це screen-reader hint, не
+  // user-visible copy, low priority для translation. Paywall surface — це
+  // conversion-critical, тому йде через `useLocale`.
+  const { messages: i18n } = useLocale();
 
   const label = formatPeriodLabel(period, offset);
   const isCurrentPeriod = offset === 0;
@@ -247,8 +253,8 @@ export function HubReports() {
         open={exportGate.paywallOpen}
         onClose={exportGate.closePaywall}
         surface={exportGate.paywallSurface}
-        title={messages.paywall["analytics-export-pdf"].title}
-        description={messages.paywall["analytics-export-pdf"].description}
+        title={i18n.paywall["analytics-export-pdf"].title}
+        description={i18n.paywall["analytics-export-pdf"].description}
       />
     </div>
   );

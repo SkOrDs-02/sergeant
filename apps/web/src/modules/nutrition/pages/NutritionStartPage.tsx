@@ -3,7 +3,7 @@ import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { messages } from "@shared/i18n/uk";
+import { useLocale } from "@shared/i18n/useLocale";
 import { PaywallModal, useFeatureGate } from "../../../core/billing";
 import { NutritionDashboard } from "../components/NutritionDashboard";
 import { PhotoAnalyzeCard } from "../components/PhotoAnalyzeCard";
@@ -55,8 +55,11 @@ export function NutritionStartPage({
   // Phase 7 D2 — gate AI-powered photo macro analysis behind Premium.
   // The hook owns paywall-open state; we proxy `analyzePhoto` through
   // `requireAccess()` so non-Pro users hit the modal instead of the
-  // mutation.
+  // mutation. `useLocale` resolves paywall copy under `?lang=en`
+  // override; UA users see UK copy via the fall-through path in the
+  // i18n resolver.
   const photoGate = useFeatureGate("ai-photo-analysis");
+  const { messages } = useLocale();
   const gatedAnalyzePhoto = () => {
     if (!photoGate.requireAccess()) return;
     void photo.analyzePhoto();
