@@ -14,7 +14,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:coverage": "vitest run --coverage",
     "db:migrate": "node dist-server/migrate.js",
-    "db:migrate:dev": "node --import tsx ./migrate.mjs"
+    "db:migrate:dev": "node --import tsx ./migrate.mjs",
+    "reencrypt:tokens": "node --env-file-if-exists=.env --import tsx scripts/token-reencrypt-rollover.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.5",

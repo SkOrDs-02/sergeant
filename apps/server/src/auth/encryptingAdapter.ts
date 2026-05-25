@@ -92,12 +92,24 @@ function decryptTokenFields<T>(row: T, ring: KeyRing): T {
             field,
             row_version: String(rowVersion),
           });
-          // TODO(token-reencrypt): lazy rollover relies on user-triggered OAuth
-          // refresh. After a key rotation, watch authTokenLazyReencryptTotal in
-          // Grafana. If the metric stays elevated for > 7 days post-rotation,
-          // consider a one-off migration job that re-reads all account rows and
-          // rewrites stale-version tokens under ring.current so that the old key
-          // can be safely retired without waiting for every user to refresh.
+          // Lazy rollover (this code) handles active users — Better Auth's
+          // OAuth refresh re-enters `update`, which writes under
+          // `ring.current.version`. Dormant users leave stale-version rows
+          // behind indefinitely; until they drain, the old key cannot be
+          // safely retired from BETTER_AUTH_TOKEN_ENC_KEYS.
+          //
+          // For proactive sweep, run the standalone CLI:
+          //   pnpm --filter @sergeant/server reencrypt:tokens
+          // (apps/server/scripts/token-reencrypt-rollover.ts). It SELECTs
+          // account rows in batches, re-encrypts stale-version tokens
+          // in-memory, and writes back under ring.current with an
+          // optimistic-lock WHERE to avoid clobbering a fresh refresh.
+          // --dry-run by default; --execute to actually write. Multi-pass
+          // safe (idempotent).
+          //
+          // Operational signal: watch authTokenLazyReencryptTotal in
+          // Grafana post-rotation. If it stays elevated > 7 days, run the
+          // proactive CLI to drain dormant rows before retiring the old key.
         }
       } catch {
         // readKeyVersion can throw on malformed prefix; ignore — decrypt above already succeeded
