@@ -1,7 +1,7 @@
 # Hub tabs perf — RUM baseline
 
-> **Last validated:** 2026-05-21 by @Skords-01. **Next review:** 2026-08-19.
-> **Status:** Active — Sprint 0 instrumentation merged, baseline data collection in progress.
+> **Last validated:** 2026-05-25 by @Skords-01. **Next review:** 2026-08-23.
+> **Status:** Active — Sprint 0 instrumentation merged 2026-05-20, baseline data collection in progress, dashboard manifest committed 2026-05-25 (ready for import on 2026-05-27 baseline pull).
 
 Цей runbook описує RUM-інструмент, який запровадив Sprint 0 [Initiative 0017 — Hub Settings & Reports mount perf](../initiatives/0017-hub-tabs-mount-perf.md). Сам файл — **жива сторінка**: коли назбирається ≥ 1 тиждень даних з прода, заповнюємо таблицю «Baseline», і кожен наступний Sprint оновлює свій рядок.
 
@@ -83,11 +83,21 @@
    - Дає швидкий sense чи бачимо bimodal distribution (cache-hit vs miss).
 5. **Insight 5 — Longtask count P95 per tab** — health check для Sprint 1+ optimisations.
 
-Portable manifest буде під [`ops/posthog/dashboards/hub-tab-perf.json`](../../ops/posthog/dashboards/) (експортується з UI коли дашборд налаштовано).
+Portable manifest — [`ops/posthog/dashboards/hub-tab-perf.json`](../../ops/posthog/dashboards/hub-tab-perf.json) (5 panels: TTI percentiles, longtask burden, cache-hit ratio, TTI histogram, 28-day TTI trend; 3 alerts; см. контракт у [`ops/posthog/README.md`](../../ops/posthog/README.md)). Імпорт у PostHog UI — per «Імпорт у PostHog» в README; кожен panel'у `panel.query.query` paste-иться у SQL editor, save as Insight, pin to Dashboards → «Hub tab perf».
+
+## Baseline pull procedure (target: 2026-05-27)
+
+Sprint 0 merged 2026-05-20 з 100% sampling. На 2026-05-27 буде ≥ 7 днів prod-даних — достатньо щоб закрити TBD-комірки нижче. Покрокова процедура:
+
+1. **Імпортувати дашборд у PostHog UI.** Без створеного дашборду немає звідки витягнути числа. Manifest — [`ops/posthog/dashboards/hub-tab-perf.json`](../../ops/posthog/dashboards/hub-tab-perf.json). Procedure — у [`ops/posthog/README.md`](../../ops/posthog/README.md) §«Імпорт у PostHog» (для кожного `panel.query.query` — paste у PostHog SQL editor → save as Insight → pin to «Hub tab perf» dashboard).
+2. **Запустити кожен з 5 query за `last 14 days` window.** Цифри з `tti-percentiles` + `longtask-burden` дають усі рядки baseline-таблиці нижче.
+3. **Заповнити таблицю.** TBD → реальні числа. Округлення до сотень мілісекунд (нікому не важлива точність ±50 ms на baseline).
+4. **Зробити commit** з оновленою таблицею + bump `Last validated:` зверху runbook-у. Sprint 1 PR-и далі порівнюватимуть свої числа з цією baseline-комою.
+5. **Не вимикати 100% sampling** — поточний rate тримати до моменту коли Sprint 2 PR-и landed (потрібна щільність даних для validation).
 
 ## Baseline таблиця
 
-Заповнюємо коли назбираємо ≥ 1 тиждень даних з прода (target: 2026-05-27 — тиждень після Sprint 0 merge).
+Заповнюємо за процедурою вище. На момент committed runbook (2026-05-25) ще TBD.
 
 | Метрика             | Reports | Settings | Profile |
 | ------------------- | ------- | -------- | ------- |
@@ -118,7 +128,7 @@ Portable manifest буде під [`ops/posthog/dashboards/hub-tab-perf.json`](.
 
 ## Що далі (carry-over)
 
-- [ ] **2026-05-27:** перший pull baseline-таблиці з PostHog (≥ 7 днів даних).
+- [ ] **2026-05-27:** перший pull baseline-таблиці з PostHog (≥ 7 днів даних). Procedure — §«Baseline pull procedure» вище. Dashboard manifest готовий — [`ops/posthog/dashboards/hub-tab-perf.json`](../../ops/posthog/dashboards/hub-tab-perf.json).
 - [ ] Sprint 1 PR-1.1 — per-section lazy у Settings; перевірити що `ttiMs` падає для `tab=settings`.
 - [ ] Sprint 1 PR-1.2 — `useInView` gate на cross-module queries; `longTaskCount` P95 має впасти.
 - [ ] Sprint 2 PR-2 — HubReports per-card lazy; `ttiMs` для `tab=reports` під target.

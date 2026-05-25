@@ -1,0 +1,157 @@
+{
+  "$schema": "../schema/dashboard.schema.json",
+  "version": 1,
+  "key": "hub-tab-perf",
+  "name": "Hub tab perf",
+  "description": "RUM dashboard for Initiative 0017 (Hub Settings & Reports mount perf). Aggregates HUB_TAB_SWITCH_PERF events emitted by apps/web/src/core/lib/hubPerf.ts: P50/P95 ttiMs per tab, long-task burden, cache-hit ratio, histogram of ttiMs, and longTaskCount P95 per tab. Runbook: docs/observability/hub-perf-baseline.md. Baseline pull target: 2026-05-27 (≥ 7 days after Sprint 0 merge 2026-05-20).",
+  "timezone": "Europe/Kyiv",
+  "events_contract": {
+    "hub_tab_switch_perf": {
+      "payload": {
+        "tab": "reports | settings | profile",
+        "ttiMs": "number — ms from hubView commit → TabReadyProbe mounted past 2× rAF",
+        "longTaskMs": "number — sum of `longtask` PerformanceEntry durations observed during the window",
+        "longTaskCount": "number — count of those entries",
+        "cacheHit": "boolean — chunk already in module cache when switch began"
+      },
+      "fired_by": "apps/web/src/core/lib/hubPerf.ts endHubTabSwitch()",
+      "introduced_by": "Sprint 0 (merged 2026-05-20)",
+      "sampling": "100% for first 30 days post-merge, then 10% — gated via SAMPLE_RATE in hubPerf.ts + feature flag `hub_perf_rum_sample_rate`",
+      "notes": "Dashboard `tab` does NOT include `dashboard` — eager-mount, no Suspense boundary, no measurement."
+    }
+  },
+  "super_properties": ["platform", "is_capacitor"],
+  "person_properties": [],
+  "panels": [
+    {
+      "key": "tti-percentiles",
+      "name": "Tab-switch TTI — P50 / P95 per tab",
+      "type": "hogql",
+      "size": "wide",
+      "description": "P50 + P95 of `ttiMs` over the last 14 days, broken down by `tab`. P95 is the load-bearing number — Initiative 0017 acceptance gates Sprint 1/2/3 targets on P95 thresholds for Settings (≤7000/3000/1500 ms) and Reports (no explicit P95 in spec; tracked alongside).",
+      "rationale": "P50 alone hides the tail. Sprint 0 audit data (live audit 2026-05-20) measured one user one moment at ~10s for Settings — but the real distribution might be bimodal (cache-hit miss = catastrophic, cache-hit hit = fast). P95 is what users tweet about.",
+      "targets": {
+        "Settings P50 baseline (Sprint 0 doc estimate)": "~10000 ms",
+        "Settings P95 Sprint 1 target": "≤ 7000 ms",
+        "Settings P95 Sprint 2 target": "≤ 3000 ms",
+        "Settings P95 Sprint 3 target": "≤ 1500 ms",
+        "Reports P50 baseline (Sprint 0 doc estimate)": "~8000 ms",
+        "Reports P50 Sprint 1 target": "≤ 4000 ms",
+        "Reports P50 Sprint 2 target": "≤ 1500 ms",
+        "Reports P50 Sprint 3 target": "≤ 800 ms"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT properties.tab AS tab, quantile(0.50)(toFloat(properties.ttiMs)) AS p50_ttiMs, quantile(0.95)(toFloat(properties.ttiMs)) AS p95_ttiMs, count() AS sample_size FROM events WHERE event = 'hub_tab_switch_perf' AND timestamp >= now() - INTERVAL 14 DAY GROUP BY tab ORDER BY tab"
+      },
+      "breakdown": {
+        "type": "super_property",
+        "key": "platform",
+        "comment": "Web vs ios vs android. Mobile JS-execution is ~3× slower per Initiative 0017 §Чому зараз — expect mobile-platform P95 to be the worst quartile."
+      }
+    },
+    {
+      "key": "longtask-burden",
+      "name": "Long-task burden — avg longTaskMs per tab",
+      "type": "hogql",
+      "size": "half",
+      "description": "Average sum-of-longtasks per tab-switch over the last 14 days. Long-tasks (≥50 ms) block the main thread; aggregate per switch tells us how much of the perceived freeze is actual main-thread blocking vs network/render.",
+      "rationale": "ttiMs measures user-visible delay; longTaskMs measures the cause. If ttiMs drops Sprint-over-Sprint but longTaskMs stays high → we shifted the freeze to a different point in the render tree, not eliminated it.",
+      "targets": {
+        "Sprint 1": "measured (was unknown pre-Sprint-0)",
+        "Sprint 2 longTaskCount P95": "≤ 5 per tab-switch",
+        "Sprint 3 longTaskCount P95": "≤ 2 per tab-switch"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT properties.tab AS tab, avg(toFloat(properties.longTaskMs)) AS avg_longTaskMs, quantile(0.95)(toFloat(properties.longTaskMs)) AS p95_longTaskMs, avg(toFloat(properties.longTaskCount)) AS avg_longTaskCount, quantile(0.95)(toFloat(properties.longTaskCount)) AS p95_longTaskCount FROM events WHERE event = 'hub_tab_switch_perf' AND timestamp >= now() - INTERVAL 14 DAY GROUP BY tab ORDER BY tab"
+      }
+    },
+    {
+      "key": "cache-hit-ratio",
+      "name": "Cache-hit ratio per tab",
+      "type": "hogql",
+      "size": "half",
+      "description": "Share of tab-switches that landed on already-prefetched chunks (`cacheHit = true`) over the last 14 days, broken down by tab. Low cache-hit % means `prefetchHubNavigationPages()` is not running early enough OR users navigate faster than prefetch completes.",
+      "rationale": "Sprint 0 carries an implicit hypothesis: tail-end ttiMs is dominated by cold-from-network switches. If cache-hit % is consistently >90% but P95 ttiMs is still bad, the bottleneck is mount/render, NOT chunk fetch — i.e. the prefetch optimization has already paid off, remaining win is in Sprint 1-3 code-splitting.",
+      "targets": {
+        "Cache-hit baseline": "≥ 80% per tab — anything lower means prefetch race",
+        "Cache-hit alarm": "< 50% sustained 7 days → investigate route-loader timing"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT properties.tab AS tab, countIf(properties.cacheHit = true) * 1.0 / count() AS cache_hit_ratio, count() AS sample_size FROM events WHERE event = 'hub_tab_switch_perf' AND timestamp >= now() - INTERVAL 14 DAY GROUP BY tab ORDER BY tab"
+      }
+    },
+    {
+      "key": "tti-histogram",
+      "name": "TTI histogram — distribution buckets",
+      "type": "hogql",
+      "size": "wide",
+      "description": "Bucketed count of ttiMs values over the last 14 days. Buckets per runbook: 0–500, 500–1000, 1000–2000, 2000–5000, 5000–10000, 10000+. Visualizes the shape of the distribution — a bimodal cluster (one peak <500, one peak >5000) tells a different story than a single fat distribution centered at 3000.",
+      "rationale": "Averages and even percentiles can hide structure. A histogram with two peaks signals 'two distinct user experiences happening' (e.g. fresh-session cold cache vs subsequent-tab warm cache). Without this view, Sprint 1+ optimizations might improve one peak while leaving the other untouched and look like 50% wins instead of pinpoint fixes.",
+      "targets": {
+        "Post-Sprint-1": "Mass in 5000+ buckets should drop ≥40%",
+        "Post-Sprint-2": "Mass in 5000+ buckets should drop ≥80%",
+        "Post-Sprint-3": "Mass in 5000+ buckets should be ≤5% of total switches"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT properties.tab AS tab, multiIf(toFloat(properties.ttiMs) < 500, '0-500', toFloat(properties.ttiMs) < 1000, '500-1000', toFloat(properties.ttiMs) < 2000, '1000-2000', toFloat(properties.ttiMs) < 5000, '2000-5000', toFloat(properties.ttiMs) < 10000, '5000-10000', '10000+') AS bucket, count() AS switches FROM events WHERE event = 'hub_tab_switch_perf' AND timestamp >= now() - INTERVAL 14 DAY GROUP BY tab, bucket ORDER BY tab, bucket"
+      }
+    },
+    {
+      "key": "tti-trend",
+      "name": "TTI trend — daily P50/P95 over 28 days",
+      "type": "hogql",
+      "size": "wide",
+      "description": "Daily P50 + P95 ttiMs per tab over 28 days. Sprint-over-Sprint regression detector: when PR-1.1 merges, the curve should step down within 24h of the deploy. If it does not, the optimization landed but failed to bite (e.g. cache-hit dominated the prior baseline, or the lazy boundaries didn't change real-world perceived TTI).",
+      "rationale": "Static `Baseline` table in the runbook captures one snapshot. This trend tile captures the delta — and lets us correlate dips with deploy timestamps (cross-reference with Sergeant deploy log).",
+      "targets": {
+        "Post-Sprint-1 deploy": "step-down ≥30% within 48h of merge for affected tab",
+        "Post-Sprint-2 deploy": "step-down ≥50% from Sprint 1 line",
+        "Regression alarm": "any +20% increase WoW → P2 ticket, investigate recent deploys"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT toDate(timestamp) AS day, properties.tab AS tab, quantile(0.50)(toFloat(properties.ttiMs)) AS p50_ttiMs, quantile(0.95)(toFloat(properties.ttiMs)) AS p95_ttiMs, count() AS samples FROM events WHERE event = 'hub_tab_switch_perf' AND timestamp >= now() - INTERVAL 28 DAY GROUP BY day, tab ORDER BY day, tab"
+      }
+    }
+  ],
+  "alerts": [
+    {
+      "key": "tti-p95-regression",
+      "panel": "tti-trend",
+      "condition": "P95 ttiMs for any tab increases ≥20% WoW (rolling 7-day windows)",
+      "severity": "P2",
+      "channel": "Telegram #ops (via n8n WF-16 ingest) + PostHog subscription",
+      "notes": "Likely cause: recent deploy added eager-mount cost to a Settings/Reports section. Bisect via Sergeant deploy log."
+    },
+    {
+      "key": "longtask-regression",
+      "panel": "longtask-burden",
+      "condition": "P95 longTaskCount exceeds Sprint-current target by 2× for 3 consecutive days",
+      "severity": "P2",
+      "channel": "Telegram #ops",
+      "notes": "Sprint 1 target = measured (no number yet); Sprint 2 = ≤5; Sprint 3 = ≤2. Trip-wire kicks in once Sprint-current target is set."
+    },
+    {
+      "key": "cache-hit-collapse",
+      "panel": "cache-hit-ratio",
+      "condition": "cache_hit_ratio for any tab drops below 50% over 7 rolling days",
+      "severity": "P2",
+      "channel": "Telegram #growth",
+      "notes": "Likely cause: route-loader prefetch race (added in PR #3043). Re-investigate timing/scope."
+    }
+  ],
+  "umbrella_dashboard": {
+    "name": "Hub tab perf",
+    "tiles": [
+      { "panel": "tti-percentiles", "row": 1, "width": "full" },
+      { "panel": "longtask-burden", "row": 2, "width": "half" },
+      { "panel": "cache-hit-ratio", "row": 2, "width": "half" },
+      { "panel": "tti-histogram", "row": 3, "width": "full" },
+      { "panel": "tti-trend", "row": 4, "width": "full" }
+    ]
+  }
+}
