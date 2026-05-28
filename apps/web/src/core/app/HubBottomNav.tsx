@@ -20,15 +20,14 @@ import { messages } from "@shared/i18n/uk";
  * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - `bg-panel` opaque elevated surface a step lighter than the page
- *   so the bar reads as its own solid surface "lying" on the bottom
- *   edge. Must stay opaque (not `/95` + blur): the hub mesh-gradient
- *   page background showed through the translucent fill, so the strip
- *   read as empty space again — obvious in light mode where `panel`
- *   is white over a coloured mesh (navbar-dead-space, 2026-05-28
- *   dark-mode pass + light-mode follow-up). `border-t border-line`;
- *   still edge-to-edge — no horizontal margin, no rounded corners,
- *   no shadow (no floating-card look).
+ * - Transparent background — no fill, no `border-t`, no blur — so the
+ *   bar blends into the page and reads as "lying on the background"
+ *   rather than as a separate panel at the bottom. A solid surface
+ *   (`bg-panel` + border) had reintroduced the dead-space read (a
+ *   floating bar with empty padding below the labels); a transparent
+ *   bar removes it (navbar-dead-space, 2026-05-28 → transparent
+ *   direction). Still edge-to-edge — no horizontal margin, no rounded
+ *   corners, no shadow.
  * - Active indicator: a rounded outline (`rounded-2xl border
  *   border-ink-strong/25`) framing the active tab — outline only, no
  *   fill. Module-agnostic by design.
@@ -262,11 +261,7 @@ export function HubBottomNav({
   return (
     <nav
       aria-label={messages.nav.hubSections}
-      className={cn(
-        "shrink-0 relative z-30 safe-area-pb-tight",
-        "bg-panel",
-        "border-t border-line",
-      )}
+      className={cn("shrink-0 relative z-30 safe-area-pb-tight")}
     >
       <div
         role="tablist"
