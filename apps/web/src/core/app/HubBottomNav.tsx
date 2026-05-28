@@ -20,14 +20,16 @@ import { messages } from "@shared/i18n/uk";
  * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - `bg-bg/95 motion-safe:backdrop-blur-xl` translucent surface
- *   tinted to match the page background (so the nav reads as part
- *   of the surface, not a separate panel). `border-t border-line`
- *   provides a subtle delineation; no horizontal margin, no rounded
- *   corners, no shadow (no floating-card look).
- * - Active indicator: thin 4 px sliding stripe (`top-0 h-1 w-10
- *   rounded-full`) at the top of the active tab, `bg-ink-strong`
- *   (brand) — module-agnostic by design.
+ * - `bg-panel/95 motion-safe:backdrop-blur-xl` elevated surface a
+ *   step lighter than the page so the bar reads as its own surface
+ *   "lying" on the bottom edge — esp. in dark mode, where `bg-bg`
+ *   matched the page and the bottom strip read as empty space
+ *   (navbar-dead-space, 2026-05-28). `border-t border-line`; still
+ *   edge-to-edge — no horizontal margin, no rounded corners, no
+ *   shadow (no floating-card look).
+ * - Active indicator: a rounded outline (`rounded-2xl border
+ *   border-ink-strong/25`) framing the active tab — outline only, no
+ *   fill. Module-agnostic by design.
  * - Active label + icon: `text-ink-strong`; inactive: `text-muted`.
  * - `role="tablist"` + `aria-selected` for AT.
  *
@@ -101,10 +103,12 @@ function HubBottomNavTab({
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
         "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
-        "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
+        "my-1.5 rounded-2xl border transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-        active ? "text-ink-strong" : "text-muted hover:text-text/70",
+        active
+          ? "text-ink-strong border-ink-strong/25"
+          : "text-muted border-transparent hover:text-text/70",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}
@@ -253,36 +257,19 @@ export function HubBottomNav({
     label: "Налаштування",
   });
 
-  const activeIndex = tabs.findIndex((tab) => tab.active);
-
   return (
     <nav
       aria-label={messages.nav.hubSections}
       className={cn(
         "shrink-0 relative z-30 safe-area-pb-tight",
-        "bg-bg/95 motion-safe:backdrop-blur-xl",
+        "bg-panel/95 motion-safe:backdrop-blur-xl",
         "border-t border-line",
       )}
     >
       <div
         role="tablist"
-        className="relative flex h-[60px] pointer-coarse:h-[64px]"
+        className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
       >
-        {activeIndex >= 0 && (
-          <span
-            data-testid="hub-bottom-nav-active-indicator"
-            className={cn(
-              "absolute top-0 h-1 w-10 rounded-full pointer-events-none",
-              "bg-ink-strong shadow-sm",
-              "transition-[left] duration-200 ease-out",
-            )}
-            style={{
-              left: `calc(${activeIndex} * (100% / ${tabs.length}) + (100% / ${tabs.length} - 2.5rem) / 2)`,
-            }}
-            aria-hidden
-          />
-        )}
-
         {tabs.map((tab) => (
           <HubBottomNavTab
             key={tab.key}

@@ -12,14 +12,16 @@ import { cn } from "../../lib/ui/cn";
  * Canonical shape:
  * - Height 60 px (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - `bg-bg/95 motion-safe:backdrop-blur-xl` translucent surface
- *   tinted to match the page background (so the nav reads as part
- *   of the surface, not a separate panel). `border-t border-line`
- *   provides a subtle delineation; no horizontal margin, no rounded
- *   corners, no shadow.
- * - Active indicator: thin 4 px sliding stripe (`top-0 h-1 w-10
- *   rounded-full`) at the top of the active tab, tinted with the
- *   module's accent gradient. Carries module identity.
+ * - `bg-panel/95 motion-safe:backdrop-blur-xl` elevated surface a
+ *   step lighter than the page so the bar reads as its own surface
+ *   on the bottom edge (esp. dark mode, where `bg-bg` matched the
+ *   page and the bottom strip read as empty space — navbar-dead-space,
+ *   2026-05-28). `border-t border-line`; still edge-to-edge — no
+ *   horizontal margin, no rounded corners, no shadow.
+ * - Active indicator: a rounded outline (`rounded-2xl border`)
+ *   framing the active tab, tinted with the module accent
+ *   (`tokens.outline`) — outline only, no fill. Carries module
+ *   identity.
  * - Active icon picks up `tokens.text` (module-colored); label
  *   stays `text-text`. No drop-shadow glow.
  * - Labels `text-style-caption` (12px) per Hard Rule #16.
@@ -67,8 +69,8 @@ export interface ModuleBottomNavProps {
 type ColorTokens = {
   /** Active icon tint. Module-colored text token. */
   text: string;
-  /** Top-stripe gradient — identity carrier. */
-  pill: string;
+  /** Active-tab outline border — module accent at low opacity. */
+  outline: string;
   /** Tiny unread/attention dot color. */
   badge: string;
 };
@@ -76,22 +78,22 @@ type ColorTokens = {
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
     text: "text-finyk",
-    pill: "bg-linear-to-r from-brand-400 to-brand-500",
+    outline: "border-finyk/40",
     badge: "bg-finyk",
   },
   fizruk: {
     text: "text-fizruk",
-    pill: "bg-linear-to-r from-teal-400 to-teal-500",
+    outline: "border-fizruk/40",
     badge: "bg-fizruk",
   },
   routine: {
     text: "text-routine",
-    pill: "bg-linear-to-r from-coral-400 to-coral-500",
+    outline: "border-routine/40",
     badge: "bg-routine",
   },
   nutrition: {
     text: "text-nutrition",
-    pill: "bg-linear-to-r from-lime-400 to-lime-500",
+    outline: "border-nutrition/40",
     badge: "bg-nutrition",
   },
 };
@@ -107,38 +109,21 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
 }: ModuleBottomNavProps) {
   const tokens = COLORS[module];
   const isTablist = role === "tablist";
-  const activeIndex = items.findIndex((i) => i.id === activeId);
 
   return (
     <nav
       aria-label={ariaLabel}
       className={cn(
         "shrink-0 relative z-30 safe-area-pb-tight",
-        "bg-bg/95 motion-safe:backdrop-blur-xl",
+        "bg-panel/95 motion-safe:backdrop-blur-xl",
         "border-t border-line",
         className,
       )}
     >
       <div
-        className="relative flex h-[60px] pointer-coarse:h-[64px]"
+        className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
         role={isTablist ? "tablist" : undefined}
       >
-        {activeIndex >= 0 && (
-          <span
-            data-testid="module-bottom-nav-active-indicator"
-            className={cn(
-              "absolute top-0 h-1 w-10 rounded-full pointer-events-none",
-              tokens.pill,
-              "shadow-sm",
-              "transition-[left] duration-200 ease-out",
-            )}
-            style={{
-              left: `calc(${activeIndex} * (100% / ${items.length}) + (100% / ${items.length} - 2.5rem) / 2)`,
-            }}
-            aria-hidden
-          />
-        )}
-
         {items.map((item) => {
           const active = activeId === item.id;
           return (
@@ -156,11 +141,13 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onClick={() => onChange(item.id)}
               className={cn(
                 "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
-                "min-h-touch-target",
+                "my-1.5 rounded-2xl border min-h-touch-target",
                 "transition-all duration-200",
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                active ? "text-text" : "text-muted hover:text-text/70",
+                active
+                  ? cn("text-text", tokens.outline)
+                  : "text-muted border-transparent hover:text-text/70",
               )}
             >
               <span
