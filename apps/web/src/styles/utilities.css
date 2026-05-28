@@ -363,8 +363,20 @@
    * `ui-layout-styling-fixes`). The calc keeps a ~16px clearance above the
    * home indicator on iPhone while letting the nav sit flush against the
    * bottom on Android / desktop where `env(safe-area-inset-bottom)` is 0.
+   *
+   * In a browser tab that ~16px reads fine (Safari's bottom toolbar sits
+   * below it), but installed as a PWA the gap still showed as page-coloured
+   * dead space and the nav looked detached from the bottom edge instead of
+   * lying on it (user report 2026-05-28 / `navbar-dead-space`). In
+   * `display-mode: standalone` we therefore drop the inset to 0 so the nav
+   * sits flush on the screen edge; the per-tab `pb-1.5` (6px) still keeps the
+   * labels off the very edge / home indicator.
    */
   padding-bottom: max(6px, calc(env(safe-area-inset-bottom, 0px) - 18px));
+
+  @media (display-mode: standalone) {
+    padding-bottom: 0;
+  }
 }
 
 @utility safe-area-pt-pb {
