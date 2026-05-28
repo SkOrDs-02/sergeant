@@ -12,11 +12,13 @@ import { cn } from "../../lib/ui/cn";
  * Canonical shape:
  * - Height 60 px (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - `bg-panel/95 motion-safe:backdrop-blur-xl` elevated surface a
- *   step lighter than the page so the bar reads as its own surface
- *   on the bottom edge (esp. dark mode, where `bg-bg` matched the
- *   page and the bottom strip read as empty space — navbar-dead-space,
- *   2026-05-28). `border-t border-line`; still edge-to-edge — no
+ * - `bg-panel` opaque elevated surface a step lighter than the page
+ *   so the bar reads as its own solid surface on the bottom edge.
+ *   Must stay opaque (not `/95` + blur): the page background showed
+ *   through the translucent fill so the strip read as empty space
+ *   again — obvious in light mode where `panel` is white over a
+ *   coloured mesh (navbar-dead-space, 2026-05-28 + light-mode
+ *   follow-up). `border-t border-line`; still edge-to-edge — no
  *   horizontal margin, no rounded corners, no shadow.
  * - Active indicator: a rounded outline (`rounded-2xl border`)
  *   framing the active tab, tinted with the module accent
@@ -115,7 +117,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-label={ariaLabel}
       className={cn(
         "shrink-0 relative z-30 safe-area-pb-tight",
-        "bg-panel/95 motion-safe:backdrop-blur-xl",
+        "bg-panel",
         "border-t border-line",
         className,
       )}

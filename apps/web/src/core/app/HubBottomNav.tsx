@@ -20,13 +20,15 @@ import { messages } from "@shared/i18n/uk";
  * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
  * - `safe-area-pb` so iOS home-indicator clears.
- * - `bg-panel/95 motion-safe:backdrop-blur-xl` elevated surface a
- *   step lighter than the page so the bar reads as its own surface
- *   "lying" on the bottom edge — esp. in dark mode, where `bg-bg`
- *   matched the page and the bottom strip read as empty space
- *   (navbar-dead-space, 2026-05-28). `border-t border-line`; still
- *   edge-to-edge — no horizontal margin, no rounded corners, no
- *   shadow (no floating-card look).
+ * - `bg-panel` opaque elevated surface a step lighter than the page
+ *   so the bar reads as its own solid surface "lying" on the bottom
+ *   edge. Must stay opaque (not `/95` + blur): the hub mesh-gradient
+ *   page background showed through the translucent fill, so the strip
+ *   read as empty space again — obvious in light mode where `panel`
+ *   is white over a coloured mesh (navbar-dead-space, 2026-05-28
+ *   dark-mode pass + light-mode follow-up). `border-t border-line`;
+ *   still edge-to-edge — no horizontal margin, no rounded corners,
+ *   no shadow (no floating-card look).
  * - Active indicator: a rounded outline (`rounded-2xl border
  *   border-ink-strong/25`) framing the active tab — outline only, no
  *   fill. Module-agnostic by design.
@@ -262,7 +264,7 @@ export function HubBottomNav({
       aria-label={messages.nav.hubSections}
       className={cn(
         "shrink-0 relative z-30 safe-area-pb-tight",
-        "bg-panel/95 motion-safe:backdrop-blur-xl",
+        "bg-panel",
         "border-t border-line",
       )}
     >
