@@ -80,4 +80,80 @@ export const messagesEn: Partial<MessageCatalog> = {
     loadingTransactions: "Loading transactions…",
     loadingWorkouts: "Loading workouts",
   },
+
+  // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
+  // surface; EN translation is the gating reason a non-UA visitor can
+  // self-checkout. Tier names ("Free", "Premium") are brand-stable across
+  // locales — identical to UK.
+  pricing: {
+    pageTitle: "Plans",
+    backLabel: "Back",
+    plansAriaLabel: "Pricing plans",
+    hero: {
+      headlineLine1: "Sergeant is free for everyday use.",
+      headlineLine2: "Premium — when you need everything at once.",
+      subtitle:
+        "One paid plan. No tiers, no lifetime deal, no trial timer. Tap Premium and Stripe Checkout opens.",
+    },
+    tiers: {
+      freeName: "Free",
+      freeCadence: "forever",
+      freeTagline: "Basic limits across all 4 modules. Local-first, no cloud.",
+      premiumName: "Premium",
+      premiumCadence: "/mo",
+      premiumTagline:
+        "Everything unlocked. One plan — no tiers, no add-ons.",
+    },
+    features: {
+      expensesFinyk: "Finyk expenses",
+      aiPhotoFood: "AI meal photo in Nutrition",
+      aiPhotoFoodShort: "AI meal photo",
+      manualMeals: "Manual meal entries",
+      activeWorkoutTemplate: "Active workout template",
+      workoutTemplates: "Workout templates",
+      activeHabits: "Active habits",
+      habits: "Habits",
+      pdfExport: "PDF report export",
+      multiCurrency: "Multi-currency accounts",
+      cloudSync: "Cross-device CloudSync",
+    },
+    limits: {
+      // Leading space matches uk — composes as `${N} / month`.
+      perMonth: " / month",
+      unlimited: "unlimited",
+    },
+    cta: {
+      tryPremium: "Try Premium",
+      openingCheckout: "Opening checkout…",
+      manageSubscription: "Manage subscription",
+      openingPortal: "Opening portal…",
+      switchToFree: "Switch to Free",
+      currentPlan: "Your current plan",
+    },
+    status: {
+      checkoutCreatedPrefix: "Checkout session created",
+    },
+    errors: {
+      checkoutUnavailable:
+        "Checkout is temporarily unavailable. Leave your email below and we'll get back with a checkout link.",
+      portalNoBillingCustomer:
+        "No Stripe billing profile found. Reach out to support — we'll set it up manually.",
+      portalUnavailable:
+        "Subscription management is temporarily unavailable. Try again later.",
+      portalGeneric:
+        "Couldn't open the portal. Check your connection and try again.",
+    },
+    toast: {
+      subscriptionActive: "Subscription active — welcome to Premium!",
+      subscriptionActiveCta: "Go to settings",
+      paymentCanceled: "Payment canceled. No subscription was created.",
+    },
+    waitlist: {
+      headline: "Waitlist email",
+      subtitle:
+        "One email when Premium launches. No spam, no auto-charges.",
+    },
+    footer:
+      "Prices in EUR; Stripe charges the UAH-equivalent for the UA market. Final number lives in the pricing-strategy PR after market research.",
+  },
 };

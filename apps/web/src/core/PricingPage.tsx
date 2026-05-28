@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
@@ -9,6 +9,7 @@ import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { useToast } from "@shared/hooks/useToast";
+import { useLocale } from "@shared/i18n/useLocale";
 import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { usePlan } from "./billing/usePlan";
@@ -59,48 +60,63 @@ const FREE_LIMIT_MEAL_PHOTOS = 20;
 const FREE_LIMIT_ACTIVE_WORKOUTS = 1;
 const FREE_LIMIT_ACTIVE_HABITS = 5;
 
-const TIERS: ReadonlyArray<Tier> = [
-  {
-    id: "free",
-    name: "Free",
-    price: "€0",
-    cadence: "назавжди",
-    tagline: "Базові ліміти у всіх 4 модулях. Local-first, без cloud.",
-    highlight: false,
-    features: [
-      { label: "Витрати у Фініку", limit: `${FREE_LIMIT_EXPENSES} / місяць` },
-      {
-        label: "AI-фото їжі у Харчуванні",
-        limit: `${FREE_LIMIT_MEAL_PHOTOS} / місяць`,
-      },
-      { label: "Ручні прийоми їжі", limit: "без ліміту" },
-      {
-        label: "Активний шаблон тренування",
-        limit: `${FREE_LIMIT_ACTIVE_WORKOUTS}`,
-      },
-      { label: "Активні звички", limit: `${FREE_LIMIT_ACTIVE_HABITS}` },
-      { label: "PDF-експорт звітів", included: false },
-      { label: "Мульти-валютні рахунки", included: false },
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: PREMIUM_PRICE_MONTHLY_PLACEHOLDER,
-    cadence: "/міс",
-    tagline: "Усе розблоковано. Один план — без рівнів і доплат.",
-    highlight: true,
-    features: [
-      { label: "Витрати у Фініку", limit: "без ліміту" },
-      { label: "AI-фото їжі", limit: "без ліміту" },
-      { label: "Шаблони тренувань", limit: "без ліміту" },
-      { label: "Звички", limit: "без ліміту" },
-      { label: "PDF-експорт звітів" },
-      { label: "Мульти-валютні рахунки" },
-      { label: "CloudSync між пристроями" },
-    ],
-  },
-];
+/**
+ * Build the per-locale TIERS array. Lives inside PricingPage so `useLocale`
+ * messages can drive every label; memoized on `messages` identity since the
+ * resolver returns a frozen reference per locale (the array recomputes only
+ * when the user toggles language, not on every parent render).
+ */
+function buildTiers(
+  pricing: ReturnType<typeof useLocale>["messages"]["pricing"],
+): ReadonlyArray<Tier> {
+  const limits = pricing.limits;
+  const features = pricing.features;
+  return [
+    {
+      id: "free",
+      name: pricing.tiers.freeName,
+      price: "€0",
+      cadence: pricing.tiers.freeCadence,
+      tagline: pricing.tiers.freeTagline,
+      highlight: false,
+      features: [
+        {
+          label: features.expensesFinyk,
+          limit: `${FREE_LIMIT_EXPENSES}${limits.perMonth}`,
+        },
+        {
+          label: features.aiPhotoFood,
+          limit: `${FREE_LIMIT_MEAL_PHOTOS}${limits.perMonth}`,
+        },
+        { label: features.manualMeals, limit: limits.unlimited },
+        {
+          label: features.activeWorkoutTemplate,
+          limit: `${FREE_LIMIT_ACTIVE_WORKOUTS}`,
+        },
+        { label: features.activeHabits, limit: `${FREE_LIMIT_ACTIVE_HABITS}` },
+        { label: features.pdfExport, included: false },
+        { label: features.multiCurrency, included: false },
+      ],
+    },
+    {
+      id: "premium",
+      name: pricing.tiers.premiumName,
+      price: PREMIUM_PRICE_MONTHLY_PLACEHOLDER,
+      cadence: pricing.tiers.premiumCadence,
+      tagline: pricing.tiers.premiumTagline,
+      highlight: true,
+      features: [
+        { label: features.expensesFinyk, limit: limits.unlimited },
+        { label: features.aiPhotoFoodShort, limit: limits.unlimited },
+        { label: features.workoutTemplates, limit: limits.unlimited },
+        { label: features.habits, limit: limits.unlimited },
+        { label: features.pdfExport },
+        { label: features.multiCurrency },
+        { label: features.cloudSync },
+      ],
+    },
+  ];
+}
 
 export function PricingPage() {
   const navigate = useNavigate();
@@ -115,6 +131,11 @@ export function PricingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const { isPro: isPremiumActive } = usePlan();
+  // i18n. Resolved messages frozen per-locale у resolver → memo identity
+  // stable, `tiers` recomputes лише при locale-flip (rare).
+  const { messages } = useLocale();
+  const t = messages.pricing;
+  const tiers = useMemo(() => buildTiers(t), [t]);
 
   // Pageview-аналітика. Window.location.search парситься щоб ми могли
   // розрізнити "user натиснув CTA з paywall" vs "user сам зайшов на /pricing".
@@ -147,18 +168,14 @@ export function PricingPage() {
     setSearchParams(next, { replace: true });
     if (checkout === "success") {
       void queryClient.invalidateQueries({ queryKey: billingKeys.status });
-      toast.success(
-        "Підписку активовано — ласкаво просимо в Premium!",
-        undefined,
-        {
-          label: "Перейти у налаштування",
-          onClick: () => navigate("/settings"),
-        },
-      );
+      toast.success(t.toast.subscriptionActive, undefined, {
+        label: t.toast.subscriptionActiveCta,
+        onClick: () => navigate("/settings"),
+      });
       return;
     }
-    toast.info("Оплату скасовано. Підписка не оформлена.");
-  }, [searchParams, setSearchParams, queryClient, toast, navigate]);
+    toast.info(t.toast.paymentCanceled);
+  }, [searchParams, setSearchParams, queryClient, toast, navigate, t]);
 
   async function handlePremiumCta(): Promise<void> {
     trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
@@ -181,9 +198,7 @@ export function PricingPage() {
       window.location.assign(checkout.url);
       return;
     } catch {
-      setCheckoutError(
-        "Оплата тимчасово недоступна. Можеш залишити email нижче, і ми повернемось з checkout-link.",
-      );
+      setCheckoutError(t.errors.checkoutUnavailable);
       const anchor = document.getElementById("waitlist-anchor");
       if (anchor && typeof anchor.scrollIntoView === "function") {
         anchor.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -227,17 +242,11 @@ export function PricingPage() {
           ? (err as { status?: unknown }).status
           : undefined;
       if (status === 409) {
-        setPortalError(
-          "Не знайдено платіжний профіль Stripe. Напиши у підтримку — підключимо вручну.",
-        );
+        setPortalError(t.errors.portalNoBillingCustomer);
       } else if (status === 503) {
-        setPortalError(
-          "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
-        );
+        setPortalError(t.errors.portalUnavailable);
       } else {
-        setPortalError(
-          "Не вдалося відкрити портал. Перевір зв'язок і спробуй ще раз.",
-        );
+        setPortalError(t.errors.portalGeneric);
       }
     } finally {
       setPortalLoading(false);
@@ -260,26 +269,25 @@ export function PricingPage() {
               size="sm"
               iconOnly
               onClick={() => navigate(-1)}
-              aria-label="Назад"
+              aria-label={t.backLabel}
             >
               <Icon name="chevron-left" size={20} />
             </Button>
-            <h1 className="text-style-title text-text">Тарифи</h1>
+            <h1 className="text-style-title text-text">{t.pageTitle}</h1>
           </header>
 
           <section className="space-y-3 text-center">
             <h2 className="text-style-headline text-text leading-tight">
-              Sergeant безкоштовний для базового користування.
+              {t.hero.headlineLine1}
               <br />
-              Premium — коли треба все одразу.
+              {t.hero.headlineLine2}
             </h2>
             <p className="text-style-body text-muted max-w-2xl mx-auto">
-              Один платний план. Без рівнів, без довічної підписки, без
-              trial-таймера. Натиснеш Premium — відкриється Stripe Checkout.
+              {t.hero.subtitle}
             </p>
             {checkoutResult ? (
               <p className="text-style-body-sm text-success-strong">
-                Checkout session створено ({checkoutResult.mode} mode).
+                {t.status.checkoutCreatedPrefix} ({checkoutResult.mode} mode).
               </p>
             ) : null}
             {checkoutError ? (
@@ -296,9 +304,9 @@ export function PricingPage() {
 
           <section
             className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto w-full"
-            aria-label="Тарифні плани"
+            aria-label={t.plansAriaLabel}
           >
-            {TIERS.map((tier, idx) => {
+            {tiers.map((tier, idx) => {
               const isPremium = tier.id === "premium";
               const isCurrent =
                 (isPremium && isPremiumActive) ||
@@ -312,14 +320,14 @@ export function PricingPage() {
               const ctaLabel = isPremium
                 ? isPremiumActive
                   ? portalLoading
-                    ? "Відкриваємо портал…"
-                    : "Керувати підпискою"
+                    ? t.cta.openingPortal
+                    : t.cta.manageSubscription
                   : checkoutLoading
-                    ? "Відкриваємо checkout…"
-                    : "Спробувати Premium"
+                    ? t.cta.openingCheckout
+                    : t.cta.tryPremium
                 : isPremiumActive
-                  ? "Перейти на Free"
-                  : "Зараз ваш план";
+                  ? t.cta.switchToFree
+                  : t.cta.currentPlan;
               const ctaDisabled = isPremium
                 ? isPremiumActive
                   ? portalLoading
@@ -416,20 +424,17 @@ export function PricingPage() {
           >
             <header className="space-y-2 mb-6">
               <h2 className="text-style-headline text-text">
-                Email для waitlist
+                {t.waitlist.headline}
               </h2>
               <p className="text-style-body-sm text-muted">
-                Один лист, коли Premium стартує. Без спаму, без авто-списань.
+                {t.waitlist.subtitle}
               </p>
             </header>
             <WaitlistForm source="pricing_page" />
           </section>
 
           <footer className="text-center text-style-caption text-muted space-y-1">
-            <p>
-              Ціни у EUR; для UA-ринку Stripe виставляє ₴-еквівалент. Фінальна
-              цифра — у pricing-strategy PR після market-research.
-            </p>
+            <p>{t.footer}</p>
           </footer>
         </div>
       </div>

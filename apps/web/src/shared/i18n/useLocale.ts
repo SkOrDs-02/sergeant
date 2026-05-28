@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_LOCALE,
   type Locale,
@@ -98,9 +98,12 @@ export function useLocale(): UseLocaleResult {
     }
   }, []);
 
-  return {
-    locale,
-    messages: getMessages(locale),
-    setLocale,
-  };
+  // Memoize the resolved catalog. `getMessages` for EN allocates a frozen
+  // object on every call (per #3123 contract); without `useMemo` consumers
+  // that pass `messages` in dep arrays (`useEffect(..., [messages])`,
+  // `useMemo(..., [messages])`) would re-run every render. UK path keeps
+  // referential identity intact (`getMessages('uk') === uk`).
+  const messages = useMemo(() => getMessages(locale), [locale]);
+
+  return { locale, messages, setLocale };
 }

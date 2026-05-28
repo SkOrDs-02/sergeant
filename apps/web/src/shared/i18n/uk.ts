@@ -639,6 +639,85 @@ export const messages = {
         "Розширені звіти між модулями та експорт PDF — у Premium підписці.",
     },
   },
+
+  // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
+  // surface; EN translation is launch-critical. All user-visible strings on
+  // the page route through this group so they can be locale-switched per
+  // `?lang=en` URL trigger (see `useLocale.ts`). Tier names ("Free",
+  // "Premium") kept here for symmetry but they're brand-stable across
+  // locales — the same identifiers ship in both `uk.ts` and `en.ts`.
+  pricing: {
+    pageTitle: "Тарифи",
+    backLabel: "Назад",
+    plansAriaLabel: "Тарифні плани",
+    hero: {
+      headlineLine1: "Sergeant безкоштовний для базового користування.",
+      headlineLine2: "Premium — коли треба все одразу.",
+      subtitle:
+        "Один платний план. Без рівнів, без довічної підписки, без trial-таймера. Натиснеш Premium — відкриється Stripe Checkout.",
+    },
+    tiers: {
+      freeName: "Free",
+      freeCadence: "назавжди",
+      freeTagline: "Базові ліміти у всіх 4 модулях. Local-first, без cloud.",
+      premiumName: "Premium",
+      premiumCadence: "/міс",
+      premiumTagline:
+        "Усе розблоковано. Один план — без рівнів і доплат.",
+    },
+    features: {
+      expensesFinyk: "Витрати у Фініку",
+      aiPhotoFood: "AI-фото їжі у Харчуванні",
+      aiPhotoFoodShort: "AI-фото їжі",
+      manualMeals: "Ручні прийоми їжі",
+      activeWorkoutTemplate: "Активний шаблон тренування",
+      workoutTemplates: "Шаблони тренувань",
+      activeHabits: "Активні звички",
+      habits: "Звички",
+      pdfExport: "PDF-експорт звітів",
+      multiCurrency: "Мульти-валютні рахунки",
+      cloudSync: "CloudSync між пристроями",
+    },
+    limits: {
+      // Leading space intentional — composes як `${N} / місяць`.
+      perMonth: " / місяць",
+      unlimited: "без ліміту",
+    },
+    cta: {
+      tryPremium: "Спробувати Premium",
+      openingCheckout: "Відкриваємо checkout…",
+      manageSubscription: "Керувати підпискою",
+      openingPortal: "Відкриваємо портал…",
+      switchToFree: "Перейти на Free",
+      currentPlan: "Зараз ваш план",
+    },
+    status: {
+      // Renders як «Checkout session створено (test mode).» — caller appends `(${mode} mode).`.
+      checkoutCreatedPrefix: "Checkout session створено",
+    },
+    errors: {
+      checkoutUnavailable:
+        "Оплата тимчасово недоступна. Можеш залишити email нижче, і ми повернемось з checkout-link.",
+      portalNoBillingCustomer:
+        "Не знайдено платіжний профіль Stripe. Напиши у підтримку — підключимо вручну.",
+      portalUnavailable:
+        "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
+      portalGeneric:
+        "Не вдалося відкрити портал. Перевір зв'язок і спробуй ще раз.",
+    },
+    toast: {
+      subscriptionActive: "Підписку активовано — ласкаво просимо в Premium!",
+      subscriptionActiveCta: "Перейти у налаштування",
+      paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
+    },
+    waitlist: {
+      headline: "Email для waitlist",
+      subtitle:
+        "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
+    },
+    footer:
+      "Ціни у EUR; для UA-ринку Stripe виставляє ₴-еквівалент. Фінальна цифра — у pricing-strategy PR після market-research.",
+  },
 } as const satisfies MessageCatalog;
 
 /**
