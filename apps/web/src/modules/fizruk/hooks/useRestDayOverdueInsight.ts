@@ -33,7 +33,6 @@ function daysSinceLastWorkout(workouts: readonly Workout[]): number {
   }
   if (!Number.isFinite(latestMs)) return Infinity;
 
-  const nowMs = Date.now();
   // Truncate both sides to local-midnight so partial days don't inflate
   // the count (e.g. finished at 23:55 → next day at 00:05 ≠ 1 full day).
   const todayStart = new Date();

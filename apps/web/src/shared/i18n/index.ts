@@ -25,7 +25,7 @@
  * `en.ts` typed as `Partial<MessageCatalog>` що гарантує shape compatibility.
  */
 
-import { messages as uk, type MessageCatalog } from "./uk";
+import { messages as uk } from "./uk";
 import { messagesEn } from "./en";
 
 /** Canonical narrow type — the precise literal shape of the uk catalog. */
@@ -64,8 +64,14 @@ export function getMessages(lang: Locale): LocalizedMessages {
   // Missing keys (most of the catalog right now) inherit from UK. Cast to
   // `LocalizedMessages` is safe: `messagesEn` is `Partial<MessageCatalog>`
   // shape-compatible with `uk`, and shallow-merge preserves structural
-  // identity for non-overridden groups.
-  return Object.freeze({ ...uk, ...messagesEn }) as unknown as LocalizedMessages;
+  // identity for non-overridden groups. The double-cast bridges
+  // Object.freeze's loosened readonly-shape return back to the precise
+  // literal `LocalizedMessages` type without losing structural identity.
+  // eslint-disable-next-line sergeant-design/no-strict-bypass
+  return Object.freeze({
+    ...uk,
+    ...messagesEn,
+  }) as unknown as LocalizedMessages;
 }
 
 /**

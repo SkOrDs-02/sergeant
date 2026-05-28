@@ -100,7 +100,13 @@ describe("HubBottomNav", () => {
     const nav = screen.getByRole("navigation");
     const settingsTab = screen.getByRole("tab", { name: /Налаштування/ });
 
-    expect(nav.className).toContain("safe-area-pb");
+    // The nav uses the `safe-area-pb-tight` utility (defined in
+    // utilities.css) instead of the previous `safe-area-pb`. The new
+    // utility tightens the iPhone-PWA bottom inset so labels sit closer
+    // to the screen edge — see HubBottomNav.tsx + utilities.css for the
+    // user-report context. We assert on the className because jsdom
+    // doesn't compute styles from at-rule `@utility` declarations.
+    expect(nav.className).toContain("safe-area-pb-tight");
     expect(nav.className).not.toContain("mx-3");
     expect(nav.className).not.toContain("mb-3");
     expect(nav.className).not.toContain("rounded");

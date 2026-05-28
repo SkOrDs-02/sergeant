@@ -183,10 +183,13 @@ export function SettingsSubGroup({
       >
         <ChevronIcon expanded={open} />
         {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-            Collapsible header uses `group-hover:text-text` interactive state +
-            transition-colors, which SectionHeading can't express via its
-            static tone tokens. */}
-        <span className="text-xs font-bold text-muted uppercase tracking-wider group-hover:text-text transition-colors">
+            Collapsible header uses `group-hover:text-brand-strong` interactive
+            state + transition-colors, which SectionHeading can't express via
+            its static tone tokens. Resting tone is `text-text` (stone-900) —
+            the previous `text-muted` resting tone read as light-on-light in
+            the warm light theme over the soft-glass card (user report
+            2026-05-26 / `ui-layout-styling-fixes`). */}
+        <span className="text-xs font-bold text-text uppercase tracking-wider group-hover:text-brand-strong transition-colors">
           {title}
         </span>
       </button>

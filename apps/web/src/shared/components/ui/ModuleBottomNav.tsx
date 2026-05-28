@@ -113,7 +113,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     <nav
       aria-label={ariaLabel}
       className={cn(
-        "shrink-0 relative z-30 safe-area-pb",
+        "shrink-0 relative z-30 safe-area-pb-tight",
         "bg-bg/95 motion-safe:backdrop-blur-xl",
         "border-t border-line",
         className,

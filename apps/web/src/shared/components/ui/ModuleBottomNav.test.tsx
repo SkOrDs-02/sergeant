@@ -35,7 +35,7 @@ describe("ModuleBottomNav", () => {
     const nav = screen.getByRole("navigation", { name: "Module sections" });
     const statsTab = screen.getByRole("button", { name: "Stats" });
 
-    expect(nav.className).toContain("safe-area-pb");
+    expect(nav.className).toContain("safe-area-pb-tight");
     expect(nav.className).not.toContain("mx-3");
     expect(nav.className).not.toContain("mb-3");
     expect(nav.className).not.toContain("rounded");

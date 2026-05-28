@@ -345,9 +345,15 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
 
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
-      {/* Search and tabs header */}
+      {/* Search and tabs header. Container uses the soft glass tint so the
+          inputs sitting on top can use a stronger surface and visually
+          "lift" off the header. Previously the input + tabs used
+          `bg-surface-soft-glass` (50% white) on top of `bg-surface-glass`
+          (82% white) — the input read as lighter than its own container
+          and the whole block felt empty in light theme (user report
+          2026-05-26 / `ui-layout-styling-fixes`). */}
       <div
-        className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3"
+        className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-soft-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3"
         style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))" }}
       >
         <label className="relative block">
@@ -360,7 +366,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук налаштувань…"
-            className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-surface-soft-glass border border-surface-line rounded-r-lg text-base md:text-sm text-ink placeholder:text-muted-v2"
+            className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panel border border-line rounded-r-lg text-base md:text-sm text-ink placeholder:text-muted"
           />
           {query && (
             <Button
@@ -385,7 +391,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
             items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
             value={tab}
             onChange={(v) => setTab(v)}
-            className="overflow-x-auto border border-surface-line bg-surface-soft-glass rounded-r-lg"
+            className="overflow-x-auto border border-line bg-panel rounded-r-lg"
           />
         )}
       </div>

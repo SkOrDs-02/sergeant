@@ -166,8 +166,14 @@ function useCollapseOnScroll(threshold = 80) {
           return;
         }
         const dy = y - lastY.current;
+        // Collapse on any meaningful downward scroll past the threshold.
+        // Expand ONLY when the user has returned close to the top — not on
+        // every small upward delta. iOS rubber-band and finger-jitter near
+        // the pill's vertical level produced tiny negative `dy` values that
+        // were flipping the pill open during scroll, even though the user
+        // had never tapped it (user report 2026-05-26 / `ui-layout-styling-fixes`).
         if (y > threshold && dy > 4) setCollapsed(true);
-        else if (dy < -4) setCollapsed(false);
+        else if (y <= threshold) setCollapsed(false);
         lastY.current = y;
         ticking.current = false;
       });
@@ -311,7 +317,9 @@ export function AIPill({
         role="group"
         aria-label={messages.nav.openAssistant}
         data-collapsed={collapsed ? "true" : undefined}
-        style={{ bottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))` }}
+        style={{
+          bottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))`,
+        }}
         className={cn(
           // Fixed pill positioning. Collapsed state shrinks to a circular
           // pip on the right edge so the content underneath stays
@@ -320,14 +328,15 @@ export function AIPill({
           "fixed z-sticky",
           "transition-[left,width,padding,box-shadow] duration-200 ease-out motion-reduce:transition-none",
           collapsed
-            ? "left-auto right-[4.5rem] w-11 pl-1 pr-1"
+            ? "left-auto right-[4.5rem] w-11"
             : "left-3.5 right-[4.5rem] pl-2.5 pr-2",
-          // Visual chrome — translucent glass surface with v2 pill shadow.
-          // `surface-strong-glass` is alpha-baked (0.93 light / 0.10 dark /
-          // 1.0 HC) so HC mode reads as a solid pill.
-          "h-11 bg-surface-strong-glass backdrop-blur-md",
-          "border border-line rounded-full shadow-pill",
-          "flex items-center gap-2",
+          // Visual chrome: glass pill ONLY when expanded. Collapsed reads as
+          // a clean gradient FAB — the previous always-on glass halo around
+          // a 28px icon looked like a disproportionate white outline around
+          // a small green dot (user report 2026-05-26).
+          "h-11 rounded-full flex items-center gap-2",
+          !collapsed &&
+            "bg-surface-strong-glass backdrop-blur-md border border-line shadow-pill",
           className,
         )}
       >
@@ -339,7 +348,7 @@ export function AIPill({
           aria-label={messages.nav.openAssistant}
           className={cn(
             "flex items-center gap-2 min-w-0",
-            collapsed ? "flex-none" : "flex-1",
+            collapsed ? "flex-none h-full w-full justify-center" : "flex-1",
             "focus:outline-none focus-visible:rounded-full focus-visible:ring-2",
             "focus-visible:ring-focus/45 focus-visible:ring-offset-2",
             "focus-visible:ring-offset-bg",
@@ -348,12 +357,13 @@ export function AIPill({
           <span
             aria-hidden
             className={cn(
-              "w-7 h-7 rounded-full shrink-0 text-white",
+              "rounded-full shrink-0 text-white",
               "flex items-center justify-center",
               "bg-gradient-to-br from-brand-400 to-brand-strong",
+              collapsed ? "w-11 h-11 shadow-fab" : "w-7 h-7",
             )}
           >
-            <Icon name="sparkle" size={14} strokeWidth={2.2} />
+            <Icon name="sparkle" size={collapsed ? 18 : 14} strokeWidth={2.2} />
           </span>
           {!collapsed && (
             <span className="flex-1 text-left text-style-body-sm text-muted truncate min-w-0">

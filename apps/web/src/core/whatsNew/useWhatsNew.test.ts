@@ -3,7 +3,11 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useWhatsNew, SHOW_DELAY_MS } from "./useWhatsNew";
+import {
+  useWhatsNew,
+  SHOW_DELAY_MS,
+  __resetWhatsNewSessionForTesting,
+} from "./useWhatsNew";
 import { RELEASES } from "./releases";
 import { WHATS_NEW_LAST_SEEN_KEY } from "./storage";
 
@@ -28,6 +32,7 @@ describe("useWhatsNew", () => {
   beforeEach(() => {
     localStorage.clear();
     trackEventMock.mockClear();
+    __resetWhatsNewSessionForTesting();
     vi.useFakeTimers();
   });
 
@@ -97,6 +102,22 @@ describe("useWhatsNew", () => {
         expect.objectContaining({ id: latest.id, href: latest.cta.href }),
       );
     }
+  });
+
+  it("re-opens without the 2.5s delay on remount before the user dismisses (no flash)", () => {
+    const first = renderHook(() => useWhatsNew({ enabled: true }));
+    act(() => {
+      vi.advanceTimersByTime(SHOW_DELAY_MS + 1);
+    });
+    expect(first.result.current.open).toBe(true);
+    first.unmount();
+
+    const second = renderHook(() => useWhatsNew({ enabled: true }));
+    // Without advancing timers — the second mount must show the modal
+    // synchronously. Otherwise the user sees a ~2s blank flash between
+    // mounts (the original bug report).
+    expect(second.result.current.open).toBe(true);
+    expect(second.result.current.release?.id).toBe(latest.id);
   });
 
   it("does not re-open after lastSeenId persists across remounts", () => {

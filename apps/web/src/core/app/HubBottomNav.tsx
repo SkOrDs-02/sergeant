@@ -259,7 +259,7 @@ export function HubBottomNav({
     <nav
       aria-label={messages.nav.hubSections}
       className={cn(
-        "shrink-0 relative z-30 safe-area-pb",
+        "shrink-0 relative z-30 safe-area-pb-tight",
         "bg-bg/95 motion-safe:backdrop-blur-xl",
         "border-t border-line",
       )}

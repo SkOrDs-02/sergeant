@@ -353,6 +353,20 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+@utility safe-area-pb-tight {
+  /**
+   * Tightened safe-area bottom padding for screen-edge nav surfaces (Hub /
+   * Module bottom nav). The full `safe-area-pb` produced ~34px of
+   * page-coloured dead space below the labels on iPhone PWA standalone,
+   * which read as floating chrome with empty padding instead of a nav
+   * "lying" on the bottom edge (user report 2026-05-26 /
+   * `ui-layout-styling-fixes`). The calc keeps a ~16px clearance above the
+   * home indicator on iPhone while letting the nav sit flush against the
+   * bottom on Android / desktop where `env(safe-area-inset-bottom)` is 0.
+   */
+  padding-bottom: max(6px, calc(env(safe-area-inset-bottom, 0px) - 18px));
+}
+
 @utility safe-area-pt-pb {
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);

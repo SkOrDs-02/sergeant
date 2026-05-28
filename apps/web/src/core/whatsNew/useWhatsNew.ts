@@ -38,6 +38,27 @@ export interface UseWhatsNewResult {
 
 export const SHOW_DELAY_MS = 2500;
 
+// Re-mount guard. The hook lives on `<HubHomeView>`, which can re-mount
+// without the user dismissing the modal (key flips on auth load, route
+// transition back to the hub shell, HMR in dev). Without this guard the
+// fresh mount re-runs the 2.5s timer from scratch — user sees the modal,
+// then a ~2s blank flash, then the modal again. Tracking shown release ids
+// at module scope lets a re-mount skip the delay and re-open immediately,
+// so the swap reads as a single frame instead of "appears → disappears for
+// 2s → reappears". Dismissal still flows through localStorage via
+// `writeLastSeenId`, which is the canonical persistence — this set only
+// guards the within-session shown-but-not-dismissed window.
+const SESSION_SHOWN_RELEASE_IDS = new Set<string>();
+
+/**
+ * Test-only escape hatch — wipes the in-memory shown-set so a fresh
+ * `renderHook(...)` re-exercises the 2.5s timer path. Production code MUST
+ * NOT call this; the set is intentionally retained across the page session.
+ */
+export function __resetWhatsNewSessionForTesting(): void {
+  SESSION_SHOWN_RELEASE_IDS.clear();
+}
+
 export function useWhatsNew(opts: UseWhatsNewOptions): UseWhatsNewResult {
   const { enabled } = opts;
   const [release, setRelease] = useState<WhatsNewRelease | null>(null);
@@ -51,8 +72,16 @@ export function useWhatsNew(opts: UseWhatsNewOptions): UseWhatsNewResult {
     const candidate = pickRelease(readLastSeenId());
     if (!candidate) return;
 
+    if (SESSION_SHOWN_RELEASE_IDS.has(candidate.id)) {
+      shownRef.current = true;
+      setRelease(candidate);
+      setOpen(true);
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       shownRef.current = true;
+      SESSION_SHOWN_RELEASE_IDS.add(candidate.id);
       setRelease(candidate);
       setOpen(true);
       trackEvent(ANALYTICS_EVENTS.WHATS_NEW_SHOWN, {
