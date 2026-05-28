@@ -92,22 +92,20 @@ describe("HubBottomNav", () => {
     expect(onChange).toHaveBeenCalledWith("settings");
   });
 
-  it("keeps the PWA nav edge-to-edge with bottom-aligned controls", () => {
+  it("renders as a floating pill — inset, rounded, framed", () => {
     renderNav({});
     const nav = screen.getByRole("navigation");
     const settingsTab = screen.getByRole("tab", { name: /Налаштування/ });
 
-    // The nav uses the `safe-area-pb-tight` utility (defined in
-    // utilities.css) instead of the previous `safe-area-pb`. The new
-    // utility tightens the iPhone-PWA bottom inset so labels sit closer
-    // to the screen edge — see HubBottomNav.tsx + utilities.css for the
-    // user-report context. We assert on the className because jsdom
-    // doesn't compute styles from at-rule `@utility` declarations.
-    expect(nav.className).toContain("safe-area-pb-tight");
-    expect(nav.className).not.toContain("mx-3");
-    expect(nav.className).not.toContain("mb-3");
-    expect(nav.className).not.toContain("rounded");
-    expect(nav.className).not.toContain("shadow-nav");
+    // Floating-pill shape (navbar-dead-space → floating-pill direction):
+    // inset from the edges + rounded + a panel surface with a border, so
+    // it reads as a distinct panel with the page background continuing
+    // around it. We assert on the className because jsdom doesn't compute
+    // styles from arbitrary / at-rule declarations.
+    expect(nav.className).toContain("mx-3");
+    expect(nav.className).toContain("rounded-3xl");
+    expect(nav.className).toContain("bg-panel");
+    expect(nav.className).toContain("border");
     expect(settingsTab.className).toContain("justify-end");
     expect(settingsTab.className).toContain("pb-1.5");
   });

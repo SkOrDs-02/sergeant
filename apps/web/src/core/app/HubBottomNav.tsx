@@ -13,21 +13,21 @@ import { messages } from "@shared/i18n/uk";
 /**
  * Sergeant Design System — `HubBottomNav`
  *
- * Hub-level bottom navigation. Sits as an edge-to-edge `border-t`
- * panel flush with the screen bottom — matches `ModuleBottomNav` so
- * the whole app reads under one navigation pattern.
+ * Hub-level bottom navigation. Renders as a floating pill — inset from
+ * the screen edges (`mx-3` + bottom margin clearing the home indicator)
+ * with the page mesh background continuing behind and below it, matching
+ * `ModuleBottomNav` so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
- * - `safe-area-pb` so iOS home-indicator clears.
- * - Transparent background — no fill, no `border-t`, no blur — so the
- *   bar blends into the page and reads as "lying on the background"
- *   rather than as a separate panel at the bottom. A solid surface
- *   (`bg-panel` + border) had reintroduced the dead-space read (a
- *   floating bar with empty padding below the labels); a transparent
- *   bar removes it (navbar-dead-space, 2026-05-28 → transparent
- *   direction). Still edge-to-edge — no horizontal margin, no rounded
- *   corners, no shadow.
+ * - Floating pill: `mx-3 mb-[calc(env(safe-area-inset-bottom)+0.5rem)]
+ *   rounded-3xl border border-line bg-panel shadow-lg`. Inset + rounded
+ *   so it reads as a distinct panel "lying on" the page background
+ *   (which shows through the surrounding gap) instead of an edge-to-edge
+ *   bar — an edge-to-edge bar made the bottom safe-area read as dead
+ *   space / a black strip (navbar-dead-space, 2026-05-28 → floating-pill
+ *   direction, matching the surrounding AIPill / FAB offsets that always
+ *   assumed a floating nav).
  * - Active indicator: a rounded outline (`rounded-2xl border
  *   border-ink-strong/25`) framing the active tab — outline only, no
  *   fill. Module-agnostic by design.
@@ -261,7 +261,11 @@ export function HubBottomNav({
   return (
     <nav
       aria-label={messages.nav.hubSections}
-      className={cn("shrink-0 relative z-30 safe-area-pb-tight")}
+      className={cn(
+        "shrink-0 relative z-30",
+        "mx-3 mb-[calc(env(safe-area-inset-bottom)_+_0.5rem)]",
+        "rounded-3xl border border-line bg-panel shadow-lg",
+      )}
     >
       <div
         role="tablist"

@@ -21,7 +21,7 @@ describe("ModuleBottomNav", () => {
     cleanup();
   });
 
-  it("keeps the PWA nav edge-to-edge with bottom-aligned controls", () => {
+  it("renders as a floating pill — inset, rounded, framed", () => {
     render(
       <ModuleBottomNav
         items={items}
@@ -35,11 +35,10 @@ describe("ModuleBottomNav", () => {
     const nav = screen.getByRole("navigation", { name: "Module sections" });
     const statsTab = screen.getByRole("button", { name: "Stats" });
 
-    expect(nav.className).toContain("safe-area-pb-tight");
-    expect(nav.className).not.toContain("mx-3");
-    expect(nav.className).not.toContain("mb-3");
-    expect(nav.className).not.toContain("rounded");
-    expect(nav.className).not.toContain("shadow-nav");
+    expect(nav.className).toContain("mx-3");
+    expect(nav.className).toContain("rounded-3xl");
+    expect(nav.className).toContain("bg-panel");
+    expect(nav.className).toContain("border");
     expect(statsTab.className).toContain("justify-end");
     expect(statsTab.className).toContain("pb-1.5");
   });

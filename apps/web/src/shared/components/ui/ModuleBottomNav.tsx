@@ -5,18 +5,19 @@ import { cn } from "../../lib/ui/cn";
  * Sergeant Design System — ModuleBottomNav
  *
  * Shared bottom-navigation shell for Фінік / Фізрук / Рутина /
- * Харчування. Sits edge-to-edge along the screen bottom (matches
- * `HubBottomNav` shape) so the whole app reads under one navigation
- * pattern.
+ * Харчування. Renders as a floating pill inset from the screen edges
+ * (matches `HubBottomNav` shape) so the whole app reads under one
+ * navigation pattern.
  *
  * Canonical shape:
  * - Height 60 px (64 px on coarse-pointer devices).
- * - `safe-area-pb` so iOS home-indicator clears.
- * - Transparent background — no fill, no `border-t`, no blur — so the
- *   bar blends into the page and reads as "lying on the background"
- *   rather than as a separate panel at the bottom (navbar-dead-space,
- *   2026-05-28 → transparent direction). Still edge-to-edge — no
- *   horizontal margin, no rounded corners, no shadow.
+ * - Floating pill: `mx-3 mb-[calc(env(safe-area-inset-bottom)+0.5rem)]
+ *   rounded-3xl border border-line bg-panel shadow-lg`. Inset + rounded
+ *   so it reads as a distinct panel with the page background continuing
+ *   behind and below it, instead of an edge-to-edge bar whose bottom
+ *   safe-area read as dead space / a black strip (navbar-dead-space,
+ *   2026-05-28 → floating-pill direction). The Routine FAB's `-top-[22px]`
+ *   offset assumes this pill's top edge.
  * - Active indicator: a rounded outline (`rounded-2xl border`)
  *   framing the active tab, tinted with the module accent
  *   (`tokens.outline`) — outline only, no fill. Carries module
@@ -112,7 +113,12 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   return (
     <nav
       aria-label={ariaLabel}
-      className={cn("shrink-0 relative z-30 safe-area-pb-tight", className)}
+      className={cn(
+        "shrink-0 relative z-30",
+        "mx-3 mb-[calc(env(safe-area-inset-bottom)_+_0.5rem)]",
+        "rounded-3xl border border-line bg-panel shadow-lg",
+        className,
+      )}
     >
       <div
         className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
