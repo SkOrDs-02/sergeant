@@ -5,6 +5,8 @@ import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import { aiQuotaBlocksTotal, aiQuotaFailOpenTotal } from "../../obs/metrics.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
+import { getUserPlan } from "../billing/getUserPlan.js";
+import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
 
 type SessionUser = { id: string } | null;
 
@@ -32,11 +34,6 @@ interface QuotaResult {
   remaining: number | null;
   limit: number | null;
   reason?: "disabled" | "limit" | "store_unavailable";
-}
-
-interface EffectiveLimits {
-  user: number | null;
-  anon: number | null;
 }
 
 interface ConsumeQuotaOpts {
@@ -105,12 +102,38 @@ export function isAiQuotaDisabled(): boolean {
   return v === "1" || v === "true";
 }
 
-function effectiveLimits(): EffectiveLimits {
-  if (isAiQuotaDisabled()) return { user: null, anon: null };
-  return {
-    user: parseLimit("AI_DAILY_USER_LIMIT", 120),
-    anon: parseLimit("AI_DAILY_ANON_LIMIT", 40),
-  };
+const DEFAULT_ANON_LIMIT = 40;
+
+/** Daily AI-message cap for an anonymous (IP-keyed) caller — env-tunable. */
+function anonDailyLimit(): number | null {
+  return parseLimit("AI_DAILY_ANON_LIMIT", DEFAULT_ANON_LIMIT);
+}
+
+/**
+ * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
+ * Free → `FREE_LIMITS.aiRequestsPerDay` (5); Pro → `null` (unlimited).
+ * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
+ *
+ * On a plan-lookup error we fall back to the FREE cap — never silently grant
+ * unlimited (the monetization-safe default). A full DB outage is still
+ * absorbed by the `consumeQuota` fail-open path downstream, so a transient
+ * blip degrades to "free cap", not "blocked".
+ *
+ * No plan cache: the lookup is a single indexed point-read on `subscriptions`
+ * and is dwarfed by the upstream Anthropic call. Add a short-TTL cache here
+ * (ADR-1.7) only if profiling shows it matters.
+ */
+async function userDailyLimit(userId: string): Promise<number | null> {
+  let plan: "free" | "pro" = "free";
+  try {
+    plan = (await getUserPlan(pool, userId)).plan === "pro" ? "pro" : "free";
+  } catch (e: unknown) {
+    logger.warn({
+      msg: "ai_quota_plan_lookup_failed",
+      err: { message: (e as Error)?.message || String(e) },
+    });
+  }
+  return planLimits(plan).aiRequestsPerDay;
 }
 
 function toolCost(): number {
@@ -172,9 +195,10 @@ export async function assertAiQuota(
 ): Promise<boolean> {
   if (isAiQuotaDisabled()) return true;
 
-  const { user: userLimit, anon: anonLimit } = effectiveLimits();
   const sessionUser = await safeSessionUser(req);
-  const limit = sessionUser ? userLimit : anonLimit;
+  const limit = sessionUser
+    ? await userDailyLimit(sessionUser.id)
+    : anonDailyLimit();
 
   if (limit == null) return true;
 
