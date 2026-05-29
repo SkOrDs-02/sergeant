@@ -48,7 +48,7 @@ describe("FirstActionHeroCard", () => {
     expect(getByText(/Створи першу звичку/)).toBeTruthy();
   });
 
-  it("fires onAction(primary) and onPicked(via primary) on primary press", () => {
+  it("opens the preset sheet and fires onPicked(via primary) on primary press", () => {
     seedPicks(["finyk", "fizruk"]);
     const onAction = jest.fn();
     const onPicked = jest.fn();
@@ -57,7 +57,11 @@ describe("FirstActionHeroCard", () => {
     );
 
     fireEvent.press(getByTestId("first-action-primary"));
-    expect(onAction).toHaveBeenCalledWith("finyk");
+    // Tapping the primary CTA opens the module's PresetStep (mirrors web
+    // `openPreset`) rather than routing directly — `onAction` only fires
+    // later, from a preset / fallback tap inside the sheet.
+    expect(onAction).not.toHaveBeenCalled();
+    expect(getByTestId("preset-fallback")).toBeTruthy();
     expect(onPicked).toHaveBeenCalledWith({
       module: "finyk",
       via: "primary",
@@ -89,7 +93,7 @@ describe("FirstActionHeroCard", () => {
     });
   });
 
-  it("renders alt-module chip row inline (no expand) and routes with via=chip", () => {
+  it("renders alt-module chip row inline (no expand) and opens preset with via=chip", () => {
     // S2.3 mobile parity: the legacy «Інший модуль» expand toggle is gone;
     // alt-module chips are always visible, mirroring the web refactor.
     seedPicks(["routine", "finyk"]);
@@ -104,7 +108,9 @@ describe("FirstActionHeroCard", () => {
 
     fireEvent.press(getByTestId("first-action-alt-finyk"));
 
-    expect(onAction).toHaveBeenCalledWith("finyk");
+    // Chip tap opens the module's PresetStep instead of routing directly.
+    expect(onAction).not.toHaveBeenCalled();
+    expect(getByTestId("preset-fallback")).toBeTruthy();
     expect(onPicked).toHaveBeenCalledWith({
       module: "finyk",
       via: "chip",

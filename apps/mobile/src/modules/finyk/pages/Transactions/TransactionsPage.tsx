@@ -34,7 +34,7 @@
  *  - Date-range bottom-sheet picker beyond the month nav (covered by
  *    `setRange` on the filter hook — UI can be added later).
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
@@ -81,6 +81,14 @@ export interface TransactionsPageProps {
   now?: Date;
   /** testID propagated to the screen root + add button. */
   testID?: string;
+  /**
+   * FTUX deep-link (PresetStep): when `true`, open the add-expense sheet
+   * once on mount. The route passes this when navigated with
+   * `?action=add_expense`. The `addPrefill` (consumed from
+   * `presetPrefill`) seeds the description / category of that open.
+   */
+  openAddOnMount?: boolean;
+  addPrefill?: { description?: string; category?: string };
 }
 
 export function TransactionsPage({
@@ -88,6 +96,8 @@ export function TransactionsPage({
   filtersSeed,
   now: nowOverride,
   testID = "finyk-transactions",
+  openAddOnMount = false,
+  addPrefill,
 }: TransactionsPageProps) {
   const store = useFinykTransactionsStore(seed);
   const {
@@ -141,7 +151,12 @@ export function TransactionsPage({
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [sheetState, setSheetState] = useState<
-    { open: false } | { open: true; editing: ManualExpenseRecord | null }
+    | { open: false }
+    | {
+        open: true;
+        editing: ManualExpenseRecord | null;
+        prefill?: { description?: string; category?: string };
+      }
   >({ open: false });
   const [catPicker, setCatPicker] = useState<{ tx: Transaction } | null>(null);
   const [filterCatSheet, setFilterCatSheet] = useState(false);
@@ -233,6 +248,17 @@ export function TransactionsPage({
   );
 
   const closeSheet = useCallback(() => setSheetState({ open: false }), []);
+
+  // FTUX deep-link (PresetStep): open the add-sheet once on mount when
+  // routed with `?action=add_expense`, seeded with the staged preset
+  // prefill (description / category). One-shot via a ref so a later
+  // re-render (e.g. store refresh) never reopens the sheet.
+  const didAutoOpenRef = useRef(false);
+  useEffect(() => {
+    if (didAutoOpenRef.current || !openAddOnMount) return;
+    didAutoOpenRef.current = true;
+    setSheetState({ open: true, editing: null, prefill: addPrefill });
+  }, [openAddOnMount, addPrefill]);
 
   const handleSave = useCallback(
     (payload: ManualExpensePayload) => {
@@ -472,6 +498,12 @@ export function TransactionsPage({
         onDelete={handleDeleteManualExpense}
         initialExpense={
           sheetState.open && sheetState.editing ? sheetState.editing : null
+        }
+        initialDescription={
+          sheetState.open ? sheetState.prefill?.description : undefined
+        }
+        initialCategory={
+          sheetState.open ? sheetState.prefill?.category : undefined
         }
         testID={`${testID}-sheet`}
       />
