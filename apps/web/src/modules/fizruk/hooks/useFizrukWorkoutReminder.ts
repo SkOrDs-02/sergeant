@@ -74,35 +74,51 @@ export function useFizrukWorkoutReminder({
       if (typeof Notification === "undefined") return;
       if (Notification.permission !== "granted") return;
 
+      // Optimistic in-memory guard so the 30s interval doesn't double-fire
+      // while the (async) notification is being shown. The day is persisted to
+      // localStorage only AFTER a successful show — otherwise a failed
+      // notification would permanently suppress today's reminder across
+      // reloads. On failure we clear the in-memory guard so the next tick
+      // retries.
       firedRef.current = dayStr;
-      safeWriteLS(LAST_KEY, dayStr);
+      const persistFired = () => safeWriteLS(LAST_KEY, dayStr);
+      const onShowFailed = () => {
+        firedRef.current = null;
+      };
+
+      const title = "Фізрук — тренування";
+      const body =
+        "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.";
 
       try {
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready
-            .then((reg) => {
-              reg.showNotification("Фізрук — тренування", {
-                body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
+            .then((reg) =>
+              reg.showNotification(title, {
+                body,
                 tag: `fizruk-plan-${dayStr}`,
                 icon: "/icon-192.png",
                 badge: "/icon-192.png",
                 requireInteraction: false,
                 data: { action: "open", module: "fizruk" },
-              });
-            })
+              }),
+            )
+            .then(persistFired)
             .catch(() => {
-              new Notification("Фізрук — тренування", {
-                body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
-                tag: "fizruk-plan",
-              });
+              try {
+                new Notification(title, { body, tag: "fizruk-plan" });
+                persistFired();
+              } catch {
+                onShowFailed();
+              }
             });
         } else {
-          new Notification("Фізрук — тренування", {
-            body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
-            tag: "fizruk-plan",
-          });
+          new Notification(title, { body, tag: "fizruk-plan" });
+          persistFired();
         }
-      } catch {}
+      } catch {
+        onShowFailed();
+      }
     };
 
     const id = setInterval(tick, 30_000);
