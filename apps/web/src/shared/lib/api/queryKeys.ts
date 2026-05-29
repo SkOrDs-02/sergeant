@@ -76,6 +76,12 @@ export const finykKeys = {
   monoWebhookAccounts: ["finyk", "mono", "webhook-accounts"] as const,
   monoWebhookTransactions: (params?: string) =>
     ["finyk", "mono", "webhook-tx", params ?? "all"] as const,
+  /**
+   * Prefix over every `monoWebhookTransactions(...)` bucket — the 3-element
+   * head shared by all date-bounded keys. Use with `findAll`/`removeQueries`
+   * to match every webhook-tx cache entry regardless of its `params` tail.
+   */
+  monoWebhookTransactionsPrefix: ["finyk", "mono", "webhook-tx"] as const,
 
   // Privatbank read endpoints
   privat: ["finyk", "privat"] as const,

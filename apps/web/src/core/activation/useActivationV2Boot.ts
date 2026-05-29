@@ -119,7 +119,7 @@ function countCategorizedTransactions(
   // `["finyk", "mono", "webhook-tx"]` (the live webhook txn
   // buckets — date-bounded keys collapse under this prefix).
   for (const query of cache.findAll({
-    queryKey: ["finyk", "mono", "webhook-tx"] as const,
+    queryKey: finykKeys.monoWebhookTransactionsPrefix,
   })) {
     const data = query.state.data as MonoTransactionDto[] | undefined;
     if (!Array.isArray(data)) continue;
