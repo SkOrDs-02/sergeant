@@ -11,8 +11,6 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 Sorted: `blocked` items first, потім за `mtime` desc (свіже = warm context).
 
-- [`security/hardening/C1-mono-webhook-secret-in-url.md`](./security/hardening/C1-mono-webhook-secret-in-url.md) — C1 — Monobank webhook secret leaks via URL path → **Phase 2 — pending** _(Security hardening)_
-- [`security/hardening/sprint-1.md`](./security/hardening/sprint-1.md) — Sprint 1 — Critical + найгірші High → **Phase 2 — pending** _(Security hardening)_
 - [`initiatives/0006-frontend-routing-and-code-split.md`](./initiatives/0006-frontend-routing-and-code-split.md) — 0006 — Frontend routing migration + route-based code-split → **Phase 5 — pending** _(Ініціативи)_
 
 ## Прострочений review (0)

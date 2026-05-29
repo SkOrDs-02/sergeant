@@ -518,18 +518,19 @@ export const paths: ZodOpenApiPathsObject = {
 
   // ────────────────────── Mono webhook integration ──────────────────────
   // C1 — `docs/security/hardening/C1-mono-webhook-secret-in-url.md`.
-  // Header-based маршрут — preferred. Path-based маршрут лишається для
-  // backward-compat поки Monobank не мігрує на header-доставку.
+  // Path-based маршрут — це транспорт, який реально вміє Monobank
+  // (`/personal/webhook` приймає лише `webHookUrl`). Header-based маршрут —
+  // defense-in-depth для майбутнього edge-proxy; Monobank його не шле.
   "/api/mono/webhook": {
     post: {
-      summary: "Mono webhook (X-Mono-Webhook-Secret header — preferred)",
+      summary: "Mono webhook (X-Mono-Webhook-Secret header — edge-proxy only)",
       tags: ["mono"],
       requestParams: {
         header: z.object({
           "x-mono-webhook-secret": z
             .string()
             .describe(
-              "Per-user webhook secret. Header-варіант — preferred з C1-rollout-у; не потрапляє в access-логи.",
+              "Per-user webhook secret у header-і. Використовується лише коли edge-proxy перекладає path-secret у header; Monobank сам шле через path-маршрут. Не потрапляє в access-логи.",
             ),
         }),
       },
@@ -539,7 +540,7 @@ export const paths: ZodOpenApiPathsObject = {
   "/api/mono/webhook/{secret}": {
     post: {
       summary:
-        "Mono webhook (per-user secret у URL — legacy, deprecated по C1)",
+        "Mono webhook (per-user secret у URL — транспорт Monobank; secret редагується в логах + ротується 90d, C1)",
       tags: ["mono"],
       requestParams: {
         path: z.object({ secret: z.string() }),

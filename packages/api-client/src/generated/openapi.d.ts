@@ -1425,12 +1425,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mono webhook (X-Mono-Webhook-Secret header — preferred) */
+        /** Mono webhook (X-Mono-Webhook-Secret header — edge-proxy only) */
         post: {
             parameters: {
                 query?: never;
                 header: {
-                    /** @description Per-user webhook secret. Header-варіант — preferred з C1-rollout-у; не потрапляє в access-логи. */
+                    /** @description Per-user webhook secret у header-і. Використовується лише коли edge-proxy перекладає path-secret у header; Monobank сам шле через path-маршрут. Не потрапляє в access-логи. */
                     "x-mono-webhook-secret": string;
                 };
                 path?: never;
@@ -1466,7 +1466,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mono webhook (per-user secret у URL — legacy, deprecated по C1) */
+        /** Mono webhook (per-user secret у URL — транспорт Monobank; secret редагується в логах + ротується 90d, C1) */
         post: {
             parameters: {
                 query?: never;
@@ -3061,7 +3061,7 @@ export interface components {
             /** Format: uri */
             url: string;
         };
-        /** @description Поточний subscription state користувача, серіалізований з billing_subscriptions. */
+        /** @description Поточний subscription state користувача, серіалізований з subscriptions (m056). */
         BillingStatusResponse: {
             subscription: {
                 id: number | null;

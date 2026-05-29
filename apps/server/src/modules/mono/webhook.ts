@@ -21,19 +21,22 @@ import { emitSecurityEvent } from "../../obs/securityEvents.js";
  * SHA-256 lookup. No session auth — Monobank calls this directly.
  *
  * Secret transport (C1 — `docs/security/hardening/C1-mono-webhook-secret-in-url.md`):
- *   1. **Preferred** — `X-Mono-Webhook-Secret` HTTP header. Headers do not
- *      land in access-logs / Sentry `event.request.url` / Railway request
- *      audit, so this path leaves zero secret residue in our log pipeline.
- *   2. **Legacy** — path param `:secret`. Kept for backward-compat with the
- *      Monobank delivery URL that pre-dates the header rollout. Once Monobank
- *      is migrated off path-based delivery, the legacy route stays as a
- *      404-only stub (it will only ever match expired secrets) and we drop
- *      the `:secret` route in a follow-up PR.
+ *   1. **Path param `:secret`** — the transport Monobank actually uses. Their
+ *      `/personal/webhook` API accepts only a bare `webHookUrl`; there is no
+ *      custom-header or signature config (unlike acquiring/checkout, which has
+ *      `x-sign`). So the secret is structurally path-bound and stays that way.
+ *      Its log-pipeline exposure is mitigated, not eliminated: URL redaction
+ *      (`sensitiveUrl.ts` + Sentry hooks, C1 Phase 1) plus 90-day rotation
+ *      (`rotateSecret.ts`) bound the blast radius.
+ *   2. **`X-Mono-Webhook-Secret` HTTP header** — accepted as defense-in-depth
+ *      for a future edge-proxy that rewrites the path secret into a header
+ *      before the request reaches our log pipeline. Monobank itself cannot
+ *      send it — this branch is never exercised by direct Monobank delivery.
  *
- * If both transports carry a value, the header wins — that lets us flip the
- * Monobank `setWebHook`/`webhookUrl` to header-mode without re-deploying the
- * server, and detect any straggling path-deliveries via the `legacy_path`
- * audit metric tag (see `mono_webhook_secret_transport` counter increment).
+ * If both transports carry a value the header wins, so such an edge-rewrite
+ * could take over transparently with no server change. The
+ * `mono_webhook_secret_transport` counter tags which transport carried the
+ * secret on each request (today: effectively always the path).
  *
  * Payload: `{ type: "StatementItem", data: { account, statementItem } }`.
  * Idempotent UPSERT by PK `(user_id, mono_tx_id)`.
