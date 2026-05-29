@@ -81,7 +81,7 @@ function PinPad({
                 key={key}
                 type="button"
                 aria-label={isBackspace ? m.deleteDigit : key}
-                className="w-16 h-16 rounded-full bg-panel border border-line text-style-title text-text hover:bg-panelHi active:scale-95 transition-all select-none"
+                className="w-16 h-16 rounded-full bg-panel border border-line text-style-title text-text hover:bg-panelHi active:scale-95 transition-colors select-none"
                 onClick={() => {
                   if (isBackspace) {
                     onChange(value.slice(0, -1));

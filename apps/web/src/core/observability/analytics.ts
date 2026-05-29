@@ -85,10 +85,12 @@ export function trackEvent(
     console.log("[analytics]", event);
     const current = safeReadLog();
     safeWriteLog([...current, event]);
-    const analyticsWindow = window as Window & {
-      __hubAnalytics?: unknown[];
-    };
-    analyticsWindow.__hubAnalytics = [...current, event].slice(-MAX_LOG);
+    if (import.meta.env.DEV) {
+      const analyticsWindow = window as Window & {
+        __hubAnalytics?: unknown[];
+      };
+      analyticsWindow.__hubAnalytics = [...current, event].slice(-MAX_LOG);
+    }
   } catch {}
   // Окремий try/catch — `trackEvent` контракт каже "ніколи не кидає"
   // (див. шапку файлу). `capturePostHogEvent` сам по собі захищений
