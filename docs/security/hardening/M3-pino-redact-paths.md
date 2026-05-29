@@ -1,6 +1,6 @@
 # M3 — Pino `redactPaths` is incomplete for security headers and URLs
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** Closed (2026-05-04) — see Resolution log.
 
 | Field          | Value                                                  |
@@ -120,7 +120,7 @@ const redactPaths = [
 - **redactKeyNames** (Sentry-скрабер, recursive case-insensitive) тепер містить `x-mono-webhook-secret`, `x-openclaw-webhook-secret`, `x-api-secret`, `x-internal-token`, `groqKey`, `anthropicKey`, `voyageKey`.
 - **redactPaths** (Pino, path-based) тепер містить:
   - `req.headers["x-mono-webhook-secret"]`, `req.headers["x-openclaw-webhook-secret"]`, `req.headers["x-api-secret"]`, `req.headers["x-internal-token"]`.
-  - `groqKey` / `anthropicKey` / `voyageKey` у root + `*.<key>` (1 рівень вкладеності).
+  - `groqKey` / `anthropicKey` / `voyageKey` у root. Вкладені входження покриває рекурсивний key-name scrubber (`redactKeysRecursively` через `REDACT_KEY_NAMES`), а не `*.<key>` redactPath — таких wildcard-шляхів у `redactPaths` немає.
   - `req.body.password`, `req.body.token`, `req.body.currentPassword`, `req.body.newPassword`.
   - `err.config.headers.Authorization` / `authorization` / `Cookie` / `cookie` / `["x-mono-webhook-secret"]` (axios upstream-failure capture).
 
