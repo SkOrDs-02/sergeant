@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-15.
+> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -13,6 +13,14 @@
 > **Як cut-ити release:** `pnpm changelog:cut` (опц. `<YYYY-MM-DD>` як arg) renames `## [Unreleased]` → `## [<date>]`, додає fresh empty Unreleased, створює tag `v<date>`, commit-ить. `--dry-run` для preview. Деталі — [`docs/initiatives/0016-changelog-release-cut.md`](./docs/initiatives/0016-changelog-release-cut.md).
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [2026-05-29]
 
 ### Added
 
@@ -42,7 +50,7 @@
   (`apps/web/src/core/syncEngine/syncEngineWriter.ts:127`, через
   `deps.createReconnect ?? createSyncEngineFlushOnReconnect` у
   `ensureReconnect`); mobile — `f5e89d8e feat(mobile): wire sync v2
-  writer-runtime into mobile boot pipeline`
+writer-runtime into mobile boot pipeline`
   (`apps/mobile/src/core/syncEngine/syncEngineWriter.ts:139`).
 
 - **`recoverDeadLetter` helper у `@sergeant/db-schema`
