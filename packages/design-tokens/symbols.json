@@ -1,7 +1,7 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-05-22",
+  "generated_at": "2026-05-29",
   "package": "@sergeant/design-tokens",
   "entryFile": "packages/design-tokens/index.d.ts",
   "stats": {
