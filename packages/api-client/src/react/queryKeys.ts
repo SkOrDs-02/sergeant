@@ -55,4 +55,9 @@ export const apiMutationKeys = {
     test: () => ["push", "test"] as const,
     unregister: () => ["push", "unregister"] as const,
   },
+  nutrition: {
+    all: ["nutrition"] as const,
+    /** AI-рекомендації рецептів (`/api/nutrition/recommend-recipes`). */
+    recommendRecipes: () => ["nutrition", "recommend-recipes"] as const,
+  },
 } as const;
