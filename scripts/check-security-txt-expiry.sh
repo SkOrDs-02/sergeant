@@ -28,7 +28,7 @@ fi
 # Витягуємо першу `Expires:` стрічку (case-sensitive — RFC 9116 визначає
 # заголовки case-insensitive, але всі реальні приклади у RFC capitalized;
 # тримаємось такого ж стилю для людської читабельності).
-expires_raw=$(grep -m1 -E '^Expires:' "$file" | sed -E 's/^Expires:[[:space:]]*//')
+expires_raw=$(grep -m1 -E '^Expires:' "$file" | sed -E 's/^Expires:[[:space:]]*//' || true)
 
 if [[ -z "$expires_raw" ]]; then
   echo "::error::security.txt is missing the Expires field (RFC 9116 §2.5.5)."
@@ -55,7 +55,7 @@ if (( seconds_until_expiry <= 0 )); then
 fi
 
 if (( days_until_expiry < 30 )); then
-  echo "::error::security.txt expires in ${days_until_expiry} day(s) (<$30)."
+  echo "::error::security.txt expires in ${days_until_expiry} day(s) (<30)."
   echo "Refresh apps/web/public/.well-known/security.txt before it goes stale."
   echo "RFC 9116 §2.5.5; see docs/security/hardening/I4-security-txt.md."
   exit 1

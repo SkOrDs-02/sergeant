@@ -1,6 +1,6 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** In progress
 
 ## TL;DR
@@ -82,11 +82,11 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 ### Phase 1
 
-- [ ] `docs/today.md` генерується щодня cron-ом, містить 3-5 top items + overdue + WIP warnings
-- [ ] `pnpm docs:check-wip-limits` запускається в CI; soft = warn, hard = fail
-- [ ] `docs/README.md` має auto-updated trust badge section з 🟢/🟡/🔴 + лічильник
-- [ ] Daily cron не падає 7 днів поспіль
-- [ ] Maintainer звітує що відкривав `today.md` принаймні 5 з 7 днів першого тижня
+- [x] `docs/today.md` генерується (`pnpm docs:gen-today`), містить top items + overdue + WIP warnings
+- [x] `pnpm docs:check-wip-limits` запускається в CI; soft = warn, hard = fail
+- [x] `docs/README.md` має auto-updated trust badge section з 🟢/🟡/🔴 + лічильник
+- [ ] Daily cron не падає 7 днів поспіль _(observational — чекає на живу роботу crona)_
+- [ ] Maintainer звітує що відкривав `today.md` принаймні 5 з 7 днів першого тижня _(self-report — чекає на тиждень usage)_
 
 ### Phase 2
 
