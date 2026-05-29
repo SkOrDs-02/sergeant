@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/governance/repo-map.auto.json`](../governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -17,13 +17,13 @@
 
 ## Apps (`apps/`)
 
-| App                 | Stack                                                                                                            | Purpose                                                                                                |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `apps/web`          | Vite 8 + React 18 + TanStack Query + Tailwind CSS 4 + design-tokens preset + Vitest/MSW/RTL + Playwright         | Single-page web app (PWA target). Bundle budget enforced via `size-limit` (≤ 820 kB JS / ≤ 28 kB CSS). |
-| `apps/server`       | Express + PostgreSQL (`pg`) + Better Auth + Anthropic fetch client + Voyage fetch client + Vitest/Testcontainers | REST API + chat orchestrator + Mono webhook ingestion. Dockerfile: `Dockerfile.api` → Railway.         |
-| `apps/mobile`       | Expo 52 + React Native 0.76 + NativeWind + MMKV + Jest                                                           | iOS/Android app via Expo Router. Local-first storage in MMKV.                                          |
-| `apps/mobile-shell` | Capacitor 7 wrapper                                                                                              | Native shell that re-uses the `apps/web` build artifacts; no app code lives here, only build glue.     |
-| `tools/openclaw`    | grammy + Anthropic SDK + Vitest                                                                                  | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.    |
+| App                 | Stack                                                                                                            | Purpose                                                                                                                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Vite 8 + React 18 + TanStack Query + Tailwind CSS 4 + design-tokens preset + Vitest/MSW/RTL + Playwright         | Single-page web app (PWA target). Bundle budget enforced via `size-limit` (≤ 880 kB JS brotli / ≤ 28 kB CSS — see `apps/web/package.json`); per-chunk gzip budgets additionally gated by `scripts/check-bundle-size.mjs`. |
+| `apps/server`       | Express + PostgreSQL (`pg`) + Better Auth + Anthropic fetch client + Voyage fetch client + Vitest/Testcontainers | REST API + chat orchestrator + Mono webhook ingestion. Dockerfile: `Dockerfile.api` → Railway.                                                                                                                            |
+| `apps/mobile`       | Expo 52 + React Native 0.76 + NativeWind + MMKV + Jest                                                           | iOS/Android app via Expo Router. Local-first storage in MMKV.                                                                                                                                                             |
+| `apps/mobile-shell` | Capacitor 7 wrapper                                                                                              | Native shell that re-uses the `apps/web` build artifacts; no app code lives here, only build glue.                                                                                                                        |
+| `tools/openclaw`    | grammy + Anthropic SDK + Vitest                                                                                  | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.                                                                                                                       |
 
 ## Packages (`packages/`)
 

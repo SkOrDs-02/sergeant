@@ -1,6 +1,6 @@
 # Pino logging redaction policy
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** Active.
 > **Hard rule:** [#21 — Pino redaction policy enforced](../../AGENTS.md#21-pino-redaction-policy-enforced).
 > **Stack-pulse initiative:** [PR-16](../initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md).
@@ -86,7 +86,7 @@ logger.warn({ traceId: ctx.traceId }, "ok");
 Завжди — **спочатку поле потрапляє у redaction, потім код починає його логувати**, не навпаки. Інакше один pre-merge run у CI протече дані у Sentry / Loki ще до того, як рулі стане за замок.
 
 1. **Класифікуй**. Подивись [`docs/security/pii-handling.md`](./pii-handling.md). Class A (секрети) → ротація при витоку. Class B (PII) → hash/redact. Class C (контент) → опціонально опт-аут.
-2. **Додай у `redactKeyNames`** ([`apps/server/src/obs/logger.ts`](../../apps/server/src/obs/logger.ts) рядок ~31). Це покриває Sentry-скрабер на будь-якій глибині (case-insensitive).
+2. **Додай у `REDACT_KEY_NAMES`** — канонічне (DOM-free) джерело у [`packages/shared/src/lib/pii.ts`](../../packages/shared/src/lib/pii.ts). `apps/server/src/obs/logger.ts` лише ре-експортує його як `redactKeyNames` (`export const redactKeyNames = REDACT_KEY_NAMES`), тож додавати треба у shared, не в logger. Це покриває Sentry-скрабер на будь-якій глибині (case-insensitive) і web-Sentry SDK.
 3. **Додай у `redactPaths`** з конкретними шляхами + wildcard-варіантами (Pino redact матчить wildcard рівно на одну глибину):
    - Top-level: `"newSecret"`.
    - Wildcard 1-2 levels: `"*.newSecret"`, `"*.*.newSecret"`.

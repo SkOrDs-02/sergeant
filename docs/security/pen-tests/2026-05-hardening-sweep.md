@@ -1,6 +1,6 @@
 # Hardening pen-test sweep — 2026-05 (H5/H6/H8/H9)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** Active
 
 | Field        | Value                                                                                                                                                                                  |
@@ -72,7 +72,7 @@ would let an attacker pivot OAuth code-grants to a non-Sergeant client.
 
 ### As-shipped fix (commit reference)
 
-`apps/server/src/auth.ts:392-403` — `getTrustedNativeSchemes()` returns
+`apps/server/src/auth.ts` (`getTrustedNativeSchemes()`) — returns
 `["sergeant://"]` when `NODE_ENV === "production"` and `["sergeant://", "exp://"]`
 otherwise. Optional `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES` override replaces
 the entire defaults (deliberately not additive — see card §Recommendation).
@@ -151,7 +151,7 @@ statements once the legitimate owner ever re-attempts sign-up.
 
 ### As-shipped fix
 
-`apps/server/src/auth.ts:158-170` — `requireEmailVerification` now reads
+`apps/server/src/auth.ts` (`requireEmailVerification` config) — now reads
 `env.REQUIRE_EMAIL_VERIFICATION` (default `false` to keep legacy users
 working). Crucially, `apps/server/src/http/requireVerifiedEmail.ts` is
 **unconditional**: `/api/mono/connect` always rejects with 403 if the
@@ -180,8 +180,9 @@ curl -i -b /tmp/cookies.txt \
   http://localhost:5000/api/mono/connect
 ```
 
-**Expected:** HTTP 403, body `{"error":"...","code":"EMAIL_NOT_VERIFIED"}`.
-Server log: `requireVerifiedEmail_blocked subject=u:<id>`.
+**Expected:** HTTP 403, body `{"error":"...","code":"EMAIL_VERIFICATION_REQUIRED"}`.
+(The `requireVerifiedEmail` middleware returns the 403 without emitting a
+dedicated log line — see `apps/server/src/http/requireVerifiedEmail.ts`.)
 
 **Observed (2026-05-06):** matches.
 

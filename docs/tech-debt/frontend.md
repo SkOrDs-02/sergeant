@@ -168,12 +168,14 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 ### 2.5. Hub Settings & Reports tab cold-mount cost — 10+ s tab freeze
 
+> **Status (2026-05-29): substantially mitigated — tracked by [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md).** Sprint 1 (per-section `React.lazy` + Suspense у Settings; viewport-gated heavy queries у `FinykSection`, [#3102](https://github.com/Skords-01/Sergeant/pull/3102)) і Sprint 2 (HubReports → per-card lazy, `HubReports.tsx` 608 → **261 LOC**) зашиплено. Final RUM-перевірка цілей P50/P95 — у 0017. Цифри LOC нижче оновлено до фактичних.
+
 **Симптом (2026-05-20 prod audit):** клік на bottom-nav таб `?tab=settings` або `?tab=reports` показує `PageLoader` skeleton на 10+ секунд на desktop (mid-range mobile estimate: 25+ с). Chunk download уже **не** проблема — `prefetchHubNavigationPages` без зовнішньої idle-обгортки ([PR #3043](https://github.com/Skords-01/Sergeant/pull/3043)) дає chunks за 31 ms (cache-hit). Затримка — у JS execution та initial mount cost.
 
 **Root cause:**
 
-- [`apps/web/src/core/hub/HubSettingsPage.tsx`](../../apps/web/src/core/hub/HubSettingsPage.tsx) (387 LOC) рендерить 14 секцій active-group одним render burst. Кожна секція (особливо `FinykSection` 614 LOC, `NutritionSection` 284 LOC) тягне свій `useQuery`, `useEffect`, cross-module hooks (`useFinykStorage`, `useMonoBackfillProgress`, `useNutritionDualWriteBoot` тощо).
-- [`apps/web/src/core/hub/HubReports.tsx`](../../apps/web/src/core/hub/HubReports.tsx) (608 LOC) робить heavy `useMemo(aggregateReport)` over всі 4 localStorage shards (`fizruk_workouts_v1`, `finyk_tx_cache`, `hub_routine_v1`, `nutrition_log_v1`) + `generateInsights` рекомендації — все синхронно на main thread.
+- [`apps/web/src/core/hub/HubSettingsPage.tsx`](../../apps/web/src/core/hub/HubSettingsPage.tsx) (457 LOC) рендерить 14 секцій active-group одним render burst. Кожна секція (особливо `FinykSection` 635 LOC, `NutritionSection` 284 LOC) тягне свій `useQuery`, `useEffect`, cross-module hooks (`useFinykStorage`, `useMonoBackfillProgress`, `useNutritionDualWriteBoot` тощо). _(Sprint 1 уже зробив ці секції lazy + Suspense — див. Status вище.)_
+- [`apps/web/src/core/hub/HubReports.tsx`](../../apps/web/src/core/hub/HubReports.tsx) (608 → **261 LOC** після Sprint 2 per-card lazy) робив heavy `useMemo(aggregateReport)` over всі 4 localStorage shards (`fizruk_workouts_v1`, `finyk_tx_cache`, `hub_routine_v1`, `nutrition_log_v1`) + `generateInsights` рекомендації — синхронно на main thread; тепер розрізано на per-card lazy chunks.
 - `<SuspenseWithMinDelay>` приховує цю роботу за skeleton, але не прискорює — лише робить flicker менш різким.
 
 **Як ловити нові випадки в CI:**
@@ -233,7 +235,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 0 файлів в allowlist (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 closed (Done 2026-05-29); 0 regressions**
+### 4. Великі файли (>600 рядків) — 0 файлів в allowlist (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 closed (Done 2026-05-29); ManualExpenseSheet drift fixed 2026-05-29**
 
 > **Status (2026-05-22):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
 > закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
@@ -252,7 +254,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 > 645 → 589 effective — `useCompletionNoteDrafts` extraction, PR #3091
 > follow-up). `max-lines` allowlist у `eslint.config.js` **порожній**.
 >
-> **Активних регресій (2026-05-22): 0.** Всі carry-over під threshold.
+> **Регресія (2026-05-29):** `ManualExpenseSheet.tsx` дрейфнув до 601 eff LOC (новий leaker, не 0001-carry-over) і ламав `max-lines` → декомпозовано (category-система винесена у `manualExpenseCategories.ts`, PR #3151). Поза цим усі carry-over під threshold; allowlist порожній.
 >
 > Плюс **2 нових leakers**, які з'явились після audit-у 0001:
 > `AuthPage.tsx` (хоча зараз 157 LOC raw — теж не leaker після 2026-Q2),
@@ -404,7 +406,7 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 ~31% файлів мають тести (re-audit 2026-05-13). Критичні модулі без тестів / з тонким покриттям
 (актуально):
 
-- `HubReports.tsx` (592 рядків, складна агрегація) — досі без тестів
+- `HubReports.tsx` (608 → **261 LOC** після 0017 Sprint 2 per-card decomposition; важка агрегація винесена в per-card chunks) — покриття shell-у тонке
 - ~~`TodayFocusCard.tsx` (recommendation engine інтеграція)~~ — `TodayFocusCard.test.tsx` додано
 - ~~`ProfilePage.tsx` (1060 рядків)~~ — декомпозовано на `core/profile/` (max 383 LOC)
 

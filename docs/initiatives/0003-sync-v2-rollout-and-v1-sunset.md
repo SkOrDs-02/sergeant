@@ -262,9 +262,9 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 
 **Що видалити після exit-criteria met:**
 
-- `apps/server/src/modules/sync/sunsetGone.ts` + `sunsetHeaders.ts` + `clientSurvey.ts` (audit lookup лишається — `audit.ts` для read-only access).
-- `apps/server/src/routes/sync.ts:62-66` — drop `respondV1Gone` route handlers.
-- `packages/shared/src/schemas/api.ts:505-552` — drop `SyncModuleEnum`, `SyncPushSchema`, `SyncPullSchema`, `SyncPushAllSchema`, `ClientUpdatedAtSchema` (також у Stage 13 PR #076 scope).
-- `packages/shared/src/openapi/registry.ts:99-110` — drop entries.
+- `apps/server/src/modules/sync/sunsetGone.ts` + `sunsetHeaders.ts` + `clientSurvey.ts` (audit lookup лишається — `audit.ts` для read-only access). _(Still present — `respondV1Gone` мапиться у `routes/sync.ts`.)_
+- `apps/server/src/routes/sync.ts` — drop the `respondV1Gone` route handlers (`/api/sync/{push,pull,pull-all,push-all}`). _(Still present.)_
+- ~~`packages/shared/src/schemas/api.ts` — drop `SyncModuleEnum`, `SyncPushSchema`, `SyncPullSchema`, `SyncPushAllSchema`, `ClientUpdatedAtSchema`~~ — **already dropped in PR #076** (Stage 13); see the tombstone comment at `api.ts` § "Sync v2 (op-log)".
+- ~~`packages/shared/src/openapi/registry.ts` — drop entries~~ — **already dropped in PR #076** (together with the schemas above).
 
 **Risk.** Якщо клієнт усе ще встромляє v1 запити після removal — отримує 404 (raw Express), а не 410 Gone. Acceptable після 8-week zero signal або 90-day deprecation window.
