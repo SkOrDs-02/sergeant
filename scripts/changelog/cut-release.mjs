@@ -194,9 +194,10 @@ function main() {
   // scope, so a `chore(release):` subject is rejected by the commit-msg hook.
   git(`commit -m "chore(root): cut ${TAG}"`);
   git(`tag ${TAG} HEAD`);
+  const sha = git("rev-parse --short HEAD");
 
   process.stdout.write(`✅ Cut release ${TAG} (${RELEASE_DATE}).\n`);
-  process.stdout.write(`   Commit: $(git rev-parse --short HEAD)\n`);
+  process.stdout.write(`   Commit: ${sha}\n`);
   process.stdout.write(`   Tag:    ${TAG}\n`);
   process.stdout.write(
     `\nNext: push commit + tag together:\n  git push --follow-tags origin main\n`,
