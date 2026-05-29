@@ -66,6 +66,7 @@ import {
   VISIBLE_DASHBOARD_MODULES,
 } from "./dashboardModuleConfig";
 import { FirstActionHeroCard } from "./FirstActionHeroCard";
+import type { PresetAction } from "@/core/onboarding/PresetStep";
 import { HubInsightsPanel, type InsightItem } from "./HubInsightsPanel";
 import { SoftAuthPromptCard } from "./SoftAuthPromptCard";
 import { TodayFocusCard } from "./TodayFocusCard";
@@ -316,12 +317,25 @@ export function HubDashboard() {
     [],
   );
 
-  const openModule = useCallback((id: DashboardModuleId) => {
-    // `DASHBOARD_MODULE_ROUTES` holds validated Expo-Router hrefs. We
-    // cast to `Href` so the router's typed-href helper accepts them
-    // without materialising a union of every literal string.
-    router.push(DASHBOARD_MODULE_ROUTES[id] as Href);
-  }, []);
+  const openModule = useCallback(
+    (id: DashboardModuleId, action?: PresetAction) => {
+      // FTUX preset routing (PresetStep): `finyk` presets and the
+      // fallback CTA deep-link into the add-expense sheet. The
+      // TransactionsPage reads the `action=add_expense` param, opens its
+      // `ManualExpenseSheet`, and pulls the staged `presetPrefill`
+      // (description / category). Other modules have no prefill channel
+      // yet, so they route to the module root exactly as before.
+      if (id === "finyk" && action === "add_expense") {
+        router.push("/(tabs)/finyk/transactions?action=add_expense" as Href);
+        return;
+      }
+      // `DASHBOARD_MODULE_ROUTES` holds validated Expo-Router hrefs. We
+      // cast to `Href` so the router's typed-href helper accepts them
+      // without materialising a union of every literal string.
+      router.push(DASHBOARD_MODULE_ROUTES[id] as Href);
+    },
+    [],
+  );
 
   const openSettings = useCallback(() => {
     router.push("/settings" as Href);
@@ -452,7 +466,7 @@ export function HubDashboard() {
         <View testID="dashboard-hero-slot">
           {firstActionVisible ? (
             <FirstActionHeroCard
-              onAction={(id) => openModule(id)}
+              onAction={(id, action) => openModule(id, action)}
               onDismiss={bumpHero}
               onShown={({ primary, picks, primaryReason }) => {
                 trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
