@@ -17,6 +17,9 @@ import type { TextInput as RNTextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useToast } from "@/components/ui/Toast";
+import { useTextToSpeech } from "@/lib/voice/useTextToSpeech";
+
 import { HubChatBody } from "./HubChatBody";
 import { HubChatComposer } from "./HubChatComposer";
 import { HubChatHeader } from "./HubChatHeader";
@@ -38,6 +41,7 @@ export function HubChat({
   onOpenCatalogue,
 }: HubChatProps) {
   const router = useRouter();
+  const toast = useToast();
 
   const inputRef = useRef<RNTextInput | null>(null);
 
@@ -53,17 +57,23 @@ export function HubChat({
     handleDeleteSession,
   } = useChatSessions();
 
+  // TTS-рушій (expo-speech) живе тут, а не у composer-і, щоб
+  // `useChatSend` міг озвучити відповідь через `onSpeak`, а composer —
+  // лише тогл-ити mute. Mute прапор persist-иться у MMKV самим хуком.
+  const { speak, stop: stopSpeaking, muted, toggleMute } = useTextToSpeech();
+
   const fallbackOpenCatalogue = useCallback(() => {
     router.push("/assistant");
   }, [router]);
 
-  const { input, setInput, loading, online, send, cancelInFlight } =
+  const { input, setInput, loading, online, send, cancelInFlight, sendRef } =
     useChatSend({
       messages,
       setMessages,
       ...(initialMessage !== undefined ? { initialMessage } : {}),
       ...(autoSendInitial !== undefined ? { autoSendInitial } : {}),
       onOpenCatalogue: onOpenCatalogue ?? fallbackOpenCatalogue,
+      onSpeak: speak,
     });
 
   const handleClose = useCallback(() => {
@@ -82,6 +92,27 @@ export function HubChat({
   const handleSend = useCallback(() => {
     void send();
   }, [send]);
+
+  // STT final transcript → авто-надсилання як голосовий турн
+  // (`fromVoice=true` → відповідь озвучиться). Зупиняємо поточне
+  // озвучення перед стартом нової фрази, щоб TTS-вивід не накладався
+  // на STT-ввід.
+  const handleVoiceResult = useCallback(
+    (transcript: string) => {
+      const text = transcript.trim();
+      if (!text) return;
+      stopSpeaking();
+      void sendRef.current?.(text, true);
+    },
+    [sendRef, stopSpeaking],
+  );
+
+  const handleVoiceError = useCallback(
+    (message: string) => {
+      if (message) toast.error(message);
+    },
+    [toast],
+  );
 
   return (
     <SafeAreaView
@@ -114,6 +145,10 @@ export function HubChat({
             online={online}
             loading={loading}
             onSend={handleSend}
+            onVoiceResult={handleVoiceResult}
+            onVoiceError={handleVoiceError}
+            muted={muted}
+            onToggleMute={toggleMute}
           />
         </View>
       </KeyboardAvoidingView>

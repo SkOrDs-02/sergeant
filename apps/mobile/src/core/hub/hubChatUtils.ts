@@ -166,3 +166,11 @@ const HELP_RE = /^\/(help|допомога|команди|інструменти
 export function isHelpCommand(text: string): boolean {
   return HELP_RE.test(text.trim());
 }
+
+/**
+ * Keyword sniffer that opts a *typed* message into a spoken reply, even
+ * when it did not come from the mic. Kept byte-identical to the web
+ * source (`apps/web/src/core/lib/hubChatSpeech.ts`) so voice-triggered
+ * replies do not diverge across platforms.
+ */
+export const VOICE_KEYWORDS = /голосом|вголос|скажи|озвуч|прочитай/i;
