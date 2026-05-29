@@ -23,7 +23,7 @@ const REENGAGEMENT_SHOWN_KEY = "hub_reengagement_shown_v1";
  * surfaces. Day-2 is the earliest meaningful loop: D1 covers itself with the
  * primary daily nudge, while D7+ is owned by the email drip (S4.3) and push
  * scheduling (S4.2). The 1-per-day rate limit (`REENGAGEMENT_SHOWN_KEY`) keeps
- * the card from re-firing within the same UTC day.
+ * the card from re-firing within the same Europe/Kyiv day.
  */
 export const REENGAGEMENT_INACTIVE_DAYS = 2;
 
@@ -165,7 +165,12 @@ export function getActiveNudge(
 
 function todayKey(now?: Date): string {
   const d = now ?? new Date();
-  return d.toISOString().slice(0, 10);
+  // Europe/Kyiv day boundary (domain invariant) — NOT UTC. A user active at
+  // 01:00 Kyiv (23:00 UTC the day before) must count as "today", otherwise the
+  // re-engagement gap is off by a day near midnight. `en-CA` formats YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" }).format(
+    d,
+  );
 }
 
 /** Record the current date as last active. Call on every hub mount. */

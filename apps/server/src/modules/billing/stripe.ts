@@ -273,20 +273,24 @@ function getStripeSecretKey(): string {
   return key;
 }
 
-function getPriceId(plan: BillingPlan): string {
-  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): read
-  // from the Zod-validated `env` so the `price_*` format is checked
-  // up-front and `assertStartupEnv` can refuse to boot in production
-  // when billing is wired but the price ID is missing.
-  const envName =
-    plan === "plus"
-      ? "STRIPE_PRICE_ID_PLUS_MONTHLY"
-      : "STRIPE_PRICE_ID_PRO_MONTHLY";
-  const priceId =
-    plan === "plus"
-      ? env.STRIPE_PRICE_ID_PLUS_MONTHLY
-      : env.STRIPE_PRICE_ID_PRO_MONTHLY;
-  if (!priceId) throw new BillingConfigurationError(`${envName} is not set`);
+function getPriceId(_plan: BillingPlan): string {
+  // Pricing v3 (ADR-0051): Stripe sells Pro only — the legacy 'plus' tier was
+  // removed, so every checkout maps to the Pro price regardless of the
+  // requested plan (consistent with `normalizePlan` always returning "pro").
+  // FOLLOW-UP: narrow `BillingPlanSchema` to `["pro"]` and drop
+  // `STRIPE_PRICE_ID_PLUS_MONTHLY` once the api-client contract can be
+  // regenerated together (Hard Rule #3 triplet).
+  //
+  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): read from the
+  // Zod-validated `env` so the `price_*` format is checked up-front and
+  // `assertStartupEnv` can refuse to boot when billing is wired but the price
+  // ID is missing.
+  const priceId = env.STRIPE_PRICE_ID_PRO_MONTHLY;
+  if (!priceId) {
+    throw new BillingConfigurationError(
+      "STRIPE_PRICE_ID_PRO_MONTHLY is not set",
+    );
+  }
   return priceId;
 }
 
