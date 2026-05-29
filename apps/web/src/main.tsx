@@ -183,7 +183,14 @@ void (async () => {
   // вони не observability для крашів.
   void initSentry();
 
-  ReactDOM.createRoot(document.getElementById("root")!).render(
+  const rootEl = document.getElementById("root");
+  if (!rootEl) {
+    document.body.innerHTML =
+      "<p>Завантаження не вдалося. Перезавантаж сторінку.</p>";
+    throw new Error("missing #root element");
+  }
+
+  ReactDOM.createRoot(rootEl).render(
     <ErrorBoundary fallback={ErrorFallback}>
       <PersistQueryClientProvider
         client={queryClient}

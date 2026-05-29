@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-05-22",
+  "generated_at": "2026-05-29",
   "summary": {
     "packages": 17,
     "totalExports": 279,
@@ -1978,7 +1978,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 305,
+        "totalImporters": 307,
         "deadExports": 0
       },
       "exports": [
