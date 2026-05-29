@@ -233,7 +233,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 2 файли (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 Sprint 2 done; 0 regressions**
+### 4. Великі файли (>600 рядків) — 0 файлів в allowlist (тільки `apps/web/src`) — **Initiative 0001 closed; 0013 closed (Done 2026-05-29); 0 regressions**
 
 > **Status (2026-05-22):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
 > закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
