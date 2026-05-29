@@ -239,6 +239,73 @@ describe("assertAiQuota (default bucket)", () => {
   });
 });
 
+describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
+  const findUpsert = () =>
+    pool.query.mock.calls.find((c) =>
+      /INSERT INTO ai_usage_daily/.test(c[0] as string),
+    );
+
+  beforeEach(() => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+  });
+
+  it("caps an authenticated FREE user at 5/day (billing FREE_LIMITS)", async () => {
+    getSessionUser.mockResolvedValue({ id: "u-free" });
+    pool.query.mockImplementation(async (sql: string) => {
+      // No subscription row → getUserPlan() returns synthetic free plan.
+      if (/FROM subscriptions/i.test(sql)) return { rows: [], rowCount: 0 };
+      return { rows: [{ request_count: 1 }], rowCount: 1 };
+    });
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+    expect(ok).toBe(true);
+    expect(res.headers["X-AI-Quota-Remaining"]).toBe("4"); // 5 - 1
+    const upsert = findUpsert();
+    expect(upsert).toBeDefined();
+    expect((upsert![1] as unknown[])[4]).toBe(5); // limit passed to UPSERT
+  });
+
+  it("leaves an authenticated PRO user unlimited (no quota row written)", async () => {
+    getSessionUser.mockResolvedValue({ id: "u-pro" });
+    pool.query.mockImplementation(async (sql: string) => {
+      if (/FROM subscriptions/i.test(sql))
+        return {
+          rows: [
+            {
+              plan: "pro",
+              status: "active",
+              current_period_end: null,
+              cancel_at_period_end: false,
+              provider: "stripe",
+            },
+          ],
+          rowCount: 1,
+        };
+      return { rows: [{ request_count: 1 }], rowCount: 1 };
+    });
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+    expect(ok).toBe(true);
+    expect(res.statusCode).toBe(200);
+    expect(findUpsert()).toBeUndefined(); // unlimited → no ai_usage_daily write
+  });
+
+  it("falls back to the FREE cap when the plan lookup throws", async () => {
+    getSessionUser.mockResolvedValue({ id: "u-err" });
+    pool.query.mockImplementation(async (sql: string) => {
+      if (/FROM subscriptions/i.test(sql)) throw new Error("subs db blip");
+      return { rows: [{ request_count: 1 }], rowCount: 1 };
+    });
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+    expect(ok).toBe(true);
+    const upsert = findUpsert();
+    expect(upsert).toBeDefined();
+    expect((upsert![1] as unknown[])[4]).toBe(5); // free cap enforced despite error
+  });
+});
+
 describe("consumeToolQuota (tool buckets)", () => {
   beforeEach(() => {
     process.env["DATABASE_URL"] = "postgres://ignored";
