@@ -21,15 +21,16 @@ import { webhookHandler } from "../modules/mono/webhook.js";
  * Роутер для webhook-based Monobank інтеграції (Track A).
  *
  * Webhook endpoint монтується БЕЗ session auth — це публічний endpoint, куди
- * Monobank надсилає delivery. Авторизація — через секрет, що ходить у
- * `X-Mono-Webhook-Secret` header (preferred) або у legacy path-param
- * `:secret` (deprecated, див. C1
- * `docs/security/hardening/C1-mono-webhook-secret-in-url.md`).
+ * Monobank надсилає delivery. Авторизація — через секрет у path-param
+ * `:secret` (це єдиний транспорт, який вміє Monobank `/personal/webhook` —
+ * лише `webHookUrl`, без custom-headers). Header-варіант
+ * `X-Mono-Webhook-Secret` — defense-in-depth для майбутнього edge-proxy, що
+ * перекладе secret з path у header до нашого лог-пайплайну. Деталі та
+ * residual risk — C1 `docs/security/hardening/C1-mono-webhook-secret-in-url.md`.
  *
  * Обидва маршрути ведуть у один і той самий handler — `webhookHandler`
  * вибирає секрет з header-а (якщо є) або з path-param-у. Header виграє при
- * колізії, що дозволяє мігрувати Monobank-конфіг на header-mode без
- * server-change.
+ * колізії, тож edge-rewrite зміг би перехопити транспорт без server-change.
  *
  * Решта endpoints — під `requireSession()`.
  */
@@ -46,9 +47,9 @@ export function createMonoWebhookRouter(): Router {
 
   // Webhook — публічний, без auth.
   //
-  // Header-based маршрут — preferred. Реєструється першим, щоб
-  // `POST /api/mono/webhook` без trailing-slash потрапляв сюди, а не у 404
-  // через path-param-варіант.
+  // Header-only маршрут реєструється першим, щоб `POST /api/mono/webhook` без
+  // path-secret (edge-rewrite кейс) потрапляв сюди, а не у 404. Monobank
+  // реально б'є у path-варіант нижче.
   r.post("/api/mono/webhook", asyncHandler(webhookHandler));
   r.post("/api/mono/webhook/:secret", asyncHandler(webhookHandler));
 

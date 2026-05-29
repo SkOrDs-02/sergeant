@@ -1,19 +1,19 @@
 # Sprint 1 — Critical + найгірші High
 
-> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
-> **Status:** Active — Phase 2 pending (C1: Monobank path→header + rotation; H1: TTL + device-binding → H3). Closed: H2, C2 Phase 1, C1 Phase 1 (2026-05-04), H1 Phase 1 (2026-05-04).
+> **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
+> **Status:** C1 mitigated (2026-05-29) — rotation shipped, Monobank header rollout dropped as infeasible (path-only `webHookUrl`). H1 Phase 2 resolved server-side via H3 (PR #1669); only the SessionsList UI follow-up remains. Closed: H2, C2 Phase 1, C1 Phase 1 (2026-05-04), H1 Phase 1 (2026-05-04).
 
 **Тривалість:** 1–2 тижні (target close: 2026-05-17).
 **Сумарний effort:** ~2.5 person-days.
 
 ## Скоуп
 
-| ID                                       | Title                                                                            | Severity | Effort | Owner    | Status                                                                                                                                                                                                           |
-| ---------------------------------------- | -------------------------------------------------------------------------------- | -------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                      | Critical | 1d     | backend  | **Phase 1 closed** (2026-05-04) — header-маршрут + URL-redaction в Pino/Sentry; Phase 2 (Monobank rollout + secret rotation) — pending                                                                           |
-| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                               | Critical | 0.5d   | frontend | **Phase 1 closed** (2026-05-04) — soak                                                                                                                                                                           |
-| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                      | High     | 0.5d   | mobile   | **Phase 1 closed** (2026-05-04) — `@aparajita/capacitor-secure-storage` міграція + iCloud-sync OFF + `afterFirstUnlockThisDeviceOnly`; Phase 2 (TTL + device-binding) → [H3](./H3-session-revoke-and-binding.md) |
-| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) + auto-merge workflow | High     | 0.5h   | devops   | **Closed** (2026-05-04)                                                                                                                                                                                          |
+| ID                                       | Title                                                                            | Severity | Effort | Owner    | Status                                                                                                                                                                                                                                       |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                      | Critical | 1d     | backend  | **Mitigated** (2026-05-29) — Phase 1 (log-redaction) + secret rotation (`rotateSecret.ts`, 90d) shipped. Monobank header rollout dropped: `/personal/webhook` is path-only `webHookUrl`, no custom-header/signature. Residual risk accepted. |
+| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                               | Critical | 0.5d   | frontend | **Phase 1 closed** (2026-05-04) — soak                                                                                                                                                                                                       |
+| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                      | High     | 0.5d   | mobile   | **Phase 1 closed** (2026-05-04) — `@aparajita/capacitor-secure-storage` міграція + iCloud-sync OFF + `afterFirstUnlockThisDeviceOnly`; Phase 2 (TTL + device-binding) → [H3](./H3-session-revoke-and-binding.md)                             |
+| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) + auto-merge workflow | High     | 0.5h   | devops   | **Closed** (2026-05-04)                                                                                                                                                                                                                      |
 
 ## Чому саме ці чотири разом
 
@@ -30,7 +30,7 @@
 
 ## Залежності та ризики
 
-- C1 потребує **узгодження з Monobank** про новий webhook-URL формат (`X-Mono-Webhook-Secret` header). Якщо Monobank API не підтримує custom-headers — fallback на body-mode або path-mode з middleware-redaction.
+- ~~C1 потребує узгодження з Monobank про `X-Mono-Webhook-Secret` header.~~ **Resolved 2026-05-29:** Monobank `/personal/webhook` не підтримує custom-headers — secret лишається в path-mode з middleware-redaction (Phase 1) + 90d rotation. Жодного узгодження з Monobank не потрібно.
 - C2 потребує продакшн-інвентаризації всіх 3rd-party-загрузок (PostHog, Sentry, Vercel Analytics, Stripe-якщо-є) перед написанням `connect-src`.
 - H1 не блокує реліз mobile shell, але вимагає **bump version** + новий store-submission (iOS App Store review = 1–3 дні).
 
