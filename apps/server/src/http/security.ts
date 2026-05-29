@@ -45,8 +45,10 @@ export function buildApiCspDirectives(): ApiCspDirectives {
  *   потрібна CSP на SPA, політика задається на CDN-рівні (Vercel headers).
  * - `servesFrontend: false` (дефолт) — API-only (Railway). CSP буде строгою
  *   (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1` переводить її у
- *   report-only-режим — корисно під час phased-rollout, бо ловить порушення
- *   у браузерах через `report-uri`/`report-to`, не блокуючи запит.
+ *   report-only-режим — корисно під час phased-rollout: браузер логує
+ *   порушення у DevTools-консоль, не блокуючи запит. NB: `report-uri`/
+ *   `report-to` endpoint НЕ налаштований — порушення видно лише локально в
+ *   консолі, централізовано не збираються (додати report-endpoint — окремий PR).
  *
  * **Видалено** (M1 — `docs/security/hardening/M1-csp-disable-runtime-flag.md`,
  * 2026-05-04): `CSP_DISABLE=1`-kill-switch. Він давав можливість одним
