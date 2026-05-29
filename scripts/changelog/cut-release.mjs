@@ -4,7 +4,8 @@
 // Cut a release from the current `## [Unreleased]` section of CHANGELOG.md:
 //   - rename the section to `## [YYYY-MM-DD]`
 //   - insert a fresh empty `## [Unreleased]` block above it
-//   - commit the change
+//   - commit the change (`chore(root): cut <tag>` — `root` because
+//     commitlint scope-enum has no `release` scope)
 //   - create a git tag `vYYYY.MM.DD` pointing at the new commit
 //
 // Initiative 0016 — author keeps writing rich manual narrative under
@@ -113,8 +114,7 @@ export function rewrite(md, releaseDate) {
   }
   const before = md.slice(0, headerStart);
   const renamedHeader = `## [${releaseDate}]`;
-  const renamedSection =
-    renamedHeader + md.slice(headerEnd, sectionEnd);
+  const renamedSection = renamedHeader + md.slice(headerEnd, sectionEnd);
   const after = md.slice(sectionEnd);
   return before + EMPTY_UNRELEASED + renamedSection + after;
 }
@@ -178,7 +178,7 @@ function main() {
       `[dry-run] Would rewrite CHANGELOG.md: ${before.length} → ${after.length} bytes.\n`,
     );
     process.stdout.write(
-      `[dry-run] Would create git tag ${TAG} on a new commit "chore(release): cut ${TAG}".\n`,
+      `[dry-run] Would create git tag ${TAG} on a new commit "chore(root): cut ${TAG}".\n`,
     );
     process.stdout.write(
       `[dry-run] Would NOT push — run \`git push --follow-tags origin main\` manually.\n`,
@@ -189,7 +189,10 @@ function main() {
   // 3. Write, commit, tag
   writeFileSync(CHANGELOG_PATH, after, "utf8");
   git("add CHANGELOG.md");
-  git(`commit -m "chore(release): cut ${TAG}"`);
+  // Scope is `root` (repo-wide), not `release` — commitlint `scope-enum`
+  // (commitlint.config.js, mirrors AGENTS.md hard rule #5) has no `release`
+  // scope, so a `chore(release):` subject is rejected by the commit-msg hook.
+  git(`commit -m "chore(root): cut ${TAG}"`);
   git(`tag ${TAG} HEAD`);
 
   process.stdout.write(`✅ Cut release ${TAG} (${RELEASE_DATE}).\n`);
