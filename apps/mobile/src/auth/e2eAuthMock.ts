@@ -250,6 +250,25 @@ export function installE2EAuthMock(): boolean {
       return jsonResponse({ message: "Unauthorized" }, { status: 401 });
     }
 
+    // POST /api/nutrition/recommend-recipes — synthetic AI recipe so the
+    // recipe-recommender E2E flow renders without a live Anthropic key.
+    if (method === "POST" && path.endsWith("/api/nutrition/recommend-recipes")) {
+      return jsonResponse({
+        recipes: [
+          {
+            title: "Омлет E2E",
+            timeMinutes: 15,
+            servings: 2,
+            ingredients: ["3 яйця", "сіль"],
+            steps: ["Збити яйця", "Посмажити"],
+            tips: [],
+            macros: { kcal: 300, protein_g: 20, fat_g: 22, carbs_g: 4 },
+          },
+        ],
+        rawText: null,
+      });
+    }
+
     return real(input, init);
   };
 

@@ -420,6 +420,28 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
         </Pressable>
       </Card>
 
+      <Card testID="nutrition-recipe-recommender-cta">
+        <Pressable
+          onPress={() => {
+            hapticTap();
+            router.push("/(tabs)/nutrition/recipe/recommend");
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="AI-рецепти зі складу"
+          className="flex-row items-center justify-between"
+        >
+          <View>
+            <Text className="text-sm font-semibold text-fg">AI-рецепти</Text>
+            <Text className="text-xs text-fg-muted mt-0.5">
+              Згенерувати рецепти з продуктів у коморі
+            </Text>
+          </View>
+          <Text className="text-fg-subtle text-lg" aria-hidden>
+            ›
+          </Text>
+        </Pressable>
+      </Card>
+
       <Card testID="nutrition-saved-recipes-cta">
         <Pressable
           onPress={() => {

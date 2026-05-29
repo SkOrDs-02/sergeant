@@ -1,8 +1,12 @@
 /**
- * Mobile-side composer для HubChat: text input + send button + офлайн-банер.
+ * Mobile-side composer для HubChat: text input + send button + офлайн-банер
+ * + голосові афорданси (STT мікрофон + TTS mute/stop toggle).
  *
- * Port `apps/web/src/core/hub/chat/HubChatComposer.tsx`. Голосовий
- * input (web `ChatInput`) виведено за дужки (Phase 8 / Voice STT).
+ * Port `apps/web/src/core/hub/chat/HubChatComposer.tsx` +
+ * `apps/web/src/core/components/ChatInput.tsx`. На відміну від web, де
+ * `ChatInput` сам тримає `useSpeech`, тут STT/TTS-хуки живуть у `HubChat`
+ * (бо `expo-speech-recognition` / `expo-speech` — окремі нативні модулі),
+ * а composer отримує готові колбеки + стани як props.
  */
 
 import { forwardRef } from "react";
@@ -13,7 +17,10 @@ import {
   View,
   type TextInput as RNTextInput,
 } from "react-native";
-import { Send } from "lucide-react-native";
+import { Send, Volume2, VolumeX } from "lucide-react-native";
+
+import { VoiceMicButton } from "@/components/ui/VoiceMicButton";
+import { colors } from "@/theme";
 
 export interface HubChatComposerProps {
   input: string;
@@ -21,11 +28,29 @@ export interface HubChatComposerProps {
   online: boolean;
   loading: boolean;
   onSend: () => void;
+  /** Final STT transcript → prefill + auto-send (fromVoice=true). */
+  onVoiceResult: (transcript: string) => void;
+  /** STT error → UA toast. */
+  onVoiceError: (message: string) => void;
+  /** Persistent TTS mute прапор (з `useTextToSpeech`). */
+  muted: boolean;
+  /** Перемикач mute. */
+  onToggleMute: () => void;
 }
 
 export const HubChatComposer = forwardRef<RNTextInput, HubChatComposerProps>(
   function HubChatComposer(
-    { input, setInput, online, loading, onSend }: HubChatComposerProps,
+    {
+      input,
+      setInput,
+      online,
+      loading,
+      onSend,
+      onVoiceResult,
+      onVoiceError,
+      muted,
+      onToggleMute,
+    }: HubChatComposerProps,
     ref,
   ) {
     const disabled = loading || !input.trim();
@@ -62,6 +87,28 @@ export const HubChatComposer = forwardRef<RNTextInput, HubChatComposerProps>(
               }}
             />
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              muted ? "Увімкнути озвучення" : "Вимкнути озвучення"
+            }
+            accessibilityState={{ selected: muted }}
+            onPress={onToggleMute}
+            testID="hub-chat-tts-toggle"
+            hitSlop={8}
+            className="h-11 w-11 items-center justify-center rounded-2xl border border-line bg-bg active:opacity-80"
+          >
+            {muted ? (
+              <VolumeX size={20} color={colors.danger} />
+            ) : (
+              <Volume2 size={20} color={colors.text} />
+            )}
+          </Pressable>
+          <VoiceMicButton
+            size="md"
+            onResult={onVoiceResult}
+            onError={onVoiceError}
+          />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Надіслати"

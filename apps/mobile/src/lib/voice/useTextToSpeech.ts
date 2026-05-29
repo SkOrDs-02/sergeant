@@ -21,6 +21,22 @@ import { mobileKVStore } from "@/lib/storage";
 
 const MUTE_STORAGE_KEY = "sergeant.voice.tts.muted";
 
+/**
+ * Прибирає те, що TTS не повинен диктувати вголос: емодзі-маркери,
+ * `[дужки]`, `id:`-токени, URL, markdown-символи. Дзеркало web
+ * `cleanTextForSpeech` (`apps/web/src/core/lib/hubChatSpeech.ts`).
+ */
+function cleanTextForSpeech(text: string): string {
+  return text
+    .replace(/✅/g, "")
+    .replace(/\[.*?\]/g, "")
+    .replace(/id:\S+/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[_*#~`|]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export interface UseTextToSpeechOptions {
   /** BCP-47 локаль, дефолт `uk-UA`. */
   lang?: string;
@@ -51,7 +67,8 @@ export interface UseTextToSpeechReturn {
 function readInitialMuted(): boolean {
   try {
     return mobileKVStore.getString(MUTE_STORAGE_KEY) === "true";
-  } catch {
+  } catch (err) {
+    console.warn("[useTextToSpeech] read mute flag failed", err);
     return false;
   }
 }
@@ -73,8 +90,10 @@ export function useTextToSpeech({
     setMutedState(next);
     try {
       mobileKVStore.setString(MUTE_STORAGE_KEY, next ? "true" : "false");
-    } catch {
-      /* noop — MMKV може бути недоступний у тестах */
+    } catch (err) {
+      // MMKV може бути недоступний у тестах — лог для observability,
+      // але стан у пам'яті вже виставлено, тому UX не блокується.
+      console.warn("[useTextToSpeech] persist mute flag failed", err);
     }
     if (next) {
       // Якщо муьтимо посеред озвучення — зупиняємо одразу.
@@ -92,12 +111,12 @@ export function useTextToSpeech({
 
   const speak = useCallback(
     (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
       if (muted) return;
+      const clean = cleanTextForSpeech(text);
+      if (!clean) return;
       const { lang: l, pitch: p, rate: r } = optionsRef.current;
       try {
-        Speech.speak(trimmed, {
+        Speech.speak(clean, {
           language: l,
           ...(p !== undefined ? { pitch: p } : {}),
           ...(r !== undefined ? { rate: r } : {}),

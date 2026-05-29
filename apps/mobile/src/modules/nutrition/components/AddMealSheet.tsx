@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { isApiError, type NutritionPhotoResult } from "@sergeant/api-client";
+import { type NutritionPhotoResult } from "@sergeant/api-client";
 import { useApiClient } from "@sergeant/api-client/react";
 
 import {
@@ -28,6 +28,7 @@ import { hapticSuccess } from "@sergeant/shared";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { setNutritionScanPrefillHandler } from "../lib/nutritionScanBridge";
+import { formatPhotoApiError } from "../lib/photoErrorFormatting";
 import { mapPhotoResultToMealForm } from "../lib/photoResultToMealForm";
 import {
   captureResizeAndReadBase64Jpeg,
@@ -261,12 +262,8 @@ export function AddMealSheet({
         }
         applyPhotoAnalyzeSuccess(picked.base64, picked.mimeType, r);
       } catch (e) {
-        const msg = isApiError(e)
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : "Помилка аналізу фото";
-        setForm((s) => ({ ...s, err: msg }));
+        const msg = formatPhotoApiError(e, "Помилка аналізу фото");
+        if (msg) setForm((s) => ({ ...s, err: msg }));
       } finally {
         setPhotoBusy(false);
       }
@@ -308,12 +305,8 @@ export function AddMealSheet({
         setRefinePortion(String(Math.round(g2)));
       }
     } catch (e) {
-      const msg = isApiError(e)
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : "Помилка уточнення";
-      setForm((s) => ({ ...s, err: msg }));
+      const msg = formatPhotoApiError(e, "Помилка уточнення");
+      if (msg) setForm((s) => ({ ...s, err: msg }));
     } finally {
       setRefineBusy(false);
     }
@@ -499,7 +492,12 @@ export function AddMealSheet({
           ) : null}
 
           {form.err ? (
-            <Text className="text-xs text-red-500 mt-2">{form.err}</Text>
+            <Text
+              className="text-xs text-red-500 mt-2"
+              testID="add-meal-fill-err"
+            >
+              {form.err}
+            </Text>
           ) : null}
 
           <View className="mt-5 gap-2">

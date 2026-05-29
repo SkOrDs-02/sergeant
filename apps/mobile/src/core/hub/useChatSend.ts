@@ -15,8 +15,14 @@
  *    web-only localStorage shape-и). Натомість картки будуються через
  *    `buildActionCard` і вертаються до сервера як заглушка
  *    «not supported on mobile», щоб follow-up stream завершився.
- *  - TTS (window.speechSynthesis) і `expo-speech` — окрема ініціатива
- *    (#7 / Phase 8); тут — text-only composer.
+ *  - TTS: web тримає `maybeSpeak` всередині хука і полить
+ *    `window.speechSynthesis`. На mobile рушій озвучення (`expo-speech`)
+ *    живе в окремому `useTextToSpeech`-хуку, що інстансується у
+ *    `HubChat`. Тому замість прямого виклику `speak()` тут ми лишаємо
+ *    `onSpeak` callback-опцію: коли `shouldSpeak` (fromVoice / попередній
+ *    турн був голосовим / `VOICE_KEYWORDS` у тексті) — кличемо
+ *    `onSpeak(assistantText)`, а HubChat вирішує, чи реально озвучувати
+ *    (поважаючи MMKV-mute прапор TTS-хука).
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,6 +39,7 @@ import {
   makeAssistantMsg,
   makeUserMsg,
   newMsgId,
+  VOICE_KEYWORDS,
   type ChatMessage,
 } from "./hubChatUtils";
 import { buildActionCard, type ChatActionCard } from "./hubChatActionCards";
@@ -45,6 +52,14 @@ export interface UseChatSendOptions {
   initialMessage?: string;
   autoSendInitial?: boolean;
   onOpenCatalogue?: () => void;
+  /**
+   * Кличеться з фінальним текстом assistant-відповіді, коли турн має
+   * бути озвучений (голосовий ввід, попередній голосовий турн, або
+   * `VOICE_KEYWORDS` у запиті). HubChat прокидає сюди `speak` з
+   * `useTextToSpeech`. Mute-логіка живе в TTS-хуку — `speak` сам
+   * no-op-ить коли muted.
+   */
+  onSpeak?: (text: string) => void;
 }
 
 export interface UseChatSendResult {
@@ -52,9 +67,12 @@ export interface UseChatSendResult {
   setInput: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
   online: boolean;
-  send: (text?: string) => Promise<void>;
+  /** Надіслати `text` (або поточний `input`). `fromVoice` вмикає TTS-відповідь. */
+  send: (text?: string, fromVoice?: boolean) => Promise<void>;
   cancelInFlight: () => void;
-  sendRef: React.MutableRefObject<((text?: string) => Promise<void>) | null>;
+  sendRef: React.MutableRefObject<
+    ((text?: string, fromVoice?: boolean) => Promise<void>) | null
+  >;
 }
 
 function useOnlineStatus(): boolean {
@@ -84,6 +102,7 @@ export function useChatSend({
   initialMessage,
   autoSendInitial,
   onOpenCatalogue,
+  onSpeak,
 }: UseChatSendOptions): UseChatSendResult {
   const api = useApiClient();
   const online = useOnlineStatus();
@@ -93,10 +112,17 @@ export function useChatSend({
 
   const abortRef = useRef<AbortController | null>(null);
 
-  const sendRef = useRef<((text?: string) => Promise<void>) | null>(null);
+  // Тримаємо `onSpeak` у ref, щоб `send` не залежав від його identity
+  // і не перебудовувався на кожному рендері HubChat.
+  const onSpeakRef = useRef(onSpeak);
+  onSpeakRef.current = onSpeak;
+
+  const sendRef = useRef<
+    ((text?: string, fromVoice?: boolean) => Promise<void>) | null
+  >(null);
 
   const send = useCallback(
-    async (text?: string): Promise<void> => {
+    async (text?: string, fromVoice = false): Promise<void> => {
       const msg = (text ?? input).trim();
       if (!msg || loading) return;
 
@@ -117,6 +143,16 @@ export function useChatSend({
         setInput("");
         return;
       }
+
+      // Чи озвучувати відповідь: явний голосовий ввід або keyword-тригер
+      // у тексті (web-паритет — `apps/web/.../useChatSend.ts`).
+      const shouldSpeak = fromVoice || VOICE_KEYWORDS.test(msg);
+
+      const maybeSpeak = (assistantText: string): void => {
+        if (!shouldSpeak) return;
+        const speakTarget = assistantText.trim();
+        if (speakTarget) onSpeakRef.current?.(speakTarget);
+      };
 
       const userMsg = makeUserMsg(msg);
       const nextMsgs = [...messages, userMsg];
@@ -292,9 +328,14 @@ export function useChatSend({
               ),
             );
           }
+
+          // Озвучуємо follow-up-стрім (або prefix-зведення дій, якщо
+          // follow-up порожній) — web-паритет.
+          maybeSpeak(followUpText || prefix);
         } else {
           const reply = data.text || "Немає відповіді.";
           setMessages((m) => [...m, makeAssistantMsg(reply)]);
+          maybeSpeak(reply);
         }
       } catch (e) {
         const isAbort =

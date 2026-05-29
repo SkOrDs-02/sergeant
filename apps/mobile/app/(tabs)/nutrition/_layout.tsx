@@ -41,6 +41,10 @@ export default function NutritionStackLayout() {
           options={{ title: "Рецепти", headerShown: false }}
         />
         <Stack.Screen
+          name="recipe/recommend"
+          options={{ title: "AI-рецепти", headerShown: false }}
+        />
+        <Stack.Screen
           name="recipe/form"
           options={{ title: "Рецепт", headerShown: false }}
         />
