@@ -1,7 +1,7 @@
 # 0016 — CHANGELOG release-cut automation
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
-> **Status:** In progress
+> **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
+> **Status:** Done (2026-05-29) — script shipped + first release cut `v2026.05.29` executed. Fixed a latent tooling bug: the cut commit used `chore(release):`, which commitlint `scope-enum` rejects (no `release` scope) → switched to `chore(root):`.
 
 ## TL;DR
 
@@ -53,7 +53,7 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
    - Rename `## [Unreleased]` → `## [<date>]`
    - Insert new `## [Unreleased]\n\n### Added\n\n### Changed\n\n### Fixed\n\n` above renamed section
 7. `git add CHANGELOG.md`
-8. `git commit -m "chore(release): cut <tag>"`
+8. `git commit -m "chore(root): cut <tag>"` (`root` scope — commitlint `scope-enum` has no `release` scope)
 9. `git tag <tag> HEAD`
 10. Print push instructions (don't auto-push — leave it to maintainer choice)
 
@@ -63,12 +63,12 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
 
 ### Phase 1
 
-- [ ] `pnpm changelog:cut --dry-run` показує що буде зроблено без side-effects
-- [ ] `pnpm changelog:cut` (без dry-run) перейменовує section, додає fresh Unreleased, commit-ить, тегає
-- [ ] Script відмовляється cut-ити порожній Unreleased (validation)
-- [ ] Script відмовляється cut-ити з повторно існуючим tag (validation)
-- [ ] CHANGELOG.md header не містить більше TODO про auto-generation
-- [ ] Перший cut виконаний (тег `v2026.05.17` або новіший — створено)
+- [x] `pnpm changelog:cut --dry-run` показує що буде зроблено без side-effects
+- [x] `pnpm changelog:cut` (без dry-run) перейменовує section, додає fresh Unreleased, commit-ить, тегає
+- [x] Script відмовляється cut-ити порожній Unreleased (validation) — `hasRealContent`
+- [x] Script відмовляється cut-ити з повторно існуючим tag (validation) — `tagExists` (local + origin)
+- [x] CHANGELOG.md header не містить більше TODO про auto-generation
+- [x] Перший cut виконаний — тег `v2026.05.29` створено (PR; push після merge у захищений main)
 
 ## Ризики
 
