@@ -1,7 +1,7 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
-> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
-> **Status:** In progress — Sprint 1 done. Sprint 2 effectively done: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→614 raw / 518 effective (incremental refactors, passes rule), `RoutineCalendarPanel.tsx` 645→589 effective ([PR #3091](https://github.com/Skords-01/Sergeant/pull/3091) follow-up commits, `useCompletionNoteDrafts` extraction). `max-lines:600` allowlist in `eslint.config.js` empty. **All Sprint 2 files now under the threshold — ready for `decomp-r2-finalize` closure PR.**
+> **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
+> **Status:** Done (2026-05-29) — allowlist drained to **0 files** (target was ≤2; closes 0001 carry-over criterion #2). All Initiative-0001 carry-over files + the 2026-05-09 drift items are decomposed under the 600-LOC threshold; the `max-lines` `overrides` allowlist in `eslint.config.js` is empty (only an explanatory comment remains). Sprint 2 closers: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→518 effective, `RoutineCalendarPanel.tsx` 645→589 effective ([PR #3091](https://github.com/Skords-01/Sergeant/pull/3091)). See § Outcome → Closure.
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
@@ -90,13 +90,13 @@ PR-и:
 
 ## Критерії DONE
 
-- [ ] У `apps/web/src/**` лишається **≤2 файли в allowlist** (closes 0001 carry-over criterion #2).
-- [ ] `eslint.config.js` `overrides` allowlist для `max-lines` видалено цілком (`decomp-r2-finalize`).
-- [ ] Жоден з 11 файлів у scope не перевищує 600 LOC; `pnpm lint` зелений без override-ів.
-- [ ] Bundle-size delta задокументована у `decomp-r2-finalize` (очікуємо ≥+20 KB у `shared` chunk-і за рахунок tree-shaking).
-- [ ] [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) `LARGE_FILES` секція оновлена: 0013 → Done, посилання на цю ініціативу замість 0001.
-- [ ] [`docs/initiatives/README.md`](./README.md) — рядок 0013 переміщено з § Активні у § Нещодавно завершені.
-- [ ] Outcome-секція у цьому файлі написана з фінальними метриками (як у 0001 Phase 3).
+- [x] У `apps/web/src/**` лишається **≤2 файли в allowlist** — фактично **0** (closes 0001 carry-over criterion #2).
+- [x] `eslint.config.js` `overrides` allowlist для `max-lines` видалено цілком (лишився тільки пояснювальний коментар, `eslint.config.js:1036-1040`).
+- [x] Жоден з файлів у scope не перевищує 600 LOC; `pnpm lint` зелений без override-ів.
+- [x] Bundle-size delta задокументована — Sprint 1 виміряно **−5 KB** у `shared` (gzip); агрегатний re-measure окремо не ганявся, бо decomp був інкрементальний per-PR (див. § Outcome → Closure).
+- [x] [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) `LARGE_FILES` секція оновлена: 0013 → Done.
+- [x] [`docs/initiatives/README.md`](./README.md) — рядок 0013 переміщено з § Активні у § Нещодавно завершені.
+- [x] Outcome-секція з фінальними метриками написана (§ Outcome → Closure).
 
 ## Ризики та митиґація
 
@@ -155,3 +155,32 @@ Verify:
 - `pnpm lint` — зелений (0 errors); попередні warnings на cyrillic-JSX літерали перенесено разом зі стрічками без змін поведінки.
 - `pnpm --filter @sergeant/web typecheck` — зелений.
 - `pnpm --filter @sergeant/web test` — `223 / 223` test-files, `2247 / 2247` tests passed (тести `dualWrite/*` запрацювали після `pnpm --filter @sergeant/db-schema build` — pre-existing setup-крок, не пов’язаний з цим PR-ом).
+
+### Sprint 2 — drift drain (closed)
+
+Та сама per-file схема. Усі drift-файли під threshold:
+
+- `hubChatContext.ts` — **681 → 32 LOC** ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)); context-provider розщеплено на seam-и (state / effects / renderer), не на штучні LOC-куски.
+- `fizrukActions.ts` — **672 → 73 LOC** ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)).
+- `AssetsTable.tsx` — **671 → 142 LOC** ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)).
+- `HubDashboard.tsx` — **837 → 115 LOC** ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)).
+- `NutritionApp.tsx` — **766 → 518 effective LOC** (інкрементальні рефактори, проходить рул без override-у).
+- `RoutineCalendarPanel.tsx` — **645 → 589 effective LOC** (`useCompletionNoteDrafts` extraction, [PR #3091](https://github.com/Skords-01/Sergeant/pull/3091) follow-up).
+
+### Closure (2026-05-29)
+
+`decomp-r2-finalize` зведено до docs-pass: на момент закриття `eslint.config.js` `max-lines` allowlist **уже порожній** (декомпозиції мерджились інкрементально per-PR через Sprint 1–2), тож код-зміна у finalize не потрібна — лишилось зафіксувати статус.
+
+**Фінальні метрики:**
+
+| Метрика                                       | Baseline (post-0001) | Final (2026-05-29)        |
+| --------------------------------------------- | -------------------- | ------------------------- |
+| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 11                   | **0** (target був ≤2)     |
+| Найбільший файл у allowlist                   | 717 (`Workouts.tsx`) | **—** (allowlist drained) |
+| Сумарний LOC у allowlist                      | ~7 800               | **0**                     |
+| `pnpm lint` без override-у                    | червоний для 11      | **зелений**               |
+| `shared` chunk (gzip)                         | baseline             | −5 KB (Sprint 1 measured) |
+
+**Bundle-size застереження:** очікуваний у плані «≥+20 KB tree-shaking win» окремим агрегатним заміром не підтверджувався — decomp ішов інкрементально, кожен PR міряв власну дельту (Sprint 1: −5 KB shared gzip). `manualChunks` re-tuning лишається out-of-scope (окрема ініціатива, прив'язана до 0006-routing — див. § Скоуп → Out).
+
+**Carry-over:** жодного. Hard Rule #18 (`max-lines: [error, 600]`) лишається діючим upstream-контрактом, що тримає новий код під порогом без allowlist-у.
