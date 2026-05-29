@@ -1,6 +1,6 @@
 # 🎯 Статус трьох поверхонь — Web / RN mobile / Capacitor shell
 
-> **Last validated:** 2026-05-14 by @claude. **Next review:** 2026-08-12.
+> **Last validated:** 2026-05-29 by @claude. **Next review:** 2026-08-27.
 > **Status:** Active.  
 > **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
 > **Initiative:** [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md).
@@ -19,7 +19,7 @@
 
 ## 🟢 0. Feature-parity матриця (web ↔ shell ↔ RN)
 
-> **Snapshot:** 2026-05-06. Колонки відображають _функціональну_ parity (юзер може зробити цю дію), не code-parity (різна реалізація допустима).  
+> **Snapshot:** 2026-05-29. Колонки відображають _функціональну_ parity (юзер може зробити цю дію), не code-parity (різна реалізація допустима).  
 > **Легенда:** `✅` — повна parity; `🟡` — часткова / smoke-only / без edge-cases; `🟥` — не реалізовано; `n/a` — поза скоупом.
 >
 > Таблиця оновлюється на кожен Phase-2 PR ініціативи 0002 і повинна бути «свіжою» в межах 7 днів — це **gating сигнал** для рішення про зсув T₀ (див. [`docs/initiatives/0002-mobile-platform-decision.md` § Ризики](../initiatives/0002-mobile-platform-decision.md#ризики-та-митиґація)).
@@ -30,9 +30,9 @@
 | **Auth — Google OAuth**           | ✅               | ✅              | ✅                 | Shell і RN ходять через ASWebAuthenticationSession / Custom Tab                                                                                                                                                                                         |
 | **Hub dashboard**                 | ✅               | ✅              | ✅                 | RN-варіант — `apps/mobile/src/core/dashboard/`                                                                                                                                                                                                          |
 | **Hub chat (text)**               | ✅               | ✅              | ✅                 | Один `/api/v1/coach/*` контракт для всіх трьох                                                                                                                                                                                                          |
-| **Hub voice (STT + TTS)**         | ✅               | 🟡              | 🟡                 | RN: `useSpeechRecognition` / `useTextToSpeech` готові, AddMealSheet — wired; HubChat-композер — Phase 8 follow-up                                                                                                                                       |
+| **Hub voice (STT + TTS)**         | ✅               | 🟡              | 🟡                 | RN: `useSpeechRecognition` / `useTextToSpeech` готові, AddMealSheet — wired; HubChat-композер (mic + TTS-mute, `fromVoice`/`maybeSpeak`) — **in review** (swarm-гілка `worktree-wf_7bd467f4-761-7`, ще не merged)                                        |
 | **Hub search**                    | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/core/hub/search/`                                                                                                                                                                                                                 |
-| **OnboardingWizard**              | ✅               | ✅              | 🟡                 | RN-stack має скорочений wizard; повний крок «AI-customize» — Phase 7                                                                                                                                                                                    |
+| **OnboardingWizard**              | ✅               | ✅              | 🟡                 | RN: оновлений wizard (Welcome / Modules / Goals / Permissions + JIT-permissions, splash-Modal). Бракує кроку «AI-customize» (AI-персоналізація) — єдиний gap до повного паритету                                                                          |
 | **WeeklyDigestCard**              | ✅               | ✅              | ✅                 | Усі три тримають `getWeeklyDigest()` через api-client                                                                                                                                                                                                   |
 | **Push (web-push VAPID)**         | ✅               | 🟡              | n/a                | Shell-WebView push працює тільки на iOS ≥ 16.4; Android Chrome + PWA install                                                                                                                                                                            |
 | **Push (native APNs/FCM)**        | n/a              | ✅              | ✅                 | Shell — `@capacitor/push-notifications` (PR #512); RN — `expo-notifications`                                                                                                                                                                            |
@@ -42,13 +42,13 @@
 | **Фінік** — Overview/Tx/Budgets   | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/modules/finyk/`                                                                                                                                                                                                                   |
 | **Фізрук** — Workouts/Programs    | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/modules/fizruk/`                                                                                                                                                                                                                  |
 | **Рутина** — Habits/Heatmap       | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/modules/routine/`                                                                                                                                                                                                                 |
-| **Харчування** — log/water/meal   | ✅               | ✅              | 🟡                 | RN: AddMealSheet + scanner готові; shopping/pantry — Phase 7                                                                                                                                                                                            |
+| **Харчування** — log/water/meal   | ✅               | ✅              | ✅                 | RN: AddMealSheet + scanner + log + water + meal-журнал готові                                                                                                                                                                                           |
 | **Харчування** — barcode scan     | ✅               | ✅              | ✅                 | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode`                                                                                                                                                                                  |
 | **Харчування** — pantry           | ✅               | ✅              | ✅                 | RN: `useNutritionPantries` + `pages/Pantry` готові                                                                                                                                                                                                      |
 | **Харчування** — shopping list    | ✅               | ✅              | ✅                 | RN: ручний список + AI-генерація з рецептів через `apiClient.nutrition.shoppingList`; weekplan-джерело — TODO                                                                                                                                           |
-| **Харчування** — day plan         | ✅               | ✅              | 🟡                 | RN: `DailyPlanCard` портовано (Phase 7), вбудовано в dashboard tab                                                                                                                                                                                      |
-| **Харчування** — recipes (AI)\*\* | ✅               | ✅              | 🟥                 | RN: `recipe/[id].tsx` — заглушка, Phase 7                                                                                                                                                                                                               |
-| **Харчування** — photo-AI\*\*     | ✅               | ✅              | 🟥                 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`)                                                                                                                                                                                                |
+| **Харчування** — day plan         | ✅               | ✅              | ✅                 | RN: `DailyPlanCard` + AI-генерація денного плану в `Dashboard.tsx` через `api.nutrition.dayPlan` (full + per-meal regenerate). TDEE з біометрії — свідомо out-of-scope                                                                                   |
+| **Харчування** — recipes (AI)\*\* | ✅               | ✅              | 🟡                 | RN: `RecipeDetail` (перегляд / редагування / видалення / share) + `recipeBookStore` готові. AI-генерація рецептів (`useNutritionRemoteActions` → `apiClient.nutrition.recommendRecipes`, `RecipeRecommender`) — **in review** (swarm-гілка `worktree-wf_7bd467f4-761-5`) |
+| **Харчування** — photo-AI\*\*     | ✅               | ✅              | ✅                 | RN: `AddMealSheet` analyze-photo / refine-photo через `expo-image-picker` + `expo-image-manipulator`. Edge-case error-handling (402/429/network/413) — **in review** (swarm-гілка `worktree-wf_7bd467f4-761-6`)                                          |
 | **Detox / e2e on CI**             | n/a              | n/a             | ✅                 | `detox-ios.yml` — smoke + full sign-in→module→sign-out (×4 модуля), `detox-android.yml` — smoke-build; full під mock-auth flag                                                                                                                          |
 | **Native UX** (haptics, sheets)   | 🟡               | 🟡              | ✅                 | Web — обмежено (`navigator.vibrate`); shell — Capacitor Haptics; RN — `react-native-haptics`                                                                                                                                                            |
 
@@ -56,8 +56,8 @@
 
 Три маяки мають бути **зеленими до T₀ = 2026-09-01**, інакше дата зсувається на 30 днів:
 
-- 🟥 **RN-Nutrition full parity** — `recipe/[id]`, photo-AI. (AI-shopping shipped — recipes source live; weekplan source чекає на mobile week-plan storage.) Зеленіє коли всі три рядки = `✅`
-- 🟥 **RN-Voice (STT/TTS)** — Phase 7+. Зеленіє коли Hub voice у RN = `✅`
+- 🟡 **RN-Nutrition full parity** — log/water/meal, day-plan AI-gen, photo-AI, shopping, pantry → `✅`. Залишок **in review** (swarm-гілки, ще не merged): AI-генерація рецептів (`recommendRecipes` / `RecipeRecommender`) + photo edge-case error-handling. Weekplan-джерело для shopping чекає на mobile week-plan storage. Зеленіє коли recipes (AI) = `✅`
+- 🟡 **RN-Voice (STT/TTS)** — `useSpeechRecognition` / `useTextToSpeech` готові, AddMealSheet wired. HubChat-композер voice (mic + TTS-mute) — **in review** (swarm-гілка `worktree-wf_7bd467f4-761-7`). Зеленіє коли Hub voice у RN = `✅`
 - ✅ **Detox real e2e** — sign-in → module → sign-out × 4 модулі. Чотири повні сьюти (`routine-full.e2e.ts`, `fizruk-full.e2e.ts`, `finyk-full.e2e.ts`, `nutrition-full.e2e.ts`) ганяють real Better Auth через mock-fetch interceptor (`apps/mobile/src/auth/e2eAuthMock.ts`) на iOS Simulator (`detox-ios.yml` matrix). Android — smoke build, full-сьюти follow-up.
 
 ---
@@ -102,8 +102,11 @@
 
 **Не зроблено / частково:**
 
-- **Nutrition решта** — `recipe/[id].tsx` заглушка; shopping generate, photo — Phase 7. DailyPlan card ✅ (partially done — goal selectors + warnings + plan-vs-actual; AI-генерація ще TODO)
-- **Voice/Speech** — потребує `expo-speech` + платформний STT (iOS Speech framework / Android SpeechRecognizer)
+- **Nutrition** — `RecipeDetail` (view/edit/delete/share), photo-AI (AddMealSheet), shopping-generate, pantry, DailyPlan AI-gen — усе ✅ live. **In review** (swarm-гілки): AI recipe-generation (`RecipeRecommender`), photo edge-case error-handling. Weekplan-джерело для shopping — TODO (нема mobile week-plan storage)
+- **Voice/Speech** — `useSpeechRecognition` / `useTextToSpeech` готові, AddMealSheet wired. HubChat-композер voice — **in review** (swarm-гілка)
+- **AI-шар (Phase 8)** — HubChat (`app/hub-chat.tsx` + `core/hub/HubChat.tsx`), Coach-insight (`useCoachInsight`), WeeklyDigest (`useWeeklyDigest` + `useMondayAutoDigest`) — ✅ live
+- **Hub Phase 9** — HubReports (`app/hub-reports.tsx` + `core/hub/HubReports.tsx`) + HubSearch (`core/hub/search/`) — ✅ live
+- **Onboarding** — оновлений wizard live; бракує кроку AI-customize
 - **App Store/Play метадані** — store-listing, іконки, privacy manifest (iOS), data safety (Android)
 - **Detox e2e** — smoke + 4 full сьюти (`routine-full.e2e.ts`, `fizruk-full.e2e.ts`, `finyk-full.e2e.ts`, `nutrition-full.e2e.ts`) під `EXPO_PUBLIC_E2E_REAL_AUTH=1` на iOS Simulator (`detox-ios.yml`). Android залишається smoke-only — включення full-сьют на emu pipeline — окремий follow-up.
 
