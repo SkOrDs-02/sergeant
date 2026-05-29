@@ -1,7 +1,7 @@
 # 0017 — Hub Settings & Reports mount perf
 
-> **Last validated:** 2026-05-22 by @Skords-01. **Next review:** 2026-08-20.
-> **Status:** In progress — Sprint 0 (observability baseline) shipped. Sprint 1 PR-1.1 (`SectionSkeleton` primitive in `SettingsPrimitives.tsx`) landed 2026-05-22 (this branch); per-section lazy wiring in `HubSettingsPage` is the next PR.
+> **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
+> **Status:** In progress — Sprint 0 + Sprint 1 shipped; Sprint 2 in flight. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk (see § Sprint 1 note). **Sprint 2** (HubReports per-card lazy) implemented on branch `feat/0017-reports-per-card-lazy` (commit `d8c13e82`), PR pending. Remaining: Sprint 2 merge + bundle-gate finalize + Outcome.
 > **Priority:** P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))
 > **Owner:** `@Skords-01`
 > **ETA:** ~3 weeks (3 sprints × 1 week each, includes observability baseline)
@@ -103,12 +103,11 @@
 - Skeleton heights калібровані з прод screenshots: Dashboard 180px, Plan 240px, Finyk 320px тощо.
 - Bundle delta вимірюється у PR description.
 
-**PR-1.2 `feat/0017-settings-cross-module-defer`**:
+**PR-1.2 `feat/0017-settings-cross-module-defer`** — **shipped (Finyk only), [#3102](https://github.com/Skords-01/Sergeant/pull/3102)**:
 
-- `FinykSection`: `useMonoBackfillProgress` гейтиться на `useInView()` — query starts тільки коли section проскролився у viewport. Heavy `purgeMonoCache` import → dynamic `import("./finykPurge")` всередині `onConfirmPurge`.
-- Аналогічно `NutritionSection`, `RoutineSection`, `FizrukSection`.
-- `useFinykStorage` — той самий патерн (`useInView` gate).
-- **Перевірка**: відкриваємо Settings, скролимо вниз — Finyk секція mount-иться лише коли проскролилась у видиму область. У DevTools Network — нема `mono_webhook_state` запиту до першого скролу.
+- `FinykSection`: `const [sectionRef, inView] = useInView()` на корені секції; `monoSyncState` query + `useMonoBackfillProgress` поллер гейтяться на `enabled: inView` — стартують лише коли секція у viewport.
+- **Re-scope 2026-05-29:** план «аналогічно `NutritionSection`/`RoutineSection`/`FizrukSection`» **не застосовний** — Finyk був єдиною секцією з off-screen _network_ cost (Monobank sync-state + 2s backfill poller). Інші три несуть лише локальну state-гідрацію без gatable queries: `FizrukSection` = `useRestSettings` (локальні rest-timer кнопки), `NutritionSection` = локальний pantry-state + `useMemo`, `RoutineSection` = `useRoutineState` (stateful hook, чий вивід керує рендером — hooks-rules забороняють умовний виклик, `enabled:inView` не підходить). Їхній mount-cost уже знятий lazy-chunk + Suspense з PR-1.1; справжній додатковий defer тут вимагав би lazy-render реструктуризації (окрема, ризикованіша робота — не в скоупі Sprint 1).
+- **Перевірка (Finyk):** відкриваємо Settings, скролимо вниз — у DevTools Network нема `mono_webhook_state` запиту до першого скролу до Finyk-секції.
 
 ### Sprint 2 — HubReports per-card lazy (1 PR)
 
