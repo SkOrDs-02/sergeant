@@ -111,9 +111,6 @@ export function useChatSend({
   const [loading, setLoading] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
-  // Чи був попередній турн голосовим — тоді наступну текстову
-  // відповідь теж озвучуємо (web-паритет: «розмова голосом триває»).
-  const lastWasVoice = useRef(false);
 
   // Тримаємо `onSpeak` у ref, щоб `send` не залежав від його identity
   // і не перебудовувався на кожному рендері HubChat.
@@ -147,12 +144,9 @@ export function useChatSend({
         return;
       }
 
-      // Чи озвучувати відповідь: явний голосовий ввід, продовження
-      // голосової розмови, або keyword-тригер у тексті. Прапор
-      // одноразовий — скидаємо після обчислення (web-паритет).
-      const shouldSpeak =
-        fromVoice || lastWasVoice.current || VOICE_KEYWORDS.test(msg);
-      lastWasVoice.current = fromVoice;
+      // Чи озвучувати відповідь: явний голосовий ввід або keyword-тригер
+      // у тексті (web-паритет — `apps/web/.../useChatSend.ts`).
+      const shouldSpeak = fromVoice || VOICE_KEYWORDS.test(msg);
 
       const maybeSpeak = (assistantText: string): void => {
         if (!shouldSpeak) return;

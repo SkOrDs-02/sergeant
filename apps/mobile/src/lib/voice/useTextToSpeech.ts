@@ -21,6 +21,22 @@ import { mobileKVStore } from "@/lib/storage";
 
 const MUTE_STORAGE_KEY = "sergeant.voice.tts.muted";
 
+/**
+ * Прибирає те, що TTS не повинен диктувати вголос: емодзі-маркери,
+ * `[дужки]`, `id:`-токени, URL, markdown-символи. Дзеркало web
+ * `cleanTextForSpeech` (`apps/web/src/core/lib/hubChatSpeech.ts`).
+ */
+function cleanTextForSpeech(text: string): string {
+  return text
+    .replace(/✅/g, "")
+    .replace(/\[.*?\]/g, "")
+    .replace(/id:\S+/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[_*#~`|]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export interface UseTextToSpeechOptions {
   /** BCP-47 локаль, дефолт `uk-UA`. */
   lang?: string;
@@ -95,12 +111,12 @@ export function useTextToSpeech({
 
   const speak = useCallback(
     (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
       if (muted) return;
+      const clean = cleanTextForSpeech(text);
+      if (!clean) return;
       const { lang: l, pitch: p, rate: r } = optionsRef.current;
       try {
-        Speech.speak(trimmed, {
+        Speech.speak(clean, {
           language: l,
           ...(p !== undefined ? { pitch: p } : {}),
           ...(r !== undefined ? { rate: r } : {}),
