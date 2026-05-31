@@ -28,6 +28,8 @@
 
 ### F1 — `hubChatSessions.deriveSessionTitle` formats with host timezone, violating Kyiv domain invariant [severity: high] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — `deriveSessionTitle` (`apps/web/src/core/hub/hubChatSessions.ts:47`) уже використовує `getKyivDateParts(createdAt)` з `@shared/lib/time/kyivTime` і формує `Бесіда DD.MM HH:MM` у Europe/Kyiv незалежно від host timezone. Жодних `new Date().getDate()/getMonth()/getHours()/getMinutes()` не лишилось — змін у коді не потрібно, закриваю аудит-нотаткою.
+
 **Page:** `HubChat` (sessions library)
 **File:** `apps/web/src/core/hub/hubChatSessions.ts`
 **Lines:** L35–L50
@@ -147,6 +149,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 ---
 
 ### F8 — `searchTypes.localDateKey` & `searchSources` produce non-Kyiv day keys [severity: high] [perspective: bug]
+
+> ✅ **Closed 2026-05-31** — `searchTypes.localDateKey` (`apps/web/src/core/hub/search/searchTypes.ts:67-69`) тонкий проксі до `getKyivDayKey` з `@shared/lib/time/kyivTime`, який форматує день через `Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" })`. Host-time `getFullYear/getMonth/getDate` прибрані; `searchSources` отримує канонічний Kyiv day-key для всіх per-module джерел. Закриваю без змін у коді.
 
 **Page:** `HubSearch` (sources pipeline)
 **File:** `apps/web/src/core/hub/search/searchTypes.ts` (L61–L63), `apps/web/src/core/hub/search/searchSources.ts` (calls at L45, L147, L262, L279)
