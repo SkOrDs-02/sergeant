@@ -114,6 +114,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 **Recommendation.** Add a `preferences.tts.autoSpeak` toggle (default off). Only invoke `maybeSpeak(...)` when the user explicitly typed via voice (`fromVoice`) or has the toggle on. Keep the regex as a hint for an inline "🔊 Озвучити" button, not as a silent trigger.
 
+> ✅ **Closed 2026-05-31** — `useChatSend.ts` now gates `VOICE_KEYWORDS.test(msg)` behind `isAutoTtsEnabled()` (reads `sergeant:hub-chat:auto-tts:v1` from local storage, default `false`). Voice-initiated sends (`fromVoice`) and follow-ups to the same voice turn (`lastWasVoice`) still speak. Settings UI for the toggle tracked separately.
+
 ---
 
 ### F6 — Touch targets in `HubChatHistoryDrawer` (close, delete) are below 44×44 px [severity: high] [perspective: a11y]
