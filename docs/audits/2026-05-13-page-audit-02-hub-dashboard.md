@@ -218,6 +218,8 @@ Brand-drift: bar-кольори у Reports не співпадають з кол
 
 ### F6 — `aggregateReport` ігнорує `now`, тому `period range` дрейфує під час сесії [severity: medium] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — `aggregateReport(period, offset, inputs, now: Date = new Date()): ReportData` у `apps/web/src/core/hub/hubReports.aggregation.ts:283` уже має optional `now` arg. Додатково: `HubReports.tsx` більше не викликає `aggregateReport` (Sprint 2 ADR-0017 splittout на per-domain cards); тести в `hubReports.aggregation.test.ts` передають фіксовану `NOW_WED`. Закриваю без змін у коді.
+
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx` + `hubReports.aggregation.ts`
 **Lines:** HubReports.tsx L24–L60 (виклик `aggregateReport(period, offset, inputs)` без `now`); `hubReports.aggregation.ts` L283 (signature `aggregateReport(period, offset, inputs, now = new Date())`)
