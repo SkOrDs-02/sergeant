@@ -203,6 +203,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 ### F12 — `HubChatBody` auto-scrolls to bottom on every message change, breaking "scroll up to read history" [severity: medium] [perspective: ux]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `HubChatBody` тепер тримає `stickToBottomRef` (default `true`), який гаситься в `onScroll`, коли користувач відходить від низу більш ніж на 32px, і повертається назад, коли останнє повідомлення — від користувача (signal "user just sent → wants to see reply"). Auto-scroll-effect стрибає до низу лише коли ref `true`, тож stream-delta не висмикує view під час перечитування історії.
+
 **Page:** `HubChatBody`
 **File:** `apps/web/src/core/hub/chat/HubChatBody.tsx`
 **Lines:** L44–L47
