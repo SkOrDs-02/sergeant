@@ -121,6 +121,8 @@ Add a unit test against the integration config in `sentry.test.ts`.
 
 ### F4 — `PricingPage` redirects to `checkout.url` without origin allow-list [severity: high] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — module-level `ALLOWED_CHECKOUT_HOSTS` (`checkout.stripe.com`, `billing.stripe.com`) + `assertAllowedCheckoutUrl` helper парсить URL через `new URL()` і кидає, якщо host не в allow-list. `handlePremiumCta` і `handleManageSubscription` проганяють `checkout.url` / `portal.url` через helper перед `window.location.assign`; на mismatch — `captureException(err, { tags: { scope: "pricing-checkout-redirect" } })` + існуючий локалізований error без навігації.
+
 **Page:** Marketing / Pricing
 **File:** `apps/web/src/core/PricingPage.tsx`
 **Lines:** L77–L84

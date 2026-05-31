@@ -12,6 +12,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { useLocale } from "@shared/i18n/useLocale";
 import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
+import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing/usePlan";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 
@@ -52,6 +53,24 @@ interface Tier {
 // Placeholder — real price locked in pricing strategy PR (D3 § Out of scope).
 // Tracked: docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md → D3.
 const PREMIUM_PRICE_MONTHLY_PLACEHOLDER = "€X";
+
+// Defense-in-depth open-redirect guard (audit F4,
+// docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
+// returns checkout.url / portal.url від Stripe; додатково валідовуємо host
+// на клієнті — щоб контракт-дрифт чи компроментація бекенду не змогли
+// перевести юзера на довільний origin у high-trust моменті funnel-у.
+const ALLOWED_CHECKOUT_HOSTS: ReadonlySet<string> = new Set([
+  "checkout.stripe.com",
+  "billing.stripe.com",
+]);
+
+function assertAllowedCheckoutUrl(raw: string): string {
+  const parsed = new URL(raw);
+  if (!ALLOWED_CHECKOUT_HOSTS.has(parsed.host)) {
+    throw new Error(`checkout url host not in allow-list: ${parsed.host}`);
+  }
+  return parsed.toString();
+}
 
 // Free-tier limits (first-pass, TENTATIVE — to be A/B-tested per D3 § Out of scope).
 // Сходити в pricing strategy PR після того, як буде market research input.
@@ -195,9 +214,14 @@ export function PricingPage() {
         plan: "pro",
         mode: checkout.mode,
       });
-      window.location.assign(checkout.url);
+      // Audit F4: refuse to navigate if server returned a non-Stripe host.
+      const safeUrl = assertAllowedCheckoutUrl(checkout.url);
+      window.location.assign(safeUrl);
       return;
-    } catch {
+    } catch (err) {
+      captureException(err, {
+        tags: { scope: "pricing-checkout-redirect" },
+      });
       setCheckoutError(t.errors.checkoutUnavailable);
       const anchor = document.getElementById("waitlist-anchor");
       if (anchor && typeof anchor.scrollIntoView === "function") {
@@ -235,7 +259,9 @@ export function PricingPage() {
     setPortalError(null);
     try {
       const { url } = await billingApi.createPortal();
-      window.location.assign(url);
+      // Audit F4: refuse to navigate if server returned a non-Stripe host.
+      const safeUrl = assertAllowedCheckoutUrl(url);
+      window.location.assign(safeUrl);
     } catch (err) {
       const status =
         err && typeof err === "object" && "status" in err
@@ -246,6 +272,9 @@ export function PricingPage() {
       } else if (status === 503) {
         setPortalError(t.errors.portalUnavailable);
       } else {
+        captureException(err, {
+          tags: { scope: "pricing-checkout-redirect" },
+        });
         setPortalError(t.errors.portalGeneric);
       }
     } finally {
