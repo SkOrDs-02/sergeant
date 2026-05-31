@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { User } from "@sergeant/shared";
 
-const getVibePicksMock = vi.fn();
+const mockGetVibePicks = vi.fn();
 
 vi.mock("../onboarding/vibePicks", async () => {
   const actual = await vi.importActual<
@@ -11,7 +11,7 @@ vi.mock("../onboarding/vibePicks", async () => {
   >("../onboarding/vibePicks");
   return {
     ...actual,
-    getVibePicks: () => getVibePicksMock(),
+    getVibePicks: () => mockGetVibePicks(),
   };
 });
 
@@ -27,7 +27,7 @@ const BASE_USER: User = {
 };
 
 beforeEach(() => {
-  getVibePicksMock.mockReset().mockReturnValue([]);
+  mockGetVibePicks.mockReset().mockReturnValue([]);
 });
 
 afterEach(() => {
@@ -36,7 +36,7 @@ afterEach(() => {
 
 describe("buildIdentifyTraits", () => {
   it("повертає всі чотири трейти, коли всі джерела доступні", () => {
-    getVibePicksMock.mockReturnValue(["finyk", "fizruk"]);
+    mockGetVibePicks.mockReturnValue(["finyk", "fizruk"]);
     vi.stubGlobal("navigator", { language: "uk-UA" });
 
     const traits = buildIdentifyTraits(BASE_USER);
@@ -61,13 +61,13 @@ describe("buildIdentifyTraits", () => {
   });
 
   it("опускає `vibe`, якщо vibe-picks порожні", () => {
-    getVibePicksMock.mockReturnValue([]);
+    mockGetVibePicks.mockReturnValue([]);
     const traits = buildIdentifyTraits(BASE_USER);
     expect(traits).not.toHaveProperty("vibe");
   });
 
   it("опускає `vibe`, якщо `getVibePicks` кинув (наприклад quota)", () => {
-    getVibePicksMock.mockImplementation(() => {
+    mockGetVibePicks.mockImplementation(() => {
       throw new Error("quota");
     });
     const traits = buildIdentifyTraits(BASE_USER);
