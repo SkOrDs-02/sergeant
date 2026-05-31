@@ -1,7 +1,7 @@
 # 0017 — Hub Settings & Reports mount perf
 
 > **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
-> **Status:** In progress — Sprint 0 + Sprint 1 shipped; Sprint 2 in flight. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk (see § Sprint 1 note). **Sprint 2** (HubReports per-card lazy) implemented on branch `feat/0017-reports-per-card-lazy` (commit `d8c13e82`), PR pending. Remaining: Sprint 2 merge + bundle-gate finalize + Outcome.
+> **Status:** In progress — Sprint 0 + Sprint 1 + Sprint 2 shipped; only Sprint 3 (conditional) + Finalize remain. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.
 > **Priority:** P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))
 > **Owner:** `@Skords-01`
 > **ETA:** ~3 weeks (3 sprints × 1 week each, includes observability baseline)
@@ -137,9 +137,9 @@
 
 ## Критерії DONE
 
-- [ ] Sprint 0 PR merged, PostHog `hub_tab_switch_perf` event працює, baseline зафіксований у `docs/observability/hub-perf-baseline.md`.
-- [ ] Sprint 1 PR-и merged: 14 секцій — окремі chunk-и, кожна обгорнута у Suspense з SectionSkeleton, cross-module queries gated на `useInView`.
-- [ ] Sprint 2 PR merged: HubReports — 5 lazy-cards.
+- [x] Sprint 0 PR merged, PostHog `hub_tab_switch_perf` event працює, baseline зафіксований у `docs/observability/hub-perf-baseline.md`.
+- [x] Sprint 1 PR-и merged: 14 секцій — окремі chunk-и, кожна обгорнута у Suspense з SectionSkeleton, cross-module queries gated на `useInView`.
+- [x] Sprint 2 PR merged: HubReports — 5 lazy-cards. ([#3094](https://github.com/Skords-01/Sergeant/pull/3094), 2026-05-24, squash як `5c98b41e`)
 - [ ] Sprint 3 PR merged (умовно — тільки якщо метрики > target Sprint 2).
 - [ ] Settings P50 tab-switch ≤ 2 s, P95 ≤ 3 s на mid-range mobile (Moto G Power-class device у Lighthouse mobile profile).
 - [ ] Reports P50 tab-switch ≤ 1.5 s, P95 ≤ 3 s.
