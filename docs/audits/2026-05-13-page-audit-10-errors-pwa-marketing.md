@@ -559,6 +559,8 @@ Or expose a `subscribe(callback)` API in `syncEngineWriter` and consume it here.
 
 ### F21 — `dualWriteTelemetry` calls `setSentryTag` before SDK init (lazy no-op drops tags) [severity: low] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — `setSentryTag` тепер буферизує key/value у `pendingTags: Map`, а `initSentry` після `mod.init` дренує їх у `mod.setTag` і очищає буфер. Ранні `dualWriteTelemetry` тегі (Stage 8 counters) більше не губляться у cold-start вікні до `requestIdleCallback`. Без `VITE_SENTRY_DSN` буфер просто не дренається — поведінка no-op зберігається.
+
 **Page:** Observability
 **File:** `apps/web/src/core/observability/dualWriteTelemetry.ts`
 **Lines:** L91–L120

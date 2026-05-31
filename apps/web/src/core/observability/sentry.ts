@@ -123,6 +123,14 @@ export function applyWebBeforeSend(
 
 let initialized = false;
 let sentryModule: SentryModule | null = null;
+/**
+ * Тегі, виставлені через `setSentryTag` до того, як `@sentry/react`
+ * закінчив lazy-load. `initSentry` дренує цей буфер на справжній SDK
+ * одразу після `mod.init`, щоб ранні Stage 8 dual-write counters
+ * (audit 2026-05-13 F21) не губилися у вікні до `requestIdleCallback`.
+ * Last-write-wins збігається з `Sentry.setTag` семантикою (global scope).
+ */
+const pendingTags = new Map<string, string>();
 
 function parseRate(val: unknown, fallback: number): number {
   if (val == null || val === "") return fallback;
@@ -357,6 +365,17 @@ export async function initSentry() {
   mod.setTag("platform", getPlatform());
   mod.setTag("is_capacitor", String(isCapacitor()));
 
+  // Audit 2026-05-13 §F21: дренаж тегів, які виставили ранні споживачі
+  // (наприклад `dualWriteTelemetry` під час boot) до завершення lazy-load.
+  for (const [key, value] of pendingTags) {
+    try {
+      mod.setTag(key, value);
+    } catch {
+      /* noop — індивідуальний tag не повинен валити init */
+    }
+  }
+  pendingTags.clear();
+
   initialized = true;
 }
 
@@ -409,7 +428,14 @@ export function addSentryBreadcrumb(
  * shape we want to remain queryable if the regression ever recurs.
  */
 export function setSentryTag(key: string, value: string): void {
-  if (!sentryModule) return;
+  if (!sentryModule) {
+    // Audit 2026-05-13 §F21: буферизуємо до завершення `initSentry`;
+    // last-write-wins збігається з global `Sentry.setTag`. Якщо DSN
+    // відсутній — `initSentry` рано повертається, буфер ніколи не
+    // дренується і виклик лишається повним no-op, як і раніше.
+    pendingTags.set(key, value);
+    return;
+  }
   try {
     sentryModule.setTag(key, value);
   } catch {
