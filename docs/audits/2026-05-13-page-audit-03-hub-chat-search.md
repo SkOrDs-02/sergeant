@@ -221,6 +221,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 ### F13 — `HubChatPage.handleClose` falls back to `navigate("/")` only when `window.history.length <= 1` — unreliable signal [severity: medium] [perspective: bug]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `HubChatPage` більше не покладається на `window.history.length`: на mount при `useNavigationType() === "PUSH"` виставляється прапорець `hub-chat:in-app-entry` у `sessionStorage`, а `handleClose` читає його — якщо прапорець є, робимо `navigate(-1)` і чистимо його, інакше fallback `navigate("/", { replace: true })`. Прямі заходи, refresh і POP-навігація тепер коректно ведуть на Hub замість попередньої таб-сторінки.
+
 **Page:** `HubChatPage`
 **File:** `apps/web/src/core/hub/HubChatPage.tsx`
 **Lines:** L40–L49

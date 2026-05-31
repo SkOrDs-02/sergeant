@@ -1,10 +1,21 @@
-import { useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo } from "react";
+import {
+  useNavigate,
+  useNavigationType,
+  useSearchParams,
+} from "react-router-dom";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
 
 const HubChat = lazyDefault(() => import("./HubChat"));
+
+// Marks the current `/chat` visit as reachable via in-app back navigation.
+// Set on mount when the router reports a PUSH (router-driven in-app nav),
+// cleared on close. Direct hits, refreshes, and history POPs leave the flag
+// absent so `handleClose` falls back to the Hub instead of `navigate(-1)`,
+// which could otherwise eject the user to a previous tab origin.
+const IN_APP_ENTRY_FLAG = "hub-chat:in-app-entry";
 
 /**
  * @scaffolded
@@ -25,6 +36,7 @@ const HubChat = lazyDefault(() => import("./HubChat"));
  */
 export function HubChatPage() {
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const [searchParams] = useSearchParams();
 
   const initialMessage = useMemo(() => {
@@ -37,15 +49,33 @@ export function HubChatPage() {
     [searchParams],
   );
 
+  useEffect(() => {
+    if (navigationType !== "PUSH") {
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(IN_APP_ENTRY_FLAG, "1");
+    } catch {
+      // sessionStorage can throw in private mode / sandboxed iframes;
+      // worst case we just fall back to `navigate('/')` on close.
+    }
+  }, [navigationType]);
+
   const handleClose = useCallback(() => {
-    // Prefer an in-app back navigation so the user lands on whatever
-    // surface they came from (dashboard, module). Fallback to `/` for
-    // direct hits (deep link, refresh on `/chat`).
-    if (window.history.length > 1) {
+    let cameFromInApp = false;
+    try {
+      cameFromInApp = window.sessionStorage.getItem(IN_APP_ENTRY_FLAG) === "1";
+      if (cameFromInApp) {
+        window.sessionStorage.removeItem(IN_APP_ENTRY_FLAG);
+      }
+    } catch {
+      cameFromInApp = false;
+    }
+    if (cameFromInApp) {
       navigate(-1);
       return;
     }
-    navigate("/");
+    navigate("/", { replace: true });
   }, [navigate]);
 
   const handleOpenCatalogue = useCallback(() => {
