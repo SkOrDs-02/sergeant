@@ -315,6 +315,8 @@ useEffect(() => {
 
 ### F9 — `HubInsightsPanel` хардкодить foreign module-accents у hub-shell [severity: medium] [perspective: rule]
 
+> ✅ **Closed 2026-05-31** — `MODULE_ACCENT` і `ModuleId` локальний тип прибрано. Accent повністю severity-driven: `SEVERITY_ACCENT: Record<RecSeverity, string>` покриває `danger/warning/info/success` → `bg-{token}`; fallback на `info` коли severity не виставлено. Hard Rule #12 дотриманий — `bg-finyk`/`bg-routine`/`bg-nutrition`/`bg-fizruk` не протікають у hub-shell.
+
 **Page:** Hub Insights Panel
 **File:** `apps/web/src/core/hub/HubInsightsPanel.tsx`
 **Lines:** L14–L20

@@ -9,23 +9,19 @@ import { Icon } from "@shared/components/ui/Icon";
 import type { Rec } from "../lib/recommendationEngine";
 import { messages } from "@shared/i18n/uk";
 
-type ModuleId = "finyk" | "fizruk" | "routine" | "nutrition" | "hub";
-type Severity = "danger" | "warning";
-
 // Re-export Rec as Recommendation for backward compat
 type Recommendation = Rec;
 
-const MODULE_ACCENT: Record<ModuleId, string> = {
-  finyk: "bg-finyk",
-  fizruk: "bg-fizruk",
-  routine: "bg-routine",
-  nutrition: "bg-nutrition",
-  hub: "bg-primary",
-};
+// Audit F9: hub-shell не повинен фарбуватися у foreign module-токени
+// (Hard Rule #12). Accent повністю severity-driven; fallback на `info`
+// для нейтральних рекомендацій без поточного severity.
+type RecSeverity = "danger" | "warning" | "info" | "success";
 
-const SEVERITY_ACCENT: Record<Severity, string> = {
+const SEVERITY_ACCENT: Record<RecSeverity, string> = {
   danger: "bg-danger",
   warning: "bg-warning",
+  info: "bg-info",
+  success: "bg-success",
 };
 
 interface RecRowProps {
@@ -35,10 +31,14 @@ interface RecRowProps {
 }
 
 function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
-  const accent =
-    rec.severity && (rec.severity === "danger" || rec.severity === "warning")
-      ? SEVERITY_ACCENT[rec.severity]
-      : MODULE_ACCENT[rec.module] || "bg-primary";
+  const severity: RecSeverity =
+    rec.severity === "danger" ||
+    rec.severity === "warning" ||
+    rec.severity === "info" ||
+    rec.severity === "success"
+      ? rec.severity
+      : "info";
+  const accent = SEVERITY_ACCENT[severity];
   return (
     <div
       className={cn(
