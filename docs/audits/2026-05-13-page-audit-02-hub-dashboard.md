@@ -497,6 +497,8 @@ const seen = safeReadStringLS(STORAGE_KEYS.FTUX_MODULES_HINT_SEEN);
 
 ### F14 — `BentoCard` aria-label лише для inactive-state [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `aria-label` на primary `<button>` тепер обчислюється для всіх станів: inactive — пояснення про неактивний модуль, active+data — `${config.label}: ${preview.main}, ${preview.sub}`, active+empty — `${config.label}: ${config.emptyLabel}`. Декоративний icon-wrapper отримав `aria-hidden`, тож SVG/гліф усередині більше не озвучується. NVDA тепер чує коротке "Фінік: 12 345 ₴ за добу button" замість шумного потоку.
+
 **Page:** Modules Grid (Bento)
 **File:** `apps/web/src/core/hub/dashboard/BentoCard.tsx`
 **Lines:** L108–L113
