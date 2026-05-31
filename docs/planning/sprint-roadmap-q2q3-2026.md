@@ -1,7 +1,7 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-13 by Devin (child session — T5 closed: `.github/workflows/lighthouse-ci.yml` shipped; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-07-01.
-> **Status:** Active — усі Wave-2/3 задачи верифіковані на предмет залежностей та PR-статусу
+> **Last validated:** 2026-05-31 by Claude (child session — Спринт 6 close-out: статус звірено з кодом у trunk — O4 dedup + T1 HubDashboard зашиплені, але документ цього не відображав; O3 лишається first-pass). Раніше: 2026-05-13 by Devin (T5 closed; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-07-01.
+> **Status:** Active — Спринт 6 реалізаційно закритий (O3 first-pass / O4 / O9 / T1 у trunk); за календарем активне вікно — Спринт 7
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
 > Джерела: [`docs/audits/archive/2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md),
@@ -48,7 +48,7 @@
 | O1  | Phase 2.A: Ранкова повістка 08:30 Kyiv                        | openclaw §Phase 2      | W2    | M      | 🚧 Partial — cron live (Stage 5d, [`b187bfaf`](https://github.com/Skords-01/Sergeant/commit/b187bfaf)); повний LLM-ritual з MRR/signups/PR-queue/proposal — не зашиплено |
 | O2  | C.2: Sentry breadcrumbs у tool-calls                          | tg-improvements §4.3   | W2    | XS     | ✅ Done ([PR #2504](https://github.com/Skords-01/Sergeant/pull/2504), `284cf7cd`, Sprint 5)                                                                              |
 | O3  | Phase 2.B: Friday weekly + monthly OKR                        | openclaw §Phase 2      | W3    | M      | 🚧 First pass shipped — endpoints + n8n WF-27/28 готові, активуй cron-и після OPENCLAW_BOT_TOKEN на n8n Railway                                                          |
-| O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ⏳ Очікує Sprint 6                                                                                                                                                       |
+| O4  | B.1: Alert dedup / occurrence-counter (10-min window)         | tg-improvements §4.2   | W3    | M      | ✅ Done — міграція [`060_tg_alert_acks_dedup_signature.sql`](../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql) + dedup-логіка у [`telegramShipper.ts`](../../apps/server/src/modules/alerts/telegramShipper.ts) (10-min sliding-window, `editMessageText` «🔁 N× за 10 хв»; escalation незалежна від dedup-у)                          |
 | O5  | W3 PR-3: `/alerts pending` slash-команда                      | tg-improvements §3.2   | W3    | S      | ✅ Done ([PR #2507](https://github.com/Skords-01/Sergeant/pull/2507), `9ad0e272`, Sprint 5)                                                                              |
 | O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ✅ Done ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531), `49d5c846`)                                                                                        |
 | O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ✅ Done ([PR #2534](https://github.com/Skords-01/Sergeant/pull/2534), `6ee444d3`)                                                                                        |
@@ -81,6 +81,8 @@
 | T10 Overview.tsx decomposition | ✅ 509→139 LOC via `useOverviewData` hook ([PR #2547](https://github.com/Skords-01/Sergeant/pull/2547))                                                                 |
 | O6 Webhook retry hardening     | ✅ Sentry breadcrumb on W4.1 race recovery ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531))                                                                |
 | O7 `/help` + persona quick-row | ✅ InlineKeyboard discovery + `/start` persona row ([PR #2534](https://github.com/Skords-01/Sergeant/pull/2534))                                                        |
+| O4 Alert dedup (10-min window) | ✅ Міграція `060_tg_alert_acks_dedup_signature` + `telegramShipper.ts` dedup/occurrence-counter; тести у `alerts/telegramShipper.test.ts` + `store.test.ts`            |
+| T1 HubDashboard decomposition  | ✅ `HubDashboard.tsx` → 116 LOC; винесено `HubHeroBlock`/`HubInsightsBlock`/`HubModulesGrid` + `useHubDashboardState` hook + `hub.types.ts` + `dashboard/` subdir       |
 
 ---
 
@@ -201,23 +203,23 @@
 
 ---
 
-#### O4: Alert dedup / occurrence-counter (10-min window) `Продукт` `M`
+#### O4: Alert dedup / occurrence-counter (10-min window) `Продукт` `M` — ✅ Done
 
-**Що:** перш ніж слати новий alert з того самого `workflow_id`, перевірити чи не було повідомлення за останні 10 хвилин. Якщо було — edit існуючого повідомлення: додати occurrence-counter `(×3)` замість нового.
+**Статус:** Shipped — міграція [`060_tg_alert_acks_dedup_signature.sql`](../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql) (Created 2026-05-13) + dedup-логіка у [`telegramShipper.ts`](../../apps/server/src/modules/alerts/telegramShipper.ts). Звірено з кодом у trunk 2026-05-31.
 
-**Схема:**
+**Що:** перш ніж слати новий alert з того самого `workflow_id`, перевірити чи не було повідомлення за останні 10 хвилин. Якщо було — edit існуючого повідомлення: додати occurrence-counter `🔁 N×` замість нового.
 
-```sql
--- нова колонка у tg_alert_acks або окрема таблиця dedup
-ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS occurrence_count INT NOT NULL DEFAULT 1;
-ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS last_occurrence_at TIMESTAMPTZ;
-```
+**Реалізація:**
+
+- Схема: `tg_alert_acks` розширено колонками `dedup_signature`, `occurrence_count` (DEFAULT 1), `last_occurrence_at`, `telegram_chat_id`, `telegram_message_id` (усі nullable/DEFAULT — Hard Rule #4-compatible; legacy writer без знання про dedup пише group-of-1).
+- Shipper: `DEFAULT_DEDUP_WINDOW_MS = 10 хв`; при попаданні в `(topic, dedup_signature)` group у вікні — інкремент `occurrence_count` + `editMessageText` («🔁 N× за 10 хв:\n<text>»), інакше — новий post із seed-ом dedup-полів.
+- Тести: `alerts/telegramShipper.test.ts` + `alerts/store.test.ts` (~1425 LOC сукупно).
 
 **Acceptance:**
 
-- [ ] Не більше 1 нового повідомлення / 10 хв по одному workflow
-- [ ] Occurrence counter видно у message-і (`⚠️ WF-15 failed (×4)`)
-- [ ] Dedup не блокує escalation (P0 unacked 15min → ескалація незалежно від dedup-у)
+- [x] Не більше 1 нового повідомлення / 10 хв по одному `(topic, dedup_signature)` group
+- [x] Occurrence counter видно у message-і (`🔁 N× за 10 хв`)
+- [x] Dedup не блокує escalation — `findUnacked` (WF-103 cron) живе на `escalated_at IS NULL` і не залежить від dedup-вікна
 
 ---
 
@@ -244,29 +246,30 @@ ALTER TABLE tg_alert_acks ADD COLUMN IF NOT EXISTS last_occurrence_at TIMESTAMPT
 
 ---
 
-#### T1: HubDashboard decomposition `Tech` `M`
+#### T1: HubDashboard decomposition `Tech` `M` — ✅ Done
 
-**Scope:** `apps/web/src/core/hub/HubDashboard.tsx` (743 LOC → ~100 LOC)
+**Статус:** Shipped — `HubDashboard.tsx` 116 LOC у trunk. Звірено з кодом 2026-05-31. (NB: рядок T1 у §1.1 вже позначав Sprint-5 close-out `61e0093f`; секцію Спринту 6 не було синхронізовано — виправлено цим оновленням.)
 
-**Запропонована структура:**
+**Scope:** `apps/web/src/core/hub/HubDashboard.tsx` (837 → 116 LOC)
+
+**Фактична структура** (відрізняється від попередньо запропонованої — мета < 150 LOC досягнута):
 
 ```
 apps/web/src/core/hub/
-├── HubDashboard.tsx          # Container (~100 LOC)
-├── HubHeader.tsx             # Navigation + greeting (~80 LOC)
-├── TodayFocusCard.tsx        # Recommendation engine widget (~150 LOC)
-├── ModuleQuickActions.tsx    # 4 module shortcuts (~120 LOC)
-├── WeeklyProgressChart.tsx   # Cross-module chart (~180 LOC)
-├── RecentActivityFeed.tsx    # Activity timeline (~150 LOC)
-├── useHubAggregation.ts      # Data aggregation hook (~100 LOC)
-└── hub.types.ts              # TypeScript types (~40 LOC)
+├── HubDashboard.tsx          # Container (116 LOC)
+├── HubHeroBlock.tsx          # Hero / greeting (141 LOC)
+├── HubInsightsBlock.tsx      # Insights widget (141 LOC)
+├── HubModulesGrid.tsx        # Module shortcuts grid (208 LOC)
+├── useHubDashboardState.ts   # Data aggregation hook (533 LOC)
+├── hub.types.ts              # TypeScript types (47 LOC)
+└── dashboard/                # BentoCard + adaptiveSort + dashboardStore + moduleConfigs
 ```
 
 **Acceptance:**
 
-- [ ] `HubDashboard.tsx` < 150 LOC
-- [ ] Всі існуючі тести проходять
-- [ ] Жодних circular dependencies (перевірити `pnpm lint`)
+- [x] `HubDashboard.tsx` < 150 LOC (116)
+- [x] Всі існуючі тести проходять (`HubDashboard.test.tsx` — мерджено через CI-gate)
+- [x] Жодних circular dependencies (`pnpm lint` зелений у мердж-PR-ах)
 
 ---
 
@@ -488,4 +491,4 @@ apps/web/src/core/hub/
 
 ---
 
-**Документ оновлено 2026-05-13. Активний спринт — Спринт 5. Наступний review — 2026-07-01.**
+**Документ оновлено 2026-05-31 (Спринт 6 close-out звірка з trunk: O4 + T1 позначено Done, O3 — first-pass). За календарем активне вікно — Спринт 7 (2026-06-09 – 2026-06-20); продовження планування — [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md). Наступний review — 2026-07-01.**
