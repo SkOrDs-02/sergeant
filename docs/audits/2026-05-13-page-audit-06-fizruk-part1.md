@@ -377,6 +377,8 @@ Subscribe to `document.visibilitychange` and force-recompute `elapsedSec = (Date
 
 ### F14 — `<select>` in WorkoutItemCard has no accessible name [severity: medium] [perspective: a11y]
 
+> ✅ **Closed 2026-05-31** — `<select>` більше не існує у `WorkoutItemCard.tsx` (grep повертає 0 matches). Exercise-type control мігровано на `Segmented` компонент з `ariaLabel="Тип вправи"` + per-item `ariaLabel`. WCAG 1.3.1 задоволено через `aria-label`.
+
 **Page:** Workouts → log
 **File:** `apps/web/src/modules/fizruk/components/workouts/WorkoutItemCard.tsx`
 **Lines:** L207–L239
@@ -551,6 +553,8 @@ Demote the page-level title to `<h2>` (and keep the visual size via `text-hero f
 ---
 
 ### F23 — `text-2xs` used for prose sub-heading outside its sanctioned use case [severity: low] [perspective: tailwind] [perspective: rule]
+
+> ✅ **Closed 2026-05-31** — `Dashboard.tsx:416` («Нещодавно використані» / «Останні шаблони») мігровано на `text-style-caption text-muted`. Решта `text-2xs` usage у `WorkoutTemplatesSection.tsx`/`SupersetBadge.tsx` — санкціоновані pill/badge з explicit lint disables, поза scope.
 
 **Page:** Dashboard
 **File:** `apps/web/src/modules/fizruk/pages/Dashboard.tsx`

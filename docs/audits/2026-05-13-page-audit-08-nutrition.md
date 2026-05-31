@@ -40,6 +40,8 @@ Bonus theme — **дубльовані Meal-ID generators** (7 sites) із не�
 
 ### F1 — Raw-palette кольори макро-міток у Daily Plan (Hard Rule #11/#13) [severity: high] [perspective: tailwind]
 
+> ✅ **Closed 2026-05-31** — `DailyPlanCard.tsx` L135/141/147 уже використовує семантичні токени `text-info`/`text-warning`/`text-success`. Raw-palette (`text-blue-400`/`text-yellow-400`/`text-green-400`) відсутній.
+
 **Page:** Menu (`plan` sub-tab)
 **File:** `apps/web/src/modules/nutrition/components/DailyPlanCard.tsx`
 **Lines:** 131, 137, 143
@@ -57,6 +59,8 @@ Module-accent для Nutrition — lime/green; `text-blue-400` і `text-yellow-4
 
 ### F2 — Sky-палітра у water-tracker progress bar (Hard Rule #11) [severity: high] [perspective: tailwind]
 
+> ✅ **Closed 2026-05-31** — `WaterTrackerCard.tsx:121` `done ? "bg-success" : "bg-info"`. Quick-add buttons також на `bg-info-soft`/`text-info-strong`. `bg-sky-500` відсутній.
+
 **Page:** Start (`WaterTrackerCard` рендериться через `NutritionDashboard`)
 **File:** `apps/web/src/modules/nutrition/components/WaterTrackerCard.tsx`
 **Lines:** 117
@@ -73,6 +77,8 @@ Hard Rule #11 (no arbitrary hex/raw palette) — це блокер convention. �
 ---
 
 ### F3 — Raw-palette `amber-500` у banner про великий журнал (Hard Rule #11/#13) [severity: high] [perspective: tailwind]
+
+> ✅ **Closed 2026-05-31** — `LogCard.tsx:137` уже на `border-warning/40 bg-warning/10 text-warning-strong`. `amber-500` не знайдено в `apps/web/src/modules/nutrition/components/`.
 
 **Page:** Log
 **File:** `apps/web/src/modules/nutrition/components/LogCard.tsx`
@@ -93,6 +99,8 @@ Hard Rule #11 (no arbitrary hex/raw palette) — це блокер convention. �
 ---
 
 ### F4 — Touch target нижче 44×44 px на ItemRow delete button (WCAG 2.5.5) [severity: high] [perspective: a11y]
+
+> ✅ **Closed 2026-05-31** — закрито commit `f108399f`. `PantryCard.tsx` ItemRow і `MealRow.tsx` delete тепер на `<Button variant="ghost" size="xs" iconOnly>`. Shared Button auto-applies `pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]` при `iconOnly || size === "xs"|"sm"` — WCAG 2.5.5 виконано для finger-tap precision.
 
 **Page:** Pantry (`items` sub-tab)
 **File:** `apps/web/src/modules/nutrition/components/PantryCard.tsx`
