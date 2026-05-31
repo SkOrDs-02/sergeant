@@ -1,7 +1,9 @@
 # Аналіз README: чого не вистачає та повний гайд по проєкту
 
-> **Last validated:** 2026-05-16 by @claude. **Next review:** 2026-08-14.
-> **Status:** Active
+> **Last validated:** 2026-05-31 by audits-runner workflow. **Next review:** 2026-08-29.
+> **Status:** Closed (historical record — all 15 checklist items now de-facto covered in current `README.md`; жоден gap не залишився open)
+
+> **Closure note (2026-05-31, audits-runner triage):** Re-read `README.md` HEAD проти 15-пунктного gap-checklist цього документа — усі пункти покриті через quickstart, Core commands, troubleshooting, Tech stack секції, що виросли з моменту цього аудиту. Документ зберігається як історичний рекорд того, як виглядав gap станом на 2026-05-03. Outstanding items: жодних.
 
 Цей документ робить дві речі:
 

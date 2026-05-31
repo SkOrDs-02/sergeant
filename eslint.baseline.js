@@ -75,6 +75,12 @@ export const baselineIgnores = {
     // own bundled lint/sandbox — eslint here would only produce false
     // positives. Prettier still formats them via lint-staged.
     "ops/n8n-workflows/_lib/**",
+    // `.claude/workflows/*` are scripts for the Claude Code Workflow
+    // tool. They run inside an async sandbox where `args`, `log`,
+    // `agent`, `phase`, `pipeline`, `parallel`, `budget`, and top-level
+    // `return` are all legal (and `Date.now`/`Math.random` are NOT).
+    // Linting them as ES modules produces only false positives.
+    ".claude/workflows/**",
     // `mockups/_shared/components/*` holds no-build-step CDN-React helpers
     // (deck-stage Web Component, design-canvas, tweaks-panel, motion-variants).
     // They reference `React` as a CDN global, use catch-param stubs, and are

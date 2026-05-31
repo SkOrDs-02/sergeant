@@ -1,8 +1,9 @@
 # Security Events — Operator Playbook
 
+> **Last validated:** 2026-05-31 by @Skords-01. **Next review:** 2026-08-29.
+> **Status:** Active
 > **Tracking:** I7 sprint card — `feat/security-i7-events-openclaw`
 > **Owner:** @Skords-01
-> **Last updated:** 2026-05-23
 
 ## Overview
 
@@ -29,11 +30,13 @@ Monobank webhook POST failed Zod schema validation before any DB write. The
 payload is untrusted; the issues array is logged (no raw payload echo).
 
 **Possible causes:**
+
 - Monobank changed their webhook schema (upstream breaking change).
 - Attacker probing the endpoint with malformed payloads.
 - Integration bug in a third-party webhook forwarder.
 
 **Response:**
+
 1. Check the `issues` field in the Pino log for the failing Zod paths.
 2. If Monobank API changelog confirms a schema change — update `WebhookPayloadSchema` in `modules/mono/webhook.ts`.
 3. If rate is sustained (>50/min from a single IP) — consider adding IP-level
@@ -56,12 +59,14 @@ legitimately switch networks (mobile → WiFi) and upgrade browsers. This event
 is a forensics signal, not an automatic block.
 
 **Possible causes:**
+
 - User switched networks (home → mobile).
 - Browser or OS auto-update changed the UA string.
 - Credential sharing / session theft (sustained pattern from different IPs).
 - VPN or proxy rotation.
 
 **Response:**
+
 1. Single event: observe but do not act. Note the `userIdHash` for correlation.
 2. Sustained pattern (same `userIdHash`, many different IP prefixes within
    minutes): escalate. Consider forcing re-authentication for that user via
@@ -82,6 +87,7 @@ The content was still forwarded to the model inside a `<tool_output>` envelope
 (M8 hardening), which instructs the model to treat it as data.
 
 **Possible causes:**
+
 - Compromised upstream: Mono webhook `description` field, n8n webhook response,
   or GitHub API response contained injected text.
 - Attacker crafted a malicious tool response (would require compromising the
@@ -90,6 +96,7 @@ The content was still forwarded to the model inside a `<tool_output>` envelope
   excerpt about AI safety that contains "ignore previous instructions").
 
 **Response:**
+
 1. Check the `tool` label in the log to identify which tool triggered.
 2. If `tool=unknown` — an orphan `tool_result` block was received; check
    client for state corruption.
@@ -110,11 +117,13 @@ A user hit the per-day USD cap on the `/api/transcribe` endpoint (H9
 hardening). The request was rejected with HTTP 402.
 
 **Possible causes:**
+
 - Legitimate heavy usage (user transcribed many long audio files).
 - Automated abuse: bot repeatedly posting audio to exhaust the daily cap
   (DoS against the user's own quota or cost amplification).
 
 **Response:**
+
 1. The cap is configured via `TRANSCRIBE_USD_CAP_PER_USER_PER_DAY_USD` env.
    Check the `bucket` and `cap_micros` values in the log.
 2. To unblock a specific user: manually reset their cap row:
@@ -139,6 +148,7 @@ was rejected with HTTP 422 (M7 hardening).
 
 **`boundary=client_request`** — the client sent more than `MAX_TOOL_ITERATIONS`
 `tool_result` blocks in a single request. This is either:
+
 - A manipulated / malformed client payload (most likely abuse).
 - A client-side bug where tool execution output was duplicated.
 
@@ -147,6 +157,7 @@ was rejected with HTTP 422 (M7 hardening).
 loop).
 
 **Response:**
+
 1. `boundary=client_request` (high severity):
    - Check `observed` value vs. `MAX_TOOL_ITERATIONS` to gauge how far over.
    - If sustained from one user: investigate for automation / scripted abuse.
@@ -167,11 +178,13 @@ Prometheus metrics. This is useful during load tests, planned maintenance, or
 when investigating a high-volume false-positive pattern.
 
 **To mute:**
+
 ```
 railway variables set SECURITY_EVENTS_MUTED=1 --service api
 ```
 
 **To unmute:**
+
 ```
 railway variables set SECURITY_EVENTS_MUTED=0 --service api
 ```
