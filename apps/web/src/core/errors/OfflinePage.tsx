@@ -18,8 +18,10 @@
  */
 import { Button, EmptyState, Icon } from "@shared/components/ui";
 import { OfflineIllustration } from "@assets/illustrations";
+import { useOnlineStatus } from "@shared/hooks";
 
 export function OfflinePage() {
+  const online = useOnlineStatus();
   return (
     <main className="min-h-svh flex items-center justify-center bg-bg px-6">
       <EmptyState
@@ -28,18 +30,29 @@ export function OfflinePage() {
         eyebrow="Офлайн"
         illustration={<OfflineIllustration size={200} />}
         title="Немає зʼєднання"
-        description="Зараз немає інтернету, але дані не загубляться — вони збережуться локально і синхронізуються, коли зʼєднання повернеться."
+        description={
+          online
+            ? "Зараз немає інтернету, але дані не загубляться — вони збережуться локально і синхронізуються, коли зʼєднання повернеться."
+            : "Зʼєднання ще не повернулося. Дані збережуться локально і синхронізуються автоматично — зачекай хвильку або спробуй пізніше."
+        }
         primaryAction={
           <Button
             type="button"
             variant="primary"
             size="lg"
+            disabled={!online}
             onClick={() => {
+              if (
+                typeof navigator !== "undefined" &&
+                navigator.onLine === false
+              ) {
+                return;
+              }
               window.location.reload();
             }}
           >
             <Icon name="refresh-cw" size={16} />
-            Спробувати ще
+            {online ? "Спробувати ще" : "Очікуємо мережу…"}
           </Button>
         }
         hint="Модулі Фінік, Фізрук, Рутина та Харчування зберігають дані офлайн — вони доступні навіть без мережі."

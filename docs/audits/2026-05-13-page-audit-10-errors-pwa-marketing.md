@@ -343,6 +343,8 @@ Move to `messages.publicStatus.componentName.{server,database,n8n,consoleBot}` a
 
 ### F12 — `OfflinePage` reload CTA blindly reloads regardless of `navigator.onLine` [severity: medium] [perspective: ux]
 
+> ✅ **Closed 2026-05-31** — `OfflinePage` тепер слухає `useOnlineStatus`: офлайн → кнопка `disabled`, копія «Очікуємо мережу…», description нагадує почекати; онлайн → CTA знову активний і викликає `window.location.reload()`. Захист у глибину: `onClick` додатково перевіряє `navigator.onLine === false`.
+
 **Page:** Error / Offline
 **File:** `apps/web/src/core/errors/OfflinePage.tsx`
 **Lines:** L29–L41
