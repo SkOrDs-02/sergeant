@@ -243,13 +243,13 @@ migration), поза скоупом цієї прожарки.
 
 ## Все, що НЕ зайшло в PR (виноситься у наступну прожарку)
 
+> **Reconciled 2026-05-31.** Прибрано пункти, що насправді закриті: `metrics.md §6` (P2-4, закрито у PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)) і Sentry sampling (P2-7, закрито local diff). Залишилися реально відкриті.
+
 - **P0+** `chore(db-schema): drop umbrella ./migrate export` — потрібен у mobile-фокусній прожарці.
-- **P2** Migration `push.ts` / `routes/push.ts` `process.env` reads → `env.ts` — окремий PR через 15+ test-патчів.
+- **P2** Migration `push.ts` / `routes/push.ts` `process.env` reads → `env.ts` — окремий PR через 15+ test-патчів. P2-1 closed in [#2752](https://github.com/Skords-01/Sergeant/pull/2752); решта міграції — тут.
 - **P2** `obs/tracing.ts` env-injection refactor — обговорюємо, чи лишити DI-pattern.
 - **P2** SQLite `sync_op_outbox` no-such-table fix — Stage 8/9 (інша ініціатива).
-- **P2** Documentation gap у `metrics.md` §6 (AI-token join-pattern) — окремий cosmetic PR.
-- **P2** Sentry sampling для `/api/internal/*` — закрито local diff у P2-7
-  (broad 1.0 відсутній, guardrail-тести додані).
+- **P2-8** `docs/observability/metrics.md` §Відкриті питання — cosmetic освіження.
 
 ## Methodology notes
 
