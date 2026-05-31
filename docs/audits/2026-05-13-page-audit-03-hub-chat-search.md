@@ -171,6 +171,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 **Recommendation.** Refactor the row into either (a) a single `<button>` with the delete as a sibling Popover trigger that opens on long-press / context menu, or (b) a `role="option"` list item where activation is via Enter/Space and delete is a separately-tabbable button outside the row's hit area.
 
+> ✅ **Closed 2026-05-31** — flattened to sibling pattern: outer `<div className="group relative">` wraps a real `<button>` for selection (full row clickable, `pr-12` reserves space) and the delete `<Button>` is positioned `absolute right-2` as a sibling, not a descendant. Drops `role="button"`, `tabIndex={0}`, and the synthetic `onKeyDown` — native `<button>` handles Enter/Space. axe `nested-interactive` clears.
+
 ---
 
 ### F10 — Search dialog (`HubSearch`) has no focus trap; only Esc is bound [severity: medium] [perspective: a11y]

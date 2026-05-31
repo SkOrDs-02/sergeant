@@ -144,37 +144,31 @@ export function HubChatHistoryDrawer({
               const isActive = s.id === activeId;
               const msgs = userMessageCount(s);
               return (
-                <div
-                  key={s.id}
-                  className={cn(
-                    "group relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-colors",
-                    isActive
-                      ? "bg-brand-500/15 text-text"
-                      : "hover:bg-panelHi text-text",
-                  )}
-                  role="button"
-                  tabIndex={0}
-                  aria-current={isActive ? "true" : undefined}
-                  onClick={() => onSelect(s.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onSelect(s.id);
-                    }
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-style-label truncate">{s.title}</div>
-                    <div className="text-style-caption text-muted mt-0.5 flex items-center gap-1.5">
-                      <span>{formatStamp(s.updatedAt)}</span>
-                      <span className="text-line" aria-hidden>
-                        ·
-                      </span>
-                      <span>
-                        {msgs} {msgs === 1 ? "повідомлення" : "повідомлень"}
-                      </span>
+                <div key={s.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => onSelect(s.id)}
+                    aria-current={isActive ? "true" : undefined}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2.5 pr-12 rounded-xl text-left transition-colors",
+                      isActive
+                        ? "bg-brand-500/15 text-text"
+                        : "hover:bg-panelHi text-text",
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-style-label truncate">{s.title}</div>
+                      <div className="text-style-caption text-muted mt-0.5 flex items-center gap-1.5">
+                        <span>{formatStamp(s.updatedAt)}</span>
+                        <span className="text-line" aria-hidden>
+                          ·
+                        </span>
+                        <span>
+                          {msgs} {msgs === 1 ? "повідомлення" : "повідомлень"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </button>
                   <Button
                     variant="ghost"
                     size="xs"
@@ -182,7 +176,7 @@ export function HubChatHistoryDrawer({
                     onClick={(e) => handleDelete(e, s.id)}
                     aria-label={`Видалити бесіду ${s.title}`}
                     title="Видалити"
-                    className="shrink-0 text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
                   >
                     <Icon name="trash" size={14} />
                   </Button>
