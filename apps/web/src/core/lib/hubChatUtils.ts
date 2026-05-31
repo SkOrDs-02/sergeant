@@ -81,7 +81,12 @@ export function friendlyChatError(e: unknown): string {
   return `Помилка: ${msg}`;
 }
 
-/** Читає SSE з /api/chat (data: {"t":"..."} / [DONE]). Рядок за рядком — стійко до часткових чанків. */
+/** Максимум байтів усього SSE-потоку чату. 256 КБ ≈ 60-80 тис. символів — більше за будь-яку розумну AI-відповідь. Час обмежує `useChatSend` (90 с), цей ліміт обмежує память і CPU на rerender. */
+const MAX_SSE_TOTAL_BYTES = 256 * 1024;
+/** Максимум на одну SSE-лінію (між `\n`). Захист від runaway-server, що шле один рядок без переносів. */
+const MAX_SSE_LINE_BYTES = 8 * 1024;
+
+/** Читає SSE з /api/chat (data: {"t":"..."} / [DONE]). Рядок за рядком — стійко до часткових чанків. Кидає `Error("Відповідь занадто довга")` якщо потік перевищує MAX_SSE_TOTAL_BYTES або одна лінія перевищує MAX_SSE_LINE_BYTES. */
 export async function consumeHubChatSse(
   response: Response,
   onDelta: (delta: string) => void,
@@ -90,10 +95,30 @@ export async function consumeHubChatSse(
   const reader = response.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
+  let totalBytes = 0;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+    if (value) {
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_SSE_TOTAL_BYTES) {
+        try {
+          await reader.cancel();
+        } catch {
+          /* reader вже закритий — гнатися немає за чим */
+        }
+        throw new Error("Відповідь занадто довга");
+      }
+    }
     buf += dec.decode(value, { stream: true });
+    if (buf.length > MAX_SSE_LINE_BYTES && buf.indexOf("\n") === -1) {
+      try {
+        await reader.cancel();
+      } catch {
+        /* див. вище */
+      }
+      throw new Error("Відповідь занадто довга");
+    }
     for (;;) {
       const nl = buf.indexOf("\n");
       if (nl === -1) break;
