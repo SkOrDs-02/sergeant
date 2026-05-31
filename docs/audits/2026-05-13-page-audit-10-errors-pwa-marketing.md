@@ -504,6 +504,8 @@ Drop `refetchOnWindowFocus: "always"` to the default `true` (which honors `stale
 
 ### F19 — `PaywallModal` fires `PAYWALL_VIEWED` on every `surface` re-render via `[open, surface]` deps [severity: low] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — `useRef(false)` як `prevOpen` гейтить `PAYWALL_VIEWED` на переході `open: false → true`. Surface swaps при відкритій модалці більше не дублюють подію.
+
 **Page:** Billing / Paywall
 **File:** `apps/web/src/core/billing/PaywallModal.tsx`
 **Lines:** L68–L76
