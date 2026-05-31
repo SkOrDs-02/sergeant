@@ -934,6 +934,8 @@
 
 ### PR-X3 · Content-style guide
 
+> **Closure note (2026-05-31, audits-runner triage):** Shipped. [`docs/copy/style-guide.uk.md`](../copy/style-guide.uk.md) створено з 10 секціями (Hard rules, Voice, Errors, Buttons, Empty states, Toasts, Заборонені слова, Числа/дати, Headings/microcopy, How-to-update). Лінк у [`AGENTS.md § See also`](../../AGENTS.md#see-also). Файл базується на патернах з `apps/web/src/shared/i18n/uk.ts` (PR-30 round-17 1st-person-singular рефакторінг).
+
 **Scope:**
 
 - `docs/copy/style-guide.uk.md` — фінальні правила tone-of-voice (1-а особа однини, «ти», без «Зачекайте» / «Виходимо»).
