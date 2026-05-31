@@ -838,6 +838,8 @@ const count = items.length;
 
 ### F23 — Тести: `HubReports.tsx` має тільки aggregation-тести; UI рендер без coverage [severity: medium] [perspective: test]
 
+> 🟡 **Partially closed 2026-05-31** — додано render-smoke `apps/web/src/core/hub/HubReports.test.tsx`, який мокає 4 lazy domain cards + WeeklyDigestCard + billing/useFeatureGate, рендерить компонент із порожнім localStorage і перевіряє, що empty-insights копія «Збери більше даних для інсайтів» з'являється. Повне UI-coverage (period nav, export, paywall flow) лишається open.
+
 **Page:** Hub Reports
 **File:** missing `apps/web/src/core/hub/HubReports.test.tsx`
 
