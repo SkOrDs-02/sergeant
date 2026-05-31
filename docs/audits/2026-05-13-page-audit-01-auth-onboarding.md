@@ -110,6 +110,8 @@ Either (a) finish the decomposition this sprint — wire AuthPage to the scaffol
 
 ### F4 — `PermissionsPrompt.tsx` is unwired dead code [severity: high] [perspective: code-quality]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Grep підтвердив, що `PermissionsPrompt.tsx` (+ `.test.tsx`) не імпортується ніде окрім самих себе — `WelcomeOneScreen` → `OnboardingWizard` обходить інтерстиціал, дозволи запитуються just-in-time всередині модулів. Файл не має `@scaffolded` маркера, тож позначаємо його `@deprecated` з явним строком видалення (2026-07-15, ~6 тижнів) і причиною. Наступний maintainer бачить статус явно; повне видалення (включно з тестом і JSDoc-ом у `picksStorage.ts:14–17`) виконається окремим PR після того, як deprecation window мине.
+
 **Page:** Onboarding (legacy)
 **File:** `apps/web/src/core/onboarding/PermissionsPrompt.tsx`
 **Lines:** L1–L263 (whole file)

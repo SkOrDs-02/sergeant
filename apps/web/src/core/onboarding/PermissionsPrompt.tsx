@@ -20,6 +20,15 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
  *   або поводяться інакше, тож кнопки рендеряться, але повертають
  *   "denied"-fallback без помилки. Native push має інший шлях
  *   (registerPush у mobile-shell), яким керує `usePushNotifications`.
+ *
+ * @deprecated No consumer since 2026-05-13 audit
+ *   (`docs/audits/2026-05-13-page-audit-01-auth-onboarding.md` F4).
+ *   `WelcomeOneScreen` → `OnboardingWizard` skipped this interstitial;
+ *   permissions are now requested just-in-time inside the modules that
+ *   need them (see `picksStorage.ts:14-17`). Slated for removal on or
+ *   after **2026-07-15** together with `PermissionsPrompt.test.tsx`.
+ *   If you wire it back, remove this tag and add a `@scaffolded` marker
+ *   with `@nextStep` per Rule #10.
  */
 
 type PermissionId = "push" | "microphone" | "camera";
