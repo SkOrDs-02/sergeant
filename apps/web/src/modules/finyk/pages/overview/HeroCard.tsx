@@ -155,6 +155,7 @@ const HeroCardImpl = function HeroCard({
         >
           {showBalance ? (
             <>
+              {dayBudget < 0 ? "−" : ""}
               {/* CounterReveal handles prefers-reduced-motion internally */}
               <CounterReveal
                 value={Math.round(Math.abs(dayBudget))}

@@ -35,16 +35,19 @@ export function SubscriptionForm({
   return (
     <Card variant="flat" radius="md" className="space-y-3 mt-2">
       <Input
+        aria-label="Назва підписки"
         placeholder="Назва"
         value={newSub.name}
         onChange={(e) => setNewSub((a) => ({ ...a, name: e.target.value }))}
       />
       <Input
+        aria-label="Ключове слово з транзакції"
         placeholder="Ключове слово з транзакції"
         value={newSub.keyword}
         onChange={(e) => setNewSub((a) => ({ ...a, keyword: e.target.value }))}
       />
       <Input
+        aria-label="День списання (1-31)"
         placeholder="День списання (1-31)"
         type="number"
         min="1"
@@ -79,7 +82,7 @@ export function SubscriptionForm({
               ...ss,
               {
                 ...newSub,
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 billingDay: parsedDay,
               } as Subscription,
             ]);
@@ -132,22 +135,26 @@ export function ReceivableForm({
   return (
     <Card variant="flat" radius="md" className="space-y-3">
       <Input
+        aria-label="Ім'я або назва боржника"
         placeholder="Ім'я або назва"
         value={newRecv.name}
         onChange={(e) => setNewRecv((a) => ({ ...a, name: e.target.value }))}
       />
       <Input
+        aria-label="Сума у гривнях"
         placeholder="Сума ₴"
         type="number"
         value={newRecv.amount}
         onChange={(e) => setNewRecv((a) => ({ ...a, amount: e.target.value }))}
       />
       <Input
+        aria-label="Нотатка (необов'язково)"
         placeholder="Нотатка (необов'язково)"
         value={newRecv.note}
         onChange={(e) => setNewRecv((a) => ({ ...a, note: e.target.value }))}
       />
       <Input
+        aria-label="Дата повернення"
         type="date"
         value={newRecv.dueDate}
         onChange={(e) => setNewRecv((a) => ({ ...a, dueDate: e.target.value }))}
@@ -168,7 +175,7 @@ export function ReceivableForm({
               ...rs,
               {
                 ...newRecv,
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 amount: parsedAmount,
                 linkedTxIds: [],
               } as Receivable,
@@ -229,90 +236,95 @@ export function AssetForm({
   };
   return (
     <>
-    <Card
-      ref={assetFormRef as React.Ref<HTMLElement>}
-      variant="finyk-soft"
-      radius="md"
-      className="space-y-3"
-    >
-      <div>
-        <div className="text-style-label text-text">Новий актив</div>
-        <div className="text-xs text-muted mt-0.5">
-          Готівка, брокерський рахунок, крипта тощо.
-        </div>
-      </div>
-      <Input
-        ref={assetNameInputRef as React.Ref<HTMLInputElement>}
-        placeholder="Назва"
-        value={newAsset.name}
-        onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
-      />
-      <Input
-        placeholder="Сума"
-        type="number"
-        value={newAsset.amount}
-        onChange={(e) => setNewAsset((a) => ({ ...a, amount: e.target.value }))}
-      />
-      <select
-        className="input-focus-finyk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text"
-        value={newAsset.currency}
-        onChange={(e) => onCurrencyChange(e.target.value)}
+      <Card
+        ref={assetFormRef as React.Ref<HTMLElement>}
+        variant="finyk-soft"
+        radius="md"
+        className="space-y-3"
       >
-        <option>UAH</option>
-        <option>USD</option>
-        <option>EUR</option>
-        <option>BTC</option>
-      </select>
-      <div className="flex gap-2">
-        <Button
-          className="flex-1"
-          size="sm"
-          onClick={() => {
-            if (!newAsset.name || !newAsset.amount) return;
-            // <input type="number"> accepts negatives + arbitrary precision;
-            // an asset balance must be strictly positive. A negative manual
-            // asset shows up as "−1 000 ₴" inside the assets list, flips the
-            // section header to "Активи +−1 000 ₴" (because the formatter
-            // unconditionally prepends `+`), and pulls Загальний нетворс
-            // negative.
-            const parsedAmount = Number(newAsset.amount);
-            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
-            setManualAssets((a) => [
-              ...a,
-              {
-                ...newAsset,
-                id: Date.now().toString(),
-                amount: parsedAmount,
-              } as ManualAsset,
-            ]);
-            setNewAsset({
-              name: "",
-              amount: "",
-              currency: "UAH",
-              emoji: "\u{1F4B0}",
-            });
-            setShowAssetForm(false);
-          }}
+        <div>
+          <div className="text-style-label text-text">Новий актив</div>
+          <div className="text-xs text-muted mt-0.5">
+            Готівка, брокерський рахунок, крипта тощо.
+          </div>
+        </div>
+        <Input
+          ref={assetNameInputRef as React.Ref<HTMLInputElement>}
+          aria-label="Назва активу"
+          placeholder="Назва"
+          value={newAsset.name}
+          onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
+        />
+        <Input
+          aria-label="Сума активу"
+          placeholder="Сума"
+          type="number"
+          value={newAsset.amount}
+          onChange={(e) =>
+            setNewAsset((a) => ({ ...a, amount: e.target.value }))
+          }
+        />
+        <select
+          aria-label="Валюта активу"
+          className="input-focus-finyk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text"
+          value={newAsset.currency}
+          onChange={(e) => onCurrencyChange(e.target.value)}
         >
-          Додати
-        </Button>
-        <Button
-          className="flex-1"
-          size="sm"
-          variant="secondary"
-          onClick={() => setShowAssetForm(false)}
-        >
-          Скасувати
-        </Button>
-      </div>
-    </Card>
-    <PaywallModal
-      open={currencyGate.paywallOpen}
-      onClose={currencyGate.closePaywall}
-      surface={currencyGate.paywallSurface}
-      title={messages.paywall["multi-currency"].title}
-      description={messages.paywall["multi-currency"].description}
-    />
+          <option>UAH</option>
+          <option>USD</option>
+          <option>EUR</option>
+          <option>BTC</option>
+        </select>
+        <div className="flex gap-2">
+          <Button
+            className="flex-1"
+            size="sm"
+            onClick={() => {
+              if (!newAsset.name || !newAsset.amount) return;
+              // <input type="number"> accepts negatives + arbitrary precision;
+              // an asset balance must be strictly positive. A negative manual
+              // asset shows up as "−1 000 ₴" inside the assets list, flips the
+              // section header to "Активи +−1 000 ₴" (because the formatter
+              // unconditionally prepends `+`), and pulls Загальний нетворс
+              // negative.
+              const parsedAmount = Number(newAsset.amount);
+              if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
+              setManualAssets((a) => [
+                ...a,
+                {
+                  ...newAsset,
+                  id: crypto.randomUUID(),
+                  amount: parsedAmount,
+                } as ManualAsset,
+              ]);
+              setNewAsset({
+                name: "",
+                amount: "",
+                currency: "UAH",
+                emoji: "\u{1F4B0}",
+              });
+              setShowAssetForm(false);
+            }}
+          >
+            Додати
+          </Button>
+          <Button
+            className="flex-1"
+            size="sm"
+            variant="secondary"
+            onClick={() => setShowAssetForm(false)}
+          >
+            Скасувати
+          </Button>
+        </div>
+      </Card>
+      <PaywallModal
+        open={currencyGate.paywallOpen}
+        onClose={currencyGate.closePaywall}
+        surface={currencyGate.paywallSurface}
+        title={messages.paywall["multi-currency"].title}
+        description={messages.paywall["multi-currency"].description}
+      />
     </>
   );
 }
@@ -358,6 +370,7 @@ export function DebtForm({
       <div className="flex gap-2">
         <Input
           ref={debtNameInputRef as React.Ref<HTMLInputElement>}
+          aria-label="Назва пасиву (кредит, борг…)"
           className="flex-1"
           placeholder="Назва пасиву (кредит, борг…)"
           value={newDebt.name}
@@ -382,6 +395,7 @@ export function DebtForm({
         />
       </div>
       <Input
+        aria-label="Загальна сума у гривнях"
         placeholder="Загальна сума ₴"
         type="number"
         value={newDebt.totalAmount}
@@ -390,6 +404,7 @@ export function DebtForm({
         }
       />
       <Input
+        aria-label="Дата погашення"
         type="date"
         value={newDebt.dueDate}
         onChange={(e) => setNewDebt((a) => ({ ...a, dueDate: e.target.value }))}
@@ -404,7 +419,7 @@ export function DebtForm({
                 ...ds,
                 {
                   ...newDebt,
-                  id: Date.now().toString(),
+                  id: crypto.randomUUID(),
                   amount: Number(newDebt.totalAmount),
                   totalAmount: Number(newDebt.totalAmount),
                   linkedTxIds: [],

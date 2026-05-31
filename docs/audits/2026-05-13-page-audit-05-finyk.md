@@ -83,6 +83,8 @@ Total: 25 findings.
 
 ### F1 — Day-budget displays magnitude only; minus sign suppressed [severity: high] [perspective: ux]
 
+> ✅ **Closed 2026-05-31** — у `HeroCard.tsx` перед `CounterReveal(Math.abs(dayBudget))` додано явний `{dayBudget < 0 ? "−" : ""}` за патерном `networth` вище. Перевитрата читається як `−200 ₴/день`.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/HeroCard.tsx`
 **Lines:** L120–L128
@@ -237,6 +239,8 @@ For the bar classes returned by computed strings
 ---
 
 ### F4 — `pluralizeOps` returns wrong Ukrainian noun forms [severity: high] [perspective: i18n]
+
+> ✅ **Closed 2026-05-31** — `pluralizeOps` тепер приймає grammatical case (`nom`/`acc`/`gen`) і повертає правильні one/few/many форми. Три call-сайти у `useTransactionSelection.ts` явно передають падіж (`gen` для «Категорію змінено для X операцій»; `acc` для «Приховано X операцій»). Інтервал `mod100 < 12 || mod100 >= 14` коректно покриває teens.
 
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/useTransactionSelection.ts`
@@ -423,6 +427,8 @@ midnight, or recompute on every render (cheap — it's a string format).
 
 ### F7 — `Date.now().toString()` IDs collide on rapid double-tap [severity: high] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — усі 4 call-сайти в `AssetsForm.tsx` (Subscription/Receivable/ManualAsset/Debt) переведені з `Date.now().toString()` на `crypto.randomUUID()`. Колізії при double-tap усунено. Це закриває і F24 (бандл).
+
 **Page:** `assets`
 **File:** `apps/web/src/modules/finyk/pages/AssetsForm.tsx`
 **Lines:** L68, L152, L248, L364
@@ -561,6 +567,8 @@ of `через NaN дн`).
 ---
 
 ### F10 — `MonthPulseCard` day-pluralizer falls back to abbreviation [severity: medium] [perspective: i18n]
+
+> ✅ **Closed 2026-05-31** — замінено локальний тернар на `pluralDays(daysPassed)` з `@sergeant/shared`. Fallback «дн.» більше не з'являється.
 
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx`
@@ -734,6 +742,8 @@ this; if none exists, keep the change scoped to this file.
 
 ### F14 — `min-h-[36px]` arbitrary on "Усі →" link [severity: medium] [perspective: a11y]
 
+> ✅ **Closed 2026-05-31** — у `PlannedFlowsCard.tsx` замінено raw `<button className="…min-h-[36px]">` на `<Button variant="ghost" size="xs" module="finyk">`. Touch target тепер ≥44×44 з design-system Button primitive.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/PlannedFlowsCard.tsx`
 **Lines:** L28–L32
@@ -893,6 +903,8 @@ stale-`now` problem from a different angle).
 ---
 
 ### F17 — Non-UAH manual assets silently dropped from networth [severity: medium] [perspective: bug]
+
+> ✅ **Closed 2026-05-31** — `useOverviewData.ts` тепер рахує `nonUahManualAssetCount` поряд з `manualAssetTotal` і `logger.warn`-ить про drop у DevTools/Sentry breadcrumbs. Кількість пробрасується в return для майбутньої UI-підказки.
 
 **Page:** `overview`, `assets`
 **File:** `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts`
@@ -1165,6 +1177,8 @@ Have the parent clear `focusLimitCategoryId` once consumed.
 
 ### F22 — `useTransactionSelection.handlersRef` rebuilt on every render [severity: low] [perspective: perf]
 
+> ✅ **Closed 2026-05-31** — sync `handlersRef.current` тепер у `useEffect`-і з exhaustive deps замість inline assignment. Об'єкт-літерал перевиділяється лише коли реально змінюється identity одного з handlers.
+
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/useTransactionSelection.ts`
 **Lines:** L90–L107
@@ -1218,6 +1232,8 @@ useEffect(() => {
 
 ### F23 — `SubscriptionForm`/`AssetForm`/etc. use `Input` without `<label>` [severity: low] [perspective: a11y]
 
+> ✅ **Closed 2026-05-31** — додано `aria-label` до всіх Input/select у 4 формах `AssetsForm.tsx` (Subscription, Receivable, ManualAsset, Debt). Screen-reader тепер озвучує конкретне поле.
+
 **Page:** `assets`
 **File:** `apps/web/src/modules/finyk/pages/AssetsForm.tsx`
 **Lines:** various — see F19
@@ -1238,6 +1254,8 @@ See F19.
 ---
 
 ### F24 — `Date.now().toString()` ID style is inconsistent with `crypto.randomUUID()` [severity: low] [perspective: rule]
+
+> ✅ **Closed 2026-05-31** — закрито бандлом разом з F7. Усі 4 `Date.now().toString()` IDs у `AssetsForm.tsx` мігровано на `crypto.randomUUID()`.
 
 **Page:** `assets`
 **File:** `apps/web/src/modules/finyk/pages/AssetsForm.tsx`

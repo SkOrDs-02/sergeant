@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { FlowRow, type FlowItem } from "./FlowRow";
+import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 
 interface PlannedFlowsCardProps {
@@ -25,12 +26,14 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
         <span className="text-style-caption text-subtle">
           Найближчі платежі
         </span>
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
+          module="finyk"
           onClick={() => onNavigate("budgets")}
-          className="text-xs text-primary/80 hover:text-primary transition-colors py-2 px-1 min-h-[36px]"
         >
           Усі →
-        </button>
+        </Button>
       </div>
       <div className="px-5 pb-3">
         {plannedFlows.slice(0, 5).map((f) => (

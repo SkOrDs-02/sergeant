@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Icon } from "@shared/components/ui/Icon";
@@ -150,8 +151,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
       {showForecastBlock && (
         <div className="mt-4 space-y-2">
           <p className="text-xs text-muted leading-snug">
-            За {daysPassed}{" "}
-            {daysPassed === 1 ? "день" : daysPassed < 5 ? "дні" : "дн."} · факт{" "}
+            За {daysPassed} {pluralDays(daysPassed)} · факт{" "}
             <span className="font-semibold text-text tabular-nums">
               {spent.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴
             </span>
