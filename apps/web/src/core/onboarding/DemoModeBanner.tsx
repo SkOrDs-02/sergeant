@@ -95,7 +95,7 @@ export function DemoModeBanner() {
           size="xs"
           iconOnly
           onClick={dismiss}
-          aria-label="Сховати"
+          aria-label="Сховати банер демо-режиму"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
           <Icon name="close" size={16} />

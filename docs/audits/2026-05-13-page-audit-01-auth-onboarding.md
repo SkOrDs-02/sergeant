@@ -621,6 +621,8 @@ Same pattern as everywhere else in the codebase.
 
 ### F24 — DemoModeBanner / DailyNudge `aria-label` doesn't communicate dismiss-X separately [severity: low] [perspective: a11y]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Dismiss-X кнопкам у `DemoModeBanner.tsx:98` і `DailyNudge.tsx:113` замінено generic `aria-label="Сховати"` / `"Закрити"` на explicit `"Сховати банер демо-режиму"` / `"Сховати щоденну пораду"`. Screen-reader юзери тепер чують, що саме приховує кнопка, без TAB-розвідки в region/section.
+
 **Page:** Hub (DemoModeBanner, DailyNudge)
 **Files:** `apps/web/src/core/onboarding/DemoModeBanner.tsx:70–98`, `apps/web/src/core/onboarding/DailyNudge.tsx:65–115`
 
