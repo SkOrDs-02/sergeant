@@ -106,7 +106,7 @@ export function Atlas() {
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-full bg-warning inline-block" />
                 <span className="text-xs text-teal-700 dark:text-white/70">
                   Відновлюється
                 </span>

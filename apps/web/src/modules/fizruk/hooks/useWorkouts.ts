@@ -24,7 +24,9 @@ import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 export const FIZRUK_WORKOUTS_STORAGE_ERROR = "fizruk-workouts-storage-error";
 
 function uid(prefix = "id") {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  // F19: use crypto.randomUUID() — collision-resistant unlike Math.random()-based suffixes.
+  // Prefix is preserved for human-readable debugging of IDs in LS / SQLite dumps.
+  return `${prefix}_${crypto.randomUUID()}`;
 }
 
 const DEFAULT_WARMUP_ITEMS = [

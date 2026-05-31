@@ -235,6 +235,8 @@ const statusByMuscle = useMemo(() => {
 
 ### F9 — Exercise charts use raw RGB literals instead of design tokens [severity: medium] [perspective: tailwind] [perspective: rule]
 
+> ✅ **Closed 2026-05-31** — `Exercise.tsx` тепер імпортує `chartSeries`/`statusColors` з `@shared/charts`. Чотири raw `rgb()` літерали замінено на: 1RM → `statusColors.success`, Обсяг → `chartSeries.fizruk.primary`, Темп → `statusColors.warning`, Дистанція → `statusColors.info`.
+
 **Page:** Exercise
 **File:** `apps/web/src/modules/fizruk/pages/Exercise.tsx`
 **Lines:** L256, L270, L284, L301
@@ -417,6 +419,8 @@ The catalog is the primary discovery surface; if AT users can't tell which group
 
 ### F16 — Atlas legend uses raw `bg-yellow-400` instead of the `warning` semantic token [severity: medium] [perspective: tailwind] [perspective: rule]
 
+> ✅ **Closed 2026-05-31** — `Atlas.tsx:109` `bg-yellow-400` → `bg-warning`. Hard Rule #11 дотриманий.
+
 **Page:** Atlas
 **File:** `apps/web/src/modules/fizruk/pages/Atlas.tsx`
 **Lines:** L98
@@ -468,6 +472,8 @@ Add a `@critical` Playwright test (axe rule `color-contrast`) that boots `/fizru
 
 ### F19 — `useWorkouts.uid()` uses `Math.random()` for client-generated workout / item IDs [severity: medium] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — `useWorkouts.ts:26-29` `uid()` мігровано на `crypto.randomUUID()`. Prefix зберігся для людино-читабельного debug-у в LS/SQLite dump-ах.
+
 **Page:** all (data layer)
 **File:** `apps/web/src/modules/fizruk/hooks/useWorkouts.ts` (search for `uid()`), plus `ActiveWorkoutPanel.tsx` (L15)
 **Lines:** see above
@@ -501,6 +507,8 @@ Either (a) defer the catalog to first use (`React.use(catalogPromise)` from a co
 ---
 
 ### F21 — ContextualBackButton min-height of 40 px violates the 44 px touch-target floor [severity: low] [perspective: a11y]
+
+> ✅ **Closed 2026-05-31** — у `FizrukHeader.tsx:79` `min-h-[40px]` → `min-h-[44px] min-w-[44px]`. WCAG 2.5.5 / Apple HIG дотримані.
 
 **Page:** shell (Atlas, Workouts, Exercise, Measurements)
 **File:** `apps/web/src/modules/fizruk/shell/FizrukHeader.tsx`
@@ -567,6 +575,8 @@ Use `text-style-overline` or `text-style-caption` (12 px floor) for the sub-head
 ---
 
 ### F24 — `bg-yellow-400/40` / `bg-yellow-400/10` in PR celebration banner bypasses semantic tokens [severity: low] [perspective: tailwind]
+
+> ✅ **Closed 2026-05-31** — `Exercise.tsx:191` `border-yellow-400/40 bg-yellow-400/10` → `border-warning/40 bg-warning/10`. PR celebration banner тепер на семантичному токені.
 
 **Page:** Exercise
 **File:** `apps/web/src/modules/fizruk/pages/Exercise.tsx`

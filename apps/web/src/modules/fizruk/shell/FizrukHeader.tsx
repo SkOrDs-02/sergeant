@@ -76,7 +76,7 @@ function ContextualBackButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 min-h-[40px]",
+        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 min-h-[44px] min-w-[44px]",
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
       )}

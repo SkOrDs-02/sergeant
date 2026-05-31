@@ -23,6 +23,7 @@ import {
 } from "../components/ExerciseProgressChart";
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
 import { fmt } from "../lib/numberFmt";
+import { chartSeries, statusColors } from "@shared/charts";
 
 interface HistoryEntry {
   workout: Workout;
@@ -187,7 +188,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         </div>
 
         {best.isNewPR && (
-          <div className="flex items-center gap-2.5 rounded-2xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3">
+          <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
             <span className="text-xl leading-none">🏆</span>
             <div>
               <p className="text-style-label text-warning-strong dark:text-warning">
@@ -257,7 +258,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={progressData.rmPoints}
               label="1RM"
               unit="кг"
-              color="rgb(22 163 74)"
+              color={statusColors.success}
             />
           </Card>
         )}
@@ -271,7 +272,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={progressData.volPoints}
               label="Обсяг"
               unit="кг"
-              color="rgb(99 102 241)"
+              color={chartSeries.fizruk.primary}
             />
           </Card>
         )}
@@ -285,7 +286,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={cardioData.pacePoints}
               label="Темп"
               unit="хв/км"
-              color="rgb(234 88 12)"
+              color={statusColors.warning}
             />
             <div className="text-style-caption text-subtle mt-1">
               Менше — краще (швидший темп)
@@ -302,7 +303,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={cardioData.distPoints}
               label="Дистанція"
               unit="км"
-              color="rgb(6 182 212)"
+              color={statusColors.info}
             />
           </Card>
         )}
