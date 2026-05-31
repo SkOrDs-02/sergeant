@@ -384,6 +384,8 @@ const entryCount = useMemo(() => countRealEntries(localStorageStore), [tick]);
 
 ### F11 — `ModuleErrorBoundary` рендерить `error.message` у `<pre>` без редакції [severity: medium] [perspective: security]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `error.message` `<pre>` block тепер обгорнуто у `import.meta.env.DEV` guard — у production user бачить лише generic `messages.errors.generic.moduleFailed` + дві CTA-кнопки. У dev-buidі stack/raw-message залишається видимим для debugging. Sentry/observability вже ловлять exception окремо — UI не потрібен як telemetry surface.
+
 **Page:** Module error fallback
 **File:** `apps/web/src/core/ModuleErrorBoundary.tsx`
 **Lines:** L65–L80 (fallback render)
@@ -424,6 +426,8 @@ const entryCount = useMemo(() => countRealEntries(localStorageStore), [tick]);
 ---
 
 ### F12 — `useMondayAutoDigest` подвійний-тригер при null-перетині понеділка [severity: medium] [perspective: bug]
+
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Idempotency guard додано: (а) mount-scoped `firedRef = useRef(false)` блокує повторний виклик `generate()` коли `generate` callback identity змінюється на півночі Sun→Mon; (б) `loadDigest(weekKey)` re-check всередині setTimeout мітигує cross-tab race. LLM-cost 2× risk закрито. Solution не персистить inflight у localStorage — це створювало б remount-race (cleanup перед timer-fire застрягав би у Active inflight). Деталі — JSDoc у файлі.
 
 **Page:** Auto weekly digest
 **File:** `apps/web/src/core/hub/dashboard/useMondayAutoDigest.ts`

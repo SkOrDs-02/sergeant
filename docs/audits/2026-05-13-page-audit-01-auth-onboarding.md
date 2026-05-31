@@ -586,6 +586,8 @@ Either (a) fix `buildIdentifyTraits`' return type to extend `Record<string, unkn
 
 ### F23 — `presetApply.uid()` uses `Math.random()` for entry IDs [severity: low] [perspective: code-quality]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `uid()` тепер повертає `${prefix}-${crypto.randomUUID()}` — RFC 4122 v4 з cryptographic randomness. Старий `Date.now().toString(36) + Math.random().slice(2,7)` (≈5 chars з ~36^5 ≈ 60M space) замінено на full 122-bit entropy. Поверхневі ID-shape changes: тести FTUX preset-seeding бачать тепер UUID-форму замість `tx-LXXXXXXXX-YYYYY`.
+
 **Page:** PresetSheet
 **File:** `apps/web/src/core/onboarding/presetApply.ts`
 **Lines:** L137–L139
