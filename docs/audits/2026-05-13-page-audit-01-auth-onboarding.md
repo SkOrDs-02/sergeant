@@ -562,6 +562,8 @@ Track Better Auth upstream issue for proper typings; pin the version in `pnpm-lo
 
 ### F22 — `AuthContext.tsx` stacks `as Record<...>` cast with `eslint-disable react-hooks/exhaustive-deps` [severity: medium] [perspective: ts]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `IdentifyTraits` отримав index-signature `[key: string]: unknown`, тому інтерфейс тепер нативно присвоюється до `Record<string, unknown>` без касту. У `AuthContext.tsx` прибрано `as Record<string, unknown>` біля `buildIdentifyTraits(user)` і скорочено comment-блок над викликом (стара "чому каст" мотивація замінена однорядковим посиланням на index-signature). `eslint-disable react-hooks/exhaustive-deps` навмисно залишений — він стосується іншого інваріанта (deps на `user?.id`, не на `user`), і його сенс описаний у коментарі нижче.
+
 **Page:** AuthContext
 **File:** `apps/web/src/core/auth/AuthContext.tsx`
 **Lines:** L294–L310

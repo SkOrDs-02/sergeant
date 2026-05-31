@@ -340,15 +340,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const currentId = user?.id ?? null;
     const prevId = lastIdentifiedUserIdRef.current;
     if (currentId && user && currentId !== prevId) {
-      // Cast у `Record<string, unknown>` — `IdentifyTraits` має іменовані
-      // опціональні поля без index-signature, тому TS не звужує його до
-      // record-у автоматично. Контракт `identifyPostHogUser` приймає
-      // довільний bag-of-properties — типи трейтів захищає сам
-      // `buildIdentifyTraits`.
-      identifyPostHogUser(
-        currentId,
-        buildIdentifyTraits(user) as Record<string, unknown>,
-      );
+      // `IdentifyTraits` має index-signature `[key: string]: unknown`,
+      // тому присвоюється до `Record<string, unknown>` без касту.
+      // Типи трейтів захищає сам `buildIdentifyTraits`.
+      identifyPostHogUser(currentId, buildIdentifyTraits(user));
       lastIdentifiedUserIdRef.current = currentId;
     } else if (!currentId && prevId) {
       resetPostHog();

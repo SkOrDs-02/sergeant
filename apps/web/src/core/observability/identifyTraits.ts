@@ -29,6 +29,12 @@ export interface IdentifyTraits {
   plan?: "free" | "pro";
   locale?: string;
   signup_date?: string;
+  // Index-signature робить `IdentifyTraits` сумісним з
+  // `Record<string, unknown>` без runtime-касту в місці виклику
+  // `identifyPostHogUser`. PostHog приймає довільний bag-of-properties;
+  // іменовані поля вище — задокументований мінімум, який реально
+  // використовує продукт, додаткові ключі допустимі.
+  [key: string]: unknown;
 }
 
 const MAX_LOCALE_LENGTH = 16;
