@@ -100,15 +100,36 @@ const PERSONA_LABELS: Record<StrategicGoalPersona, string> = {
   routine: "routine",
 };
 
+/**
+ * Audit F2: типізована помилка з HTTP-статусом, щоб UI міг змапити її
+ * на дружню українську копію без витоку server-internal `error.message`.
+ */
+class StrategyApiError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "StrategyApiError";
+    this.status = status;
+  }
+}
+
+function strategyErrorMessage(status: number): string {
+  if (status === 401 || status === 403) return "Сесія завершилась";
+  if (status >= 500) return "Сервер тимчасово недоступний";
+  return "Не вдалося зберегти ціль";
+}
+
 async function fetchGoals(weekStart: string): Promise<StrategicGoal[]> {
   const res = await fetch("/api/internal/strategic/goals/list", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ weekStart }),
   });
-  if (!res.ok) throw new Error(`list goals failed: ${res.status}`);
+  if (!res.ok)
+    throw new StrategyApiError(res.status, `list goals failed: ${res.status}`);
   const data = (await res.json()) as ListResponse;
-  if (!data.ok) throw new Error(data.error ?? "list goals not-ok");
+  if (!data.ok)
+    throw new StrategyApiError(res.status, data.error ?? "list goals not-ok");
   return data.goals ?? [];
 }
 
@@ -123,9 +144,11 @@ async function createGoalApi(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  if (!res.ok) throw new Error(`create goal failed: ${res.status}`);
+  if (!res.ok)
+    throw new StrategyApiError(res.status, `create goal failed: ${res.status}`);
   const data = (await res.json()) as CreateResponse;
-  if (!data.ok || !data.goal) throw new Error(data.error ?? "create not-ok");
+  if (!data.ok || !data.goal)
+    throw new StrategyApiError(res.status, data.error ?? "create not-ok");
   return data.goal;
 }
 
@@ -160,7 +183,11 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
       });
     },
     onError: (err) => {
-      setSubmitError(err instanceof Error ? err.message : "create failed");
+      if (err instanceof StrategyApiError) {
+        setSubmitError(strategyErrorMessage(err.status));
+        return;
+      }
+      setSubmitError("Не вдалося зберегти ціль");
     },
   });
 

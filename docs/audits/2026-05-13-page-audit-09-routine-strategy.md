@@ -47,6 +47,8 @@ Decide one of:
 
 ### F2 — Strategy page leaks raw server `error.message` to the user [severity: high] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — введено `StrategyApiError` зі статусом HTTP-відповіді; обидва `fetch`-каллери (`fetchGoals`, `createGoalApi`) кидають типізовану помилку. `useMutation.onError` рендерить лише канонічну UA-копію через `strategyErrorMessage(status)`: 401/403 → «Сесія завершилась», 5xx → «Сервер тимчасово недоступний», інакше → «Не вдалося зберегти ціль».
+
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
 **Lines:** L102–L104, L155–L158, L228–L232
