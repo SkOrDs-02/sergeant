@@ -23,14 +23,40 @@ export const config = {
   matcher: "/api/:path*",
 };
 
+/**
+ * Audit F6: дозволені схеми для BACKEND_URL — `https://*` або
+ * `http://localhost`/`127.0.0.1` (dev). Будь-яке інше значення робить
+ * middleware no-op замість тихого downgrade проксі та витоку cookies на
+ * непередбачений хост.
+ */
+function isAllowedBackend(raw: string): URL | undefined {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return undefined;
+  }
+  if (parsed.protocol === "https:") return parsed;
+  if (
+    parsed.protocol === "http:" &&
+    (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")
+  ) {
+    return parsed;
+  }
+  return undefined;
+}
+
 export default async function middleware(
   request: Request,
 ): Promise<Response | undefined> {
   const backend = process.env.BACKEND_URL;
   if (!backend) return undefined;
 
+  const backendUrl = isAllowedBackend(backend);
+  if (!backendUrl) return undefined;
+
   const url = new URL(request.url);
-  const target = new URL(`${backend}${url.pathname}${url.search}`);
+  const target = new URL(`${url.pathname}${url.search}`, backendUrl.origin);
 
   const headers = new Headers(request.headers);
   headers.set("x-forwarded-host", url.host);

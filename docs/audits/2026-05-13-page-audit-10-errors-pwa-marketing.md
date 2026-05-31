@@ -191,6 +191,8 @@ Or, if dev-mode visibility is desired, gate behind `import.meta.env.DEV`.
 
 ### F6 — `middleware.ts` proxies arbitrary `BACKEND_URL` with no scheme validation [severity: medium] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — `apps/web/middleware.ts` тепер парсить `BACKEND_URL` через `new URL()` і пропускає лише `https://*` або `http://` для `localhost`/`127.0.0.1` (dev). Невалідний URL чи інша схема — middleware no-op (запит йде далі без проксі). Цільовий URL збирається через `new URL(path, backendUrl.origin)` — додатковий захист від path-injection.
+
 **Page:** Vercel Edge middleware
 **File:** `apps/web/middleware.ts`
 **Lines:** L29–L33
