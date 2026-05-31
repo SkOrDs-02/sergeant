@@ -1,7 +1,7 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-31 by Claude (child session — Спринт 6 close-out: статус звірено з кодом у trunk — O4 dedup + T1 HubDashboard зашиплені, але документ цього не відображав; O3 лишається first-pass). Раніше: 2026-05-13 by Devin (T5 closed; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-07-01.
-> **Status:** Active — Спринт 6 реалізаційно закритий (O3 first-pass / O4 / O9 / T1 у trunk); за календарем активне вікно — Спринт 7
+> **Last validated:** 2026-05-31 by Claude (child session — Спринт 8 close-out звірка: T4-B react-markdown swap підтверджено shipped; решта cuts (@dnd-kit / react-virtuoso / vendor-sqlite-lazy / drizzle tree-shake / replayIntegration drop) — досі open у коді; size gate дрейфнув 870→880 kB; T5 Lighthouse — досі warn-only. Раніше того ж дня — Спринт 6 close-out: O4 dedup + T1 HubDashboard зашиплені; O3 first-pass). Раніше: 2026-05-13 by Devin (T5 closed; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-07-01.
+> **Status:** Active — Спринти 6-7 реалізаційно закриті; Спринт 8 частковий (T4-A + T4-B react-markdown + T6 shipped; решта T4-B cuts + T5 tightening open); за календарем активне вікно — Спринт 7
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
 > Джерела: [`docs/audits/archive/2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md),
@@ -34,7 +34,7 @@
 | T1  | HubDashboard decomposition         | `HubDashboard.tsx` 837 → 115 LOC                                           | ✅ Done ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f), Sprint 5)                                                                                                                     |
 | T2  | Capacitor boundary tests           | 0 тестів → 10+ у `apps/mobile-shell`                                       | ✅ Done ([PR #2538](https://github.com/Skords-01/Sergeant/pull/2538), `c57fad3d`)                                                                                                                     |
 | T3  | Великі файли (батч 3)              | `Workouts.tsx` 744→213, `LogCard.tsx` 736→216, `NutritionApp.tsx` 728→<250 | ✅ Done ([`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67) NutritionApp; [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) Workouts+LogCard)                                    |
-| T4  | Bundle size                        | 856 KB (brotli) → 870 KB ceiling; eager-only 374→342 kB (T4-A+B)           | 🚧 T4-A shipped (lazy WelcomeScreen+OnboardingWizard, `onboardingGate` thin barrel). T4-B partial: react-markdown → inline parser (−30 kB total). Continued cuts → Sprint 10.                               |
+| T4  | Bundle size                        | 856 KB (brotli) → 880 KB ceiling (виріс 870→880 post-T4-B); eager-only 374→342 kB (T4-A+B) | 🚧 T4-A shipped (lazy WelcomeScreen+OnboardingWizard, `onboardingGate` thin barrel). T4-B partial: react-markdown → inline parser (−30 kB total, verified 2026-05-31). Решта cuts (@dnd-kit / react-virtuoso / vendor-sqlite-lazy / drizzle / replay) — open → Sprint 10.                               |
 | T5  | Lighthouse CI                      | LCP < 2.0s у CI, error на LCP > 3.0s                                       | ✅ First pass shipped (warn-only) — [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (2026-05-13). Tightening LCP `warn` → `error` 3000 ms — baseline-gathered follow-up. |
 | T6  | Backend dedup verification         | `pantry → prompt-builders.ts` consolidation                                | ✅ Done ([PR #2542](https://github.com/Skords-01/Sergeant/pull/2542), `73edb9cf`)                                                                                                                     |
 | T7  | Mobile flaky tests CI verification | `isReduceMotionEnabled` pattern fixed (PR #2453)                           | 🚧 Verification job shipped — [`.github/workflows/mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml). Baseline: чекає на перший 20-run pass.                                        |
@@ -382,12 +382,14 @@ apps/web/src/core/hub/
 | Tree-shake `drizzle-orm` legacy imports                 | 🚧 open (S)                      | ~10 kB   |
 | `@sentry/react` integrations: drop `replayIntegration`  | 🚧 open (S)                      | ~15 kB   |
 
+> **Звірка з кодом (2026-05-31):** react-markdown swap підтверджено — пакет відсутній у `apps/web/package.json`, `AssistantMessageBody.tsx` = inline-парсер. Решта 5 cuts **досі open** у trunk: `@dnd-kit/*` живе у `core/hub/{useHubDashboardState,HubModulesGrid,dashboard/BentoCard}.tsx`; `react-virtuoso` ще в deps, `@tanstack/react-virtual` не додано; `vendor-sqlite` boot не виокремлено (`core/db/{kvStoreBoot,sqlite}.ts`); `drizzle-orm` ще прямий web-dep; `replayIntegration` ще активний у `core/observability/sentry.ts`. Жоден cut не регресував і не зашиплений з 2026-05-13.
+
 **T4-B shipped slice (2026-05-13):**
 
 - `AssistantMessageBody.tsx` (HubChat) більше не залежить від `react-markdown` + всередини remark/mdast/hast/micromark/unified стеку. Замість нього — власний inline-парсер на ~250 LOC який покриває весь набір фічей (paragraphs, h3/h4 headings, ordered/unordered lists, blockquotes, bold/italic/code/safe links).
 - 9 Vitest тестів припиняють граматику (включно з sandboxing-ом `javascript:` та unsafe-scheme link-ів).
 - `vendor-markdown` chunk повністю зникає з `dist/assets/*.js`. Total brotli: `886.4 → 856.2 kB` (−30.2 kB / −3.4 %).
-- `size-limit` ceiling: `900 → 870 kB` (14 kB headroom над поточним значенням — є простір для наступних дрібних додавань, але gate вже регресівно жорсткіший).
+- `size-limit` ceiling: `900 → 870 kB` (14 kB headroom над поточним значенням — є простір для наступних дрібних додавань, але gate вже регресівно жорсткіший). **Update 2026-05-31:** фактичний gate у `apps/web/package.json` зараз `880 kB` (виріс +10 kB через природний ріст після T4-B; не +cut). При наступному T4-cut-у ceiling треба знову опускати.
 
 **Команда:** `pnpm --filter @sergeant/web build && pnpm --filter @sergeant/web size`
 
@@ -417,6 +419,8 @@ apps/web/src/core/hub/
 - Workflow: [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (додано 2026-05-13 через follow-up child Devin session; без `treosh/lighthouse-ci-action`; прямо `@lhci/cli` як devDep в `apps/web` — уникаємо додаткового SHA-pin-у).
 - Routes аудитуються: `/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition` (`/` = Hub; окремого `/hub` немає).
 - 3 runs/URL, median-run aggregation.
+
+> **Звірка з кодом (2026-05-31):** `apps/web/lighthouserc.json` досі тримає LCP як `warn` (maxNumericValue 2000) — tightening до `error` 3000 ms і branch-protection flip **не зроблені**. Це ops-крок (потрібен baseline у CI + flip захисту гілки), не code-only; лишається open follow-up.
 
 **Acceptance:**
 
@@ -487,8 +491,8 @@ apps/web/src/core/hub/
 | Спринт 5 | O1, O2, O5        | T7                 | ~5–6 днів        |
 | Спринт 6 | O3, O4, O9        | T1                 | ~8–10 днів       |
 | Спринт 7 | O6, O7            | ~~T2~~ (done)      | ~7–9 днів        |
-| Спринт 8 | O8-start          | T4 (T4-A done)     | ~8–10 днів       |
+| Спринт 8 | O8-start (done)   | T4 (T4-A + T4-B react-markdown done; 5 cuts + T5 tightening open), T5 (first-pass), T6 (done) | ~8–10 днів       |
 
 ---
 
-**Документ оновлено 2026-05-31 (Спринт 6 close-out звірка з trunk: O4 + T1 позначено Done, O3 — first-pass). За календарем активне вікно — Спринт 7 (2026-06-09 – 2026-06-20); продовження планування — [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md). Наступний review — 2026-07-01.**
+**Документ оновлено 2026-05-31 — дві close-out звірки з trunk: (1) Спринт 6 — O4 + T1 позначено Done, O3 first-pass; (2) Спринт 8 — T4-B react-markdown swap підтверджено shipped, решта 5 bundle-cuts + T5 tightening лишаються open, виправлено дрейф size-gate 870→880 kB. За календарем активне вікно — Спринт 7 (2026-06-09 – 2026-06-20); продовження планування — [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md). Наступний review — 2026-07-01.**
