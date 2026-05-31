@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 import type {
@@ -8,16 +8,23 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 
-// Ukrainian 1 / 2-4 / 5+ noun plural for "операція" (operation/transaction).
-// Inline because the only consumers are the batch-undo toasts below — if a
-// third caller appears, promote to `@shared/lib/pluralize`.
-function pluralizeOps(n: number): string {
+// Ukrainian one / few / many noun plural for "операція" (operation/transaction)
+// with grammatical case selector. Inline because the only consumers are the
+// batch-undo toasts below — if a third caller appears, promote to
+// `@shared/lib/pluralize`.
+type OpsCase = "nom" | "acc" | "gen";
+const OPS_FORMS: Record<OpsCase, readonly [string, string, string]> = {
+  nom: ["операція", "операції", "операцій"],
+  acc: ["операцію", "операції", "операцій"],
+  gen: ["операції", "операцій", "операцій"],
+};
+function pluralizeOps(n: number, c: OpsCase = "acc"): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "операції";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return "операцій";
-  return "операцій";
+  const [one, few, many] = OPS_FORMS[c];
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 >= 14)) return few;
+  return many;
 }
 
 export interface UseTransactionSelectionParams {
@@ -86,7 +93,9 @@ export function useTransactionSelection({
   const [batchCatPicker, setBatchCatPicker] = useState(false);
 
   // Stable refs for handlers used by memoized row — avoids re-rendering all
-  // visible rows whenever any unrelated parent state changes.
+  // visible rows whenever any unrelated parent state changes. Sync the ref
+  // through `useEffect` so we don't allocate a fresh object on every render —
+  // only when one of the source handlers actually changes identity (F22).
   const handlersRef = useRef({
     hideTx,
     overrideCategory,
@@ -96,7 +105,17 @@ export function useTransactionSelection({
     onEditManualExpense,
     toast,
   });
-  handlersRef.current = {
+  useEffect(() => {
+    handlersRef.current = {
+      hideTx,
+      overrideCategory,
+      setSplitTx,
+      removeManualExpense,
+      addManualExpense,
+      onEditManualExpense,
+      toast,
+    };
+  }, [
     hideTx,
     overrideCategory,
     setSplitTx,
@@ -104,7 +123,7 @@ export function useTransactionSelection({
     addManualExpense,
     onEditManualExpense,
     toast,
-  };
+  ]);
 
   // useCallback — `toggleSelect` передається у кожен рядок вибору.
   // Сталий reference спільно з React.memo(TxRow)/обгорткою чекбокса дає
@@ -189,7 +208,7 @@ export function useTransactionSelection({
       exitSelectMode();
       if (prev.length > 0) {
         showUndoToast(toast, {
-          msg: `Категорію змінено для ${prev.length} ${pluralizeOps(prev.length)}`,
+          msg: `Категорію змінено для ${prev.length} ${pluralizeOps(prev.length, "gen")}`,
           onUndo: () => {
             for (const [id, prevCat] of prev) overrideCategory(id, prevCat);
           },
@@ -214,7 +233,7 @@ export function useTransactionSelection({
     exitSelectMode();
     if (hiddenNow.length > 0) {
       showUndoToast(toast, {
-        msg: `Приховано ${hiddenNow.length} ${pluralizeOps(hiddenNow.length)}`,
+        msg: `Приховано ${hiddenNow.length} ${pluralizeOps(hiddenNow.length, "acc")}`,
         onUndo: () => {
           for (const id of hiddenNow) hideTx(id);
         },
@@ -235,7 +254,7 @@ export function useTransactionSelection({
     exitSelectMode();
     if (excludedNow.length > 0) {
       showUndoToast(toast, {
-        msg: `Виключено зі статистики: ${excludedNow.length} ${pluralizeOps(excludedNow.length)}`,
+        msg: `Виключено зі статистики: ${excludedNow.length} ${pluralizeOps(excludedNow.length, "acc")}`,
         onUndo: () => {
           for (const id of excludedNow) toggleExcludeFromStats(id);
         },

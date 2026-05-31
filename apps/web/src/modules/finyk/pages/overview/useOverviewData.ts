@@ -27,6 +27,7 @@ import {
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
+import { logger } from "@shared/lib";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -153,13 +154,21 @@ export function useOverviewData({
       ),
     [receivables, transactions],
   );
-  const manualAssetTotal = useMemo(
-    () =>
-      (manualAssets || [])
-        .filter((a) => a.currency === "UAH")
-        .reduce((s: number, a) => s + Number(a.amount), 0),
-    [manualAssets],
-  );
+  const { manualAssetTotal, nonUahManualAssetCount } = useMemo(() => {
+    const all = manualAssets || [];
+    const uah = all.filter((a) => a.currency === "UAH");
+    return {
+      manualAssetTotal: uah.reduce((s: number, a) => s + Number(a.amount), 0),
+      nonUahManualAssetCount: all.length - uah.length,
+    };
+  }, [manualAssets]);
+  useEffect(() => {
+    if (nonUahManualAssetCount > 0) {
+      logger.warn(
+        `[finyk/overview] ${nonUahManualAssetCount} non-UAH manual asset(s) excluded from networth (F17)`,
+      );
+    }
+  }, [nonUahManualAssetCount]);
   const networth = monoTotal + manualAssetTotal + totalReceivable - totalDebt;
 
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
@@ -374,6 +383,7 @@ export function useOverviewData({
     networth,
     monoTotal,
     totalDebt,
+    nonUahManualAssetCount,
     daysInMonth,
     daysPassed,
     dayBudget,
