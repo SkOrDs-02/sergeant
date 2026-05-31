@@ -767,6 +767,8 @@ useEffect(() => {
 
 ### F21 — `useFinykHubPreview.ts:20` дублює `STORAGE_KEYS.FINYK_TX_CACHE` [severity: low] [perspective: rule]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. У `apps/web/src/core/hub/useFinykHubPreview.ts` локальну константу `TX_CACHE_LS_KEY = "finyk_tx_cache"` видалено; обидва вживання (`safeReadLS` у `readHasMonoData` та порівняння в `storage`-listener) тепер посилаються напряму на `STORAGE_KEYS.FINYK_TX_CACHE` з `@sergeant/shared`. Drift-bug клас (F1) для цього hook-а закрито — реєстр у `packages/shared/src/lib/storageKeys.ts` лишається єдиним джерелом істини.
+
 **Page:** Hub Finyk preview hook
 **File:** `apps/web/src/core/hub/useFinykHubPreview.ts`
 **Lines:** L20

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { hubKeys } from "@shared/lib/api/queryKeys";
 
@@ -17,14 +18,12 @@ import { hubKeys } from "@shared/lib/api/queryKeys";
  * write to other tabs, so we only need to rebuild the derived value there.
  */
 
-const TX_CACHE_LS_KEY = "finyk_tx_cache";
-
 export interface FinykHubPreview {
   hasMonoData: boolean;
 }
 
 function readHasMonoData(): boolean {
-  const parsed = safeReadLS<{ txs?: unknown[] }>(TX_CACHE_LS_KEY);
+  const parsed = safeReadLS<{ txs?: unknown[] }>(STORAGE_KEYS.FINYK_TX_CACHE);
   return Array.isArray(parsed?.txs) && parsed.txs.length > 0;
 }
 
@@ -37,7 +36,7 @@ export function useFinykHubPreview() {
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === null || e.key === TX_CACHE_LS_KEY) {
+      if (e.key === null || e.key === STORAGE_KEYS.FINYK_TX_CACHE) {
         queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
       }
     };
