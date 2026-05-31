@@ -53,12 +53,12 @@ export function StatusPage(): JSX.Element {
       setState({ kind: "ready", data });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+      // Audit F10: не показуємо raw err.message анонімним відвідувачам —
+      // може просочити target URL, CORS-preflight або DNS-підказки.
+      console.warn("[StatusPage] /api/status fetch failed", err);
       setState({
         kind: "error",
-        message:
-          err instanceof Error
-            ? err.message
-            : messages.publicStatus.errorFallback,
+        message: messages.publicStatus.errorFallback,
       });
     }
   }, []);
@@ -277,10 +277,10 @@ const DOT_CLASSES: Record<ComponentStatus, string> = {
 };
 
 const COMPONENT_NAME: Record<StatusComponent["id"], string> = {
-  server: "API server",
-  database: "Database",
-  n8n: "n8n workflows",
-  "console-bot": "OpenClaw bot",
+  server: "API-сервер",
+  database: "База даних",
+  n8n: "n8n-воркфлоу",
+  "console-bot": "OpenClaw-бот",
 };
 
 export default StatusPage;

@@ -304,6 +304,8 @@ const safeBody = String(payload.body ?? "")
 
 ### F10 — `StatusPage` shows raw fetch `err.message` to anonymous visitors [severity: medium] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — catch-блок у `apps/web/src/core/status/StatusPage.tsx` більше не пробрасує `err.message` у банер: будь-яка не-abort помилка мапиться на `messages.publicStatus.errorFallback`, raw — у `console.warn`. Анонімні відвідувачі більше не бачать `Failed to fetch`/CORS/DNS-підказок.
+
 **Page:** Status (`/status`)
 **File:** `apps/web/src/core/status/StatusPage.tsx`
 **Lines:** L54–L63
@@ -329,6 +331,8 @@ Send the raw `err` to Sentry breadcrumb instead.
 ---
 
 ### F11 — `StatusPage` `COMPONENT_NAME` is hardcoded English ("API server", "Database", "n8n workflows", "OpenClaw bot") [severity: medium] [perspective: i18n]
+
+> ✅ **Closed 2026-05-31** — мапу `COMPONENT_NAME` (L279–L284) перекладено інлайн: `API-сервер`, `База даних`, `n8n-воркфлоу`, `OpenClaw-бот`. Публічна `/status` сторінка тепер суцільно українська (Hard Rule #15).
 
 **Page:** Status (`/status`)
 **File:** `apps/web/src/core/status/StatusPage.tsx`
