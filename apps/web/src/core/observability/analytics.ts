@@ -26,6 +26,18 @@ export { initPostHog, identifyPostHogUser, resetPostHog } from "./posthog";
 
 const LOG_KEY = "hub_analytics_log_v1";
 const MAX_LOG = 200;
+const FLUSH_DEBOUNCE_MS = 500;
+
+// Audit 2026-05-13 §F14: in-memory ring-buffer — джерело правди під час
+// сесії. У localStorage зливаємо batch-ами (debounce 500 мс) або
+// синхронно на `visibilitychange`/`pagehide`, щоб не блокувати
+// main-thread на кожен `trackEvent`. Патерн дзеркалить `webVitals.ts`.
+let memoryLog: unknown[] = (() => {
+  const parsed = safeReadLS<unknown[]>(LOG_KEY);
+  return Array.isArray(parsed) ? parsed.slice(-MAX_LOG) : [];
+})();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushListenersAttached = false;
 
 function clonePayload(
   payload: Record<string, unknown>,
@@ -41,13 +53,39 @@ function clonePayload(
   }
 }
 
-function safeReadLog(): unknown[] {
-  const parsed = safeReadLS<unknown[]>(LOG_KEY);
-  return Array.isArray(parsed) ? parsed : [];
+function flushLogToStorage(): void {
+  if (flushTimer !== null) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  safeWriteLS(LOG_KEY, memoryLog);
 }
 
-function safeWriteLog(events: unknown[]): void {
-  safeWriteLS(LOG_KEY, events.slice(-MAX_LOG));
+function ensureFlushListeners(): void {
+  if (flushListenersAttached) return;
+  if (typeof document === "undefined" || typeof window === "undefined") return;
+  flushListenersAttached = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushLogToStorage();
+  });
+  window.addEventListener("pagehide", flushLogToStorage);
+}
+
+function scheduleFlush(): void {
+  ensureFlushListeners();
+  if (flushTimer !== null) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    safeWriteLS(LOG_KEY, memoryLog);
+  }, FLUSH_DEBOUNCE_MS);
+}
+
+function appendEvent(event: unknown): void {
+  memoryLog.push(event);
+  if (memoryLog.length > MAX_LOG) {
+    memoryLog = memoryLog.slice(-MAX_LOG);
+  }
+  scheduleFlush();
 }
 
 /**
@@ -81,15 +119,18 @@ export function trackEvent(
     // Тож логуємо клон з вирізаними PII-значеннями. Оригінальний `event`
     // лишається незачепленим — він іде у localStorage ring-buffer і у
     // PostHog як було.
-    // All sinks below use this scrubbed `event`.
-    console.log("[analytics]", event);
-    const current = safeReadLog();
-    safeWriteLog([...current, event]);
+    // У prod console.log приглушений (Rule #21 — Sentry breadcrumb-и не
+    // повинні містити аналітичних payload-ів). LS-запис через batched
+    // ring-buffer, щоб серія кліків не била по main-thread (audit F14).
+    if (import.meta.env.DEV) {
+      console.log("[analytics]", event);
+    }
+    appendEvent(event);
     if (import.meta.env.DEV) {
       const analyticsWindow = window as Window & {
         __hubAnalytics?: unknown[];
       };
-      analyticsWindow.__hubAnalytics = [...current, event].slice(-MAX_LOG);
+      analyticsWindow.__hubAnalytics = memoryLog;
     }
   } catch {}
   // Окремий try/catch — `trackEvent` контракт каже "ніколи не кидає"

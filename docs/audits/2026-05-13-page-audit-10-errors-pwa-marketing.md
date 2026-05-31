@@ -393,6 +393,8 @@ Add minimal RTL tests asserting (a) `messages.errors.*` strings are rendered, (b
 
 ### F14 — `analytics.ts` writes every event to localStorage twice (read + slice + write) [severity: medium] [perspective: perf]
 
+> ✅ **Closed 2026-05-31** — `apps/web/src/core/observability/analytics.ts` тепер тримає in-memory ring-buffer (`memoryLog`); у `localStorage` скидається debounced (500мс) + sync на `visibilitychange:hidden` + `pagehide` (як `webVitals.ts`). `console.log("[analytics]", event)` під `import.meta.env.DEV` (Rule #21). `__hubAnalytics` читає з пам’яті без read+slice циклу.
+
 **Page:** Observability
 **File:** `apps/web/src/core/observability/analytics.ts`
 **Lines:** L45–L75 (especially L51–L62 `safeWriteLog`)
