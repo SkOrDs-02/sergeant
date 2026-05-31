@@ -424,6 +424,8 @@ Add `AI-CONTEXT:` on `AuthContext.translateAuthError`, `authClient.typedAuthClie
 
 ### F16 — `presetApply.ts` bypasses module storage public API [severity: medium] [perspective: code-quality]
 
+> ✅ **Closed 2026-05-31** — `presetApply.ts` більше не звертається до `safeReadLS`/`safeWriteLS` напряму. Кожен writer (Finyk / Routine / Fizruk / Nutrition) тепер через canonical module-owned `createModuleStorage` instance: `readJSON`/`writeJSON`/`writeRaw` з `@finyk/lib/finykStorage`, плюс `routineStorage`/`fizrukStorage`/`nutritionStorage` з відповідних `*StorageInstance` файлів. FTUX-семантика збережена (`writeJSON` синхронний), але pending-write буфери і allowlist contract тепер спільні з рештою кожного модуля.
+
 **Page:** PresetSheet
 **File:** `apps/web/src/core/onboarding/presetApply.ts`
 **Lines:** L24–L30 (key constants), L150–L172 (`applyFinykPreset`), and similar `applyRoutinePreset` / `applyFizrukPreset` / `applyNutritionPreset` below.
@@ -449,6 +451,8 @@ At minimum, add `AI-CONTEXT:` markers (see F15) on each `apply*Preset` writer.
 ---
 
 ### F17 — `seedDemoData.ts` bypasses storage allowlist [severity: medium] [perspective: code-quality]
+
+> ✅ **Closed 2026-05-31** — `seedDemoData.ts` тепер кличе `safeWriteLS`/`safeRemoveLS` напряму замість `writeRaw`/`removeKey` thin-wrappers з `./seedDemoData/utils`. Wrappers і раніше форвардили у allowlist-safe boundary, але назви створювали ілюзію raw-LS доступу. Точкова заміна робить контракт явним; per-module seeders залишають wrappers як DX-helper.
 
 **Page:** Demo seeding (`?demo=1`)
 **File:** `apps/web/src/core/onboarding/seedDemoData.ts`, `seedDemoData/utils.ts`

@@ -43,8 +43,11 @@ import { seedFizruk } from "./seedDemoData/seedFizruk";
 import { seedHubQuickStats } from "./seedDemoData/seedHubQuickStats";
 import { seedNutrition } from "./seedDemoData/seedNutrition";
 import { seedRoutine } from "./seedDemoData/seedRoutine";
-import { removeKey, writeRaw } from "./seedDemoData/utils";
-import { safeReadStringLS } from "@shared/lib/storage/storage";
+import {
+  safeReadStringLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
 const SEEDED_KEYS = [
@@ -74,11 +77,11 @@ const SEEDED_KEYS = [
 export function seedDemoData(): void {
   // Skip the one-time cleanup that would otherwise nuke demo-flagged
   // rows on the next boot.
-  writeRaw(DEMO_CLEANUP_DONE_KEY, "1");
+  safeWriteLS(DEMO_CLEANUP_DONE_KEY, "1");
   // Skip the welcome / onboarding splash.
-  writeRaw(ONBOARDING_DONE_KEY, "1");
+  safeWriteLS(ONBOARDING_DONE_KEY, "1");
   // Tell the «first real entry» analytics gate that we've already fired.
-  writeRaw(FIRST_REAL_ENTRY_KEY, "1");
+  safeWriteLS(FIRST_REAL_ENTRY_KEY, "1");
 
   seedFinyk();
   seedFizruk();
@@ -86,12 +89,12 @@ export function seedDemoData(): void {
   seedNutrition();
   seedHubQuickStats();
 
-  writeRaw(DEMO_FLAG_KEY, "1");
+  safeWriteLS(DEMO_FLAG_KEY, "1");
 }
 
 /** Wipe everything the seeder writes. */
 export function resetDemoData(): void {
-  for (const k of SEEDED_KEYS) removeKey(k);
+  for (const k of SEEDED_KEYS) safeRemoveLS(k);
 }
 
 /**

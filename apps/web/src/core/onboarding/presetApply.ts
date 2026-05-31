@@ -1,4 +1,11 @@
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  readJSON as finykReadJSON,
+  writeJSON as finykWriteJSON,
+  writeRaw as finykWriteRaw,
+} from "@finyk/lib/finykStorage";
+import { fizrukStorage } from "@fizruk/lib/fizrukStorageInstance";
+import { nutritionStorage } from "@nutrition/lib/nutritionStorageInstance";
+import { routineStorage } from "@routine/lib/routineStorageInstance";
 
 // Writes a single preset entry directly into the matching module's
 // localStorage key. This is how the FTUX PresetSheet turns "tap a tile"
@@ -154,7 +161,7 @@ function toLocalISODate(d = new Date()) {
 // here AND in `apps/web/src/core/modules/finyk/storage.ts` together; a drift
 // silently breaks preset seeding.
 function applyFinykPreset(preset: FinykPreset) {
-  const existing = safeReadLS(FINYK_MANUAL_EXPENSES_KEY, []);
+  const existing = finykReadJSON<unknown>(FINYK_MANUAL_EXPENSES_KEY, []);
   const list = Array.isArray(existing) ? existing : [];
   const entry = {
     id: uid("tx"),
@@ -168,19 +175,18 @@ function applyFinykPreset(preset: FinykPreset) {
   // цей LS write — local-only onboarding seed на tombstone-ключі
   // (`@deprecated` у storageKeys.ts), residual-import drains у SQLite
   // на наступний boot.
-  safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
+  finykWriteJSON(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
   // Keep the user out of the Monobank login gate — mirrors what
   // `enableFinykManualOnly()` does on the «Далі без банку» path.
-  // `safeWriteLS` keeps raw strings as-is (no JSON.stringify) so the
-  // stored value matches the legacy `localStorage.setItem(_, "1")` shape.
-  // (Untracked key — keep using `safeWriteLS`.)
-  safeWriteLS(FINYK_MANUAL_ONLY_KEY, "1");
+  // `writeRaw` keeps raw strings as-is (no JSON.stringify) so the stored
+  // value matches the legacy `localStorage.setItem(_, "1")` shape.
+  finykWriteRaw(FINYK_MANUAL_ONLY_KEY, "1");
 }
 
 // ─── Routine ─────────────────────────────────────────────────────────────
 
 function applyRoutinePreset(preset: RoutinePreset) {
-  const state = safeReadLS<RoutineState>(ROUTINE_STATE_KEY, null);
+  const state = routineStorage.readJSON<RoutineState>(ROUTINE_STATE_KEY, null);
   const today = toLocalISODate();
   const habit: RoutineHabit = {
     id: uid("hab"),
@@ -210,7 +216,7 @@ function applyRoutinePreset(preset: RoutinePreset) {
     ? [...base.habitOrder, habit.id]
     : [habit.id];
 
-  safeWriteLS(ROUTINE_STATE_KEY, {
+  routineStorage.writeJSON(ROUTINE_STATE_KEY, {
     schemaVersion: 3,
     prefs: base.prefs || {
       showFizrukInCalendar: true,
@@ -231,10 +237,9 @@ function applyRoutinePreset(preset: RoutinePreset) {
 // ─── Fizruk ──────────────────────────────────────────────────────────────
 
 function applyFizrukPreset(preset: FizrukPreset) {
-  const existing = safeReadLS<FizrukWorkoutsState | FizrukWorkout[]>(
-    FIZRUK_WORKOUTS_KEY,
-    null,
-  );
+  const existing = fizrukStorage.readJSON<
+    FizrukWorkoutsState | FizrukWorkout[]
+  >(FIZRUK_WORKOUTS_KEY, null);
   const existingList: FizrukWorkout[] = Array.isArray(existing)
     ? existing
     : existing && Array.isArray(existing.workouts)
@@ -251,7 +256,7 @@ function applyFizrukPreset(preset: FizrukPreset) {
     durationSec: preset.durationMin * 60,
     exercises: [],
   };
-  safeWriteLS(FIZRUK_WORKOUTS_KEY, {
+  fizrukStorage.writeJSON(FIZRUK_WORKOUTS_KEY, {
     schemaVersion: 1,
     workouts: [workout, ...existingList],
   });
@@ -260,7 +265,10 @@ function applyFizrukPreset(preset: FizrukPreset) {
 // ─── Nutrition ───────────────────────────────────────────────────────────
 
 function applyNutritionPreset(preset: NutritionPreset) {
-  const existing = safeReadLS<NutritionLogState>(NUTRITION_LOG_KEY, null);
+  const existing = nutritionStorage.readJSON<NutritionLogState>(
+    NUTRITION_LOG_KEY,
+    null,
+  );
   const base: NutritionLogState =
     existing && typeof existing === "object" && !Array.isArray(existing)
       ? { ...existing }
@@ -296,7 +304,7 @@ function applyNutritionPreset(preset: NutritionPreset) {
   // цей LS write — local-only onboarding seed на tombstone-ключі
   // (`@deprecated` у storageKeys.ts), residual-import drains у SQLite
   // на наступний boot.
-  safeWriteLS(NUTRITION_LOG_KEY, base);
+  nutritionStorage.writeJSON(NUTRITION_LOG_KEY, base);
   dispatch(NUTRITION_LOG_EVENT);
 }
 
