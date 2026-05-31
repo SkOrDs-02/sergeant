@@ -78,6 +78,8 @@
 
 ### PR-0 · Telemetry & ADR foundation
 
+> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
+
 **Why first:** §18 (Як міряти ефект) вимагає PostHog-events, які зараз або відсутні, або непослідовні. Без них ми не помітимо, чи P0-зміни щось дали.
 **Scope:**
 
