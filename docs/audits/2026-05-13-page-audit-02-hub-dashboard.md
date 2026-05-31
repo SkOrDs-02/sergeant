@@ -616,6 +616,8 @@ for (let i = 0; i < order.length; i++) {
 
 ### F17 — Inline gradient `from-brand-100 to-teal-100` у dashboardCards [severity: low] [perspective: tailwind]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved — у `apps/web/src/core/hub/dashboard/dashboardCards.tsx:268-272` (WeeklyDigestFooter) raw `from-brand-100 to-teal-100` + `dark:from-brand-900/40 dark:to-teal-900/30` пара замінена на theme-adaptive `bg-brand-soft` токен. Dark: companion pair прибрано (Hard Rule #13), без необхідності реєструвати новий `brand-secondary` token.
+
 **Page:** Hub Dashboard (Weekly Digest footer)
 **File:** `apps/web/src/core/hub/dashboard/dashboardCards.tsx`
 **Lines:** L268–L270
