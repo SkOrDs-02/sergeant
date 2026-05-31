@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Modal } from "@shared/components/ui/Modal";
@@ -64,15 +64,16 @@ export function PaywallModal({
   dismissLabel = "Не зараз",
 }: PaywallModalProps) {
   const navigate = useNavigate();
+  const prevOpen = useRef(false);
 
   useEffect(() => {
-    if (open) {
+    // Fire once per open false→true transition. Surface swaps while the
+    // modal stays open must NOT re-fire — that would inflate the
+    // `paywall_viewed → checkout_opened → subscription_started` funnel.
+    if (open && !prevOpen.current) {
       trackEvent(ANALYTICS_EVENTS.PAYWALL_VIEWED, { surface });
     }
-    // `surface` is part of the dependency tuple so a parent that swaps
-    // the surface while the modal stays open (rare, but possible during
-    // route transitions) re-fires the event. PostHog dedupes by uuid; we
-    // do not attempt client-side dedupe here.
+    prevOpen.current = open;
   }, [open, surface]);
 
   function handleCta() {
