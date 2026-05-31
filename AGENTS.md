@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
+> **Last validated:** 2026-05-31 by @Skords-01. **Next review:** 2026-08-29.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -167,6 +167,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 - [`docs/playbooks/README.md`](docs/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers).
 - [`docs/agents/agent-skills-catalog.md`](docs/agents/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills.
+- [`docs/copy/style-guide.uk.md`](docs/copy/style-guide.uk.md) — canonical UA-copy tone-of-voice rules (1st-person-singular for action-busy, `ти`-address, action-prompt-closed errors). Reference for every new кирилічний JSX literal.
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
 - [`docs/architecture/`](docs/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
 - [`docs/governance/rules/`](docs/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
