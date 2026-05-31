@@ -13,7 +13,11 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { isActiveModule, type DashboardModuleId } from "@sergeant/shared";
+import {
+  STORAGE_KEYS,
+  isActiveModule,
+  type DashboardModuleId,
+} from "@sergeant/shared";
 import {
   DndContext,
   closestCenter,
@@ -31,11 +35,9 @@ import { DENSITY_BENTO_GAP } from "./hub.types";
 // FTUX inline hint
 // ─────────────────────────────────────────────────────────────────────
 
-const FTUX_MODULES_HINT_KEY = "sergeant.hub.ftuxModulesHint.dismissed.v1";
-
 function FtuxModulesHint() {
   const [dismissed, setDismissed] = useLocalStorageState<boolean>(
-    FTUX_MODULES_HINT_KEY,
+    STORAGE_KEYS.FTUX_MODULES_HINT_DISMISSED,
     false,
     { validate: (v): v is boolean => typeof v === "boolean" },
   );

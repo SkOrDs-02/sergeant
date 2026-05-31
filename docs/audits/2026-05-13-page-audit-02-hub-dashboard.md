@@ -461,6 +461,8 @@ return () => clearTimeout(timer);
 
 ### F13 — Inline `FTUX_MODULES_HINT_KEY` за межами `STORAGE_KEYS` registry [severity: low] [perspective: rule]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Додано `FTUX_MODULES_HINT_DISMISSED: "sergeant.hub.ftuxModulesHint.dismissed.v1"` у `packages/shared/src/lib/storageKeys.ts` (Hub section, поряд із `ONBOARDING_DONE`), зберігши існуючий літерал щоб не зламати state користувачів. У `apps/web/src/core/hub/HubModulesGrid.tsx` локальну `const FTUX_MODULES_HINT_KEY` прибрано, `useLocalStorageState` тепер читає `STORAGE_KEYS.FTUX_MODULES_HINT_DISMISSED` через імпорт з `@sergeant/shared`.
+
 **Page:** Modules Grid
 **File:** `apps/web/src/core/hub/HubModulesGrid.tsx`
 **Lines:** L30–L34
