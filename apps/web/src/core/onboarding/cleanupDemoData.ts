@@ -117,6 +117,11 @@ function cleanNutrition(): void {
  * flag isn't set yet, `safeReadLS` returns `null` → we proceed with the
  * cleanup. If it's set, the parsed string `"1"` short-circuits.
  */
+// AI-DANGER: one-shot per device. Once `CLEANUP_DONE_KEY` is set, this is
+// never run again. If the guard ever inverts (e.g. a refactor flips the
+// comparison to `!== "1"`), every subsequent boot wipes real user data.
+// Never weaken the early-return guard without a regression test that calls
+// this function twice in a row and asserts the second call is a no-op.
 export function runDemoCleanupOnce(): void {
   if (safeReadLS<unknown>(CLEANUP_DONE_KEY) === "1") return;
   cleanFinyk();

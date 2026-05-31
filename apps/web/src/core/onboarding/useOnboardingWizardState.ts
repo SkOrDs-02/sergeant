@@ -119,6 +119,11 @@ export interface UseOnboardingWizardStateReturn {
  * Keeps the composition root (`OnboardingWizard.tsx`) free of every
  * non-presentational concern.
  */
+// AI-CONTEXT: variant assignment for the FTUX wizard. `mode` ("tour" vs
+// real-wizard) and the default-picks arm (always "none" since 2026-05-08)
+// are read once and pinned for the entire mount. Flipping arms mid-flight
+// would reshuffle module picks under the user's pointer — never make this
+// reactive without a hard reset of the wizard state.
 export function useOnboardingWizardState({
   mode,
   onDone,

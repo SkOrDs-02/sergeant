@@ -402,6 +402,8 @@ For the scaffolded auth siblings (F3): `Status: Scaffolded` with a TODO link to 
 
 ### F15 — AI markers under-used in high-risk auth code [severity: medium] [perspective: ai-marker]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. AI markers додано на всі 5 рекомендованих точок: `AI-CONTEXT` на `AuthContext.translateAuthError`, `authClient.typedAuthClient` cast, `useOnboardingWizardState` variant assignment, `presetApply.applyFinykPreset` direct-LS write; `AI-DANGER` на `AuthContext` PostHog identify ref-effect (auth-state transition) і `cleanupDemoData.runDemoCleanupOnce` (one-shot guard).
+
 **Page:** Auth tree, OnboardingWizard
 **File:** `apps/web/src/core/auth/*`, `apps/web/src/core/onboarding/*`
 **Lines:** Only one `AI-NOTE` in scope (`OnboardingWizard.ux.test.tsx:29`); zero `AI-CONTEXT` / `AI-DANGER` / `AI-LEGACY` markers anywhere in the auth tree or wizard.

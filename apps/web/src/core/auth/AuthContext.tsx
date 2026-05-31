@@ -55,6 +55,9 @@ export type AuthErrorLike = {
   statusText?: string | null;
 };
 
+// AI-CONTEXT: error-code switch — every branch must round-trip the Better Auth
+// `code`/`status` pair to a user-facing Ukrainian message. A typo in any case
+// arm silently surfaces the English fallback or the raw vendor string.
 export function translateAuthError(
   raw: AuthErrorLike | string | null | undefined,
   fallback: string,
@@ -328,6 +331,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // `buildIdentifyTraits()` — див. JSDoc у `identifyTraits.ts` про
   // джерела і поведінку при відсутності localStorage / navigator.
   const lastIdentifiedUserIdRef = useRef<string | null>(null);
+  // AI-DANGER: auth-state transition effect. Calls `identifyPostHogUser` on
+  // every login and `resetPostHog` on every logout. Wrong wiring here either
+  // attributes one user's analytics events to another (privacy leak) or
+  // silently stops identifying entirely. Pair changes here with a test of
+  // the login → logout → re-login sequence on `lastIdentifiedUserIdRef`.
   useEffect(() => {
     const currentId = user?.id ?? null;
     const prevId = lastIdentifiedUserIdRef.current;

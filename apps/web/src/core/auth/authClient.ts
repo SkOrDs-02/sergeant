@@ -129,6 +129,12 @@ type PasswordResetResult = {
 // runtime via a Proxy over the email/password plugin endpoints. We extend
 // the type here so consumers can keep destructuring them; runtime
 // behaviour is unchanged.
+//
+// AI-CONTEXT: manual Proxy type extension. The cast asserts methods exist on
+// the runtime Proxy that the static `authClient` type does not expose. A
+// rename or drop of those plugin endpoints in Better Auth surfaces only at
+// runtime (TS still type-checks). When upgrading Better Auth, smoke-test the
+// password-reset flow end-to-end before trusting the type extension.
 const typedAuthClient = authClient as typeof authClient & {
   requestPasswordReset: (args: {
     email: string;

@@ -147,6 +147,12 @@ function toLocalISODate(d = new Date()) {
 
 // ─── Finyk ───────────────────────────────────────────────────────────────
 
+// AI-CONTEXT: bypasses `createModuleStorage()` and writes the raw LS key
+// directly. The FTUX preset needs a synchronous flush so the user sees the
+// seeded entry on the very first Finyk render — `createModuleStorage` adds a
+// debounce that would race the navigation. Rename `FINYK_MANUAL_EXPENSES_KEY`
+// here AND in `apps/web/src/core/modules/finyk/storage.ts` together; a drift
+// silently breaks preset seeding.
 function applyFinykPreset(preset: FinykPreset) {
   const existing = safeReadLS(FINYK_MANUAL_EXPENSES_KEY, []);
   const list = Array.isArray(existing) ? existing : [];
