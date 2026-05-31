@@ -4,6 +4,7 @@ import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 import { LogCard } from "../components/LogCard";
+import { newMealId } from "../lib/mealId";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
 import type { EditingMealState } from "../hooks/useNutritionUiState";
 
@@ -32,7 +33,7 @@ export function NutritionLogPage({
           log.setAddMealSheetOpen(true);
         }}
         onAddMealFromSearch={(meal) => {
-          const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const id = newMealId();
           log.handleAddMeal({ ...meal, id });
         }}
         onRemoveMeal={(date: string, meal: Meal) => {

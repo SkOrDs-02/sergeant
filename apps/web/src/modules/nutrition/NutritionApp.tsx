@@ -52,6 +52,7 @@ import { useNutritionRecipeCache } from "./hooks/useNutritionRecipeCache";
 import { useNutritionPrefsState } from "./hooks/useNutritionPrefsState";
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
+import { newMealId } from "./lib/mealId";
 import { useToast } from "@shared/hooks/useToast";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 
@@ -143,18 +144,31 @@ export default function NutritionApp({
     };
   }, []);
 
-  // First-run jump to the canonical goal surface. Runs once after
-  // mount so a user mid-session who clears the seen flag does not
-  // get re-routed away from whatever page they were on. Skipped when
-  // a `pwaAction` is already routing the user (e.g. `add_meal`,
-  // `add_meal_photo`) so the action target wins.
+  // First-run jump to the canonical goal surface. Fires the first
+  // time `firstRunNutrition` resolves truthy after mount — depending
+  // on the flag (rather than `[]`) avoids a stale-closure race when
+  // `useModuleFirstRun` flips asynchronously after the SQLite read.
+  // A ref guard keeps the routing one-shot so a user mid-session who
+  // clears the seen flag does not get re-routed away from whatever
+  // page they were on. Skipped when a `pwaAction` is already routing
+  // the user (e.g. `add_meal`, `add_meal_photo`) so the action target
+  // wins (audit F19).
+  const firstRunJumpDoneRef = useRef(false);
   useEffect(() => {
+    if (firstRunJumpDoneRef.current) return;
     if (!firstRunNutrition) return;
     if (pwaAction === "add_meal" || pwaAction === "add_meal_photo") return;
+    firstRunJumpDoneRef.current = true;
     if (activePage !== "menu") setActivePageAndHash("menu");
     if (menuSubTab !== "plan") setMenuSubTab("plan");
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount; subsequent edits to firstRun must not retrigger
-  }, []);
+  }, [
+    firstRunNutrition,
+    pwaAction,
+    activePage,
+    menuSubTab,
+    setActivePageAndHash,
+    setMenuSubTab,
+  ]);
 
   useNutritionPwaAction({
     pwaAction,
@@ -368,7 +382,7 @@ export default function NutritionApp({
               : "snack";
       const mealLabel =
         MEAL_TYPES.find((m) => m.id === mealTypeId)?.label || "Прийом їжі";
-      const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      const id = newMealId();
       const meal: Meal = {
         id,
         name: chip.label,
@@ -475,139 +489,139 @@ export default function NutritionApp({
           onOpenSettings={onOpenSettings}
         />
 
-      <PullToRefresh
-        onRefresh={handlePullRefresh}
-        onError={handlePullRefreshError}
-        variant="nutrition"
-        enabled={!cloudPullPending}
-      >
-        <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
-          <NutritionPantrySelector pantry={pantry} busy={busy} />
+        <PullToRefresh
+          onRefresh={handlePullRefresh}
+          onError={handlePullRefreshError}
+          variant="nutrition"
+          enabled={!cloudPullPending}
+        >
+          <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
+            <NutritionPantrySelector pantry={pantry} busy={busy} />
 
-          {statusText && <Banner className="mb-4">{statusText}</Banner>}
-          {err && (
-            <Banner variant="danger" className="mb-4">
-              {err}
-            </Banner>
-          )}
-          {storageBanner && (
-            <Banner variant="warning" className="mb-4">
-              {storageBanner}
-            </Banner>
-          )}
-
-          <div className="grid gap-4">
-            {activePage === "start" && (
-              <NutritionStartPage
-                log={log}
-                photo={photo}
-                prefs={prefs}
-                busy={busy}
-                setActivePageAndHash={setActivePageAndHash}
-                fetchDayHint={fetchDayHint}
-                dayHintText={dayHintText}
-                dayHintBusy={dayHintBusy}
-                scheduleTransient={scheduleTransient}
-                photoCardForceOpen={photoCardForceOpen}
-                setPhotoCardForceOpen={setPhotoCardForceOpen}
-                onSaveToLog={handleSaveToLog}
-                pantryItems={pantry.effectiveItems}
-                onQuickAddMeal={handleQuickAddMealFromChip}
-              />
+            {statusText && <Banner className="mb-4">{statusText}</Banner>}
+            {err && (
+              <Banner variant="danger" className="mb-4">
+                {err}
+              </Banner>
+            )}
+            {storageBanner && (
+              <Banner variant="warning" className="mb-4">
+                {storageBanner}
+              </Banner>
             )}
 
-            {activePage === "pantry" && (
-              <NutritionPantryPage
-                pantry={pantry}
-                shopping={shopping}
-                recipes={recipes}
-                weekPlan={weekPlan}
-                shoppingBusy={shoppingBusy}
-                busy={busy}
-                pantrySubTab={pantrySubTab}
-                setPantrySubTab={(id) => setPantrySubTab(id as PantrySubTab)}
-                pantryScanStatus={pantryScanStatus}
-                setPantryScanStatus={setPantryScanStatus}
-                setPantryScannerOpen={setPantryScannerOpen}
-                toast={toast}
-                generateShoppingList={generateShoppingList}
-                addCheckedItemsToPantry={addCheckedItemsToPantry}
-              />
-            )}
+            <div className="grid gap-4">
+              {activePage === "start" && (
+                <NutritionStartPage
+                  log={log}
+                  photo={photo}
+                  prefs={prefs}
+                  busy={busy}
+                  setActivePageAndHash={setActivePageAndHash}
+                  fetchDayHint={fetchDayHint}
+                  dayHintText={dayHintText}
+                  dayHintBusy={dayHintBusy}
+                  scheduleTransient={scheduleTransient}
+                  photoCardForceOpen={photoCardForceOpen}
+                  setPhotoCardForceOpen={setPhotoCardForceOpen}
+                  onSaveToLog={handleSaveToLog}
+                  pantryItems={pantry.effectiveItems}
+                  onQuickAddMeal={handleQuickAddMealFromChip}
+                />
+              )}
 
-            {activePage === "log" && (
-              <NutritionLogPage
-                log={log}
-                toast={toast}
-                setEditingMeal={setEditingMeal}
-              />
-            )}
+              {activePage === "pantry" && (
+                <NutritionPantryPage
+                  pantry={pantry}
+                  shopping={shopping}
+                  recipes={recipes}
+                  weekPlan={weekPlan}
+                  shoppingBusy={shoppingBusy}
+                  busy={busy}
+                  pantrySubTab={pantrySubTab}
+                  setPantrySubTab={(id) => setPantrySubTab(id as PantrySubTab)}
+                  pantryScanStatus={pantryScanStatus}
+                  setPantryScanStatus={setPantryScanStatus}
+                  setPantryScannerOpen={setPantryScannerOpen}
+                  toast={toast}
+                  generateShoppingList={generateShoppingList}
+                  addCheckedItemsToPantry={addCheckedItemsToPantry}
+                />
+              )}
 
-            {activePage === "menu" && (
-              <NutritionMenuPage
-                menuSubTab={menuSubTab}
-                setMenuSubTab={(id) => setMenuSubTab(id as MenuSubTab)}
-                pantry={pantry}
-                prefs={prefs}
-                setPrefs={setPrefs}
-                busy={busy}
-                err={err}
-                dayPlan={dayPlan}
-                dayPlanBusy={dayPlanBusy}
-                dayPlanQuery={dayPlanQuery}
-                dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
-                fetchDayPlan={fetchDayPlan}
-                addMealFromPlan={addMealFromPlan}
-                weekPlan={weekPlan}
-                weekPlanRaw={weekPlanRaw}
-                weekPlanBusy={weekPlanBusy}
-                fetchWeekPlan={fetchWeekPlan}
-                firstRunHint={firstRunNutritionActive}
-                onDismissFirstRunHint={() => {
-                  markNutritionSeen();
-                  setFirstRunNutritionSurface(false);
-                }}
-                recommendRecipes={recommendRecipes}
-                recipes={recipes}
-                recipesTried={recipesTried}
-                recipesRaw={recipesRaw}
-                recipeCacheEntry={recipeCacheEntry}
-                wrappedSaveMeal={wrappedSaveMeal}
-                selectedDate={log.selectedDate}
-              />
-            )}
+              {activePage === "log" && (
+                <NutritionLogPage
+                  log={log}
+                  toast={toast}
+                  setEditingMeal={setEditingMeal}
+                />
+              )}
+
+              {activePage === "menu" && (
+                <NutritionMenuPage
+                  menuSubTab={menuSubTab}
+                  setMenuSubTab={(id) => setMenuSubTab(id as MenuSubTab)}
+                  pantry={pantry}
+                  prefs={prefs}
+                  setPrefs={setPrefs}
+                  busy={busy}
+                  err={err}
+                  dayPlan={dayPlan}
+                  dayPlanBusy={dayPlanBusy}
+                  dayPlanQuery={dayPlanQuery}
+                  dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
+                  fetchDayPlan={fetchDayPlan}
+                  addMealFromPlan={addMealFromPlan}
+                  weekPlan={weekPlan}
+                  weekPlanRaw={weekPlanRaw}
+                  weekPlanBusy={weekPlanBusy}
+                  fetchWeekPlan={fetchWeekPlan}
+                  firstRunHint={firstRunNutritionActive}
+                  onDismissFirstRunHint={() => {
+                    markNutritionSeen();
+                    setFirstRunNutritionSurface(false);
+                  }}
+                  recommendRecipes={recommendRecipes}
+                  recipes={recipes}
+                  recipesTried={recipesTried}
+                  recipesRaw={recipesRaw}
+                  recipeCacheEntry={recipeCacheEntry}
+                  wrappedSaveMeal={wrappedSaveMeal}
+                  selectedDate={log.selectedDate}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </PullToRefresh>
+        </PullToRefresh>
 
-      <NutritionBottomNav
-        activePage={activePage}
-        setActivePage={(id) => setActivePageAndHash(id as NutritionPage)}
-      />
+        <NutritionBottomNav
+          activePage={activePage}
+          setActivePage={(id) => setActivePageAndHash(id as NutritionPage)}
+        />
 
-      <NutritionOverlays
-        pantry={pantry}
-        log={log}
-        busy={busy}
-        pantryScannerOpen={pantryScannerOpen}
-        setPantryScannerOpen={setPantryScannerOpen}
-        handlePantryBarcodeDetected={handlePantryBarcodeDetected}
-        editingMeal={editingMeal}
-        setEditingMeal={setEditingMeal}
-        wrappedSaveMeal={wrappedSaveMeal}
-        prefs={prefs}
-        setPrefs={setPrefs}
-        backupPasswordDialog={backupPasswordDialog}
-        setBackupPasswordDialog={setBackupPasswordDialog}
-        handleBackupPasswordConfirm={handleBackupPasswordConfirm}
-        restoreConfirm={restoreConfirm}
-        setRestoreConfirm={setRestoreConfirm}
-        applyRestorePayload={applyRestorePayload}
-        onRequestMealPhoto={handleRequestMealPhoto}
-      />
+        <NutritionOverlays
+          pantry={pantry}
+          log={log}
+          busy={busy}
+          pantryScannerOpen={pantryScannerOpen}
+          setPantryScannerOpen={setPantryScannerOpen}
+          handlePantryBarcodeDetected={handlePantryBarcodeDetected}
+          editingMeal={editingMeal}
+          setEditingMeal={setEditingMeal}
+          wrappedSaveMeal={wrappedSaveMeal}
+          prefs={prefs}
+          setPrefs={setPrefs}
+          backupPasswordDialog={backupPasswordDialog}
+          setBackupPasswordDialog={setBackupPasswordDialog}
+          handleBackupPasswordConfirm={handleBackupPasswordConfirm}
+          restoreConfirm={restoreConfirm}
+          setRestoreConfirm={setRestoreConfirm}
+          applyRestorePayload={applyRestorePayload}
+          onRequestMealPhoto={handleRequestMealPhoto}
+        />
 
-      {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
-      <AIPill module="nutrition" />
+        {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
+        <AIPill module="nutrition" />
       </MeshBackground>
     </ModuleAccentProvider>
   );

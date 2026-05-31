@@ -31,6 +31,7 @@ import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
 import { MEAL_TYPES } from "../lib/mealTypes";
+import { newMealId } from "../lib/mealId";
 
 interface RecipeLike {
   id?: string;
@@ -181,7 +182,7 @@ export function RecipesCard({
       ? `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
       : "";
     await addMealToLog({
-      id: `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: newMealId(),
       time,
       mealType,
       label,

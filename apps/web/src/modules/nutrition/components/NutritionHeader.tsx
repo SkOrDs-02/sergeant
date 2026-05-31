@@ -10,8 +10,7 @@ function AppleBadge() {
     <div
       className={cn(
         "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
-        "bg-linear-to-br from-lime-100 to-green-100",
-        "dark:from-lime-900/40 dark:to-green-900/30",
+        "bg-nutrition-soft dark:bg-nutrition/15",
         "text-nutrition-strong dark:text-nutrition",
         "border border-nutrition-soft-border/60",
         "shadow-sm",

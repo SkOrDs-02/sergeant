@@ -13,6 +13,12 @@ export const NUTRITION_PANTRIES_KEY = "nutrition_pantries_v1";
 export const NUTRITION_ACTIVE_PANTRY_KEY = "nutrition_active_pantry_v1";
 export const NUTRITION_PREFS_KEY = "nutrition_prefs_v1";
 export const NUTRITION_LOG_KEY = "nutrition_log_v1";
+/**
+ * Per-tab sessionStorage cache for AI-generated recipes (Menu → recipes sub-tab).
+ * Stored as `Record<cacheKey, RecipeCacheEntry>` JSON blob; values keyed by
+ * `buildRecipeCacheKey(...)` from `apps/web/.../lib/recipeCache.ts`.
+ */
+export const NUTRITION_RECIPES_CACHE_KEY = "nutrition_recipes_cache_v1";
 
 export type NutritionGoal = string;
 export type MealMacroSource = "manual" | "productDb" | "photoAI" | "recipeAI";

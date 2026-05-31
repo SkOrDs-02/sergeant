@@ -1,6 +1,31 @@
+import { NUTRITION_RECIPES_CACHE_KEY } from "@sergeant/nutrition-domain";
+
 import { normalizeFoodName } from "./pantryTextParser";
 
-const STORAGE_KEY = "nutrition_recipes_cache_v1";
+/**
+ * Recipe cache lives in `sessionStorage` (per-tab) by design — AI-generated
+ * recipes are throwaway suggestions tied to the current pantry exploration
+ * session. `@shared/storage` is currently `localStorage`-only (Stage 9);
+ * a `webSessionKVStore` adapter is tracked separately. Until then, route
+ * all three session-storage touches through these helpers so quota /
+ * blocked-by-extension failures collapse to a single try/catch point
+ * (audit F9 — docs/audits/2026-05-13-page-audit-08-nutrition.md).
+ */
+function safeReadSessionRaw(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeWriteSessionRaw(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* quota / private mode / blocked-by-extension — swallow */
+  }
+}
 
 function shortHash(str: string): string {
   let h = 2166136261;
@@ -46,9 +71,9 @@ export function buildRecipeCacheKey(
 export function readRecipeCache<TRecipe = unknown>(
   cacheKey: string,
 ): RecipeCacheEntry<TRecipe> | null {
+  const raw = safeReadSessionRaw(NUTRITION_RECIPES_CACHE_KEY);
+  if (!raw) return null;
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
     const all = JSON.parse(raw);
     if (!all || typeof all !== "object") return null;
     const entry = (all as Record<string, unknown>)[cacheKey] as
@@ -69,26 +94,28 @@ export function writeRecipeCache<TRecipe = unknown>(
   cacheKey: string,
   { recipes, recipesRaw }: { recipes: TRecipe[]; recipesRaw?: string },
 ): void {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    let all: Record<string, RecipeCacheEntry<TRecipe>> = {};
-    if (raw) {
-      try {
-        all = (JSON.parse(raw) || {}) as Record<
-          string,
-          RecipeCacheEntry<TRecipe>
-        >;
-      } catch {
-        all = {};
-      }
+  const raw = safeReadSessionRaw(NUTRITION_RECIPES_CACHE_KEY);
+  let all: Record<string, RecipeCacheEntry<TRecipe>> = {};
+  if (raw) {
+    try {
+      all = (JSON.parse(raw) || {}) as Record<
+        string,
+        RecipeCacheEntry<TRecipe>
+      >;
+    } catch {
+      all = {};
     }
-    all[cacheKey] = {
-      recipes,
-      recipesRaw: recipesRaw || "",
-      savedAt: Date.now(),
-    };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  } catch {
-    /* ignore */
   }
+  all[cacheKey] = {
+    recipes,
+    recipesRaw: recipesRaw || "",
+    savedAt: Date.now(),
+  };
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(all);
+  } catch {
+    return;
+  }
+  safeWriteSessionRaw(NUTRITION_RECIPES_CACHE_KEY, serialized);
 }

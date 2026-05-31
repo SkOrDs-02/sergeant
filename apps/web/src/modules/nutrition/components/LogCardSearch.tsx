@@ -8,6 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { searchMealsByName } from "../lib/nutritionStorage";
+import { newMealId } from "../lib/mealId";
 import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
 
 interface LogCardSearchProps {
@@ -100,7 +101,7 @@ export function LogCardSearch({
                   className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
                   onClick={() => {
                     onAddMealFromSearch?.({
-                      id: `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                      id: newMealId(),
                       time: "",
                       name: meal.name,
                       mealType: meal.mealType,

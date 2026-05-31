@@ -14,6 +14,7 @@ import type {
 import { formatNutritionError } from "../lib/nutritionErrors";
 import { writeRecipeCache } from "../lib/recipeCache";
 import { stableRecipeId } from "../lib/recipeIds";
+import { newMealId } from "../lib/mealId";
 import { getDayMacros, getDaySummary } from "../lib/nutritionStorage";
 import type { Meal, NutritionLogLike } from "../lib/nutritionStorage";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -479,7 +480,7 @@ export function useNutritionRemoteActions({
   }
   const addMealFromPlan = useCallback(
     (meal: PlanMealInput) => {
-      const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const id = newMealId();
       const typeLabels: Record<string, string> = {
         breakfast: "Сніданок",
         lunch: "Обід",
