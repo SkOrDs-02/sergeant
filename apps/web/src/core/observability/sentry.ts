@@ -310,8 +310,16 @@ export async function initSentry() {
     release: import.meta.env.VITE_SENTRY_RELEASE,
     integrations: [
       mod.browserTracingIntegration(),
+      // PII roast 2026-05-13 §F3 (errors-pwa-marketing): Sentry defaults
+      // only mask password/email/tel/number inputs; free-text in <div> /
+      // <input type="text"> / <textarea> (AI-chat composer, Фінік notes,
+      // nutrition diary, onboarding) is captured verbatim. With
+      // `replaysOnErrorSampleRate: 1.0` every error uploads a 30 s window
+      // of plaintext — explicit maskAllText + maskAllInputs + blockAllMedia
+      // close the leak (docs/security/pii-handling.md).
       mod.replayIntegration({
-        maskAllText: false,
+        maskAllText: true,
+        maskAllInputs: true,
         blockAllMedia: true,
       }),
     ],

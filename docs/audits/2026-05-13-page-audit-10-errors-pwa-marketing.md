@@ -86,6 +86,8 @@ This is a confidentiality breach for any multi-tenant device usage. Finik transa
 
 ### F3 — Sentry Session Replay records text without `maskAllText: true` [severity: high] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — `initSentry()` тепер передає `replayIntegration({ maskAllText: true, maskAllInputs: true, blockAllMedia: true })`. Free-text content (AI-chat composer, Фінік notes, nutrition diary, onboarding) маскується перед аплоадом. Додано regression-тест у `sentry.test.ts`, який зчитує `replayIntegration.mock.calls[0][0]` і фіксує всі три прапорці.
+
 **Page:** Observability
 **File:** `apps/web/src/core/observability/sentry.ts`
 **Lines:** L241–L293 (`initSentry`)

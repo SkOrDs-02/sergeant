@@ -103,6 +103,20 @@ describe("initSentry", () => {
     expect(cfg.tracesSampleRate).toBeUndefined();
   });
 
+  it("маскує free-text у Session Replay (audit 2026-05-13 §F3)", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+    expect(replayIntegration).toHaveBeenCalledTimes(1);
+    const opts = replayIntegration.mock.calls[0]?.[0] as {
+      maskAllText?: boolean;
+      maskAllInputs?: boolean;
+      blockAllMedia?: boolean;
+    };
+    expect(opts.maskAllText).toBe(true);
+    expect(opts.maskAllInputs).toBe(true);
+    expect(opts.blockAllMedia).toBe(true);
+  });
+
   it("реєструє beforeSend, який рекурсивно скрабить PII (audit 2026-05-13)", async () => {
     const { initSentry } = await import("./sentry");
     await initSentry();
