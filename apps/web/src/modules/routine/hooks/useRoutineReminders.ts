@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { logger } from "@shared/lib";
 import {
   safeListLSKeys,
   safeReadStringLS,
@@ -52,10 +53,14 @@ async function showNotification(
       });
       return;
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("[routine.reminders] sw-show-failed", err);
+  }
   try {
     new Notification(title, { body, tag, requireInteraction: false });
-  } catch {}
+  } catch (err) {
+    logger.warn("[routine.reminders] notification-ctor-failed", err);
+  }
 }
 
 function sendRoutineStateToSW(routine: RoutineState): void {
@@ -70,11 +75,82 @@ function sendRoutineStateToSW(routine: RoutineState): void {
         prefs: routine.prefs,
       },
     });
-  } catch {}
+  } catch (err) {
+    logger.warn("[routine.reminders] sw-state-postmessage-failed", err);
+  }
+}
+
+function readNotificationPermission(): NotificationPermission | "unsupported" {
+  if (typeof Notification === "undefined") return "unsupported";
+  return Notification.permission;
+}
+
+/**
+ * Audit F8: відстежує runtime `Notification.permission` через
+ * Permissions API change-event + fallback на `visibilitychange`/`focus`,
+ * щоб scheduler коректно стопився на revoke і рестартував на re-grant.
+ */
+function useNotificationPermission(): NotificationPermission | "unsupported" {
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">(() =>
+    readNotificationPermission(),
+  );
+
+  useEffect(() => {
+    if (typeof Notification === "undefined") return undefined;
+    let disposed = false;
+    const sync = () => {
+      if (disposed) return;
+      const next = readNotificationPermission();
+      setPerm((prev) => (prev === next ? prev : next));
+    };
+
+    sync();
+
+    let permStatus: PermissionStatus | null = null;
+    const onPermChange = () => sync();
+    try {
+      const permissions = navigator.permissions;
+      if (permissions && typeof permissions.query === "function") {
+        permissions
+          .query({ name: "notifications" as PermissionName })
+          .then((status) => {
+            if (disposed) return;
+            permStatus = status;
+            status.addEventListener("change", onPermChange);
+            sync();
+          })
+          .catch(() => {
+            /* Permissions API недоступна — лишається fallback */
+          });
+      }
+    } catch {
+      /* Safari старіших версій кидає на name="notifications" — fallback */
+    }
+
+    const onVisibility = () => sync();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onVisibility);
+
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onVisibility);
+      if (permStatus) {
+        try {
+          permStatus.removeEventListener("change", onPermChange);
+        } catch {
+          /* noop */
+        }
+      }
+    };
+  }, []);
+
+  return perm;
 }
 
 export function useRoutineReminders(routine: RoutineState): void {
   const enabled = routine.prefs?.routineRemindersEnabled === true;
+  const permission = useNotificationPermission();
   const routineRef = useRef<RoutineState>(routine);
   routineRef.current = routine;
 
@@ -88,6 +164,7 @@ export function useRoutineReminders(routine: RoutineState): void {
 
   useEffect(() => {
     if (!enabled) return undefined;
+    if (permission !== "granted") return undefined;
     let timerId: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
 
@@ -127,7 +204,9 @@ export function useRoutineReminders(routine: RoutineState): void {
               data: { storageKey },
             });
           }
-        } catch {}
+        } catch (err) {
+          logger.warn("[routine.reminders] sw-sent-postmessage-failed", err);
+        }
       }
 
       scheduleNext();
@@ -147,7 +226,7 @@ export function useRoutineReminders(routine: RoutineState): void {
       disposed = true;
       if (timerId) clearTimeout(timerId);
     };
-  }, [enabled]);
+  }, [enabled, permission]);
 }
 
 export async function requestRoutineNotificationPermission() {
@@ -156,7 +235,8 @@ export async function requestRoutineNotificationPermission() {
   if (Notification.permission === "denied") return "denied";
   try {
     return await Notification.requestPermission();
-  } catch {
+  } catch (err) {
+    logger.warn("[routine.reminders] request-permission-failed", err);
     return "denied";
   }
 }

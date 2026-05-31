@@ -141,6 +141,8 @@ Replace the regex with `parseDateKey(q)` round-trip validation: if `dateKeyFromD
 
 ### F7 — `useRoutineReminders` swallows every error via empty `catch {}` [severity: high] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — чотири порожні `catch {}` замінено на `logger.warn` з префіксами `[routine.reminders] *-failed` (SW `showNotification`, нативний `Notification` fallback, `ROUTINE_STATE_UPDATE`/`ROUTINE_NOTIFICATION_SENT` postMessage, `Notification.requestPermission`). У production шлях іде через Sentry breadcrumbs (`logger.warn` з `@shared/lib`); у DEV — `console.warn`.
+
 **Page:** Routine module / Reminders hook
 **File:** `apps/web/src/modules/routine/hooks/useRoutineReminders.ts`
 **Lines:** L43–L59 (showNotification), L62–L74 (sendRoutineStateToSW), L123–L130 (SW postMessage), L155–L160 (requestRoutineNotificationPermission)
@@ -157,6 +159,8 @@ Each catch should at minimum call `logError("routine.reminders.notify-failed", e
 ---
 
 ### F8 — `useRoutineReminders` scheduler is bound only to `enabled` flag; runtime permission flips are ignored [severity: medium] [perspective: bug]
+
+> ✅ **Closed 2026-05-31** — додано `useNotificationPermission` хук: підписка на `navigator.permissions.query({ name: "notifications" })` change-event + fallback `visibilitychange`/`focus`. Стан permission тепер у deps scheduler-ефекту — revoke зупиняє цикл, re-grant автоматично рестартує без перезавантаження SPA.
 
 **Page:** Routine module / Reminders hook
 **File:** `apps/web/src/modules/routine/hooks/useRoutineReminders.ts`
