@@ -18,6 +18,8 @@
 
 ### F1 — `HubReports` дублює хардкоднуті ключі замість `STORAGE_KEYS` [severity: high] [perspective: rule]
 
+> 🟡 **Closed partially 2026-05-31** — після split-out `HubReports` оригінального блоку немає. Залишковий літерал `"fizruk_workouts_v1"` у `apps/web/src/core/hub/FitnessCard.tsx:188` замінено на `STORAGE_KEYS.FIZRUK_WORKOUTS`. Решта (ExpensesCard `finyk_tx_cache`, RoutineCard `hub_routine_v1`, NutritionCard `nutrition_log_v1`, `search/searchSources.ts`, `useFinykHubPreview.ts`) лишається open — потрібен окремий sweep + lint-правило.
+
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
 **Lines:** L24–L60 (раніше згаданий блок `useReportData`)

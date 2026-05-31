@@ -4,6 +4,7 @@
  * the Reports page can show this card without blocking on other domains.
  */
 import { useMemo, useState } from "react";
+import { STORAGE_KEYS } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
@@ -185,7 +186,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   );
 
   const { cur, prev, dates } = useMemo(() => {
-    const rawWorkouts = safeReadStringLS("fizruk_workouts_v1");
+    const rawWorkouts = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);
