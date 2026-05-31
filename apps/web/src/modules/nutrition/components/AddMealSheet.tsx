@@ -26,6 +26,7 @@ import type {
   PantryItem,
 } from "@sergeant/nutrition-domain";
 import { MEAL_TYPES } from "../lib/mealTypes";
+import { newMealId } from "../lib/mealId";
 import { ensureSeedFoods } from "../lib/foodDb/foodDb";
 import { BarcodeScanner } from "./BarcodeScanner";
 import {
@@ -152,9 +153,7 @@ export function AddMealSheet({
       // there are no sources to pick from (no templates, no pre-fill, no
       // photo) — the "source" step would be a pointless click-through.
       const autoSkip =
-        !initialMeal?.id &&
-        !photoResult &&
-        mealTemplates.length === 0;
+        !initialMeal?.id && !photoResult && mealTemplates.length === 0;
       const initialStep =
         initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
       skippedSourceRef.current = autoSkip && initialStep === "fill";
@@ -235,9 +234,7 @@ export function AddMealSheet({
           ? "productDb"
           : "manual";
     onSave({
-      id:
-        initialMeal?.id ||
-        `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: initialMeal?.id || newMealId(),
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,
