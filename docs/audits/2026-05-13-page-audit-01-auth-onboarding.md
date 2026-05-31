@@ -326,6 +326,8 @@ Promote to `<Button variant="secondary" size="sm">{ctaLabel}</Button>` so the 44
 
 ### F13 — ReEngagementCard pluralization breaks for 11–14 [severity: medium] [perspective: i18n/bug]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Замінено naive ladder (`=== 1 ? "день" : < 5 ? "дні" : "днів"`) на `pluralDays(daysInactive)` з `@sergeant/shared/utils/ukrainianPlural`. Helper уже існує з CLDR-rules + tests (`ukrainianPlural.test.ts` покриває 1/21/101 → "день", 22/32 → "дні", 11/12 → "днів"). Bug на 21/22/31/32 закрито без додавання нової залежності на `Intl.PluralRules`.
+
 **Page:** Hub (ReEngagementCard)
 **File:** `apps/web/src/core/onboarding/ReEngagementCard.tsx`
 **Lines:** L38–L42

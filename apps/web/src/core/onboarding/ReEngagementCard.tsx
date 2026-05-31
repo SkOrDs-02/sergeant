@@ -6,7 +6,7 @@ import { useCallback, useEffect } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { markReengagementShown } from "@sergeant/shared";
+import { markReengagementShown, pluralDays } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 export function ReEngagementCard({
@@ -40,9 +40,8 @@ export function ReEngagementCard({
         <div className="space-y-1">
           <h3 className="text-base font-bold text-text">Давно не бачились!</h3>
           <p className="text-xs text-muted leading-relaxed max-w-xs">
-            Тебе не було {daysInactive}{" "}
-            {daysInactive === 1 ? "день" : daysInactive < 5 ? "дні" : "днів"}.
-            Все збережено — продовжуй звідки зупинився.
+            Тебе не було {daysInactive} {pluralDays(daysInactive)}. Все
+            збережено — продовжуй звідки зупинився.
           </p>
         </div>
         <div className="flex items-center gap-2">

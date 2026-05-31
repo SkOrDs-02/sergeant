@@ -532,6 +532,8 @@ aria-label={
 
 ### F15 — Non-null assertions у `adaptiveSort.ts` обходять `noUncheckedIndexedAccess` [severity: low] [perspective: ts]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `for (let i = 0; i < order.length; i++) { const id = order[i]; … id! }` замінено на `for (const [i, id] of order.entries()) { … }`. `.entries()` гарантовано повертає визначений `id` без assertion. Тип `severityByModule[id]` (`Partial<Record<ModuleId, RecSeverity | undefined>>`) узгоджений із `signalScore(severity?: RecSeverity | undefined)` сигнатурою — undefined тут не баг, очікуваний шлях. `noUncheckedIndexedAccess` тепер не потребує bypass.
+
 **Page:** Adaptive sort engine
 **File:** `apps/web/src/core/hub/dashboard/adaptiveSort.ts`
 **Lines:** L183–L196, L213
