@@ -85,6 +85,8 @@ function BarChart({
             <button
               key={dates[i]}
               type="button"
+              aria-label={formatTooltip(dates[i] ?? "", v)}
+              aria-pressed={isSelected}
               className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
               onClick={() => setSelected(isSelected ? null : i)}
             >

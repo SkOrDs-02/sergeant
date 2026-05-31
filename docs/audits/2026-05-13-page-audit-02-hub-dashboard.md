@@ -55,6 +55,8 @@ const rawNutritionLog = safeReadLS(STORAGE_KEYS.NUTRITION_LOG, {});
 
 ### F2 — BarChart bar-buttons без accessible name [severity: high] [perspective: a11y]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Після Sprint 2 0017 split `BarChart` компонент скопіювався у 4 module cards: `ExpensesCard.tsx`, `FitnessCard.tsx`, `NutritionCard.tsx`, `RoutineCard.tsx`. На кожному `<button>` додано `aria-label={formatTooltip(date, value)}` (формат `"31.05: 1 250 ₴"`) + `aria-pressed={isSelected}`. WCAG 4.1.2 виконано. Окремий root-level `BarChart` у `HubReports.tsx` більше не існує — splittout-консолідація закрила початковий scope.
+
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
 **Lines:** L92–L141 (`BarChart` component)
