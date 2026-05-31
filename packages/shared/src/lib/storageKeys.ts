@@ -30,6 +30,7 @@ export const STORAGE_KEYS = {
   ROUTINE_MAIN_TAB: "hub_routine_main_tab_v1",
   NUTRITION_MAIN_TAB: "hub_nutrition_main_tab_v1",
   ONBOARDING_DONE: "hub_onboarding_done_v1",
+  FTUX_MODULES_HINT_DISMISSED: "sergeant.hub.ftuxModulesHint.dismissed.v1",
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
   USER_PROFILE: "hub_user_profile_v1",
