@@ -173,6 +173,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 ### F10 — Search dialog (`HubSearch`) has no focus trap; only Esc is bound [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `HubSearch` тепер обгорнуто `useDialogFocusTrap(true, panelRef)` — Tab/Shift-Tab циклічно ходять у межах палети, початковий фокус приземляється всередину overlay, попередньо сфокусований елемент відновлюється після закриття (WCAG 2.4.3). `onEscape` навмисно не передається: `useSearchEngine` вже слухає Escape на `document`, інакше `onClose` викликався б двічі. Хук завезений тим самим патерном, що `HubChatHistoryDrawer` і `Modal`.
+
 **Page:** `HubSearch`
 **File:** `apps/web/src/core/hub/search/HubSearch.tsx` and `apps/web/src/core/hub/search/useSearchEngine.ts`
 **Lines:** `HubSearch.tsx:30–L71`, `useSearchEngine.ts:73–L75`

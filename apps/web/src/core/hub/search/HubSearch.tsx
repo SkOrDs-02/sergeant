@@ -1,8 +1,10 @@
+import { useRef } from "react";
 import { InlineAiRail } from "./InlineAiRail";
 import { SearchInput } from "./SearchInput";
 import { SearchResults } from "./SearchResults";
 import { useSearchEngine } from "./useSearchEngine";
 import { messages } from "@shared/i18n/uk";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 
 export interface HubSearchProps {
   onClose: () => void;
@@ -21,14 +23,23 @@ export interface HubSearchProps {
  * The shell owns nothing beyond the dialog overlay and wiring; the
  * heavy work lives in `searchSources` (per-module localStorage parsers
  * and scoring).
+ *
+ * Focus is contained via `useDialogFocusTrap` so Tab/Shift-Tab cycle
+ * within the palette (WCAG 2.4.3, audit 03 § F10). Escape closure stays
+ * with `useSearchEngine`'s document-level handler — passing `onEscape`
+ * here would call `onClose` twice on every Esc.
  */
 export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   const engine = useSearchEngine({ onClose, onOpenModule });
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useDialogFocusTrap(true, panelRef);
 
   const activeHit = engine.flat[engine.activeIdx];
 
   return (
     <div
+      ref={panelRef}
       className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb page-enter"
       role="dialog"
       aria-modal="true"
