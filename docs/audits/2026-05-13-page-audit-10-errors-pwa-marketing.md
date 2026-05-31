@@ -485,6 +485,8 @@ Same threat model as F2 — multi-user device. Even on single-user devices, left
 
 ### F18 — `usePlan.ts` combines `staleTime: 60_000` with `refetchOnWindowFocus: "always"` (contradictory) [severity: low] [perspective: perf]
 
+> ✅ **Closed 2026-05-31** — прибрано `refetchOnWindowFocus: "always"` в `apps/web/src/core/billing/usePlan.ts`; `staleTime: 60_000` тепер реально працює, focus refetches коалесціюються, а webhook-invalidation усе одно тягне свіже після checkout.
+
 **Page:** Billing
 **File:** `apps/web/src/core/billing/usePlan.ts`
 **Lines:** L42–L53

@@ -42,11 +42,10 @@ export function usePlan(): UsePlanResult {
   const query = useQuery({
     queryKey: billingKeys.status,
     queryFn: ({ signal }) => billingApi.status({ signal }),
-    // Plan rarely changes — refresh on focus is enough to catch a fresh
-    // post-checkout webhook without polling the server. Webhook-driven
-    // invalidation lands in a follow-up PR.
+    // Plan rarely changes — 60 s staleTime is enough to coalesce focus
+    // refetches across tabs; webhook-driven invalidation picks up fresh
+    // post-checkout state without polling the server.
     staleTime: 60_000,
-    refetchOnWindowFocus: "always",
     // 401s on unauthenticated callers are expected: fall through to "free"
     // instead of bubbling errors into Pro-only UI.
     retry: false,
