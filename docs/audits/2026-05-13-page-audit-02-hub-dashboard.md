@@ -678,6 +678,8 @@ const txList = Array.isArray(raw) ? raw : isWrappedShape(raw) ? raw.txs : [];
 
 ### F19 — `App.tsx` запускає `useNutritionDualWriteBoot()` без auth-guard [severity: low] [perspective: perf]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Введено `<AuthenticatedNutritionBoot />` (викликає обидва hook-и) + `<NutritionBootGate />` (гейтує через `useAuth().user`). Двофункційна обгортка зберігає Rules of Hooks (gate component завжди викликає 1 hook, child завжди викликає 2). У `AppInner` обидва прямі виклики hook-ів видалені. Signed-out visitors на `/sign-in`, pricing, `/welcome` тепер не запускають hook-bodies. Bundle-lazy split (`React.lazy` на самі imports у `App.tsx`) — окремий follow-up; runtime gating досягнуто.
+
 **Page:** App shell
 **File:** `apps/web/src/core/App.tsx`
 **Lines:** L130–L134 (`AppInner` body, hooks-block)

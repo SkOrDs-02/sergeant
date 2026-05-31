@@ -48,6 +48,23 @@ export default function App() {
   );
 }
 
+// Side-effect-only child rendered exclusively for authenticated users
+// (see F19 in `docs/audits/2026-05-13-page-audit-02-hub-dashboard.md`).
+// Both boot hooks are idempotent at runtime, but moving the calls into
+// a gated child means signed-out visitors on `/sign-in`, pricing or
+// `/welcome` never execute the hook bodies. The imports stay at the
+// top of this file; a full bundle-lazy split is a follow-up.
+function AuthenticatedNutritionBoot() {
+  useNutritionDualWriteBoot();
+  useNutritionSqliteReadBoot();
+  return null;
+}
+
+function NutritionBootGate() {
+  const { user } = useAuth();
+  return user ? <AuthenticatedNutritionBoot /> : null;
+}
+
 function AppInnerWithLock() {
   const appLock = useAppLockContext();
   // Sergeant v2 Phase 7 D5 — HubChat now opens as a bottom-sheet
@@ -70,6 +87,7 @@ function AppInnerWithLock() {
           appLock.finishSetup();
         }}
       />
+      <NutritionBootGate />
       <AppInner />
       <HubChatOverlay />
     </HubChatOverlayProvider>
@@ -146,8 +164,11 @@ function AppInner() {
   // the user has never opened the Nutrition module in this session.
   // Both hooks are idempotent — they latch on `userId` and the
   // module-level `booted` flag in `bootNutritionSqliteReadPath`.
-  useNutritionDualWriteBoot();
-  useNutritionSqliteReadBoot();
+  //
+  // Gated by `user` so that signed-out visitors (sign-in, pricing,
+  // /welcome) never run the hook bodies — see F19 in the hub-dashboard
+  // audit. The imports still live at the top of this file; full
+  // bundle-lazy split is a follow-up.
 
   // Activation v2 web-side capture (audit P1-2). Subscribes to the
   // signed-up time and finyk RQ cache to fire `ACTIVATION_V2_HIT`

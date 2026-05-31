@@ -465,6 +465,8 @@ Replace `writeRaw` / `removeKey` with `safeWriteLS` / `safeRemoveLS`. If string-
 
 ### F18 — CelebrationModal auto-dismiss timer races user input [severity: medium] [perspective: ux/race]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. CelebrationModal живе у `apps/web/src/shared/components/ui/CelebrationModal.tsx` (модернізована copy), `autoCloseMs` — проп (4500–6000 ms по call-site). Додано pause-on-focus + pause-on-hover patterns: timer паузить на `focusin`/`mouseenter`, ресюмить на `focusout`/`mouseleave` із залишковим remaining ms. `focusout` deferred через `queueMicrotask` + `node.contains(document.activeElement)` re-check, щоб не рестартити на internal focus-shifts. Slow readers і SR-юзери більше не отримують modal pulled out from under a mid-tap CTA.
+
 **Page:** Hub (first-entry celebration)
 **File:** `apps/web/src/core/onboarding/CelebrationModal.tsx`
 **Lines:** L113–L120

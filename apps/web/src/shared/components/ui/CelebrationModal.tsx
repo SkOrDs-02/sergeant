@@ -182,16 +182,54 @@ export const CelebrationModal = memo(function CelebrationModal({
     handleClose,
   );
 
-  // Auto-close timer
+  // Auto-close timer. Pauses while focus or hover lives inside the
+  // modal — see F18 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`.
+  // Slow readers and screen-reader users no longer get the modal pulled
+  // out from under a mid-tap CTA at the autoCloseMs deadline.
   useEffect(() => {
     if (!open || !autoCloseMs) return;
-    timerRef.current = setTimeout(() => {
-      handleClose();
-    }, autoCloseMs);
+    const node = modalRef.current;
+    let remainingMs = autoCloseMs;
+    let lastStart = Date.now();
+
+    const start = () => {
+      if (timerRef.current) return;
+      lastStart = Date.now();
+      timerRef.current = setTimeout(() => {
+        handleClose();
+      }, remainingMs);
+    };
+    const pause = () => {
+      if (!timerRef.current) return;
+      clearTimeout(timerRef.current);
+      timerRef.current = undefined;
+      remainingMs = Math.max(0, remainingMs - (Date.now() - lastStart));
+    };
+    // focusout fires on every internal focus-shift; defer the resume so
+    // the next focusin can re-pause before we accidentally restart.
+    const onFocusOut = () => {
+      queueMicrotask(() => {
+        if (node && !node.contains(document.activeElement)) start();
+      });
+    };
+
+    start();
+    if (node) {
+      node.addEventListener("focusin", pause);
+      node.addEventListener("focusout", onFocusOut);
+      node.addEventListener("mouseenter", pause);
+      node.addEventListener("mouseleave", start);
+    }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (node) {
+        node.removeEventListener("focusin", pause);
+        node.removeEventListener("focusout", onFocusOut);
+        node.removeEventListener("mouseenter", pause);
+        node.removeEventListener("mouseleave", start);
+      }
     };
-  }, [open, autoCloseMs, handleClose]);
+  }, [open, autoCloseMs, handleClose, modalRef]);
 
   const handleAction = useCallback(() => {
     onAction?.();
