@@ -28,14 +28,18 @@ export interface HubChatBodyProps {
 
 /**
  * Scrollable message list + inline cancel pill while a request is
- * in flight. Auto-scrolls to bottom on every new message and on the
- * `loading` flip so the typing indicator (and the cancel pill next
- * to it) stay visible.
+ * in flight. Auto-scrolls to bottom on new messages / on the `loading`
+ * flip **only when the user is already stuck near the bottom** — once
+ * they scroll up more than `STICK_THRESHOLD_PX` to re-read history,
+ * streamed deltas no longer yank the view back (F12). Sending a new
+ * user message re-sticks (signal: user just sent → wants to see reply).
  *
  * Якщо `messages.length === 0` — рендерить `<ChatEmpty>` як
  * empty-state-placeholder з 4 chip-suggestion-ами, що префілять
  * composer (PR-26 / §A12).
  */
+const STICK_THRESHOLD_PX = 32;
+
 export function HubChatBody({
   messages,
   loading,
@@ -44,17 +48,30 @@ export function HubChatBody({
   onPickSuggestion,
 }: HubChatBodyProps) {
   const chatRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
+
+  const lastRole = messages[messages.length - 1]?.role;
+  // Re-stick the moment the user sends a new message — they want the reply.
+  if (lastRole === "user") stickToBottomRef.current = true;
 
   useEffect(() => {
-    if (chatRef.current)
+    if (chatRef.current && stickToBottomRef.current)
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [messages, loading]);
+
+  const handleScroll = () => {
+    const el = chatRef.current;
+    if (!el) return;
+    stickToBottomRef.current =
+      el.scrollTop + el.clientHeight >= el.scrollHeight - STICK_THRESHOLD_PX;
+  };
 
   const isEmpty = messages.length === 0 && !loading;
 
   return (
     <div
       ref={chatRef}
+      onScroll={handleScroll}
       className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 min-h-0"
       aria-live="polite"
       aria-relevant="additions"
