@@ -114,7 +114,7 @@ export function HubInsightsPanel({
 }: HubInsightsPanelProps) {
   const [open, setOpen] = useState(false);
 
-  const total = items?.length || 0;
+  const total = items.length;
   if (total === 0) return null;
 
   return (

@@ -634,6 +634,8 @@ Lower-priority polish. Track in next a11y pass.
 
 ### F25 — `ResetPasswordPage` uses `autoFocus` on first input — hostile to SR users [severity: low] [perspective: a11y]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved via option (b) з рекомендації — `autoFocus` (+ `eslint-disable-next-line`) на password Input прибрано, фокус перенесено на `<h2>Новий пароль</h2>` через `headingRef` + `tabIndex={-1}` + `useEffect` (same pattern as `WelcomeOneScreen.tsx:96–100`). SR-юзери тепер чують context heading перед тим, як перейти на перший інпут.
+
 **Page:** ResetPasswordPage
 **File:** `apps/web/src/core/auth/ResetPasswordPage.tsx`
 **Lines:** L144–L145 (`// eslint-disable-next-line jsx-a11y/no-autofocus -- standalone reset page, first required input`)

@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
@@ -109,6 +109,15 @@ export function ResetPasswordPage() {
   const status =
     lastResponse !== undefined ? "done" : isSubmitting ? "sending" : "idle";
 
+  // Heading-focus pattern (same as `WelcomeOneScreen.tsx`) — gives the
+  // SR user the page context before they reach the first input. Replaces
+  // `autoFocus` on the password field, which yanked focus past the
+  // heading (F25 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`).
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
   return (
     // Phase 7 D1 — visual refresh. Pre-module surface, so MeshBackground
     // is mounted without `<ModuleAccentProvider>` (auth is module-agnostic).
@@ -131,7 +140,13 @@ export function ResetPasswordPage() {
           className="space-y-5"
         >
           <div className="text-center">
-            <h2 className="text-style-display-hero text-text">Новий пароль</h2>
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-style-display-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+            >
+              Новий пароль
+            </h2>
             <p className="text-style-body-sm text-subtle mt-2">
               Встанови новий пароль для свого акаунта.
             </p>
@@ -170,8 +185,6 @@ export function ResetPasswordPage() {
                   type="password"
                   placeholder="Мінімум 10 символів"
                   autoComplete="new-password"
-                  // eslint-disable-next-line jsx-a11y/no-autofocus -- standalone reset page, first required input
-                  autoFocus
                   error={!!formState.errors.password}
                   aria-invalid={!!formState.errors.password}
                   aria-describedby={

@@ -792,6 +792,8 @@ const TX_CACHE_LS_KEY = STORAGE_KEYS.FINYK_TX_CACHE;
 
 ### F22 — `HubInsightsPanel.tsx:113` `items?.length || 0` коли `items: Recommendation[]` non-optional [severity: low] [perspective: ts]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. `items?.length || 0` замінено на `items.length`. Optional-chain + `|| 0` був мертвим кодом: тип `items: Recommendation[]` гарантує визначений масив. Behaviour unchanged.
+
 **Page:** Hub Insights Panel
 **File:** `apps/web/src/core/hub/HubInsightsPanel.tsx`
 **Lines:** L113

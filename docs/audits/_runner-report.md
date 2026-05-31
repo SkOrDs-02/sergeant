@@ -9,40 +9,60 @@
 - **Top P0/critical to plan next:** C1 tool_calls Zod allow-list (consolidated audit + F3 hub-chat duplicate), C2 SW per-user cache, F12 Sentry Replay maskAllText, F13 PricingPage open-redirect, F8 Strategy bearer-auth, PR-12 SyncSetupRequiredError guard, P1 CSRF browser sign-up. These are user-blocking security/auth issues.
 - **Close 2 audits as stale:** README gap analysis (2026-05-03) and doc-hygiene roast (2026-05-13) — all items resolved.
 
+## Progress (rolling — last updated 2026-05-31)
+
+9 PR-ів злито у main з цього звіту. Inline ✅ нижче — закриті items, з [PR# / batch#] у дужках.
+
+| Batch | PR                                                       | Closed (items / findings)                                                                                         |
+| ----- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Init  | [#3153](https://github.com/Skords-01/Sergeant/pull/3153) | 2 stale audits (README gap, doc-hygiene roast); audits-runner tooling shipped                                     |
+| 1     | [#3155](https://github.com/Skords-01/Sergeant/pull/3155) | hub-dash F16, F18 (closure notes — split shipped)                                                                 |
+| 2     | [#3156](https://github.com/Skords-01/Sergeant/pull/3156) | backend-roast metrics §Відкриті refresh; auth-onb F15 (6 AI markers)                                              |
+| 3     | [#3157](https://github.com/Skords-01/Sergeant/pull/3157) | auth-onb F14, hub-chat F11 (closed as superseded by Rule #10)                                                     |
+| 4     | [#3158](https://github.com/Skords-01/Sergeant/pull/3158) | ux-roast PR-X3 — new `docs/copy/style-guide.uk.md` + AGENTS link                                                  |
+| 5     | [#3159](https://github.com/Skords-01/Sergeant/pull/3159) | auth-onb F23 (crypto.randomUUID), hub-dash F11 (DEV-only error.message), hub-dash F12 (Monday digest idempotency) |
+| 6     | [#3160](https://github.com/Skords-01/Sergeant/pull/3160) | hub-dash F2 (BarChart aria-label across 4 module cards)                                                           |
+| 7     | [#3161](https://github.com/Skords-01/Sergeant/pull/3161) | hub-dash F15 (adaptiveSort entries()), auth-onb F13 (pluralDays)                                                  |
+| 8     | [#3162](https://github.com/Skords-01/Sergeant/pull/3162) | auth-onb F18 (CelebrationModal pause-on-focus/hover), hub-dash F19 (NutritionBootGate)                            |
+
+**Discoveries during triage (already done before audit ran):** doc-hygiene#1 (date canonicalization), app-audit#env-example (NUTRITION_BACKUP / BETTER_AUTH_TOKEN_ENC warnings), backend-roast#metrics-§6 (cleaned in PR #2933), auth-onb F1 (text-error → text-danger across auth tree).
+
+**Audits tracker delta:** 26 open → **23 open** (2 closed as stale Init batch; the F-level closures don't change tracker count since the audit docs stay Active with remaining findings).
+
 ## Execute now
 
 AutoSafe + low-risk doc-only items, safe to batch as a single PR per audit.
 
 ### 2026-05-02-doc-hygiene-audit
 
-- [ ] doc-hygiene#1 — `docs/audits/archive/2026-04-28-ux-ui-audit.md` — canonicalize three date params into single freshness-header
+- [x] ✅ doc-hygiene#1 — already done in repo (canonicalized 2026-05-02 by prior doc-hygiene PR; verified during Batch 1 triage)
 
 ### 2026-05-06-ux-roast-pr-plan
 
-- [ ] ux-roast#PR-X3 — `docs/copy/style-guide.uk.md`, `AGENTS.md` (link) — pure docs new style guide + link
+- [x] ✅ ux-roast#PR-X3 — `docs/copy/style-guide.uk.md`, `AGENTS.md` (link) — pure docs new style guide + link [Batch 4 / #3158]
 
 ### 2026-05-07-app-audit
 
-- [ ] app-audit#env-example — `.env.example` — document NUTRITION_BACKUP_KEY_SECRET / BETTER_AUTH_TOKEN_ENC_KEY warnings
+- [x] ✅ app-audit#env-example — already done in repo (NUTRITION_BACKUP_KEY_SECRET / BETTER_AUTH_TOKEN_ENC_KEY warnings present on `.env.example:11–12`)
 
 ### 2026-05-13-backend-performance-roast
 
-- [ ] backend-roast#metrics-§6 — `docs/observability/metrics.md` — fill per-model AI-token join-pattern doc gap (verify against PR #2933 first)
-- [ ] backend-roast#metrics-Відкриті — `docs/observability/metrics.md` — refresh stale "Відкриті питання" section
+- [x] ✅ backend-roast#metrics-§6 — already closed in PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933) (stray copy-paste cleaned; verified during Batch 2)
+- [x] ✅ backend-roast#metrics-Відкриті — `docs/observability/metrics.md` — refresh stale "Відкриті питання" section [Batch 2 / #3156]
 
 ### 2026-05-13-page-audit-01-auth-onboarding
 
-- [ ] auth-onb#F14 — auth/_ + onboarding/_ — insert Last validated/Status lifecycle markers (mechanical mass edit)
-- [ ] auth-onb#F15 — AuthContext, authClient, useOnboardingWizardState, presetApply, cleanupDemoData — add AI-CONTEXT/AI-DANGER markers
+- [x] ✅ auth-onb#F14 — **closed as superseded by Rule #10** (default Active needs no marker on source files) [Batch 3 / #3157]
+- [x] ✅ auth-onb#F15 — AuthContext, authClient, useOnboardingWizardState, presetApply, cleanupDemoData — AI-CONTEXT/AI-DANGER markers added [Batch 2 / #3156]
 
 ### 2026-05-13-page-audit-02-hub-dashboard
 
-- [ ] hub-dash#F16 — `apps/web/src/core/hub/HubReports.tsx` — close as resolved (Sprint 2 0017 split already shipped, 261 LOC)
-- [ ] hub-dash#F18 — `apps/web/src/core/hub/ExpensesCard.tsx` — close as resolved (Array.isArray cast already in card split)
+- [x] ✅ hub-dash#F16 — `apps/web/src/core/hub/HubReports.tsx` — closure note (Sprint 2 0017 split already shipped, 261 LOC) [Batch 1 / #3155]
+- [x] ✅ hub-dash#F18 — `apps/web/src/core/hub/ExpensesCard.tsx` — closure note (Array.isArray cast already in card split) [Batch 1 / #3155]
 
 ### 2026-05-13-page-audit-03-hub-chat-search
 
-- [ ] hub-chat#F11 — 23 in-scope hub chat/search/backup files — insert lifecycle markers (Hard Rule #10)
+- [x] ✅ hub-chat#F11 — **closed as superseded by Rule #10** (HubChatPage.tsx already carries `@scaffolded`) [Batch 3 / #3157]
 
 ## Plan first
 
@@ -71,19 +91,19 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 16. **F21 (hub-dash)** — `finyk_tx_cache` → `STORAGE_KEYS.FINYK_TX_CACHE`.
 17. **F16/F17 (auth-onb)** — `presetApply.ts` / `seedDemoData.ts` bypass `createModuleStorage` allowlist — storage contract change.
 18. **Theme 6** — Ban non-null assertions in Fizruk P1/P2 — `noUncheckedIndexedAccess` discipline.
-19. **F15 (hub-dash)** — Six `!` assertions in `adaptiveSort.ts` — replace with guards.
+19. ✅ **F15 (hub-dash)** — Six `!` assertions in `adaptiveSort.ts` — replaced with `for…entries()` [Batch 7 / #3161].
 
 ### Server / env / observability
 
 20. **P1.4 (dead-code)** — Phase 2 process.env burn-down: 4 callers + test refactors (`requireAnthropicKey`, `requireGroqKey`, `posthogCapture`, `authTransactionalMail`). Split into 4 PRs per audit guidance.
 21. **app-audit obs migration** — `apps/server/src/obs/{logger,metrics,tracing}.ts` + push to `env.ts`. 64 `process.env` occurrences.
 22. **backend-roast tracing.ts** — DI vs env.ts singleton design decision needed before refactor.
-23. **F11 (hub-dash)** — `ModuleErrorBoundary` renders raw `error.message` in prod — token/stack leak risk.
+23. ✅ **F11 (hub-dash)** — `ModuleErrorBoundary` raw `error.message` now wrapped in `import.meta.env.DEV` [Batch 5 / #3159].
 
 ### Theme refactors (cross-cutting visual / policy)
 
-24. **F1 (auth-onb)** — `text-error` → `text-danger` token rename across 14 occurrences in auth tree.
-25. **F19 (auth-onb)** — `ResetPasswordPage` mixed `text-error` / `text-danger` — subset of F1.
+24. ✅ **F1 (auth-onb)** — already done in repo (zero `text-error` matches in `apps/`/`packages/`; verified during Batch 6 triage).
+25. ✅ **F19 (auth-onb)** — subset of F1, also already done in repo.
 26. **Theme 3 (consolidated)** — Same rename + ban raw saturated palette steps + lint plugin.
 27. **Theme 2** — 44×44 touch targets via Button primitive + ESLint + codemod.
 28. **F7-F12 (auth-onb)** — DailyNudge/DemoModeBanner/SoftAuthPromptCard/ReEngagementCard/FirstRunHintBanner small CTAs → Button primitive.
@@ -106,8 +126,8 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 39. **F4 (hub-chat) — Theme 7 F4 (consolidated)** — Fizruk rest-timer destroyed on navigation — lifecycle/persistence redesign.
 40. **F7 F6/F7 (consolidated)** — Validate weight/height/girth + block empty Measurements save.
 41. **F7 F3 (consolidated) / F3 (hub-dash)** — HubReports live LS reactivity via `hub-storage-updated` event bus. F10/F22 hub-dash depend on it.
-42. **F12 (hub-dash)** — `useMondayAutoDigest` idempotency guard — 2× LLM cost risk.
-43. **F19 (hub-dash)** — `App.tsx` nutrition boot hooks unconditional — add auth gate + lazy.
+42. ✅ **F12 (hub-dash)** — `useMondayAutoDigest` idempotency guard via mount-scoped ref + in-timer re-check [Batch 5 / #3159].
+43. ✅ **F19 (hub-dash)** — auth gate landed via `NutritionBootGate` + `AuthenticatedNutritionBoot` two-component pattern; bundle-lazy split is follow-up [Batch 8 / #3162].
 44. **F14 (hub-chat)** — Title rewrite steamrolls user titles — schema change `titleSource`.
 45. **F5 (hub-chat)** — Voice keyword auto-triggers TTS without consent — settings toggle.
 46. **F15 (hub-chat)** — SSE consumer lacks per-chunk/total byte cap.
@@ -161,17 +181,17 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 
 ### Hub-dash misc
 
-82. **F2/F14 (hub-dash)** — BarChart `aria-label` + BentoCard active-state `aria-label`/`aria-hidden`.
+82. 🟡 **F2/F14 (hub-dash)** — F2 BarChart `aria-label` done across 4 module cards [Batch 6 / #3160]; F14 BentoCard `aria-label`/`aria-hidden` still open.
 83. **F6/F7/F8/F20 (hub-dash)** — aggregateReport `now` arg, insights context, interval gating, CrossModulePreview telemetry.
 84. **F22/F23/F24 (hub-dash)** — dead optional chain, missing HubReports test, ErrorBoundary test coverage.
 
 ### Auth-onb misc
 
-85. **F18 (auth-onb)** — CelebrationModal 10s auto-dismiss races input — bump to 15s or drop.
+85. ✅ **F18 (auth-onb)** — CelebrationModal autoCloseMs paused on focus/hover with `queueMicrotask` resume re-check [Batch 8 / #3162].
 86. **F21/F22 (auth-onb)** — Better Auth client cast + AuthContext PostHog identify cast/disable.
-87. **F23 (auth-onb)** — `presetApply.uid()` Math.random → `crypto.randomUUID()`.
+87. ✅ **F23 (auth-onb)** — `presetApply.uid()` migrated to `crypto.randomUUID()` (RFC 4122 v4) [Batch 5 / #3159].
 88. **F24/F25 (auth-onb)** — DemoModeBanner/DailyNudge dismiss aria-label, ResetPasswordPage autoFocus hostility.
-89. **F13 (auth-onb)** — ReEngagementCard UA pluralization edge cases (use `Intl.PluralRules`).
+89. ✅ **F13 (auth-onb)** — ReEngagementCard now uses `pluralDays()` from `@sergeant/shared` (CLDR rules + existing tests) [Batch 7 / #3161].
 
 ### Hub-chat F10/F12/F13
 
@@ -181,8 +201,8 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 
 ## Close as stale
 
-- `docs/audits/2026-05-03-readme-gap-analysis.md` — closure note confirms all 15 checklist items de-facto covered in current README with per-item line mappings.
-- `docs/audits/2026-05-13-documentation-hygiene-roast.md` — 53 broken links + 3 stale claims fixed; all P0/P1/P2 closed.
+- ✅ `docs/audits/2026-05-03-readme-gap-analysis.md` — Status: Closed (historical record) [Init / #3153].
+- ✅ `docs/audits/2026-05-13-documentation-hygiene-roast.md` — Status: Closed (historical record) [Init / #3153].
 
 ## Blocked
 
@@ -194,4 +214,4 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 - **backend-roast SQLite `sync_op_outbox`** — blocked on Stage 8/9 SQLite migration program.
 - **backend-roast P2-2 tracing.ts** — blocked on DI-vs-singleton design decision.
 - **backend-roast audit text inconsistencies** — P2-1 push.ts and P2-4 metrics.md §6 marked both closed and open; reconcile before execution.
-- **hub-dash audit-freeze window** — 2026-05-05 → 2026-06-02. Today 2026-05-31; 2 days remaining or route via `[freeze-exception]`.
+- **hub-dash audit-freeze window** — 2026-05-05 → 2026-06-02. Today 2026-05-31; 2 days remaining or route via `[freeze-exception]`. Status: all PRs in this batch stayed inside the freeze rules (no new top-level audit/initiative/playbook/ADR files added).
