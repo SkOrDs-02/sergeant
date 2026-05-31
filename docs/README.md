@@ -1,15 +1,17 @@
 # Sergeant Documentation
 
-> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
+> **Last validated:** 2026-05-31 by @Skords-01. **Next review:** 2026-08-29.
 > **Status:** Active
 
 Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-05-29 via `pnpm docs:gen-trust-badge`_
+> 🔴 **Docs trust: CRITICAL** — _оновлено 2026-05-31 via `pnpm docs:gen-trust-badge`_
 >
-> 0 stale docs · 0 WIP violations — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
+> 0 stale, 0 WIP violations — **STOP**, дренуй backlog перш ніж заводити нове. Деталі → [`today.md`](./today.md).
+>
+> ⚠ Cron health: docs-daily-brief.yml failed 5× поспіль. Перевір `gh run list --workflow=<name> --status=failure`.
 
 <!-- TRUST-BADGE:END -->
 
