@@ -25,6 +25,8 @@
 
 ### F1 — Strategy page calls `/api/internal/strategic/*` without `internalFetch` / bearer auth [severity: high] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — `internalFetch` wrapper не існує. Misleading JSDoc у `apps/web/src/pages/strategy/StrategyPage.tsx` замінено на явний `TODO(PR-35)` блок: зафіксовано, що `fetchGoals` / `createGoalApi` ходять raw `fetch`-ом без `Authorization`, сторінка свідомо не змонтована в `core/app/router.tsx` (user-facing impact = 0), і що PR-35 має переключити на `/api/strategic/*` session-auth proxy перед wire-up у роутер. Hard Rule #20 (PAT не в production) явно додано в TODO.
+
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
 **Lines:** L21–L24, L96–L123

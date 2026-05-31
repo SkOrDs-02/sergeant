@@ -18,10 +18,17 @@
  *   * `weekStart` = понеділок ISO-тижня у Kyiv local (`YYYY-MM-DD`).
  *   * `founderUserId` — Better Auth opaque string ID (читаємо з AuthContext-у).
  *
- * Fetch path: `/api/internal/strategic/goals/list` через `internalFetch`-wrapper
- * (тобто bearer-token у dev — лежить у `INTERNAL_API_KEY`). Production-version
- * у PR-35+ переключить fetch на `/api/strategic/*` proxy (session-auth), а
- * internal-route залишить тільки для n8n.
+ * Fetch path: зараз `fetchGoals` / `createGoalApi` ходять raw `fetch`-ом на
+ * `/api/internal/strategic/*` **без `Authorization`-хедера** — `internalFetch`
+ * wrapper в `apps/web/src/shared/lib/api/` ще не існує. Сторінка свідомо
+ * **не змонтована** в `apps/web/src/core/app/router.tsx`, тому з браузера ці
+ * виклики ще ніхто не робить.
+ *
+ * TODO(PR-35): перед wire-up у роутер — переключити fetch на
+ * `/api/strategic/*` session-auth proxy (а internal-route залишити тільки для
+ * n8n). Якщо bearer все ж знадобиться з браузера — спершу додати справжній
+ * `internalFetch` helper і інжектити `INTERNAL_API_KEY` лише через
+ * `import.meta.env.VITE_*` для dev (Hard Rule #20: PAT не їде в production).
  */
 
 import { useMemo, useState } from "react";
