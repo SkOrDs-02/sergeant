@@ -579,6 +579,8 @@ for (let i = 0; i < order.length; i++) {
 
 ### F16 — `HubReports.tsx` ≈603 LOC — на межі Hard Rule #18 (max-lines: 600) [severity: medium] [perspective: rule]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved — Sprint 2 0017 split shipped. `apps/web/src/core/hub/HubReports.tsx` тепер 261 LOC (було 603). Файл — чистий container; BarChart, StatCard, useReportData, generateInsights винесені у свої модулі. Hard Rule #18 проходить з широким запасом.
+
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
 **Lines:** entire file
@@ -632,6 +634,8 @@ brand: { ... },
 ---
 
 ### F18 — `HubReports.tsx` `raw!.txs` — non-null на narrowed union [severity: low] [perspective: ts]
+
+> **Closure note (2026-05-31, audits-runner triage):** Resolved — після F16 split логіка переїхала у `apps/web/src/core/hub/ExpensesCard.tsx:189-197`. Поточна реалізація використовує безпечний `Array.isArray((raw as { txs?: unknown[] } | null)?.txs)` + `(raw as { txs: unknown[] }).txs` cast; non-null assertion `raw!.txs` прибрано. F18 більше не актуальний.
 
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
