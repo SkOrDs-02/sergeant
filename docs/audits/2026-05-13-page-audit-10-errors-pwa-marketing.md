@@ -424,6 +424,8 @@ LocalStorage is synchronous and blocks the render thread. On low-end Android (th
 
 ### F15 — `useAppLock` idle reset listeners are unthrottled across `pointermove`/`scroll`/`keydown`/`touchstart` capture phase [severity: medium] [perspective: perf]
 
+> ✅ **Closed 2026-05-31** — додано ref-timestamp guard `lastIdleResetRef` + `IDLE_RESET_THROTTLE_MS = 1000` у `resetIdleTimer`. Capture-phase подія, що приходить менш ніж за секунду після попередньої, — no-op. `IDLE_TIMEOUT_MS` логіка незмінна. Після успішного unlock throttle force-resets (`lastIdleResetRef.current = 0`), щоб post-unlock idle-таймер armed одразу.
+
 **Page:** Security / AppLock
 **File:** `apps/web/src/core/security/useAppLock.ts`
 **Lines:** L73–L89

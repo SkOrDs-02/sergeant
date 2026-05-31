@@ -9,6 +9,11 @@ export type LockState = "idle" | "locked" | "setup" | "change";
 // How long (ms) without pointer/keyboard activity before auto-lock.
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
+// Audit F15: мінімальний gap між перепланованнями idle-таймера. Швидкий
+// скрол шле десятки подій за секунду — без throttle вони jankifyять
+// main-thread, не змінюючи ефективну auto-lock поведінку.
+const IDLE_RESET_THROTTLE_MS = 1000;
+
 export interface UseAppLockReturn {
   state: LockState;
   /** Begin the PIN-setup flow (called by PrivacySection when enabling lock). */
@@ -27,6 +32,7 @@ export function useAppLock(): UseAppLockReturn {
   const enabled = useFlag("app-lock-enabled");
   const [state, setState] = useState<LockState>("idle");
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastIdleResetRef = useRef(0);
   const setupModeRef = useRef<"setup" | "change">("setup");
 
   // On mount (and whenever the flag is toggled on) check if a PIN is already
@@ -60,8 +66,13 @@ export function useAppLock(): UseAppLockReturn {
   }, [enabled]);
 
   // Idle timer — reset on any user interaction; lock after IDLE_TIMEOUT_MS.
+  // Throttled by IDLE_RESET_THROTTLE_MS so capture-phase scroll/pointer
+  // floods do not thrash main-thread rescheduling setTimeout (audit F15).
   const resetIdleTimer = useCallback(() => {
     if (!enabled) return;
+    const now = Date.now();
+    if (now - lastIdleResetRef.current < IDLE_RESET_THROTTLE_MS) return;
+    lastIdleResetRef.current = now;
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
       hasPinSet().then((has) => {
@@ -120,6 +131,9 @@ export function useAppLock(): UseAppLockReturn {
       if (ok) {
         setState("idle");
         capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS, {});
+        // Force-reset throttle window so resetIdleTimer runs immediately
+        // to arm post-unlock idle timer (audit F15).
+        lastIdleResetRef.current = 0;
         resetIdleTimer();
       } else {
         capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED, {});
