@@ -112,7 +112,9 @@ export const BentoCard = memo(function BentoCard({
         aria-label={
           inactive
             ? `${config.label} — неактивний модуль. Увімкнути в налаштуваннях Hub.`
-            : undefined
+            : hasData
+              ? `${config.label}: ${preview.main}${preview.sub ? `, ${preview.sub}` : ""}`
+              : `${config.label}: ${config.emptyLabel}`
         }
         data-inactive={inactive ? "true" : undefined}
         className={cn(
@@ -131,6 +133,7 @@ export const BentoCard = memo(function BentoCard({
       >
         <div className="flex items-center justify-between mb-2">
           <div
+            aria-hidden
             className={cn(
               "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
               inactive ? "bg-line/40 text-muted" : config.iconClass,
