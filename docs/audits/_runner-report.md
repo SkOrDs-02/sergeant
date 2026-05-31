@@ -141,7 +141,7 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 
 ### UX-roast remainder (PR-0 unblocker first)
 
-51. **PR-0** — Telemetry events + ADR + tracker. **Blocks 10 other PRs** — schedule first in the queue.
+51. ✅ **PR-0** — Telemetry events + ADR + tracker shipped via prior catalog work; tracker entry flipped in Batch 10 / #TBD. 11 downstream PRs unblocked.
 52. **PR-1a/1b** — App-lock PIN + biometric. High-blast-radius security surface.
 53. **PR-2** — Module settings gear shortcut across 4 headers.
 54. **PR-3 / PR-20** — Bento subtitles + FTUX empty bento (PR-20 depends on PR-3).
@@ -206,7 +206,7 @@ Sorted by impact (security/auth/money first, then domain invariants, then UX/per
 
 ## Blocked
 
-- **ux-roast PR-0 (telemetry)** — not started; blocks PR-1a, PR-1b, PR-2, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4. Unblock first.
+- ✅ **ux-roast PR-0 (telemetry)** — closed as shipped (Batch 10): all 9 events live in `packages/shared/src/lib/analyticsEvents.ts:273-302`, ADR-0054 covers §1-§13 decisions. 11 downstream PR-1a/1b/2/3/6/7/8/14/16/22/42/X4 now unblocked.
 - **ux-roast PR-11 (CSV export)** — blocked on S3/R2 credentials.
 - **ux-roast PR-28 (Avatar upload)** — blocked on S3/R2 credentials.
 - **consolidated audit Scope 04** — Devin VM infra failure; retry queued. Also `git_pr` builtin returning "Bad credentials" in child Devin sessions despite valid PAT.
