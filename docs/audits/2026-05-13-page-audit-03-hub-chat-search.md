@@ -187,6 +187,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 ### F11 — Lifecycle markers (`Last validated:` / `Status:`) missing across the entire scope [severity: medium] [perspective: lifecycle]
 
+> **Closure note (2026-05-31, audits-runner triage):** Closed as superseded by the actual Rule #10 reading. [`docs/governance/rules/10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md) "Code: JSDoc lifecycle tags" section says: source files default to `Active` (no marker needed); only `@scaffolded` / `@experimental` / `@deprecated` files require explicit JSDoc tags. The `> **Last validated:** … > **Status:** …` block applies to **markdown docs**, not TS/TSX source modules. The `@scaffolded` tag already present at `HubChatPage.tsx:10` is Rule-compliant. Mass-inserting `Status: Active` on 23 files would add 70+ lines of noise the rule does not require. Real follow-ups in this scope (F1–F10, F12–F15) remain open.
+
 **Page:** all files in scope
 **File:** every `.ts`/`.tsx` listed at the top of this audit
 **Lines:** N/A (the markers are absent entirely)

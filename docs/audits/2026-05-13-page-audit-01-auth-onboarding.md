@@ -376,6 +376,8 @@ const word = forms[pr.select(daysInactive)] ?? "днів";
 
 ### F14 — Lifecycle markers missing on every file in scope [severity: medium] [perspective: lifecycle]
 
+> **Closure note (2026-05-31, audits-runner triage):** Closed as superseded by the actual Rule #10 reading. [`docs/governance/rules/10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md) explicitly states for source code: "If a file/doc has no marker, treat it as `Active` (the default)." Markers are required only for non-Active states (`@scaffolded`, `@experimental`, `@deprecated`) — and those use JSDoc tags, NOT the `Last validated:` / `Status:` doc-style block. The scaffolded auth siblings already carry `@scaffolded` tags (Rule-compliant); the recommendation here would add 700+ lines of useless `Status: Active` noise that the rule does not ask for. Real F3/F4 follow-ups (wire vs delete the scaffolded files) remain open as their own findings.
+
 **Page:** All in-scope files
 **File:** entire `apps/web/src/core/auth/` and `apps/web/src/core/onboarding/`
 **Lines:** Top-of-file JSDoc / module header missing.
