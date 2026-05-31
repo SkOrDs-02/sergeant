@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-05-19 by @devin-ai. **Next review:** 2026-08-17.
+> **Last validated:** 2026-05-31 by @devin-ai. **Next review:** 2026-08-29.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->
@@ -44,6 +44,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md)                   | Порт web-екрану в mobile                                   | "Перенести екран з `apps/web` у `apps/mobile`" / чергова фаза RN migration / mobile-фіча повинна повторити існуючий web capability без дублювання domain-логіки.                                                                      |
 | [`pre-merge-migration-checklist.md`](./pre-merge-migration-checklist.md)           | Pre-Merge Migration Checklist                              | PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).                                                                                                                                |
 | [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md)                           | Prettier Pass on `docs/`                                   | `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).                                                              |
+| [`reconcile-doc-drift.md`](./reconcile-doc-drift.md)                               | Звірка дрифту документації та архівація                    | «Актуалізуй документацію» / «Знайди дрифт і не позначені виконані таски» / «Заархівуй завершені плани/ініціативи/аудити» / періодична гігієна docs, щоб у кожному документі було видно стан і залишок роботи.                         |
 | [`release.md`](./release.md)                                                       | Реліз                                                      | «Виконати реліз» / реліз-несуча зміна на продакшні — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor) або `apps/mobile` (Expo); EAS-апдейти, store-білди, скоординовані крос-поверхневі деплої.                             |
 | [`restore-from-backup.md`](./restore-from-backup.md)                               | Restore from Backup                                        | критичні дані треба відновити після corruption, destructive міграції, provider-інциденту або невідновлюваної втрати runtime-стану.                                                                                                    |
 | [`retire-feature-flag.md`](./retire-feature-flag.md)                               | Retire Feature Flag                                        | feature flag завершив rollout, expired, або перетворився на rollout-debt і його треба прибрати з кодової бази та registry.                                                                                                            |
