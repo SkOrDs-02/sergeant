@@ -72,15 +72,22 @@ interface SessionItem {
   userAgent?: string | null;
 }
 
-const authClient = createAuthClient({
-  baseURL: getAuthBaseURL(),
-  fetchOptions,
-}) as ReturnType<typeof createAuthClient> & {
-  // Better Auth 1.6+ renamed the email-password reset endpoint to
-  // `/request-password-reset`; the React client proxy maps the camelCase
-  // method `requestPasswordReset` to that path. The legacy alias
-  // `forgetPassword` is no longer served and silently 404s, so we MUST
-  // use the new name on the wire.
+// Named extension surface for the Better Auth React client Proxy. The
+// runtime Proxy exposes these methods over the email/password and account
+// plugins, but the static `createAuthClient` return type does not advertise
+// them. Declaring the augmentation as a named interface (instead of an
+// inline `& { ... }` on the cast) keeps the cast narrow and the intent
+// explicit: this is a manual stand-in for `declare module` augmentation
+// against `better-auth/react`. If Better Auth ever lands these methods
+// upstream, this interface will conflict loudly rather than silently
+// shadowing the upstream shape.
+//
+// Better Auth 1.6+ renamed the email-password reset endpoint to
+// `/request-password-reset`; the React client Proxy maps the camelCase
+// method `requestPasswordReset` to that path. The legacy alias
+// `forgetPassword` is no longer served and silently 404s, so we MUST
+// use the new name on the wire.
+interface BetterAuthProxyExtensions {
   requestPasswordReset: (args: {
     email: string;
     redirectTo?: string;
@@ -113,7 +120,12 @@ const authClient = createAuthClient({
     newEmail: string;
     callbackURL?: string;
   }) => Promise<AuthResult>;
-};
+}
+
+const authClient = createAuthClient({
+  baseURL: getAuthBaseURL(),
+  fetchOptions,
+}) as ReturnType<typeof createAuthClient> & BetterAuthProxyExtensions;
 
 type PasswordResetResult = {
   data?: unknown;
@@ -123,6 +135,21 @@ type PasswordResetResult = {
     statusText?: string;
   } | null;
 };
+
+// Narrower variant of the password-reset surface — the underlying Proxy
+// method shape is the same as in `BetterAuthProxyExtensions`, but here we
+// surface the richer `PasswordResetResult` (with a non-nullable `error`
+// field) that the consumers of `typedAuthClient` actually depend on.
+interface PasswordResetProxyExtensions {
+  requestPasswordReset: (args: {
+    email: string;
+    redirectTo?: string;
+  }) => Promise<PasswordResetResult>;
+  resetPassword: (args: {
+    newPassword: string;
+    token?: string;
+  }) => Promise<PasswordResetResult>;
+}
 
 // The React auth-client's static TypeScript surface doesn't advertise
 // `requestPasswordReset` / `resetPassword` — Better Auth resolves them at
@@ -135,16 +162,8 @@ type PasswordResetResult = {
 // rename or drop of those plugin endpoints in Better Auth surfaces only at
 // runtime (TS still type-checks). When upgrading Better Auth, smoke-test the
 // password-reset flow end-to-end before trusting the type extension.
-const typedAuthClient = authClient as typeof authClient & {
-  requestPasswordReset: (args: {
-    email: string;
-    redirectTo?: string;
-  }) => Promise<PasswordResetResult>;
-  resetPassword: (args: {
-    newPassword: string;
-    token?: string;
-  }) => Promise<PasswordResetResult>;
-};
+const typedAuthClient = authClient as typeof authClient &
+  PasswordResetProxyExtensions;
 
 // NOTE: `useSession` is intentionally NOT re-exported here. The single
 // source of truth for "who am I" lives in `AuthContext`, which drives off

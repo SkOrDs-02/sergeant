@@ -540,6 +540,8 @@ After resolving F3 (wire siblings OR delete them), reconcile the tests. Until th
 
 ### F21 — Better Auth client type-extension via `as ReturnType<...> & {...}` cast [severity: medium] [perspective: ts]
 
+> **Closure note (2026-05-31, audits-runner triage):** Resolved. Inline `& {...}` shape-extensions у двох `as`-кастах винесено у named interfaces `BetterAuthProxyExtensions` (для `createAuthClient` повернення) і `PasswordResetProxyExtensions` (для `typedAuthClient`). Касти тепер читаються як `as ReturnType<typeof createAuthClient> & BetterAuthProxyExtensions` і `as typeof authClient & PasswordResetProxyExtensions` — declarative typed-augmentation surface замість опаклих inline shape-lies. Runtime поведінка незмінна; AI-CONTEXT-коментар про Proxy resolution збережено над cast-ом.
+
 **Page:** authClient
 **File:** `apps/web/src/core/auth/authClient.ts`
 **Lines:** L75–L135 (`authClient = createAuthClient({…}) as …`, then `typedAuthClient = authClient as typeof authClient & {…}`)
