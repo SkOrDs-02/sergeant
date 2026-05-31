@@ -237,6 +237,8 @@ Translate the strings now (it's a 10-line diff) and rename `PERSONA_LABELS` to U
 
 ### F12 — Strategy page uses raw Tailwind palette pairs (`bg-blue-600`, `text-red-600`, `text-gray-200`) [severity: medium] [perspective: tailwind]
 
+> ✅ **Closed 2026-05-31** — у `apps/web/src/pages/strategy/StrategyPage.tsx`: `text-red-600` → `text-danger-strong`, `bg-blue-600` + `outline-blue-500` → `bg-info-strong` + `outline-info`, `border-gray-200` → `border-line`. Без `dark:`-пар (Hard Rule #13), без arbitrary hex (Hard Rule #11).
+
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
 **Lines:** L229 (`text-red-600`), L236 (`bg-blue-600 text-white focus-visible:outline-blue-500`), L266 (`border-gray-200`).
