@@ -33,6 +33,11 @@ import { usePlan } from "../../billing/usePlan";
 type ChatMessage = HubChatSession["messages"][number];
 const FREE_DAILY_AI_CHAT_LIMIT = 5;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
+const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
+
+function isAutoTtsEnabled(): boolean {
+  return safeReadLS<boolean>(AUTO_TTS_ENABLED_KEY) === true;
+}
 
 function kyivDayKey(date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -244,7 +249,9 @@ export function useChatSend({
       }
 
       const shouldSpeak =
-        fromVoice || lastWasVoice.current || VOICE_KEYWORDS.test(msg);
+        fromVoice ||
+        lastWasVoice.current ||
+        (isAutoTtsEnabled() && VOICE_KEYWORDS.test(msg));
       lastWasVoice.current = false;
 
       const userMsg = makeUserMsg(msg);
