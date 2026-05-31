@@ -157,6 +157,8 @@ try {
 
 ### F5 — `ErrorFallback` in `main.tsx` displays raw `error.message` to end-user [severity: medium] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — `ErrorFallback` тепер рендерить `<pre>{error?.message}</pre>` під `import.meta.env.DEV`. У проді користувач бачить лише локалізований заголовок `messages.errors.generic.somethingWrong` + reload-кнопку. Vite статично замінює `import.meta.env.DEV` на `false` у prod-бандлі — dev-гілка tree-shake-ається. Sentry-шлях через `ErrorBoundary` не змінюється.
+
 **Page:** App shell
 **File:** `apps/web/src/main.tsx`
 **Lines:** L77–L98 (`ErrorFallback` component)

@@ -89,14 +89,20 @@ interface ErrorFallbackProps {
 }
 
 function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
+  // Hard rule #21 spirit: raw error.message може витекти внутрішні шляхи,
+  // DB-колонки, API URL-и та `Error.cause`-ланцюги. У проді показуємо лише
+  // локалізований заголовок; повний нарратив усе ще в Sentry. Vite DCE
+  // вирізає dev-гілку з prod-бандлу.
   return (
     <div className="p-8 font-sans">
       <h2 className="text-style-title text-text">
         {messages.errors.generic.somethingWrong}
       </h2>
-      <pre className="text-xs text-danger whitespace-pre-wrap mt-2">
-        {error?.message}
-      </pre>
+      {import.meta.env.DEV ? (
+        <pre className="text-xs text-danger whitespace-pre-wrap mt-2">
+          {error?.message}
+        </pre>
+      ) : null}
       <button
         type="button"
         onClick={() => {
