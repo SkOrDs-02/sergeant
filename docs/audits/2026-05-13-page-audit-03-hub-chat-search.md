@@ -241,6 +241,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 ### F14 — `useChatSessions` title-rewrite test `title.startsWith("Бесіда ")` will steamroll legitimate user titles [severity: medium] [perspective: bug]
 
+> ✅ **Closed 2026-05-31** — додано optional `titleSource: "auto" | "user"` поле в `HubChatSession`. `createInitialSession` пише `auto`; manual rename має ставити `user` і захищений від auto-rewrite. Debounced flush у `useChatSessions` тепер чіпає title лише якщо `titleSource === "auto"` (або відсутній + legacy prefix — для backward-compat). Користувацькі назви не steamroll-ляться.
+
 **Page:** `HubChat` (sessions library)
 **File:** `apps/web/src/core/hub/chat/useChatSessions.ts`
 **Lines:** L107–L111

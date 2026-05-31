@@ -16,6 +16,14 @@ const MESSAGES_PER_SESSION = 60;
 export interface HubChatSession {
   id: string;
   title: string;
+  /**
+   * Audit F14: де лежить current `title`. `"auto"` (default) — debounced
+   * flush у `useChatSessions` може пере-derive-ити з першого user message;
+   * `"user"` — manual rename взяв ownership, auto-rewrite не чіпає.
+   * Optional для backward-compat зі старими сесіями — для них працює
+   * legacy prefix heuristic ("Бесіда " / "Нова бесіда").
+   */
+  titleSource?: "auto" | "user";
   createdAt: number;
   updatedAt: number;
   messages: ChatMessage[];
@@ -58,6 +66,7 @@ function createInitialSession(messages?: ChatMessage[]): HubChatSession {
   return {
     id: newId(),
     title: deriveSessionTitle(msgs, now),
+    titleSource: "auto",
     createdAt: now,
     updatedAt: now,
     messages: msgs,

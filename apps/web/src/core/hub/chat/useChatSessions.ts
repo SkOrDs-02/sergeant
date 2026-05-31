@@ -102,12 +102,21 @@ export function useChatSessions(): UseChatSessionsResult {
       setSessions((prev) => {
         const target = prev.find((s) => s.id === activeId);
         if (!target) return prev;
+        // Audit F14: auto-rewrite тільки якщо title ownership = auto.
+        // Для сесій без `titleSource` (старі persisted записи) — fallback
+        // на legacy prefix heuristic, щоб existing fallback-титули
+        // апгрейдились після першого реального message.
+        const isAutoTitle =
+          target.titleSource === "auto" ||
+          (target.titleSource === undefined &&
+            (target.title.startsWith("Бесіда ") ||
+              target.title === "Нова бесіда"));
         const next: HubChatSession = {
           ...target,
-          title:
-            target.title.startsWith("Бесіда ") || target.title === "Нова бесіда"
-              ? deriveSessionTitle(current, target.createdAt)
-              : target.title,
+          title: isAutoTitle
+            ? deriveSessionTitle(current, target.createdAt)
+            : target.title,
+          titleSource: isAutoTitle ? "auto" : target.titleSource,
           updatedAt: Date.now(),
           messages: current,
         };
@@ -167,6 +176,7 @@ export function useChatSessions(): UseChatSessionsResult {
     persistCurrentMessages();
     const fresh = createSession();
     fresh.title = "Нова бесіда";
+    fresh.titleSource = "auto";
     setSessions((prev) => {
       const updated = upsertSession(prev, fresh);
       saveSessions(updated);
