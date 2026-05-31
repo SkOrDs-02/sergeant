@@ -247,6 +247,8 @@ for (const h of HOP_BY_HOP) headers.delete(h);
 
 ### F8 — SW `notificationclick` opens `/?module=${module}` with no allow-list on `module` [severity: medium] [perspective: security]
 
+> ✅ **Closed 2026-05-31** — `apps/web/src/sw.ts` тепер має `ALLOWED_NOTIFICATION_MODULES = {finyk, fizruk, nutrition, routine}`. `notificationclick` бере `module` з push-payload лише якщо він у allow-list; інакше падає на `/` без `OPEN_MODULE` postMessage. Отруєний VAPID-push не може стиснути користувача в довільний клієнтський роут.
+
 **Page:** PWA / Service Worker
 **File:** `apps/web/src/sw.ts`
 **Lines:** L38–L58
@@ -268,6 +270,8 @@ const url = module && ALLOWED_MODULES.has(module) ? `/?module=${module}` : "/";
 ---
 
 ### F9 — SW `push` handler renders `payload.title`/`body` verbatim with no length/charset clamp [severity: medium] [perspective: security]
+
+> ✅ **Closed 2026-05-31** — `apps/web/src/sw.ts` додав `sanitize(input, max)` helper, який вирізає BiDi-overrides + zero-width joiners і кламповує довжину. `push` handler тепер обмежує `title` до 80, `body` до 200, `tag` до 120 символів — спам/спуфінг через скомпрометований VAPID payload локалізовано.
 
 **Page:** PWA / Service Worker
 **File:** `apps/web/src/sw.ts`

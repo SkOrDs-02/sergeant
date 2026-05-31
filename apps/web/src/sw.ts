@@ -39,10 +39,24 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("message", handleSwMessage);
 
+// Audit 2026-05-13 §F8: push payload приходить підписаним VAPID, але
+// VAPID-key compromise або mis-routed subscription може підкинути
+// довільний `module`. Без allow-list рядок одразу йде у URL і у postMessage.
+const ALLOWED_NOTIFICATION_MODULES = new Set([
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+]);
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const module = (event.notification.data as { module?: string } | null)
+  const rawModule = (event.notification.data as { module?: string } | null)
     ?.module;
+  const module =
+    rawModule && ALLOWED_NOTIFICATION_MODULES.has(rawModule)
+      ? rawModule
+      : undefined;
   const url = module ? `/?module=${module}` : "/";
   event.waitUntil(
     self.clients
@@ -81,6 +95,16 @@ self.addEventListener("activate", (event) => {
 });
 
 // ── Web Push ─────────────────────────────────────────────────────
+// Audit 2026-05-13 §F9: defensive clamps on adversary-controlled payloads.
+// VAPID-signed, але якщо backend скомпрометовано — SW виконає довільний
+// `title`/`body`. Обрізаємо довжину і вирізаємо BiDi-overrides
+// (U+202A..U+202E, U+2066..U+2069) і zero-width joiners (U+200B..U+200D,
+// U+FEFF), які зловмисник може використати для візуального спуфінгу.
+const sanitize = (input: unknown, max: number): string =>
+  String(input ?? "")
+    .replace(/[‪-‮⁦-⁩​-‍﻿]/g, "")
+    .slice(0, max);
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let payload: { title?: string; body?: string; tag?: string; module?: string };
@@ -90,12 +114,13 @@ self.addEventListener("push", (event) => {
     payload = { title: event.data.text() };
   }
 
-  const title = payload.title || "Мій простір";
+  const title = sanitize(payload.title, 80) || "Мій простір";
+  const tag = sanitize(payload.tag, 120) || `push_${Date.now()}`;
   const options = {
-    body: payload.body || "",
+    body: sanitize(payload.body, 200),
     icon: "/icon-192.png",
     badge: "/icon-192.png",
-    tag: payload.tag || `push_${Date.now()}`,
+    tag,
     requireInteraction: false,
     data: { module: payload.module || null },
   };
