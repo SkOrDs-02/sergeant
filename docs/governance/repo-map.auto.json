@@ -6,7 +6,7 @@
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
     "typescript": "^6.0.3",
-    "turbo": "^2.9.8"
+    "turbo": "^2.9.14"
   },
   "workspaces": [
     {
