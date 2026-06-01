@@ -496,7 +496,7 @@ slos:
 | M-9  | PWA install prompt відсутній                                             | ✅ Closed               | PR-07 [#2011](https://github.com/Skords-01/Sergeant/pull/2011)                                                                                                                                       |
 | M-10 | FTUX SLO відсутні                                                        | ✅ Closed (declarative) | Declarative SLO landed у [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml) — 2026-05-13 roast PR. Alerting wiring (PostHog Alerts + Sentry webhook) лишається у PR-14 follow-up. |
 | M-11 | A11y manual audit не проведений                                          | ⏳ Open                 | PR-16                                                                                                                                                                                                |
-| M-12 | What's new modal відсутній                                               | 🚧 Mitigation in flight | PR-18 — `apps/web/src/core/whatsNew/` + `docs/whats-new/` (in flight)                                                                                                                                |
+| M-12 | What's new modal                                                         | ✅ Closed               | PR-18 — `apps/web/src/core/whatsNew/` (`<WhatsNewModal />` + `useWhatsNew` + `releases.ts` + `storage.ts`, з тестами) + `docs/whats-new/`; інтегровано у `HubHomeView.tsx`                           |
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 

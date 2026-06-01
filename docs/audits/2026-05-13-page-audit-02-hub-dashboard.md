@@ -877,6 +877,8 @@ Test coverage gap для одного з найскладніших компон
 - Throw generic error → перевірити `requestId` extraction;
 - Reset → перевірити, що Sentry breadcrumb додано.
 
+> **Closure note (2026-06-01, PR-A8 of 15-pack):** Resolved. New `apps/web/src/core/ErrorBoundary.test.tsx` with 3 cases — default-fallback render on thrown child, reset-path clears state and re-renders children when the bomb defuses, function-shaped fallback receives `error` + `resetError`. `captureException` + `chunkReload` mocked so the suite stays offline. Extended cooldown / requestId paths land separately if those code paths drift; the reset-path was the load-bearing gap.
+
 ---
 
 ## Per-page coverage matrix

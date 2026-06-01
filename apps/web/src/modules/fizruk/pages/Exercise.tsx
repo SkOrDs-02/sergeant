@@ -160,6 +160,37 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     );
   }
 
+  // Audit 06 F7: when the deep-link carries an `exerciseId` that does not
+  // match the catalog AND there is no history for it either, the page
+  // would otherwise render a blank skeleton with a confusing "Поки немає
+  // записів" empty state. Surface the real cause (deleted / stale share-
+  // card / typo) and route the user back to the journal.
+  if (exerciseId && !ex && history.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
+          <Card radius="lg" padding="lg">
+            <EmptyState
+              title="Вправу не знайдено"
+              description="Можливо, її видалили з каталогу. Повернись до журналу і обери зі списку."
+              action={
+                onNavigate ? (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate("workouts")}
+                    className="min-h-touch-target inline-flex items-center justify-center rounded-2xl bg-fizruk-strong text-white px-4 text-style-label"
+                  >
+                    До журналу
+                  </button>
+                ) : undefined
+              }
+            />
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">

@@ -156,6 +156,8 @@ addEntry(payload);
 
 Або disable submit-кнопки, якщо немає жодного непорожнього поля у `form`.
 
+> **Closure note (2026-06-01, PR-A13 of 15-pack):** Resolved by disabling the submit button (audit option B — "disable submit if no field set"). `apps/web/src/modules/fizruk/pages/Measurements.tsx` button click handler now computes `parsedPayload` (only `Number.isFinite` numeric values land in the object) and renders `disabled + aria-disabled + opacity-50` when `Object.keys(parsedPayload).length === 0`. `onClick` also re-guards `if (!hasAnyValue) return` so a focus-+enter keyboard activation cannot bypass. NaN inputs ("abc") are stripped before persisting so a stray entry can never pollute the snapshot.
+
 ---
 
 ### F5 — Жоден з 4 page-файлів не має unit-тестів [severity: high] [perspective: test]

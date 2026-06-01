@@ -59,8 +59,13 @@ export function monthGrid(
   y: number,
   monthIndex: number,
 ): { cells: Array<number | null> } {
-  const last = new Date(y, monthIndex + 1, 0).getDate();
-  const firstWd = (new Date(y, monthIndex, 1).getDay() + 6) % 7;
+  // Civil-calendar arithmetic only: we want "how many days in month X of year Y"
+  // and "what weekday is the 1st of X/Y" — both are timezone-independent for a
+  // fixed (y, monthIndex) tuple, so UTC getters give the same answer as host-
+  // local while satisfying sergeant-design/prefer-kyiv-time (Kyiv-tz routing is
+  // for *current-time* boundaries, not abstract month skeletons).
+  const last = new Date(Date.UTC(y, monthIndex + 1, 0)).getUTCDate();
+  const firstWd = (new Date(Date.UTC(y, monthIndex, 1)).getUTCDay() + 6) % 7;
   const cells: Array<number | null> = [];
   for (let i = 0; i < firstWd; i++) cells.push(null);
   for (let d = 1; d <= last; d++) cells.push(d);
@@ -94,10 +99,10 @@ export function groupEventsForList(
     if (existing) existing.push(e);
     else map.set(head, [e]);
   }
-  return [...map.entries()].sort((a, b) => {
-    const ai = GROUP_ORDER.indexOf(a[0]);
-    const bi = GROUP_ORDER.indexOf(b[0]);
-    if (ai === -1 && bi === -1) return a[0].localeCompare(b[0], "uk");
+  return [...map.entries()].sort(([aKey], [bKey]) => {
+    const ai = GROUP_ORDER.indexOf(aKey);
+    const bi = GROUP_ORDER.indexOf(bKey);
+    if (ai === -1 && bi === -1) return aKey.localeCompare(bKey, "uk");
     if (ai === -1) return 1;
     if (bi === -1) return -1;
     return ai - bi;

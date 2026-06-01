@@ -181,6 +181,8 @@ Add at minimum:
 
 ### F7 — Exercise deep-link silently renders empty card on unknown `exerciseId` [severity: medium] [perspective: ux] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B10 of 15-pack):** Resolved. `apps/web/src/modules/fizruk/pages/Exercise.tsx` now adds a second guard: when `exerciseId` is non-empty but unmatched in the catalog AND no history exists for it, the page renders an `EmptyState title="Вправу не знайдено"` with a "До журналу" CTA routing through `onNavigate("workouts")`. Stale share-card / deleted-catalog deep-links no longer surface as a blank skeleton.
+
 **Page:** Exercise
 **File:** `apps/web/src/modules/fizruk/pages/Exercise.tsx`
 **Lines:** L44–L155
@@ -208,6 +210,8 @@ if (exerciseId && !ex && history.length === 0) {
 ---
 
 ### F8 — Atlas page recomputes muscle-status mapping on every render (no `useMemo`) [severity: medium] [perspective: perf]
+
+> **Closure note (2026-06-01, PR-B6 of 15-pack):** Resolved. `apps/web/src/modules/fizruk/pages/Atlas.tsx` now wraps `statusByMuscle` in `useMemo(..., [rec.by])`. `<BodyAtlas>` gets identity-stable input across storage / BroadcastChannel re-emits that don't actually change the recovery snapshot — the internal SVG path no longer re-paints on every cycle.
 
 **Page:** Atlas
 **File:** `apps/web/src/modules/fizruk/pages/Atlas.tsx`

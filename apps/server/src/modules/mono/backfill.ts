@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { env } from "../../env/env.js";
 import { query } from "../../db.js";
 import { bankProxyFetch } from "../../lib/bankProxy.js";
 import { logger } from "../../obs/logger.js";
@@ -7,7 +6,11 @@ import {
   MonoBackfillResponseSchema,
   MonoBackfillProgressSchema,
 } from "../../http/schemas.js";
-import { decryptToken } from "./crypto.js";
+import {
+  monoKeyRing,
+  decryptAndLazyReencrypt,
+  type MonoTokenRow,
+} from "./tokenStore.js";
 
 interface AuthedRequest extends Request {
   user?: { id: string };
@@ -127,33 +130,23 @@ interface MonoStatementRaw {
 }
 
 async function getDecryptedToken(userId: string): Promise<string | null> {
-  const { rows } = await query<{
-    token_ciphertext: Buffer;
-    token_iv: Buffer;
-    token_tag: Buffer;
-  }>(
-    `SELECT token_ciphertext, token_iv, token_tag FROM mono_connection WHERE user_id = $1`,
+  const { rows } = await query<MonoTokenRow>(
+    `SELECT token_ciphertext, token_iv, token_tag, token_key_version FROM mono_connection WHERE user_id = $1`,
     [userId],
     { op: "mono_backfill_token" },
   );
   if (rows.length === 0) return null;
 
-  const encKey = env.MONO_TOKEN_ENC_KEY;
-  if (!encKey) {
+  const ring = monoKeyRing();
+  if (!ring) {
     logger.error({ msg: "MONO_TOKEN_ENC_KEY not configured" });
     return null;
   }
 
   try {
-    const row = rows[0];
-    return decryptToken(
-      {
-        ciphertext: row!.token_ciphertext,
-        iv: row!.token_iv,
-        tag: row!.token_tag,
-      },
-      encKey,
-    );
+    // Decrypts under the row's recorded key version + best-effort lazy
+    // re-encrypt of legacy/stale rows under the current key.
+    return await decryptAndLazyReencrypt(rows[0]!, userId, ring);
   } catch (err) {
     logger.error({ msg: "mono_token_decrypt_failed", err });
     return null;

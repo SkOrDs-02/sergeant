@@ -625,8 +625,38 @@ const envSchema = z.object({
     .enum(["true", "false", "1", "0", ""])
     .optional()
     .transform((v) => v === "true" || v === "1"),
-  /** 32-byte hex ключ для AES-256-GCM шифрування Monobank токенів. */
+  /**
+   * 32-byte hex ключ для AES-256-GCM шифрування Monobank токенів.
+   *
+   * **H4 Phase 2** (2026-06-01): тепер це legacy single-key fallback. Multi-key
+   * rotation реалізовано через `MONO_TOKEN_ENC_KEYS` +
+   * `MONO_TOKEN_ENC_KEY_CURRENT_VERSION` (нижче), що мапить цей ключ на версію
+   * v1. Існуючий ciphertext (з `token_key_version` = NULL) читається як v1.
+   */
   MONO_TOKEN_ENC_KEY: z.string().optional(),
+  /**
+   * **H4 Phase 2** Multi-key key-ring для AES-256-GCM шифрування Mono OAuth-
+   * токенів. Формат: `v1:<64-hex>,v2:<64-hex>,...` — CSV пар `vN:<32-byte-hex>`.
+   *
+   * Якщо задане, перевизначає legacy `MONO_TOKEN_ENC_KEY`. Версія для **запису**
+   * нових ciphertext-ів обирається через `MONO_TOKEN_ENC_KEY_CURRENT_VERSION`
+   * і персиститься в `mono_connection.token_key_version`. Версія для
+   * розшифрування конкретного рядка читається з того ж стовпця (NULL → v1).
+   *
+   * Rotation flow (`docs/runbooks/encryption-key-rotation.md`):
+   *   1. додати `v2:hex` до `_KEYS` (deploy)
+   *   2. бампнути `_CURRENT_VERSION=v2` (deploy) — нові записи + lazy re-encrypt
+   *      йдуть під v2
+   *   3. через retention-window (≥30d, моніторити `mono_token_lazy_reencrypt_total`)
+   *      прибрати `v1:` із `_KEYS`
+   */
+  MONO_TOKEN_ENC_KEYS: z.string().optional(),
+  /**
+   * **H4 Phase 2** Поточна версія Mono-ключа для запису ciphertext-ів. Формат
+   * `vN`, де N — позитивне ціле, присутнє у `MONO_TOKEN_ENC_KEYS`. Якщо
+   * порожнє — найвища версія у key-ring-у.
+   */
+  MONO_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
   /** Публічна базова URL API (Railway) для реєстрації webhook у Monobank. */
   PUBLIC_API_BASE_URL: z.string().optional(),
 
@@ -1343,10 +1373,25 @@ export function assertStartupEnv(): void {
   }
 
   if (env.MONO_WEBHOOK_ENABLED) {
-    if (!env.MONO_TOKEN_ENC_KEY) {
+    // H4 Phase 2: accept either the multi-key ring (`MONO_TOKEN_ENC_KEYS` +
+    // `_CURRENT_VERSION`) or the legacy single-key (`MONO_TOKEN_ENC_KEY`).
+    // Validate via `parseKeyRing` so a malformed CSV / unknown current
+    // version fails fast at boot, not on first `/api/mono/connect`.
+    if (!env.MONO_TOKEN_ENC_KEYS && !env.MONO_TOKEN_ENC_KEY) {
       throw new Error(
-        "MONO_TOKEN_ENC_KEY is required when MONO_WEBHOOK_ENABLED=true. Must be 32-byte hex (64 chars).",
+        "MONO_TOKEN_ENC_KEY (or MONO_TOKEN_ENC_KEYS) is required when MONO_WEBHOOK_ENABLED=true. Must be 32-byte hex (64 chars).",
       );
+    }
+    try {
+      parseKeyRing({
+        keysCsv: env.MONO_TOKEN_ENC_KEYS,
+        currentVersion: env.MONO_TOKEN_ENC_KEY_CURRENT_VERSION,
+        legacyKey: env.MONO_TOKEN_ENC_KEY,
+        envName: "MONO_TOKEN_ENC_KEY",
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(`MONO_TOKEN_ENC_KEY[S] is invalid: ${detail}`);
     }
     if (!env.PUBLIC_API_BASE_URL) {
       throw new Error(

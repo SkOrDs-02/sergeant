@@ -160,12 +160,21 @@ migration), поза скоупом цієї прожарки.
   - [`.tech-debt/env-single-source-budget.json`](../../.tech-debt/env-single-source-budget.json) — бюджет 105 → 98 (net −7 reads).
 - **Why P2:** [`2026-05-07-app-audit.md:396`](./2026-05-07-app-audit.md#L396) (P2) і §4 TL;DR цього аудиту. Module-load-time `process.env[...]` обходив startup-assert + zod-валідацію — typo в Railway env (`VAPID_PUBL=...`) тихо вимикав push-сурфейс без alerts. Перенесли на `env.ts` singleton, тести мігрували на vitest-канонічний pattern, щоб майбутні зміни env-shape ловилися type-системою, а не runtime-патчем `process.env`.
 
-### P2-2. `obs/tracing.ts` `process.env` reads (через дефолтний argument) ❌ Тут не торкаємось
+### P2-2. `obs/tracing.ts` `process.env` reads (через дефолтний argument) ✅ Closed 2026-06-01
 
-- **File:** [`apps/server/src/obs/tracing.ts:105,121,251`](../../apps/server/src/obs/tracing.ts#L105).
-- **Why виносимо:** `env: NodeJS.ProcessEnv = process.env` — це
+- **File:** [`apps/server/src/obs/tracing.ts:55,386`](../../apps/server/src/obs/tracing.ts#L55).
+- **Why виносимо (initial):** `env: NodeJS.ProcessEnv = process.env` — це
   injection-pattern для тестів, рефактор у `env.ts` зламає DI. Окрема
   розмова чи переписувати чи лишити.
+- **Closure note (tail PR of "9 decisions", Decision #9 — Option Б):**
+  Verified-already-done. `apps/server/src/obs/tracing.ts:55` тепер
+  `import { env as defaultEnv, type Env } from "../env.js"`, а module-load
+  side-effect на L386 — `startTracing(defaultEnv)`. Тести викликають
+  `startTracing()` явно з мок-env через DI (signature `startTracing(env: TracingEnv)`
+  збережено), тому testability не зламано. Прямих `process.env[...]` reads
+  у файлі більше немає. Decision Б (consistency with the env.ts singleton)
+  обрана; DI-pattern лишається, але defaultEnv тепер валідований Zod-env
+  замість сирого `process.env`.
 
 ### P2-3. `@sergeant/db-schema` umbrella `./migrate` export — drop ❌ Не в цьому PR
 

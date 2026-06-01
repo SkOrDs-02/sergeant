@@ -108,6 +108,8 @@ Extract two cohesive subcomponents in a follow-up:
 
 ### F5 — Foreign module accents (`sky-*`, `emerald-*`) inside the routine subtree [severity: high] [perspective: rule]
 
+> **Closure note (2026-06-01, PR-B9 of 15-pack):** Verified-already-done. `grep -rn "sky-[0-9]\|emerald-[0-9]" apps/web/src/modules/routine` returns **zero matches**. Whatever foreign-accent leakage the audit flagged has since been cleaned up (Hard Rule #12 holds — only the `routine` semantic accents remain in-subtree). Doc-only closure.
+
 **Page:** Routine module
 **Files:**
 
@@ -141,6 +143,8 @@ A crafted deep link from a malicious actor (e.g. a habit-sharing flow) can crash
 **Recommendation.**
 Replace the regex with `parseDateKey(q)` round-trip validation: if `dateKeyFromDate(parseDateKey(q)) !== q`, drop the parameter and `replaceState` without applying. Already a one-liner.
 
+> **Closure note (2026-06-01, PR-B4 of 15-pack):** Verified-already-done. `apps/web/src/modules/routine/useRoutineAppState.ts:254-263` now does `if (q && parseKyivDate(q))` before `time.deepLinkDay(q)`. `parseKyivDate` returns `null` for invalid calendar dates (`2026-02-31`, `9999-99-99`, `0000-13-01` all rejected), and the param is `URLSearchParams.delete()`-d after a successful apply so back-navigation can't re-trigger the jump. No regex-shape-only path remains.
+
 ---
 
 ### F7 — `useRoutineReminders` swallows every error via empty `catch {}` [severity: high] [perspective: bug]
@@ -163,6 +167,8 @@ Each catch should at minimum call `logError("routine.reminders.notify-failed", e
 ---
 
 ### F8 — `useRoutineReminders` scheduler is bound only to `enabled` flag; runtime permission flips are ignored [severity: medium] [perspective: bug]
+
+> **Closure note (2026-06-01, PR-B15 of 15-pack):** Verified-already-done. `apps/web/src/modules/routine/hooks/useRoutineReminders.ts:93-149` introduced `useNotificationPermission` — listens to the Permissions API `change` event with `visibilitychange` / `focus` fallback. Scheduler effect tuple now includes `[enabled, permission]`, so revoke stops the loop and re-grant restarts it without a tab refresh. Audit-flagged "ignored runtime permission flip" closed.
 
 > ✅ **Closed 2026-05-31** — додано `useNotificationPermission` хук: підписка на `navigator.permissions.query({ name: "notifications" })` change-event + fallback `visibilitychange`/`focus`. Стан permission тепер у deps scheduler-ефекту — revoke зупиняє цикл, re-grant автоматично рестартує без перезавантаження SPA.
 
@@ -222,6 +228,8 @@ if (!row) return s; // nothing to move
 next.splice(ti, 0, row);
 ```
 
+> **Closure note (2026-06-01, PR-B2 of 15-pack):** Resolved. `apps/web/src/modules/routine/components/settings/ActiveHabitsSection.tsx:141-144` now narrows via `if (row === undefined) return s;` before the second `splice`. No `!`. Hard Rule #19 friendly.
+
 ---
 
 ### F11 — Strategy page UI strings are in English; product is Ukrainian-first [severity: medium] [perspective: i18n]
@@ -238,6 +246,8 @@ When PR-35+ wires the page to `/strategy`, every shipped string will need a foll
 
 **Recommendation.**
 Translate the strings now (it's a 10-line diff) and rename `PERSONA_LABELS` to Ukrainian: `"Фінік (фінанси)"`, `"Фізрук (фітнес)"`, `"Харчування"`, `"Рутина"`. Keep the persona id strings English (they are an API contract with the server).
+
+> **Closure note (2026-06-01, PR-B1 of 15-pack):** Resolved. `apps/web/src/pages/strategy/StrategyPage.tsx` now ships Ukrainian copy across all surfaces: header "Стратегічні цілі" / "Тиждень з …"; form "Додати ціль", "Персона", "Текст цілі", placeholder; submit "Додати ціль" / "Зберігаю…"; empty/loading "Цілей на тиждень… немає" / "Завантаження…"; error-text "Текст цілі не може бути порожнім". `PERSONA_LABELS` map → Ukrainian as recommended. Persona id strings (`"finyk"` etc.) intentionally stay English as the server-side API contract.
 
 ---
 
@@ -274,6 +284,8 @@ The page is meant to be touched on mobile (Capacitor shell + PWA both list it). 
 
 **Recommendation.**
 Replace the bare `<button>` with the design-system `<Button variant="primary">` from `@shared/components/ui/Button` — it auto-applies `min-h-[44px]` and the correct focus ring.
+
+> **Closure note (2026-06-01, PR-B1 of 15-pack):** Resolved minimally. Submit button keeps the bare `<button>` (StrategyPage is still PR-34 skeleton + unmounted) but adds `min-h-touch-target` + `text-style-label` to the className. Resolves to ≥44 px floor on coarse-pointer devices; WCAG 2.5.5 satisfied. Full `<Button>` migration deferred to the PR-35+ conversation-UI rewrite (StrategyPage will get a router-mount + design-system pass together).
 
 ---
 
@@ -479,6 +491,8 @@ return [...map.entries()].sort(([ah], [bh]) => {
   return ai === -1 && bi === -1 ? ah.localeCompare(bh, "uk") : ai - bi;
 });
 ```
+
+> **Closure note (2026-06-01, PR-A9 of 15-pack):** Resolved. `apps/web/src/modules/routine/RoutineApp.helpers.ts:97-104` now destructures: `.sort(([aKey], [bKey]) => …)`. No tuple indexing; locals read directly so a future refactor that changes the entries shape forces a compile-time fix instead of silently shifting a bang.
 
 ---
 

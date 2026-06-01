@@ -879,6 +879,29 @@ export const n8nWebhookReplayDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// ───────────────────────── Mono token crypto (H4) ─────────────
+/**
+ * H4 Phase 2 — кількість прочитань `mono_connection.token_*` рядків, чий
+ * ciphertext був зашифрований не поточною версією ключа (legacy unversioned
+ * або стара версія після rotation). Інкрементиться один раз на read, що
+ * тригерить lazy re-encrypt. Дозволяє під час rotation моніторити
+ * `сума(stale) → 0` перед тим, як прибрати старий ключ із
+ * `MONO_TOKEN_ENC_KEYS`.
+ *
+ * `row_version` — версія, під якою рядок БУВ зашифрований (stringified;
+ * `"legacy"` для NULL `token_key_version`). `outcome`:
+ *   - `reencrypted`      — read decrypt-нувся під старою версією, re-encrypt-
+ *     write під current версією успішно записаний.
+ *   - `reencrypt_failed` — decrypt OK, але re-encrypt-write кинув (best-effort;
+ *     read НЕ провалився; рядок лишається під старою версією до наступного read-у).
+ */
+export const monoTokenLazyReencryptTotal = new client.Counter({
+  name: "mono_token_lazy_reencrypt_total",
+  help: "Reads of mono_connection.token_* rows still under a non-current key version, with lazy re-encrypt outcome (H4 Phase 2 rotation gauge)",
+  labelNames: ["row_version", "outcome"], // row_version=legacy|1|2|…; outcome=reencrypted|reencrypt_failed
+  registers: [register],
+});
+
 // ───────────────────────── Mono enrichment worker ─────────────
 // Polling-worker для `mono_ai_enrichment_queue`. Раніше outbox-таблиця
 // існувала (міграція 013), але жоден консьюмер її не читав — n8n flow

@@ -32,6 +32,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { strategicKeys } from "@shared/lib/api/queryKeys";
+import { messages } from "../../shared/i18n/uk";
 import { internalFetch } from "@shared/lib/api/internalFetch";
 
 /** Канонічний catalog персон (mirror з `apps/server/src/lib/strategicGoals.ts`). */
@@ -93,10 +94,10 @@ export function kyivMondayISO(now: Date = new Date()): string {
 }
 
 const PERSONA_LABELS: Record<StrategicGoalPersona, string> = {
-  finyk: "finyk (finance)",
-  fizruk: "fizruk (fitness)",
-  nutrition: "nutrition",
-  routine: "routine",
+  finyk: "Фінік (фінанси)",
+  fizruk: "Фізрук (фітнес)",
+  nutrition: "Харчування",
+  routine: "Рутина",
 };
 
 /**
@@ -203,7 +204,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
     e.preventDefault();
     const trimmed = goalText.trim();
     if (!trimmed) {
-      setSubmitError("goal_text не може бути порожнім");
+      setSubmitError(messages.strategy.goalTextRequired);
       return;
     }
     createMutation.mutate({
@@ -217,20 +218,20 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
   return (
     <main className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Strategic Goals</h1>
+        <h1 className="text-2xl font-semibold">{messages.strategy.title}</h1>
         <p className="text-sm text-muted-foreground">
-          Week starting <code>{weekStart}</code> &middot; placeholder UI (PR-34
-          skeleton)
+          {messages.strategy.weekPrefix} <code>{weekStart}</code> &middot;{" "}
+          {messages.strategy.placeholderTag}
         </p>
       </header>
 
       <section aria-labelledby="add-goal-heading" className="mb-8">
         <h2 id="add-goal-heading" className="mb-2 text-lg font-medium">
-          Add goal
+          {messages.strategy.addGoal}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <label className="block">
-            <span className="text-sm">Persona</span>
+            <span className="text-sm">{messages.strategy.personaLabel}</span>
             <select
               value={persona}
               onChange={(e) =>
@@ -246,14 +247,14 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm">Goal text</span>
+            <span className="text-sm">{messages.strategy.goalTextLabel}</span>
             <textarea
               value={goalText}
               onChange={(e) => setGoalText(e.target.value)}
               rows={3}
               maxLength={2048}
               className="mt-1 block w-full rounded-md border px-3 py-2"
-              placeholder="e.g. Cut 'Coffee' category spend by 60% before Sunday"
+              placeholder={messages.strategy.goalTextPlaceholder}
             />
           </label>
           {submitError !== null && (
@@ -264,23 +265,27 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="rounded-md bg-info-strong px-4 py-2 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-info disabled:opacity-50"
+            className="rounded-md bg-info-strong px-4 py-2 text-white text-style-label min-h-touch-target focus-visible:outline focus-visible:outline-2 focus-visible:outline-info disabled:opacity-50"
           >
-            {createMutation.isPending ? "Saving…" : "Add goal"}
+            {createMutation.isPending
+              ? messages.strategy.saving
+              : messages.strategy.addGoal}
           </button>
         </form>
       </section>
 
       <section aria-labelledby="goals-heading">
         <h2 id="goals-heading" className="mb-2 text-lg font-medium">
-          This week&apos;s goals
+          {messages.strategy.thisWeeksGoals}
         </h2>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">
+            {messages.strategy.loading}
+          </p>
         ) : goals.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No goals for week starting {weekStart}. WF-26 cron fires Mon 09:00
-            Kyiv, or add a goal manually using the form above.
+            {messages.strategy.emptyStatePrefix} {weekStart}{" "}
+            {messages.strategy.emptyStateSuffix}
           </p>
         ) : (
           <div className="space-y-4">

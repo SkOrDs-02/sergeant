@@ -15,7 +15,8 @@ import { pool } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { categorizeMcc } from "./mccCategories.js";
-import { decryptToken } from "./crypto.js";
+import type { KeyRing } from "../../lib/keyRing.js";
+import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
 
 const MONO_API_TIMEOUT_MS = 15_000;
 /** Monobank personal statement rate limit: 1 req / 60 s per token. */
@@ -175,26 +176,17 @@ interface BackfillAccount {
   id: string;
 }
 
-interface BackfillConnectionRow {
-  token_ciphertext: Buffer;
-  token_iv: Buffer;
-  token_tag: Buffer;
-}
+type BackfillConnectionRow = MonoTokenRow;
 
 export async function runMonoHistoryBackfill(
   userId: string,
   accounts: BackfillAccount[],
   encryptedToken: BackfillConnectionRow,
-  encKey: string,
+  ring: KeyRing,
 ): Promise<void> {
-  const token = decryptToken(
-    {
-      ciphertext: encryptedToken.token_ciphertext,
-      iv: encryptedToken.token_iv,
-      tag: encryptedToken.token_tag,
-    },
-    encKey,
-  );
+  // Decrypt under the row's recorded key version + lazily re-encrypt if it's
+  // a legacy/stale-version row (best-effort; never throws on the write).
+  const token = await decryptAndLazyReencrypt(encryptedToken, userId, ring);
 
   const toTs = Math.floor(Date.now() / 1000);
   const fromTs = toTs - HISTORY_DAYS * 24 * 60 * 60;
@@ -259,14 +251,14 @@ export async function runMonoHistoryBackfill(
 export function scheduleHistoryBackfill(
   userId: string,
   accountIds: string[],
-  encKey: string,
+  ring: KeyRing,
 ): void {
   if (accountIds.length === 0) return;
 
   setImmediate(() => {
     pool
       .query<BackfillConnectionRow>(
-        `SELECT token_ciphertext, token_iv, token_tag
+        `SELECT token_ciphertext, token_iv, token_tag, token_key_version
          FROM mono_connection WHERE user_id = $1`,
         [userId],
       )
@@ -277,7 +269,7 @@ export function scheduleHistoryBackfill(
           userId,
           accountIds.map((id) => ({ id })),
           row,
-          encKey,
+          ring,
         );
       })
       .catch((err: unknown) => {

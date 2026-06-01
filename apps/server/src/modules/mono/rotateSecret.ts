@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 import { Sentry } from "../../sentry.js";
 import { logger } from "../../obs/logger.js";
-import { decryptToken, tokenFingerprint, webhookSecretHash } from "./crypto.js";
+import type { KeyRing } from "../../lib/keyRing.js";
+import { tokenFingerprint, webhookSecretHash } from "./crypto.js";
+import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
 
 /**
  * Periodic Monobank webhook-secret rotation.
@@ -33,7 +35,7 @@ const MONO_WEBHOOK_URL = "https://api.monobank.ua/personal/webhook";
 
 export interface RotateOneInput {
   userId: string;
-  encKey: string;
+  ring: KeyRing;
   publicApiBaseUrl: string;
   /** Injectable for tests; defaults to the global `fetch`. */
   fetchImpl?: typeof fetch | undefined;
@@ -65,15 +67,11 @@ export interface RotateOneResult {
 export async function rotateMonoWebhookSecret(
   input: RotateOneInput,
 ): Promise<RotateOneResult> {
-  const { userId, encKey, publicApiBaseUrl, query } = input;
+  const { userId, ring, publicApiBaseUrl, query } = input;
   const fetchImpl = input.fetchImpl ?? fetch;
 
-  const sel = await query<{
-    token_ciphertext: Buffer;
-    token_iv: Buffer;
-    token_tag: Buffer;
-  }>(
-    `SELECT token_ciphertext, token_iv, token_tag
+  const sel = await query<MonoTokenRow>(
+    `SELECT token_ciphertext, token_iv, token_tag, token_key_version
        FROM mono_connection
       WHERE user_id = $1 AND status = 'active'`,
     [userId],
@@ -84,17 +82,12 @@ export async function rotateMonoWebhookSecret(
     return { userId, rotated: false, reason: "not_found" };
   }
 
-  const row = sel.rows[0];
+  const row = sel.rows[0]!;
   let plaintextToken: string;
   try {
-    plaintextToken = decryptToken(
-      {
-        ciphertext: row!.token_ciphertext,
-        iv: row!.token_iv,
-        tag: row!.token_tag,
-      },
-      encKey,
-    );
+    // Decrypt under the row's recorded key version; lazily re-encrypt
+    // legacy/stale rows under the current key (best-effort, never throws).
+    plaintextToken = await decryptAndLazyReencrypt(row, userId, ring, query);
   } catch (err) {
     // Decryption failure means the row's `token_ciphertext`/`tag` no longer
     // matches the configured `MONO_TOKEN_ENC_KEY` — most likely an env
@@ -180,7 +173,7 @@ export async function rotateMonoWebhookSecret(
 }
 
 export interface RotateBatchInput {
-  encKey: string;
+  ring: KeyRing;
   publicApiBaseUrl: string;
   /** Rotate connections older than this many days. Default 90. */
   olderThanDays?: number | undefined;
@@ -256,7 +249,7 @@ export async function rotateStaleMonoWebhookSecrets(
     try {
       outcome = await rotateMonoWebhookSecret({
         userId: r.user_id,
-        encKey: input.encKey,
+        ring: input.ring,
         publicApiBaseUrl: input.publicApiBaseUrl,
         fetchImpl: input.fetchImpl,
         query: input.query,

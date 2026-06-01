@@ -8,6 +8,7 @@
 
 import { calcDebtRemaining, calcReceivableRemaining } from "../utils";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
   Debt as EngineDebt,
   Receivable as EngineReceivable,
@@ -48,21 +49,43 @@ export type FinykSchedule = {
   urgentLiability: UrgentLiability | null;
 };
 
+/**
+ * Audit 05 F9: parse `YYYY-MM-DD` to a local-midnight `Date`. On bad input
+ * (`null`, `""`, `"not-a-date"`, `"2026-13-99"`) we now bail to "today" at
+ * local midnight instead of silently constructing an `Invalid Date` that
+ * propagates as `NaN` into "через NaN дн" labels. The `Number.isFinite`
+ * triple-guard also blocks the prior `y!` non-null assertion path.
+ */
 export function parseLocalDate(isoDate: string | undefined | null): Date {
-  const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y!, (m || 1) - 1, d || 1);
+  const parts = (isoDate || "").split("-").map(Number);
+  const [y, m, d] = parts;
+  if (
+    !Number.isFinite(y) ||
+    !Number.isFinite(m) ||
+    !Number.isFinite(d) ||
+    (y as number) < 1970
+  ) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  return new Date(y as number, (m as number) - 1, d as number);
 }
 
 export function getNextBillingDate(billingDay: number, now: Date): Date {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  let d = new Date(y, m, Math.min(billingDay, new Date(y, m + 1, 0).getDate()));
-  if (d < new Date(y, m, now.getDate())) {
-    d = new Date(
-      y,
-      m + 1,
-      Math.min(billingDay, new Date(y, m + 2, 0).getDate()),
-    );
+  // Audit 09 prefer-kyiv-time: anchor billing-cycle math to Europe/Kyiv
+  // so a user travelling abroad doesn't accidentally roll the billing
+  // day by their host timezone. Day-of-month is timezone-agnostic for
+  // calendar arithmetic via Date.UTC.
+  const parts = getKyivDateParts(now.getTime());
+  const y = parts.year;
+  const m = parts.month - 1;
+  const today = parts.day;
+  const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const daysInNextMonth = new Date(Date.UTC(y, m + 2, 0)).getUTCDate();
+  let d = new Date(y, m, Math.min(billingDay, daysInMonth));
+  if (d < new Date(y, m, today)) {
+    d = new Date(y, m + 1, Math.min(billingDay, daysInNextMonth));
   }
   return d;
 }
@@ -202,6 +225,8 @@ export function computeFinykSchedule({
  * a frozen snapshot is safer than a fresh `new Date()` each render.
  */
 export function startOfToday(): Date {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  // Audit 09 prefer-kyiv-time: "today" anchored to Europe/Kyiv so the
+  // start-of-day comparison doesn't drift for travelling users.
+  const parts = getKyivDateParts(Date.now());
+  return new Date(parts.year, parts.month - 1, parts.day);
 }
