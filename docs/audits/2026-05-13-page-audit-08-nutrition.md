@@ -346,6 +346,8 @@ Bug-class — UX flakiness on low-end devices.
 
 ### F14 — `as NutritionPage` cast у parser без exhaustive guard [severity: medium] [perspective: ts]
 
+> **Closure note (2026-06-01, PR-B5 of 15-pack):** Resolved. New `isNutritionPage(value): value is NutritionPage` predicate in `apps/web/src/modules/nutrition/lib/nutritionRouter.ts` enumerates each `NutritionPage` literal so adding a future variant fails compile until the predicate is updated. Both `as NutritionPage` casts in `parseNutritionSegments` are dropped: `if (!isNutritionPage(page)) return { page: "start" }` narrows the rest of the function. Stale `VALID_NUTRITION_PAGES` array removed.
+
 **Page:** All
 **File:** `apps/web/src/modules/nutrition/lib/nutritionRouter.ts`
 **Lines:** 53, 62
