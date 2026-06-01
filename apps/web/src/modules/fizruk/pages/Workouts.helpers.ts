@@ -1,5 +1,6 @@
 import type { Workout } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { LastExerciseItem } from "./Workouts.types";
 
 /**
@@ -117,11 +118,11 @@ export function formatActiveDuration(
 }
 
 /**
- * Default retro-workout date — today's calendar date in `YYYY-MM-DD`
- * form, computed from the local time zone (Kyiv-day boundary follows
- * the device clock).
+ * Default retro-workout date — today's calendar date in `YYYY-MM-DD`,
+ * anchored to **Europe/Kyiv** (domain invariant) rather than the device
+ * clock, so late-evening users on a non-Kyiv host don't get the wrong day
+ * (page-audit-06 F11). Name kept for call-site stability.
  */
 export function todayLocalDateString(): string {
-  const x = new Date();
-  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  return getKyivDayKey();
 }

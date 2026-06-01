@@ -139,7 +139,7 @@ export function MiniLineChart({
         viewBox={`0 0 ${w} ${h}`}
         className="w-full h-auto max-h-[160px] overflow-visible"
         role="img"
-        aria-label="Графік тренду"
+        aria-label={`Графік тренду — ${metricLabel}`}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -164,7 +164,7 @@ export function MiniLineChart({
               x={padL - 4}
               y={t.y + 4}
               textAnchor="end"
-              fontSize="9"
+              fontSize="10"
               className="fill-subtle font-medium"
             >
               {t.lab}
@@ -207,7 +207,7 @@ export function MiniLineChart({
               x={p.x}
               y={h - 4}
               textAnchor="middle"
-              fontSize="9"
+              fontSize="10"
               className="fill-muted font-semibold"
             >
               {p.label}

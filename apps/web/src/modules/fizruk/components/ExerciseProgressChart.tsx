@@ -100,7 +100,7 @@ export function ExerciseProgressChart({
               x={padL - 4}
               y={t.y + 4}
               textAnchor="end"
-              fontSize="9"
+              fontSize="10"
               className="fill-subtle"
             >
               {t.lab}
