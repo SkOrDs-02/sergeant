@@ -22,7 +22,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
@@ -190,7 +189,8 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
         ) : null}
       </View>
       <Text className="text-xs text-fg-muted">
-        Рекомендації на базі продуктів зі складу ({activePantry?.name || "Склад"}
+        Рекомендації на базі продуктів зі складу (
+        {activePantry?.name || "Склад"}
         ). Можна вказати час, порції та «не хочу».
       </Text>
 
@@ -316,7 +316,10 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
           <Card key={r.id} className="gap-2" testID={`recipe-card-${r.id}`}>
             <View className="flex-row items-start justify-between gap-2">
               <View className="flex-1">
-                <Text className="text-sm font-semibold text-fg" numberOfLines={2}>
+                <Text
+                  className="text-sm font-semibold text-fg"
+                  numberOfLines={2}
+                >
                   {r.title || "Рецепт"}
                 </Text>
                 <Text className="text-xs text-fg-muted mt-0.5">
@@ -329,7 +332,9 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
 
             {r.ingredients.length > 0 ? (
               <View>
-                <Text className="text-xs text-fg-muted mb-0.5">Інгредієнти</Text>
+                <Text className="text-xs text-fg-muted mb-0.5">
+                  Інгредієнти
+                </Text>
                 <Text className="text-sm text-fg">
                   {r.ingredients.join(", ")}
                 </Text>

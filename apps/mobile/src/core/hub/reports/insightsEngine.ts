@@ -53,6 +53,7 @@ const MONTHS_UK = [
 ] as const;
 
 function parseWorkouts(): Workout[] {
+  // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard read (storage-roadmap migration tracked separately)
   const raw = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
   if (!raw) return [];
   try {

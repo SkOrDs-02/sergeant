@@ -57,8 +57,9 @@ export function PermissionsStep({
   const [pushState, setPushState] = useState<PermissionPromptResult | null>(
     null,
   );
-  const [cameraState, setCameraState] =
-    useState<PermissionPromptResult | null>(null);
+  const [cameraState, setCameraState] = useState<PermissionPromptResult | null>(
+    null,
+  );
 
   const askPush = useCallback(async () => {
     if (pushState !== null) return;
@@ -115,7 +116,7 @@ export function PermissionsStep({
           Дозволи — лише потрібні
         </Text>
         <Text className="text-center text-xs text-fg-muted">
-          Проси можна пізніше. Нічого не обов'язкове.
+          Проси можна пізніше. Нічого не обов’язкове.
         </Text>
       </View>
 
@@ -197,11 +198,7 @@ function PermissionCard({
           granted ? "bg-brand-500/15" : "bg-cream-100",
         )}
       >
-        {granted ? (
-          <Check size={20} color="#7c6af7" strokeWidth={2.5} />
-        ) : (
-          icon
-        )}
+        {granted ? <Check size={20} color="#7c6af7" strokeWidth={2.5} /> : icon}
       </View>
       <View className="min-w-0 flex-1 pr-2">
         <Text className="text-sm font-bold leading-tight text-fg">{title}</Text>

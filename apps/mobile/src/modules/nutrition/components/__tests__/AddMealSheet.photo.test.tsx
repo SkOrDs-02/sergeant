@@ -13,7 +13,7 @@
  * мережевого error-флоу. API-клієнт інжектиться через той самий
  * fetch-responder патерн, що й у `Shopping.generate.test.tsx`.
  */
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
 import { createApiClient } from "@sergeant/api-client";

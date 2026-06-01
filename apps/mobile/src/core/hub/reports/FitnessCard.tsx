@@ -27,6 +27,7 @@ export interface FitnessCardProps {
 
 export default function FitnessCard({ period, offset }: FitnessCardProps) {
   const { cur, prev, dates } = useMemo(() => {
+    // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard read (storage-roadmap migration tracked separately)
     const raw = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);

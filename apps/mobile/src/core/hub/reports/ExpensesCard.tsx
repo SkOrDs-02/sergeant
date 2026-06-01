@@ -34,6 +34,7 @@ interface RawTx {
 
 function readTxInputs(): SpendingInputs {
   const raw = safeReadLS<{ txs?: unknown[] } | unknown[] | null>(
+    // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard read (storage-roadmap)
     STORAGE_KEYS.FINYK_TX_CACHE,
     null,
   );
@@ -53,9 +54,13 @@ function readTxInputs(): SpendingInputs {
       time: typeof tx.time === "number" ? tx.time : 0,
     }));
 
+  /* eslint-disable no-restricted-syntax -- intentional LS-shard reads; this
+     report card reads its own localStorage shard by design. SQLite-overlay
+     migration is separate storage-roadmap work. */
   const hidden = safeReadLS<string[]>(STORAGE_KEYS.FINYK_HIDDEN_TXS, []) ?? [];
   const txCategories =
     safeReadLS<Record<string, string>>(STORAGE_KEYS.FINYK_TX_CATS, {}) ?? {};
+  /* eslint-enable no-restricted-syntax */
   const transferIds = Object.entries(txCategories)
     .filter(([, v]) => v === "internal_transfer")
     .map(([k]) => k);

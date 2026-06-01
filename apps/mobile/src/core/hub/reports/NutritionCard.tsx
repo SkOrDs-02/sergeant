@@ -28,6 +28,7 @@ export interface NutritionCardProps {
 
 export default function NutritionCard({ period, offset }: NutritionCardProps) {
   const { cur, prev, dates } = useMemo(() => {
+    // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard read (storage-roadmap migration tracked separately)
     const log = safeReadLS<NutritionLog>(STORAGE_KEYS.NUTRITION_LOG, {});
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);

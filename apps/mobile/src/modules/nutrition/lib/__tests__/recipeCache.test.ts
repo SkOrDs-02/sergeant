@@ -16,8 +16,6 @@ import {
   writeRecipeCache,
 } from "../recipeCache";
 
-const STORAGE_KEY = "mobile:nutrition_recipe_cache_v1";
-
 beforeEach(() => {
   _getMMKVInstance().clearAll();
   jest.restoreAllMocks();
