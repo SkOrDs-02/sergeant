@@ -1,7 +1,7 @@
 # I3 — Generate SBOM during container build
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Phase 1 + Phase 3 implemented (workspace-level SBOM + SLSA L1 build-provenance attestation on release)
+> **Status:** Closed (2026-06-01) — Phase 1 + Phase 3 implemented (workspace-level SBOM + SLSA L1 build-provenance attestation; 100% dependency coverage). Phase 2 (container SBOM) is optional-by-design — deferred until containers become the deploy path (workspace SBOM already covers 100% of deps).
 
 | Field          | Value                                                                        |
 | -------------- | ---------------------------------------------------------------------------- |
@@ -9,7 +9,7 @@
 | **Sprint**     | [Sprint 4](./sprint-4.md)                                                    |
 | **Owner**      | platform                                                                     |
 | **Effort**     | 0.5 person-day                                                               |
-| **Status**     | Phase 1 + 3 live (workspace SBOM + SLSA L1 attest); Phase 2 (container) open |
+| **Status**     | Closed (2026-06-01) — Phase 1+3 live; Phase 2 (container) optional, deferred |
 | **Discovered** | 2026-05-03 deep security review                                              |
 
 ## Summary

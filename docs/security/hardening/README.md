@@ -42,10 +42,10 @@
 
 ### Critical
 
-| ID                                       | Title                                       | Status                              | Sprint                    |
-| ---------------------------------------- | ------------------------------------------- | ----------------------------------- | ------------------------- |
-| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | In progress (Phase 1 shipped 05-04) | [Sprint 1](./sprint-1.md) |
-| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | In progress (Phase 1 shipped 05-04) | [Sprint 1](./sprint-1.md) |
+| ID                                       | Title                                       | Status                               | Sprint                    |
+| ---------------------------------------- | ------------------------------------------- | ------------------------------------ | ------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Closed (2026-06-01, mitigated-final) | [Sprint 1](./sprint-1.md) |
+| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | In progress (Phase 1 shipped 05-04)  | [Sprint 1](./sprint-1.md) |
 
 ### High
 
