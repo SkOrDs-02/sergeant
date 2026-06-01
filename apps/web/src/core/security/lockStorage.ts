@@ -32,16 +32,31 @@ const ITERATIONS_BY_VERSION: Record<CredVersion, number> = {
 export const CURRENT_PBKDF2_ITERATIONS =
   ITERATIONS_BY_VERSION[LATEST_CRED_VERSION];
 
+/**
+ * Audit 10 / Decision #4 ("10 failed attempts wipe"): after this many
+ * consecutive failed `verifyPin` calls the credential is wiped, the
+ * counter is dropped, and `useAppLock` falls through to the setup flow.
+ *
+ * Why 10: PBKDF2 with 600k iterations + a 4-6 digit numeric PIN gives an
+ * attacker who exfiltrates the IDB blob the upper hand offline. The wipe
+ * protects only against an _online_ adversary with physical access to an
+ * unlocked-but-pin-required device. 10 is a comfortable margin for a
+ * fat-finger user (more than iOS, less than Android pattern-lock).
+ */
+export const MAX_FAILED_UNLOCK_ATTEMPTS = 10;
+
 interface LockCredV1 {
   salt: Uint8Array;
   hash: Uint8Array;
   v?: 1;
+  failed?: number;
 }
 
 interface LockCredV2 {
   salt: Uint8Array;
   hash: Uint8Array;
   v: 2;
+  failed?: number;
 }
 
 type LockCred = LockCredV1 | LockCredV2;
@@ -111,9 +126,30 @@ export async function savePinHash(pin: string): Promise<void> {
   await writeCred({ salt, hash, v: LATEST_CRED_VERSION });
 }
 
-export async function verifyPin(pin: string): Promise<boolean> {
+/**
+ * Audit 10 / Decision #4: brute-force wipe protocol.
+ *
+ *   - Success → resets the persisted `failed` counter to 0.
+ *   - Failure → increments. On the `MAX_FAILED_UNLOCK_ATTEMPTS`-th
+ *     consecutive failure the credential is wiped (`clearPinHash`) and
+ *     the result is `{ ok: false, wiped: true }`. The next mount of
+ *     `useAppLock` will see `hasPinSet() === false` and fall through
+ *     to "idle"; Settings shows the un-configured state and the user
+ *     can re-enroll.
+ *
+ * `verifyPin` is preserved as the legacy boolean entry point for
+ * `useAppLock` and the existing tests. New call sites should prefer
+ * `verifyPinAttempt` so the wipe signal is observable.
+ */
+export interface VerifyPinResult {
+  ok: boolean;
+  failed: number;
+  wiped: boolean;
+}
+
+export async function verifyPinAttempt(pin: string): Promise<VerifyPinResult> {
   const cred = await loadCred();
-  if (!cred) return false;
+  if (!cred) return { ok: false, failed: 0, wiped: false };
   const version = credVersion(cred);
   const candidate = await deriveHash(
     pin,
@@ -121,10 +157,52 @@ export async function verifyPin(pin: string): Promise<boolean> {
     ITERATIONS_BY_VERSION[version],
   );
   const ok = timingSafeEqual(candidate, cred.hash);
-  if (ok && version < LATEST_CRED_VERSION) {
-    await migrateCredIfNeeded(pin);
+  if (ok) {
+    if (version < LATEST_CRED_VERSION) {
+      await migrateCredIfNeeded(pin);
+    } else if ((cred.failed ?? 0) > 0) {
+      try {
+        await writeCred({
+          salt: cred.salt,
+          hash: cred.hash,
+          v: LATEST_CRED_VERSION,
+          failed: 0,
+        });
+      } catch {
+        // best-effort reset
+      }
+    }
+    return { ok: true, failed: 0, wiped: false };
   }
-  return ok;
+  const nextFailed = (cred.failed ?? 0) + 1;
+  if (nextFailed >= MAX_FAILED_UNLOCK_ATTEMPTS) {
+    try {
+      await clearPinHash();
+    } catch {
+      // best-effort wipe
+    }
+    return { ok: false, failed: nextFailed, wiped: true };
+  }
+  try {
+    if (version >= LATEST_CRED_VERSION) {
+      await writeCred({
+        salt: cred.salt,
+        hash: cred.hash,
+        v: LATEST_CRED_VERSION,
+        failed: nextFailed,
+      });
+    }
+    // Legacy v=1 records: skip the counter persist so the migration
+    // path stays focused on the single-pass re-derive. The counter
+    // will start tracking on the first successful unlock + re-write.
+  } catch {
+    // best-effort counter persist
+  }
+  return { ok: false, failed: nextFailed, wiped: false };
+}
+
+export async function verifyPin(pin: string): Promise<boolean> {
+  return (await verifyPinAttempt(pin)).ok;
 }
 
 // Re-derive an already-verified PIN at the current iteration count and

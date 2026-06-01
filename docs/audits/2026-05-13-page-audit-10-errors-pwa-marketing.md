@@ -479,6 +479,8 @@ async function savePinHash(userId: string, pin: string) { ... db.put(STORE, payl
 
 Also rotate / clear on logout in `useAppLock` mount when `auth.userId !== persisted.userId`.
 
+> **Closure note (2026-06-01, PR-7 of "9 decisions", Decision #4 — partial):** Shipped the 10-attempts brute-force wipe half. `lockStorage.ts` now persists a `failed` counter in the `LockCredV2` record; `verifyPinAttempt(pin)` returns `{ ok, failed, wiped }` and resets to 0 on success. After `MAX_FAILED_UNLOCK_ATTEMPTS = 10` consecutive failures the credential is wiped via `clearPinHash`, and `useAppLock.unlock` drops the lock to `idle` so the user gets back into the app (Settings shows un-configured state; re-enrollment required). New `APP_LOCK_UNLOCK_FAILED` payload now carries `{ method: "pin", attempt, wiped }` matching the canonical contract in `packages/shared/src/lib/analyticsEvents.ts:267-269`. Regression tests in `lockStorage.test.ts` cover counter increment, wipe-on-10th, and reset-on-success. Per-user keying (`KEY = (userId) => \`v1:\${userId}\``) and WebAuthn passkey replacement (Option A's main thrust) stay open as a follow-up — both touch the AppLockProvider plumbing and Settings UI more broadly than the brute-force hardening, and Capacitor mobile-shell webview WebAuthn support needs its own audit. The wipe meaningfully shrinks the threat model in the meantime: an attacker with physical access to an unlocked device but pin-required gets ≤10 tries before the credential evaporates.
+
 ---
 
 ### F17 — `sqlite.ts` opens a single per-origin DB without per-user partitioning [severity: medium] [perspective: bug]

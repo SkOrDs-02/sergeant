@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { useFlag } from "../lib/featureFlags";
-import { hasPinSet, verifyPin } from "./lockStorage";
+import { hasPinSet, verifyPinAttempt } from "./lockStorage";
 
 export type LockState = "idle" | "locked" | "setup" | "change";
 
@@ -127,18 +127,33 @@ export function useAppLock(): UseAppLockReturn {
 
   const unlock = useCallback(
     async (pin: string): Promise<boolean> => {
-      const ok = await verifyPin(pin);
-      if (ok) {
+      const result = await verifyPinAttempt(pin);
+      if (result.ok) {
         setState("idle");
-        capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS, {});
+        capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS, {
+          method: "pin",
+        });
         // Force-reset throttle window so resetIdleTimer runs immediately
         // to arm post-unlock idle timer (audit F15).
         lastIdleResetRef.current = 0;
         resetIdleTimer();
-      } else {
-        capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED, {});
+        return true;
       }
-      return ok;
+      capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED, {
+        method: "pin",
+        attempt: result.failed,
+        wiped: result.wiped,
+      });
+      if (result.wiped) {
+        // Decision #4 / 10-attempt wipe: credential was nuked. Drop the
+        // lock so the user gets back into the app — Settings shows the
+        // un-configured state and they must re-enroll. The single
+        // `APP_LOCK_UNLOCK_FAILED` event above already carries
+        // `wiped: true`, so dashboards filter on it without aggregating
+        // a duplicate event.
+        setState("idle");
+      }
+      return false;
     },
     [resetIdleTimer],
   );

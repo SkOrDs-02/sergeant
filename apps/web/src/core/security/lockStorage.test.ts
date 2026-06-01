@@ -10,6 +10,8 @@ import {
   hasPinSet,
   savePinHash,
   verifyPin,
+  verifyPinAttempt,
+  MAX_FAILED_UNLOCK_ATTEMPTS,
 } from "./lockStorage";
 
 const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
@@ -70,6 +72,52 @@ describe("lockStorage", () => {
     // Overwrite — should still verify with the same PIN.
     await savePinHash("1234");
     expect(await verifyPin("1234")).toBe(true);
+  });
+
+  describe("Decision #4 — 10-failed-attempts brute-force wipe", () => {
+    it("MAX_FAILED_UNLOCK_ATTEMPTS is pinned at 10", () => {
+      expect(MAX_FAILED_UNLOCK_ATTEMPTS).toBe(10);
+    });
+
+    // PBKDF2 with 600k iterations under fake-indexeddb costs ~1s per
+    // attempt in CI; 10 attempts → ~10s. Per-test timeout is bumped so
+    // the brute-force loop has room to breathe without leaking past
+    // the suite-wide default.
+    it("increments the failed counter on each wrong PIN", async () => {
+      await savePinHash("9999");
+      for (let i = 1; i < MAX_FAILED_UNLOCK_ATTEMPTS; i++) {
+        const r = await verifyPinAttempt("0000");
+        expect(r.ok).toBe(false);
+        expect(r.wiped).toBe(false);
+        expect(r.failed).toBe(i);
+      }
+      expect(await hasPinSet()).toBe(true);
+    }, 30_000);
+
+    it("wipes the credential on the 10th consecutive failure", async () => {
+      await savePinHash("9999");
+      let last;
+      for (let i = 0; i < MAX_FAILED_UNLOCK_ATTEMPTS; i++) {
+        last = await verifyPinAttempt("0000");
+      }
+      expect(last?.ok).toBe(false);
+      expect(last?.wiped).toBe(true);
+      expect(last?.failed).toBe(MAX_FAILED_UNLOCK_ATTEMPTS);
+      expect(await hasPinSet()).toBe(false);
+    }, 30_000);
+
+    it("resets the counter on a successful unlock", async () => {
+      await savePinHash("9999");
+      for (let i = 0; i < 5; i++) {
+        await verifyPinAttempt("0000");
+      }
+      const success = await verifyPinAttempt("9999");
+      expect(success.ok).toBe(true);
+      expect(success.failed).toBe(0);
+      const after = await verifyPinAttempt("0000");
+      expect(after.failed).toBe(1);
+      expect(after.wiped).toBe(false);
+    }, 30_000);
   });
 
   describe("S6 — PBKDF2 ramp-up (OWASP 2023, 600k iterations) and v=1→v=2 migration", () => {
