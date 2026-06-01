@@ -222,6 +222,8 @@ if (!row) return s; // nothing to move
 next.splice(ti, 0, row);
 ```
 
+> **Closure note (2026-06-01, PR-B2 of 15-pack):** Resolved. `apps/web/src/modules/routine/components/settings/ActiveHabitsSection.tsx:141-144` now narrows via `if (row === undefined) return s;` before the second `splice`. No `!`. Hard Rule #19 friendly.
+
 ---
 
 ### F11 — Strategy page UI strings are in English; product is Ukrainian-first [severity: medium] [perspective: i18n]
