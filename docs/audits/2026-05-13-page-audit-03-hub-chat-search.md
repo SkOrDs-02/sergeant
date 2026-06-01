@@ -104,6 +104,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 **Recommendation.** Require an explicit confirmation step for any `autoSend=1` originating outside the in-app launcher: either gate `autoSend` on `document.referrer` matching `location.origin`, or always prefill the input and let the user press Send. Alternatively, sign the launcher's `autoSend` hand-off with a short-lived nonce.
 
+> **Closure note (2026-06-01, PR-A6 of 15-pack):** Resolved by dropping URL-driven auto-send. `apps/web/src/core/hub/HubChatPage.tsx` now hard-codes `autoSendInitial={false}` and ignores the `autoSend` search param entirely; the `q=` pre-fill stays so the user can review + edit before pressing Send themselves. The auto-send path remains available **only** to the in-process `openChat` hub-bus event (`HubChatOverlay`), which is not reachable from a hand-crafted URL. Net effect: a malicious link `https://app.sergeant.lol/chat?q=...&autoSend=1` now opens chat with the text pre-filled but does not ship a turn until the user explicitly sends.
+
 ---
 
 ### F5 — Voice-keyword regex auto-triggers TTS playback without user consent [severity: medium] [perspective: security]
