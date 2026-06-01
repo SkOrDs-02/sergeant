@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -32,8 +32,8 @@ The HubChat assistant uses Anthropic tool-calling. Tools are **defined on the se
 ┌─────────────────┐    POST /api/chat        ┌────────────────────────┐
 │ HubChat (web)   │ ──────────────────────▶  │ apps/server            │
 │ apps/web/src/   │                          │ src/modules/chat/      │
-│ core/HubChat.   │                          │  - chat.ts (handler)   │
-│ tsx             │                          │  - tools.ts (TOOLS)    │
+│ core/hub/       │                          │  - chat.ts (handler)   │
+│ HubChat.tsx     │                          │  - tools.ts (TOOLS)    │
 └─────────────────┘                          │  - toolDefs/*.ts       │
         ▲                                    └───────────┬────────────┘
         │ stream: text + tool_use blocks                 │
@@ -66,7 +66,7 @@ The HubChat assistant uses Anthropic tool-calling. Tools are **defined on the se
 
 **Implications when changing tools:**
 
-- A new tool needs three coordinated edits: `apps/server/src/modules/chat/toolDefs/<domain>.ts` (definition), `apps/web/src/core/lib/hubChatActions.ts` (executor), and (if user-visible) `hubChatActionCards.ts` + optionally `hubChatQuickActions.ts`.
+- A new tool needs three coordinated edits: `apps/server/src/modules/chat/toolDefs/<domain>.ts` (definition), `apps/web/src/core/lib/hubChatActions.ts` (executor), and (if user-visible) `hubChatActionCards.ts` + optionally `apps/web/src/shared/lib/modules/moduleQuickActions.ts`.
 - The server **does not** run tool side effects — never put DB writes in `chat.ts`. They go through the regular `apps/server/src/modules/<domain>/*` HTTP endpoints, called by the client executor.
 - "Risky" tools (delete/forget/import) live in `RISKY_TOOLS` in `hubChatActionCards.ts` and get a "Критична дія" badge in the UI.
 

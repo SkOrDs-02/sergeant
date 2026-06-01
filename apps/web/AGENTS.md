@@ -29,7 +29,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Surface-specific gotchas
 
-- **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`). No inline `queryKey: [...]`.
+- **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`). No inline `queryKey: [...]`.
 - **Tailwind colour-opacity (Hard Rule #8):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion (Rule #9). No arbitrary hex in `className` (Rule #11). Use `focus-visible:` not `focus:` (Rule #14).
 - **Module accents (Rule #12):** module-accent containment — no foreign accents inside a module subtree.
 - **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Active initiative — split before crossing.
