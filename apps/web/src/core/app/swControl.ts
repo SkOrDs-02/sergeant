@@ -1,7 +1,8 @@
 type SwRequest =
   | { type: "SW_DEBUG"; data?: { requestId: string } }
   | { type: "CLEAR_SW_CACHES"; data?: { requestId: string } }
-  | { type: "SW_SET_DEBUG"; data?: { enabled: boolean } };
+  | { type: "SW_SET_DEBUG"; data?: { enabled: boolean } }
+  | { type: "SW_SET_USER"; data?: { userKey: string | null } };
 
 type SwResponse =
   | { type: "SW_DEBUG_RESULT"; requestId?: string | null; snapshot?: unknown }
@@ -80,6 +81,23 @@ export async function swGetDebugSnapshot() {
     4000,
   );
   return res.snapshot;
+}
+
+/**
+ * Audit 03 / Decision #2 (C): partition runtime cache keys per user.
+ *
+ * Posts the current Better Auth opaque user id (or `null` on logout) to
+ * the service worker. The SW stores it in module-scope and the
+ * `cacheKeyWillBeUsed` plugin on the API + navigation routes prepends it
+ * to the cache key so user A's responses never resolve user B's requests.
+ *
+ * Fire-and-forget: no response is required. If the SW restarts and the
+ * main thread hasn't yet re-posted, cache keys fall back to `__u=anon` —
+ * acceptable since `signOut` already wipes the caches as the real
+ * security boundary.
+ */
+export async function swSetActiveUser(userKey: string | null) {
+  await postToSw({ type: "SW_SET_USER", data: { userKey } });
 }
 
 export async function swClearCaches() {

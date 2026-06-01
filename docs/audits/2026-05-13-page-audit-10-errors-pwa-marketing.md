@@ -82,6 +82,8 @@ This is a confidentiality breach for any multi-tenant device usage. Finik transa
 2. Add a `plugins: [{ cacheKeyWillBeUsed: ({ request }) => withUserScope(request) }]` to the runtime `/api/*` cache route, where `withUserScope` appends the Better Auth user id from a SW-readable channel (e.g., `clients.matchAll()` + `postMessage` handshake on session change).
 3. Add a regression test that signs in as user A, signs out, signs in as B, and asserts no A-scoped responses are served.
 
+> **Closure note (2026-06-01, PR-5 of "9 decisions", Option C):** Resolved (parts 1 + 2). Part 1 — `apps/web/src/core/auth/AuthContext.tsx` `logout()` now calls `swClearCaches()` and `swSetActiveUser(null)` after `signOut()` (try/catch + `logger.warn`, fire-and-forget — SW failures never block logout). Part 2 — new `userPartitionPlugin` in `apps/web/src/sw/cache.ts` (`cacheKeyWillBeUsed` hook) appends `__u=<userKey>` to every cache key on the navigation + API runtime routes. The active user key lives in SW module-scope (`activeUserKey`, defaults to `"anon"`) and is updated via a new `SW_SET_USER` message from the main thread — `AuthContext` `identifyPostHogUser` effect now also posts `swSetActiveUser(currentId)`. On SW restart the key falls back to `"anon"` until next mount re-posts (acceptable: part 1 is the real security boundary). Part 3 (regression test) deferred — needs a service-worker e2e harness that does not yet exist in this repo. Threat model from F2 (shared device, user-B reading user-A's `/api/finyk/transactions`) is closed: even before next re-post, the previous user's entries live under a different key.
+
 ---
 
 ### F3 — Sentry Session Replay records text without `maskAllText: true` [severity: high] [perspective: security]

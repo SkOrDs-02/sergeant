@@ -20,6 +20,62 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 /**
+ * Audit 03 / Decision #2 (C): module-scope active-user partition.
+ *
+ * Holds the opaque Better Auth user id posted from the main thread via
+ * `SW_SET_USER`. The `cacheKeyWillBeUsed` plugin below appends it to the
+ * Request URL (`__u=<userKey>`) so user A's cache entries never resolve
+ * user B's reads. Resets to `"anon"` on SW restart — main thread re-posts
+ * on next mount, and `signOut → CLEAR_SW_CACHES` already wipes the caches
+ * as the security boundary.
+ *
+ * Why a query param and not a per-user cacheName: cache.delete() under
+ * `clearAppCaches` already walks every cache name; an unbounded set of
+ * per-user cache names would leak across logged-out users and require
+ * extra cleanup logic. A varied cache *key* keeps the cache count fixed.
+ */
+let activeUserKey = "anon";
+
+export function setActiveUserKey(key: string | null): void {
+  activeUserKey = key && key.length > 0 ? key : "anon";
+}
+
+export function getActiveUserKey(): string {
+  return activeUserKey;
+}
+
+const PARTITION_PARAM = "__u";
+
+/**
+ * Workbox `cacheKeyWillBeUsed` hook: appends the active user key as a
+ * synthetic query param so the cache key varies per user without changing
+ * the actual network Request that flies on miss. Drop-in: idempotent if
+ * called twice on the same Request.
+ */
+const userPartitionPlugin = {
+  cacheKeyWillBeUsed: async ({
+    request,
+  }: {
+    request: Request;
+    mode: string;
+  }): Promise<Request> => {
+    try {
+      const url = new URL(request.url);
+      if (url.searchParams.get(PARTITION_PARAM) === activeUserKey) {
+        return request;
+      }
+      url.searchParams.set(PARTITION_PARAM, activeUserKey);
+      return new Request(url.toString(), {
+        method: request.method,
+        headers: request.headers,
+      });
+    } catch {
+      return request;
+    }
+  },
+};
+
+/**
  * Реєструє precache + 2 runtime route-и (навігація + API). Викликається
  * один раз при старті SW. Розбиття на функцію (а не side-effect на
  * import) дає змогу легше mock-ати у тестах і робить порядок
@@ -34,7 +90,10 @@ export function setupCacheRoutes(): void {
       new NetworkFirst({
         cacheName: CACHE_NAMES.navigations,
         networkTimeoutSeconds: 3,
-        plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
+        plugins: [
+          new CacheableResponsePlugin({ statuses: [0, 200] }),
+          userPartitionPlugin,
+        ],
       }),
       { denylist: [/^\/api\//] },
     ),
@@ -67,6 +126,7 @@ export function setupCacheRoutes(): void {
           maxAgeSeconds: 60 * 30, // 30 min
           purgeOnQuotaError: true,
         }),
+        userPartitionPlugin,
       ],
     }),
     "GET",

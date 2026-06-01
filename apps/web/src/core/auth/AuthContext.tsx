@@ -18,6 +18,8 @@ import {
   requestPasswordReset as requestPasswordResetApi,
 } from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
+import { swClearCaches, swSetActiveUser } from "../app/swControl";
+import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { messages } from "../../shared/i18n/uk";
@@ -321,6 +323,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // далі все одно викидаємо локальний me-кеш — UI має показати
       // sign-in surface, а не застрягти в «напів-залогіненому» стані.
     }
+    // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
+    // never resolves a stale cache entry that belonged to user A on
+    // shared devices. Fire-and-forget — ignore SW failures since the
+    // partition plugin (`cacheKeyWillBeUsed`) is the in-flight defense.
+    try {
+      await swClearCaches();
+    } catch (err) {
+      logger.warn("[auth.logout] swClearCaches failed", err);
+    }
+    try {
+      await swSetActiveUser(null);
+    } catch (err) {
+      logger.warn("[auth.logout] swSetActiveUser(null) failed", err);
+    }
     await invalidateMe();
   }, [invalidateMe]);
 
@@ -345,6 +361,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Типи трейтів захищає сам `buildIdentifyTraits`.
       identifyPostHogUser(currentId, buildIdentifyTraits(user));
       lastIdentifiedUserIdRef.current = currentId;
+      // Audit 03 / Decision #2 (C): partition SW cache keys per user.
+      // Fire-and-forget; SW restart will fall back to `__u=anon` until
+      // next mount re-posts.
+      void swSetActiveUser(currentId).catch((err) =>
+        logger.warn("[auth.identify] swSetActiveUser failed", err),
+      );
     } else if (!currentId && prevId) {
       resetPostHog();
       lastIdentifiedUserIdRef.current = null;

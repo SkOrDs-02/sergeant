@@ -11,7 +11,7 @@
  */
 
 import { SW_VERSION } from "./version";
-import { clearAppCaches } from "./cache";
+import { clearAppCaches, setActiveUserKey } from "./cache";
 import { buildSwSnapshot, setDebugEnabled } from "./debug";
 import { recordNotified } from "./notifiedKeys";
 import {
@@ -98,6 +98,17 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
           }
         }),
     );
+    return;
+  }
+
+  if (type === "SW_SET_USER") {
+    // Audit 03 / Decision #2 (C): per-user cache partition. The opaque
+    // Better Auth user id (or `null` on logout) varies the cache key via
+    // `cacheKeyWillBeUsed` in `./cache`. No reply — main thread treats
+    // this as fire-and-forget.
+    const userKey =
+      (data as { userKey?: string | null } | undefined)?.userKey ?? null;
+    setActiveUserKey(userKey);
     return;
   }
 
