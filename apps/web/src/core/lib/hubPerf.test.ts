@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies BEFORE importing the SUT. Vitest hoists `vi.mock`
