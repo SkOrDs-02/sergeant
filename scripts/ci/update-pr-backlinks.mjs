@@ -30,7 +30,7 @@ import {
   existsSync,
   mkdirSync,
 } from "node:fs";
-import { resolve, dirname, join, relative, sep, basename } from "node:path";
+import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 
@@ -39,10 +39,6 @@ const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
 const LEDGER_PATH = resolve(REPO_ROOT, "docs/pr-ledger/index.json");
-const SCHEMA_PATH = resolve(
-  REPO_ROOT,
-  "docs/governance/schemas/pr-ledger.schema.json",
-);
 const SCHEMA_VERSION = 1;
 const TOP_N_IN_DOC = 5;
 
@@ -53,7 +49,8 @@ const BLOCK_END = "<!-- AUTO-GENERATED: PR-BACKLINKS-END -->";
 // strings can safely appear inside backticks, code fences, or prose
 // (e.g. inside ADR-0061 itself, which documents the format). Only a
 // marker that sits on its own line — optionally indented — counts.
-const RE_BLOCK_START = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-START -->[ \t]*$/m;
+const RE_BLOCK_START =
+  /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-START -->[ \t]*$/m;
 const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 
 const GITHUB_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
@@ -133,8 +130,7 @@ function listCanonicalDocs() {
       if (!ent.isFile()) continue;
       if (!ent.name.endsWith(".md")) continue;
       if (cfg.excludes?.includes(ent.name)) continue;
-      if (cfg.excludePrefix && ent.name.startsWith(cfg.excludePrefix))
-        continue;
+      if (cfg.excludePrefix && ent.name.startsWith(cfg.excludePrefix)) continue;
       out.push(join(rootAbs, ent.name));
     }
   }
@@ -143,9 +139,7 @@ function listCanonicalDocs() {
 
 function isCanonicalDocPath(repoRelPath) {
   for (const cfg of CANONICAL_DOC_ROOTS) {
-    const prefix = cfg.rootDir.endsWith("/")
-      ? cfg.rootDir
-      : cfg.rootDir + "/";
+    const prefix = cfg.rootDir.endsWith("/") ? cfg.rootDir : cfg.rootDir + "/";
     if (!repoRelPath.startsWith(prefix)) continue;
     const remainder = repoRelPath.slice(prefix.length);
     if (remainder.includes("/")) continue; // sub-directories not allowed
@@ -187,16 +181,12 @@ function validateLedger(ledger) {
   for (const pr of ledger.prs) {
     if (typeof pr.number !== "number" || pr.number < 1)
       errors.push(`pr ${JSON.stringify(pr.number)}: invalid number`);
-    if (seen.has(pr.number))
-      errors.push(`pr #${pr.number}: duplicate entry`);
+    if (seen.has(pr.number)) errors.push(`pr #${pr.number}: duplicate entry`);
     seen.add(pr.number);
     if (!pr.title) errors.push(`pr #${pr.number}: missing title`);
     if (!pr.merged_at) errors.push(`pr #${pr.number}: missing merged_at`);
     if (!pr.author) errors.push(`pr #${pr.number}: missing author`);
-    if (
-      !Array.isArray(pr.touchedDocs) ||
-      pr.touchedDocs.length === 0
-    )
+    if (!Array.isArray(pr.touchedDocs) || pr.touchedDocs.length === 0)
       errors.push(`pr #${pr.number}: empty touchedDocs`);
   }
   return errors;
@@ -283,19 +273,13 @@ export function applyBlock(docContent, blockText) {
 
   if (hasExistingBlock && blockText == null) {
     const before = docContent.slice(0, startIdx).replace(/\s+$/, "");
-    const after = docContent.slice(endIdx + endMarkerLen).replace(
-      /^\s+/,
-      "",
-    );
+    const after = docContent.slice(endIdx + endMarkerLen).replace(/^\s+/, "");
     return before + (after ? "\n\n" + after : "\n");
   }
 
   if (hasExistingBlock) {
     const before = docContent.slice(0, startIdx).replace(/\s+$/, "");
-    const after = docContent.slice(endIdx + endMarkerLen).replace(
-      /^\s+/,
-      "",
-    );
+    const after = docContent.slice(endIdx + endMarkerLen).replace(/^\s+/, "");
     const tail = after ? "\n\n" + after : "\n";
     return before + "\n\n" + blockText + tail;
   }
@@ -307,14 +291,32 @@ export function applyBlock(docContent, blockText) {
 
 // ── Block regen (for --rebuild-blocks and --check) ──────────────────────────
 
-function rebuildAllBlocks(ledger, { write = true } = {}) {
+/**
+ * Format `content` with the repo Prettier config so the generated block is
+ * byte-identical to what the Husky `prettier --write` pre-commit hook produces
+ * for `*.md`. Without this, the generator emitted compact GFM tables
+ * (`| PR |`) while Prettier reflows them to column-padded tables — any commit
+ * touching a backlinked doc would then re-pad the table and break
+ * `docs:check-pr-ledger`. Formatting here makes the generator output and the
+ * hook output agree (padded). Lazy-import keeps unit tests node_modules-free.
+ */
+async function formatMarkdown(content, filepath) {
+  const { default: prettier } = await import("prettier");
+  const opts = (await prettier.resolveConfig(filepath)) ?? {};
+  return prettier.format(content, { ...opts, parser: "markdown", filepath });
+}
+
+async function rebuildAllBlocks(ledger, { write = true } = {}) {
   const docs = listCanonicalDocs();
   const diffs = [];
   for (const docAbs of docs) {
     const docRel = relPath(docAbs);
     const current = readSafe(docAbs);
     const block = renderBlock(docRel, ledger);
-    const next = applyBlock(current, block);
+    let next = applyBlock(current, block);
+    // Normalise through Prettier so the on-disk result matches the pre-commit
+    // hook exactly (padded tables); only when a block is present/changed.
+    if (next !== current) next = await formatMarkdown(next, docAbs);
     if (current === next) continue;
     diffs.push({ path: docRel, current, next });
     if (write) writeFileSync(docAbs, next);
@@ -416,11 +418,10 @@ async function main() {
       console.error(
         `pr-ledger: ${schemaErrors.length} schema violation${schemaErrors.length === 1 ? "" : "s"}:`,
       );
-      for (const err of schemaErrors.slice(0, 20))
-        console.error(`  - ${err}`);
+      for (const err of schemaErrors.slice(0, 20)) console.error(`  - ${err}`);
       process.exit(1);
     }
-    const diffs = rebuildAllBlocks(ledger, { write: false });
+    const diffs = await rebuildAllBlocks(ledger, { write: false });
     if (diffs.length > 0) {
       console.error(
         `pr-ledger: ${diffs.length} doc${diffs.length === 1 ? "" : "s"} have stale PR-BACKLINKS block${diffs.length === 1 ? "" : "s"}. Run \`pnpm docs:gen-pr-backlinks\` and commit.`,
@@ -441,7 +442,7 @@ async function main() {
       for (const err of schemaErrors) console.error(`  - ${err}`);
       process.exit(1);
     }
-    const diffs = rebuildAllBlocks(ledger, { write: true });
+    const diffs = await rebuildAllBlocks(ledger, { write: true });
     console.log(
       `pr-ledger: ${diffs.length === 0 ? "no blocks needed updating" : `updated ${diffs.length} block${diffs.length === 1 ? "" : "s"}`}.`,
     );
@@ -467,7 +468,7 @@ async function main() {
         `PR #${entry.number}: upserted with ${entry.touchedDocs.length} touched doc${entry.touchedDocs.length === 1 ? "" : "s"}.`,
       );
     }
-    const diffs = rebuildAllBlocks(ledger, { write: true });
+    const diffs = await rebuildAllBlocks(ledger, { write: true });
     console.log(
       `Blocks: ${diffs.length === 0 ? "no updates needed" : `regenerated ${diffs.length}`}.`,
     );
