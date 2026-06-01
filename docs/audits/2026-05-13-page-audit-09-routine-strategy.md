@@ -239,6 +239,8 @@ When PR-35+ wires the page to `/strategy`, every shipped string will need a foll
 **Recommendation.**
 Translate the strings now (it's a 10-line diff) and rename `PERSONA_LABELS` to Ukrainian: `"Фінік (фінанси)"`, `"Фізрук (фітнес)"`, `"Харчування"`, `"Рутина"`. Keep the persona id strings English (they are an API contract with the server).
 
+> **Closure note (2026-06-01, PR-B1 of 15-pack):** Resolved. `apps/web/src/pages/strategy/StrategyPage.tsx` now ships Ukrainian copy across all surfaces: header "Стратегічні цілі" / "Тиждень з …"; form "Додати ціль", "Персона", "Текст цілі", placeholder; submit "Додати ціль" / "Зберігаю…"; empty/loading "Цілей на тиждень… немає" / "Завантаження…"; error-text "Текст цілі не може бути порожнім". `PERSONA_LABELS` map → Ukrainian as recommended. Persona id strings (`"finyk"` etc.) intentionally stay English as the server-side API contract.
+
 ---
 
 ### F12 — Strategy page uses raw Tailwind palette pairs (`bg-blue-600`, `text-red-600`, `text-gray-200`) [severity: medium] [perspective: tailwind]
@@ -274,6 +276,8 @@ The page is meant to be touched on mobile (Capacitor shell + PWA both list it). 
 
 **Recommendation.**
 Replace the bare `<button>` with the design-system `<Button variant="primary">` from `@shared/components/ui/Button` — it auto-applies `min-h-[44px]` and the correct focus ring.
+
+> **Closure note (2026-06-01, PR-B1 of 15-pack):** Resolved minimally. Submit button keeps the bare `<button>` (StrategyPage is still PR-34 skeleton + unmounted) but adds `min-h-touch-target` + `text-style-label` to the className. Resolves to ≥44 px floor on coarse-pointer devices; WCAG 2.5.5 satisfied. Full `<Button>` migration deferred to the PR-35+ conversation-UI rewrite (StrategyPage will get a router-mount + design-system pass together).
 
 ---
 
