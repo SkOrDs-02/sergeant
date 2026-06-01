@@ -171,6 +171,8 @@ Extend `sergeant-design/valid-tailwind-opacity` to also flag the
 decimal-arbitrary form (track as a follow-up). PR is docs-only, so the
 fix and the lint tightening land in a code PR.
 
+> **Closure note (2026-06-01, PR-B3 of 15-pack):** Resolved. All four module-accent entries in `apps/web/src/shared/components/layout/ModuleHeader.tsx` swapped from `/[.06]` → `/5` and `/[.14]` → `/15` (on-scale values). `apps/web/src/modules/finyk/components/TxRow.tsx:221` decorative wash swapped from `/[0.08] dark:/[0.15]` → `/10 dark:/15`. Visual diff is sub-threshold. The lint-rule tightening to also flag `/[.NN]` decimals stays as a follow-up.
+
 ---
 
 ### F3 — Raw `emerald` palette with `text-white` and no `-strong` companion [severity: high] [perspective: tailwind]
@@ -511,6 +513,8 @@ The downstream chart already handles `[…, 0, …]` data points.
 
 ### F9 — `parseLocalDate` returns `Invalid Date` silently [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B8 of 15-pack):** Resolved. `apps/web/src/modules/finyk/lib/upcomingSchedule.ts` `parseLocalDate` now `Number.isFinite`-checks `y, m, d` (plus `y >= 1970` sanity) and falls back to today-at-local-midnight on any malformed input. No more silent `Invalid Date` propagating `NaN` into "через NaN дн" UI; the prior `y!` non-null assertion also dropped. Existing test (`upcomingSchedule.test.ts`) for null/undefined/"" still passes — those land on the new "today" path.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts`
 **Lines:** L32–L35
@@ -612,6 +616,8 @@ function pluralizeDays(n: number): string {
 
 ### F11 — Filter-pill emoji split is fragile and bypasses `noUncheckedIndexedAccess` [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B11 of 15-pack):** Resolved. `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx` now uses `indexOf(" ")` + `slice` instead of `split(" ")[0]`. When a category label has no leading emoji (legacy plain-text names) the label renders cleanly without a leading space; when it does have an emoji the pill spacing is preserved. No more `string | undefined` coercion through the Hard Rule #19 surface.
+
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx`
 **Lines:** L28–L36
@@ -671,6 +677,8 @@ and `c.label.replace(/^\S+\s/, "")` instead.
 ---
 
 ### F12 — Filter pills opt out of 44×44 touch target via `data-compact` [severity: medium] [perspective: a11y]
+
+> **Closure note (2026-06-01, PR-B12 of 15-pack):** Resolved. `TransactionFilters.tsx` button gets `pointer-coarse:min-h-[44px]`. Visual 28px pill (`h-7`) preserved on fine-pointer (desktop) so the chip strip stays dense; coarse-pointer devices (mobile finger-tap) get the WCAG 2.5.5 ≥44px hit area without changing the visible rendering. Standard `Button` `needsCoarseMinTarget` policy mirrored locally since `data-compact` is the project-wide opt-out signal for the dense-on-fine, ergonomic-on-coarse pattern.
 
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx`
@@ -1314,6 +1322,8 @@ Either:
   marker in the same PR.
 - Or update the `@nextStep` with a fresher integration plan if the
   consumer migration is deferred.
+
+> **Closure note (2026-06-01, PR-A11 of 15-pack):** Resolved by option (b'). The `@scaffolded` marker on `apps/web/src/modules/finyk/index.ts` is dropped; the JSDoc now documents the **intentional asymmetry**: cross-module consumers (hub-reports aggregation, ExpensesCard, insights, coach, weekly digest) already route through `@finyk/utils`/`@finyk/constants`/`@finyk/lib/*`, but `ActiveModuleView.tsx` keeps the deep `./FinykApp` import as the `React.lazy()` chunk-boundary anchor — routing the router via the barrel would broaden the per-route lazy chunk. Status: Active, not pending. `knip` no longer suppresses zero-importer warnings on this surface.
 
 ---
 

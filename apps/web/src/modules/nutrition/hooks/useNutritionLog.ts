@@ -102,17 +102,26 @@ export function useNutritionLog() {
 
   // Coach insight and weekly digest both derive from the nutrition log.
   // Invalidate them whenever the log changes so the next mount / user
-  // refresh regenerates with the latest context. `staleTime: Infinity`
-  // on those queries means invalidation only marks them stale — it does
-  // not trigger unsolicited AI calls.
+  // refresh regenerates with the latest context.
+  //
+  // Audit 08 F11 scope-tightening: previously called `coachKeys.all` /
+  // `digestKeys.all` — a broad sweep that refetched every coach query
+  // and every weekly-digest variant on each meal save. Now scoped to
+  // `coachKeys.insight(selectedDate)` (the only key whose data depends
+  // on the day the user edited) and `digestKeys.history` (the rolling
+  // list the user might be scrolling). Other coach / digest queries
+  // keep their `staleTime: Infinity` cache; they re-derive on their own
+  // next mount-cycle without a sync write storm here.
   useEffect(() => {
     if (!didMountRef.current) {
       didMountRef.current = true;
       return;
     }
-    queryClient.invalidateQueries({ queryKey: coachKeys.all });
-    queryClient.invalidateQueries({ queryKey: digestKeys.all });
-  }, [nutritionLog, queryClient]);
+    queryClient.invalidateQueries({
+      queryKey: coachKeys.insight(selectedDate),
+    });
+    queryClient.invalidateQueries({ queryKey: digestKeys.history });
+  }, [nutritionLog, selectedDate, queryClient]);
 
   /**
    * Add a meal to the currently selected date and close the add-meal sheet.

@@ -212,9 +212,10 @@ export function useChatSessions(): UseChatSessionsResult {
       let nextActiveId = activeId;
       let nextMessages: ChatMessage[] | null = null;
       if (id === activeId) {
-        if (remaining.length > 0) {
-          nextActiveId = remaining[0]!.id;
-          nextMessages = remaining[0]!.messages;
+        const head = remaining[0];
+        if (head) {
+          nextActiveId = head.id;
+          nextMessages = head.messages;
         } else {
           const fresh = createSession();
           remaining.unshift(fresh);

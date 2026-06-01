@@ -104,6 +104,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 **Recommendation.** Require an explicit confirmation step for any `autoSend=1` originating outside the in-app launcher: either gate `autoSend` on `document.referrer` matching `location.origin`, or always prefill the input and let the user press Send. Alternatively, sign the launcher's `autoSend` hand-off with a short-lived nonce.
 
+> **Closure note (2026-06-01, PR-A6 of 15-pack):** Resolved by dropping URL-driven auto-send. `apps/web/src/core/hub/HubChatPage.tsx` now hard-codes `autoSendInitial={false}` and ignores the `autoSend` search param entirely; the `q=` pre-fill stays so the user can review + edit before pressing Send themselves. The auto-send path remains available **only** to the in-process `openChat` hub-bus event (`HubChatOverlay`), which is not reachable from a hand-crafted URL. Net effect: a malicious link `https://app.sergeant.lol/chat?q=...&autoSend=1` now opens chat with the text pre-filled but does not ship a turn until the user explicitly sends.
+
 ---
 
 ### F5 — Voice-keyword regex auto-triggers TTS playback without user consent [severity: medium] [perspective: security]
@@ -133,6 +135,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 **Why it matters.** Coarse-pointer users (the entire mobile audience) routinely miss the delete-confirm or close-drawer affordance; mis-taps on the row body open the wrong chat instead. The WCAG criterion is a known accessibility-blocker tier.
 
 **Recommendation.** Switch the icon buttons to `<Button variant="iconOnly" size="sm">` (auto-applies `min-h-[44px] min-w-[44px]`) or add the `touch-target` utility. For the delete button keep visual density via a transparent 44 px hit area centred on a 28 px glyph.
+
+> **Closure note (2026-06-01, PR-A12 of 15-pack):** Resolved. `apps/web/src/core/hub/HubChatHistoryDrawer.tsx` close button (L105) and per-row delete button (L172) bumped from `size="xs"` to `size="sm"`. `Button` `needsCoarseMinTarget` already applied `pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]` on both sizes, so mobile already met WCAG; the size bump lifts the fine-pointer (desktop) target from 32 → 36 px and aligns visually with the audit recommendation.
 
 ---
 
@@ -450,6 +454,8 @@ The `length > 0` guard does justify the `!`, but the `!` non-null bang is the ki
 **Why it matters.** Low-severity TS-hygiene nit; flagged because the strict-mode rule is explicitly an _active initiative_ (see `19-strict-mode-flag-canonical.md`) and the codebase is converging on guard-then-destructure instead of `!`.
 
 **Recommendation.** Replace with a `const [head, ...rest] = remaining; if (head) { ... }` pattern, or use `remaining.at(0)` with explicit `if`.
+
+> **Closure note (2026-06-01, PR-A7 of 15-pack):** Resolved. `apps/web/src/core/hub/chat/useChatSessions.ts:215-217` now does `const head = remaining[0]; if (head) { nextActiveId = head.id; nextMessages = head.messages; }` — no `!` assertion, narrowed via `if`-guard, Hard Rule #19 friendly.
 
 ---
 

@@ -25,14 +25,20 @@ const IN_APP_ENTRY_FLAG = "hub-chat:in-app-entry";
  *   in-chat history drawer is folded into a real two-pane layout.
  *
  * Dedicated `/chat` route. Replaces the fullscreen modal that used to
- * slam over the dashboard. Reads `?q=` and `?autoSend=1` from the URL
- * so launcher / catalogue / hint hand-offs all use the same shape:
+ * slam over the dashboard. Reads `?q=` from the URL so launcher /
+ * catalogue / hint hand-offs all use the same shape:
  *
  *   navigate(`/chat?q=${encodeURIComponent(message)}`);
  *
  * `onClose` and `onOpenCatalogue` route through `react-router` instead
  * of imperative state, so the back button and deep-links behave as
  * expected.
+ *
+ * Audit 03 F4 (high/security): `?autoSend=1` is **not** honored on this
+ * surface. The pre-fill stays so a user can review the text and hit
+ * Send themselves; the auto-send path is only reachable from the
+ * in-process `openChat` hub-bus event (`HubChatOverlay`), which is
+ * not attacker-controllable from a hand-crafted URL.
  */
 export function HubChatPage() {
   const navigate = useNavigate();
@@ -43,11 +49,6 @@ export function HubChatPage() {
     const raw = searchParams.get("q");
     return raw && raw.trim().length > 0 ? raw : "";
   }, [searchParams]);
-
-  const autoSendInitial = useMemo(
-    () => searchParams.get("autoSend") === "1",
-    [searchParams],
-  );
 
   useEffect(() => {
     if (navigationType !== "PUSH") {
@@ -88,7 +89,7 @@ export function HubChatPage() {
         <HubChat
           onClose={handleClose}
           initialMessage={initialMessage}
-          autoSendInitial={autoSendInitial}
+          autoSendInitial={false}
           onOpenCatalogue={handleOpenCatalogue}
         />
       </SuspenseWithMinDelay>

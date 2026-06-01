@@ -210,15 +210,15 @@ function TxRowImpl({
         </span>
       ) : (
         // 28px tinted circle — decorative, non-interactive (aria-hidden).
-        // bg-finyk/[0.08] gives a soft emerald wash; text-finyk-strong
+        // bg-finyk/10 gives a soft emerald wash; text-finyk-strong
         // ensures ≥4.5:1 contrast on the bg-panel surface in light mode.
-        // dark:bg-finyk/[0.15] lifts the wash slightly for dark-surface parity.
+        // dark:bg-finyk/15 lifts the wash slightly for dark-surface parity.
         <span
           aria-hidden="true"
           className={cn(
             "shrink-0 inline-flex items-center justify-center rounded-full",
             "w-7 h-7",
-            "bg-finyk/[0.08] dark:bg-finyk/[0.15]",
+            "bg-finyk/10 dark:bg-finyk/15",
             "text-finyk-strong dark:text-finyk",
           )}
         >

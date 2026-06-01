@@ -42,24 +42,24 @@
 
 ### Critical
 
-| ID                                       | Title                                       | Status                              | Sprint                    |
-| ---------------------------------------- | ------------------------------------------- | ----------------------------------- | ------------------------- |
-| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | In progress (Phase 1 shipped 05-04) | [Sprint 1](./sprint-1.md) |
-| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | In progress (Phase 1 shipped 05-04) | [Sprint 1](./sprint-1.md) |
+| ID                                       | Title                                       | Status                               | Sprint                    |
+| ---------------------------------------- | ------------------------------------------- | ------------------------------------ | ------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Closed (2026-06-01, mitigated-final) | [Sprint 1](./sprint-1.md) |
+| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | In progress (Phase 1 shipped 05-04)  | [Sprint 1](./sprint-1.md) |
 
 ### High
 
-| ID                                       | Title                                                    | Status                                                                                                       | Sprint                    |
-| ---------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| [H1](./H1-mobile-bearer-storage.md)      | Bearer token у мобільному shell без явного Keychain-AC   | Closed (Phase 1, 2026-05-04)                                                                                 | [Sprint 1](./sprint-1.md) |
-| [H2](./H2-dependabot.md)                 | Немає Dependabot / Renovate                              | Closed (2026-05-04)                                                                                          | [Sprint 1](./sprint-1.md) |
-| [H3](./H3-session-revoke-and-binding.md) | Сесія 30d без revoke-on-password-change і device-binding | Closed (2026-05-04) — PR [#1669](https://github.com/Skords-01/Sergeant/pull/1669)                            | [Sprint 2](./sprint-2.md) |
-| [H4](./H4-encryption-key-rotation.md)    | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Phase 1 closed (2026-05-04) — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679); Phase 2 follow-up | [Sprint 3](./sprint-3.md) |
-| [H5](./H5-trusted-origins-exp-scheme.md) | `exp://` як trusted origin у production                  | Closed (2026-05-04)                                                                                          | Sprint 2                  |
-| [H6](./H6-email-verification.md)         | Email verification disabled                              | Closed (2026-05-04, partial)                                                                                 | Sprint 2                  |
-| [H7](./H7-vercel-config-drift.md)        | `vercel.json` SSOT drift                                 | Closed (2026-05-04)                                                                                          | Sprint 2                  |
-| [H8](./H8-corp-per-route.md)             | Helmet `CORP: cross-origin` глобально                    | Closed (2026-05-04)                                                                                          | Sprint 2                  |
-| [H9](./H9-transcribe-usd-cap.md)         | Transcribe per-user USD-cap відсутній                    | Closed (2026-05-04, partial)                                                                                 | Sprint 2                  |
+| ID                                       | Title                                                    | Status                                                                                                                                                     | Sprint                    |
+| ---------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [H1](./H1-mobile-bearer-storage.md)      | Bearer token у мобільному shell без явного Keychain-AC   | Closed (Phase 1, 2026-05-04)                                                                                                                               | [Sprint 1](./sprint-1.md) |
+| [H2](./H2-dependabot.md)                 | Немає Dependabot / Renovate                              | Closed (2026-05-04)                                                                                                                                        | [Sprint 1](./sprint-1.md) |
+| [H3](./H3-session-revoke-and-binding.md) | Сесія 30d без revoke-on-password-change і device-binding | Closed (2026-05-04) — PR [#1669](https://github.com/Skords-01/Sergeant/pull/1669)                                                                          | [Sprint 2](./sprint-2.md) |
+| [H4](./H4-encryption-key-rotation.md)    | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Closed (2026-06-01) — Phase 1 PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679) (Better Auth) + Phase 2 (Mono `mono_connection.token_*` KeyRing) | [Sprint 3](./sprint-3.md) |
+| [H5](./H5-trusted-origins-exp-scheme.md) | `exp://` як trusted origin у production                  | Closed (2026-05-04)                                                                                                                                        | Sprint 2                  |
+| [H6](./H6-email-verification.md)         | Email verification disabled                              | Closed (2026-05-04, partial)                                                                                                                               | Sprint 2                  |
+| [H7](./H7-vercel-config-drift.md)        | `vercel.json` SSOT drift                                 | Closed (2026-05-04)                                                                                                                                        | Sprint 2                  |
+| [H8](./H8-corp-per-route.md)             | Helmet `CORP: cross-origin` глобально                    | Closed (2026-05-04)                                                                                                                                        | Sprint 2                  |
+| [H9](./H9-transcribe-usd-cap.md)         | Transcribe per-user USD-cap відсутній                    | Closed (2026-05-04, partial)                                                                                                                               | Sprint 2                  |
 
 ### Medium / Low / Informational
 
@@ -69,7 +69,7 @@
 
 | ID                                             | Title                                                   | Status                                                                                                                                       | Sprint                    |
 | ---------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| [M9](./M9-per-ip-secondary-rate-limit.md)       | Mass-account abuse can scale rate-limit linearly        | Closed (2026-06-01) — PR `fix(server): add secondary per-IP rate-limit bucket (M9)`                                                          | [Sprint 3](./sprint-3.md) |
+| [M9](./M9-per-ip-secondary-rate-limit.md)      | Mass-account abuse can scale rate-limit linearly        | Closed (2026-06-01) — PR `fix(server): add secondary per-IP rate-limit bucket (M9)`                                                          | [Sprint 3](./sprint-3.md) |
 | [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                            | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                                                            | [Sprint 3](./sprint-3.md) |
 | [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist    | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                                                     | [Sprint 3](./sprint-3.md) |
 | [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization                | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                                                     | [Sprint 3](./sprint-3.md) |

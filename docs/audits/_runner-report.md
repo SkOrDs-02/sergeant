@@ -9,7 +9,7 @@
 - **Top P0/critical to plan next:** C1 tool_calls Zod allow-list (consolidated audit + F3 hub-chat duplicate), C2 SW per-user cache, F12 Sentry Replay maskAllText, F13 PricingPage open-redirect, F8 Strategy bearer-auth, PR-12 SyncSetupRequiredError guard, P1 CSRF browser sign-up. These are user-blocking security/auth issues.
 - **Close 2 audits as stale:** README gap analysis (2026-05-03) and doc-hygiene roast (2026-05-13) — all items resolved.
 
-## Progress (rolling — last updated 2026-05-31)
+## Progress (rolling — last updated 2026-06-01)
 
 9 PR-ів злито у main з цього звіту. Inline ✅ нижче — закриті items, з [PR# / batch#] у дужках.
 

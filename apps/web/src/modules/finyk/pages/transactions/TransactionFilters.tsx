@@ -25,15 +25,20 @@ export function TransactionFilters({
     { id: "expense", label: "Витрати" },
     { id: "income", label: "Доходи" },
     ...(hasCreditAccounts ? [{ id: "credit", label: "💳 Кредитна" }] : []),
-    ...catSpends.map((c) => ({
-      id: c.id,
-      // Each category label is rendered as `<emoji> <name>`; splitting on
-      // the first space drops the leading symbol so we can re-emit it
-      // separately below if a future iteration wants different spacing.
-      // The current visual is identical to before — kept the join here so
-      // the diff stays minimal.
-      label: c.label.split(" ")[0] + " " + c.label.slice(3),
-    })),
+    ...catSpends.map((c) => {
+      // Audit 05 F11: `c.label.split(" ")[0]` returned `string | undefined`
+      // under Hard Rule #19 (noUncheckedIndexedAccess) and was implicitly
+      // coerced. Categories without a leading emoji (legacy plain-text
+      // names) used to produce a leading space. Guard the split result
+      // explicitly: when there is no detectable emoji segment, fall back
+      // to the raw label so the pill renders cleanly.
+      const space = c.label.indexOf(" ");
+      const label =
+        space > 0
+          ? `${c.label.slice(0, space)} ${c.label.slice(space + 1)}`
+          : c.label;
+      return { id: c.id, label };
+    }),
   ];
 
   return (
@@ -46,7 +51,14 @@ export function TransactionFilters({
             onClick={() => onChangeFilter(f.id)}
             aria-pressed={filter === f.id}
             className={cn(
+              // Audit 05 F12: keep the compact `h-7` visual on fine
+              // pointers (mouse) but extend the touch-target floor on
+              // coarse pointers (mobile finger-tap) to the WCAG 2.5.5 ≥44
+              // px contract via `pointer-coarse:min-h-[44px]`. The pill
+              // outline stays 28px on desktop; the hit area only grows
+              // where it actually matters.
               "shrink-0 inline-flex items-center h-7 px-3 text-style-caption font-medium rounded-full border transition-colors",
+              "pointer-coarse:min-h-[44px]",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
               filter === f.id
                 ? "bg-primary border-primary text-bg shadow-sm"

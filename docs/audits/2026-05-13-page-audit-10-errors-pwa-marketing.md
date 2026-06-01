@@ -253,6 +253,8 @@ const HOP_BY_HOP = [
 for (const h of HOP_BY_HOP) headers.delete(h);
 ```
 
+> **Closure note (2026-06-01, PR-A5 of 15-pack):** Resolved. `apps/web/middleware.ts:62-77` now iterates the canonical RFC 7230 §6.1 hop-by-hop header list and calls `headers.delete()` before setting `x-forwarded-host` / `x-forwarded-proto`. Removes the foot-gun the audit flagged: edge `connection` / `keep-alive` rewrites no longer reach Railway, and the next contributor who tags a fetch with a debug header gets the same hygiene by default.
+
 ---
 
 ### F8 — SW `notificationclick` opens `/?module=${module}` with no allow-list on `module` [severity: medium] [perspective: security]
@@ -807,6 +809,8 @@ className = "... transition-colors duration-150 ease-out";
 ```
 
 Or split: `transition-[background-color,transform] duration-150`.
+
+> **Closure note (2026-06-01, PR-A10 of 15-pack):** Verified-already-done. `apps/web/src/core/security/AppLock.tsx` no longer contains `transition-all`. The PinPad button (L84) uses `transition-colors` + `active:scale-95` (transform via state class, not via the transition shorthand); the status dot (L29) uses `transition-colors`. Rule #17 animation-budget compliance restored — no code change needed.
 
 ---
 

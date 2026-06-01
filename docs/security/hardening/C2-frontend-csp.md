@@ -1,7 +1,7 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last validated:** 2026-05-24 by @Skords-01. **Next review:** 2026-08-22.
-> **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only.
+> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-08-30.
+> **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code.
 
 | Field              | Value                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
@@ -182,7 +182,7 @@ impact than script XSS, and the W3C explicitly allows the split.
 hash-based, no per-request nonce, fits a CDN-cached SPA; or
 (b) a custom `transformIndexHtml` plugin that emits a deterministic
 build-time hash for each `<script>`. **Recommendation:** prefer (a)
-*only if* we re-introduce inline scripts; today's bundle does not need
+_only if_ we re-introduce inline scripts; today's bundle does not need
 either. The Phase-2 enforce policy can ship without a nonce flow.
 
 **Proposed enforce policy (drop-in replacement for the Report-Only header

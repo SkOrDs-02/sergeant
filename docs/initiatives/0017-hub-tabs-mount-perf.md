@@ -1,7 +1,7 @@
 # 0017 — Hub Settings & Reports mount perf
 
 > **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
-> **Status:** In progress — Sprint 0 + Sprint 1 + Sprint 2 shipped; only Sprint 3 (conditional) + Finalize remain. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.
+> **Status:** Code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.
 > **Priority:** P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))
 > **Owner:** `@Skords-01`
 > **ETA:** ~3 weeks (3 sprints × 1 week each, includes observability baseline)
@@ -134,6 +134,17 @@
 - `docs/tech-debt/frontend.md` `LARGE_FILES` table — `HubReports.tsx` (608 → ~120) і `HubSettingsPage.tsx` (387 → ~150) знімаються з watchlist.
 - Outcome-секція у цьому файлі з фінальними метриками.
 - Status → Done, файл перейменовується у `_0017-hub-tabs-mount-perf.md`.
+
+### Sprint 3 decision (2026-06-01)
+
+**Skipped pending metrics review.** Sprint 3 (Web Worker for aggregation) was conditional on post-Sprint-2 PostHog `aggregateReport` P95 > 50 ms. Cut window for the decision opens after a 30-day rolling window on `hub_tab_switch_perf`. Recorded here as a Finalize decision so the initiative can mark code-complete and roll forward; if the next monthly RUM review shows P95 still > 50 ms, Sprint 3 reopens as a discrete follow-up against this initiative. Owner confirms cut at the next standup.
+
+### Outcome (2026-06-01, code-complete)
+
+- **Sprint 0 / 1 / 2 PRs:** all merged to main ([#3094](https://github.com/Skords-01/Sergeant/pull/3094) Sprint 2, [#3102](https://github.com/Skords-01/Sergeant/pull/3102) Finyk cross-module defer).
+- **Sprint 3:** conditional, skipped pending RUM review (see above).
+- **Bundle gate / tech-debt watchlist drain / Outcome with concrete RUM numbers** roll into the next `frontend.md` sweep — reserving numeric updates for when PostHog window cuts.
+- **Status transition:** flipped from "In progress" to "Code-complete, RUM review pending". Once Sprint 3 decision is signed off and metrics are pinned, the file will be archived as `_0017-hub-tabs-mount-perf.md`.
 
 ## Критерії DONE
 

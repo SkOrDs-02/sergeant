@@ -22,6 +22,7 @@ vi.mock("../../sentry.js", () => ({
 }));
 
 import { encryptToken } from "./crypto.js";
+import { parseKeyRing } from "../../lib/keyRing.js";
 import {
   rotateMonoWebhookSecret,
   rotateStaleMonoWebhookSecrets,
@@ -30,6 +31,14 @@ import {
 // gitleaks:allow — fixed test fixture, not a real key (matches connection.test.ts).
 const ENC_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+// H4 Phase 2: rotation now takes a KeyRing, not a raw hex key. A legacy
+// single-key ring (current version = v1) decrypts the v1 fixtures below
+// unchanged — and because the rows carry no newer key version, no lazy
+// re-encrypt fires, so the DB-call counts are identical to pre-H4.
+const ENC_RING = parseKeyRing({
+  legacyKey: ENC_KEY,
+  envName: "MONO_TOKEN_ENC_KEY",
+})!;
 const PUBLIC_API_BASE_URL = "https://api.example.com";
 
 interface QueryRow {
@@ -107,7 +116,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
 
     const result = await rotateMonoWebhookSecret({
       userId: "user_1",
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       fetchImpl: fetchMock as unknown as typeof fetch,
       query,
@@ -148,7 +157,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
 
     const result = await rotateMonoWebhookSecret({
       userId: "missing_user",
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       fetchImpl: fetchMock as unknown as typeof fetch,
       query,
@@ -179,7 +188,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
 
     const result = await rotateMonoWebhookSecret({
       userId: "user_1",
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       fetchImpl: fetchMock as unknown as typeof fetch,
       query,
@@ -214,7 +223,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
 
     const result = await rotateMonoWebhookSecret({
       userId: "user_1",
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       fetchImpl: fetchMock as unknown as typeof fetch,
       query,
@@ -245,7 +254,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
 
     const result = await rotateMonoWebhookSecret({
       userId: "user_1",
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       fetchImpl: fetchMock as unknown as typeof fetch,
       query,
@@ -283,7 +292,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
       .mockResolvedValue({ ok: true, status: 200, text: async () => "" });
 
     const result = await rotateStaleMonoWebhookSecrets({
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       olderThanDays: 90,
       alertAfterDays: 100,
@@ -321,7 +330,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
       .mockResolvedValue({ ok: true, status: 200, text: async () => "" });
 
     const result = await rotateStaleMonoWebhookSecrets({
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       olderThanDays: 90,
       alertAfterDays: 100,
@@ -346,7 +355,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
     const fetchMock = vi.fn();
 
     const result = await rotateStaleMonoWebhookSecrets({
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       olderThanDays: 90,
       alertAfterDays: 100,
@@ -394,7 +403,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
       });
 
     const result = await rotateStaleMonoWebhookSecrets({
-      encKey: ENC_KEY,
+      ring: ENC_RING,
       publicApiBaseUrl: PUBLIC_API_BASE_URL,
       olderThanDays: 90,
       alertAfterDays: 100,
@@ -416,7 +425,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
 
     await expect(
       rotateStaleMonoWebhookSecrets({
-        encKey: ENC_KEY,
+        ring: ENC_RING,
         publicApiBaseUrl: PUBLIC_API_BASE_URL,
         olderThanDays: 0,
         fetchImpl: fetchMock as unknown as typeof fetch,
@@ -426,7 +435,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
 
     await expect(
       rotateStaleMonoWebhookSecrets({
-        encKey: ENC_KEY,
+        ring: ENC_RING,
         publicApiBaseUrl: PUBLIC_API_BASE_URL,
         olderThanDays: 100,
         alertAfterDays: 50,

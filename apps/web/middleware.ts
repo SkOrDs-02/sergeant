@@ -59,6 +59,24 @@ export default async function middleware(
   const target = new URL(`${url.pathname}${url.search}`, backendUrl.origin);
 
   const headers = new Headers(request.headers);
+  // Audit 10 F7: drop hop-by-hop headers before forwarding upstream.
+  // Browsers won't usually attach these on a same-origin proxy hop, but
+  // upstream proxies (Vercel edge → Railway) can rewrite `connection` /
+  // `keep-alive` in ways that confuse the downstream HTTP/2 server.
+  // Stripping them here is RFC 7230 §6.1-conformant and removes the
+  // foot-gun the audit called out.
+  for (const h of [
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+  ]) {
+    headers.delete(h);
+  }
   headers.set("x-forwarded-host", url.host);
   headers.set("x-forwarded-proto", url.protocol.replace(":", ""));
 

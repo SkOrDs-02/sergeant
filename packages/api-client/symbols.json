@@ -1,12 +1,12 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-05-29",
+  "generated_at": "2026-06-01",
   "package": "@sergeant/api-client",
   "entryFile": "packages/api-client/src/index.ts",
   "stats": {
     "exportCount": 190,
-    "totalImporters": 34,
+    "totalImporters": 38,
     "deadExports": 102
   },
   "exports": [
@@ -33,11 +33,12 @@
         "apps/mobile/src/api/apiClient.ts",
         "apps/mobile/src/core/dashboard/useCoachInsight.ts",
         "apps/mobile/src/features/push/registerPush.ts",
+        "apps/mobile/src/modules/nutrition/hooks/useNutritionRemoteActions.ts",
         "apps/mobile/src/modules/nutrition/lib/shoppingGenerateApi.ts",
         "apps/web/src/shared/api/index.ts",
         "apps/web/src/shared/hooks/usePushNotifications.test.tsx"
       ],
-      "usageCount": 6
+      "usageCount": 7
     },
     {
       "name": "ApiClientConfig",
@@ -121,15 +122,17 @@
         "apps/mobile/src/core/dashboard/useWeeklyDigest.ts",
         "apps/mobile/src/core/hub/search/useInlineAiRail.ts",
         "apps/mobile/src/core/hub/useChatSend.ts",
-        "apps/mobile/src/modules/nutrition/components/AddMealSheet.tsx",
         "apps/mobile/src/modules/nutrition/components/NutritionBarcodeScanScreen.tsx",
         "apps/mobile/src/modules/nutrition/hooks/useBarcodeProductLookup.ts",
+        "apps/mobile/src/modules/nutrition/lib/nutritionRecipeError.ts",
+        "apps/mobile/src/modules/nutrition/lib/photoErrorFormatting.ts",
+        "apps/mobile/src/modules/nutrition/pages/Dashboard.tsx",
         "apps/mobile/src/modules/nutrition/pages/Pantry.tsx",
         "apps/mobile/src/modules/nutrition/pages/Shopping.tsx",
         "apps/web/src/core/pricing/WaitlistForm.tsx",
         "apps/web/src/shared/api/index.ts"
       ],
-      "usageCount": 11
+      "usageCount": 13
     },
     {
       "name": "ApiErrorInit",
@@ -895,8 +898,11 @@
       "name": "NutritionRecipe",
       "kind": "re-export",
       "fromFile": "./endpoints/nutrition",
-      "usedBy": ["apps/web/src/shared/api/index.ts"],
-      "usageCount": 1
+      "usedBy": [
+        "apps/mobile/src/modules/nutrition/hooks/useNutritionRemoteActions.ts",
+        "apps/web/src/shared/api/index.ts"
+      ],
+      "usageCount": 2
     },
     {
       "name": "NutritionRecipesResponse",

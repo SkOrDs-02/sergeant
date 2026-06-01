@@ -1,7 +1,7 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-05-29",
+  "generated_at": "2026-06-01",
   "package": "@sergeant/openclaw-plugin",
   "entryFile": "packages/openclaw-plugin/src/index.ts",
   "stats": {

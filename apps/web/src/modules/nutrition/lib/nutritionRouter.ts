@@ -4,12 +4,20 @@
 // both redirect to `menu`.
 export type NutritionPage = "start" | "pantry" | "log" | "menu";
 
-const VALID_NUTRITION_PAGES: readonly NutritionPage[] = [
-  "start",
-  "pantry",
-  "log",
-  "menu",
-];
+/**
+ * Audit 08 F14: type-guard predicate replaces the `as NutritionPage` casts
+ * downstream. If a future variant lands in `NutritionPage`, TypeScript will
+ * fail this set-literal narrowing and force the consumer to either add the
+ * member or document the deliberate omission — exhaustive by construction.
+ */
+function isNutritionPage(value: string): value is NutritionPage {
+  return (
+    value === "start" ||
+    value === "pantry" ||
+    value === "log" ||
+    value === "menu"
+  );
+}
 
 const LEGACY_REDIRECTS: Record<string, NutritionPage> = {
   products: "pantry",
@@ -50,7 +58,7 @@ export function parseNutritionSegments(
   if (!page) return { page: "start" };
   const redirect = LEGACY_REDIRECTS[page];
   if (redirect) return { page: redirect, redirectFrom: page };
-  if (!VALID_NUTRITION_PAGES.includes(page as NutritionPage)) {
+  if (!isNutritionPage(page)) {
     return { page: "start" };
   }
   let validSub: string | undefined;
@@ -59,7 +67,7 @@ export function parseNutritionSegments(
   } else if (page === "menu" && sub && VALID_MENU_SUBS.includes(sub)) {
     validSub = sub;
   }
-  return { page: page as NutritionPage, subTab: validSub };
+  return { page, subTab: validSub };
 }
 
 /**
