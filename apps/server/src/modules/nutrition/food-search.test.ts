@@ -7,6 +7,7 @@ import {
   normalizeUSDAProduct,
 } from "./food-search.js";
 import handler from "./food-search.js";
+import { FoodSearchSuccessSchema } from "@sergeant/shared/schemas";
 
 interface TestRes {
   statusCode: number;
@@ -427,5 +428,106 @@ describe("food-search handler", () => {
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("lc=uk");
+  });
+
+  // ── PR F: contract shape validation (Hard Rule #3) ──────────────────────
+  // Response shape must match FoodSearchSuccessSchema (api-client source of truth).
+
+  it("response body satisfies FoodSearchSuccessSchema contract (PR F)", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(true, {
+          products: [
+            {
+              code: "4820000000001",
+              product_name_uk: "Молоко",
+              brands: "Галичина",
+              nutriments: {
+                "energy-kcal_100g": 60,
+                proteins_100g: 3.2,
+                fat_100g: 3.5,
+                carbohydrates_100g: 4.7,
+              },
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "молоко", limit: "5" }), res);
+
+    expect(res.statusCode).toBe(200);
+    // Validates the actual runtime shape against the shared schema — catches
+    // any server-side drift before it reaches the api-client types.
+    const parsed = FoodSearchSuccessSchema.safeParse(res.body);
+    expect(parsed.success).toBe(true);
+
+    const p = products(res.body)[0];
+    expect(p).toBeDefined();
+    // All required fields present with correct types:
+    expect(typeof p!["id"]).toBe("string");
+    expect(typeof p!["name"]).toBe("string");
+    expect(["string", "object"].includes(typeof p!["brand"])).toBe(true); // string | null
+    expect(p!["source"]).toMatch(/^(off|usda)$/);
+    expect(typeof p!["defaultGrams"]).toBe("number");
+    const per100 = p!["per100"] as Record<string, unknown>;
+    expect(typeof per100["kcal"]).toBe("number");
+    expect(typeof per100["protein_g"]).toBe("number");
+    expect(typeof per100["fat_g"]).toBe("number");
+    expect(typeof per100["carbs_g"]).toBe("number");
+  });
+
+  it("empty upstream results → {products:[]} satisfies FoodSearchSuccessSchema", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "5" }), res);
+
+    const parsed = FoodSearchSuccessSchema.safeParse(res.body);
+    expect(parsed.success).toBe(true);
+    expect(products(res.body)).toHaveLength(0);
+  });
+
+  // ── UK_TO_EN translation coverage via handler behaviour ──────────────────
+  // Tests that key Ukrainian query tokens are translated to English
+  // so that OFF-en and USDA are actually queried.
+
+  it("translates Cyrillic prefix 'молок' → 'milk' (prefix match)", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    // "молок" is a valid prefix of "молоко" in UK_TO_EN → translates to "milk"
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] })) // OFF-uk
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] })) // OFF-en
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] })); // USDA
+
+    const res = mockRes();
+    await handler(asReq({ q: "молок", limit: "3" }), res);
+
+    // Should have made 3 calls (uk + en + usda) — prefix matched
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls[1]).toContain("search_terms=milk");
+    expect(urls[2]).toContain("query=milk");
+  });
+
+  it("exact Ukrainian word 'яйце' translates to 'egg'", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] })) // OFF-uk
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] })) // OFF-en
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] })); // USDA
+
+    await handler(asReq({ q: "яйце", limit: "3" }), mockRes());
+
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls[1]).toContain("search_terms=egg");
+    expect(urls[2]).toContain("query=egg");
   });
 });

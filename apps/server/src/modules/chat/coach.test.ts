@@ -161,6 +161,141 @@ describe("coachMemoryGet", () => {
   });
 });
 
+describe("coachMemoryPost — mergeMemory logic (PR F)", () => {
+  // Tests the mergeMemory invariants indirectly via the public handler.
+  // These are the high-value paths that affect AI coach prompt quality.
+
+  it("same weekKey замінює наявний запис (LWW upsert per-week)", async () => {
+    const existing = {
+      weeklyDigests: [
+        {
+          weekKey: "2026-W10",
+          generatedAt: "2026-03-02T00:00:00.000Z",
+          finyk: { summary: "старе фінансове" },
+        },
+      ],
+      lastInsightDate: null,
+      lastInsightText: null,
+    };
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ data: JSON.stringify(existing) }] })
+      .mockResolvedValueOnce({ rows: [] }); // INSERT
+
+    const req = {
+      user: { id: "user_1" },
+      body: {
+        weeklyDigest: {
+          weekKey: "2026-W10",
+          weekRange: "2–8 Mar",
+          finyk: { summary: "нові фінанси" },
+        },
+      },
+    };
+    const res = makeRes();
+    await coachMemoryPost(asReq(req), res);
+
+    expect(res.statusCode).toBe(200);
+    const insertCall = pool.query.mock.calls[1] as [string, unknown[]];
+    const saved = JSON.parse(insertCall[1][1] as string) as {
+      weeklyDigests: Array<{ weekKey: string; finyk?: { summary: string } }>;
+    };
+    // Тільки один запис з цим weekKey
+    expect(
+      saved.weeklyDigests.filter((d) => d.weekKey === "2026-W10"),
+    ).toHaveLength(1);
+    expect(saved.weeklyDigests[0]!.finyk!.summary).toBe("нові фінанси");
+  });
+
+  it("digests відсортовані за weekKey desc (новіше на початку)", async () => {
+    const existing = {
+      weeklyDigests: [
+        {
+          weekKey: "2026-W05",
+          generatedAt: "2026-01-01T00:00:00.000Z",
+          finyk: null,
+          fizruk: null,
+          nutrition: null,
+          routine: null,
+        },
+        {
+          weekKey: "2026-W03",
+          generatedAt: "2026-01-01T00:00:00.000Z",
+          finyk: null,
+          fizruk: null,
+          nutrition: null,
+          routine: null,
+        },
+      ],
+      lastInsightDate: null,
+      lastInsightText: null,
+    };
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ data: JSON.stringify(existing) }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const req = {
+      user: { id: "user_1" },
+      body: {
+        weeklyDigest: {
+          weekKey: "2026-W07",
+          generatedAt: "2026-02-16T00:00:00.000Z",
+        },
+      },
+    };
+    await coachMemoryPost(asReq(req), makeRes());
+
+    const insertCall = pool.query.mock.calls[1] as [string, unknown[]];
+    const saved = JSON.parse(insertCall[1][1] as string) as {
+      weeklyDigests: Array<{ weekKey: string }>;
+    };
+    expect(saved.weeklyDigests[0]!.weekKey).toBe("2026-W07");
+    expect(saved.weeklyDigests[1]!.weekKey).toBe("2026-W05");
+    expect(saved.weeklyDigests[2]!.weekKey).toBe("2026-W03");
+  });
+
+  it("digests обрізаються до 12 записів (retention limit)", async () => {
+    // Створюємо 13 наявних записів + один новий = 14 до cap
+    const manyDigests = Array.from({ length: 13 }, (_, i) => ({
+      weekKey: `2025-W${String(i + 1).padStart(2, "0")}`,
+      generatedAt: "2025-01-01T00:00:00.000Z",
+      finyk: null,
+      fizruk: null,
+      nutrition: null,
+      routine: null,
+    }));
+    const existing = {
+      weeklyDigests: manyDigests,
+      lastInsightDate: null,
+      lastInsightText: null,
+    };
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ data: JSON.stringify(existing) }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const req = {
+      user: { id: "user_1" },
+      body: {
+        weeklyDigest: {
+          weekKey: "2026-W01",
+          generatedAt: "2026-01-06T00:00:00.000Z",
+        },
+      },
+    };
+    await coachMemoryPost(asReq(req), makeRes());
+
+    const insertCall = pool.query.mock.calls[1] as [string, unknown[]];
+    const saved = JSON.parse(insertCall[1][1] as string) as {
+      weeklyDigests: Array<unknown>;
+    };
+    expect(saved.weeklyDigests.length).toBe(12);
+    // Найновіший (2026-W01) залишається, найстаріші обрізаються
+    const keys = (saved.weeklyDigests as Array<{ weekKey: string }>).map(
+      (d) => d.weekKey,
+    );
+    expect(keys[0]).toBe("2026-W01");
+  });
+});
+
 describe("coachInsight", () => {
   function makeReq(body: unknown): Request {
     return {
