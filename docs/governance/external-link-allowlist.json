@@ -101,6 +101,10 @@
     {
       "pattern": "^https?://cabinet\\.tax\\.gov\\.ua(/.*)?$",
       "reason": "cabinet.tax.gov.ua (Ukrainian tax office cabinet) returns 503 to non-browser User-Agents and has intermittent uptime issues. Cited in docs/launch/business/04-launch-readiness.md as the canonical tax-cabinet portal; page loads correctly in browsers."
+    },
+    {
+      "pattern": "^https?://n8n-production-09ac\\.up\\.railway\\.app(/.*)?$",
+      "reason": "Founder's self-hosted n8n instance on Railway (cited in docs/runbooks/operations-runbook.md as the workflow editor UI). Railway PaaS routes 404 when the deploy slug is paused, asleep, or scaled-to-zero between cron ticks — the URL is correct for the owner (dmytro.skords@gmail.com) and behind Railway-managed Postgres auth."
     }
   ]
 }

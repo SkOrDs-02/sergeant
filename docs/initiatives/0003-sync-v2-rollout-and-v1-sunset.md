@@ -29,7 +29,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 **In:**
 
 1. Server-side метрики rollout-у v2 та v1-traffic (Pino + Grafana).
-2. `Sunset:` HTTP-header на v1-ендпоінтах ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594) сумісний).
+2. `Sunset:` HTTP-header на v1-ендпоінтах ([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594) сумісний).
 3. Feature-flag `cloudSyncMode` per-user / per-module (web + RN).
 4. **Shadow mode** — клієнт пише і v1, і v2; сервер порівнює і логує дельту.
 5. Migration-скрипт (idempotent), який бекфілить історію `module_data` → `sync_op_log` для активних користувачів.
