@@ -241,11 +241,11 @@ DOR для Phase 1 (`feat-react-router-setup`): після введення `<Ro
 
 ### Phase 4 (partial) — scroll restoration + prefetch (2026-05-18)
 
-| Що                           | Як зафіксовано                                                                                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<ScrollRestoration />`      | Mounted у `Providers.tsx` (line 60). Scroll position відновлюється при back/forward navigation.                                                                     |
-| Prefetch-on-hover            | `apps/web/src/core/hooks/useRoutePrefetch.ts` — `getPagePrefetchProps()` повертає `onMouseEnter`, `onFocus`, `onPointerDown` handlers; wired у `HubBottomNav` tabs. |
-| PostHog `route_change` event | PENDING — `PageviewTracker` fires `$pageview` при pathname change (standard PostHog); кастомний `route_change` + `p95` metric не реалізовані.                       |
+| Що                           | Як зафіксовано                                                                                                                                                                                                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<ScrollRestoration />`      | Mounted у `Providers.tsx` (line 60). Scroll position відновлюється при back/forward navigation.                                                                                                                                                          |
+| Prefetch-on-hover            | `apps/web/src/core/hooks/useRoutePrefetch.ts` — `getPagePrefetchProps()` повертає `onMouseEnter`, `onFocus`, `onPointerDown` handlers; wired у `HubBottomNav` tabs.                                                                                      |
+| PostHog `route_change` event | **Done (2026-06-01 reconcile)** — `apps/web/src/core/observability/RouteChangeTracker.tsx` + `core/lib/routeChangePerf.ts` fire the custom `route_change` event (mounted у `Providers.tsx:63`). Узгоджено з line 122 (помилково лишалось «PENDING» тут). |
 
 ### Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)
 

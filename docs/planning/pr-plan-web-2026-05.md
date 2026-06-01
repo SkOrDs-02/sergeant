@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **Оновлено 2026-06-01 (drift reconcile).** Вже **shipped** у коді (звірено sweep-ом): **A1** — `useHashRouter` codemod завершено, ESLint-правило на `error` (`eslint.config.js:317`), 0 violations у `apps/web/src/modules`; **A3** — per-route bundle-gate у `scripts/check-bundle-size.mjs` (FinykApp/150, FizrukApp/180, RoutineApp/120, NutritionApp/100); **A4** — 3 з 4 файлів розпиляно (`hubChatContext.ts`=32, `fizrukActions.ts`=73, `AssetsTable.tsx`=142; **лишився** `NutritionApp.tsx`≈628 > 600); **A7** — `useSyncStatus` має `useQuery` з `refetchInterval` для online-сесії. Перевір перед тим, як брати у роботу.
+
 Консолідований PR-план за результатами двох прожарок `apps/web` від 2026-05-13:
 архітектура + state-management (прожарка #3/10) і frontend ergonomics
 (прожарка #2/10). Документ збирає всі відкриті / partial items в одне місце,

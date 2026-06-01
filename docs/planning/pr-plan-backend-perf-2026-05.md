@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **Оновлено 2026-06-01 (drift reconcile).** Кілька PR-ів цього плану вже **shipped** у коді (звірено sweep-ом): **PR-03** — umbrella `./migrate` export прибрано (`grep '@sergeant/db-schema/migrate"'` → 0); **PR-05** — bounded `pool.end()` drain з AbortController є (`lib/poolShutdown.ts:endPoolWithAbortTimeout`, wired `index.ts`); **PR-09 + PR-10** — `validateBody`/`validateQuery` → `parseBody` міграція завершена (`grep validateBody apps/server/src` excl. `http/`/tests → 0). Перевір цей блок перед тим, як брати їх у роботу.
+
 PR-розкладка по решті open / Partial / Follow-up / Backlog items із прожарки
 [`docs/audits/2026-05-13-backend-performance-roast.md`](../audits/2026-05-13-backend-performance-roast.md).
 Скоуп: `apps/server/`, `packages/db-schema/`, `packages/shared/`,

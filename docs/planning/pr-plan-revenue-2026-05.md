@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **Оновлено 2026-06-01 (drift reconcile).** Вже **shipped** у коді (звірено sweep-ом): **PR-2** — Customer Portal endpoint (`apps/server/src/routes/billing.ts:90` `POST /api/billing/portal`) + Settings `PlanSection.tsx` «Керувати підпискою»; **PR-3 (checkout part)** — `?checkout=success|cancel` handler у `PricingPage.tsx:177-188` (env exit-1 валідація лишається open); **PR-4 (AI-chat part)** — `<PaywallModal surface="ai_chat_limit">` wired у `HubChat.tsx:152-155` через `useChatSend`+`usePlan`; **PR-9** — `TrialBanner.tsx` має повну логіку (countdown + lifecycle states). Перевір перед тим, як брати у роботу. (Live-mode Stripe + ФОП — окремий founder/external блокер, не code.)
+
 PR-план виконавчих кроків, що закриває outstanding-items з двох прожарок revenue + monetization. Скоуп — `apps/web` paywall/billing surface, `apps/server` billing module, лендинг і pricing-experimentation guardrails. Цей файл не дублює існуючий 48-PR ops-план у [`pr-plan-2026-05.md`](./pr-plan-2026-05.md) — він фокусується вузько на revenue surface (Stripe checkout/webhook lifecycle, paywall gates, plan-aware UI, landing/EN, A/B harness).
 
 ## Cross-refs
