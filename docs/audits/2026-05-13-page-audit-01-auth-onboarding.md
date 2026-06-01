@@ -78,6 +78,8 @@ Prefer (a) — fewer aliases, single source of truth. Add an ESLint custom rule 
 **Recommendation.**
 Wire `AuthPage.tsx` to import the existing scaffolded siblings (`LoginForm`, `RegisterForm`, `GoogleSignInButton`, `ForgotPasswordPanel`, `useForgotPassword`, `PasswordStrengthBar`, `PasswordVisibilityToggle`, `FieldError`) and delete the inline copies. Target ≤300 LOC for the composition root. Tracked in the 2026-05-13 dead-code roast § P1.6 per `useForgotPassword.ts:10`.
 
+> **Closure note (2026-06-01, PR-6 of "9 decisions"):** Verified-already-done. `wc -l apps/web/src/core/auth/AuthPage.tsx` → **187 LOC** (was 693 at audit time). All scaffolded siblings are now wired: `LoginForm` (144 LOC) + `RegisterForm` (164) + `ForgotPasswordPanel` (97) + `GoogleSignInButton` (43) + `useForgotPassword` (87) + `authSchemas` (38) + `authFormPrimitives` (80) — total ~840 across the decomposition. `AuthPage.tsx` is now a pure composition root: mode toggle + provider buttons + analytics, no inline forms. Hard Rule #18 (max-lines: 600) satisfied with 413 LOC of headroom. Decision #3 ("A — full decomposition") therefore lands as a doc-only closure in this PR — no code change needed beyond what already shipped.
+
 ---
 
 ### F3 — Scaffolded auth decomposition is dead code [severity: high] [perspective: rule/code-quality]
@@ -105,6 +107,8 @@ Two divergent copies of auth UX (one shipped, one tested). A bug fixed in the in
 
 **Recommendation.**
 Either (a) finish the decomposition this sprint — wire AuthPage to the scaffolded siblings (see F2), or (b) delete the scaffolded siblings + their tests + cite the rationale in an ADR. Do not let both copies coexist past 2026-05-31.
+
+> **Closure note (2026-06-01, PR-6 of "9 decisions"):** Resolved by option (a). `AuthPage.tsx` now imports and uses the scaffolded siblings; no inline `function LoginForm`/`function RegisterForm` exists in `AuthPage.tsx`. The dead-code coexistence flagged here is closed.
 
 ---
 
