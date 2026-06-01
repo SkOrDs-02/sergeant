@@ -171,6 +171,8 @@ Extend `sergeant-design/valid-tailwind-opacity` to also flag the
 decimal-arbitrary form (track as a follow-up). PR is docs-only, so the
 fix and the lint tightening land in a code PR.
 
+> **Closure note (2026-06-01, PR-B3 of 15-pack):** Resolved. All four module-accent entries in `apps/web/src/shared/components/layout/ModuleHeader.tsx` swapped from `/[.06]` → `/5` and `/[.14]` → `/15` (on-scale values). `apps/web/src/modules/finyk/components/TxRow.tsx:221` decorative wash swapped from `/[0.08] dark:/[0.15]` → `/10 dark:/15`. Visual diff is sub-threshold. The lint-rule tightening to also flag `/[.NN]` decimals stays as a follow-up.
+
 ---
 
 ### F3 — Raw `emerald` palette with `text-white` and no `-strong` companion [severity: high] [perspective: tailwind]

@@ -67,29 +67,29 @@ const MODULE_HEADER_TOKENS: Record<
   }
 > = {
   finyk: {
-    gradient: "from-finyk/[.06]",
-    border: "border-finyk/[.14]",
+    gradient: "from-finyk/5",
+    border: "border-finyk/15",
     subtitle: "text-finyk-strong dark:text-finyk/70",
     accentDot: "bg-finyk",
     accentStrip: "bg-finyk/45",
   },
   fizruk: {
-    gradient: "from-fizruk/[.06]",
-    border: "border-fizruk/[.14]",
+    gradient: "from-fizruk/5",
+    border: "border-fizruk/15",
     subtitle: "text-fizruk-strong dark:text-fizruk/70",
     accentDot: "bg-fizruk",
     accentStrip: "bg-fizruk/45",
   },
   routine: {
-    gradient: "from-routine/[.06]",
-    border: "border-routine/[.14]",
+    gradient: "from-routine/5",
+    border: "border-routine/15",
     subtitle: "text-routine-strong dark:text-routine/70",
     accentDot: "bg-routine",
     accentStrip: "bg-routine/45",
   },
   nutrition: {
-    gradient: "from-nutrition/[.06]",
-    border: "border-nutrition/[.14]",
+    gradient: "from-nutrition/5",
+    border: "border-nutrition/15",
     subtitle: "text-nutrition-strong dark:text-nutrition/70",
     accentDot: "bg-nutrition",
     accentStrip: "bg-nutrition/45",
