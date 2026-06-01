@@ -282,7 +282,12 @@ export function useTransactionFilters({
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key !== DAY_COLLAPSE_KEY) return;
-      setDayOverrides(readDayCollapse());
+      const next = readDayCollapse();
+      // Diff before committing — a cross-tab event that doesn't actually
+      // change our overrides shouldn't force a re-render (page-audit-05 F18).
+      setDayOverrides((prev) =>
+        JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
+      );
     }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
