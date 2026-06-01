@@ -1,7 +1,7 @@
 # PR-31: ESLint config 1073 рядки → split per-app
 
-> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Phase 1 shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). Phase 2 deferred: per-surface extracts (apps/web, apps/server, apps/mobile, apps/mobile-shell, tools/openclaw, packages/\*\*) tracked separately — потребує diff-test scaffolding (`scripts/eslint-print-config-diff.mjs`) перед extraction.
+> **Last validated:** 2026-06-01 by Skords-01. **Next review:** 2026-09-01.
+> **Status:** Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. Per-surface extracts (apps/web, apps/server, apps/mobile, apps/mobile-shell, tools/openclaw, packages/\*\*) tracked separately — diff-gate тепер flips на будь-який accidental config drift; extraction PR запускає `--update` після того як intent verified review-ером.
 
 |                    |                                                             |
 | ------------------ | ----------------------------------------------------------- |
