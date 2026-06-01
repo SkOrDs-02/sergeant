@@ -151,6 +151,15 @@ export default [
       // future import-style refactors. Place new utils in the right
       // subdir, or import via the `@shared/lib` barrel.
       "sergeant-design/no-flat-shared-lib": "error",
+      // `prefer-kyiv-time` — Theme 1 (consolidated audit 2026-05-13).
+      // Bans `Date.prototype.get{FullYear,Month,Date,Day,Hours,Minutes,Seconds}`
+      // in web client code; use helpers in `@shared/lib/time/kyivTime.ts`
+      // so day boundaries stay anchored to Europe/Kyiv per the domain-
+      // invariants spec. Allowlisted: `kyivTime.ts` itself, `apps/server/**`,
+      // and `*.test.{ts,tsx,js}` (mock-clock tests). Severity `warn`
+      // initially; ramps to `error` after the burndown sweep closes.
+      // See docs/governance/rules/kyiv-time-helpers.md.
+      "sergeant-design/prefer-kyiv-time": "warn",
       // `require-toast-error-action` — audit 2026-05-13 § F1 (P0):
       // every error-toast must include an `action: { label, onClick }`
       // so the user has a recovery path. Bare `toast.error("...")`

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { logger } from "@shared/lib";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   safeListLSKeys,
   safeReadStringLS,
@@ -32,8 +33,11 @@ function todayKey() {
 }
 
 function currentHm() {
-  const n = new Date();
-  return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+  // Theme 1: routine reminders fire on Kyiv-local HH:MM so a user
+  // travelling abroad still gets the same "8:00" reminder they
+  // configured in Kyiv, instead of one shifted by the host clock.
+  const { hour, minute } = getKyivDateParts(Date.now());
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 async function showNotification(

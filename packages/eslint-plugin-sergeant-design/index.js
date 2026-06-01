@@ -4427,6 +4427,90 @@ const noBareFixedInsetModal = {
   },
 };
 
+// ──────────────────────────────────────────────────────────────────────
+// prefer-kyiv-time — Theme 1 (audit consolidated 2026-05-13 § Theme 1).
+//
+// `Date.prototype.getHours()` / `getMinutes()` / `getDate()` / `getDay()` /
+// `getMonth()` / `getFullYear()` / `getSeconds()` return host-local values,
+// not Europe/Kyiv. Reading them and stamping a day-key / streak / drawer
+// label silently drifts off-by-one when the device timezone differs from
+// Kyiv. The repo declares **Europe/Kyiv** as the single source of truth
+// for time (`docs/architecture/domain-invariants.md`).
+//
+// Use helpers in `apps/web/src/shared/lib/time/kyivTime.ts`:
+//   getKyivDateParts(ts)   → { year, month, day, hour, minute }
+//   getKyivDayKey(d)       → "YYYY-MM-DD" in Kyiv
+//   isSameKyivDay(ts)      → boolean
+//
+// Severity ramp: `warn` initially (many existing sites — covered by
+// `kyivTime.ts` exemption + per-file `eslint-disable` comments while
+// migration is in flight). Promote to `error` when audit closes.
+//
+// Allowlist (rule-level skip):
+//   - The helper itself (`kyivTime.ts`)
+//   - Server code (`apps/server/**`) — backend handles time as UTC.
+//   - Tests (`*.test.{ts,tsx,js}`) — explicit `vi.setSystemTime` ok.
+//   - Strategy `kyivMondayISO` uses `Intl.DateTimeFormat` directly and is
+//     itself the recommended pattern.
+//
+// See docs/governance/rules/kyiv-time-helpers.md for the full migration
+// plan and the audit cross-ref.
+const PREFER_KYIV_TIME_MESSAGE =
+  "Don't read host-local date parts ({{name}}). Use @shared/lib/time/kyivTime helpers " +
+  "(getKyivDateParts, getKyivDayKey, isSameKyivDay) so day boundaries stay anchored " +
+  "to Europe/Kyiv per the domain-invariants spec.";
+
+const HOST_TIME_GETTERS = new Set([
+  "getFullYear",
+  "getMonth",
+  "getDate",
+  "getDay",
+  "getHours",
+  "getMinutes",
+  "getSeconds",
+]);
+
+const preferKyivTime = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid host-local Date getters; route through @shared/lib/time/kyivTime helpers.",
+    },
+    schema: [],
+    messages: {
+      forbidden: PREFER_KYIV_TIME_MESSAGE,
+    },
+  },
+  create(context) {
+    const filename =
+      typeof context.filename === "string"
+        ? context.filename
+        : typeof context.getFilename === "function"
+          ? context.getFilename()
+          : "";
+    const normalized = filename.replace(/\\/g, "/");
+    if (/\/shared\/lib\/time\/kyivTime\.[jt]sx?$/.test(normalized)) return {};
+    if (/\/apps\/server\//.test(normalized)) return {};
+    if (/\.test\.[jt]sx?$/.test(normalized)) return {};
+    return {
+      MemberExpression(node) {
+        if (
+          node.property &&
+          node.property.type === "Identifier" &&
+          HOST_TIME_GETTERS.has(node.property.name)
+        ) {
+          context.report({
+            node,
+            messageId: "forbidden",
+            data: { name: node.property.name },
+          });
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -4457,6 +4541,7 @@ const plugin = {
     "forbid-shell-only-feature": forbidShellOnlyFeature,
     "no-hash-router-in-modules": noHashRouterInModules,
     "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
+    "prefer-kyiv-time": preferKyivTime,
     "require-stories-for-ui-components": requireStoriesForUiComponents,
     "prefer-data-state": preferDataState,
     "no-inline-body-size-limit": noInlineBodySizeLimit,
@@ -4498,6 +4583,7 @@ export {
   NO_HASH_ROUTER_MESSAGE,
   NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE,
   NO_BARE_FIXED_INSET_MODAL_MESSAGE,
+  PREFER_KYIV_TIME_MESSAGE,
 };
 
 export default plugin;
