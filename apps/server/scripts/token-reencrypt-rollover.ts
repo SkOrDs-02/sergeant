@@ -110,7 +110,15 @@ export function parseCliArgs(argv: readonly string[]): ParsedArgsResult {
   });
 
   if (values.help) {
-    return { parsed: { execute: false, batchSize: 0, maxRows: 0, verbose: false, help: true } };
+    return {
+      parsed: {
+        execute: false,
+        batchSize: 0,
+        maxRows: 0,
+        verbose: false,
+        help: true,
+      },
+    };
   }
 
   let batchSize = DEFAULT_BATCH_SIZE;
@@ -243,7 +251,10 @@ export function accumulatePlan(counters: RollupCounters, plan: RowPlan): void {
   }
 }
 
-export function formatReport(counters: RollupCounters, mode: "dry-run" | "execute"): string {
+export function formatReport(
+  counters: RollupCounters,
+  mode: "dry-run" | "execute",
+): string {
   const lines: string[] = [];
   lines.push(`Mode: ${mode}`);
   lines.push(`Rows scanned:        ${counters.rowsScanned}`);
@@ -255,7 +266,9 @@ export function formatReport(counters: RollupCounters, mode: "dry-run" | "execut
   lines.push(`Fields to rewrite:   ${counters.fieldsRewritten}`);
   if (counters.byOldVersion.size > 0) {
     lines.push("By old key version:");
-    const versions = Array.from(counters.byOldVersion.keys()).sort((a, b) => a - b);
+    const versions = Array.from(counters.byOldVersion.keys()).sort(
+      (a, b) => a - b,
+    );
     for (const v of versions) {
       lines.push(`  v${v} → v? : ${counters.byOldVersion.get(v)} field(s)`);
     }
@@ -280,7 +293,7 @@ Flags:
   --help, -h            Show this help.
 
 Env:
-  BETTER_AUTH_TOKEN_ENC_KEYS                 Multi-key CSV (v1:hex,v2:hex,...).
+  BETTER_AUTH_TOKEN_ENC_KEYS                 Multi-key CSV (v1:hex,v2:hex,…).
   BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION  Current write key (e.g. v2).
   BETTER_AUTH_TOKEN_ENC_KEY                  Legacy single-key fallback (script is a no-op).
 
@@ -310,7 +323,8 @@ async function main(argv: readonly string[]): Promise<number> {
 
   const ring = parseKeyRing({
     keysCsv: process.env["BETTER_AUTH_TOKEN_ENC_KEYS"] ?? null,
-    currentVersion: process.env["BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION"] ?? null,
+    currentVersion:
+      process.env["BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION"] ?? null,
     legacyKey: process.env["BETTER_AUTH_TOKEN_ENC_KEY"] ?? null,
     envName: "BETTER_AUTH_TOKEN_ENC_KEY",
   });
@@ -408,7 +422,7 @@ async function main(argv: readonly string[]): Promise<number> {
     return counters.rowsFailed > 0 ? 3 : 0;
   } catch (err) {
     process.stderr.write(
-      `reencrypt-tokens: unrecoverable error: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`,
+      `reencrypt-tokens: unrecoverable error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
     );
     return 2;
   } finally {
@@ -427,7 +441,9 @@ async function main(argv: readonly string[]): Promise<number> {
  * of a now-stale plaintext.
  */
 async function updateRowAtomic(
-  pool: { query: (q: string, p: unknown[]) => Promise<{ rowCount: number | null }> },
+  pool: {
+    query: (q: string, p: unknown[]) => Promise<{ rowCount: number | null }>;
+  },
   plan: RowPlan,
 ): Promise<void> {
   if (plan.rekeys.length === 0) return;
@@ -446,7 +462,9 @@ async function updateRowAtomic(
   const sql = `UPDATE account SET ${setClauses.join(", ")} WHERE ${whereClauses.join(" AND ")}`;
   const result = await pool.query(sql, params);
   if ((result.rowCount ?? 0) === 0) {
-    throw new Error("row changed between SELECT and UPDATE (optimistic-lock fail) — skipped");
+    throw new Error(
+      "row changed between SELECT and UPDATE (optimistic-lock fail) — skipped",
+    );
   }
 }
 
@@ -469,7 +487,7 @@ if (isMain) {
     .then((code) => process.exit(code))
     .catch((err) => {
       process.stderr.write(
-        `reencrypt-tokens: top-level crash: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`,
+        `reencrypt-tokens: top-level crash: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
       );
       process.exit(2);
     });
