@@ -275,9 +275,10 @@ export function useNutritionPantries({
         const idx = items.findIndex((x) => normalizeFoodName(x?.name) === norm);
         if (idx < 0) return p;
         const item = items[idx];
-        const qty = Number(item!.qty!);
+        if (!item) return p;
+        const qty = Number(item.qty);
         if (!Number.isFinite(qty) || qty <= 0) return p;
-        const unit = String(item!.unit! || "г")
+        const unit = String(item.unit || "г")
           .toLowerCase()
           .trim();
         // Only deduct from mass-based units (грами/кілограми). Inventory in
