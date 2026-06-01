@@ -638,14 +638,15 @@ describe("rateLimitExpress — Redis path", () => {
     expect(next).not.toHaveBeenCalled();
     expect(blockedJson).toHaveBeenCalledTimes(1);
     const body = blockedJson.mock.calls[0]?.[0] as Record<string, unknown>;
-    // Anonymous request → primary per-user bucket → code is RATE_LIMIT_USER.
-    // Better Auth client reads `message`; `error` is the legacy field for direct
-    // fetch callers. Both fields must be present and equal (M3 contract).
+    // Anonymous request → primary bucket is keyed by IP (no `u:` subject), so
+    // the block is IP-based → code is RATE_LIMIT_IP. Better Auth client reads
+    // `message`; `error` is the legacy field for direct fetch callers. Both
+    // fields must be present and equal (M3 contract).
     expect(body).toEqual(
       expect.objectContaining({
         error: "Забагато запитів. Спробуй пізніше.",
         message: "Забагато запитів. Спробуй пізніше.",
-        code: "RATE_LIMIT_USER",
+        code: "RATE_LIMIT_IP",
       }),
     );
   });

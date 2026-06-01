@@ -640,6 +640,13 @@ export function rateLimitExpress({
     // Primary per-user bucket passed; now enforce the shared IP cap so an
     // attacker with N accounts cannot multiply effective throughput by N.
     // TODO(M9): (IP,ASN) keying for CGNAT fairness — needs ASN datasource, deferred.
+    //
+    // `reportedLimit` is the cap surfaced in the `RateLimit-Limit` header. It
+    // follows whichever bucket actually constrains the response, so a 429 from
+    // the secondary IP bucket reports the IP cap rather than the (larger)
+    // per-user cap — keeping `RateLimit-Limit` / `RateLimit-Remaining`
+    // internally consistent.
+    let reportedLimit = limit;
     if (rl.ok && ipLimit !== undefined) {
       const subject = rateLimitSubject(req);
       if (subject.startsWith("u:")) {
@@ -652,15 +659,22 @@ export function rateLimitExpress({
           // and alerting rely on `RATE_LIMIT_IP` vs `RATE_LIMIT_USER` to
           // differentiate per-user saturation from IP-level abuse (M9 card).
           rl = { ...ipRl, blockedBy: "ip" };
+          reportedLimit = ipLimit;
         }
         // Otherwise rl.ok is still true (both buckets had headroom) — no block.
       }
       // Anonymous requests key by IP on the primary bucket already; the secondary
       // only activates for authenticated (u:) subjects. Nothing to do here.
     } else if (!rl.ok) {
-      // Primary bucket blocked (no ipLimit or request did not reach secondary check).
-      // Tag with blockedBy="user" so the 429 code is RATE_LIMIT_USER.
-      rl = { ...rl, blockedBy: "user" };
+      // Primary bucket blocked. The primary subject is per-user (`u:`) for
+      // authenticated requests but per-IP for anonymous ones, so label by the
+      // actual subject — anonymous throttling must report RATE_LIMIT_IP, not
+      // RATE_LIMIT_USER. `reportedLimit` stays the primary `limit`, which is
+      // the cap the anonymous IP bucket was checked against.
+      rl = {
+        ...rl,
+        blockedBy: rateLimitSubject(req).startsWith("u:") ? "user" : "ip",
+      };
     }
 
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table
@@ -674,7 +688,7 @@ export function rateLimitExpress({
       // клієнти, які гребли на тому хедері, не зламаються до окремого
       // PR-а на cleanup.
       const resetSec = Math.max(1, Math.ceil(rl.resetMs / 1000));
-      res.setHeader("RateLimit-Limit", String(limit));
+      res.setHeader("RateLimit-Limit", String(reportedLimit));
       res.setHeader("RateLimit-Remaining", String(rl.remaining));
       res.setHeader("RateLimit-Reset", String(resetSec));
       res.setHeader("X-RateLimit-Remaining", String(rl.remaining));
@@ -700,9 +714,12 @@ export function rateLimitExpress({
       //   RATE_LIMIT_IP   — secondary per-IP bucket exhausted first (multi-account abuse)
       //   RATE_LIMIT_USER — primary per-user bucket exhausted (normal per-account cap)
       //   RATE_LIMIT      — defensive fallback; should not appear in normal operation
-      const code = rl.blockedBy === "ip" ? "RATE_LIMIT_IP"
-        : rl.blockedBy === "user" ? "RATE_LIMIT_USER"
-        : "RATE_LIMIT";
+      const code =
+        rl.blockedBy === "ip"
+          ? "RATE_LIMIT_IP"
+          : rl.blockedBy === "user"
+            ? "RATE_LIMIT_USER"
+            : "RATE_LIMIT";
       res.status(429).json({
         error: message,
         message,
