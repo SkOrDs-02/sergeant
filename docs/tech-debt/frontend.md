@@ -1028,7 +1028,7 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 1. **Міграція TODO-списку `no-raw-local-storage`** — пріоритетно файли з
    найбільшою кількістю викликів (наступні за пріоритетом після вже
    мігрованих top-3).
-2. **File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.
+2. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done** — усі три розпиляні: `Assets.tsx` ≈40 LOC, `ActiveWorkoutPanel.tsx` ≈273 LOC, `ProfilePage.tsx` ≈145 LOC (жоден не топ-splitter).
 3. **Test coverage** — recommendation engine, reports aggregation, cloud
    sync flows; `HubDashboard` focused coverage вже додано.
 4. Опційно — `eslint-plugin-import` + `import/extensions: never`, щоб

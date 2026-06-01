@@ -5,6 +5,8 @@
 > **Status:** Active
 
 > **Оновлено 2026-06-01.** Не-actionable секції тепер несуть токен `🚫 Blocked-reason: <category>`: «Operational visibility — Railway env-var changes» (`owner-decision`) та «Push credentials» (`external-infra`). Легенда + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
+>
+> **Оновлено 2026-06-01 (annex reconcile).** Із 2026-05-15 code-debt annex закрито два пункти: **(a)** `TODO(token-reencrypt)` — є proactive sweep CLI `apps/server/scripts/token-reencrypt-rollover.ts` (`pnpm reencrypt:tokens`), key-rotation playbook більше не заблокований (H4 Closed); **(c)** `sessionProtection.ts` із 2 `as unknown as X` кастами **видалено** — session-логіка переїхала в `auth/sessionFingerprint.ts` + `http/requireSession.ts`, bypass-патернів у non-test server-src — 0. Пункт **(b)** (`sync_op_log` партиціювання, roadmap PR-050) лишається відкритим.
 
 > **Оновлено 2026-05-15.** Code-debt audit annex (Claude Opus 4.7 external session, monorepo-wide scan). **Closed in this PR (`refactor(server): consolidate sleep() helper into lib/timing`):** consolidated 6 duplicated `sleep(ms)` helpers (`db.ts`, `lib/anthropic.ts`, `lib/bankProxy.ts`, `lib/webpushSend.ts`, `modules/ai-memory/embeddings.ts`, `push/send.ts`) into the existing `lib/timing.ts:sleep` export; replaced 7 hardcoded AI-call timeout literals with named constants — new `modules/nutrition/timeouts.ts:NUTRITION_AI_TIMEOUTS_MS` (5 sites: day-plan/week-plan/recommend-recipes/shopping-list/food-search) and `modules/chat/chat.ts:CHAT_TOOL_TIMEOUT_MS` (2 sites). **New items added to backlog (low signal-to-noise, not blockers):** (a) `apps/server/src/auth/encryptingAdapter.ts:95` — `TODO(token-reencrypt)` lazy rollover relies on user-triggered OAuth (no background re-encryption path; blocks key-rotation playbook); (b) `apps/server/src/modules/sync/syncV2.ts:243` + `syncV2Stream.ts:42` — `TODO(roadmap-pr-050)` `sync_op_log` партиціювання + архівація (tied to roadmap PR-050); (c) `apps/server/src/auth/sessionProtection.ts` — 2 non-test `as unknown as X` casts (document, не блокує).
 
@@ -63,15 +65,15 @@
 
 ### Entry, app shell, DB, auth
 
-| Файл         | Статус / залишковий борг                                                                                                                                       |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index.ts`   | **OK** — graceful shutdown, pool sampler; **низький**: `catch { /* ignore */ }` навколо Sentry flush — прийнятно.                                              |
-| `app.ts`     | **OK** — body-size caps, middleware pipeline.                                                                                                                  |
-| `config.ts`  | **OK** — frozen config.                                                                                                                                        |
-| `db.ts`      | **OK** — query wrapper + метрики; **середній**: глобальний `DB_SLOW_MS` 200ms; **низький**: catch навколо histogram observe.                                   |
-| `auth.ts`    | **OK** — Better Auth; **середній**: lazy Sentry + catch у тестових моках.                                                                                      |
-| `aiQuota.ts` | **OK** — atomic upsert + per-cost (PR C); **високий (P1)**: немає окремих per-tool лімітів / ваг у продуктовій політиці; **середній**: catch на метриках — OK. |
-| `sentry.ts`  | **OK**; **середній**: `SENTRY_TRACES_SAMPLE_RATE` 0.1 у проді може бути дорогим.                                                                               |
+| Файл         | Статус / залишковий борг                                                                                                                                                                                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `index.ts`   | **OK** — graceful shutdown, pool sampler; **низький**: `catch { /* ignore */ }` навколо Sentry flush — прийнятно.                                                                                                                                                                                                                                      |
+| `app.ts`     | **OK** — body-size caps, middleware pipeline.                                                                                                                                                                                                                                                                                                          |
+| `config.ts`  | **OK** — frozen config.                                                                                                                                                                                                                                                                                                                                |
+| `db.ts`      | **OK** — query wrapper + метрики; **середній**: глобальний `DB_SLOW_MS` 200ms; **низький**: catch навколо histogram observe.                                                                                                                                                                                                                           |
+| `auth.ts`    | **OK** — Better Auth; **середній**: lazy Sentry + catch у тестових моках.                                                                                                                                                                                                                                                                              |
+| `aiQuota.ts` | **OK** — atomic upsert + per-cost (PR C) + **per-tool ліміти/ваги shipped** (`toolCost()`/`toolLimit()`, `AI_QUOTA_TOOL_LIMITS` JSON, dedicated `tool:<name>` buckets via `consumeToolQuota()`); **низький**: лишився тільки metrics-label split (`aiQuotaBlocksTotal{reason,cost}` + `ai_cost_consumed_total`); **середній**: catch на метриках — OK. |
+| `sentry.ts`  | **OK**; **середній**: `SENTRY_TRACES_SAMPLE_RATE` 0.1 у проді може бути дорогим.                                                                                                                                                                                                                                                                       |
 
 ### `http/` (infra)
 
@@ -271,10 +273,12 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### Per-tool limits
 
-- Додати `AI_DAILY_TOOL_LIMIT` (fallback = 0.5 × `AI_DAILY_USER_LIMIT`).
-- Ендпоінти з `toolUse: true` (`chat` при наявності tool_results) викликають `assertAiQuota(req, res, { cost: Number(process.env.AI_TOOL_COST) || 2 })`.
-- Chat без tool_use / всі nutrition handler-и → `cost: 1`.
-- Метрики: розділити `aiQuotaBlocksTotal{reason}` на `{reason, cost}`, додати `ai_cost_consumed_total{subject_type}`.
+> ✅ **Shipped 2026-06-01.** Core per-tool limits implemented in `apps/server/src/modules/chat/aiQuota.ts` — `toolCost()` (`DEFAULT_TOOL_COST=3`), `toolLimit()` reads `AI_QUOTA_TOOL_LIMITS` JSON, `consumeToolQuota()` uses dedicated `tool:<name>` buckets (`TOOL_BUCKET_PREFIX`). Env shape differs from the original sketch below (`AI_QUOTA_TOOL_LIMITS` JSON map instead of a single `AI_DAILY_TOOL_LIMIT`). **Only open item:** the metrics-label split below (`aiQuotaBlocksTotal` is still labelled by `reason` only in `obs/metrics.ts`).
+
+- ~~Додати `AI_DAILY_TOOL_LIMIT` (fallback = 0.5 × `AI_DAILY_USER_LIMIT`).~~ Shipped as `AI_QUOTA_TOOL_LIMITS` JSON map.
+- ~~Ендпоінти з `toolUse: true` … `assertAiQuota(req, res, { cost: … })`.~~ Shipped via `consumeToolQuota()`.
+- ~~Chat без tool_use / всі nutrition handler-и → `cost: 1`.~~ Shipped.
+- **Open:** Метрики: розділити `aiQuotaBlocksTotal{reason}` на `{reason, cost}`, додати `ai_cost_consumed_total{subject_type}`.
 
 ---
 
