@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-05-29",
+  "generated_at": "2026-06-01",
   "counts": {
     "adr": 58,
     "audit": 31,
     "hard-rule": 26,
     "initiative": 52,
-    "playbook": 55,
-    "pr": 234,
+    "playbook": 56,
+    "pr": 237,
     "skill": 21
   },
   "nodes": [
@@ -672,7 +672,7 @@
       "type": "audit",
       "title": "Аналіз README: чого не вистачає та повний гайд по проєкту",
       "path": "docs/audits/2026-05-03-readme-gap-analysis.md",
-      "status": "Active",
+      "status": "Closed (historical record — all 15 checklist items now de-facto covered in current `README.md`; жоден gap не залишився open)",
       "tier": "core",
       "meta": {}
     },
@@ -762,7 +762,7 @@
       "type": "audit",
       "title": "Doc-hygiene roast — 2026-05-13",
       "path": "docs/audits/2026-05-13-documentation-hygiene-roast.md",
-      "status": "Active",
+      "status": "Closed (historical record — усі 53 broken links + 3 stale claims пофікшено у Devin PR; P0/P1/P2 закриті)",
       "tier": "core",
       "meta": {}
     },
@@ -1353,7 +1353,7 @@
       "type": "initiative",
       "title": "0010 — Revenue-first launch: ship paid, focus wedge",
       "path": "docs/initiatives/0010-revenue-first-launch.md",
-      "status": "In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2+6(partial) done; Apple Sign-In + PricingPage portal link landed 2026-05-24 (this branch). Pending: founder adds APPLE_* env vars in Railway/local, EN locale (6)",
+      "status": "In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2+6(partial) done; Apple Sign-In + PricingPage portal link landed 2026-05-24 (this branch). Pending: founder adds APPLE\\_\\* env vars in Railway/local, EN locale (6)",
       "tier": "core",
       "meta": {
         "number": 10,
@@ -1379,7 +1379,7 @@
       "type": "initiative",
       "title": "0013 — Module decomposition round 2 (`apps/web` allowlist drain)",
       "path": "docs/initiatives/0013-module-decomposition-round-2.md",
-      "status": "In progress — Sprint 1 done. Sprint 2 effectively done: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→614 raw / 518 effective (incremental refactors, passes rule), `RoutineCalendarPanel.tsx` 645→589 effective ([PR #3091](https://github.com/Skords-01/Sergeant/pull/3091) follow-up commits, `useCompletionNoteDrafts` extraction). `max-lines:600` allowlist in `eslint.config.js` empty. **All Sprint 2 files now under the threshold — ready for `decomp-r2-finalize` closure PR.**",
+      "status": "Done (2026-05-29) — allowlist drained to **0 files** (target was ≤2; closes 0001 carry-over criterion #2). All Initiative-0001 carry-over files + the 2026-05-09 drift items are decomposed under the 600-LOC threshold; the `max-lines` `overrides` allowlist in `eslint.config.js` is empty (only an explanatory comment remains). Sprint 2 closers: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→518 effective, `RoutineCalendarPanel.tsx` 645→589 effective ([PR #3091](https://github.com/Skords-01/Sergeant/pull/3091)). See § Outcome → Closure.",
       "tier": "core",
       "meta": {
         "number": 13,
@@ -1416,7 +1416,7 @@
       "type": "initiative",
       "title": "0016 — CHANGELOG release-cut automation",
       "path": "docs/initiatives/0016-changelog-release-cut.md",
-      "status": "In progress",
+      "status": "Done (2026-05-29) — script shipped + first release cut `v2026.05.29` executed. Fixed a latent tooling bug: the cut commit used `chore(release):`, which commitlint `scope-enum` rejects (no `release` scope) → switched to `chore(root):`.",
       "tier": "core",
       "meta": {
         "number": 16
@@ -1427,7 +1427,7 @@
       "type": "initiative",
       "title": "0017 — Hub Settings & Reports mount perf",
       "path": "docs/initiatives/0017-hub-tabs-mount-perf.md",
-      "status": "In progress — Sprint 0 (observability baseline) shipped. Sprint 1 PR-1.1 (`SectionSkeleton` primitive in `SettingsPrimitives.tsx`) landed 2026-05-22 (this branch); per-section lazy wiring in `HubSettingsPage` is the next PR.",
+      "status": "In progress — Sprint 0 + Sprint 1 + Sprint 2 shipped; only Sprint 3 (conditional) + Finalize remain. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
       "tier": "core",
       "meta": {
         "number": 17,
@@ -2106,6 +2106,15 @@
       "type": "playbook",
       "title": "Prettier Pass on `docs/`",
       "path": "docs/playbooks/prettier-pass-on-docs.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:reconcile-doc-drift",
+      "type": "playbook",
+      "title": "Звірка дрифту документації та архівація",
+      "path": "docs/playbooks/reconcile-doc-drift.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -4149,6 +4158,16 @@
       }
     },
     {
+      "id": "pr:3078",
+      "type": "pr",
+      "title": "PR #3078",
+      "tier": "extended",
+      "meta": {
+        "number": 3078,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3078"
+      }
+    },
+    {
       "id": "pr:3091",
       "type": "pr",
       "title": "PR #3091",
@@ -4156,6 +4175,26 @@
       "meta": {
         "number": 3091,
         "url": "https://github.com/Skords-01/Sergeant/pull/3091"
+      }
+    },
+    {
+      "id": "pr:3094",
+      "type": "pr",
+      "title": "PR #3094",
+      "tier": "extended",
+      "meta": {
+        "number": 3094,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3094"
+      }
+    },
+    {
+      "id": "pr:3102",
+      "type": "pr",
+      "title": "PR #3102",
+      "tier": "extended",
+      "meta": {
+        "number": 3102,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3102"
       }
     },
     {
@@ -6041,6 +6080,16 @@
       "type": "references"
     },
     {
+      "from": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
+      "to": "pr:3078",
+      "type": "touched-by"
+    },
+    {
       "from": "audit:2026-05-13-revenue-monetization-roast",
       "to": "hard-rule:11",
       "type": "references"
@@ -6741,6 +6790,16 @@
       "type": "touched-by"
     },
     {
+      "from": "initiative:0017",
+      "to": "pr:3094",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0017",
+      "to": "pr:3102",
+      "type": "touched-by"
+    },
+    {
       "from": "initiative:stack-pulse-2026-05/00-overview",
       "to": "hard-rule:20",
       "type": "references"
@@ -7099,6 +7158,11 @@
       "from": "playbook:prettier-pass-on-docs",
       "to": "pr:447",
       "type": "touched-by"
+    },
+    {
+      "from": "playbook:reconcile-doc-drift",
+      "to": "hard-rule:10",
+      "type": "references"
     },
     {
       "from": "playbook:release",

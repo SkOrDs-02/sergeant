@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-05-29)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-01)</title>
     <style>
       body {
         font-family:
@@ -97,7 +97,7 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-05-29 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-01 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
@@ -105,13 +105,13 @@
       <span class="chip chip-audit">audit: <b>31</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>52</b></span>
-      <span class="chip chip-playbook">playbook: <b>55</b></span>
-      <span class="chip chip-pr">pr: <b>234</b></span>
+      <span class="chip chip-playbook">playbook: <b>56</b></span>
+      <span class="chip chip-pr">pr: <b>237</b></span>
       <span class="chip chip-skill">skill: <b>21</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (236 core)</summary>
+      <summary>Nodes (237 core)</summary>
       <table>
         <thead>
           <tr>
@@ -827,7 +827,10 @@
                 >Аналіз README: чого не вистачає та повний гайд по проєкту</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed (historical record — all 15 checklist items now de-facto
+              covered in current `README.md`; жоден gap не залишився open)
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -953,7 +956,10 @@
                 >Doc-hygiene roast — 2026-05-13</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed (historical record — усі 53 broken links + 3 stale claims
+              пофікшено у Devin PR; P0/P1/P2 закриті)
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -1632,8 +1638,8 @@
             <td>
               In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2+6(partial) done;
               Apple Sign-In + PricingPage portal link landed 2026-05-24 (this
-              branch). Pending: founder adds APPLE_* env vars in Railway/local,
-              EN locale (6)
+              branch). Pending: founder adds APPLE\_\* env vars in
+              Railway/local, EN locale (6)
             </td>
             <td>number=10 · owner=@Skords-01 · priority=P0 (Sprint 1–4)</td>
           </tr>
@@ -1720,8 +1726,12 @@
               >
             </td>
             <td>
-              In progress — Sprint 1 done. Sprint 2 effectively done:
-              `hubChatContext.ts` 681→32
+              Done (2026-05-29) — allowlist drained to **0 files** (target was
+              ≤2; closes 0001 carry-over criterion #2). All Initiative-0001
+              carry-over files + the 2026-05-09 drift items are decomposed under
+              the 600-LOC threshold; the `max-lines` `overrides` allowlist in
+              `eslint.config.js` is empty (only an explanatory comment remains).
+              Sprint 2 closers: `hubChatContext.ts` 681→32
               ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)),
               `fizrukActions.ts` 672→73
               ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)),
@@ -1729,13 +1739,10 @@
               ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)),
               `HubDashboard.tsx` 837→115
               ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)),
-              `NutritionApp.tsx` 766→614 raw / 518 effective (incremental
-              refactors, passes rule), `RoutineCalendarPanel.tsx` 645→589
-              effective ([PR
-              #3091](https://github.com/Skords-01/Sergeant/pull/3091) follow-up
-              commits, `useCompletionNoteDrafts` extraction). `max-lines:600`
-              allowlist in `eslint.config.js` empty. **All Sprint 2 files now
-              under the threshold — ready for `decomp-r2-finalize` closure PR.**
+              `NutritionApp.tsx` 766→518 effective, `RoutineCalendarPanel.tsx`
+              645→589 effective ([PR
+              #3091](https://github.com/Skords-01/Sergeant/pull/3091)). See §
+              Outcome → Closure.
             </td>
             <td>
               number=13 · owner=@Skords-01 · priority=P2 (subordinate to
@@ -1776,7 +1783,12 @@
                 >0016 — CHANGELOG release-cut automation</a
               >
             </td>
-            <td>In progress</td>
+            <td>
+              Done (2026-05-29) — script shipped + first release cut
+              `v2026.05.29` executed. Fixed a latent tooling bug: the cut commit
+              used `chore(release):`, which commitlint `scope-enum` rejects (no
+              `release` scope) → switched to `chore(root):`.
+            </td>
             <td>number=16</td>
           </tr>
           <tr>
@@ -1788,10 +1800,28 @@
               >
             </td>
             <td>
-              In progress — Sprint 0 (observability baseline) shipped. Sprint 1
-              PR-1.1 (`SectionSkeleton` primitive in `SettingsPrimitives.tsx`)
-              landed 2026-05-22 (this branch); per-section lazy wiring in
-              `HubSettingsPage` is the next PR.
+              In progress — Sprint 0 + Sprint 1 + Sprint 2 shipped; only Sprint
+              3 (conditional) + Finalize remain. **Sprint 1 done:** per-section
+              lazy wiring landed on main — the 4 heavy module-scoped sections
+              (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` +
+              `&lt;Suspense fallback={&lt;SectionSkeleton minH={72}/&gt;}&gt;`
+              in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10
+              lightweight sections stay static **by design** (a per-chunk for a
+              tiny section is net overhead). PR-1.2 cross-module defer landed
+              for **Finyk only**
+              ([#3102](https://github.com/Skords-01/Sergeant/pull/3102),
+              `useInView` gate on the Monobank sync-state query + backfill
+              poller) — it was the only section with off-screen _network_ cost;
+              `fizruk`/`nutrition`/`routine` carry only local-state hydration
+              (no `enabled:inView`-gatable queries), already mitigated by the
+              lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card
+              lazy decomposition merged via
+              [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash
+              on main as `5c98b41e`); remote branch
+              `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:**
+              Sprint 3 conditional on post-merge PostHog `aggregateReport` P95
+              metrics (cut window — only if &gt; 50 ms); Finalize PR — bundle
+              gate update + tech-debt watchlist drain + Outcome.
             </td>
             <td>
               number=17 · owner=@Skords-01 · priority=P1 (Sprint 1 candidate
@@ -3024,6 +3054,17 @@
           </tr>
           <tr>
             <td>playbook</td>
+            <td><code>playbook:reconcile-doc-drift</code></td>
+            <td>
+              <a href="../../docs/playbooks/reconcile-doc-drift.md"
+                >Звірка дрифту документації та архівація</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
             <td><code>playbook:release</code></td>
             <td><a href="../../docs/playbooks/release.md">Реліз</a></td>
             <td>Active</td>
@@ -3538,7 +3579,7 @@
     </details>
 
     <details>
-      <summary>Edges (490 total, first 500 core-to-core)</summary>
+      <summary>Edges (495 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4091,6 +4132,13 @@
             <td><code>hard-rule:9</code></td>
           </tr>
           <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-10-errors-pwa-marketing</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
             <td><code>audit:2026-05-13-revenue-monetization-roast</code></td>
             <td>references</td>
             <td><code>hard-rule:11</code></td>
@@ -4285,6 +4333,11 @@
             <td><code>playbook:modify-n8n-workflow</code></td>
             <td>references</td>
             <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:reconcile-doc-drift</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
           </tr>
           <tr>
             <td><code>playbook:release</code></td>

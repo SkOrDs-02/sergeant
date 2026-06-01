@@ -1,16 +1,16 @@
 # I7 — Push security events to OpenClaw
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Open
+> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-08-30.
+> **Status:** Closed (2026-06-01)
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Informational / hardening       |
-| **Sprint**     | [Sprint 4](./sprint-4.md)       |
-| **Owner**      | backend                         |
-| **Effort**     | 1 person-day                    |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                                                                              |
+| -------------- | ---------------------------------------------------------------------------------- |
+| **Severity**   | Informational / hardening                                                          |
+| **Sprint**     | [Sprint 4](./sprint-4.md)                                                          |
+| **Owner**      | backend                                                                            |
+| **Effort**     | 1 person-day                                                                       |
+| **Status**     | Closed (2026-06-01) — typed emitter + call sites + OpenClaw consumer + runbook shipped |
+| **Discovered** | 2026-05-03 deep security review                                                    |
 
 ## Summary
 

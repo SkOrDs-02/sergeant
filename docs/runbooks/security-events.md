@@ -1,47 +1,47 @@
-# Security Events — Operator Playbook
+# Security Events — Операційний Playbook
 
-> **Last validated:** 2026-05-31 by @Skords-01. **Next review:** 2026-08-29.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
-> **Tracking:** I7 sprint card — `feat/security-i7-events-openclaw`
-> **Owner:** @Skords-01
 
-## Overview
+## Загальна архітектура
 
-The security events pipeline (`apps/server/src/obs/securityEvents.ts`) emits
-typed, rate-limited signals when the API server detects an anomalous or
-security-relevant condition. Signals are:
+Пайплайн security events (`apps/server/src/obs/securityEvents.ts`) генерує
+типізовані, rate-limited сигнали щоразу, коли API-сервер виявляє аномальний або
+security-релевантний стан. Сигнали:
 
-1. Logged via Pino at the appropriate level (see mapping below).
-2. Pushed to Telegram (`SERGEANT_OPS_CHAT_ID`) via `SERGEANT_ALERT_BOT_TOKEN`.
+1. Логуються через Pino на відповідному рівні (таблиця нижче).
+2. Пушаться у Telegram (`SERGEANT_OPS_CHAT_ID`) через `SERGEANT_ALERT_BOT_TOKEN`.
 
-Rate limit: **max 10 events per event-type per 60-second window** — suppressed
-events are counted in `security_event_rate_limited` Pino warns.
+Rate limit: **макс. 10 подій на тип події на 60-секундне вікно** — подавлені
+події фіксуються у `security_event_rate_limited` Pino warn-ах.
 
 ---
 
-## Event Reference
+## Довідник подій
 
 ### `mono_webhook_bad_payload`
 
 **Severity:** `high`
-**Pino level:** `error`
+**Рівень Pino:** `error`
 
-Monobank webhook POST failed Zod schema validation before any DB write. The
-payload is untrusted; the issues array is logged (no raw payload echo).
+Monobank webhook POST не пройшов Zod-валідацію до будь-якого запису в БД.
+Payload вважається ненадійним; масив `issues` логується (сирий payload не
+ехується).
 
-**Possible causes:**
+**Можливі причини:**
 
-- Monobank changed their webhook schema (upstream breaking change).
-- Attacker probing the endpoint with malformed payloads.
-- Integration bug in a third-party webhook forwarder.
+- Monobank змінив схему webhook (breaking change upstream).
+- Зловмисник пробує endpoint із деформованими payload-а��и.
+- Баг інтеграції у стороньому webhook-форвардері.
 
-**Response:**
+**Реакція:**
 
-1. Check the `issues` field in the Pino log for the failing Zod paths.
-2. If Monobank API changelog confirms a schema change — update `WebhookPayloadSchema` in `modules/mono/webhook.ts`.
-3. If rate is sustained (>50/min from a single IP) — consider adding IP-level
-   rate limiting to `POST /api/mono/webhook` in the rate-limit config.
-4. Correlate with `mono_webhook_received_total{status="bad_payload"}` in
+1. Перевірити поле `issues` у Pino-лозі для визначення проблемних Zod-шляхів.
+2. Якщо changelog Monobank API підтверджує зміну схеми — оновити
+   `WebhookPayloadSchema` у `modules/mono/webhook.ts`.
+3. Якщо rate сталий (>50/хв з одного IP) — розглянути додавання IP-rate-limit
+   на `POST /api/mono/webhook` у конфігурації rate-limit-у.
+4. Корелювати з `mono_webhook_received_total{status="bad_payload"}` у
    Grafana dashboard `mono-webhook`.
 
 ---
@@ -49,167 +49,174 @@ payload is untrusted; the issues array is logged (no raw payload echo).
 ### `auth_session_ua_drift`
 
 **Severity:** `medium`
-**Pino level:** `warn`
+**��івень Pino:** `warn`
 
-Session fingerprint drift detected: user-agent or IP prefix changed between
-the stored session fingerprint and the current request (H3 hardening).
+Виявлено зсув fingerprint сесії: user-agent або IP-префікс змінився між
+збереженим fingerprint-ом сесії та поточним запитом (H3 hardening).
 
-**Important:** A single drift event is **not** evidence of compromise. Users
-legitimately switch networks (mobile → WiFi) and upgrade browsers. This event
-is a forensics signal, not an automatic block.
+**Важливо:** Одиничний drift-event **не є** доказом компрометації. Користувачі
+легітимно змінюють мережі (мобільна → WiFi) і оновлюють браузери. Ця подія —
+forensics-сигнал, не автоматичне блокув��ння.
 
-**Possible causes:**
+**Можливі причини:**
 
-- User switched networks (home → mobile).
-- Browser or OS auto-update changed the UA string.
-- Credential sharing / session theft (sustained pattern from different IPs).
-- VPN or proxy rotation.
+- Користувач змінив мережу (домашня → мобільна).
+- Браузер або ОС оновились, змінивши UA-рядок.
+- Спільне використання облікових даних / крадіжка сесії (сталий патерн з
+  різних IP).
+- Ротація VPN або проксі.
 
-**Response:**
+**Реакція:**
 
-1. Single event: observe but do not act. Note the `userIdHash` for correlation.
-2. Sustained pattern (same `userIdHash`, many different IP prefixes within
-   minutes): escalate. Consider forcing re-authentication for that user via
-   the admin panel or a direct DB `DELETE FROM session WHERE user_id = ?`.
-3. Sustained pattern across many `userIdHash` values: possible infrastructure
-   issue (load balancer removing `X-Forwarded-For`, clock skew). Check infra.
+1. Одинична подія: спостерігати, але не діяти. Зафіксувати `userIdHash` для
+   кореляції.
+2. Сталий патерн (один `userIdHash`, багато різних IP-префіксів за хвилини):
+   ескалювати. Розглянути примусову повторну автентифікацію через адмін-панель
+   або через `DELETE FROM session WHERE user_id = ?` у БД.
+3. Сталий патерн по багатьох `userIdHash`-значеннях: можлива інфраструктурна
+   проблема (load balancer видаляє `X-Forwarded-For`, clock skew). Перевірити
+   інфру.
 
 ---
 
 ### `prompt_injection_attempt`
 
 **Severity:** `high`
-**Pino level:** `error`
+**Р��вень Pino:** `error`
 
-A `tool_result` block returned to the chat endpoint contained a prompt-injection
-marker (e.g. "ignore previous instructions", `<system>`, "act as evil AI").
-The content was still forwarded to the model inside a `<tool_output>` envelope
-(M8 hardening), which instructs the model to treat it as data.
+Блок `tool_result`, повернутий до chat-ендпоінту, містив маркер
+prompt-injection (наприклад «ignore previous instructions», `<system>`,
+«act as evil AI»). Контент все одно був переданий моделі всередині конверта
+`<tool_output>` (M8 hardening), що інструктує модель трактувати його як дані.
 
-**Possible causes:**
+**Можливі причини:**
 
-- Compromised upstream: Mono webhook `description` field, n8n webhook response,
-  or GitHub API response contained injected text.
-- Attacker crafted a malicious tool response (would require compromising the
-  tool execution path or the user's linked account).
-- False positive: legitimate text matched a broad pattern (e.g. a blog post
-  excerpt about AI safety that contains "ignore previous instructions").
+- Компрометований upstream: поле `description` Mono webhook, відповідь n8n
+  webhook або відповідь GitHub API містять injected-текст.
+- Зловмисник сформував шкідливу відповідь tool (для цього потрібно скомпрометувати
+  шлях виконання tool або підʼязаний акаунт користувача).
+- Хибне спрацювання: легітимний текст збігся з широким патерном (наприклад
+  витяг із блогпосту про AI-безпеку, що містить «ignore previous instructions»).
 
-**Response:**
+**Реакція:**
 
-1. Check the `tool` label in the log to identify which tool triggered.
-2. If `tool=unknown` — an orphan `tool_result` block was received; check
-   client for state corruption.
-3. Review the upstream source for that tool (Mono API, n8n workflow, GitHub).
-4. If the pattern is a false positive, review `PROMPT_INJECTION_PATTERNS` in
-   `modules/chat/toolOutputWrapping.ts` and narrow the regex if safe to do so.
-5. If sustained: consider temporarily disabling the affected tool via
-   runtime kill-switch or removing it from `TOOLS` in `modules/chat/tools.ts`.
+1. Перевірити мітку `tool` у лозі для ідентифікації tool, що спрацював.
+2. Якщо `tool=unknown` — отримано сирий блок `tool_result`; перевірити клієнт
+   на пошкодження стану.
+3. Перевірити upstream-джерело для цього tool (Mono API, n8n-workflow, GitHub).
+4. Якщо патерн є хибним спрацьовуванням — переглянути `PROMPT_INJECTION_PATTERNS`
+   у `modules/chat/toolOutputWrapping.ts` і звузити regex, якщо безпечно.
+5. Якщо сталий: розглянути тимчасове вимкнення відповідного tool через
+   runtime kill-switch або видалення з `TOOLS` у `modules/chat/tools.ts`.
 
 ---
 
 ### `transcribe_usd_cap_hit`
 
 **Severity:** `medium`
-**Pino level:** `warn`
+**Рівень Pino:** `warn`
 
-A user hit the per-day USD cap on the `/api/transcribe` endpoint (H9
-hardening). The request was rejected with HTTP 402.
+Користувач досяг щоденного USD-cap на ендпоінті `/api/transcribe` (H9
+hardening). Запит відхилено з HTTP 402.
 
-**Possible causes:**
+**Можливі причини:**
 
-- Legitimate heavy usage (user transcribed many long audio files).
-- Automated abuse: bot repeatedly posting audio to exhaust the daily cap
-  (DoS against the user's own quota or cost amplification).
+- Легітимне велике навантаження (користувач транскрибував багато довгих
+  аудіофайлів).
+- Ав��оматизовані зловживання: бот повторно надсилає аудіо для вичерпання
+  щоденного ліміту (DoS-атака на квоту користувача або cost amplification).
 
-**Response:**
+**Реакція:**
 
-1. The cap is configured via `TRANSCRIBE_USD_CAP_PER_USER_PER_DAY_USD` env.
-   Check the `bucket` and `cap_micros` values in the log.
-2. To unblock a specific user: manually reset their cap row:
+1. Cap налаштовується через `TRANSCRIBE_USD_CAP_PER_USER_PER_DAY_USD` env.
+   Перевірити значення `bucket` і `cap_micros` у лозі.
+2. Для розблокування конкретного користувача: вручну скинути рядок cap:
    ```sql
    DELETE FROM transcribe_usd_usage
    WHERE subject_key = '<subject>' AND usage_day = CURRENT_DATE;
    ```
-3. If the same user is hitting the cap every day through legitimate use,
-   raise the cap or contact them about usage patterns.
-4. If multiple users are hitting the cap concurrently (bulk abuse): tighten
-   the rate limit on `/api/transcribe` in the rate-limit config and alert Ops.
+3. Якщо один користувач щодня досягає cap через легітимне використання —
+   підняти cap або звʼязатися щодо патернів використання.
+4. Якщо кілька користувачів одночасно досягають cap (масові зловживання) —
+   посилити rate-limit на `/api/transcribe` у конфігурації та оповістити Ops.
 
 ---
 
 ### `chat_tool_cap_hit`
 
 **Severity:** `high` (client_request) / `medium` (anthropic_response)
-**Pino level:** `error` (high) / `warn` (medium)
+**Рівень Pino:** `error` (high) / `warn` (medium)
 
-The tool-iteration cap (`MAX_TOOL_ITERATIONS = 8`) was exceeded. The request
-was rejected with HTTP 422 (M7 hardening).
+Перевищено ліміт ітерацій tool (`MAX_TOOL_ITERATIONS = 8`). Запит відхилено
+з HTTP 422 (M7 hardening).
 
-**`boundary=client_request`** — the client sent more than `MAX_TOOL_ITERATIONS`
-`tool_result` blocks in a single request. This is either:
+**`boundary=client_request`** — клієнт надіслав більше `MAX_TOOL_ITERATIONS`
+блоків `tool_result` в одному запиті. Це або:
 
-- A manipulated / malformed client payload (most likely abuse).
-- A client-side bug where tool execution output was duplicated.
+- Маніпульований / деформований client payload (найімовірніше — зловживання).
+- Баг на стороні клієнта, де вивід виконання tool був продубльований.
 
-**`boundary=anthropic_response`** — the Anthropic model returned more than
-`MAX_TOOL_ITERATIONS` `tool_use` blocks in a single response (runaway model
-loop).
+**`boundary=anthropic_response`** — модель Anthropic повернула більше
+`MAX_TOOL_ITERATIONS` блоків `tool_use` в одній відповіді (runaway model loop).
 
-**Response:**
+**Реакція:**
 
 1. `boundary=client_request` (high severity):
-   - Check `observed` value vs. `MAX_TOOL_ITERATIONS` to gauge how far over.
-   - If sustained from one user: investigate for automation / scripted abuse.
-   - If from multiple users after a client update: likely a client-side bug;
-     coordinate with mobile/web team to fix the tool-execution loop.
+   - Перевірити значення `observed` відносно `MAX_TOOL_ITERATIONS` щоб оцінити
+     перевищення.
+   - Якщо сталий від одного користувача: перевірити на автоматизацію / scripted
+     abuse.
+   - Якщо від кількох користувачів після оновлення клієнта: ймовірно
+     client-side bug; координувати з mobile/web-командою для виправлення
+     tool-execution loop.
 2. `boundary=anthropic_response` (medium severity):
-   - Usually transient model behavior. Monitor rate.
-   - If sustained: review recent prompt/tool definition changes that may be
-     causing the model to propose excessive parallel tool calls.
+   - Зазвичай тимчасова поведінка моделі. Моніторити rate.
+   - Якщо сталий: переглянути недавні зміни prompt/tool definition, що можуть
+     змушувати модель пропонувати надмірні паралельні tool-виклики.
 
 ---
 
-## Muting Alerts Temporarily
+## Тимчасове вимкнення алертів
 
-Set `SECURITY_EVENTS_MUTED=1` in the server Railway environment to suppress
-Telegram push for all security events without affecting Pino logging or
-Prometheus metrics. This is useful during load tests, planned maintenance, or
-when investigating a high-volume false-positive pattern.
+Встановити `SECURITY_EVENTS_MUTED=1` у Railway-середовищі сервера для
+придушення Telegram-push для всіх security events без впливу на Pino-логування
+або Prometheus-метрики. Корисно під час load-тестів, запланованого технічного
+обслуговування або під час розслідування патерну хибних спрацьовувань з
+великим обсягом.
 
-**To mute:**
+**Вимкнути:**
 
 ```
 railway variables set SECURITY_EVENTS_MUTED=1 --service api
 ```
 
-**To unmute:**
+**Увімкнути:**
 
 ```
 railway variables set SECURITY_EVENTS_MUTED=0 --service api
 ```
 
-Or remove the variable entirely — the emitter treats any value other than `"1"`
-as "not muted".
+Або видалити змінну повністю — emitter трактує будь-яке значення, відмінне від
+`"1"`, як «не вимкнено».
 
 ---
 
-## Prometheus Queries
+## Prometheus-запити
 
 ```promql
-# Rate of security events by type (5m window)
+# Rate security events за типом (вікно 5 хв)
 sum by (event) (rate(security_event_rate_limited[5m]))
 
-# Correlation: bad payload rate vs. total mono webhook rate
+# Кореляція: rate поганих payload-ів vs. загальний rate mono webhook
 rate(mono_webhook_received_total{status="bad_payload"}[5m])
   / rate(mono_webhook_received_total[5m])
 
-# Tool cap hits by boundary (M7)
+# Спрацювання tool cap за boundary (M7)
 rate(chat_tool_iteration_cap_hit_total[5m]) by (boundary)
 
-# Prompt injection hit rate per tool (M8)
+# Rate спроб prompt injection за tool (M8)
 rate(chat_prompt_injection_attempt_total[5m]) by (tool)
 
-# Transcribe cap events
+# події cap transcribe
 rate(transcribe_usd_cap_events_total{outcome="cap_hit"}[1h])
 ```
