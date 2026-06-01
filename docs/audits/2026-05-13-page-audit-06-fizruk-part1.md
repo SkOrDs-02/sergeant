@@ -181,6 +181,8 @@ Add at minimum:
 
 ### F7 — Exercise deep-link silently renders empty card on unknown `exerciseId` [severity: medium] [perspective: ux] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B10 of 15-pack):** Resolved. `apps/web/src/modules/fizruk/pages/Exercise.tsx` now adds a second guard: when `exerciseId` is non-empty but unmatched in the catalog AND no history exists for it, the page renders an `EmptyState title="Вправу не знайдено"` with a "До журналу" CTA routing through `onNavigate("workouts")`. Stale share-card / deleted-catalog deep-links no longer surface as a blank skeleton.
+
 **Page:** Exercise
 **File:** `apps/web/src/modules/fizruk/pages/Exercise.tsx`
 **Lines:** L44–L155
