@@ -810,6 +810,8 @@ className = "... transition-colors duration-150 ease-out";
 
 Or split: `transition-[background-color,transform] duration-150`.
 
+> **Closure note (2026-06-01, PR-A10 of 15-pack):** Verified-already-done. `apps/web/src/core/security/AppLock.tsx` no longer contains `transition-all`. The PinPad button (L84) uses `transition-colors` + `active:scale-95` (transform via state class, not via the transition shorthand); the status dot (L29) uses `transition-colors`. Rule #17 animation-budget compliance restored — no code change needed.
+
 ---
 
 ### F30 — `cachePolicy.ts` `VOLATILE_API_PREFIXES` is hand-maintained and drift-prone [severity: low] [perspective: rule]
