@@ -473,6 +473,8 @@ the same synchronous tick and asserts unique IDs.
 
 ### F8 — Networth chart silently never captures break-even state [severity: high] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B14 of 15-pack):** Resolved. `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:176-187` snapshot effect drops the `networth !== 0` guard; only `accounts.length > 0` remains as the data-available gate. A user who lands on exactly 0 net worth (loan paid off equal to current cash) now gets a real data point instead of a silently skipped sample, so `NetworthSection` chart doesn't stall on the prior day's curve.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts`
 **Lines:** L163–L174

@@ -1,6 +1,6 @@
 # Encryption key rotation — runbook
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-09-01.
 > **Status:** Active
 
 > Закриває action item з [`docs/security/hardening/H4-encryption-key-rotation.md`](../security/hardening/H4-encryption-key-rotation.md).

@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-08-30.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.

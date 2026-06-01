@@ -175,7 +175,11 @@ export function useOverviewData({
 
   useEffect(() => {
     if (loadingTx && realTx.length === 0) return;
-    if (networth !== 0 && accounts.length > 0) {
+    // Audit 05 F8: the prior `networth !== 0` guard silently dropped the
+    // break-even snapshot — a real scenario after paying off a loan that
+    // exactly matches current cash. `accounts.length > 0` is the real
+    // "data available" gate; zero net worth is a legitimate data point.
+    if (accounts.length > 0) {
       saveNetworthSnapshot(networth);
     }
   }, [
