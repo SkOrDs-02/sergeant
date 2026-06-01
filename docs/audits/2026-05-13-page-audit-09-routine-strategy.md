@@ -480,6 +480,8 @@ return [...map.entries()].sort(([ah], [bh]) => {
 });
 ```
 
+> **Closure note (2026-06-01, PR-A9 of 15-pack):** Resolved. `apps/web/src/modules/routine/RoutineApp.helpers.ts:97-104` now destructures: `.sort(([aKey], [bKey]) => …)`. No tuple indexing; locals read directly so a future refactor that changes the entries shape forces a compile-time fix instead of silently shifting a bang.
+
 ---
 
 ## Per-page coverage matrix
