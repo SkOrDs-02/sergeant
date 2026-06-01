@@ -209,6 +209,8 @@ if (exerciseId && !ex && history.length === 0) {
 
 ### F8 — Atlas page recomputes muscle-status mapping on every render (no `useMemo`) [severity: medium] [perspective: perf]
 
+> **Closure note (2026-06-01, PR-B6 of 15-pack):** Resolved. `apps/web/src/modules/fizruk/pages/Atlas.tsx` now wraps `statusByMuscle` in `useMemo(..., [rec.by])`. `<BodyAtlas>` gets identity-stable input across storage / BroadcastChannel re-emits that don't actually change the recovery snapshot — the internal SVG path no longer re-paints on every cycle.
+
 **Page:** Atlas
 **File:** `apps/web/src/modules/fizruk/pages/Atlas.tsx`
 **Lines:** L30–L75
