@@ -177,6 +177,8 @@ fix and the lint tightening land in a code PR.
 
 ### F3 — Raw `emerald` palette with `text-white` and no `-strong` companion [severity: high] [perspective: tailwind]
 
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `FirstInsightBanner.tsx:24-46` тепер на module-токенах: `border-finyk/25`, `bg-finyk/10`, `bg-finyk/15`, `bg-finyk-strong text-white`. Raw `emerald-500/600/700` у `modules/finyk/` більше немає (лишився лише коментар у TxRow + тест). Hard Rule #9 (`-strong` companion) дотримано.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/FirstInsightBanner.tsx`
 **Lines:** L20–L43
@@ -318,6 +320,8 @@ Cover with a unit test for n ∈ {0, 1, 2, 5, 11, 14, 21, 24, 25}.
 
 ### F5 — Analytics month-nav buttons below 44×44 touch target [severity: high] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `Analytics.tsx:128,138` month-nav кнопки тепер несуть `min-w-[44px] min-h-[44px]` — WCAG 2.5.5 floor виконано.
+
 **Page:** `analytics`
 **File:** `apps/web/src/modules/finyk/pages/Analytics.tsx`
 **Lines:** L116–L137
@@ -369,6 +373,8 @@ Either use the shared `Button` primitive (`size="iconOnly"` auto-applies
 ---
 
 ### F6 — `now = new Date()` at module-load freezes "current month" detection [severity: high] [perspective: bug]
+
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `useTransactionFilters.ts:12,32-33,91,100,136` обчислює поточний місяць через `getKyivDateParts`/`kyivNowMonth()` на кожен виклик — module-load `now` freeze усунено, плюс day-boundary тепер Kyiv-anchored.
 
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/useTransactionFilters.ts`

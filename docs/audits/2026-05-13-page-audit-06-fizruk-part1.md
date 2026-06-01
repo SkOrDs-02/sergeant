@@ -541,6 +541,8 @@ Bump to `min-h-[44px]` (and `min-w-[44px]` if the SVG-only collapsed state at < 
 
 ### F22 — Atlas page may render two `<h1>` elements [severity: low] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `pages/Atlas.tsx` має рівно один `<h1>` (`grep -c '<h1'` = 1). Дубль heading усунено.
+
 **Page:** Atlas
 **File:** `apps/web/src/modules/fizruk/pages/Atlas.tsx` L87, `shell/FizrukHeader.tsx`
 **Lines:** Atlas L87

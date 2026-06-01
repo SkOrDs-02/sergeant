@@ -433,6 +433,8 @@ Prioritise:
 
 ### F20 — Routine module Banner "Закрити" + chip filters lack `aria-pressed` / `aria-expanded` [severity: medium] [perspective: a11y]
 
+> 🟡 **Partially closed (2026-06-01, docs-drift sweep):** Chip-filters частину виконано — `RoutineCalendarPanel.tsx:267,279,296,314` виставляють `aria-pressed`. Залишок: banner «Закрити» touch-target / state — лишається відкритим (трекається разом з F18).
+
 **Page:** Routine module / Calendar panel
 **File:** `apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`
 **Lines:** L290–L348 (filter chips loop)

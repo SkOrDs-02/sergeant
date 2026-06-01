@@ -44,6 +44,8 @@
 
 ### F2 — `HubChatHistoryDrawer.formatStamp` uses host time for "today" detection and HH:MM rendering [severity: high] [perspective: bug]
 
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `HubChatHistoryDrawer.tsx:10,26,29` тепер використовує `getKyivDateParts` + `isSameKyivDay` з `@shared/lib/time/kyivTime` для «today»-детекту і HH:MM — host-time formatting прибрано.
+
 **Page:** `HubChatHistoryDrawer`
 **File:** `apps/web/src/core/hub/HubChatHistoryDrawer.tsx`
 **Lines:** L17–L30

@@ -186,6 +186,8 @@ Writers (Fizruk-save, Nutrition-meal-add, Routine-toggle, Finyk-tx-save) уже 
 
 ### F5 — Arbitrary palette steps у BarChart (`bg-sky-500`, `bg-emerald-500`, `bg-orange-500`, `bg-lime-500`) [severity: medium] [perspective: tailwind]
 
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. Після Sprint 2 0017 split BarChart живе у per-module cards і приймає `colorClass: string` prop (`ExpensesCard.tsx:4,10` тощо) — викликач передає зареєстрований module-токен. `grep 'bg-(sky|emerald|orange|lime)-500'` по `core/hub/*.tsx` → 0 збігів. Hard Rule #11/#12 дотримані.
+
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
 **Lines:** L475, L494, L513, L533

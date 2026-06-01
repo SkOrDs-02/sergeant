@@ -36,6 +36,8 @@ Cтатичний аудит Fizruk Part 2 виявив **6 high-severity** і *
 
 ### F1 — Progress page рахує тиждень у локальному таймзоні замість Europe/Kyiv [severity: high] [perspective: bug]
 
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `Progress.tsx:20,22-26` тепер використовує `getKyivWeekStart` — week boundary anchored до Europe/Kyiv, не device-local.
+
 **Page:** `Progress`
 **File:** `apps/web/src/modules/fizruk/pages/Progress.tsx`
 **Lines:** L17–L23
@@ -62,6 +64,8 @@ function weekStartMs(d: number | string | Date) {
 ---
 
 ### F2 — `Programs` обчислює `todayDayIndex` у локальному часі [severity: high] [perspective: bug]
+
+> **Closure note (2026-06-01, docs-drift sweep):** Verified-already-done. `Programs.tsx:9,44-47` тепер бере `getKyivMondayIndex()` — day-index у Europe/Kyiv, не local time.
 
 **Page:** `Programs`
 **File:** `apps/web/src/modules/fizruk/pages/Programs.tsx`
