@@ -26,16 +26,23 @@ vi.mock("../../obs/logger.js", () => ({
   },
 }));
 
-vi.mock("./crypto.js", () => ({
-  decryptToken: vi.fn(),
-  encryptToken: vi.fn(),
-  tokenFingerprint: vi.fn(),
+// H4 Phase 2: backfill reads tokens through `tokenStore.ts` (KeyRing-aware
+// decrypt + lazy re-encrypt) instead of the raw `crypto.ts::decryptToken`.
+// `monoKeyRing` returns a truthy ring only when the env key is set, mirroring
+// production; `decryptAndLazyReencrypt` yields the plaintext token.
+vi.mock("./tokenStore.js", () => ({
+  monoKeyRing: vi.fn(() =>
+    (env as { MONO_TOKEN_ENC_KEY: string | undefined }).MONO_TOKEN_ENC_KEY
+      ? { current: { version: 1, key: Buffer.alloc(32) } }
+      : null,
+  ),
+  decryptAndLazyReencrypt: vi.fn(),
 }));
 
 import { query as _query } from "../../db.js";
 import { env } from "../../env/env.js";
 import { bankProxyFetch as _bankProxyFetch } from "../../lib/bankProxy.js";
-import { decryptToken as _decryptToken } from "./crypto.js";
+import { decryptAndLazyReencrypt as _decryptAndLazyReencrypt } from "./tokenStore.js";
 import {
   backfillHandler,
   backfillProgressHandler,
@@ -46,7 +53,7 @@ import {
 
 const queryMock = _query as unknown as Mock;
 const bankProxyFetch = _bankProxyFetch as unknown as Mock;
-const decryptToken = _decryptToken as unknown as Mock;
+const decryptToken = _decryptAndLazyReencrypt as unknown as Mock;
 
 interface TestRes {
   statusCode: number;

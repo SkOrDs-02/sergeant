@@ -1,17 +1,17 @@
 # H4 — No rotation procedure for AES-256-GCM data-encryption keys
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Phase 1 closed (2026-05-04) — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679); Phase 2 (Mono `mono_connection.token_*`) tracked as follow-up.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-09-01.
+> **Status:** Closed (2026-06-01) — Phase 1 PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679) (Better Auth); Phase 2 brings Mono `mono_connection.token_*` under the same versioned KeyRing (migration `074_mono_token_key_version.sql`).
 
-| Field          | Value                                                                                                                                                                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Severity**   | High (CVSS 7.5, AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N)                                                                                                                                                                                       |
-| **Sprint**     | [Sprint 3](./sprint-3.md)                                                                                                                                                                                                                  |
-| **Owner**      | backend                                                                                                                                                                                                                                    |
-| **Effort**     | 1.5 person-days                                                                                                                                                                                                                            |
-| **Status**     | Phase 1 closed (2026-05-04) — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679); Phase 2 follow-up open                                                                                                                          |
-| **Discovered** | 2026-05-03 deep security review                                                                                                                                                                                                            |
-| **Resolved**   | Phase 1: KeyRing infra (`apps/server/src/lib/keyRing.ts`) + Better Auth versioned ciphertext (`enc:v2:k<N>:…`) + lazy re-encrypt metric + runbook [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md). |
+| Field          | Value                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**   | High (CVSS 7.5, AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N)                                                                                                                                                                                                                                                                                                                            |
+| **Sprint**     | [Sprint 3](./sprint-3.md)                                                                                                                                                                                                                                                                                                                                                       |
+| **Owner**      | backend                                                                                                                                                                                                                                                                                                                                                                         |
+| **Effort**     | 1.5 person-days                                                                                                                                                                                                                                                                                                                                                                 |
+| **Status**     | **Closed (2026-06-01)** — Phase 1 PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679); Phase 2 lands the Mono side                                                                                                                                                                                                                                                      |
+| **Discovered** | 2026-05-03 deep security review                                                                                                                                                                                                                                                                                                                                                 |
+| **Resolved**   | Phase 1: KeyRing infra (`apps/server/src/lib/keyRing.ts`) + Better Auth versioned ciphertext (`enc:v2:k<N>:…`). Phase 2: Mono `mono_connection.token_*` under the same KeyRing — `token_key_version SMALLINT` column (migration 074), versioned writes via `MONO_TOKEN_ENC_KEYS`, transparent legacy decrypt + best-effort lazy re-encrypt (`mono_token_lazy_reencrypt_total`). |
 
 ## Phase split
 
@@ -19,14 +19,17 @@ This card was implemented in two phases because Better Auth and Mono store
 ciphertext in fundamentally different shapes (TEXT prefix vs. separate BYTEA
 columns), and the migration cost differs accordingly.
 
-| Phase   | Scope                                                                                      | Status                                                                            | Tracking           |
-| ------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | ------------------ |
-| Phase 1 | KeyRing parser, Better Auth `account.{accessToken,refreshToken,idToken}`, env, runbook     | Closed (2026-05-04) — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679) | This card          |
-| Phase 2 | `mono_connection.token_*` migration `040_token_key_version.sql` + `mono/crypto.ts` keyRing | Open — follow-up issue                                                            | Tracked separately |
+| Phase   | Scope                                                                                                                 | Status                                                                            | Tracking  |
+| ------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------- |
+| Phase 1 | KeyRing parser, Better Auth `account.{accessToken,refreshToken,idToken}`, env, runbook                                | Closed (2026-05-04) — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679) | This card |
+| Phase 2 | `mono_connection.token_*` migration `074_mono_token_key_version.sql` + `mono/crypto.ts` + KeyRing read/lazy-reencrypt | **Closed (2026-06-01)**                                                           | This card |
 
-Until Phase 2 lands, Mono key rotation still requires the legacy
-"single-key + downtime" procedure; see the "Legacy single-key rotation"
-section in [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md).
+Both phases are now closed: Mono key rotation uses the same zero-downtime
+versioned KeyRing as Better Auth. Existing legacy (unversioned) Mono
+ciphertext decrypts transparently — `mono_connection.token_key_version` is
+`NULL` for those rows and read as key version 1 — and is lazily re-encrypted
+to the current version on the next successful read. See the updated procedure
+in [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md).
 
 ## Summary
 

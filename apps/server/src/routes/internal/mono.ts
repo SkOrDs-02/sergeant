@@ -14,6 +14,7 @@ import { parseBody } from "../../http/validate.js";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
 import { rotateStaleMonoWebhookSecrets } from "../../modules/mono/rotateSecret.js";
+import { monoKeyRing } from "../../modules/mono/tokenStore.js";
 import { query as dbQuery } from "../../db.js";
 
 const RotateBody = z
@@ -52,7 +53,8 @@ export function createMonoInternalRouter(_args: { pool: Pool }): Router {
           .json({ error: "Monobank webhook integration is disabled" });
         return;
       }
-      if (!env.MONO_TOKEN_ENC_KEY || !env.PUBLIC_API_BASE_URL) {
+      const ring = monoKeyRing();
+      if (!ring || !env.PUBLIC_API_BASE_URL) {
         // `assertStartupEnv` already enforces both when MONO_WEBHOOK_ENABLED
         // is true, so reaching here means a runtime misconfiguration.
         // Fail closed rather than crash with an undefined deref deeper in.
@@ -67,7 +69,7 @@ export function createMonoInternalRouter(_args: { pool: Pool }): Router {
 
       try {
         const result = await rotateStaleMonoWebhookSecrets({
-          encKey: env.MONO_TOKEN_ENC_KEY,
+          ring,
           publicApiBaseUrl: env.PUBLIC_API_BASE_URL,
           olderThanDays: parsed.olderThanDays,
           alertAfterDays: parsed.alertAfterDays,

@@ -9,12 +9,15 @@ import {
   MonoSyncStateSchema,
 } from "../../http/schemas.js";
 import {
-  encryptToken,
-  decryptToken,
+  encryptTokenWithRing,
   tokenFingerprint,
   webhookSecretHash,
 } from "./crypto.js";
-import type { EncryptedToken } from "./crypto.js";
+import {
+  monoKeyRing,
+  decryptAndLazyReencrypt,
+  type MonoTokenRow,
+} from "./tokenStore.js";
 import { scheduleHistoryBackfill } from "./historyFetch.js";
 
 /**
@@ -81,8 +84,8 @@ export async function connectHandler(
     return;
   }
 
-  const encKey = env.MONO_TOKEN_ENC_KEY;
-  if (!encKey) {
+  const ring = monoKeyRing();
+  if (!ring) {
     res
       .status(500)
       .json({ error: "Server misconfigured: missing encryption key" });
@@ -179,7 +182,7 @@ export async function connectHandler(
     return;
   }
 
-  const encrypted: EncryptedToken = encryptToken(token, encKey);
+  const encrypted = encryptTokenWithRing(token, ring);
   const fingerprint = tokenFingerprint(token);
   // Plaintext secret stays in `webhook_secret` only for one release cycle
   // (rollback safety) — see migration 017's header. The new lookup path
@@ -189,14 +192,15 @@ export async function connectHandler(
 
   await query(
     `INSERT INTO mono_connection
-       (user_id, token_ciphertext, token_iv, token_tag, token_fingerprint,
-        webhook_secret, webhook_secret_hash, webhook_registered_at,
-        status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'active', NOW())
+       (user_id, token_ciphertext, token_iv, token_tag, token_key_version,
+        token_fingerprint, webhook_secret, webhook_secret_hash,
+        webhook_registered_at, status, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active', NOW())
      ON CONFLICT (user_id) DO UPDATE SET
        token_ciphertext = EXCLUDED.token_ciphertext,
        token_iv = EXCLUDED.token_iv,
        token_tag = EXCLUDED.token_tag,
+       token_key_version = EXCLUDED.token_key_version,
        token_fingerprint = EXCLUDED.token_fingerprint,
        webhook_secret = EXCLUDED.webhook_secret,
        webhook_secret_hash = EXCLUDED.webhook_secret_hash,
@@ -208,6 +212,7 @@ export async function connectHandler(
       encrypted.ciphertext,
       encrypted.iv,
       encrypted.tag,
+      encrypted.keyVersion,
       fingerprint,
       webhookSecret,
       webhookSecretHashHex,
@@ -258,7 +263,7 @@ export async function connectHandler(
   scheduleHistoryBackfill(
     userId,
     accounts.map((a) => a.id),
-    encKey,
+    ring,
   );
 
   // Validate response against the SSOT (Hard Rule #3) so any drift between
@@ -280,29 +285,18 @@ export async function disconnectHandler(
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
-  const encKey = env.MONO_TOKEN_ENC_KEY;
+  const ring = monoKeyRing();
 
-  const connResult = await query<{
-    token_ciphertext: Buffer;
-    token_iv: Buffer;
-    token_tag: Buffer;
-  }>(
-    "SELECT token_ciphertext, token_iv, token_tag FROM mono_connection WHERE user_id = $1",
+  const connResult = await query<MonoTokenRow>(
+    "SELECT token_ciphertext, token_iv, token_tag, token_key_version FROM mono_connection WHERE user_id = $1",
     [userId],
     { op: "mono_connection_select" },
   );
 
-  if (connResult.rows.length > 0 && encKey) {
+  if (connResult.rows.length > 0 && ring) {
     try {
-      const row = connResult.rows[0];
-      const decryptedToken = decryptToken(
-        {
-          ciphertext: row!.token_ciphertext,
-          iv: row!.token_iv,
-          tag: row!.token_tag,
-        },
-        encKey,
-      );
+      const row = connResult.rows[0]!;
+      const decryptedToken = await decryptAndLazyReencrypt(row, userId, ring);
       await fetch("https://api.monobank.ua/personal/webhook", {
         method: "POST",
         headers: {
