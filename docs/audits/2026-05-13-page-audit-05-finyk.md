@@ -672,6 +672,8 @@ and `c.label.replace(/^\S+\s/, "")` instead.
 
 ### F12 — Filter pills opt out of 44×44 touch target via `data-compact` [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01, PR-B12 of 15-pack):** Resolved. `TransactionFilters.tsx` button gets `pointer-coarse:min-h-[44px]`. Visual 28px pill (`h-7`) preserved on fine-pointer (desktop) so the chip strip stays dense; coarse-pointer devices (mobile finger-tap) get the WCAG 2.5.5 ≥44px hit area without changing the visible rendering. Standard `Button` `needsCoarseMinTarget` policy mirrored locally since `data-compact` is the project-wide opt-out signal for the dense-on-fine, ergonomic-on-coarse pattern.
+
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx`
 **Lines:** L39–L58
