@@ -333,9 +333,14 @@ export function useHubDashboardState(props: {
 
   const [adaptiveNow, setAdaptiveNow] = useState(() => new Date());
   useEffect(() => {
+    // Тікер потрібен лише коли adaptive-rebuild активний; інакше
+    // `pickAdaptiveLift` нижче одразу повертає `{ liftedId: null }`, тож
+    // щохвилинний re-render усього HubDashboard був би марним battery/CPU-cost-ом
+    // (page-audit-02 F8).
+    if (!adaptivePref || editMode) return;
     const id = setInterval(() => setAdaptiveNow(new Date()), 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [adaptivePref, editMode]);
 
   const activeSet = useMemo(
     () => new Set<string>(activeModules),
