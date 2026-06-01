@@ -49,7 +49,7 @@
 **Scope rationale.**
 
 - `apps/server/src/**` — поза правилом (моноліти вже розкладено, нові не з'являються).
-- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/initiatives/0002-mobile-platform-decision.md`](../../initiatives/0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
+- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
 - `packages/**/src/**` — поза правилом (бібліотечні файли — публічний API, поріг для них інший; зачепимо в окремій ініціативі).
 
 **Що блокує:**

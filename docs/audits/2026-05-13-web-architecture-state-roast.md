@@ -11,7 +11,7 @@
 - [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](./archive/2026-04-28-sergeant-comprehensive-audit.md) — оригінальна comprehensive прожарка
 - [`docs/audits/archive/2026-04-28-implementation-roadmap.md`](./archive/2026-04-28-implementation-roadmap.md) — sprint-roadmap по audit-items
 - [`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration (in progress, Phase 2 of 5)
-- [`docs/initiatives/0013-module-decomposition-round-2.md`](../initiatives/0013-module-decomposition-round-2.md) — `max-lines: 600` burn-down (Sprint 1 closed, Sprint 2 pending)
+- [`docs/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) — `max-lines: 600` burn-down (Sprint 1 closed, Sprint 2 pending)
 - [`docs/architecture/module-ownership.md`](../architecture/module-ownership.md) — ownership / test stack / RQ keys factory per path
 - [`docs/architecture/state-write-paths.md`](../architecture/state-write-paths.md) — **NEW** (closes §2.1) — двоканальна writer-доктрина (UI vs chatActions)
 - [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — live tech-debt тікет-лист
@@ -94,7 +94,7 @@ P0 нових немає — попередні P0 закриті у попер�
 
 - **P1-A.** Initiative 0006 Phase 3 — `useHashRouter` migration. Refs: `docs/initiatives/0006-frontend-routing-and-code-split.md:124-149`. Action: codemod across `apps/web/src/modules/{finyk,fizruk,routine,nutrition}/**`; escalate ESLint rule `no-hash-router-in-modules` (`packages/eslint-plugin-sergeant-design/index.js`) `warn` → `error`. Effort: ~30 files.
 - **P1-B.** Initiative 0006 Phase 4 — route-loaders + prefetch. Refs: `docs/initiatives/0006-frontend-routing-and-code-split.md:151-175`. Action: implement `loader: () => prefetch(qc, [...])` in each `apps/web/src/modules/<mod>/route.tsx` (`apps/web/src/modules/finyk/route.tsx:40-42`, плюс 3 інші).
-- **P1-C.** Initiative 0013 Sprint 2 — decompose 4 remaining files. Refs: `docs/initiatives/0013-module-decomposition-round-2.md:55-95`. Action: per-PR breakout for `NutritionApp.tsx` (`apps/web/src/modules/nutrition/NutritionApp.tsx`, 766 LOC), `hubChatContext.tsx` (`apps/web/src/core/hub/hubChatContext.tsx`, 681 LOC), `fizrukActions.ts` (`apps/web/src/core/lib/chatActions/fizrukActions.ts`, 672 LOC), `AssetsTable.tsx` (`apps/web/src/modules/finyk/components/AssetsTable.tsx`, 671 LOC).
+- **P1-C.** Initiative 0013 Sprint 2 — decompose 4 remaining files. Refs: `docs/initiatives/archive/_0013-module-decomposition-round-2.md:55-95`. Action: per-PR breakout for `NutritionApp.tsx` (`apps/web/src/modules/nutrition/NutritionApp.tsx`, 766 LOC), `hubChatContext.tsx` (`apps/web/src/core/hub/hubChatContext.tsx`, 681 LOC), `fizrukActions.ts` (`apps/web/src/core/lib/chatActions/fizrukActions.ts`, 672 LOC), `AssetsTable.tsx` (`apps/web/src/modules/finyk/components/AssetsTable.tsx`, 671 LOC).
 - **P1-D.** Singleton `apiClient` vs `useApiClient()` DI split-brain. Refs: `apps/web/src/shared/api/index.ts:19`, `docs/architecture/state-write-paths.md` (FAQ-section). Action: migrate consumer-сайт `import { apiClient } from "@shared/api"` → `const api = useApiClient()` усередині компонент. Effort: ~30-40 imports.
 - **P1-E.** chatActions handlers, що пишуть у `localStorage` напряму замість `apiClient`. Refs: `apps/web/src/core/lib/chatActions/fizrukActions/*` (deep-rooted local-first), `docs/architecture/state-write-paths.md` (Anti-patterns section). Action: per-handler audit + migration. Кожен handler — окремий PR з contract-тестом.
 
@@ -111,7 +111,7 @@ P0 нових немає — попередні P0 закриті у попер�
 - **Скоуп:** `apps/web/src/{app,core,features}/**`. Backend (`apps/server`), mobile-shell (`apps/mobile`, `apps/mobile-shell`), packages — out of scope.
 - **Не торкається:** SQLite migration Stage 8/9 (окрема active initiative, see `docs/planning/storage-roadmap.md`).
 - **Verification:** `pnpm check` локально (format:check + lint + typecheck + test) + CI.
-- **Sources-of-truth:** `docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` (primary), `docs/initiatives/0006-frontend-routing-and-code-split.md`, `docs/initiatives/0013-module-decomposition-round-2.md`, `docs/architecture/module-ownership.md`, `docs/tech-debt/frontend.md`. Cross-checks: `docs/audits/archive/2026-04-28-implementation-roadmap.md`, `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`.
+- **Sources-of-truth:** `docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` (primary), `docs/initiatives/0006-frontend-routing-and-code-split.md`, `docs/initiatives/archive/_0013-module-decomposition-round-2.md`, `docs/architecture/module-ownership.md`, `docs/tech-debt/frontend.md`. Cross-checks: `docs/audits/archive/2026-04-28-implementation-roadmap.md`, `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`.
 
 ---
 

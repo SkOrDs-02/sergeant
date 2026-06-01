@@ -1,8 +1,8 @@
 # Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Closed (source audit; outstanding status moved to mobile tech-debt registry)
-> **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../initiatives/0002-mobile-platform-decision.md). Canonical mobile debt owner — [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md).
+> **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../initiatives/archive/_0002-mobile-platform-decision.md). Canonical mobile debt owner — [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md).
 
 ## Cross-refs (попередні прожарки/аудити цієї теми)
 
@@ -11,7 +11,7 @@
 - [`2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — UX тех-план, mobile-частина 12/14 Done, дві Partial: E2E and device validation, Accessibility audit.
 - [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md) — living burndown, recount-нуто разом з цією прожаркою.
 - [`apps/mobile/AGENTS.md`](../../apps/mobile/AGENTS.md) — surface-specific gotchas (NativeWind, MMKV-only, Expo Router).
-- [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md) — Capacitor/Expo dual-track, sunset зараз не active.
+- [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) — Capacitor/Expo dual-track, sunset зараз не active.
 
 ## TL;DR — топ-7 болів
 
@@ -105,7 +105,7 @@
 
 ### P2.5 — `apps/mobile-shell/` deprecation/parity drift
 
-- **Файл:** `docs/initiatives/0002-mobile-platform-decision.md:4-6`
+- **Файл:** `docs/initiatives/archive/_0002-mobile-platform-decision.md:4-6`
 - **Симптом:** Initiative 0002 "Phase 1/2 shipped; sunset schedule superseded" — Capacitor + Expo підтримуються паралельно "до Expo feature parity". У `docs/architecture/platforms.md` критерій ≥18/22 рядків ✅, але `report-shell-tax.mjs` не друкує trend. Maintenance-tax росте, dual-track не активний → потрібен квартальний recount.
 - **Дія:** Окремий tracking-PR (`docs/initiatives/0002-…` — додати свіжий cost baseline). Не блокер цього roast.
 

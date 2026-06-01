@@ -6,9 +6,9 @@
     "adr": 58,
     "audit": 31,
     "hard-rule": 26,
-    "initiative": 52,
+    "initiative": 47,
     "playbook": 56,
-    "pr": 237,
+    "pr": 200,
     "skill": 21
   },
   "nodes": [
@@ -619,7 +619,7 @@
       "tier": "core",
       "meta": {
         "number": 58,
-        "last_validated": "2026-05-15"
+        "last_validated": "2026-06-01"
       }
     },
     {
@@ -631,7 +631,7 @@
       "tier": "core",
       "meta": {
         "number": 59,
-        "last_validated": "2026-05-15"
+        "last_validated": "2026-06-01"
       }
     },
     {
@@ -643,7 +643,7 @@
       "tier": "core",
       "meta": {
         "number": 60,
-        "last_validated": "2026-05-15"
+        "last_validated": "2026-06-01"
       }
     },
     {
@@ -655,7 +655,7 @@
       "tier": "core",
       "meta": {
         "number": 61,
-        "last_validated": "2026-05-15"
+        "last_validated": "2026-06-01"
       }
     },
     {
@@ -1310,19 +1310,6 @@
       }
     },
     {
-      "id": "initiative:0002",
-      "type": "initiative",
-      "title": "0002 — Mobile platform decision: lock the deprecation deadline",
-      "path": "docs/initiatives/0002-mobile-platform-decision.md",
-      "status": "Closed (superseded by ADR-0052 + initiative 0010; historical reference only)",
-      "tier": "core",
-      "meta": {
-        "number": 2,
-        "owner": "@Skords-01",
-        "priority": "P0 (Sprint 1)"
-      }
-    },
-    {
       "id": "initiative:0003",
       "type": "initiative",
       "title": "0003 — Sync v2 rollout & v1 sunset",
@@ -1362,45 +1349,6 @@
       }
     },
     {
-      "id": "initiative:0011",
-      "type": "initiative",
-      "title": "0011 — Foundation adoption + process discipline (post-launch sweep)",
-      "path": "docs/initiatives/0011-foundation-adoption-and-process-discipline.md",
-      "status": "Done — **усі фази закриті: Phase 1 (4/4 PR) + Phase 2 (9/9 PR-equivalents) + Phase 3 (4/4 PR merged 2026-05-06…20) + Phase 4 closed via 0007 round-10 handoff**. Всі carry-over action items A1–A5 та severity-promote `prefer-data-state` закриті 2026-05-06…10. **Phase 1** (4/4): [#1688](https://github.com/Skords-01/Sergeant/pull/1688) `validate-pr-body.mjs` Hard Rule #15 strict 3-of-3, [#1691](https://github.com/Skords-01/Sergeant/pull/1691) cross-branch migration-collision guard, [#1697](https://github.com/Skords-01/Sergeant/pull/1697) deploy-config staging-verification gate, [#1699](https://github.com/Skords-01/Sergeant/pull/1699) CSP_DISABLE retrospective audit (5 operational action items A1–A5 на @Skords-01 — due `2026-05-11`, див. § Carry-over). **Phase 2** (DataState consumer adoption + form-engine consolidation): 2.1 ManualExpenseSheet round-13 (commit-у-існуючому-PR), 2.2 ResetPasswordPage merged [#1696](https://github.com/Skords-01/Sergeant/pull/1696), 2.3 `useFormValidation` deprecation закрита round-11 фізичним видаленням 0-споживачевого хука; 2.4 finyk merged [#1703](https://github.com/Skords-01/Sergeant/pull/1703), 2.5 fizruk merged [#1709](https://github.com/Skords-01/Sergeant/pull/1709), 2.6 nutrition merged [#1713](https://github.com/Skords-01/Sergeant/pull/1713), 2.7 routine merged [#1714](https://github.com/Skords-01/Sergeant/pull/1714), 2.8 hubchat/coach/digest merged [#1726](https://github.com/Skords-01/Sergeant/pull/1726); 2.9 prefer-data-state ESLint canary merged [#1823](https://github.com/Skords-01/Sergeant/pull/1823) 2026-05-05 (warn-only, 0 hits across 174 модульних файлів) — **Phase 2.9 finalize: severity-promote `warn → error` DONE 2026-05-10** (carry-over `2026-06-30` закрита заздалегідь). **Phase 4 closed 2026-05-05** через 0007 round-10 handoff (37/37 `shared/ui` stories non-allowlisted, module-level stories, ADR-0046, `sergeant-design/require-stories-for-ui-components` severity = `error` [#1812](https://github.com/Skords-01/Sergeant/pull/1812)). **Phase 3 complete 2026-05-06…20** (4/4 PR-ів merged достроково, пост-0010-launch вікно 2026-06-23 не використано): PR 3.1 [#2113](https://github.com/Skords-01/Sergeant/pull/2113) pen-test sweep для H5/H6/H8/H9 (`docs/security/pen-tests/2026-05-hardening-sweep.md` + `docs/playbooks/security-pen-test-checklist.md`); PR 3.2 [#2123](https://github.com/Skords-01/Sergeant/pull/2123) session-protection coverage via Express router introspection (`apps/server/src/__tests__/session-protection.integration.test.ts`, Testcontainers); PR 3.3 [#2126](https://github.com/Skords-01/Sergeant/pull/2126) transcribe USD-cap e2e з реальним 5s WAV fixture (`apps/server/src/modules/transcribe/__tests__/transcribe-usd-cap.e2e.test.ts` + `__fixtures__/silence-5s.wav`); PR 3.4 (цей PR) — `docs/launch/email-verification-sweep.md` decision-doc для legacy soft-gate.",
-      "tier": "core",
-      "meta": {
-        "number": 11,
-        "owner": "@Skords-01",
-        "priority": "P1 (subordinate to 0010-revenue-first-launch scope-freeze)"
-      }
-    },
-    {
-      "id": "initiative:0013",
-      "type": "initiative",
-      "title": "0013 — Module decomposition round 2 (`apps/web` allowlist drain)",
-      "path": "docs/initiatives/0013-module-decomposition-round-2.md",
-      "status": "Done (2026-05-29) — allowlist drained to **0 files** (target was ≤2; closes 0001 carry-over criterion #2). All Initiative-0001 carry-over files + the 2026-05-09 drift items are decomposed under the 600-LOC threshold; the `max-lines` `overrides` allowlist in `eslint.config.js` is empty (only an explanatory comment remains). Sprint 2 closers: `hubChatContext.ts` 681→32 ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)), `fizrukActions.ts` 672→73 ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)), `AssetsTable.tsx` 671→142 ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)), `HubDashboard.tsx` 837→115 ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)), `NutritionApp.tsx` 766→518 effective, `RoutineCalendarPanel.tsx` 645→589 effective ([PR #3091](https://github.com/Skords-01/Sergeant/pull/3091)). See § Outcome → Closure.",
-      "tier": "core",
-      "meta": {
-        "number": 13,
-        "owner": "@Skords-01",
-        "priority": "P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)"
-      }
-    },
-    {
-      "id": "initiative:0014",
-      "type": "initiative",
-      "title": "0014 — Knowledge graph & auto-generated catalogs",
-      "path": "docs/initiatives/0014-knowledge-graph-and-catalogs.md",
-      "status": "Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)",
-      "tier": "core",
-      "meta": {
-        "number": 14,
-        "owner": "@Skords-01",
-        "priority": "P2"
-      }
-    },
-    {
       "id": "initiative:0015",
       "type": "initiative",
       "title": "0015 — Docs automation for daily ops",
@@ -1412,27 +1360,16 @@
       }
     },
     {
-      "id": "initiative:0016",
-      "type": "initiative",
-      "title": "0016 — CHANGELOG release-cut automation",
-      "path": "docs/initiatives/0016-changelog-release-cut.md",
-      "status": "Done (2026-05-29) — script shipped + first release cut `v2026.05.29` executed. Fixed a latent tooling bug: the cut commit used `chore(release):`, which commitlint `scope-enum` rejects (no `release` scope) → switched to `chore(root):`.",
-      "tier": "core",
-      "meta": {
-        "number": 16
-      }
-    },
-    {
       "id": "initiative:0017",
       "type": "initiative",
       "title": "0017 — Hub Settings & Reports mount perf",
       "path": "docs/initiatives/0017-hub-tabs-mount-perf.md",
-      "status": "In progress — Sprint 0 + Sprint 1 + Sprint 2 shipped; only Sprint 3 (conditional) + Finalize remain. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
+      "status": "In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
       "tier": "core",
       "meta": {
         "number": 17,
         "owner": "@Skords-01",
-        "priority": "P1 (Sprint 1 candidate after [0016](./0016-changelog-release-cut.md))"
+        "priority": "P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md))"
       }
     },
     {
@@ -2368,16 +2305,6 @@
       }
     },
     {
-      "id": "pr:128",
-      "type": "pr",
-      "title": "PR #128",
-      "tier": "extended",
-      "meta": {
-        "number": 128,
-        "url": "https://github.com/Skords-01/Sergeant/pull/128"
-      }
-    },
-    {
       "id": "pr:13",
       "type": "pr",
       "title": "PR #13",
@@ -2518,16 +2445,6 @@
       }
     },
     {
-      "id": "pr:1564",
-      "type": "pr",
-      "title": "PR #1564",
-      "tier": "extended",
-      "meta": {
-        "number": 1564,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1564"
-      }
-    },
-    {
       "id": "pr:1567",
       "type": "pr",
       "title": "PR #1567",
@@ -2535,26 +2452,6 @@
       "meta": {
         "number": 1567,
         "url": "https://github.com/Skords-01/Sergeant/pull/1567"
-      }
-    },
-    {
-      "id": "pr:1571",
-      "type": "pr",
-      "title": "PR #1571",
-      "tier": "extended",
-      "meta": {
-        "number": 1571,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1571"
-      }
-    },
-    {
-      "id": "pr:1588",
-      "type": "pr",
-      "title": "PR #1588",
-      "tier": "extended",
-      "meta": {
-        "number": 1588,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1588"
       }
     },
     {
@@ -2598,26 +2495,6 @@
       }
     },
     {
-      "id": "pr:1604",
-      "type": "pr",
-      "title": "PR #1604",
-      "tier": "extended",
-      "meta": {
-        "number": 1604,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1604"
-      }
-    },
-    {
-      "id": "pr:1606",
-      "type": "pr",
-      "title": "PR #1606",
-      "tier": "extended",
-      "meta": {
-        "number": 1606,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1606"
-      }
-    },
-    {
       "id": "pr:1607",
       "type": "pr",
       "title": "PR #1607",
@@ -2628,36 +2505,6 @@
       }
     },
     {
-      "id": "pr:1608",
-      "type": "pr",
-      "title": "PR #1608",
-      "tier": "extended",
-      "meta": {
-        "number": 1608,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1608"
-      }
-    },
-    {
-      "id": "pr:1613",
-      "type": "pr",
-      "title": "PR #1613",
-      "tier": "extended",
-      "meta": {
-        "number": 1613,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1613"
-      }
-    },
-    {
-      "id": "pr:1614",
-      "type": "pr",
-      "title": "PR #1614",
-      "tier": "extended",
-      "meta": {
-        "number": 1614,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1614"
-      }
-    },
-    {
       "id": "pr:1621",
       "type": "pr",
       "title": "PR #1621",
@@ -2665,16 +2512,6 @@
       "meta": {
         "number": 1621,
         "url": "https://github.com/Skords-01/Sergeant/pull/1621"
-      }
-    },
-    {
-      "id": "pr:1629",
-      "type": "pr",
-      "title": "PR #1629",
-      "tier": "extended",
-      "meta": {
-        "number": 1629,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1629"
       }
     },
     {
@@ -2708,26 +2545,6 @@
       }
     },
     {
-      "id": "pr:1652",
-      "type": "pr",
-      "title": "PR #1652",
-      "tier": "extended",
-      "meta": {
-        "number": 1652,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1652"
-      }
-    },
-    {
-      "id": "pr:1659",
-      "type": "pr",
-      "title": "PR #1659",
-      "tier": "extended",
-      "meta": {
-        "number": 1659,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1659"
-      }
-    },
-    {
       "id": "pr:1660",
       "type": "pr",
       "title": "PR #1660",
@@ -2735,16 +2552,6 @@
       "meta": {
         "number": 1660,
         "url": "https://github.com/Skords-01/Sergeant/pull/1660"
-      }
-    },
-    {
-      "id": "pr:1664",
-      "type": "pr",
-      "title": "PR #1664",
-      "tier": "extended",
-      "meta": {
-        "number": 1664,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1664"
       }
     },
     {
@@ -2758,26 +2565,6 @@
       }
     },
     {
-      "id": "pr:1688",
-      "type": "pr",
-      "title": "PR #1688",
-      "tier": "extended",
-      "meta": {
-        "number": 1688,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1688"
-      }
-    },
-    {
-      "id": "pr:1691",
-      "type": "pr",
-      "title": "PR #1691",
-      "tier": "extended",
-      "meta": {
-        "number": 1691,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1691"
-      }
-    },
-    {
       "id": "pr:1695",
       "type": "pr",
       "title": "PR #1695",
@@ -2785,86 +2572,6 @@
       "meta": {
         "number": 1695,
         "url": "https://github.com/Skords-01/Sergeant/pull/1695"
-      }
-    },
-    {
-      "id": "pr:1696",
-      "type": "pr",
-      "title": "PR #1696",
-      "tier": "extended",
-      "meta": {
-        "number": 1696,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1696"
-      }
-    },
-    {
-      "id": "pr:1697",
-      "type": "pr",
-      "title": "PR #1697",
-      "tier": "extended",
-      "meta": {
-        "number": 1697,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1697"
-      }
-    },
-    {
-      "id": "pr:1699",
-      "type": "pr",
-      "title": "PR #1699",
-      "tier": "extended",
-      "meta": {
-        "number": 1699,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1699"
-      }
-    },
-    {
-      "id": "pr:1703",
-      "type": "pr",
-      "title": "PR #1703",
-      "tier": "extended",
-      "meta": {
-        "number": 1703,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1703"
-      }
-    },
-    {
-      "id": "pr:1709",
-      "type": "pr",
-      "title": "PR #1709",
-      "tier": "extended",
-      "meta": {
-        "number": 1709,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1709"
-      }
-    },
-    {
-      "id": "pr:1713",
-      "type": "pr",
-      "title": "PR #1713",
-      "tier": "extended",
-      "meta": {
-        "number": 1713,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1713"
-      }
-    },
-    {
-      "id": "pr:1714",
-      "type": "pr",
-      "title": "PR #1714",
-      "tier": "extended",
-      "meta": {
-        "number": 1714,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1714"
-      }
-    },
-    {
-      "id": "pr:1726",
-      "type": "pr",
-      "title": "PR #1726",
-      "tier": "extended",
-      "meta": {
-        "number": 1726,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1726"
       }
     },
     {
@@ -2898,16 +2605,6 @@
       }
     },
     {
-      "id": "pr:1812",
-      "type": "pr",
-      "title": "PR #1812",
-      "tier": "extended",
-      "meta": {
-        "number": 1812,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1812"
-      }
-    },
-    {
       "id": "pr:1816",
       "type": "pr",
       "title": "PR #1816",
@@ -2915,16 +2612,6 @@
       "meta": {
         "number": 1816,
         "url": "https://github.com/Skords-01/Sergeant/pull/1816"
-      }
-    },
-    {
-      "id": "pr:1823",
-      "type": "pr",
-      "title": "PR #1823",
-      "tier": "extended",
-      "meta": {
-        "number": 1823,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1823"
       }
     },
     {
@@ -3015,16 +2702,6 @@
       "meta": {
         "number": 2000,
         "url": "https://github.com/Skords-01/Sergeant/pull/2000"
-      }
-    },
-    {
-      "id": "pr:2002",
-      "type": "pr",
-      "title": "PR #2002",
-      "tier": "extended",
-      "meta": {
-        "number": 2002,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2002"
       }
     },
     {
@@ -3198,16 +2875,6 @@
       }
     },
     {
-      "id": "pr:2113",
-      "type": "pr",
-      "title": "PR #2113",
-      "tier": "extended",
-      "meta": {
-        "number": 2113,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2113"
-      }
-    },
-    {
       "id": "pr:2114",
       "type": "pr",
       "title": "PR #2114",
@@ -3258,16 +2925,6 @@
       }
     },
     {
-      "id": "pr:2123",
-      "type": "pr",
-      "title": "PR #2123",
-      "tier": "extended",
-      "meta": {
-        "number": 2123,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2123"
-      }
-    },
-    {
       "id": "pr:2124",
       "type": "pr",
       "title": "PR #2124",
@@ -3285,26 +2942,6 @@
       "meta": {
         "number": 2125,
         "url": "https://github.com/Skords-01/Sergeant/pull/2125"
-      }
-    },
-    {
-      "id": "pr:2126",
-      "type": "pr",
-      "title": "PR #2126",
-      "tier": "extended",
-      "meta": {
-        "number": 2126,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2126"
-      }
-    },
-    {
-      "id": "pr:2128",
-      "type": "pr",
-      "title": "PR #2128",
-      "tier": "extended",
-      "meta": {
-        "number": 2128,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2128"
       }
     },
     {
@@ -3588,26 +3225,6 @@
       }
     },
     {
-      "id": "pr:2499",
-      "type": "pr",
-      "title": "PR #2499",
-      "tier": "extended",
-      "meta": {
-        "number": 2499,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2499"
-      }
-    },
-    {
-      "id": "pr:2517",
-      "type": "pr",
-      "title": "PR #2517",
-      "tier": "extended",
-      "meta": {
-        "number": 2517,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2517"
-      }
-    },
-    {
       "id": "pr:2526",
       "type": "pr",
       "title": "PR #2526",
@@ -3625,16 +3242,6 @@
       "meta": {
         "number": 2527,
         "url": "https://github.com/Skords-01/Sergeant/pull/2527"
-      }
-    },
-    {
-      "id": "pr:2530",
-      "type": "pr",
-      "title": "PR #2530",
-      "tier": "extended",
-      "meta": {
-        "number": 2530,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2530"
       }
     },
     {
@@ -4088,16 +3695,6 @@
       }
     },
     {
-      "id": "pr:2896",
-      "type": "pr",
-      "title": "PR #2896",
-      "tier": "extended",
-      "meta": {
-        "number": 2896,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2896"
-      }
-    },
-    {
       "id": "pr:2898",
       "type": "pr",
       "title": "PR #2898",
@@ -4128,16 +3725,6 @@
       }
     },
     {
-      "id": "pr:2963",
-      "type": "pr",
-      "title": "PR #2963",
-      "tier": "extended",
-      "meta": {
-        "number": 2963,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2963"
-      }
-    },
-    {
       "id": "pr:30",
       "type": "pr",
       "title": "PR #30",
@@ -4165,16 +3752,6 @@
       "meta": {
         "number": 3078,
         "url": "https://github.com/Skords-01/Sergeant/pull/3078"
-      }
-    },
-    {
-      "id": "pr:3091",
-      "type": "pr",
-      "title": "PR #3091",
-      "tier": "extended",
-      "meta": {
-        "number": 3091,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3091"
       }
     },
     {
@@ -4215,16 +3792,6 @@
       "meta": {
         "number": 34,
         "url": "https://github.com/Skords-01/Sergeant/pull/34"
-      }
-    },
-    {
-      "id": "pr:345",
-      "type": "pr",
-      "title": "PR #345",
-      "tier": "extended",
-      "meta": {
-        "number": 345,
-        "url": "https://github.com/Skords-01/Sergeant/pull/345"
       }
     },
     {
@@ -5256,28 +4823,13 @@
     },
     {
       "from": "adr:0058",
-      "to": "initiative:0014",
-      "type": "references"
-    },
-    {
-      "from": "adr:0058",
       "to": "pr:2876",
       "type": "touched-by"
     },
     {
       "from": "adr:0059",
-      "to": "initiative:0014",
-      "type": "references"
-    },
-    {
-      "from": "adr:0059",
       "to": "pr:2889",
       "type": "touched-by"
-    },
-    {
-      "from": "adr:0060",
-      "to": "initiative:0014",
-      "type": "references"
     },
     {
       "from": "adr:0060",
@@ -5302,11 +4854,6 @@
     {
       "from": "adr:0061",
       "to": "initiative:0010",
-      "type": "references"
-    },
-    {
-      "from": "adr:0061",
-      "to": "initiative:0014",
       "type": "references"
     },
     {
@@ -5746,11 +5293,6 @@
     },
     {
       "from": "audit:2026-05-13-mobile-reliability-ux-roast",
-      "to": "initiative:0002",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-mobile-reliability-ux-roast",
       "to": "pr:1415",
       "type": "touched-by"
     },
@@ -6061,6 +5603,11 @@
     },
     {
       "from": "audit:2026-05-13-page-audit-09-routine-strategy",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-page-audit-09-routine-strategy",
       "to": "hard-rule:20",
       "type": "references"
     },
@@ -6256,11 +5803,6 @@
     },
     {
       "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "initiative:0013",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
       "to": "pr:1601",
       "type": "touched-by"
     },
@@ -6341,11 +5883,6 @@
     },
     {
       "from": "audit:2026-05-15-deep-audit-state-of-repo",
-      "to": "initiative:0002",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-15-deep-audit-state-of-repo",
       "to": "pr:1929",
       "type": "touched-by"
     },
@@ -6407,16 +5944,6 @@
     {
       "from": "audit:2026-08-XX-sync-engine-roast",
       "to": "pr:2877",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0002",
-      "to": "initiative:0010",
-      "type": "references"
-    },
-    {
-      "from": "initiative:0002",
-      "to": "pr:1633",
       "type": "touched-by"
     },
     {
@@ -6532,256 +6059,6 @@
     {
       "from": "initiative:0010",
       "to": "pr:3109",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "hard-rule:15",
-      "type": "references"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:128",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1564",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1567",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1571",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1588",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1595",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1600",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1604",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1606",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1608",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1613",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1614",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1629",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1631",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1647",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1652",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1659",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1660",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1664",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1688",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1691",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1696",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1697",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1699",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1703",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1709",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1713",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1714",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1726",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1812",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:1823",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:2113",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:2123",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:2126",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0011",
-      "to": "pr:345",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "hard-rule:18",
-      "type": "references"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "pr:2002",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "pr:2128",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "pr:2499",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "pr:2517",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "pr:2530",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0013",
-      "to": "pr:3091",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0014",
-      "to": "hard-rule:5",
-      "type": "references"
-    },
-    {
-      "from": "initiative:0014",
-      "to": "hard-rule:6",
-      "type": "references"
-    },
-    {
-      "from": "initiative:0014",
-      "to": "pr:2876",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0014",
-      "to": "pr:2896",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0014",
-      "to": "pr:2898",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0014",
-      "to": "pr:2899",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0016",
-      "to": "pr:2963",
       "type": "touched-by"
     },
     {

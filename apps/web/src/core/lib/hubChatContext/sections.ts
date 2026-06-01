@@ -8,6 +8,7 @@ import {
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { fmt, ls } from "../hubChatUtils";
 import { generateRecommendations } from "../recommendationEngine";
 import { generateInsights } from "../insightsEngine";
@@ -19,12 +20,19 @@ import type {
   NutritionPrefs,
 } from "./types";
 
-function dayKey(d: Date): string {
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    String(d.getDate()).padStart(2, "0"),
-  ].join("-");
+/**
+ * Kyiv day-key (`YYYY-MM-DD`) for `offsetDays` relative to the Europe/Kyiv
+ * civil date of `from`. Anchoring to the Kyiv civil date and then stepping in
+ * UTC space keeps the key correct regardless of the host clock — the previous
+ * host-local `getFullYear/getMonth/getDate` build silently used the server's
+ * UTC midnight as the day boundary instead of Kyiv (prefer-kyiv-time /
+ * domain-invariants).
+ */
+function kyivDayKeyOffset(from: Date, offsetDays: number): string {
+  const { year, month, day } = getKyivDateParts(from);
+  const anchor = new Date(Date.UTC(year, month - 1, day));
+  anchor.setUTCDate(anchor.getUTCDate() + offsetDays);
+  return getKyivDayKey(anchor);
 }
 
 export function appendWorkoutLines(lines: string[]): void {
@@ -94,7 +102,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     const completions = routineState.completions || {};
     if (habits.length === 0) return;
 
-    const todayKey = dayKey(now);
+    const todayKey = getKyivDayKey(now);
     const todayDone = habits.filter(
       (h) =>
         Array.isArray(completions[h.id]) &&
@@ -114,13 +122,11 @@ export function appendRoutineLines(lines: string[], now: Date): void {
       .join(", ");
     lines.push(`[Рутина сьогодні] ${habitDetails}`);
 
-    const dow = (now.getDay() + 6) % 7;
+    const dow = (getKyivDateParts(now).weekday + 6) % 7;
     let weekDone = 0;
     let weekTotal = 0;
     for (let i = 0; i <= dow; i++) {
-      const d2 = new Date(now);
-      d2.setDate(now.getDate() - dow + i);
-      const dk = dayKey(d2);
+      const dk = kyivDayKeyOffset(now, -dow + i);
       weekTotal += habits.length;
       for (const h of habits) {
         if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
@@ -134,10 +140,8 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     );
 
     let streak = 0;
-    const sd = new Date(now);
-    sd.setDate(sd.getDate() - 1);
     for (let i = 0; i < 365; i++) {
-      const dk = dayKey(sd);
+      const dk = kyivDayKeyOffset(now, -1 - i);
       if (
         habits.every(
           (h) =>
@@ -148,7 +152,6 @@ export function appendRoutineLines(lines: string[], now: Date): void {
       } else {
         break;
       }
-      sd.setDate(sd.getDate() - 1);
     }
     if (streak > 0)
       lines.push(`[Рутина серія] ${streak} днів поспіль (всі звички)`);
@@ -165,7 +168,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
       "nutrition_prefs_v1",
       null,
     );
-    const todayKey = dayKey(now);
+    const todayKey = getKyivDayKey(now);
     const todayData = nutritionLog[todayKey];
 
     if (todayData) {
@@ -206,9 +209,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
 
     const weekKcalArr: number[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d3 = new Date(now);
-      d3.setDate(now.getDate() - i);
-      const dk = dayKey(d3);
+      const dk = kyivDayKeyOffset(now, -i);
       const dayMeals: NutritionMeal[] = Array.isArray(nutritionLog[dk]?.meals)
         ? (nutritionLog[dk].meals as NutritionMeal[])
         : [];

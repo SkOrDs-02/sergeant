@@ -98,7 +98,7 @@ SSO не залитий, Apple Developer Program не куплений, окре
 - [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
 - [ADR-0051](../../adr/0051-pricing-v3-single-tier.md) — Free + Pro $7/міс / $49/рік, UAH UA-only на старті
 - [Initiative 0010](../../initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
-- [Initiative 0002](../../initiatives/0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
+- [Initiative 0002](../../initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
 
 ---
 
@@ -323,7 +323,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 
 ### Initiatives
 
-- [`docs/initiatives/0002-mobile-platform-decision.md`](../../initiatives/0002-mobile-platform-decision.md)
+- [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md)
 - [`docs/initiatives/0010-revenue-first-launch.md`](../../initiatives/0010-revenue-first-launch.md)
 
 ### Release playbooks

@@ -19,7 +19,7 @@
 - [`docs/architecture/repo-map.md`](../architecture/repo-map.md) — per-app stack matrix, `apps/web` runtime: Vite 8 + React 18 + TanStack Query + Tailwind 4 + size-limit gate.
 - [`docs/governance/rules/18-module-size-discipline-600.md`](../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (`max-lines: 600` для `apps/web/src/**`); декомпозиція 0013 Sprint 2 (A4 нижче) — це burndown цього правила.
 - [`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration, Phase 3-5 закриваються картами A1–A3.
-- [`docs/initiatives/0013-module-decomposition-round-2.md`](../initiatives/0013-module-decomposition-round-2.md) — `max-lines: 600` Sprint 2 (4 файли на decomposition), карта A4.
+- [`docs/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) — `max-lines: 600` Sprint 2 (4 файли на decomposition), карта A4.
 - [`docs/architecture/state-write-paths.md`](../architecture/state-write-paths.md) — doctrine для UI vs chatActions writer-каналів (закрита у прожарці #3); карти A5/A6 — implementation burndown.
 - [`docs/ui/toast-policy.md`](../ui/toast-policy.md) — toast tone-table + anti-pattern matrix (закрита у прожарці #2); карти E1–E2 — Modal a11y контракт у тому ж стилі.
 - [`docs/ui/shortcuts.md`](../ui/shortcuts.md) — keyboard registry + browser-conflict matrix (закрита у прожарці #2); карта E7 — wire-up або removal TBD-handler-ів.

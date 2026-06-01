@@ -46,16 +46,18 @@ Requires `gh` CLI on PATH. Commit the resulting `docs/pr-ledger/index.json` + in
 
 ## Tracking
 
-- Initiative — [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 5.
+- Initiative — [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5.
 - ADR-0061 — [`docs/adr/0061-pr-backlink-storage.md`](../../adr/0061-pr-backlink-storage.md).
 - Workflow — [`.github/workflows/pr-backlinks.yml`](../../../.github/workflows/pr-backlinks.yml).
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
 ## Recent PRs
 
-| PR | Title | Merged |
-| --- | --- | --- |
+| PR                                                       | Title                                                              | Merged     |
+| -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
 | [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
 
 _Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

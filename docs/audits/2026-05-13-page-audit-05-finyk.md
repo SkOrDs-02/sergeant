@@ -1370,7 +1370,7 @@ markers, `lifecycle` = lifecycle markers.
   `useMonobankWebhook.ts`). No inline `queryKey: [...]` in scope.
   `FinykApp.tsx` is 640 raw LOC but ~537 effective (skipBlankLines +
   skipComments) — under the 600 max-lines threshold (cross-referenced
-  in `docs/initiatives/0013-module-decomposition-round-2.md:33`). No
+  in `docs/initiatives/archive/_0013-module-decomposition-round-2.md:33`). No
   `as any` / `any:` / `getattr` outside test fixtures.
 - **Focus styles:** Every `focus-` usage in the scope is
   `focus-visible:` (verified via grep) — Hard Rule #14 compliant.

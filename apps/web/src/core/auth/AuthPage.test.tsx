@@ -324,6 +324,23 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
     expect(document.activeElement).toBe(forgotEmail);
   });
 
+  it("forgot-панель пре-філить email, який користувач уже ввів (F6)", () => {
+    // Регресія для page-audit-01 F6: `LoginForm` колись читав
+    // `formState.defaultValues?.email` (завжди ""), тож live-набраний email
+    // губився. Тепер через `watch("email")` він пробрасується у панель.
+    render(<AuthPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "user@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
+
+    const forgotEmail = screen.getByLabelText(
+      "Email для скидання",
+    ) as HTMLInputElement;
+    expect(forgotEmail.value).toBe("user@example.com");
+  });
+
   it("кнопка submit стає disabled під час login (aria-busy=true)", async () => {
     let resolveLogin: ((v: boolean) => void) | undefined;
     loginMock.mockImplementation(

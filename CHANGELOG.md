@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -10,7 +10,7 @@
 
 > **Як писати:** entries у секції `## [Unreleased]` пишуться **вручну** у rich narrative-style (multi-paragraph з PR-mentions, file refs, technical rationale) — це свідомий вибір, бо auto-generation з commit-subjects втратило б контекст.
 >
-> **Як cut-ити release:** `pnpm changelog:cut` (опц. `<YYYY-MM-DD>` як arg) renames `## [Unreleased]` → `## [<date>]`, додає fresh empty Unreleased, створює tag `v<date>`, commit-ить. `--dry-run` для preview. Деталі — [`docs/initiatives/0016-changelog-release-cut.md`](./docs/initiatives/0016-changelog-release-cut.md).
+> **Як cut-ити release:** `pnpm changelog:cut` (опц. `<YYYY-MM-DD>` як arg) renames `## [Unreleased]` → `## [<date>]`, додає fresh empty Unreleased, створює tag `v<date>`, commit-ить. `--dry-run` для preview. Деталі — [`docs/initiatives/archive/_0016-changelog-release-cut.md`](./docs/initiatives/archive/_0016-changelog-release-cut.md).
 
 ## [Unreleased]
 

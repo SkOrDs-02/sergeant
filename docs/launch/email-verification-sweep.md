@@ -1,11 +1,11 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last validated:** 2026-05-21 by @Skords-01. **Next review:** 2026-08-19.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                           |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Initiative     | [`0011`](../initiatives/0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.4                                                                      |
+| Initiative     | [`0011`](../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.4                                                             |
 | Closes         | H6 residual risk: "Legacy users with `email_verified=false` still exist in the prod DB. Switching the global flag to `true` would lock them out."               |
 | Cards          | [H6](../security/hardening/H6-email-verification.md), [I8](../security/hardening/I8-periodic-external-pentest.md) (engagement preparation)                      |
 | Decision shape | Decision-document — outlines three options, recommends one. Implementation lives in a successor mini-initiative gated on 0010-revenue-first-launch Stripe-MVP.  |
@@ -188,7 +188,7 @@ ETA повного циклу: ~6 робочих днів implementation + 14+ �
 - Pen-test sweep transcript (2026-05): [`docs/security/pen-tests/2026-05-hardening-sweep.md`](../security/pen-tests/2026-05-hardening-sweep.md)
 - Pen-test playbook: [`docs/playbooks/security-pen-test-checklist.md`](../playbooks/security-pen-test-checklist.md)
 - Better Auth wiring: [`apps/server/src/auth.ts`](../../apps/server/src/auth.ts)
-- Initiative 0011: [`docs/initiatives/0011-foundation-adoption-and-process-discipline.md`](../initiatives/0011-foundation-adoption-and-process-discipline.md)
+- Initiative 0011: [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)
 - Initiative 0010 (revenue-first launch, sets the launch-window): [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md)
 - Deploy-config-change playbook (для Phase E env flip): [`docs/playbooks/deploy-config-change.md`](../playbooks/deploy-config-change.md)
 - Launch readiness checklist (sweep — evidence для readiness gate): [`docs/launch/business/04-launch-readiness.md`](./business/04-launch-readiness.md)

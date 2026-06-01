@@ -45,9 +45,14 @@ export declare const chartPalette: Readonly<Record<string, string>>;
 /** Ordered list view of `chartPalette` values. */
 export declare const chartPaletteList: readonly string[];
 
-/** Module-specific accent colours keyed by module identifier. */
+/**
+ * Module-specific accent colours keyed by module identifier. Every module
+ * guarantees a `primary` shade; additional shades (`secondary`, `surface`, …)
+ * are module-dependent and surface as `string | undefined` under
+ * `noUncheckedIndexedAccess` (Hard Rule #19).
+ */
 export declare const moduleColors: Readonly<
-  Record<ModuleAccent, Readonly<Record<string, string>>>
+  Record<ModuleAccent, Readonly<{ primary: string } & Record<string, string>>>
 >;
 
 /**

@@ -1,6 +1,6 @@
 # Playbook: Security pen-test checklist for closed hardening cards
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 **Trigger:** треба підтвердити, що hardening-карта зі статусом `Closed` дійсно закриває описану атаку — наприклад, перед launch readiness gate, перед external pen-test engagement, або як квартальна репетиція pen-test reproduction-у.
@@ -50,7 +50,7 @@
 
 ### 6. Маршрутизуй фоллов-ап
 
-- Mock-test-only coverage → відкривай PR із real-Postgres / real-fixture e2e (як PR 3.2 / PR 3.3 ініціативи [0011](../initiatives/0011-foundation-adoption-and-process-discipline.md)).
+- Mock-test-only coverage → відкривай PR із real-Postgres / real-fixture e2e (як PR 3.2 / PR 3.3 ініціативи [0011](../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)).
 - Залишковий ризик у самій карті → онови `Status` від `Closed` до `Closed (partial)` + перерахуй у §Deferred карти + лінкуй на новий tracker.
 - Готовність до external pen-test → передай transcript у [`docs/launch/business/04-launch-readiness.md`](../launch/business/04-launch-readiness.md) як evidence-документ.
 

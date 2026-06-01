@@ -1,6 +1,6 @@
 # PR-план — Mobile Reliability & UX (із roast 2026-05-13)
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Closed (reference execution plan; canonical mobile debt status lives in tech-debt registry)
 
 PR-розклад на closeout відкритих/partial item-ів з прожарки
@@ -15,7 +15,7 @@ Canonical mobile debt owner: [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md
 - **Прожарка:** [`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../audits/2026-05-13-mobile-reliability-ux-roast.md) — джерело TL;DR-болів, P1/P2/P3 розбивка, Outstanding-таблиця.
 - **Living burndown:** [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md) — Summary per-category, large-file inventory (>600 LOC), Roadmap-таблиця M1–M9 (статус оновлюється у момент merge кожного PR із цього плану).
 - **Mobile-strategy ADR:** [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel; жоден стек не deprecate-иться до окремого ADR на feature parity (≥18/22 у `docs/architecture/platforms.md`).
-- **Dual-track initiative:** [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md) — sunset-дати **не active commitments** на час 0010 revenue launch; quarterly recount shell-tax трекається тут.
+- **Dual-track initiative:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) — sunset-дати **не active commitments** на час 0010 revenue launch; quarterly recount shell-tax трекається тут.
 - **Surface AGENTS:** [`apps/mobile/AGENTS.md`](../../apps/mobile/AGENTS.md) — NativeWind, MMKV-only, Expo Router gotchas; flaky-tests T7 verification (`mobile-flaky-verify.yml`).
 - **Sprint context:** [`docs/planning/sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) (§1.1 тех-борг, T7 verification, lighthouse budget).
 
@@ -207,12 +207,12 @@ PR-10 (S,   Shell-tax recount)       (parallel; updates 0002 trend)
 - **Outstanding ID:** P2.5 (audit § P2.5)
 - **Scope-files:**
   - `tools/report-shell-tax.mjs` (extend — додати `--trend` flag, що друкує 30/60/90-day moving average; baseline зчитує з committed log)
-  - `docs/initiatives/0002-mobile-platform-decision.md` — нова таблиця `Shell-tax trend` (rows: 2026-02, 2026-05, 2026-08 quarterly baseline) + posting cadence.
+  - `docs/initiatives/archive/_0002-mobile-platform-decision.md` — нова таблиця `Shell-tax trend` (rows: 2026-02, 2026-05, 2026-08 quarterly baseline) + posting cadence.
   - `.github/workflows/shell-tax-report.yml` (existing cron — verify still зелений; нічого змінювати у workflow, тільки у скрипті).
   - opt: `docs/architecture/platforms.md` — feature-parity row recount (≥18/22 trigger gating).
 - **Acceptance:**
   - `pnpm exec node tools/report-shell-tax.mjs --trend` друкує таблицю з 3 row-ами (baseline 2026-02-03 → recount 2026-05 → recount 2026-08).
-  - `docs/initiatives/0002-mobile-platform-decision.md` Last validated bump-нуто (CI freshness gate).
+  - `docs/initiatives/archive/_0002-mobile-platform-decision.md` Last validated bump-нуто (CI freshness gate).
   - Якщо feature-parity ≥18/22 — окремий issue/ADR-draft request створений (не у цьому PR).
 - **Estimate:** S (1-2h).
 - **Priority:** P3.

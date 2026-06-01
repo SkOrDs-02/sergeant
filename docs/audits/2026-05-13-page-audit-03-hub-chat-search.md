@@ -436,6 +436,8 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 
 ### F26 — `useChatSessions.handleDeleteSession` reads `remaining[0]!` with a non-null assertion after `length > 0` guard, but the type guarantees TS strict-mode-friendly access is via `at(0)` [severity: low] [perspective: ts]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. `handleDeleteSession` тепер робить `const head = remaining[0]; if (head) { … } else { … createSession() }` — без non-null bang. `grep 'remaining\[0\]!'` → 0 збігів. Guard-форма еквівалентна рекомендованому `.at(0)` і strict-safe під Hard Rule #19.
+
 **Page:** `HubChat` (sessions library)
 **File:** `apps/web/src/core/hub/chat/useChatSessions.ts`
 **Lines:** L205–L207

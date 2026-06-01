@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2+6(partial) done; Apple Sign-In + PricingPage portal link landed 2026-05-24 (this branch). Pending: founder adds APPLE\_\* env vars in Railway/local, EN locale (6)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
@@ -81,7 +81,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 #### PR 1.2 `docs-adr-mobile-strategy` (scope: `docs`)
 
 - [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md) — продовжує `0002-mobile-platform-decision`: **Capacitor — primary** mobile-shell до завершення Expo-нативки; **обидва стеки підтримуються паралельно**, deprecate жодного. Конкретний рішення «коли Expo стане primary» — окремий ADR пізніше (триггер: Expo має feature parity з web).
-- Оновити `docs/initiatives/0002-mobile-platform-decision.md` — додати «Update 2026-05-04: рішення владника не deprecate, а підтримувати обидва паралельно. Capacitor primary до Expo feature-parity.»
+- Оновити `docs/initiatives/archive/_0002-mobile-platform-decision.md` — додати «Update 2026-05-04: рішення владника не deprecate, а підтримувати обидва паралельно. Capacitor primary до Expo feature-parity.»
 
 **Залежить від:** Фаза 0.
 
@@ -386,7 +386,7 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 - **GTM (буде звужений):** [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md).
 - **Технічний skeleton білінгу:** [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md).
 - **FTUX carry-over:** [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md).
-- **Mobile picks:** [`docs/initiatives/0002-mobile-platform-decision.md`](./0002-mobile-platform-decision.md).
+- **Mobile picks:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](./archive/_0002-mobile-platform-decision.md).
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md).
 - **OpenClaw roadmap (active parallel, not in scope):** [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md).
 - **Releases register (буде заповнюватись по PR):** TBD.
@@ -404,7 +404,7 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 - **ADR-0051** ([`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md)) — `Status: Accepted`. Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial 7 днів без картки. Plus tier / Lifetime / pay-per-feature — out of scope MVP.
 - **ADR-0052** ([`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/architecture/platforms.md` = ✅.
 - `docs/launch/business/01-monetization-and-pricing.md` — Update header: §2.2 і §2.3 позначено «Superseded by ADR-0051».
-- `docs/initiatives/0002-mobile-platform-decision.md` — owner decision note, ADR-0052 supersedes sunset-direction.
+- `docs/initiatives/archive/_0002-mobile-platform-decision.md` — owner decision note, ADR-0052 supersedes sunset-direction.
 - `apps/mobile/README.md`, `apps/mobile-shell/README.md` — freshness headers + посилання на ADR-0052.
 - **`packages/insights/src/activation.ts`** — `evaluateActivationV2()` pure function (Phase 5.1). Умови: Mono ≥1 + ≥5 categorized txn + ≥1 budget ≤72h від signup. 10 unit-тестів, 80/80 passed.
 

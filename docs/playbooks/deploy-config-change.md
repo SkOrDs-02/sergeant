@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
@@ -123,5 +123,5 @@ flowchart TD
 ## Нотатки
 
 - Джерело CI-job: [`.github/workflows/deploy-config-staging-gate.yml`](../../.github/workflows/deploy-config-staging-gate.yml). Логіка: [`scripts/ci/check-deploy-config-staging-gate.mjs`](../../scripts/ci/check-deploy-config-staging-gate.mjs).
-- Initiative ref: [`docs/initiatives/0011-foundation-adoption-and-process-discipline.md`](../initiatives/0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
+- Initiative ref: [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
 - Закриває type-incident PR #1595 → PR #1600.

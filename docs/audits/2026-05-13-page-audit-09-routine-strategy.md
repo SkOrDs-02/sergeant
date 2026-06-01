@@ -88,6 +88,8 @@ Introduce a single `kyivToday()` (and `kyivDateKey(date)`) helper in `apps/web/s
 
 ### F4 — `RoutineCalendarPanel.tsx` is 607 LOC — over Hard Rule #18's 600-line ceiling [severity: high] [perspective: rule]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Closed as monitor-only. Hard Rule #18 (`max-lines: 600`) рахує **effective** LOC (`skipBlankLines: true, skipComments: true`). `RoutineCalendarPanel.tsx` зараз 615 raw, але після відкидання порожніх рядків і коментарів — **584 effective**, тож ESLint-гейт проходить. Файл лишається у моніторі (як `FinykApp.tsx`): наступний PR, що додасть рядків, має тригерити split, але зараз порушення немає.
+
 **Page:** Routine module / Calendar panel
 **File:** `apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`
 **Lines:** the file as a whole (1–607)
@@ -208,6 +210,8 @@ Add a `prefs.routineReminderPrivacy: "full" | "minimal"` toggle. In `minimal` mo
 
 ### F10 — `noUncheckedIndexedAccess` bypassed via `row!` non-null assertion in drag-reorder [severity: medium] [perspective: ts]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. `grep -rn 'row!' apps/web/src/modules/routine` → 0 збігів. `row!` non-null bang у drag-reorder замінено на explicit undefined-guard (раніше через PR з commit `ca01ec3`). Hard Rule #19 більше не обходиться у цьому шляху.
+
 **Page:** Routine settings / Active habits drag
 **File:** `apps/web/src/modules/routine/components/settings/ActiveHabitsSection.tsx`
 **Lines:** L122–L139 (drop handler)
@@ -233,6 +237,8 @@ next.splice(ti, 0, row);
 ---
 
 ### F11 — Strategy page UI strings are in English; product is Ukrainian-first [severity: medium] [perspective: i18n]
+
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. `StrategyPage.tsx` тепер прокидає весь UI-текст через `messages.strategy.*` (`title`, `weekPrefix`, `addGoal`, `personaLabel`, `goalTextLabel`, `goalTextPlaceholder`, `saving`, `thisWeeksGoals`, `loading`, `emptyStatePrefix/Suffix`, …). Hardcoded English-рядки прибрано.
 
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
@@ -272,6 +278,8 @@ Submit button → `bg-info-strong text-white` (or `bg-routine-strong` if Strateg
 
 ### F13 — Strategy page submit button has no minimum 44×44 touch target [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. Submit-кнопка у `StrategyPage.tsx` тепер несе `min-h-touch-target` (= 44px utility) + `focus-visible:outline-2`. WCAG 2.5.5 floor виконано.
+
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
 **Lines:** L233–L239
@@ -308,6 +316,8 @@ Adopt `DataState` from `@shared/components/ui/DataState` (already used in `Routi
 
 ### F15 — Strategy page `useQuery` has no `staleTime` — refetches on every focus [severity: medium] [perspective: perf]
 
+> **Closure note (2026-06-01, docs-task-selection batch — code fix):** Resolved. До `useQuery({ queryKey: strategicKeys.goalsForWeek(weekStart), queryFn })` додано `staleTime: 5 * 60_000`. Тижневі цілі змінюються рідко, тож 5-хв вікно прибирає refetch-on-focus churn, лишаючись свіжим. Hard Rule #2 (RQ keys через factory) збережено.
+
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
 **Lines:** L141–L144
@@ -324,6 +334,8 @@ Add `staleTime: 5 * 60 * 1000` (5 min) and `refetchOnWindowFocus: false` to the 
 ---
 
 ### F16 — Strategy page `goalsByPersona` uses optional chaining on a fully-initialized map [severity: low] [perspective: ts]
+
+> **Closure note (2026-06-01, docs-task-selection batch):** Closed as won't-fix (audit-misclassification). `map[g.persona]?.push(g)` де `map: Record<StrategicGoalPersona, StrategicGoal[]>` — `g.persona` index-access під `noUncheckedIndexedAccess: true` (Hard Rule #19) дає `StrategicGoal[] | undefined`, тож `?.` тут **обов'язковий**, не зайвий. Прибрати `?.` (як радить finding) зламало б `pnpm typecheck`. Лишаємо як є — це коректний strict-mode patten, а не «optional chaining on a fully-initialized map».
 
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
@@ -350,6 +362,8 @@ arr.push(g);
 ---
 
 ### F17 — Strategy page `@scaffolded` marker missing `@owner` and `@addedIn` per Rule #10 [severity: low] [perspective: ai-marker]
+
+> **Closure note (2026-06-01, docs-task-selection batch — code fix):** Resolved. У JSDoc-хедер `StrategyPage.tsx` додано `@owner @Skords-01 (frontend)` і `@addedIn PR-34` поряд із наявним `@scaffolded` / `@nextStep`. Rule #10 scaffold-marker contract тепер повний.
 
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`
@@ -436,6 +450,8 @@ Add `aria-pressed={tagFilter === <id>}` to each chip button. The CSS toggle clas
 
 ### F21 — Notification storage cleanup uses `cutoff.toISOString().slice(0, 10)` — UTC, not Kyiv [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-01, docs-task-selection batch — code fix):** Resolved. У `cleanupStaleRoutineNotifyKeys` (`useRoutineReminders.ts`) `cutoff.toISOString().slice(0, 10)` (UTC) замінено на `getKyivDayKey(cutoff)` з `@shared/lib/time/kyivTime`. Notify-keys стораться як Kyiv day-keys, тож cutoff тепер у тій самій timezone — біля півночі за київським часом cutoff більше не зрізає не той день. 153/153 routine-тести зелені.
+
 **Page:** Routine module / Reminders hook
 **File:** `apps/web/src/modules/routine/hooks/useRoutineReminders.ts`
 **Lines:** L17–L27
@@ -469,6 +485,8 @@ Wrap the controls in `<fieldset className="space-y-3"><legend className="sr-only
 ---
 
 ### F23 — `RoutineApp.helpers.ts:95` uses `a[0].localeCompare(b[0], "uk")` with tuple-typed `a`/`b` — works today but masks Rule #19 [severity: low] [perspective: ts]
+
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. Сортувальник у `RoutineApp.helpers.ts` тепер деструктурує ключі в параметрах — `.sort(([aKey], [bKey]) => … aKey.localeCompare(bKey, "uk"))` — тож `aKey`/`bKey` типізовані як `string` напряму, без `a[0]` index-access і без non-null bang. Rule #19 більше не маскується.
 
 **Page:** Routine module / Helpers
 **File:** `apps/web/src/modules/routine/RoutineApp.helpers.ts`

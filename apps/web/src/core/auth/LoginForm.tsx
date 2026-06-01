@@ -29,7 +29,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
   const {
     register,
     submit,
-    formState,
+    watch,
     formState: { errors },
     isSubmitting,
   } = useApiForm<LoginValues, boolean>({
@@ -52,8 +52,10 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
   });
 
   // Стежимо за поточним email у полі — потрібен `<button "Забули пароль">`,
-  // щоб попередньо заповнити email у форму скидання пароля.
-  const emailValue = formState.defaultValues?.email ?? "";
+  // щоб попередньо заповнити email у форму скидання пароля. `watch("email")`
+  // повертає live-значення інпута; `formState.defaultValues` тримало б лише
+  // початкові дефолти ("") і ніколи б не оновлювалось під час набору.
+  const emailValue = watch("email") ?? "";
 
   return (
     <form onSubmit={submit} noValidate className="space-y-4">

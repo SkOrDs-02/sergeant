@@ -103,6 +103,6 @@ CHANGELOG.md уже містить багатий, manually-curated narrative (m
 ## Посилання
 
 - [Phase 0 audit](https://github.com/Skords-01/Sergeant/pull/2963) — Drift item #5 з якого виросла ця ініціатива
-- [`CHANGELOG.md`](../../CHANGELOG.md) — target файл, Keep a Changelog format
-- [`apps/web/src/core/whatsNew/releases.ts`](../../apps/web/src/core/whatsNew/releases.ts) — TS-side releases (out of scope Phase 1, Phase 3 розгляне sync)
-- [ADR-0042](../adr/0042-password-hashing-strategy.md) — приклад rollback-mention що потребує versioned reference (саме тому треба git tags)
+- [`CHANGELOG.md`](../../../CHANGELOG.md) — target файл, Keep a Changelog format
+- [`apps/web/src/core/whatsNew/releases.ts`](../../../apps/web/src/core/whatsNew/releases.ts) — TS-side releases (out of scope Phase 1, Phase 3 розгляне sync)
+- [ADR-0042](../../adr/0042-password-hashing-strategy.md) — приклад rollback-mention що потребує versioned reference (саме тому треба git tags)

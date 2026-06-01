@@ -1,6 +1,6 @@
 # ADR-0058: Knowledge graph schema and storage format
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md)
+  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
   - [`docs/governance/schemas/knowledge-graph.schema.json`](../governance/schemas/knowledge-graph.schema.json)
   - [`scripts/docs/check-adr-graph.mjs`](../../scripts/docs/check-adr-graph.mjs) — existing ADR-only graph validator
   - [`scripts/docs/generate-open-work.mjs`](../../scripts/docs/generate-open-work.mjs) — existing one-way `docs → PR` extractor
@@ -86,14 +86,16 @@ Sergeant має 7 розрізнених каталогів артефактів
 
 ## Links
 
-- [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md)
+- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
 ## Recent PRs
 
-| PR | Title | Merged |
-| --- | --- | --- |
+| PR                                                       | Title                                                           | Merged     |
+| -------------------------------------------------------- | --------------------------------------------------------------- | ---------- |
 | [#2876](https://github.com/Skords-01/Sergeant/pull/2876) | feat(docs): knowledge graph generator (Initiative 0014 Phase 1) | 2026-05-15 |
 
 _Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

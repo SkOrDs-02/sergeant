@@ -135,6 +135,8 @@ Delete `PermissionsPrompt.tsx` and `PermissionsPrompt.test.tsx`. Repoint the JSD
 
 ### F5 — CelebrationModal hijacks global Enter/Space keydowns [severity: high] [perspective: bug/a11y]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. `apps/web/src/core/onboarding/CelebrationModal.tsx` більше не існує — компонент переїхав у `apps/web/src/shared/components/ui/CelebrationModal.tsx` (F18 closure). Нова реалізація НЕ чіпляє `window`-keydown: `grep 'window.addEventListener("keydown"' ` у файлі → 0 збігів. Замість глобального хендлера — focus-trap, прив'язаний до modal-node-а (`node.addEventListener("focusin"/"focusout"/"mouseenter"/"mouseleave")`) + pause-on-focus/hover. Глобальний Enter/Space/Escape preventDefault-хайджек, що описаний тут, прибрано.
+
 **Page:** Hub (post-FTUX celebration)
 **File:** `apps/web/src/core/onboarding/CelebrationModal.tsx`
 **Lines:** L123–L133
@@ -166,6 +168,8 @@ Scope the listener to the modal element (`backdropRef.current?.addEventListener(
 ---
 
 ### F6 — "Забули пароль?" never pre-fills the email the user typed [severity: high] [perspective: bug]
+
+> **Closure note (2026-06-01, docs-task-selection batch — code fix):** Resolved. Після F2/F3 decomposition login-форма живе в `apps/web/src/core/auth/LoginForm.tsx`, куди й переїхав баг. `const emailValue = formState.defaultValues?.email ?? ""` (завжди `""`) замінено на `const emailValue = watch("email") ?? ""` — live-значення інпута. `watch` дістається з `useApiForm` (re-export RHF). Додано регресійний тест у `AuthPage.test.tsx` ("forgot-панель пре-філить email, який користувач уже ввів (F6)"): набираємо email у login → клік «Забули пароль?» → `Email для скидання` input має набране значення. 18/18 AuthPage-тестів зелені.
 
 **Page:** AuthPage (login tab)
 **File:** `apps/web/src/core/auth/AuthPage.tsx`
@@ -199,6 +203,8 @@ Add a regression test in `AuthPage.test.tsx`: type "user@example.com" → click 
 
 ### F7 — DailyNudge close X is `w-6 h-6` (24×24) — half the touch-target floor [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. У `DailyNudge.tsx` dismiss-кнопка тепер `<Button variant="ghost" size="xs" iconOnly aria-label="Сховати щоденну пораду">` — `Button` авто-застосовує `min-h-[44px] min-w-[44px]` для `xs`/`iconOnly`. Інлайн `w-6 h-6 <button>`, що описаний тут, прибрано.
+
 **Page:** Hub (DailyNudge)
 **File:** `apps/web/src/core/onboarding/DailyNudge.tsx`
 **Lines:** L104–L111
@@ -216,6 +222,8 @@ Either swap to `<Button variant="ghost" size="xs" iconOnly aria-label="Закр�
 
 ### F8 — DailyNudge popover trigger is `w-8 h-8` (32×32) — below touch-target floor [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. Popover-trigger у `DailyNudge.tsx` тепер `<button className="min-w-[44px] min-h-[44px] … focus-visible:ring-2 …" aria-label="Інші дії">`. 32×32 hit-area прибрано — floor 44×44 виконано.
+
 **Page:** Hub (DailyNudge)
 **File:** `apps/web/src/core/onboarding/DailyNudge.tsx`
 **Lines:** L82–L92
@@ -232,6 +240,8 @@ Use the `Button` primitive with `iconOnly` + `aria-label="Інші дії"`, or 
 ---
 
 ### F9 — DemoModeBanner CTA forces `min-h-[40px]` below touch-target floor [severity: medium] [perspective: a11y]
+
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. У `DemoModeBanner.tsx` «Створити свій» CTA тепер `<Button variant="primary" size="sm" className="flex-1">` — інлайн `min-h-[40px]` override прибрано, тож `Button size="sm"` авто-floor 44px більше не перебивається.
 
 **Page:** Hub (DemoModeBanner)
 **File:** `apps/web/src/core/onboarding/DemoModeBanner.tsx`
@@ -263,6 +273,8 @@ Drop the `min-h-[40px]` from `className` and trust the Button primitive. If the 
 
 ### F10 — SoftAuthPromptCard "Пізніше" plain button is ~28 px tall [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. «Пізніше» у `SoftAuthPromptCard.tsx` тепер `<Button type="button" variant="ghost" size="sm">{messages.actions.later}</Button>` — design-system primitive з 44px floor + focus-стилями. Сирий `text-xs … px-3 py-2 <button>` прибрано.
+
 **Page:** Hub (SoftAuthPromptCard)
 **File:** `apps/web/src/core/onboarding/SoftAuthPromptCard.tsx`
 **Lines:** L101–L107
@@ -291,6 +303,8 @@ Same root cause as F7–F9. The button is a real user action (dismisses the prom
 
 ### F11 — ReEngagementCard "Пізніше" plain button is ~28 px tall [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. «Пізніше» у `ReEngagementCard.tsx` тепер `<Button type="button" variant="ghost" size="sm" onClick={onDismiss}>Пізніше</Button>` — той самий primitive, що й у F10. (Бонус: pluralization тепер через `pluralDays(daysInactive)`, що закриває й F13.)
+
 **Page:** Hub (ReEngagementCard)
 **File:** `apps/web/src/core/onboarding/ReEngagementCard.tsx`
 **Lines:** L49–L55
@@ -304,6 +318,8 @@ Same as F10. Standardize secondary "Later" / "Пізніше" CTAs across `SoftA
 ---
 
 ### F12 — FirstRunHintBanner CTA `px-2.5 py-1` is ~26 px tall [severity: medium] [perspective: a11y]
+
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done. CTA-кнопка у `FirstRunHintBanner.tsx` тепер несе `min-h-[44px]` у className-блоці поряд із `px-2.5 py-1 text-xs` — hit-area піднято до floor-у. Module-accent containment (Rule #12) збережено: `v.cta` лишає лише text/border-кольори в module-subtree.
 
 **Page:** Module first-run hint (nutrition / finyk / routine)
 **File:** `apps/web/src/core/onboarding/FirstRunHintBanner.tsx`
@@ -507,6 +523,8 @@ Either (a) bump to 15 s and add a "Pause on focus / hover" rule (`useEffect` ret
 
 ### F19 — `ResetPasswordPage.tsx` mixes broken and correct error tokens in same file [severity: medium] [perspective: tailwind/code-quality]
 
+> **Closure note (2026-06-01, docs-task-selection batch):** Verified-already-done (follows F1). `grep -rn 'text-error|bg-error|border-error' apps/web/src/core/auth/ResetPasswordPage.tsx` → 0 збігів; repo-wide теж 0. Surface-level alerts тепер на зареєстрованому `danger`-токені, як і per-field помилки — змішування `error`/`danger` у файлі усунено.
+
 **Page:** ResetPasswordPage
 **File:** `apps/web/src/core/auth/ResetPasswordPage.tsx`
 **Lines:** L114, L158, L189, L201
@@ -534,6 +552,8 @@ Same as F1 — globally rename `error` → `danger` / `danger-soft`. Add a regre
 ---
 
 ### F20 — Test coverage targets dead `LoginForm.tsx` / `RegisterForm.tsx` [severity: medium] [perspective: test]
+
+> **Closure note (2026-06-01, docs-task-selection batch):** Resolved by F3. Після decomposition `AuthPage.tsx` імпортує і рендерить `LoginForm`/`RegisterForm` siblings — інлайн-копій більше немає, тож `LoginForm.tsx` тепер **живий** код, а не carcass. Divergent-copy ризик закрито. Регресія F6 (email-prefill) додана у `AuthPage.test.tsx`, який рендерить `AuthPage` → `LoginForm` живим шляхом. Окремого `LoginForm.test.tsx` немає (тести йдуть через `AuthPage.test.tsx`), тож dead-test concern також знятий.
 
 **Page:** AuthPage
 **File:** `apps/web/src/core/auth/LoginForm.tsx` + sibling `*.test.tsx` (if present), and the _inline_ `LoginForm` / `RegisterForm` in `AuthPage.tsx`

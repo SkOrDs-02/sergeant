@@ -1,6 +1,6 @@
 # ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 2
+  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
   - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md)
   - [`scripts/docs/generate-symbol-catalog.mjs`](../../scripts/docs/generate-symbol-catalog.mjs)
   - [`docs/governance/schemas/symbol-catalog.schema.json`](../governance/schemas/symbol-catalog.schema.json)
@@ -95,14 +95,16 @@ Hybrid не обираємо — entry-AST + cross-package regex вже є де-
 
 ## Links
 
-- [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 2
+- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
 ## Recent PRs
 
-| PR | Title | Merged |
-| --- | --- | --- |
+| PR                                                       | Title                                                            | Merged     |
+| -------------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
 | [#2889](https://github.com/Skords-01/Sergeant/pull/2889) | feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) | 2026-05-15 |
 
 _Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

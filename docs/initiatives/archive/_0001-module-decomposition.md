@@ -1,6 +1,6 @@
 # 0001 — Module decomposition + `max-lines` guard
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Done (Phase 1 + Phase 2 + Phase 3) — closed 2026-05-04
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -236,7 +236,7 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 
 | Файл                                                               | LOC  | Походження                                                                              | Куди передаємо                                                               |
 | ------------------------------------------------------------------ | ---- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `apps/web/src/modules/finyk/FinykApp.tsx`                          | 559  | Top-7 #6 у Phase 2 plan, де-приоритезовано як «найбільший ризик регресії після Routine» | [0013-module-decomposition-round-2](../0013-module-decomposition-round-2.md) |
+| `apps/web/src/modules/finyk/FinykApp.tsx`                          | 559  | Top-7 #6 у Phase 2 plan, де-приоритезовано як «найбільший ризик регресії після Routine» | [0013-module-decomposition-round-2](./_0013-module-decomposition-round-2.md) |
 | `apps/web/src/modules/fizruk/pages/Workouts.tsx`                   | 717  | Top-7 #7 (з `LogCard` парою)                                                            | same                                                                         |
 | `apps/web/src/modules/nutrition/components/LogCard.tsx`            | 580  | Top-7 #7 (пара з `Workouts`)                                                            | same                                                                         |
 | `apps/web/src/modules/nutrition/NutritionApp.tsx`                  | ≥600 | Drift: створений вже у час Phase 1 → потрапив в allowlist при follow-up                 | same                                                                         |
@@ -254,7 +254,7 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 **Done criteria — фінальна звірка:**
 
 - [x] `pnpm lint` падає на будь-якому новому файлі ≥600 LOC у `apps/web/src/**/*.tsx` — primary deliverable.
-- [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist — **не виконано**: 11 файлів (12 на час закриття 0001, −1 після наступного drop у `eslint.config.js`). Carry-over до [0013-module-decomposition-round-2](../0013-module-decomposition-round-2.md).
+- [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist — **не виконано**: 11 файлів (12 на час закриття 0001, −1 після наступного drop у `eslint.config.js`). Carry-over до [0013-module-decomposition-round-2](./_0013-module-decomposition-round-2.md).
 - [x] Декомпонований `RoutineApp` не має `any`-типів та використовує `useReducer`/state-machine для головного потоку — `useRoutineTimeState.ts`.
 - [x] Декомпонований `Icon.tsx` — `pnpm build:analyze` показує −22 KB у `shared` chunk-і (PR #1596 measurement).
 - [x] CI job `lint:tech-debt-freshness` пройшов і `LARGE_FILES` зник з `frontend.md` watching-листа (тепер посилається сюди).

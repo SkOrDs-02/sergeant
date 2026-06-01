@@ -31,7 +31,7 @@
 
 | Initiative                      | Done/Closed | Successor / Canonical                                                                  | Archive path                                                                   |
 | ------------------------------- | ----------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **0001** Module decomposition   | 2026-05-04  | Hard Rule #18 + Successor [0013](../0013-module-decomposition-round-2.md)              | [`_0001-module-decomposition.md`](./_0001-module-decomposition.md)             |
+| **0001** Module decomposition   | 2026-05-04  | Hard Rule #18 + Successor [0013](./_0013-module-decomposition-round-2.md)              | [`_0001-module-decomposition.md`](./_0001-module-decomposition.md)             |
 | **0004** Server observability   | 2026-05-04  | [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md)                        | [`_0004-server-observability.md`](./_0004-server-observability.md)             |
 | **0005** AI cost (prompt cache) | 2026-05-04  | [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md)                            | [`_0005-ai-cost-and-prompt-cache.md`](./_0005-ai-cost-and-prompt-cache.md)     |
 | **0007** Design-system tooling  | 2026-05-05  | Storybook live deploy + [ADR-0046](../../adr/0046-storybook-vrt-scope.md)              | [`_0007-design-system-tooling.md`](./_0007-design-system-tooling.md)           |
@@ -47,6 +47,25 @@
 - [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` pass
 - [x] Merge виконано 2026-05-13
 
+### ✅ 2026-06-01 (executed early)
+
+П'ять initiatives архівовано — founder прийняв рішення про fast-forward, 90-day waiting period skipped (усі `Done`/`Closed`, без активних регресій / follow-up-ів):
+
+| Initiative                      | Done/Closed | Successor / Canonical                                                                                     | Archive path                                                                                                   |
+| ------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **0002** Mobile platform        | 2026-05-18  | [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md) + [0010](../0010-revenue-first-launch.md) | [`_0002-mobile-platform-decision.md`](./_0002-mobile-platform-decision.md)                                     |
+| **0011** Foundation adoption    | 2026-05-20  | Hard Rule #15 + [email-verification-sweep](../../launch/email-verification-sweep.md)                      | [`_0011-foundation-adoption-and-process-discipline.md`](./_0011-foundation-adoption-and-process-discipline.md) |
+| **0013** Module decomp. round 2 | 2026-05-29  | Hard Rule #18 + [tech-debt/frontend](../../tech-debt/frontend.md)                                         | [`_0013-module-decomposition-round-2.md`](./_0013-module-decomposition-round-2.md)                             |
+| **0014** Knowledge graph        | 2026-05-15  | [ADR-0058](../../adr/0058-knowledge-graph-schema.md) + generated catalogs                                 | [`_0014-knowledge-graph-and-catalogs.md`](./_0014-knowledge-graph-and-catalogs.md)                             |
+| **0016** CHANGELOG release-cut  | 2026-05-29  | `changelog:cut` script + [CHANGELOG](../../../CHANGELOG.md)                                               | [`_0016-changelog-release-cut.md`](./_0016-changelog-release-cut.md)                                           |
+
+**Verification (2026-06-01):**
+
+- [x] Усі carry-over items закриті або передані successor-ам
+- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/governance/
+- [x] internal relative links у перенесених файлах поглиблено на 1 рівень (`../` → `../../`, `./` → `../`)
+- [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` + `pnpm lint:archive-move-depth` pass
+
 ## Поточний вміст
 
-7 archived initiatives — див. таблицю вище. Канонічні правила з цих initiatives продовжують жити у [`AGENTS.md`](../../../AGENTS.md) Hard Rules + [`docs/governance/`](../../governance/) — файли нижче — **історичний контекст**, не джерело правди.
+12 archived initiatives — див. таблиці вище. Канонічні правила з цих initiatives продовжують жити у [`AGENTS.md`](../../../AGENTS.md) Hard Rules + [`docs/governance/`](../../governance/) — файли нижче — **історичний контекст**, не джерело правди.

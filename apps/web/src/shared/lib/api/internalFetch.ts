@@ -25,7 +25,7 @@ export async function internalFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const key = import.meta.env.VITE_INTERNAL_API_KEY as string | undefined;
+  const key = import.meta.env["VITE_INTERNAL_API_KEY"] as string | undefined;
   if (!key) {
     // Hard Rule #20: refuse to send an unauthenticated request to an
     // `/api/internal/*` route from the browser. Return a synthetic 403

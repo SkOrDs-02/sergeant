@@ -1,11 +1,11 @@
 # 0014 — Knowledge graph & auto-generated catalogs
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)
 > **Priority:** P2
 > **Owner:** `@Skords-01`
 > **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
-> **Sources:** [`docs/architecture/repo-map.md`](../architecture/repo-map.md), [`docs/architecture/service-catalog.md`](../architecture/service-catalog.md), [`docs/architecture/diagrams/`](../architecture/diagrams/), [`docs/governance/freshness-dashboard.html`](../governance/freshness-dashboard.html), [`AGENTS.md`](../../AGENTS.md) Hard Rules #10 / #15.
+> **Sources:** [`docs/architecture/repo-map.md`](../../architecture/repo-map.md), [`docs/architecture/service-catalog.md`](../../architecture/service-catalog.md), [`docs/architecture/diagrams/`](../../architecture/diagrams/), [`docs/governance/freshness-dashboard.html`](../../governance/freshness-dashboard.html), [`AGENTS.md`](../../../AGENTS.md) Hard Rules #10 / #15.
 
 ## TL;DR
 
@@ -178,14 +178,16 @@
 7. Performance: `pnpm docs:gen-symbols` на cold cache < 60 s; warm < 5 s.
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
 ## Recent PRs
 
-| PR | Title | Merged |
-| --- | --- | --- |
-| [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) | 2026-05-15 |
-| [#2898](https://github.com/Skords-01/Sergeant/pull/2898) | feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4) | 2026-05-15 |
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5)          | 2026-05-15 |
+| [#2898](https://github.com/Skords-01/Sergeant/pull/2898) | feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4)   | 2026-05-15 |
 | [#2896](https://github.com/Skords-01/Sergeant/pull/2896) | feat(docs): auto-derived repo-map + service-catalog (Initiative 0014 Phase 3) | 2026-05-15 |
-| [#2876](https://github.com/Skords-01/Sergeant/pull/2876) | feat(docs): knowledge graph generator (Initiative 0014 Phase 1) | 2026-05-15 |
+| [#2876](https://github.com/Skords-01/Sergeant/pull/2876) | feat(docs): knowledge graph generator (Initiative 0014 Phase 1)               | 2026-05-15 |
 
 _Auto-derived from `docs/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

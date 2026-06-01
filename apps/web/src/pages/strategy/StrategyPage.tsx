@@ -11,6 +11,8 @@
  *
  * @scaffolded — landed by PR-34 (strategic mode datalayer + endpoint + WF-26
  *   skeleton); router wire-up deferred до PR-35+ conversation UI.
+ * @owner @Skords-01 (frontend)
+ * @addedIn PR-34
  * @nextStep PR-35+ — wire `StrategyPage` into `apps/web/src/core/app/router.tsx`
  *   under `/strategy` route + add conversation flow + status-controls.
  *
@@ -169,6 +171,9 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
   const { data: goals = [], isLoading } = useQuery({
     queryKey: strategicKeys.goalsForWeek(weekStart),
     queryFn: () => fetchGoals(weekStart),
+    // Weekly goals change rarely; without a staleTime RQ refetches on every
+    // window focus. 5 хв вистачає, щоб уникнути churn-у але лишитись свіжим.
+    staleTime: 5 * 60_000,
   });
 
   const createMutation = useMutation({

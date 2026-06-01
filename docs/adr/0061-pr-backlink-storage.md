@@ -1,6 +1,6 @@
 # ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 5
+  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
   - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md) — graph schema with `pr` node type
   - [`scripts/docs/generate-open-work.mjs`](../../scripts/docs/generate-open-work.mjs) — existing forward extractor (docs → PR mentions)
   - [`.github/workflows/pr-backlinks.yml`](../../.github/workflows/pr-backlinks.yml) — implementation
@@ -60,7 +60,7 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 - **Canonical doc paths** що отримують backlinks (whitelist у script):
   - `docs/adr/*.md` (крім TEMPLATE.md, README.md)
   - `docs/initiatives/*.md` (крім archive/, follow-ups.md, README.md)
-  - `docs/playbooks/*.md` (крім INDEX.md, README.md, \_TEMPLATE-*)
+  - `docs/playbooks/*.md` (крім INDEX.md, README.md, \_TEMPLATE-\*)
   - `docs/governance/rules/*.md` (крім README.md)
 - **In-doc block format** (appended at file end, idempotent). The block is delimited by HTML-comment markers `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` and `<!-- AUTO-GENERATED: PR-BACKLINKS-END -->` and contains a `## Recent PRs` heading with a 3-column markdown table (PR link, title, merge date). Example layout — see any canonical doc that has merged through Phase 5 for a real instance.
 
@@ -104,15 +104,17 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 
 ## Links
 
-- [`docs/initiatives/0014-knowledge-graph-and-catalogs.md`](../initiatives/0014-knowledge-graph-and-catalogs.md) §Phase 5
+- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
 - [`docs/governance/schemas/pr-ledger.schema.json`](../governance/schemas/pr-ledger.schema.json)
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
 ## Recent PRs
 
-| PR | Title | Merged |
-| --- | --- | --- |
+| PR                                                       | Title                                                                | Merged     |
+| -------------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
 | [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) | 2026-05-15 |
 
 _Auto-derived from `docs/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -104,14 +104,14 @@
       <span class="chip chip-adr">adr: <b>58</b></span>
       <span class="chip chip-audit">audit: <b>31</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>52</b></span>
+      <span class="chip chip-initiative">initiative: <b>47</b></span>
       <span class="chip chip-playbook">playbook: <b>56</b></span>
-      <span class="chip chip-pr">pr: <b>237</b></span>
+      <span class="chip chip-pr">pr: <b>200</b></span>
       <span class="chip chip-skill">skill: <b>21</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (237 core)</summary>
+      <summary>Nodes (232 core)</summary>
       <table>
         <thead>
           <tr>
@@ -768,7 +768,7 @@
               >
             </td>
             <td>Active</td>
-            <td>number=58 · last_validated=2026-05-15</td>
+            <td>number=58 · last_validated=2026-06-01</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -781,7 +781,7 @@
               >
             </td>
             <td>Active</td>
-            <td>number=59 · last_validated=2026-05-15</td>
+            <td>number=59 · last_validated=2026-06-01</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -794,7 +794,7 @@
               >
             </td>
             <td>Active</td>
-            <td>number=60 · last_validated=2026-05-15</td>
+            <td>number=60 · last_validated=2026-06-01</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -806,7 +806,7 @@
               >
             </td>
             <td>Active</td>
-            <td>number=61 · last_validated=2026-05-15</td>
+            <td>number=61 · last_validated=2026-06-01</td>
           </tr>
           <tr>
             <td>audit</td>
@@ -1582,21 +1582,6 @@
           </tr>
           <tr>
             <td>initiative</td>
-            <td><code>initiative:0002</code></td>
-            <td>
-              <a href="../../docs/initiatives/0002-mobile-platform-decision.md"
-                >0002 — Mobile platform decision: lock the deprecation
-                deadline</a
-              >
-            </td>
-            <td>
-              Closed (superseded by ADR-0052 + initiative 0010; historical
-              reference only)
-            </td>
-            <td>number=2 · owner=@Skords-01 · priority=P0 (Sprint 1)</td>
-          </tr>
-          <tr>
-            <td>initiative</td>
             <td><code>initiative:0003</code></td>
             <td>
               <a
@@ -1645,127 +1630,6 @@
           </tr>
           <tr>
             <td>initiative</td>
-            <td><code>initiative:0011</code></td>
-            <td>
-              <a
-                href="../../docs/initiatives/0011-foundation-adoption-and-process-discipline.md"
-                >0011 — Foundation adoption + process discipline (post-launch
-                sweep)</a
-              >
-            </td>
-            <td>
-              Done — **усі фази закриті: Phase 1 (4/4 PR) + Phase 2 (9/9
-              PR-equivalents) + Phase 3 (4/4 PR merged 2026-05-06…20) + Phase 4
-              closed via 0007 round-10 handoff**. Всі carry-over action items
-              A1–A5 та severity-promote `prefer-data-state` закриті
-              2026-05-06…10. **Phase 1** (4/4):
-              [#1688](https://github.com/Skords-01/Sergeant/pull/1688)
-              `validate-pr-body.mjs` Hard Rule #15 strict 3-of-3,
-              [#1691](https://github.com/Skords-01/Sergeant/pull/1691)
-              cross-branch migration-collision guard,
-              [#1697](https://github.com/Skords-01/Sergeant/pull/1697)
-              deploy-config staging-verification gate,
-              [#1699](https://github.com/Skords-01/Sergeant/pull/1699)
-              CSP_DISABLE retrospective audit (5 operational action items A1–A5
-              на @Skords-01 — due `2026-05-11`, див. § Carry-over). **Phase 2**
-              (DataState consumer adoption + form-engine consolidation): 2.1
-              ManualExpenseSheet round-13 (commit-у-існуючому-PR), 2.2
-              ResetPasswordPage merged
-              [#1696](https://github.com/Skords-01/Sergeant/pull/1696), 2.3
-              `useFormValidation` deprecation закрита round-11 фізичним
-              видаленням 0-споживачевого хука; 2.4 finyk merged
-              [#1703](https://github.com/Skords-01/Sergeant/pull/1703), 2.5
-              fizruk merged
-              [#1709](https://github.com/Skords-01/Sergeant/pull/1709), 2.6
-              nutrition merged
-              [#1713](https://github.com/Skords-01/Sergeant/pull/1713), 2.7
-              routine merged
-              [#1714](https://github.com/Skords-01/Sergeant/pull/1714), 2.8
-              hubchat/coach/digest merged
-              [#1726](https://github.com/Skords-01/Sergeant/pull/1726); 2.9
-              prefer-data-state ESLint canary merged
-              [#1823](https://github.com/Skords-01/Sergeant/pull/1823)
-              2026-05-05 (warn-only, 0 hits across 174 модульних файлів) —
-              **Phase 2.9 finalize: severity-promote `warn → error` DONE
-              2026-05-10** (carry-over `2026-06-30` закрита заздалегідь).
-              **Phase 4 closed 2026-05-05** через 0007 round-10 handoff (37/37
-              `shared/ui` stories non-allowlisted, module-level stories,
-              ADR-0046, `sergeant-design/require-stories-for-ui-components`
-              severity = `error`
-              [#1812](https://github.com/Skords-01/Sergeant/pull/1812)). **Phase
-              3 complete 2026-05-06…20** (4/4 PR-ів merged достроково,
-              пост-0010-launch вікно 2026-06-23 не використано): PR 3.1
-              [#2113](https://github.com/Skords-01/Sergeant/pull/2113) pen-test
-              sweep для H5/H6/H8/H9
-              (`docs/security/pen-tests/2026-05-hardening-sweep.md` +
-              `docs/playbooks/security-pen-test-checklist.md`); PR 3.2
-              [#2123](https://github.com/Skords-01/Sergeant/pull/2123)
-              session-protection coverage via Express router introspection
-              (`apps/server/src/__tests__/session-protection.integration.test.ts`,
-              Testcontainers); PR 3.3
-              [#2126](https://github.com/Skords-01/Sergeant/pull/2126)
-              transcribe USD-cap e2e з реальним 5s WAV fixture
-              (`apps/server/src/modules/transcribe/__tests__/transcribe-usd-cap.e2e.test.ts`
-              + `__fixtures__/silence-5s.wav`); PR 3.4 (цей PR) —
-              `docs/launch/email-verification-sweep.md` decision-doc для legacy
-              soft-gate.
-            </td>
-            <td>
-              number=11 · owner=@Skords-01 · priority=P1 (subordinate to
-              0010-revenue-first-launch scope-freeze)
-            </td>
-          </tr>
-          <tr>
-            <td>initiative</td>
-            <td><code>initiative:0013</code></td>
-            <td>
-              <a
-                href="../../docs/initiatives/0013-module-decomposition-round-2.md"
-                >0013 — Module decomposition round 2 (`apps/web` allowlist
-                drain)</a
-              >
-            </td>
-            <td>
-              Done (2026-05-29) — allowlist drained to **0 files** (target was
-              ≤2; closes 0001 carry-over criterion #2). All Initiative-0001
-              carry-over files + the 2026-05-09 drift items are decomposed under
-              the 600-LOC threshold; the `max-lines` `overrides` allowlist in
-              `eslint.config.js` is empty (only an explanatory comment remains).
-              Sprint 2 closers: `hubChatContext.ts` 681→32
-              ([#2517](https://github.com/Skords-01/Sergeant/pull/2517)),
-              `fizrukActions.ts` 672→73
-              ([#2499](https://github.com/Skords-01/Sergeant/pull/2499)),
-              `AssetsTable.tsx` 671→142
-              ([`2acf150a`](https://github.com/Skords-01/Sergeant/commit/2acf150a)),
-              `HubDashboard.tsx` 837→115
-              ([`61e0093f`](https://github.com/Skords-01/Sergeant/commit/61e0093f)),
-              `NutritionApp.tsx` 766→518 effective, `RoutineCalendarPanel.tsx`
-              645→589 effective ([PR
-              #3091](https://github.com/Skords-01/Sergeant/pull/3091)). See §
-              Outcome → Closure.
-            </td>
-            <td>
-              number=13 · owner=@Skords-01 · priority=P2 (subordinate to
-              0010-revenue-first-launch scope-freeze; pre-launch work паралельно
-              лише на adjacent-touch — див. § Чому зараз)
-            </td>
-          </tr>
-          <tr>
-            <td>initiative</td>
-            <td><code>initiative:0014</code></td>
-            <td>
-              <a
-                href="../../docs/initiatives/0014-knowledge-graph-and-catalogs.md"
-                >0014 — Knowledge graph &amp; auto-generated catalogs</a
-              >
-            </td>
-            <td>
-              Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)
-            </td>
-            <td>number=14 · owner=@Skords-01 · priority=P2</td>
-          </tr>
-          <tr>
-            <td>initiative</td>
             <td><code>initiative:0015</code></td>
             <td>
               <a href="../../docs/initiatives/0015-docs-automation-daily-ops.md"
@@ -1777,22 +1641,6 @@
           </tr>
           <tr>
             <td>initiative</td>
-            <td><code>initiative:0016</code></td>
-            <td>
-              <a href="../../docs/initiatives/0016-changelog-release-cut.md"
-                >0016 — CHANGELOG release-cut automation</a
-              >
-            </td>
-            <td>
-              Done (2026-05-29) — script shipped + first release cut
-              `v2026.05.29` executed. Fixed a latent tooling bug: the cut commit
-              used `chore(release):`, which commitlint `scope-enum` rejects (no
-              `release` scope) → switched to `chore(root):`.
-            </td>
-            <td>number=16</td>
-          </tr>
-          <tr>
-            <td>initiative</td>
             <td><code>initiative:0017</code></td>
             <td>
               <a href="../../docs/initiatives/0017-hub-tabs-mount-perf.md"
@@ -1800,9 +1648,13 @@
               >
             </td>
             <td>
-              In progress — Sprint 0 + Sprint 1 + Sprint 2 shipped; only Sprint
-              3 (conditional) + Finalize remain. **Sprint 1 done:** per-section
-              lazy wiring landed on main — the 4 heavy module-scoped sections
+              In progress — code-complete, RUM review pending (2026-06-01).
+              Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker)
+              explicitly skipped pending next 30-day RUM cut on
+              `aggregateReport` P95 &gt; 50 ms — re-opens as a discrete
+              follow-up only if the threshold trips. See § Outcome / § Sprint 3
+              decision. **Sprint 1 done:** per-section lazy wiring landed on
+              main — the 4 heavy module-scoped sections
               (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` +
               `&lt;Suspense fallback={&lt;SectionSkeleton minH={72}/&gt;}&gt;`
               in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10
@@ -1825,7 +1677,7 @@
             </td>
             <td>
               number=17 · owner=@Skords-01 · priority=P1 (Sprint 1 candidate
-              after [0016](./0016-changelog-release-cut.md))
+              after [0016](./archive/_0016-changelog-release-cut.md))
             </td>
           </tr>
           <tr>
@@ -3579,7 +3431,7 @@
     </details>
 
     <details>
-      <summary>Edges (495 total, first 500 core-to-core)</summary>
+      <summary>Edges (437 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3675,21 +3527,6 @@
             <td><code>initiative:0010</code></td>
           </tr>
           <tr>
-            <td><code>adr:0058</code></td>
-            <td>references</td>
-            <td><code>initiative:0014</code></td>
-          </tr>
-          <tr>
-            <td><code>adr:0059</code></td>
-            <td>references</td>
-            <td><code>initiative:0014</code></td>
-          </tr>
-          <tr>
-            <td><code>adr:0060</code></td>
-            <td>references</td>
-            <td><code>initiative:0014</code></td>
-          </tr>
-          <tr>
             <td><code>adr:0061</code></td>
             <td>references</td>
             <td><code>hard-rule:18</code></td>
@@ -3708,11 +3545,6 @@
             <td><code>adr:0061</code></td>
             <td>references</td>
             <td><code>initiative:0010</code></td>
-          </tr>
-          <tr>
-            <td><code>adr:0061</code></td>
-            <td>references</td>
-            <td><code>initiative:0014</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-02-doc-hygiene-audit</code></td>
@@ -3810,11 +3642,6 @@
             <td><code>audit:2026-05-13-mobile-reliability-ux-roast</code></td>
             <td>references</td>
             <td><code>hard-rule:18</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-mobile-reliability-ux-roast</code></td>
-            <td>references</td>
-            <td><code>initiative:0002</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-13-page-audit-01-auth-onboarding</code></td>
@@ -4108,6 +3935,13 @@
               <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
             </td>
             <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
             <td><code>hard-rule:20</code></td>
           </tr>
           <tr>
@@ -4199,11 +4033,6 @@
             <td><code>initiative:0006</code></td>
           </tr>
           <tr>
-            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
-            <td>references</td>
-            <td><code>initiative:0013</code></td>
-          </tr>
-          <tr>
             <td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td>
             <td>references</td>
             <td><code>hard-rule:10</code></td>
@@ -4224,39 +4053,9 @@
             <td><code>hard-rule:5</code></td>
           </tr>
           <tr>
-            <td><code>audit:2026-05-15-deep-audit-state-of-repo</code></td>
-            <td>references</td>
-            <td><code>initiative:0002</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0002</code></td>
-            <td>references</td>
-            <td><code>initiative:0010</code></td>
-          </tr>
-          <tr>
             <td><code>initiative:0003</code></td>
             <td>references</td>
             <td><code>hard-rule:4</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0011</code></td>
-            <td>references</td>
-            <td><code>hard-rule:15</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0013</code></td>
-            <td>references</td>
-            <td><code>hard-rule:18</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0014</code></td>
-            <td>references</td>
-            <td><code>hard-rule:5</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0014</code></td>
-            <td>references</td>
-            <td><code>hard-rule:6</code></td>
           </tr>
           <tr>
             <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>

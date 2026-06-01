@@ -631,6 +631,6 @@ User flow:
 - [`docs/playbooks/port-web-screen-to-mobile.md`](../../playbooks/port-web-screen-to-mobile.md)
 - [`docs/playbooks/sync-rn-migration-progress.md`](../../playbooks/sync-rn-migration-progress.md)
 - [`docs/initiatives/0010-revenue-first-launch.md`](../../initiatives/0010-revenue-first-launch.md) — revenue-first context
-- [`docs/initiatives/0002-mobile-platform-decision.md`](../../initiatives/0002-mobile-platform-decision.md) — original sunset initiative
+- [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md) — original sunset initiative
 - [`apps/mobile/README.md`](../../../apps/mobile/README.md), [`apps/mobile/AGENTS.md`](../../../apps/mobile/AGENTS.md)
 - [`apps/mobile-shell/README.md`](../../../apps/mobile-shell/README.md) — для порівняння

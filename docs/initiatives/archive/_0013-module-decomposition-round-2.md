@@ -5,11 +5,11 @@
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
-> **Sources:** [`docs/initiatives/archive/_0001-module-decomposition.md`](./archive/_0001-module-decomposition.md) (predecessor — Phase 3 closure 2026-05-04, carry-over список нижче), [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) (`LARGE_FILES` секція, що посилається сюди), [`AGENTS.md`](../../AGENTS.md) Hard Rule #18 (`max-lines: [error, 600]`).
+> **Sources:** [`docs/initiatives/archive/_0001-module-decomposition.md`](../archive/_0001-module-decomposition.md) (predecessor — Phase 3 closure 2026-05-04, carry-over список нижче), [`docs/tech-debt/frontend.md`](../../tech-debt/frontend.md) (`LARGE_FILES` секція, що посилається сюди), [`AGENTS.md`](../../../AGENTS.md) Hard Rule #18 (`max-lines: [error, 600]`).
 
 ## TL;DR
 
-[`0001`](./archive/_0001-module-decomposition.md) закрилася 2026-05-04 з `5/6` критеріїв виконано. **Невиконаний критерій** — `≤2 файли в allowlist у apps/web/src/**` — лишився **11 файлами** (`Workouts`, `LogCard`, `FinykApp`, `NutritionApp`, `Cards`, `Subscriptions`, `Exercise`, `Progress`, `AssetsTable`, `RoutineCalendarPanel`, `hubChatContext` / `chatActions/fizrukActions`). Hard Rule #18 (`max-lines: [error, 600]`) тримає **новий** код під контролем — старий drift лишається, з deadline-коментарем у allowlist.
+[`0001`](../archive/_0001-module-decomposition.md) закрилася 2026-05-04 з `5/6` критеріїв виконано. **Невиконаний критерій** — `≤2 файли в allowlist у apps/web/src/**` — лишився **11 файлами** (`Workouts`, `LogCard`, `FinykApp`, `NutritionApp`, `Cards`, `Subscriptions`, `Exercise`, `Progress`, `AssetsTable`, `RoutineCalendarPanel`, `hubChatContext` / `chatActions/fizrukActions`). Hard Rule #18 (`max-lines: [error, 600]`) тримає **новий** код під контролем — старий drift лишається, з deadline-коментарем у allowlist.
 
 Ця ініціатива **drain-ує allowlist** до ≤2 файлів за такою ж per-file-PR схемою, як Phase 2 у 0001 (по 1 PR на файл, baseline + decomp + verify), плюс фінальний PR `decomp-round-2-finalize` що видаляє `overrides` allowlist цілком. Без нової авто-генерації коду — це pure structure refactor.
 
@@ -42,7 +42,7 @@
 3. **Long-tail (sprint 3) — видалено як not-needed:**
    - ~~`apps/web/src/modules/fizruk/pages/Progress.tsx`~~ — 579 raw LOC, 546 effective, вже проходить рул. Allowlist вилучено в ревізії 2026-05-09.
    - ~~`apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`~~ — 602 raw LOC, 575 effective, вже проходить рул. Allowlist вилучено в ревізії 2026-05-09.
-4. **Finalize PR (last)** — `decomp-round-2-finalize`: видалити `overrides` allowlist у `eslint.config.js` цілком (або привести до ≤2 файлів як closure для 0001 #2 критерію), оновити `LARGE_FILES` запис у [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md), закрити цю ініціативу як `Done` з Outcome-секцією.
+4. **Finalize PR (last)** — `decomp-round-2-finalize`: видалити `overrides` allowlist у `eslint.config.js` цілком (або привести до ≤2 файлів як closure для 0001 #2 критерію), оновити `LARGE_FILES` запис у [`docs/tech-debt/frontend.md`](../../tech-debt/frontend.md), закрити цю ініціативу як `Done` з Outcome-секцією.
 
 **Out:**
 
@@ -94,8 +94,8 @@ PR-и:
 - [x] `eslint.config.js` `overrides` allowlist для `max-lines` видалено цілком (лишився тільки пояснювальний коментар, `eslint.config.js:1036-1040`).
 - [x] Жоден з файлів у scope не перевищує 600 LOC; `pnpm lint` зелений без override-ів.
 - [x] Bundle-size delta задокументована — Sprint 1 виміряно **−5 KB** у `shared` (gzip); агрегатний re-measure окремо не ганявся, бо decomp був інкрементальний per-PR (див. § Outcome → Closure).
-- [x] [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) `LARGE_FILES` секція оновлена: 0013 → Done.
-- [x] [`docs/initiatives/README.md`](./README.md) — рядок 0013 переміщено з § Активні у § Нещодавно завершені.
+- [x] [`docs/tech-debt/frontend.md`](../../tech-debt/frontend.md) `LARGE_FILES` секція оновлена: 0013 → Done.
+- [x] [`docs/initiatives/README.md`](../README.md) — рядок 0013 переміщено з § Активні у § Нещодавно завершені.
 - [x] Outcome-секція з фінальними метриками написана (§ Outcome → Closure).
 
 ## Ризики та митиґація
@@ -128,12 +128,12 @@ PR-и:
 
 ## Посилання
 
-- [`docs/initiatives/archive/_0001-module-decomposition.md`](./archive/_0001-module-decomposition.md) — predecessor (carry-over → cюди); зокрема [§ Outcome → Phase 3 → Що НЕ зроблено](./archive/_0001-module-decomposition.md) з повним списком файлів.
-- [`AGENTS.md`](../../AGENTS.md) Hard Rule #18 — `max-lines: [error, 600]` ESLint правило, що залишається діючим контрактом.
-- [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — `LARGE_FILES` секція, де поточний статус 11-файлового drift-у відображено.
-- [`eslint.config.js`](../../eslint.config.js) — поточний `overrides` allowlist (≈11 entries з deadline-коментарями, що цілять у цю ініціативу).
-- [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs) — bundle-gate, який перевіряє delta після decomp-у.
-- [`docs/initiatives/0010-revenue-first-launch.md`](./0010-revenue-first-launch.md) — paralleling scope-freeze, що визначає коли robо `FinykApp.tsx` дозволено.
+- [`docs/initiatives/archive/_0001-module-decomposition.md`](../archive/_0001-module-decomposition.md) — predecessor (carry-over → cюди); зокрема [§ Outcome → Phase 3 → Що НЕ зроблено](../archive/_0001-module-decomposition.md) з повним списком файлів.
+- [`AGENTS.md`](../../../AGENTS.md) Hard Rule #18 — `max-lines: [error, 600]` ESLint правило, що залишається діючим контрактом.
+- [`docs/tech-debt/frontend.md`](../../tech-debt/frontend.md) — `LARGE_FILES` секція, де поточний статус 11-файлового drift-у відображено.
+- [`eslint.config.js`](../../../eslint.config.js) — поточний `overrides` allowlist (≈11 entries з deadline-коментарями, що цілять у цю ініціативу).
+- [`scripts/check-bundle-size.mjs`](../../../scripts/check-bundle-size.mjs) — bundle-gate, який перевіряє delta після decomp-у.
+- [`docs/initiatives/0010-revenue-first-launch.md`](../0010-revenue-first-launch.md) — paralleling scope-freeze, що визначає коли robо `FinykApp.tsx` дозволено.
 
 ## Outcome
 

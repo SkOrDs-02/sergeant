@@ -112,7 +112,7 @@ Order: DC-1 (XS) → HR-1 (locks canonical test-pattern) → паралельн�
   - Якщо delete-branch: `apps/server/src/lib/ragEval/index.ts` (RAG eval barrel, post-rebase orphan з PR-20) розглянути окремо — поза скоупом DC-5 (`apps/web` only).
 - **Acceptance:** PR-description must фіксує **одну** з двох гілок:
   - **Re-wire branch:** AuthPage.tsx < 600 LOC, усі 7 `@scaffolded`-маркерів зняті, deep-imports у `AuthPage.tsx` rewired на existing helper-modules; `pnpm lint` (Hard Rule #18 gate) і `pnpm test` зелені.
-  - **Delete branch:** усі 7 файлів видалено (637 LOC), AuthPage.tsx залишається inlined (693 LOC) — Hard Rule #18 violation тоді тримається у `eslint.config.js::overrides` allowlist з deadline-коментарем, що цілить у [`docs/initiatives/0013-module-decomposition-round-2.md`](../initiatives/0013-module-decomposition-round-2.md) Sprint 2 backlog.
+  - **Delete branch:** усі 7 файлів видалено (637 LOC), AuthPage.tsx залишається inlined (693 LOC) — Hard Rule #18 violation тоді тримається у `eslint.config.js::overrides` allowlist з deadline-коментарем, що цілить у [`docs/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) Sprint 2 backlog.
   - UX smoke у preview-deploy: login (email+password + Google), register, forgot-password full flow + error states (wrong password, expired magic link).
   - `pnpm dead-code:files` без regression.
 - **Розмір:** M (re-wire branch — 7 file-edits + AuthPage.tsx refactor + tests; delete branch — 7 deletions + eslint allowlist update).
@@ -255,7 +255,7 @@ pnpm docs:check-links               # markdown internal links (HR-4 overlap)
 - [`docs/governance/hard-rules.json`](../governance/hard-rules.json) — 22-rule registry; HR-4 додає 23-й rule.
 - [`docs/governance/rules/10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md) — canonical body для `@scaffolded` маркерів (use-case у DC-2).
 - [`docs/governance/rules/18-module-size-discipline-600.md`](../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (DC-5 AuthPage decision).
-- [`docs/initiatives/0013-module-decomposition-round-2.md`](../initiatives/0013-module-decomposition-round-2.md) — Sprint-2 backlog для DC-5 delete-branch fallback.
+- [`docs/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) — Sprint-2 backlog для DC-5 delete-branch fallback.
 - [`docs/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md`](../initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md) — origin для HR-1/HR-2/HR-3 budget ratchet.
 - [`scripts/knip-respects-scaffolded.mjs`](../../scripts/knip-respects-scaffolded.mjs), [`scripts/check-env-single-source.mjs`](../../scripts/check-env-single-source.mjs), [`scripts/check-imports.mjs`](../../scripts/check-imports.mjs), [`scripts/check-hard-rules-registry.mjs`](../../scripts/check-hard-rules-registry.mjs).
 - [`knip.json`](../../knip.json), [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js).
