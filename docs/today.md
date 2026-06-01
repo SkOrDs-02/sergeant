@@ -11,7 +11,7 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 Sorted: `blocked` items first, потім за `mtime` desc (свіже = warm context).
 
-- [`initiatives/0006-frontend-routing-and-code-split.md`](./initiatives/0006-frontend-routing-and-code-split.md) — 0006 — Frontend routing migration + route-based code-split → **Phase 5 — pending** _(Ініціативи)_
+- [`initiatives/0006-frontend-routing-and-code-split.md`](./initiatives/0006-frontend-routing-and-code-split.md) — 0006 — Frontend routing migration + route-based code-split → **Phase 5 blocked 🚧** _(Ініціативи)_
 
 ## Прострочений review (0)
 
