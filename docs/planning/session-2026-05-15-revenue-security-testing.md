@@ -39,7 +39,7 @@ security exposure, dependency unblocking, and effort-to-impact.
      `ACTIVATION_V2_HIT` capture to correlate activation with paid conversion.
 
 2. **FTUX PR-C: cold-start outcome-card behind FF**
-   - Source: [`pr-plan-ftux-2026-05.md`](./pr-plan-ftux-2026-05.md#pr-c--feathub-cold-start-outcome-card-behind-ff-pr-09--p1-1)
+   - Source: [`pr-plan-ftux-2026-05.md`](./archive/pr-plan-ftux-2026-05.md#pr-c--feathub-cold-start-outcome-card-behind-ff-pr-09--p1-1)
    - Why next: PR-B is no longer a blocker, so the highest-conversion FTUX card can
      replace goal-less progress copy with outcome-oriented first-action guidance.
 

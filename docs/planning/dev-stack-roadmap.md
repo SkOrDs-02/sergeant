@@ -247,14 +247,14 @@ pnpm --filter @sergeant/web build:analyze
 
 ### 4.2. E2E та visual-тести
 
-| Tool           | What                                                                                                                                  | Cost                  |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| **Playwright** | ✅ активовано на PR ([#717](https://github.com/Skords-01/Sergeant/pull/717)) + `extended-e2e.yml` workflow                            | $0                    |
-| **Detox**      | ✅ mobile e2e активний (`detox-android.yml` + `detox-ios.yml`); див. [`docs/planning/mobile-e2e-testing.md`](./mobile-e2e-testing.md) | $0                    |
-| **Argos**      | ✅ впроваджено: `@argos-ci/playwright` + `visual-regression.yml` workflow                                                             | Free < 5K screenshots |
-| **Percy**      | BrowserStack-owned visual testing (не використовується — Argos покриває)                                                              | Free 5K screenshots   |
-| **Chromatic**  | Storybook-integrated visual testing (не використовується — Argos + Storybook deploy)                                                  | $149/міс              |
-| **Lost Pixel** | Self-hosted visual testing                                                                                                            | $0                    |
+| Tool           | What                                                                                                                                          | Cost                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| **Playwright** | ✅ активовано на PR ([#717](https://github.com/Skords-01/Sergeant/pull/717)) + `extended-e2e.yml` workflow                                    | $0                    |
+| **Detox**      | ✅ mobile e2e активний (`detox-android.yml` + `detox-ios.yml`); див. [`docs/planning/mobile-e2e-testing.md`](./archive/mobile-e2e-testing.md) | $0                    |
+| **Argos**      | ✅ впроваджено: `@argos-ci/playwright` + `visual-regression.yml` workflow                                                                     | Free < 5K screenshots |
+| **Percy**      | BrowserStack-owned visual testing (не використовується — Argos покриває)                                                                      | Free 5K screenshots   |
+| **Chromatic**  | Storybook-integrated visual testing (не використовується — Argos + Storybook deploy)                                                          | $149/міс              |
+| **Lost Pixel** | Self-hosted visual testing                                                                                                                    | $0                    |
 
 ### 4.3. Performance та load-тести
 

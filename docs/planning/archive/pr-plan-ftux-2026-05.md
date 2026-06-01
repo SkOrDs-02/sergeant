@@ -1,9 +1,9 @@
 # FTUX / Onboarding PR-план (з прожарки 2026-05-13)
 
-> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
-> **Status:** Closed (reference execution plan; canonical status lives in FTUX master tracker)
+> **Last validated:** 2026-05-19 by @codex. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only) — closed; canonical status lives in `docs/launch/product-os/ftux-master-tracker.md`.
 
-> **Призначення.** Виконавчий план PR-ів за відкритими пунктами FTUX-прожарки [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../audits/2026-05-13-ftux-onboarding-roast.md). Дзеркалить open-items із цієї прожарки у конкретні PR-картки з acceptance, conversion-метриками, розміром (S/M/L), пріоритетом (P1/P2/P3), залежностями та owner-плейсхолдером. **Не** замінює SSOT — `docs/launch/product-os/ftux-master-tracker.md` (master tracker) лишається істиною про статуси; цей файл — execution playbook на наступні 2–4 тижні.
+> **Призначення.** Виконавчий план PR-ів за відкритими пунктами FTUX-прожарки [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/2026-05-13-ftux-onboarding-roast.md). Дзеркалить open-items із цієї прожарки у конкретні PR-картки з acceptance, conversion-метриками, розміром (S/M/L), пріоритетом (P1/P2/P3), залежностями та owner-плейсхолдером. **Не** замінює SSOT — `docs/launch/product-os/ftux-master-tracker.md` (master tracker) лишається істиною про статуси; цей файл — execution playbook на наступні 2–4 тижні.
 >
 > **Що НЕ покрито тут.** Закриті у roast-PR пункти (B-11 `nextStepTip`, P2-15 `primaryCtaLabel`, M-10 `ftux-slo.yml`) — лишаються тільки як history-кросс-реф. PR-08 (cleanup .replit + archive stale audits, P1-4 у roast) — already landed [commit 92dd45b2](https://github.com/Skords-01/Sergeant/commit/92dd45b2). Paywall (PR-19/PR-20), What's new modal (PR-18), SQLite migration — окремі ініціативи, поза скоупом цієї прожарки (явно exclude-нуто у §«Що НЕ покрито цією прожаркою» roast-а).
 
@@ -11,28 +11,28 @@
 
 **Audits / прожарки:**
 
-- [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../audits/2026-05-13-ftux-onboarding-roast.md) — джерельна прожарка (5 болів полірування + 3 структурні борги).
-- [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../audits/2026-05-06-ux-roast-pr-plan.md) — попередній виконавчий план UX-прожарки (41 PR у 3 спринтах). Цей план — **incremental delta** поверх нього; коли пункт уже закритий або обмежено-в-розробці, відсилка на conf-PR із master tracker-а.
-- [`docs/audits/2026-05-06-ux-roast.md`](../audits/2026-05-06-ux-roast.md) — пост-onboarding UX-прожарка (Day 0-7).
-- [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна FTUX-прожарка (frozen).
+- [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/2026-05-13-ftux-onboarding-roast.md) — джерельна прожарка (5 болів полірування + 3 структурні борги).
+- [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) — попередній виконавчий план UX-прожарки (41 PR у 3 спринтах). Цей план — **incremental delta** поверх нього; коли пункт уже закритий або обмежено-в-розробці, відсилка на conf-PR із master tracker-а.
+- [`docs/audits/2026-05-06-ux-roast.md`](../../audits/2026-05-06-ux-roast.md) — пост-onboarding UX-прожарка (Day 0-7).
+- [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна FTUX-прожарка (frozen).
 
-**Master tracker:** [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — sprint registry, PR-09..PR-21, decisions log.
+**Master tracker:** [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) — sprint registry, PR-09..PR-21, decisions log.
 
 **Surfaces в `apps/web` (за user-journey):**
 
-| Етап                  | Файл                                                                                                                                                                                                                                 | Роль у FTUX                                                                                   |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Signup / login        | [`apps/web/src/core/auth/AuthPage.tsx`](../../apps/web/src/core/auth/AuthPage.tsx)                                                                                                                                                   | Pre-onboarding ingress: register / login / forgot-password.                                   |
-| Signup form           | [`apps/web/src/core/auth/RegisterForm.tsx`](../../apps/web/src/core/auth/RegisterForm.tsx)                                                                                                                                           | First credential entry; double-fire ризики тут менш-критичні, але logging-сумісність важлива. |
-| Welcome splash        | [`apps/web/src/core/app/WelcomeScreen.tsx`](../../apps/web/src/core/app/WelcomeScreen.tsx)                                                                                                                                           | `/welcome` peek-backdrop + entry до wizard / demo CTA.                                        |
-| Onboarding gate       | [`apps/web/src/core/onboarding/onboardingGate.ts`](../../apps/web/src/core/onboarding/onboardingGate.ts)                                                                                                                             | `shouldShowOnboarding()`, `markOnboardingDone()`, `isOnboardingCompletedFired()`.             |
-| Wizard                | [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) + [`useOnboardingWizardState.ts`](../../apps/web/src/core/onboarding/useOnboardingWizardState.ts)                     | Vibe / goal / module picks; емітить `onboarding_*` PostHog events.                            |
-| First-action sheet    | [`apps/web/src/core/onboarding/FirstActionSheet.tsx`](../../apps/web/src/core/onboarding/FirstActionSheet.tsx)                                                                                                                       | Post-wizard primary affordance (goal-aware після PR-11).                                      |
-| Hub bootstrap         | [`apps/web/src/core/app/HubHomeView.tsx`](../../apps/web/src/core/app/HubHomeView.tsx) + [`apps/web/src/core/hub/HubDashboard.tsx`](../../apps/web/src/core/hub/HubDashboard.tsx)                                                    | Cold-start dashboard; де рендеряться hero-block, modules grid, prompt-cards.                  |
-| Hero block            | [`apps/web/src/core/hub/HubHeroBlock.tsx`](../../apps/web/src/core/hub/HubHeroBlock.tsx)                                                                                                                                             | Раніше — `OnboardingProgress`; пост-PR-09 — `ValueProgressBar` / `outcome-card`.              |
-| Progress bar (legacy) | [`apps/web/src/core/onboarding/OnboardingProgress.tsx`](../../apps/web/src/core/onboarding/OnboardingProgress.tsx)                                                                                                                   | «2/4 розділів» — value-misalignment для goal-less cohort, PR-C нижче його перекриває.         |
-| Celebration           | [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) + [`useFirstEntryCelebration.ts`](../../apps/web/src/core/onboarding/useFirstEntryCelebration.ts) | Module-aware копія (B-11/P2-15 закрито). Routing CTA → add-sheet — PR-D.                      |
-| Shared copy           | [`packages/shared/src/lib/onboardingCelebrations.ts`](../../packages/shared/src/lib/onboardingCelebrations.ts)                                                                                                                       | `FIRST_ENTRY_CELEBRATIONS`: `nextStepTip` + `primaryCtaLabel` per-module.                     |
+| Етап                  | Файл                                                                                                                                                                                                                                       | Роль у FTUX                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Signup / login        | [`apps/web/src/core/auth/AuthPage.tsx`](../../../apps/web/src/core/auth/AuthPage.tsx)                                                                                                                                                      | Pre-onboarding ingress: register / login / forgot-password.                                   |
+| Signup form           | [`apps/web/src/core/auth/RegisterForm.tsx`](../../../apps/web/src/core/auth/RegisterForm.tsx)                                                                                                                                              | First credential entry; double-fire ризики тут менш-критичні, але logging-сумісність важлива. |
+| Welcome splash        | [`apps/web/src/core/app/WelcomeScreen.tsx`](../../../apps/web/src/core/app/WelcomeScreen.tsx)                                                                                                                                              | `/welcome` peek-backdrop + entry до wizard / demo CTA.                                        |
+| Onboarding gate       | [`apps/web/src/core/onboarding/onboardingGate.ts`](../../../apps/web/src/core/onboarding/onboardingGate.ts)                                                                                                                                | `shouldShowOnboarding()`, `markOnboardingDone()`, `isOnboardingCompletedFired()`.             |
+| Wizard                | [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../../apps/web/src/core/onboarding/OnboardingWizard.tsx) + [`useOnboardingWizardState.ts`](../../../apps/web/src/core/onboarding/useOnboardingWizardState.ts)                     | Vibe / goal / module picks; емітить `onboarding_*` PostHog events.                            |
+| First-action sheet    | [`apps/web/src/core/onboarding/FirstActionSheet.tsx`](../../../apps/web/src/core/onboarding/FirstActionSheet.tsx)                                                                                                                          | Post-wizard primary affordance (goal-aware після PR-11).                                      |
+| Hub bootstrap         | [`apps/web/src/core/app/HubHomeView.tsx`](../../../apps/web/src/core/app/HubHomeView.tsx) + [`apps/web/src/core/hub/HubDashboard.tsx`](../../../apps/web/src/core/hub/HubDashboard.tsx)                                                    | Cold-start dashboard; де рендеряться hero-block, modules grid, prompt-cards.                  |
+| Hero block            | [`apps/web/src/core/hub/HubHeroBlock.tsx`](../../../apps/web/src/core/hub/HubHeroBlock.tsx)                                                                                                                                                | Раніше — `OnboardingProgress`; пост-PR-09 — `ValueProgressBar` / `outcome-card`.              |
+| Progress bar (legacy) | [`apps/web/src/core/onboarding/OnboardingProgress.tsx`](../../../apps/web/src/core/onboarding/OnboardingProgress.tsx)                                                                                                                      | «2/4 розділів» — value-misalignment для goal-less cohort, PR-C нижче його перекриває.         |
+| Celebration           | [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) + [`useFirstEntryCelebration.ts`](../../../apps/web/src/core/onboarding/useFirstEntryCelebration.ts) | Module-aware копія (B-11/P2-15 закрито). Routing CTA → add-sheet — PR-D.                      |
+| Shared copy           | [`packages/shared/src/lib/onboardingCelebrations.ts`](../../../packages/shared/src/lib/onboardingCelebrations.ts)                                                                                                                          | `FIRST_ENTRY_CELEBRATIONS`: `nextStepTip` + `primaryCtaLabel` per-module.                     |
 
 ## User-journey map (cold-start, web)
 
@@ -91,8 +91,8 @@ flowchart TD
 
 - **Скоуп.** Розширити `celebration_shown` PostHog event payload фактично-render-нутими `nextStepTip` (→ `tipVariant`) і `primaryCtaLabel` (→ `ctaLabel`) — щоб dashboard ловив silent-copy-regression. Зараз payload містить тільки `ttvMs`, `source`, `moduleId`.
 - **Файли (estimate ≤ 40 LOC).**
-  - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — додати 2 ключі у `trackEvent('celebration_shown', …)` payload.
-  - [`apps/web/src/core/observability/analytics.ts`](../../apps/web/src/core/observability/analytics.ts) — розширити TS-тип `CelebrationShownPayload` (back-compat — нові поля optional).
+  - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — додати 2 ключі у `trackEvent('celebration_shown', …)` payload.
+  - [`apps/web/src/core/observability/analytics.ts`](../../../apps/web/src/core/observability/analytics.ts) — розширити TS-тип `CelebrationShownPayload` (back-compat — нові поля optional).
   - `apps/web/src/core/onboarding/CelebrationModal.test.tsx` — assertion проти ring-buffer-у.
 - **Acceptance.**
   - Payload містить `tipVariant: string` та `ctaLabel: string` для всіх 4 модулів (finyk / fizruk / routine / nutrition).
@@ -111,9 +111,9 @@ flowchart TD
   2. **Escape soft-pause** — `onDismiss` prop повертається; Escape closing-up-flow у real-mode + `tour_replay` у tour-mode.
   3. **Double-submit guard** — `submitted` ref + early-return у `useOnboardingWizardState.finish()`, щоб два кліки CTA не задвоїли `onboarding_completed`.
 - **Файли (estimate < 60 LOC).**
-  - [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) — `useAutoFocus(headingRef)` + `onDismiss` wiring.
-  - [`apps/web/src/core/onboarding/useOnboardingWizardState.ts`](../../apps/web/src/core/onboarding/useOnboardingWizardState.ts) — `submitted` ref + early-return у `finish()`.
-  - [`apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx) — зняти `it.skip` маркери, додати focus-assertion (`document.activeElement === headingRef.current`).
+  - [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../../apps/web/src/core/onboarding/OnboardingWizard.tsx) — `useAutoFocus(headingRef)` + `onDismiss` wiring.
+  - [`apps/web/src/core/onboarding/useOnboardingWizardState.ts`](../../../apps/web/src/core/onboarding/useOnboardingWizardState.ts) — `submitted` ref + early-return у `finish()`.
+  - [`apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx`](../../../apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx) — зняти `it.skip` маркери, додати focus-assertion (`document.activeElement === headingRef.current`).
 - **Acceptance.**
   - Focus-test: при mount splash, `document.activeElement` === `<h2>` (не `<body>`).
   - Escape-test: у real-mode виклик `keydown[Escape]` дзвонить `onDismiss`; у tour-mode дзеркалить `tour_replay` intent.
@@ -131,8 +131,8 @@ flowchart TD
 - **Скоуп.** На cold-start (немає `first_real_entry` у жодному модулі) показувати **outcome-card** замість `OnboardingProgress` «2/4 розділів активовано». Outcome-card сфокусована на user goal (proxy: vibe-pick), не на progress completion. Goal-less cohort (vibe + no goal-picks) бачить **canonical outcome-card** з 3 module-thumbnail-ами.
 - **Файли (estimate ~ 280 LOC).**
   - Новий `apps/web/src/core/hub/OutcomeCard.tsx` (новий component).
-  - [`apps/web/src/core/hub/HubHeroBlock.tsx`](../../apps/web/src/core/hub/HubHeroBlock.tsx) — гейтинг `outcome-card` vs `OnboardingProgress` за FF + `first_real_entry` присутністю.
-  - [`apps/web/src/core/onboarding/OnboardingProgress.tsx`](../../apps/web/src/core/onboarding/OnboardingProgress.tsx) — `@deprecated` JSDoc + видалення після FF cleanup (наступний sprint).
+  - [`apps/web/src/core/hub/HubHeroBlock.tsx`](../../../apps/web/src/core/hub/HubHeroBlock.tsx) — гейтинг `outcome-card` vs `OnboardingProgress` за FF + `first_real_entry` присутністю.
+  - [`apps/web/src/core/onboarding/OnboardingProgress.tsx`](../../../apps/web/src/core/onboarding/OnboardingProgress.tsx) — `@deprecated` JSDoc + видалення після FF cleanup (наступний sprint).
   - PostHog FF `ftux_outcome_card_v1` (50/50 split, 14-day measurement window).
   - Тести: `OutcomeCard.test.tsx` + `HubHeroBlock.test.tsx` snapshot.
 - **Acceptance.**
@@ -150,9 +150,9 @@ flowchart TD
 
 - **Скоуп.** Після P0-2 закриття (`primaryCtaLabel` per-module: «Записати ще витрату», «Запланувати наступне», …) — клік primary CTA закриває modal **і** відкриває відповідний add-sheet модуля. Реалізація — `nextActionAfterCelebration` affordance, що `usePrimaryAffordance()` ranger підхоплює після close-у CelebrationModal-а.
 - **Файли (estimate ~ 120 LOC).**
-  - [`apps/web/src/core/onboarding/useOnboardingState.ts`](../../apps/web/src/core/onboarding/useOnboardingState.ts) — додати `nextActionAfterCelebration: ModuleId | null` state + setter.
-  - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — `onPrimaryAction` → `setNextActionAfterCelebration(moduleId)` + `onClose()`.
-  - [`apps/web/src/core/hub/HubDashboard.tsx`](../../apps/web/src/core/hub/HubDashboard.tsx) — слухати `nextActionAfterCelebration` → open module add-sheet через existing `usePrimaryAffordance()`.
+  - [`apps/web/src/core/onboarding/useOnboardingState.ts`](../../../apps/web/src/core/onboarding/useOnboardingState.ts) — додати `nextActionAfterCelebration: ModuleId | null` state + setter.
+  - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — `onPrimaryAction` → `setNextActionAfterCelebration(moduleId)` + `onClose()`.
+  - [`apps/web/src/core/hub/HubDashboard.tsx`](../../../apps/web/src/core/hub/HubDashboard.tsx) — слухати `nextActionAfterCelebration` → open module add-sheet через existing `usePrimaryAffordance()`.
   - Тести: `CelebrationModal.test.tsx` (assertion проти `nextActionAfterCelebration === 'finyk'` після клік-у).
 - **Acceptance.**
   - Click «Записати ще витрату» закриває modal, відкриває finyk add-sheet ≤ 300ms (без full-route navigation).
@@ -187,8 +187,8 @@ flowchart TD
 
 - **Скоуп.** Після первого real-entry показувати у CelebrationModal на 5 секунд cross-module USP-promise: «Завтра ти побачиш, як цей запис впливає на твій тиждень.» Виконує «aha»-функцію — натяк на cross-module insights (digest / weekly report).
 - **Файли (estimate ~ 100 LOC).**
-  - [`packages/shared/src/lib/onboardingCelebrations.ts`](../../packages/shared/src/lib/onboardingCelebrations.ts) — додати `insightsTeaser: string` (per-module або canonical).
-  - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — секція teaser-а під `nextStepTip`, fade-in на 200ms, auto-hide на 5s або при scroll-у.
+  - [`packages/shared/src/lib/onboardingCelebrations.ts`](../../../packages/shared/src/lib/onboardingCelebrations.ts) — додати `insightsTeaser: string` (per-module або canonical).
+  - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — секція teaser-а під `nextStepTip`, fade-in на 200ms, auto-hide на 5s або при scroll-у.
   - Тести: `onboardingCelebrations.test.ts` — length-budget contract + regression-guard на generic «дивись завтра».
 - **Acceptance.**
   - Teaser рендериться лише на першому real-entry per module (gated `useFirstEntryCelebration` flag).
@@ -303,7 +303,7 @@ gantt
 
 ## Що НЕ покрито цим планом
 
-- **Paywall (PR-19/PR-20)** — окрема ініціатива у [`docs/launch/product-os/paywall-implementation-plan.md`](../launch/product-os/paywall-implementation-plan.md). PR-20 чекає Stripe scaffold (0010 phase 3 — `usePlan()` RQ-hook).
+- **Paywall (PR-19/PR-20)** — окрема ініціатива у [`docs/launch/product-os/paywall-implementation-plan.md`](../../launch/product-os/paywall-implementation-plan.md). PR-20 чекає Stripe scaffold (0010 phase 3 — `usePlan()` RQ-hook).
 - **What's new modal (PR-18)** — in-flight, окремий surface.
 - **SQLite migration (Stage 8/9)** — поза скоупом per parent prompt і audit `§ Що НЕ покрито`.
 - **Goal-first wizard A/B (PR-13 / S5.1)** — у master tracker Wave 2, але прив'язано до результатів PR-11 cohort-analysis. Не дублюємо тут.

@@ -23,37 +23,37 @@
 
 ### PR-плани з прожарок 2026-05-13
 
-| Документ                                                                               | Скоуп                                                                                                  | Статус |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------ |
-| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency                            | Active |
-| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                                               | Active |
-| [`pr-plan-docs-hygiene-2026-05.md`](./pr-plan-docs-hygiene-2026-05.md)                 | Documentation hygiene follow-up: stale links, discoverability, governance sync gates                   | Active |
-| [`pr-plan-ftux-2026-05.md`](./pr-plan-ftux-2026-05.md)                                 | FTUX / onboarding PR-план за відкритими пунктами прожарки 2026-05-13; статуси веде FTUX master tracker | Closed |
-| [`pr-plan-mobile-reliability-2026-05.md`](./pr-plan-mobile-reliability-2026-05.md)     | 10 PR-карток closeout із mobile reliability/UX прожарки; статуси веде mobile tech-debt registry        | Closed |
-| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                                               | Active |
-| [`pr-plan-security-obs-2026-05.md`](./pr-plan-security-obs-2026-05.md)                 | Security & observability PR-план: CSP, secrets, Sentry/OTel/web-vitals, audit logs                     | Active |
-| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                                                   | Active |
+| Документ                                                                               | Скоуп                                                                                | Статус |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------ |
+| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency          | Active |
+| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                             | Active |
+| [`pr-plan-docs-hygiene-2026-05.md`](./pr-plan-docs-hygiene-2026-05.md)                 | Documentation hygiene follow-up: stale links, discoverability, governance sync gates | Active |
+| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                             | Active |
+| [`pr-plan-security-obs-2026-05.md`](./pr-plan-security-obs-2026-05.md)                 | Security & observability PR-план: CSP, secrets, Sentry/OTel/web-vitals, audit logs   | Active |
+| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                                 | Active |
 
 ### Дослідження, міграції, рішення
 
-| Документ                                                                     | Скоуп                                                                                                                                                         | Статус                                                           |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`ai-coding-improvements.md`](./ai-coding-improvements.md)                   | План покращення AI-coding workflow (агентська інфраструктура, не продукт)                                                                                     | Active                                                           |
-| [`tools-research-2026-05.md`](./tools-research-2026-05.md)                   | Дослідження готових рішень / лібок / тулзів зі зрізу 2026-05                                                                                                  | Active research                                                  |
-| [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md) | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Active research                                                  |
-| [`tailwind-v4-migration.md`](./tailwind-v4-migration.md)                     | Tailwind v3 → v4 migration plan                                                                                                                               | Phases 1/3/4 ✅ done; Phase 2 (mobile / NativeWind 5) blocked    |
-| [`mobile-e2e-testing.md`](./mobile-e2e-testing.md)                           | Mobile E2E framework choice — Detox vs Maestro                                                                                                                | Historical recommendation; Detox is the current implemented path |
-| [`flyio-vs-railway.md`](./flyio-vs-railway.md)                               | Decision-rationale: Railway зараз залишається, Fly.io — checklist «коли мігрувати»                                                                            | Reference (не потребує дій)                                      |
-| [`talk-to-your-data.md`](./talk-to-your-data.md)                             | План для conversational data Q&A на даних користувача                                                                                                         | Draft                                                            |
+| Документ                                                                     | Скоуп                                                                                                                                                         | Статус                                                        |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`ai-coding-improvements.md`](./ai-coding-improvements.md)                   | План покращення AI-coding workflow (агентська інфраструктура, не продукт)                                                                                     | Active                                                        |
+| [`tools-research-2026-05.md`](./tools-research-2026-05.md)                   | Дослідження готових рішень / лібок / тулзів зі зрізу 2026-05                                                                                                  | Active research                                               |
+| [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md) | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Active research                                               |
+| [`tailwind-v4-migration.md`](./tailwind-v4-migration.md)                     | Tailwind v3 → v4 migration plan                                                                                                                               | Phases 1/3/4 ✅ done; Phase 2 (mobile / NativeWind 5) blocked |
+| [`flyio-vs-railway.md`](./flyio-vs-railway.md)                               | Decision-rationale: Railway зараз залишається, Fly.io — checklist «коли мігрувати»                                                                            | Reference (не потребує дій)                                   |
+| [`talk-to-your-data.md`](./talk-to-your-data.md)                             | План для conversational data Q&A на даних користувача                                                                                                         | Draft                                                         |
 
 ## Архів
 
 [`archive/`](./archive/) — read-only документи, для яких роботу повністю завершено або які зберігаються лише як історичний reference (щоб майбутні агенти не повертались до вже закритого рішення).
 
-| Архів                                                                    | Чому архів                                                                                                                     |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md)         | Хроніка early-spring 2026 «інфра-спринтів» (PR #714–#743), винесена з живого роадмапу.                                         |
-| [`archive/orm-drizzle-vs-kysely.md`](./archive/orm-drizzle-vs-kysely.md) | Міграція Kysely → Drizzle виконана 2026-05-03; зберігаємо rationale, щоб майбутні агенти не пропонували повернутися до Kysely. |
+| Архів                                                                                              | Чому архів                                                                                                                     |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md)                                   | Хроніка early-spring 2026 «інфра-спринтів» (PR #714–#743), винесена з живого роадмапу.                                         |
+| [`archive/orm-drizzle-vs-kysely.md`](./archive/orm-drizzle-vs-kysely.md)                           | Міграція Kysely → Drizzle виконана 2026-05-03; зберігаємо rationale, щоб майбутні агенти не пропонували повернутися до Kysely. |
+| [`archive/pr-plan-ftux-2026-05.md`](./archive/pr-plan-ftux-2026-05.md)                             | Closed execution-план FTUX-прожарки 2026-05-13; canonical статуси — у `docs/launch/product-os/ftux-master-tracker.md`.         |
+| [`archive/pr-plan-mobile-reliability-2026-05.md`](./archive/pr-plan-mobile-reliability-2026-05.md) | Closed execution-план mobile-reliability прожарки; canonical статуси — у `docs/tech-debt/mobile.md`.                           |
+| [`archive/mobile-e2e-testing.md`](./archive/mobile-e2e-testing.md)                                 | Detox-vs-Maestro decision-record; superseded — Detox adopted. Зберігаємо, щоб не реоцінювати Maestro.                          |
 
 ## Переїхали в інші розділи
 

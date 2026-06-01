@@ -1,23 +1,23 @@
 # PR-план — Mobile Reliability & UX (із roast 2026-05-13)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
-> **Status:** Closed (reference execution plan; canonical mobile debt status lives in tech-debt registry)
+> **Last validated:** 2026-06-01 by @claude. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only) — closed; canonical mobile debt status lives in `docs/tech-debt/mobile.md`.
 
 PR-розклад на closeout відкритих/partial item-ів з прожарки
-[`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../audits/2026-05-13-mobile-reliability-ux-roast.md)
+[`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../../audits/2026-05-13-mobile-reliability-ux-roast.md)
 для скоупу `apps/mobile/**` (Expo 52 + RN 0.76) та `apps/mobile-shell/**`
 (Capacitor 7 wrapper). **Out-of-scope:** SQLite-міграція Stage 8/9
-(трекається у [`storage-roadmap.md`](./storage-roadmap.md) — окремі сесії).
-Canonical mobile debt owner: [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md). Keep this file as source PR-card context only.
+(трекається у [`storage-roadmap.md`](../storage-roadmap.md) — окремі сесії).
+Canonical mobile debt owner: [`docs/tech-debt/mobile.md`](../../tech-debt/mobile.md). Keep this file as source PR-card context only.
 
 ## Cross-refs
 
-- **Прожарка:** [`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../audits/2026-05-13-mobile-reliability-ux-roast.md) — джерело TL;DR-болів, P1/P2/P3 розбивка, Outstanding-таблиця.
-- **Living burndown:** [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md) — Summary per-category, large-file inventory (>600 LOC), Roadmap-таблиця M1–M9 (статус оновлюється у момент merge кожного PR із цього плану).
-- **Mobile-strategy ADR:** [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel; жоден стек не deprecate-иться до окремого ADR на feature parity (≥18/22 у `docs/architecture/platforms.md`).
-- **Dual-track initiative:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) — sunset-дати **не active commitments** на час 0010 revenue launch; quarterly recount shell-tax трекається тут.
-- **Surface AGENTS:** [`apps/mobile/AGENTS.md`](../../apps/mobile/AGENTS.md) — NativeWind, MMKV-only, Expo Router gotchas; flaky-tests T7 verification (`mobile-flaky-verify.yml`).
-- **Sprint context:** [`docs/planning/sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) (§1.1 тех-борг, T7 verification, lighthouse budget).
+- **Прожарка:** [`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../../audits/2026-05-13-mobile-reliability-ux-roast.md) — джерело TL;DR-болів, P1/P2/P3 розбивка, Outstanding-таблиця.
+- **Living burndown:** [`docs/tech-debt/mobile.md`](../../tech-debt/mobile.md) — Summary per-category, large-file inventory (>600 LOC), Roadmap-таблиця M1–M9 (статус оновлюється у момент merge кожного PR із цього плану).
+- **Mobile-strategy ADR:** [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel; жоден стек не deprecate-иться до окремого ADR на feature parity (≥18/22 у `docs/architecture/platforms.md`).
+- **Dual-track initiative:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md) — sunset-дати **не active commitments** на час 0010 revenue launch; quarterly recount shell-tax трекається тут.
+- **Surface AGENTS:** [`apps/mobile/AGENTS.md`](../../../apps/mobile/AGENTS.md) — NativeWind, MMKV-only, Expo Router gotchas; flaky-tests T7 verification (`mobile-flaky-verify.yml`).
+- **Sprint context:** [`docs/planning/sprint-roadmap-q2q3-2026.md`](../sprint-roadmap-q2q3-2026.md) (§1.1 тех-борг, T7 verification, lighthouse budget).
 
 ## Глобальний sequencing
 
@@ -233,7 +233,7 @@ PR-10 (S,   Shell-tax recount)       (parallel; updates 0002 trend)
 
 ## Out-of-scope (зафіксовано, не у цьому плані)
 
-- **SQLite Stage 8/9 migrations** — okремий трек у [`docs/planning/storage-roadmap.md`](./storage-roadmap.md) (Stage 8/9 dual-write quartet, MMKV tombstones, residual-import).
+- **SQLite Stage 8/9 migrations** — okремий трек у [`docs/planning/storage-roadmap.md`](../storage-roadmap.md) (Stage 8/9 dual-write quartet, MMKV tombstones, residual-import).
 - **M9 — TS 6 bump для mobile + console** — `BLOCKED on Expo SDK 53` (tech-debt M9). Не actionable до SDK 53 release; track only.
 - **AGENTS.md sub-tree refresh** — `apps/mobile/AGENTS.md` Last validated 2026-05-13, next review 2026-08-11; recount-нуто разом з прожаркою. Окремого PR не потребує.
 - **`docs/architecture/platforms.md` feature-parity recount** — частково покривається PR-10, але full re-audit (≥18/22 ✅) — окремий ADR-trigger PR коли cell-count перейде поріг.
@@ -253,7 +253,7 @@ PR-10 (S,   Shell-tax recount)       (parallel; updates 0002 trend)
 
 ## Closeout criteria для всього плану
 
-- Outstanding-таблиця у [`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../audits/2026-05-13-mobile-reliability-ux-roast.md) — всі рядки M3, M4, M7, P2.1, P2.2a-d, P2.4, P2.5 → `done` зі посиланням на відповідний PR (M9 лишається `BLOCKED on Expo SDK 53`).
+- Outstanding-таблиця у [`docs/audits/2026-05-13-mobile-reliability-ux-roast.md`](../../audits/2026-05-13-mobile-reliability-ux-roast.md) — всі рядки M3, M4, M7, P2.1, P2.2a-d, P2.4, P2.5 → `done` зі посиланням на відповідний PR (M9 лишається `BLOCKED on Expo SDK 53`).
 - `docs/tech-debt/mobile.md` Roadmap-таблиця — M3, M4, M7 → done; large-file inventory: 4 → 0 файлів >600 LOC.
 - `pnpm lint` зелений (Hard Rule #18 `max-lines: 600`, `sergeant-design/no-strict-bypass` без stale-entry для finyk/fizruk).
 - `pnpm --filter @sergeant/mobile test` зелений; 20-run T7 flaky-verify baseline тримається 20/20.

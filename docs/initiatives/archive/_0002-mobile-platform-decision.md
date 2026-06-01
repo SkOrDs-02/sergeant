@@ -39,7 +39,7 @@
 
 - Сам RN-порт; він уже tracks у [`docs/mobile/react-native-migration.md`](../../mobile/react-native-migration.md).
 - Декомпозиція `apps/mobile/` файлів — ініціатива [0001](../archive/_0001-module-decomposition.md) бере тільки web.
-- Mobile e2e на CI — окрема ініціатива (буде додана), see [`docs/planning/mobile-e2e-testing.md`](../../planning/mobile-e2e-testing.md).
+- Mobile e2e на CI — окрема ініціатива (буде додана), see [`docs/planning/mobile-e2e-testing.md`](../../planning/archive/mobile-e2e-testing.md).
 
 ## План змін
 
@@ -120,7 +120,7 @@
 - [`docs/architecture/platforms.md`](../../architecture/platforms.md) — feature-parity матриця
 - [`docs/mobile/react-native-migration.md`](../../mobile/react-native-migration.md) — RN port roadmap
 - [`docs/mobile/shell.md`](../../mobile/shell.md) — operator-ref для shell
-- [`docs/planning/mobile-e2e-testing.md`](../../planning/mobile-e2e-testing.md) — e2e roadmap
+- [`docs/planning/mobile-e2e-testing.md`](../../planning/archive/mobile-e2e-testing.md) — e2e roadmap
 
 ## Outcome
 
@@ -183,7 +183,7 @@ top_files:     README.md (16), package.json (13), AndroidManifest.xml (6), …
 
 ### Shell-tax trend (quarterly recount)
 
-PR-10 з [`docs/planning/pr-plan-mobile-reliability-2026-05.md`](../../planning/pr-plan-mobile-reliability-2026-05.md)
+PR-10 з [`docs/planning/pr-plan-mobile-reliability-2026-05.md`](../../planning/archive/pr-plan-mobile-reliability-2026-05.md)
 додав `--trend` flag — друкує 30/60/90-day snapshot за один виклик, щоб
 quarterly review мав один table-source-of-truth замість трьох ручних
 `--since`. Cadence: запускати на 1-му тижні кожного кварталу

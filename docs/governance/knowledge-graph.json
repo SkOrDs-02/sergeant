@@ -1327,7 +1327,7 @@
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
       "path": "docs/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "In progress — Phases 1+2+3+4+5 done; Phase 5 route-loaders closed 2026-05-23. Pending: manualChunks cleanup + bundle-gate per-route tuning.",
+      "status": "In progress — Phases 1–4 done; Phase 5 blocked on a React Router 7 location-context bug for its last items — per-route lazy-chunk entries + native RR7 router-level `loader`s need a shared `RootLayout` + `<Outlet />` (див. `router.tsx`). Shipped 2026-05-24: per-route bundle budgets, manualChunks audit («no changes»), ESLint `no-hash-router-in-modules` at `error`, prefetch route-loaders. manualChunks cleanup + bundle-gate per-route tuning — закрито. Also pending (unblocked): Playwright e2e for hash-compat.",
       "tier": "core",
       "meta": {
         "number": 6,

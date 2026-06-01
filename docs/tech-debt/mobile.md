@@ -3,8 +3,8 @@
 > **Last validated:** 2026-05-15 by Claude Opus 4.7 (external session — PR-02 mobile reliability plan: M4 finyk × 2 closed, allowlist drops `CategoryChartSection.tsx` + `TransactionsPage.tsx`). **Next review:** 2026-08-13.
 > **Status:** Active
 
-> **Оновлено 2026-06-01.** Виправлено 3 pre-existing strict-typecheck порушення (TS18046/TS2739/TS2322/TS2345), які блокували `pnpm check` на `origin/main`: (1) `Dashboard.tsx` — `meals.reduce` отримав явний type argument `reduce<{totalKcal:number;...}>` (overload inference видавав `acc: PlanMeal`); (2) `useCustomExercises.ts` — `CustomExerciseDraft` перетворено з `Omit<CustomExercise,"id"> & {id?:string}` на explicit interface з конкретними типами полів (index-signature `[extra:string]:unknown` більше не вшир`авав `nameUk`до`unknown`); (3) `WorkoutJournalSection.tsx`—`WorkoutLike.items`звужено з`ReadonlyArray<unknown>`до`ReadonlyArray<WorkoutItemLike|null|undefined>`з імпортом`WorkoutItemLike`з`@sergeant/fizruk-domain/domain`. `pnpm --filter @sergeant/mobile typecheck` → 0 помилок (було 7). Жоден caller не потребував коригування.
-> **Оновлено 2026-06-01.** Заблоковані таски тепер несуть токен `🚫 Blocked-reason: <category>` у Roadmap-таблиці (M7 — `external-infra`, M9 — `dep-blocked`), щоб не плуталися з actionable. Легенда категорій + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
+> **Оновлено 2026-06-01.** Виправлено 3 pre-existing strict-typecheck порушення (TS18046/TS2739/TS2322/TS2345), які блокували `pnpm check` на `origin/main`: (1) `Dashboard.tsx` — `meals.reduce` отримав явний type argument `reduce<{totalKcal:number;...}>` (overload inference видавав `acc: PlanMeal`); (2) `useCustomExercises.ts` — `CustomExerciseDraft` перетворено з `Omit<CustomExercise,"id"> & {id?:string}` на explicit interface з конкретними типами полів (index-signature `[extra:string]:unknown` більше не вшир`авав `nameUk`до`unknown`); (3) `WorkoutJournalSection.tsx`—`WorkoutLike.items`звужено з`ReadonlyArray<unknown>`до`ReadonlyArray<WorkoutItemLike|null|undefined>`з імпортом`WorkoutItemLike`з`@sergeant/fizruk-domain/domain`. `pnpm --filter @sergeant/mobile typecheck`→ 0 помилок (було 7). Жоден caller не потребував коригування.
+**Оновлено 2026-06-01.** Заблоковані таски тепер несуть токен`🚫 Blocked-reason: <category>`у Roadmap-таблиці (M7 —`external-infra`, M9 — `dep-blocked`), щоб не плуталися з actionable. Легенда категорій + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
 
 > **Оновлено 2026-05-15 (code-debt audit annex).** Monorepo-wide code-debt scan (Claude Opus 4.7 external session). **One new item not in the §6 TODO/FIXME table:** `apps/mobile/src/core/hub/useChatSend.ts:144` — `Mobile hub-context — TODO Phase 8` (NEW, not previously tracked alongside `NotificationsSection.tsx:239` and `RoutineSection.tsx:28` which are already enumerated). Phase 8 unlock залежить від hub-context wiring у mobile; рекомендована категорія — Phase 8 mobile-migration row у §11 Roadmap.
 
@@ -95,7 +95,7 @@ allowlist у [`eslint.config.js`](../../eslint.config.js); migration файла
 = видалення рядка з allowlist.
 
 **Update 2026-05-15:** M4 (finyk × 2) закрито у PR-02 з
-[`pr-plan-mobile-reliability-2026-05.md`](../planning/pr-plan-mobile-reliability-2026-05.md).
+[`pr-plan-mobile-reliability-2026-05.md`](../planning/archive/pr-plan-mobile-reliability-2026-05.md).
 `CategoryChartSection.tsx` тримає палітру як `readonly string[]` напряму з
 `chartPaletteList` (без cast), `TransactionsPage.tsx` пропускає persisted
 record через `upgradeCategory()` перед `addManualExpense()`. Allowlist

@@ -1,7 +1,7 @@
 # Mobile E2E тестування — Detox vs Maestro
 
-> **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Closed (superseded) — Detox adopted instead of Maestro recommendation; documented here for historical decision-record purposes.
+> **Last validated:** 2026-05-14 by Devin. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only) — superseded; Detox adopted over Maestro; kept as historical decision-record.
 > **Owner:** @Skords-01
 
 ## Outcome (2026-05 — superseded)
