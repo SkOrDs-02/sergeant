@@ -78,6 +78,8 @@ There is no zod / typia / hand-written guard between the JSON and `executeAction
 
 **Recommendation.** Define a discriminated union `ToolCallEnvelope` (one variant per tool name) with a zod / typia schema; parse `data.tool_calls` through it before `executeActions`. On parse failure, surface a "не вдалося виконати дію" toast and fall back to plain-text rendering. Mirror the same schema on the server.
 
+> **Closure note (2026-06-01, PR-4 of "9 decisions"):** Resolved (client-side gate). Новий `apps/web/src/core/hub/chat/toolCallSchema.ts` експортує zod-`ToolCallEnvelopeSchema` (`{id:string, name:string, input:object}`) і `parseToolCalls(value)`. `useChatSend` тепер парсить `data.tool_calls` через цей schema **перед** `executeActions`. На fail — `logger.warn` з first-5 issue-paths, `toast.error("Не вдалося виконати дію")`, fallback на plain-text rendering з `data.text`, **жоден handler не виконується**. Це покриває критичний вектор F3 (envelope-firewall). Per-tool strict variants для mutator-ів (`create_transaction`, `mark_habit_done`, `log_meal`, `create_habit`) + server-mirror — окремий PR (доменний union у `chatActions/types.*.ts` має ~50 варіантів і потребує refactor під zod).
+
 ---
 
 ### F4 — `/chat?q=…&autoSend=1` deep link auto-sends arbitrary text to the AI on render [severity: high] [perspective: security]
