@@ -4,6 +4,8 @@
 > **Оновлено 2026-06-01.** PR E закрито: `app_build_info` gauge вже був у `obs/metrics.ts` (version/commit/release/env/node_version labels, value=1 при старті), `.env.example` оновлено з документацією `BANK_FETCH_TIMEOUT_MS`, `BANK_CACHE_TTL_MS`, `AI_DAILY_TOOL_LIMIT`, `AI_TOOL_COST`, `RAILWAY_GIT_COMMIT_SHA`, `GIT_COMMIT`, `SENTRY_RELEASE`, `METRICS_TOKEN`. PR F закрито: додано тести `coach.test.ts` (mergeMemory LWW-upsert / сортування / 12-запис retention) та `food-search.test.ts` (контракт `FoodSearchSuccessSchema`, порожній upstream, prefix-match «молок»→«milk», точний переклад «яйце»→«egg»); snapshot `registerRoutes.test.ts.snap` синхронізовано з 3 новими debug-window ендпоінтами. Тест-сюїт: 2839 passed, 7 pre-existing billing failures, typecheck чистий.
 > **Status:** Active
 
+> **Оновлено 2026-06-01.** Не-actionable секції тепер несуть токен `🚫 Blocked-reason: <category>`: «Operational visibility — Railway env-var changes» (`owner-decision`) та «Push credentials» (`external-infra`). Легенда + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
+
 > **Оновлено 2026-05-15.** Code-debt audit annex (Claude Opus 4.7 external session, monorepo-wide scan). **Closed in this PR (`refactor(server): consolidate sleep() helper into lib/timing`):** consolidated 6 duplicated `sleep(ms)` helpers (`db.ts`, `lib/anthropic.ts`, `lib/bankProxy.ts`, `lib/webpushSend.ts`, `modules/ai-memory/embeddings.ts`, `push/send.ts`) into the existing `lib/timing.ts:sleep` export; replaced 7 hardcoded AI-call timeout literals with named constants — new `modules/nutrition/timeouts.ts:NUTRITION_AI_TIMEOUTS_MS` (5 sites: day-plan/week-plan/recommend-recipes/shopping-list/food-search) and `modules/chat/chat.ts:CHAT_TOOL_TIMEOUT_MS` (2 sites). **New items added to backlog (low signal-to-noise, not blockers):** (a) `apps/server/src/auth/encryptingAdapter.ts:95` — `TODO(token-reencrypt)` lazy rollover relies on user-triggered OAuth (no background re-encryption path; blocks key-rotation playbook); (b) `apps/server/src/modules/sync/syncV2.ts:243` + `syncV2Stream.ts:42` — `TODO(roadmap-pr-050)` `sync_op_log` партиціювання + архівація (tied to roadmap PR-050); (c) `apps/server/src/auth/sessionProtection.ts` — 2 non-test `as unknown as X` casts (document, не блокує).
 
 > Scope: **`apps/server/src/`** (Node.js 20 ESM, Express 4, PostgreSQL, Better Auth, Anthropic, Monobank/Privat, web-push, Pino, Prometheus, Sentry). У тексті нижче історично згадувався tree `server/*.js` — той самий продукт після переносу в monorepo; нові PR мають посилатися лише на `apps/server/src/**/*.ts`.
@@ -428,6 +430,8 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ## Operational visibility — Railway env-var changes
 
+> 🚫 **Blocked-reason: owner-decision** — backlog, не брати зараз. Тригер → ініціатива власника `@Skords-01` після Phase 3 ініціативи 0011 (≥ 2026-06-02), або новий env-var incident / плановий SOC2-audit. Деталі owner/trigger — нижче у секції.
+
 > **Контекст.** Action item §A5 з [`docs/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md) — закриття A5 показало, що PR 1.3 staging-gate ([#1697](https://github.com/Skords-01/Sergeant/pull/1697)) ловить deploy-config drift у репо (`vercel.json`, `fly.toml`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у Railway dashboard. Це окремий клас ризику; його повний fix — окрема ініціатива; поки тримаємо тут у backlog.
 
 **Gap-у поточного tier-у Railway** (community/team), підтверджені під час A2-перевірки 2026-05-06:
@@ -507,6 +511,8 @@ Webhook-based server-side integration added in PR2. Key components:
 ---
 
 ## Push credentials
+
+> 🚫 **Blocked-reason: external-infra** — код-pipeline готовий; це провізія секретів поза репо (Apple Developer APNs `.p8` key + Google FCM service-account). Розблокування — створити/завантажити credentials і виставити env-vars у Railway. Чек-ліст нижче.
 
 Native push-send pipeline (`apps/server/src/push/send.ts::sendToUser` →
 APNs через `@parse/node-apn`, FCM HTTP v1 через `google-auth-library`)

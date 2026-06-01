@@ -7,6 +7,8 @@
 
 Аналіз кодової бази `apps/web/src` (790 source файлів, ~123k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-05-13 re-audit).
 
+> **Оновлено 2026-06-01.** §2.5 (Hub tab perf) позначено токеном `🚫 Blocked-reason: data-gated` — чекає ≥ 7 днів RUM-даних з прода, не брати зараз. Легенда категорій + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
+
 > **Оновлено 2026-05-20.** Додано §2.5 «Hub Settings & Reports tab cold-mount cost» як новий critical item — user-facing 10+ s freeze при tab-switch, з відкритою [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md). Root cause не у chunk download (вже 31 ms cache-hit), а в синхронному mount-і 14 секцій у одному render burst. План — per-section `React.lazy()` + `useInView` gate на cross-module queries + Web Worker для Reports aggregation (stretch).
 
 > **Оновлено 2026-05-22 (2nd pass).** ~~Web UI timeout magic-numbers~~ **Closed** — 6 inlined timeouts in `core/ErrorBoundary.tsx`, `core/app/useIosInstallBanner.ts`, `core/auth/ResetPasswordPage.tsx`, `modules/finyk/pages/budgets/Budgets.tsx`, `modules/nutrition/hooks/usePantryBarcodeScan.ts`, `shared/components/ui/SwipeToAction.tsx` migrated to named constants in new `apps/web/src/shared/lib/ui/timeouts.ts`. Three categories documented (transient-confirm / delayed-show / status-clear). Adding a new timeout call-site → pick the constant that matches UX intent, don't inline a fresh magic-number.
@@ -169,6 +171,8 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 ---
 
 ### 2.5. Hub Settings & Reports tab cold-mount cost — 10+ s tab freeze
+
+> 🚫 **Blocked-reason: data-gated** — Sprint 1/2 зашиплено; наступний крок (Sprint 3 stretch — Web Worker для aggregate) свідомо чекає ≥ 7 днів RUM-даних з прода (`hub_tab_switch_perf`), щоб рішення спиралося на реальні P50/P95, а не синтетику. Не брати, поки немає даних. Деталі — в [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md).
 
 > **Status (2026-05-29): substantially mitigated — tracked by [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md).** Sprint 1 (per-section `React.lazy` + Suspense у Settings; viewport-gated heavy queries у `FinykSection`, [#3102](https://github.com/Skords-01/Sergeant/pull/3102)) і Sprint 2 (HubReports → per-card lazy, `HubReports.tsx` 608 → **261 LOC**) зашиплено. Final RUM-перевірка цілей P50/P95 — у 0017. Цифри LOC нижче оновлено до фактичних.
 
