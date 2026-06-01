@@ -24,7 +24,7 @@ interface WorkoutsProps {
    * «Внести проведене» CTAs. This used to live on a separate «План»
    * tab that the user asked us to dissolve.
    */
-  onOpenRoutine?: () => void;
+  onOpenRoutine?: (() => void) | undefined;
   /**
    * Deep-link to the Fizruk «Програми» page. Wired by
    * `FizrukRouter.tsx` from the parent `onNavigate` so the Workouts
@@ -32,7 +32,7 @@ interface WorkoutsProps {
    * built-in program catalogue without forcing them back to the
    * dashboard hero just to find it.
    */
-  onOpenPrograms?: () => void;
+  onOpenPrograms?: (() => void) | undefined;
 }
 
 export function Workouts({

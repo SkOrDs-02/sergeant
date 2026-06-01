@@ -11,11 +11,13 @@
  * the only place that knows about both sides.
  *
  * Notes:
- *   - Errors thrown inside an observer are swallowed (logged via `console`)
+ *   - Errors thrown inside an observer are swallowed (logged via `logger`)
  *     so one buggy subscriber cannot break the API flow.
  *   - `publish` is called from inside `onResponseHeaders`, which already
  *     runs on every response — keep it cheap.
  */
+
+import { logger } from "@shared/lib";
 
 export type ServerBuildIdObserver = (buildId: string) => void;
 
@@ -48,9 +50,7 @@ export function publishServerBuildId(raw: string | null | undefined): void {
       observer(trimmed);
     } catch (err) {
       // Swallow — one buggy observer must not affect others or the request.
-      if (typeof console !== "undefined" && console.warn) {
-        console.warn("[serverBuildIdBus] observer threw", err);
-      }
+      logger.warn("[serverBuildIdBus] observer threw", err);
     }
   }
 }

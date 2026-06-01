@@ -76,27 +76,27 @@ export interface CelebrationModalProps {
   /** Заголовок */
   title: string;
   /** Опис/підзаголовок */
-  description?: string;
+  description?: string | undefined;
   /** Module theme for colors */
-  theme?: ModuleTheme;
+  theme?: ModuleTheme | undefined;
   /** Кількість/значення для відображення (streak days, level, amount) */
-  value?: number | string;
+  value?: number | string | undefined;
   /** Одиниця виміру (днів, рівень, грн) */
-  unit?: string;
+  unit?: string | undefined;
   /** Іконка/емодзі для відображення */
-  icon?: ReactNode;
+  icon?: ReactNode | undefined;
   /** Показати прогрес бар (для levelUp) */
-  progress?: { current: number; max: number };
+  progress?: { current: number; max: number } | undefined;
   /** Нагороди/бонуси */
-  rewards?: Array<{ icon: ReactNode; label: string }>;
+  rewards?: Array<{ icon: ReactNode; label: string }> | undefined;
   /** Текст кнопки */
-  actionLabel?: string;
+  actionLabel?: string | undefined;
   /** Callback кнопки */
-  onAction?: () => void;
+  onAction?: (() => void) | undefined;
   /** Автоматичне закриття через N мілісекунд */
-  autoCloseMs?: number;
+  autoCloseMs?: number | undefined;
   /** Інтенсивність confetti (low, medium, high) */
-  confettiIntensity?: "low" | "medium" | "high";
+  confettiIntensity?: "low" | "medium" | "high" | undefined;
 }
 
 /**

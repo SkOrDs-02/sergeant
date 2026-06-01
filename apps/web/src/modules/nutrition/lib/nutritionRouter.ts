@@ -36,8 +36,8 @@ const VALID_MENU_SUBS: readonly string[] = ["plan", "recipes"];
 export interface ParsedNutritionRoute {
   page: NutritionPage;
   /** Sub-tab segment parsed from `<page>/<sub>`. `undefined` when absent. */
-  subTab?: string;
-  redirectFrom?: string;
+  subTab?: string | undefined;
+  redirectFrom?: string | undefined;
 }
 
 /**

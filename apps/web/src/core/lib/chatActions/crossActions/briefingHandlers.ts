@@ -16,7 +16,7 @@ export function morningBriefing(): string {
   const routineState = ls<HabitState | null>("hub_routine_v1", null);
   if (routineState?.habits) {
     const activeHabits = routineState.habits.filter(
-      (h) => !(h as Record<string, unknown>).archived,
+      (h) => !(h as Record<string, unknown>)["archived"],
     );
     const completions = routineState.completions || {};
     const done = activeHabits.filter(
@@ -80,7 +80,7 @@ export function weeklySummary(): string {
   const routineState = ls<HabitState | null>("hub_routine_v1", null);
   if (routineState?.habits) {
     const activeHabits = routineState.habits.filter(
-      (h) => !(h as Record<string, unknown>).archived,
+      (h) => !(h as Record<string, unknown>)["archived"],
     );
     const completions = routineState.completions || {};
     let totalDone = 0;

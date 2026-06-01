@@ -27,7 +27,7 @@ const SEVERITY_ACCENT: Record<RecSeverity, string> = {
 interface RecRowProps {
   rec: Recommendation;
   onAction: (module: string, hash?: string) => void;
-  onDismiss?: (id: string) => void;
+  onDismiss?: ((id: string) => void) | undefined;
 }
 
 function RecRow({ rec, onAction, onDismiss }: RecRowProps) {

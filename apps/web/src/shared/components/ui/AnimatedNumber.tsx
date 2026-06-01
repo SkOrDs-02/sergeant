@@ -4,23 +4,23 @@ import { cn } from "../../lib/ui/cn";
 interface AnimatedNumberProps {
   value: number;
   /** Number of decimal places. Default 0. */
-  decimals?: number;
+  decimals?: number | undefined;
   /** Animation duration in ms. Default 600. */
-  duration?: number;
+  duration?: number | undefined;
   /** Locale for formatting. Default "uk-UA". */
-  locale?: string;
+  locale?: string | undefined;
   /** Intl.NumberFormat options for currency, units, etc. */
-  formatOptions?: Intl.NumberFormatOptions;
+  formatOptions?: Intl.NumberFormatOptions | undefined;
   /** Custom formatter function (overrides locale/formatOptions). */
-  formatter?: (value: number) => string;
+  formatter?: ((value: number) => string) | undefined;
   /** Additional CSS classes. */
-  className?: string;
+  className?: string | undefined;
   /** Prefix (e.g., currency symbol). */
-  prefix?: string;
+  prefix?: string | undefined;
   /** Suffix (e.g., unit). */
-  suffix?: string;
+  suffix?: string | undefined;
   /** Disable animation and show value immediately. */
-  immediate?: boolean;
+  immediate?: boolean | undefined;
 }
 
 /**

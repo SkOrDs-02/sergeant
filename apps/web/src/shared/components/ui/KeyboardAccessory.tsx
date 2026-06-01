@@ -80,7 +80,7 @@ export function KeyboardAccessory({
   variant = "default",
   className,
 }: KeyboardAccessoryProps) {
-  const style = variantStyles[variant] ?? variantStyles.default;
+  const style = variantStyles[variant] ?? variantStyles["default"];
 
   return (
     <div

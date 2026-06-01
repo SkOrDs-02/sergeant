@@ -43,17 +43,19 @@ export interface UseApiFormOptions<TValues extends FieldValues, TResponse> {
    */
   onSubmit: (values: TValues) => Promise<TResponse>;
   /** Викликається тільки при успішному `onSubmit`. */
-  onSuccess?: (data: TResponse, values: TValues) => void;
+  onSuccess?: ((data: TResponse, values: TValues) => void) | undefined;
   /** Якщо `true`, форма ресетне значення після успішного submit. */
-  resetOnSuccess?: boolean;
+  resetOnSuccess?: boolean | undefined;
   /** Додаткові опції для `useForm` (mode, criteriaMode, тощо). */
-  formOptions?: Omit<UseFormProps<TValues>, "resolver" | "defaultValues">;
+  formOptions?:
+    | Omit<UseFormProps<TValues>, "resolver" | "defaultValues">
+    | undefined;
 }
 
 export interface UseApiFormReturn<
   TValues extends FieldValues,
   TResponse = unknown,
-> extends UseFormReturn<TValues> {
+> extends UseFormReturn<TValues, unknown, TValues> {
   /** Pre-bound `handleSubmit(onSubmit)` — для `<form onSubmit>` з шаблону. */
   submit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   /**
@@ -190,7 +192,7 @@ export function useApiForm<TValues extends FieldValues, TResponse = unknown>({
   const form = useForm<TValues>({
     ...formOptions,
     resolver: zodResolver(schema),
-    defaultValues,
+    ...(defaultValues !== undefined ? { defaultValues } : {}),
   });
   const { handleSubmit, setError, reset } = form;
 
@@ -222,7 +224,8 @@ export function useApiForm<TValues extends FieldValues, TResponse = unknown>({
   );
 
   const submit = useCallback(
-    (e?: React.BaseSyntheticEvent) => handleSubmit(handle)(e),
+    (e?: React.BaseSyntheticEvent) =>
+      handleSubmit(handle as Parameters<typeof handleSubmit>[0])(e),
     [handleSubmit, handle],
   );
 

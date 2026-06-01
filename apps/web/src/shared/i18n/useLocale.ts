@@ -6,6 +6,7 @@ import {
   parseLocale,
   getMessages,
 } from "./index";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 /**
  * `useLocale` — single source of truth for UI language selection.
@@ -38,7 +39,7 @@ function readInitialLocale(): Locale {
     const params = new URLSearchParams(window.location.search);
     const urlLang = params.get("lang");
     if (urlLang) return parseLocale(urlLang);
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    const stored = safeReadStringLS(LOCALE_STORAGE_KEY);
     if (stored) return parseLocale(stored);
   } catch {
     // localStorage може кидати у Safari private-mode або quota errors;
@@ -79,11 +80,7 @@ export function useLocale(): UseLocaleResult {
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
-    } catch {
-      /* private-mode / quota — ignore */
-    }
+    safeWriteLS(LOCALE_STORAGE_KEY, next);
     // Clean `?lang=` from URL if present — without it, subsequent loads
     // resolve from localStorage cleanly. `history.replaceState` keeps the
     // user on the same URL без додаткового pushState navigation.

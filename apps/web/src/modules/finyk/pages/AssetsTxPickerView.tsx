@@ -27,11 +27,11 @@ import { cn } from "@shared/lib/ui/cn";
 type Subscription = {
   id: string;
   name: string;
-  emoji?: string;
-  keyword?: string;
-  billingDay?: number;
-  currency?: string;
-  linkedTxId?: string;
+  emoji?: string | undefined;
+  keyword?: string | undefined;
+  billingDay?: number | undefined;
+  currency?: string | undefined;
+  linkedTxId?: string | undefined;
   [extra: string]: unknown;
 };
 

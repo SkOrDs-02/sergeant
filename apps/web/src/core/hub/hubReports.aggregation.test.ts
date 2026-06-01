@@ -464,8 +464,8 @@ describe("aggregateKcal", () => {
 
   it("meals не масив — даний день ігнорується", () => {
     const log = {
-      "2025-04-07": { meals: "broken" as unknown as undefined },
-      "2025-04-08": { meals: [{ macros: { kcal: 300 } }] },
+      "2025-04-07": { meals: "broken" as unknown as [] },
+      "2025-04-08": { meals: [{ macros: { kcal: 300 } }] as unknown as [] },
     };
     expect(aggregateKcal(log, dates)).toEqual({
       total: 300,

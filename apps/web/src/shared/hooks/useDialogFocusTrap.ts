@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 export interface DialogFocusTrapOptions {
-  onEscape?: () => void;
+  onEscape?: (() => void) | undefined;
 }
 
 /**

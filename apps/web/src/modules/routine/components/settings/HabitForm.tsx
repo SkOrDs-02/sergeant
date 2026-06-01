@@ -21,8 +21,8 @@ import { WeekdayPicker } from "./WeekdayPicker";
 import type { HabitDraft, RoutineState } from "../../lib/types";
 
 export interface HabitFormErrors {
-  name?: string;
-  weekdays?: string;
+  name?: string | undefined;
+  weekdays?: string | undefined;
 }
 
 export interface HabitFormProps {

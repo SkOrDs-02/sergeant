@@ -64,7 +64,9 @@ export interface RoutineCalendarActions {
   onToggleHabit: (habitId: string, dateKey: string) => void;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
   setMainTab: Dispatch<SetStateAction<RoutineMainTab>>;
-  onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
+  onOpenModule?:
+    | ((moduleId: string, opts?: { hash?: string } | undefined) => void)
+    | undefined;
   onBulkMarkDay: () => void;
   onOpenQuickAddHabit: () => void;
 }

@@ -24,7 +24,11 @@ type PostHogLib = typeof import("posthog-js").default;
 
 type QueuedCall =
   | { kind: "capture"; name: string; payload: Record<string, unknown> }
-  | { kind: "identify"; userId: string; traits?: Record<string, unknown> }
+  | {
+      kind: "identify";
+      userId: string;
+      traits?: Record<string, unknown> | undefined;
+    }
   | { kind: "reset" };
 
 let posthogModule: PostHogLib | null = null;
@@ -66,13 +70,14 @@ function enqueue(call: QueuedCall) {
 export function initPostHog(): Promise<void> {
   if (initPromise) return initPromise;
 
-  const key = import.meta.env.VITE_POSTHOG_KEY;
+  const key = import.meta.env["VITE_POSTHOG_KEY"];
   if (!key) {
     initPromise = Promise.resolve();
     return initPromise;
   }
 
-  const host = import.meta.env.VITE_POSTHOG_HOST || "https://eu.i.posthog.com";
+  const host =
+    import.meta.env["VITE_POSTHOG_HOST"] || "https://eu.i.posthog.com";
 
   initPromise = (async () => {
     try {
@@ -139,7 +144,7 @@ export function capturePostHogEvent(
   // динамічний `import()` впав — `initFailed === true`. У цих випадках
   // не буферизуємо: flushQueue ніхто вже не викличе, queue росла б
   // безцільно (навіть за умови bounded-shift у enqueue).
-  if (!import.meta.env.VITE_POSTHOG_KEY) return;
+  if (!import.meta.env["VITE_POSTHOG_KEY"]) return;
   if (initFailed) return;
   enqueue({ kind: "capture", name, payload });
 }
@@ -161,7 +166,7 @@ export function identifyPostHogUser(
     }
     return;
   }
-  if (!import.meta.env.VITE_POSTHOG_KEY) return;
+  if (!import.meta.env["VITE_POSTHOG_KEY"]) return;
   if (initFailed) return;
   enqueue({ kind: "identify", userId, traits });
 }
@@ -179,7 +184,7 @@ export function resetPostHog(): void {
     }
     return;
   }
-  if (!import.meta.env.VITE_POSTHOG_KEY) return;
+  if (!import.meta.env["VITE_POSTHOG_KEY"]) return;
   if (initFailed) return;
   enqueue({ kind: "reset" });
 }

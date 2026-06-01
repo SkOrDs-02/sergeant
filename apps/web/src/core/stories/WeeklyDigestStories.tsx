@@ -26,8 +26,8 @@ import { messages } from "@shared/i18n/uk";
 interface Props {
   digest: Record<string, unknown> | null;
   weekKey: string;
-  weekRange?: string;
-  onClose?: () => void;
+  weekRange?: string | undefined;
+  onClose?: (() => void) | undefined;
 }
 
 export function WeeklyDigestStories({

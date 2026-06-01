@@ -47,7 +47,7 @@ const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
 
 export interface FizrukRouterProps {
   page: FizrukPage;
-  exerciseId?: string;
+  exerciseId?: string | undefined;
   activeProgramId: string | null;
   activeProgram: TrainingProgramDef | null;
   activateProgram: (id: string) => void;
@@ -65,7 +65,9 @@ export interface FizrukRouterProps {
     session: ProgramSessionDef,
     program: TrainingProgramDef,
   ) => void;
-  onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
+  onOpenModule?:
+    | ((moduleId: string, opts?: { hash?: string }) => void)
+    | undefined;
 }
 
 function renderPage(props: FizrukRouterProps) {

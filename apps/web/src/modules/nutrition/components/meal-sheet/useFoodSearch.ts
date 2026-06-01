@@ -24,7 +24,9 @@ async function fetchOpenFoodFacts(
   query: string,
   signal?: AbortSignal,
 ): Promise<FoodSearchProduct[]> {
-  const data = await foodSearchApi.search(query, { signal });
+  const data = await foodSearchApi.search(query, {
+    ...(signal !== undefined ? { signal } : {}),
+  });
   // `FoodSearchResponse` is a discriminated union `{ products } | { error }`;
   // narrow via property presence before indexing.
   return "products" in data && Array.isArray(data.products)

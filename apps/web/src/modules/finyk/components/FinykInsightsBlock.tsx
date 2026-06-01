@@ -19,7 +19,11 @@ import { useCoffeeLimitInsight } from "../hooks/useCoffeeLimitInsight";
 import { useBudgetOverrunInsight } from "../hooks/useBudgetOverrunInsight";
 import { useRecurringDetectedInsight } from "../hooks/useRecurringDetectedInsight";
 import type { Insight } from "@shared/lib/insights/types";
-import type { Transaction, Budget, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Transaction,
+  Budget,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
 
 /** Max number of insight cards shown simultaneously. */
 const MAX_VISIBLE = 2;
@@ -27,12 +31,21 @@ const MAX_VISIBLE = 2;
 interface FinykInsightsBlockProps {
   transactions: readonly Transaction[];
   budgets: readonly Budget[];
-  subscriptions?: readonly { id: string; keyword?: string; linkedTxId?: string | null; currency?: string }[];
-  dismissedRecurring?: readonly string[];
+  subscriptions?:
+    | readonly {
+        id: string;
+        keyword?: string | undefined;
+        linkedTxId?: string | null | undefined;
+        currency?: string | undefined;
+      }[]
+    | undefined;
+  dismissedRecurring?: readonly string[] | undefined;
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
-  customCategories?: readonly { id: string; label?: string }[];
-  excludedTxIds?: ReadonlySet<string>;
+  customCategories?:
+    | readonly { id: string; label?: string | undefined }[]
+    | undefined;
+  excludedTxIds?: ReadonlySet<string> | undefined;
 }
 
 export function FinykInsightsBlock({

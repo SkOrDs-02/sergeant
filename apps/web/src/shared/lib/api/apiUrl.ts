@@ -19,8 +19,8 @@ const DEFAULT_API_VERSION = "v1";
 
 function getApiVersion(): string {
   const raw =
-    typeof import.meta !== "undefined" && import.meta.env?.VITE_API_VERSION
-      ? String(import.meta.env.VITE_API_VERSION).trim()
+    typeof import.meta !== "undefined" && import.meta.env?.["VITE_API_VERSION"]
+      ? String(import.meta.env["VITE_API_VERSION"]).trim()
       : "";
   if (!raw) return DEFAULT_API_VERSION;
   if (raw === "none") return "";
@@ -66,8 +66,8 @@ function applyVersion(path: string): string {
 
 export function apiUrl(path: string): string {
   const raw =
-    typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
-      ? String(import.meta.env.VITE_API_BASE_URL).trim()
+    typeof import.meta !== "undefined" && import.meta.env?.["VITE_API_BASE_URL"]
+      ? String(import.meta.env["VITE_API_BASE_URL"]).trim()
       : "";
   const base = raw.replace(/\/$/, "");
   const rawPath = path.startsWith("/") ? path : `/${path}`;

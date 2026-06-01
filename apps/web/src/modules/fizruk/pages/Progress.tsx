@@ -62,7 +62,9 @@ export function Progress({ onNavigate }: ProgressProps) {
       .slice(-8)
       .map((e) => ({
         value:
-          e.weightKg != null && e.weightKg !== "" ? Number(e.weightKg) : null,
+          e["weightKg"] != null && e["weightKg"] !== ""
+            ? Number(e["weightKg"])
+            : null,
         label: new Date(e.at).toLocaleDateString("uk-UA", {
           day: "numeric",
           month: "short",
@@ -76,8 +78,8 @@ export function Progress({ onNavigate }: ProgressProps) {
       .slice(-8)
       .map((e) => ({
         value:
-          e.bodyFatPct != null && e.bodyFatPct !== ""
-            ? Number(e.bodyFatPct)
+          e["bodyFatPct"] != null && e["bodyFatPct"] !== ""
+            ? Number(e["bodyFatPct"])
             : null,
         label: new Date(e.at).toLocaleDateString("uk-UA", {
           day: "numeric",
@@ -329,8 +331,8 @@ export function Progress({ onNavigate }: ProgressProps) {
             <Stat
               label="Вага"
               value={
-                meas.latest?.weightKg != null
-                  ? `${meas.latest.weightKg} кг`
+                meas.latest?.["weightKg"] != null
+                  ? `${meas.latest["weightKg"]} кг`
                   : "—"
               }
               sublabel={
@@ -356,8 +358,8 @@ export function Progress({ onNavigate }: ProgressProps) {
             <Stat
               label="% жиру"
               value={
-                meas.latest?.bodyFatPct != null
-                  ? `${meas.latest.bodyFatPct}%`
+                meas.latest?.["bodyFatPct"] != null
+                  ? `${meas.latest["bodyFatPct"]}%`
                   : "—"
               }
               sublabel={

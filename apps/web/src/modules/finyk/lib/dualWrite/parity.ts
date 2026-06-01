@@ -421,7 +421,7 @@ function collectStringKeys(
 ): Set<string> {
   const out = new Set<string>();
   for (const row of rows) {
-    const key = row.key;
+    const key = row["key"];
     if (typeof key === "string" && key.length > 0) out.add(key);
   }
   return out;

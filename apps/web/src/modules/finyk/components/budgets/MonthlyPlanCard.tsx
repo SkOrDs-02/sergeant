@@ -41,9 +41,9 @@ interface MonthlyPlanCardProps {
    * the canonical «домівка» for the user's monthly plan. Set on the
    * user's first Finyk entry by `FinykApp` via `useModuleFirstRun`.
    */
-  firstRunHint?: boolean;
+  firstRunHint?: boolean | undefined;
   /** Dismiss callback for the first-run hint banner. */
-  onDismissFirstRunHint?: () => void;
+  onDismissFirstRunHint?: (() => void) | undefined;
 }
 
 // Unified monthly-plan block: Plan/Fact/Δ table for income, expense and

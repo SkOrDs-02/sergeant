@@ -346,7 +346,7 @@ describe("extractFinykDualWriteState — txSplitsFromMap", () => {
     const cyclic: Record<string, unknown>[] = [{ foo: 1 }];
     const ref = cyclic[0];
     if (ref) {
-      ref.self = ref;
+      ref["self"] = ref;
     }
     const state = extractFinykDualWriteState(
       makeSlots({
@@ -526,7 +526,7 @@ describe("extractFinykDualWriteState — prefs (monthlyPlan + serializeStringArr
 
   it("повертає '{}' коли monthlyPlan не серіалізується (циклічний)", () => {
     const cyclic: Record<string, unknown> = {};
-    cyclic.self = cyclic;
+    cyclic["self"] = cyclic;
     const state = extractFinykDualWriteState(
       makeSlots({ monthlyPlan: cyclic }),
       false,

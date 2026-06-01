@@ -261,7 +261,10 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       dbSchema.recoverDeadLetter(client, selector),
     addBreadcrumb: sentry.addSentryBreadcrumb,
     captureException: (error, context) =>
-      sentry.captureException(error, { extra: context }),
+      sentry.captureException(
+        error,
+        context !== undefined ? { extra: context } : undefined,
+      ),
     intervalMs,
     limit: 100,
     originDeviceId,

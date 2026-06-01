@@ -44,27 +44,27 @@ export interface ModalProps {
   open: boolean;
   onClose: () => void;
   /** Dialog title — rendered in the header and used for aria-labelledby. */
-  title?: ReactNode;
+  title?: ReactNode | undefined;
   /** Optional subtitle rendered under the title. */
-  description?: ReactNode;
+  description?: ReactNode | undefined;
   /** Main modal body. */
-  children?: ReactNode;
+  children?: ReactNode | undefined;
   /** Sticky footer (e.g. action buttons). */
-  footer?: ReactNode;
+  footer?: ReactNode | undefined;
   /** Width preset. Defaults to "md". */
-  size?: ModalSize;
+  size?: ModalSize | undefined;
   /** Modal z-index. Defaults to 200 (matches `zIndex.modal` token). */
-  zIndex?: number;
+  zIndex?: number | undefined;
   /** Accessible label for the close button. */
-  closeLabel?: string;
+  closeLabel?: string | undefined;
   /** Hide the close button (e.g. when a modal must be confirmed). */
-  hideClose?: boolean;
+  hideClose?: boolean | undefined;
   /** Dismiss on overlay click. Defaults to true. */
-  dismissOnOverlayClick?: boolean;
+  dismissOnOverlayClick?: boolean | undefined;
   /** Optional className on the panel (per-surface accents). */
-  panelClassName?: string;
+  panelClassName?: string | undefined;
   /** Optional className on the scroll region. */
-  bodyClassName?: string;
+  bodyClassName?: string | undefined;
 }
 
 export function Modal({

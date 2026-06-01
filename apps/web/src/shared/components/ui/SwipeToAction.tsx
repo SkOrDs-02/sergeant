@@ -10,25 +10,28 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { HINT_AUTO_HIDE_MS, HINT_REVEAL_DELAY_MS } from "@shared/lib/ui/timeouts";
+import {
+  HINT_AUTO_HIDE_MS,
+  HINT_REVEAL_DELAY_MS,
+} from "@shared/lib/ui/timeouts";
 
 const SWIPE_THRESHOLD = 60;
 const MAX_SWIPE = 100;
 const SWIPE_HINT_STORAGE_KEY = "sergeant:swipe_hint_shown";
 
 export interface SwipeToActionProps {
-  children?: ReactNode;
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
-  leftLabel?: ReactNode;
-  rightLabel?: ReactNode;
-  leftColor?: string;
-  rightColor?: string;
-  disabled?: boolean;
+  children?: ReactNode | undefined;
+  onSwipeLeft?: (() => void) | undefined;
+  onSwipeRight?: (() => void) | undefined;
+  leftLabel?: ReactNode | undefined;
+  rightLabel?: ReactNode | undefined;
+  leftColor?: string | undefined;
+  rightColor?: string | undefined;
+  disabled?: boolean | undefined;
   /** Show swipe hint for first-time users */
-  showHint?: boolean;
+  showHint?: boolean | undefined;
   /** Custom hint text */
-  hintText?: string;
+  hintText?: string | undefined;
 }
 
 function SwipeToActionImpl({

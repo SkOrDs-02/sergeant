@@ -60,10 +60,10 @@ export interface RecurringTx {
 
 export interface RecurringSubscription {
   id: string;
-  name?: string;
-  keyword?: string;
-  linkedTxId?: string | null;
-  currency?: string;
+  name?: string | undefined;
+  keyword?: string | undefined;
+  linkedTxId?: string | null | undefined;
+  currency?: string | undefined;
 }
 
 export interface RecurringCandidate {

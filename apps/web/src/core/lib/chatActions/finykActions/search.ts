@@ -12,8 +12,8 @@ export type FinykSearchTx = {
   date: string;
   amount: number;
   description: string;
-  category?: string;
-  type?: string;
+  category?: string | undefined;
+  type?: string | undefined;
 };
 
 export function toIsoDay(value: unknown): string {
@@ -121,11 +121,11 @@ function readSearchTransactions(): FinykSearchTx[] {
 function matchesFinykSearch(
   tx: FinykSearchTx,
   filters: {
-    query?: string;
-    amount?: number;
+    query?: string | undefined;
+    amount?: number | undefined;
     amountTolerance: number;
-    dateFrom?: string;
-    dateTo?: string;
+    dateFrom?: string | undefined;
+    dateTo?: string | undefined;
   },
 ): boolean {
   const query = normalizeText(filters.query);

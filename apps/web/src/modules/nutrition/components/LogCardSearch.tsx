@@ -14,7 +14,7 @@ import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
 interface LogCardSearchProps {
   log: NutritionLog;
   setSelectedDate: (date: string) => void;
-  onAddMealFromSearch?: (meal: Meal, date?: string) => void;
+  onAddMealFromSearch?: ((meal: Meal, date?: string) => void) | undefined;
 }
 
 export function LogCardSearch({

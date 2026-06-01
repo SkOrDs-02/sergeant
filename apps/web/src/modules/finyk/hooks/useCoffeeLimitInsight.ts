@@ -15,7 +15,10 @@
 import { useMemo } from "react";
 import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
 import type { Insight } from "@shared/lib/insights/types";
-import type { Transaction, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Transaction,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
 
 // Tunable thresholds — export so tests can override.
 /** MoM growth ratio that triggers the insight (0.25 = 25%). */
@@ -49,7 +52,7 @@ function monthlyCategorySpend(
   month: string,
   txCategories: Record<string, string | undefined>,
   txSplits: TxSplitsMap,
-  customCategories: readonly { id: string; label?: string }[],
+  customCategories: readonly { id: string; label?: string | undefined }[],
 ): number {
   const [y, m] = month.split("-").map(Number);
   if (!y || !m) return 0;
@@ -81,7 +84,9 @@ interface UseCoffeeLimitInsightArgs {
   transactions: readonly Transaction[];
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
-  customCategories?: readonly { id: string; label?: string }[];
+  customCategories?:
+    | readonly { id: string; label?: string | undefined }[]
+    | undefined;
 }
 
 export function useCoffeeLimitInsight({
@@ -114,7 +119,10 @@ export function useCoffeeLimitInsight({
       customCategories,
     );
 
-    if (lastMonthSpend <= 0 || thisMonthSpend / lastMonthSpend < 1 + COFFEE_MOM_GROWTH_THRESHOLD) {
+    if (
+      lastMonthSpend <= 0 ||
+      thisMonthSpend / lastMonthSpend < 1 + COFFEE_MOM_GROWTH_THRESHOLD
+    ) {
       return null;
     }
 
@@ -126,7 +134,10 @@ export function useCoffeeLimitInsight({
       module: "finyk",
       title: `Витрати на каву ↑ ${pct}%`,
       subtitle: `Це ${amount.toLocaleString("uk-UA")} грн. Встановити ліміт?`,
-      action: { type: "navigate", path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}` },
+      action: {
+        type: "navigate",
+        path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}`,
+      },
       // Hub surface promoted post-Phase 5e: spending awareness is useful
       // cross-module — user may not be in Finyk when threshold matters, and
       // the "Встановити ліміт?" action navigates with full context.

@@ -27,12 +27,12 @@ interface DebtCardProps {
   remaining: number;
   paid: number;
   total: number;
-  onDelete?: () => void;
-  onLink?: () => void;
-  linkedCount?: number;
-  isReceivable?: boolean;
-  dueDate?: string | null;
-  showBalance?: boolean;
+  onDelete?: (() => void) | undefined;
+  onLink?: (() => void) | undefined;
+  linkedCount?: number | undefined;
+  isReceivable?: boolean | undefined;
+  dueDate?: string | null | undefined;
+  showBalance?: boolean | undefined;
 }
 
 // Чиста картка боргу / заборгованості — рендер повністю керується пропсами,

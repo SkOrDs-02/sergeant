@@ -372,8 +372,8 @@ export function handleNutritionAction(
         carbs: meals.reduce((s, m) => s + (m?.macros?.carbs_g ?? 0), 0),
       };
       const target = {
-        kcal: nutritionPrefs?.dailyTargetKcal || 2000,
-        protein: nutritionPrefs?.dailyTargetProtein_g || 120,
+        kcal: nutritionPrefs?.["dailyTargetKcal"] || 2000,
+        protein: nutritionPrefs?.["dailyTargetProtein_g"] || 120,
       };
       const remaining = {
         kcal: Math.max(0, target.kcal - eaten.kcal),
@@ -446,15 +446,17 @@ export function handleNutritionAction(
         null,
       );
       const targetKcal =
-        Number(target_kcal) || nutritionPrefs?.dailyTargetKcal || 2000;
+        Number(target_kcal) || nutritionPrefs?.["dailyTargetKcal"] || 2000;
       const count = Number(meals_count) || 3;
       const parts: string[] = [
         `Планую ${count} прийомів на ${targetKcal} ккал/день`,
         `Приблизно ${Math.round(targetKcal / count)} ккал на прийом`,
       ];
       if (preferences) parts.push(`Побажання: ${preferences}`);
-      if (nutritionPrefs?.dailyTargetProtein_g) {
-        parts.push(`Ціль білка: ${nutritionPrefs.dailyTargetProtein_g}г/день`);
+      if (nutritionPrefs?.["dailyTargetProtein_g"]) {
+        parts.push(
+          `Ціль білка: ${nutritionPrefs["dailyTargetProtein_g"]}г/день`,
+        );
       }
       return (
         parts.join(". ") + ". Рекомендацію сформовано на основі цих даних."

@@ -21,18 +21,18 @@ interface LimitBudgetInput {
 
 interface LimitBudgetCardProps {
   budget: LimitBudgetInput;
-  categoryLabel?: string | null;
+  categoryLabel?: string | null | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
   remaining: number;
   isEditing: boolean;
   showProactiveAdvice: boolean;
-  proactiveText?: string | null;
-  proactiveLoading?: boolean;
-  onDismissAdvice?: (() => void) | null;
+  proactiveText?: string | null | undefined;
+  proactiveLoading?: boolean | undefined;
+  onDismissAdvice?: ((() => void) | null) | undefined;
   onBeginEdit: () => void;
-  onChangeLimit?: (next: number) => void;
+  onChangeLimit?: ((next: number) => void) | undefined;
   onSave: () => void;
   onDelete: () => void;
 }

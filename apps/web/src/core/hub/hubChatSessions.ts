@@ -23,7 +23,7 @@ export interface HubChatSession {
    * Optional для backward-compat зі старими сесіями — для них працює
    * legacy prefix heuristic ("Бесіда " / "Нова бесіда").
    */
-  titleSource?: "auto" | "user";
+  titleSource?: "auto" | "user" | undefined;
   createdAt: number;
   updatedAt: number;
   messages: ChatMessage[];

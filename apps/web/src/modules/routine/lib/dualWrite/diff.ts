@@ -77,7 +77,7 @@ export interface TagUpsertOp {
   readonly tag: {
     readonly id: string;
     readonly name: string;
-    readonly scope?: string;
+    readonly scope?: string | undefined;
   };
 }
 
@@ -91,7 +91,7 @@ export interface CategoryUpsertOp {
   readonly category: {
     readonly id: string;
     readonly name: string;
-    readonly emoji?: string;
+    readonly emoji?: string | undefined;
   };
 }
 
@@ -455,15 +455,15 @@ function habitChanged(prev: Habit, next: Habit): boolean {
 }
 
 function tagChanged(
-  prev: { id: string; name: string; scope?: string },
-  next: { id: string; name: string; scope?: string },
+  prev: { id: string; name: string; scope?: string | undefined },
+  next: { id: string; name: string; scope?: string | undefined },
 ): boolean {
   return prev.name !== next.name || prev.scope !== next.scope;
 }
 
 function categoryChanged(
-  prev: { id: string; name: string; emoji?: string },
-  next: { id: string; name: string; emoji?: string },
+  prev: { id: string; name: string; emoji?: string | undefined },
+  next: { id: string; name: string; emoji?: string | undefined },
 ): boolean {
   return prev.name !== next.name || prev.emoji !== next.emoji;
 }

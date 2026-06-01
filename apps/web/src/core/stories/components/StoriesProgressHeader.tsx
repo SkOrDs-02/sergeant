@@ -7,7 +7,7 @@ interface Props {
   progress: number;
   paused: boolean;
   activeLabel: string;
-  weekRange?: string;
+  weekRange?: string | undefined;
   onClose: () => void;
 }
 

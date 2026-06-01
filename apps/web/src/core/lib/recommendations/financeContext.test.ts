@@ -128,14 +128,14 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
       JSON.stringify({ t1: "food", t2: "food" }),
     );
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend.food).toBe(150);
+    expect(ctx.categorySpend["food"]).toBe(150);
   });
 
   it("falls back to category 'other' when no override exists", () => {
     const txs = [{ id: "t1", amount: -10000, time: FIXED_NOW.getTime() }];
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend.other).toBe(100);
+    expect(ctx.categorySpend["other"]).toBe(100);
   });
 
   it("uses txSplits to distribute amounts across split categoryIds", () => {
@@ -151,8 +151,8 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
       }),
     );
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend.food).toBe(80);
-    expect(ctx.categorySpend.shopping).toBe(120);
+    expect(ctx.categorySpend["food"]).toBe(80);
+    expect(ctx.categorySpend["shopping"]).toBe(120);
   });
 
   it("ignores split entries marked as internal_transfer", () => {
@@ -168,8 +168,8 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
       }),
     );
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend.food).toBe(100);
-    expect(ctx.categorySpend.internal_transfer).toBeUndefined();
+    expect(ctx.categorySpend["food"]).toBe(100);
+    expect(ctx.categorySpend["internal_transfer"]).toBeUndefined();
   });
 
   it("adds manual expenses inside current month to categorySpend", () => {
@@ -181,7 +181,7 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
       ]),
     );
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend.food).toBe(25);
+    expect(ctx.categorySpend["food"]).toBe(25);
   });
 
   it("manual expense without category falls back to 'other'", () => {
@@ -190,7 +190,7 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
       JSON.stringify([{ id: "m1", amount: 40, date: "2026-04-10" }]),
     );
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend.other).toBe(40);
+    expect(ctx.categorySpend["other"]).toBe(40);
   });
 });
 

@@ -28,7 +28,13 @@ export function useRestSettings() {
       RestSettingsSchema,
       {} as RestSettings,
     );
-    return { ...REST_DEFAULTS, ...parsed };
+    const merged = { ...REST_DEFAULTS, ...parsed };
+    return Object.fromEntries(
+      Object.entries(merged).map(([k, v]) => [
+        k,
+        v ?? REST_DEFAULTS[k as keyof typeof REST_DEFAULTS],
+      ]),
+    ) as MergedSettings;
   });
 
   const persist = useCallback((next: MergedSettings) => {

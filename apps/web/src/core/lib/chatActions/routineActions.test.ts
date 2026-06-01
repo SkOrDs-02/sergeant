@@ -675,12 +675,12 @@ describe("mark_habit_done · undo", () => {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
     const before = loadRoutineState();
-    expect(before.completions.h1).toContain("2024-06-15");
+    expect(before.completions["h1"]).toContain("2024-06-15");
 
     out.undo();
 
     const after = loadRoutineState();
-    expect(after.completions.h1 ?? []).not.toContain("2024-06-15");
+    expect(after.completions["h1"] ?? []).not.toContain("2024-06-15");
   });
 
   it("якщо дата вже була виконана — повертає string без undo (no-op)", () => {
@@ -716,8 +716,8 @@ describe("mark_habit_done · undo", () => {
     out.undo();
 
     const after = loadRoutineState();
-    expect(after.completions.h1).toContain("2024-06-13");
-    expect(after.completions.h1).not.toContain("2024-06-15");
+    expect(after.completions["h1"]).toContain("2024-06-13");
+    expect(after.completions["h1"]).not.toContain("2024-06-15");
   });
 });
 
@@ -772,7 +772,7 @@ describe("complete_habit_for_date · undo", () => {
 
     out.undo();
     const after = loadRoutineState();
-    expect(after.completions.h1).toEqual(["2025-01-01"]);
+    expect(after.completions["h1"]).toEqual(["2025-01-01"]);
   });
 
   it("повторне виставлення дати: вже виконано → return string без undo", () => {
@@ -805,6 +805,6 @@ describe("complete_habit_for_date · undo", () => {
 
     out.undo();
     const after = loadRoutineState();
-    expect(after.completions.h1).toContain("2025-01-02");
+    expect(after.completions["h1"]).toContain("2025-01-02");
   });
 });

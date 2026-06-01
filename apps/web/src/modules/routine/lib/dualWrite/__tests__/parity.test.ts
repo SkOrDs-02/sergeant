@@ -107,7 +107,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.completions).toEqual({ ls: 3, sqlite: 3 });
+      expect(out.details["completions"]).toEqual({ ls: 3, sqlite: 3 });
     } finally {
       handle.close();
     }
@@ -119,7 +119,7 @@ describe("probeRoutineParity", () => {
       const next = makeState();
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.completions).toEqual({ ls: 0, sqlite: 0 });
+      expect(out.details["completions"]).toEqual({ ls: 0, sqlite: 0 });
     } finally {
       handle.close();
     }
@@ -139,7 +139,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ completions: { h1: ["2026-05-01"] } });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.completions).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["completions"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -156,7 +156,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("mismatch");
-      expect(out.details.completions).toEqual({
+      expect(out.details["completions"]).toEqual({
         ls: 2,
         sqlite: 1,
         lsOnly: 1,
@@ -178,7 +178,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ completions: { h1: ["2026-05-01"] } });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("mismatch");
-      expect(out.details.completions).toEqual({
+      expect(out.details["completions"]).toEqual({
         ls: 1,
         sqlite: 3,
         lsOnly: 0,
@@ -198,7 +198,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ completions: { h2: ["2026-05-02"] } });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("mismatch");
-      expect(out.details.completions).toEqual({
+      expect(out.details["completions"]).toEqual({
         ls: 1,
         sqlite: 1,
         lsOnly: 1,
@@ -225,7 +225,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ completions: { h1: ["2026-05-01"] } });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.completions).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["completions"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -247,7 +247,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ completions: { h1: ["2026-05-01"] } });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.completions).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["completions"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -266,7 +266,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.completions).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["completions"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -288,7 +288,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.habits).toEqual({ ls: 2, sqlite: 2 });
+      expect(out.details["habits"]).toEqual({ ls: 2, sqlite: 2 });
     } finally {
       handle.close();
     }
@@ -306,7 +306,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("mismatch");
-      expect(out.details.habits).toEqual({
+      expect(out.details["habits"]).toEqual({
         ls: 2,
         sqlite: 1,
         lsOnly: 1,
@@ -324,7 +324,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ tags: [{ id: "t1", name: "morning" }] });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.tags).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["tags"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -337,7 +337,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ categories: [{ id: "c1", name: "Health" }] });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.categories).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["categories"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -359,7 +359,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ prefs });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.prefs).toEqual({ equal: true });
+      expect(out.details["prefs"]).toEqual({ equal: true });
     } finally {
       handle.close();
     }
@@ -378,7 +378,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("mismatch");
-      expect(out.details.prefs).toMatchObject({ lsLen: expect.any(Number) });
+      expect(out.details["prefs"]).toMatchObject({ lsLen: expect.any(Number) });
     } finally {
       handle.close();
     }
@@ -399,7 +399,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ pushupsByDate: { "2026-05-01": 30 } });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.pushups).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["pushups"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }
@@ -420,7 +420,7 @@ describe("probeRoutineParity", () => {
       const next = makeState({ habitOrder: ["h1", "h2"] });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.order).toEqual({ equal: true });
+      expect(out.details["order"]).toEqual({ equal: true });
     } finally {
       handle.close();
     }
@@ -444,7 +444,7 @@ describe("probeRoutineParity", () => {
       });
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("match");
-      expect(out.details.notes).toEqual({ ls: 1, sqlite: 1 });
+      expect(out.details["notes"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }

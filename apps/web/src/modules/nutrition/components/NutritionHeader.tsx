@@ -38,9 +38,9 @@ function AppleBadge() {
 }
 
 interface NutritionHeaderProps {
-  busy?: boolean;
-  onBackToHub?: () => void;
-  onOpenSettings?: () => void;
+  busy?: boolean | undefined;
+  onBackToHub?: (() => void) | undefined;
+  onOpenSettings?: (() => void) | undefined;
 }
 
 export function NutritionHeader({

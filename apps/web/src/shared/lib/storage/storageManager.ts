@@ -275,7 +275,7 @@ storageManager.register({
       state = {};
     }
     // Only migrate if pushupsByDate is empty
-    const existing = state.pushupsByDate;
+    const existing = state["pushupsByDate"];
     if (
       existing &&
       typeof existing === "object" &&

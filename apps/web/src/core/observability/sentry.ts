@@ -261,9 +261,10 @@ export function resolveWebSampleProfile(raw: unknown): WebSentrySampleProfile {
  */
 export function defaultWebSampleRate(env?: Record<string, unknown>): number {
   const source: Record<string, unknown> = env ?? {
-    VITE_SENTRY_TRACES_SAMPLE_RATE: import.meta.env
-      .VITE_SENTRY_TRACES_SAMPLE_RATE,
-    VITE_SENTRY_SAMPLE_PROFILE: import.meta.env.VITE_SENTRY_SAMPLE_PROFILE,
+    VITE_SENTRY_TRACES_SAMPLE_RATE: import.meta.env[
+      "VITE_SENTRY_TRACES_SAMPLE_RATE"
+    ],
+    VITE_SENTRY_SAMPLE_PROFILE: import.meta.env["VITE_SENTRY_SAMPLE_PROFILE"],
   };
   const explicit = source["VITE_SENTRY_TRACES_SAMPLE_RATE"];
   if (
@@ -303,7 +304,7 @@ export const WEB_SENTRY_DENY_URLS: readonly (string | RegExp)[] = [
  */
 export async function initSentry() {
   if (initialized) return;
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  const dsn = import.meta.env["VITE_SENTRY_DSN"];
   if (!dsn) return;
 
   const mod = await import("@sentry/react");
@@ -312,10 +313,10 @@ export async function initSentry() {
   mod.init({
     dsn,
     environment:
-      import.meta.env.VITE_SENTRY_ENVIRONMENT ||
+      import.meta.env["VITE_SENTRY_ENVIRONMENT"] ||
       import.meta.env.MODE ||
       "production",
-    release: import.meta.env.VITE_SENTRY_RELEASE,
+    release: import.meta.env["VITE_SENTRY_RELEASE"],
     integrations: [
       mod.browserTracingIntegration(),
       // PII roast 2026-05-13 §F3 (errors-pwa-marketing): Sentry defaults
@@ -342,7 +343,7 @@ export async function initSentry() {
     tracesSampler: (samplingContext) =>
       pickWebTracesSampleRate(samplingContext, defaultWebSampleRate()),
     replaysSessionSampleRate: parseRate(
-      import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE,
+      import.meta.env["VITE_SENTRY_REPLAY_SAMPLE_RATE"],
       0,
     ),
     replaysOnErrorSampleRate: 1.0,

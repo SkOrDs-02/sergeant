@@ -72,9 +72,9 @@ function incrementDailyChatCount(): void {
 export interface UseChatSendOptions {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
-  initialMessage?: string;
-  autoSendInitial?: boolean;
-  onOpenCatalogue?: () => void;
+  initialMessage?: string | undefined;
+  autoSendInitial?: boolean | undefined;
+  onOpenCatalogue?: (() => void) | undefined;
 }
 
 export interface UseChatSendResult {

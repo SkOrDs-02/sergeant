@@ -121,8 +121,8 @@ export class ErrorBoundary extends Component<
     const requestId = extractRequestId(error);
     try {
       captureException(error, {
-        contexts: { react: { componentStack: info?.componentStack } },
-        tags: requestId ? { requestId } : undefined,
+        contexts: { react: { componentStack: info?.componentStack ?? null } },
+        ...(requestId ? { tags: { requestId } } : {}),
       });
     } catch {
       /* noop — error boundary не має ламатись через телеметрію */

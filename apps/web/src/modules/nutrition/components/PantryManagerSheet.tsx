@@ -43,7 +43,7 @@ interface PantryManagerSheetProps {
   setActivePantryId: (id: string) => void;
   pantryForm: PantryForm;
   setPantryForm: Dispatch<SetStateAction<PantryForm>>;
-  busy?: boolean;
+  busy?: boolean | undefined;
   onSavePantryForm: (
     name: string,
     mode: Exclude<PantryFormMode, "idle">,

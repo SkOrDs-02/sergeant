@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Banner } from "@shared/components/ui/Banner";
+import { logger } from "@shared/lib";
 import { formatRelativeUk } from "@shared/lib/format/relativeTime.uk";
 import { messages } from "@shared/i18n/uk";
 import type { ComponentStatus, StatusComponent, StatusResponse } from "./types";
@@ -39,7 +40,7 @@ export function StatusPage(): JSX.Element {
       const res = await fetch("/api/status", {
         method: "GET",
         headers: { Accept: "application/json" },
-        signal,
+        ...(signal !== undefined ? { signal } : {}),
         credentials: "omit",
       });
       if (!res.ok) {
@@ -55,7 +56,7 @@ export function StatusPage(): JSX.Element {
       if (err instanceof DOMException && err.name === "AbortError") return;
       // Audit F10: не показуємо raw err.message анонімним відвідувачам —
       // може просочити target URL, CORS-preflight або DNS-підказки.
-      console.warn("[StatusPage] /api/status fetch failed", err);
+      logger.warn("[StatusPage] /api/status fetch failed", err);
       setState({
         kind: "error",
         message: messages.publicStatus.errorFallback,

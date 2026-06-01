@@ -42,15 +42,15 @@ function isGroqSupported(): boolean {
 }
 
 export interface UseGroqVoiceInputOptions {
-  lang?: string;
-  promptHint?: string;
-  onResult?: (transcript: string) => void;
-  onError?: (message: string) => void;
+  lang?: string | undefined;
+  promptHint?: string | undefined;
+  onResult?: ((transcript: string) => void) | undefined;
+  onError?: ((message: string) => void) | undefined;
   /**
    * Викликається при 503 від `/api/transcribe` (ключ Groq не сконфігурований).
    * Викликача треба переключитися на Web Speech API для решти сесії.
    */
-  onProviderUnavailable?: () => void;
+  onProviderUnavailable?: (() => void) | undefined;
 }
 
 export interface UseGroqVoiceInputReturn {

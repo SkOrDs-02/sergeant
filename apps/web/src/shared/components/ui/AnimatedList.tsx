@@ -146,11 +146,11 @@ export const AnimatedList = memo(function AnimatedList({
  */
 export interface AnimatedFadeInProps {
   children: ReactNode;
-  delay?: number;
-  duration?: number;
-  animation?: AnimationStyle;
-  triggerOnView?: boolean;
-  className?: string;
+  delay?: number | undefined;
+  duration?: number | undefined;
+  animation?: AnimationStyle | undefined;
+  triggerOnView?: boolean | undefined;
+  className?: string | undefined;
 }
 
 export const AnimatedFadeIn = memo(function AnimatedFadeIn({

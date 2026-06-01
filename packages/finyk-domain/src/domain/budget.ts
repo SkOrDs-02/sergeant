@@ -136,9 +136,9 @@ export function buildAtRiskKey(
 }
 
 export interface GoalInput {
-  targetAmount?: number | string;
-  savedAmount?: number | string;
-  targetDate?: string | null;
+  targetAmount?: number | string | undefined;
+  savedAmount?: number | string | undefined;
+  targetDate?: string | null | undefined;
 }
 
 // Прогрес цілі накопичення. UI лише форматує повернені числа —

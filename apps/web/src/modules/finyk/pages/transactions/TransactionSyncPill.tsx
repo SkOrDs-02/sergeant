@@ -8,9 +8,9 @@ export interface TransactionSyncPillProps {
   syncState:
     | {
         status: "idle" | "loading" | "success" | "partial" | "error";
-        source?: "network" | "cache" | "none";
-        accountsOk?: number;
-        accountsTotal?: number;
+        source?: "network" | "cache" | "none" | undefined;
+        accountsOk?: number | undefined;
+        accountsTotal?: number | undefined;
       }
     | undefined;
   lastUpdated: Date | null | undefined;

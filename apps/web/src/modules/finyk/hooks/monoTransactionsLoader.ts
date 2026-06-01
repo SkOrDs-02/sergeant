@@ -7,9 +7,9 @@ const PAGE_LIMIT = 200;
 const MAX_PAGES = 50;
 
 export interface MonoTransactionsRange {
-  from?: string;
-  to?: string;
-  accountId?: string;
+  from?: string | undefined;
+  to?: string | undefined;
+  accountId?: string | undefined;
 }
 
 /**
@@ -29,8 +29,16 @@ export async function fetchAllMonoTransactions(
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = await monoWebhookApi.transactions(
-      { ...params, limit: PAGE_LIMIT, cursor },
-      { signal: opts?.signal },
+      {
+        limit: PAGE_LIMIT,
+        ...(params.from !== undefined ? { from: params.from } : {}),
+        ...(params.to !== undefined ? { to: params.to } : {}),
+        ...(params.accountId !== undefined
+          ? { accountId: params.accountId }
+          : {}),
+        ...(cursor !== undefined ? { cursor } : {}),
+      },
+      { ...(opts?.signal !== undefined ? { signal: opts.signal } : {}) },
     );
     if (result.data.length > 0) all.push(...result.data);
     if (!result.nextCursor) return all;

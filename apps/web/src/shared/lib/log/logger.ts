@@ -109,6 +109,7 @@ function safeConsole(
   try {
     // DEV-only, gated by `isDev()`; production шлях іде через
     // `safeBreadcrumb` і ніколи сюди не падає.
+    // eslint-disable-next-line no-console -- canonical logger transport; цей модуль є дозволеним power-user для console.* (docs §7)
     console[method](...args);
   } catch {
     /* logging must never throw */

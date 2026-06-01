@@ -14,8 +14,8 @@ interface VirtualMealListProps {
   groups: Record<MealTypeId, Meal[]>;
   meals: Meal[];
   selectedDate: string;
-  onRemoveMeal?: (date: string, meal: Meal) => void;
-  onEditMeal?: (date: string, meal: Meal) => void;
+  onRemoveMeal?: ((date: string, meal: Meal) => void) | undefined;
+  onEditMeal?: ((date: string, meal: Meal) => void) | undefined;
 }
 
 type MealListItem =

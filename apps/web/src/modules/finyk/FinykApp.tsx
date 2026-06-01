@@ -171,10 +171,12 @@ export default function App({
       navigate("transactions");
       setEditingManualExpenseId(null);
       setQuickAddCategory(
-        typeof prefill?.category === "string" ? prefill.category : null,
+        typeof prefill?.["category"] === "string" ? prefill["category"] : null,
       );
       setQuickAddDescription(
-        typeof prefill?.description === "string" ? prefill.description : null,
+        typeof prefill?.["description"] === "string"
+          ? prefill["description"]
+          : null,
       );
       setShowExpenseSheet(true);
       onPwaActionConsumed?.();

@@ -77,7 +77,7 @@ export interface UseOnboardingStateOptions {
   /** Optional auth-modal opener. The soft-auth nag is suppressed
    *  when this is missing — the card is useless without a way to
    *  open the modal it nags toward. */
-  onShowAuth?: () => void;
+  onShowAuth?: (() => void) | undefined;
 }
 
 export interface UseOnboardingStateResult {

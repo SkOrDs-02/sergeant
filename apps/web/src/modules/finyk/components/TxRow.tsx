@@ -88,30 +88,34 @@ function getAccountShortName(acc: MonoAccount | undefined): string | null {
 export interface TxRowTx {
   id: string;
   amount: number;
-  description?: string;
-  mcc?: number;
-  time?: number;
-  currencyCode?: number;
-  operationAmount?: number;
-  _accountId?: string | null;
-  _source?: string;
-  _manual?: boolean;
-  _manualId?: string;
+  description?: string | undefined;
+  mcc?: number | undefined;
+  time?: number | undefined;
+  currencyCode?: number | undefined;
+  operationAmount?: number | undefined;
+  _accountId?: string | null | undefined;
+  _source?: string | undefined;
+  _manual?: boolean | undefined;
+  _manualId?: string | undefined;
+  [k: string]: unknown;
 }
 
 interface TxRowProps {
   tx: TxRowTx;
-  onClick?: (() => void) | null;
-  highlighted?: boolean;
-  onHide?: ((id: string) => void) | null;
-  hidden?: boolean;
-  overrideCatId?: string | null;
-  onCatChange?: ((id: string, catId: string | null) => void) | null;
-  accounts?: readonly MonoAccount[];
-  hideAmount?: boolean;
-  txSplits?: TxSplitsMap;
-  onSplitChange?: ((id: string, split: TxSplit[] | null) => void) | null;
-  customCategories?: readonly CustomCategoryInput[];
+  onClick?: ((() => void) | null) | undefined;
+  highlighted?: boolean | undefined;
+  onHide?: ((id: string) => void) | null | undefined;
+  hidden?: boolean | undefined;
+  overrideCatId?: string | null | undefined;
+  onCatChange?: ((id: string, catId: string | null) => void) | null | undefined;
+  accounts?: readonly MonoAccount[] | undefined;
+  hideAmount?: boolean | undefined;
+  txSplits?: TxSplitsMap | undefined;
+  onSplitChange?:
+    | ((id: string, split: TxSplit[] | null) => void)
+    | null
+    | undefined;
+  customCategories?: readonly CustomCategoryInput[] | undefined;
 }
 
 function TxRowImpl({

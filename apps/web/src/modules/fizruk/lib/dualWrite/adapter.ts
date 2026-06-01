@@ -31,7 +31,7 @@ import type {
 export interface ApplyDualWriteOptions {
   readonly userId: string;
   readonly clientTs: string;
-  readonly logger?: DualWriteLogger;
+  readonly logger?: DualWriteLogger | undefined;
 }
 
 export type DualWriteLogger = (
@@ -448,14 +448,14 @@ async function upsertMeasurement(
       m.id,
       userId,
       m.at,
-      toIntOrNull(m.weightKg),
-      toIntOrNull(m.waistCm),
-      toIntOrNull(m.chestCm),
-      toIntOrNull(m.hipsCm),
-      toIntOrNull(m.bicepCm),
-      toIntOrNull(m.sleepHours),
-      toIntOrNull(m.energyLevel),
-      toIntOrNull(m.mood),
+      toIntOrNull(m["weightKg"]),
+      toIntOrNull(m["waistCm"]),
+      toIntOrNull(m["chestCm"]),
+      toIntOrNull(m["hipsCm"]),
+      toIntOrNull(m["bicepCm"]),
+      toIntOrNull(m["sleepHours"]),
+      toIntOrNull(m["energyLevel"]),
+      toIntOrNull(m["mood"]),
       clientTs,
       clientTs,
     ],

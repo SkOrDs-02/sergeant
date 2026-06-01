@@ -76,22 +76,22 @@ export interface InputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   "size"
 > {
-  size?: InputSize;
-  variant?: InputVariant;
-  error?: boolean;
-  success?: boolean;
-  icon?: ReactNode;
-  suffix?: ReactNode;
+  size?: InputSize | undefined;
+  variant?: InputVariant | undefined;
+  error?: boolean | undefined;
+  success?: boolean | undefined;
+  icon?: ReactNode | undefined;
+  suffix?: ReactNode | undefined;
   /** Helper text shown below the input — turns red on error. */
-  helperText?: string;
+  helperText?: string | undefined;
   /** Input label — rendered above the field with correct `htmlFor`. */
-  label?: string;
+  label?: string | undefined;
   /**
    * When `true` (or when `maxLength` is set and a `value` prop is present),
    * renders a live "12/50" counter in the helper row. Color shifts to
    * warning at ≥80 % and danger at 100 %.
    */
-  showCharCount?: boolean;
+  showCharCount?: boolean | undefined;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(

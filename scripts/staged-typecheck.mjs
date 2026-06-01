@@ -92,6 +92,12 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   // file, staged typecheck on any plugin .ts fails TS2307 for both
   // imports + downstream TS7006 implicit-any on `api`/`params`.
   "packages/openclaw-plugin/tsconfig.json": ["src/types/openclaw-ambient.d.ts"],
+  // `vite-env.d.ts` narrows `ImportMetaEnv` (VITE_BUILD_ID / VITE_TARGET) to
+  // explicit interface members. Without it, `tsc-files` (which strips the
+  // project `include`) sees only the open-set index signature, so
+  // `import.meta.env.VITE_*` access trips TS4111 under
+  // noPropertyAccessFromIndexSignature once apps/web enabled the flag.
+  "apps/web/tsconfig.json": ["src/vite-env.d.ts"],
 };
 
 /**
@@ -109,6 +115,13 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
  */
 const SKIP_PREFIXES_BY_TSCONFIG = {
   "packages/openclaw-plugin/tsconfig.json": ["src/legacy/"],
+  // The service-worker subtree is excluded from `apps/web/tsconfig.json`
+  // (`exclude: ["src/sw.ts", "src/sw"]`) and typechecked separately by
+  // `tsconfig.sw.json` (standalone `strict: false`, WebWorker lib). Without
+  // this skip, `tsc-files` force-loads staged SW files under the main strict
+  // config and reports flags (exactOptionalPropertyTypes /
+  // noPropertyAccessFromIndexSignature) that the SW build never enforces.
+  "apps/web/tsconfig.json": ["src/sw.ts", "src/sw/"],
 };
 
 function main() {

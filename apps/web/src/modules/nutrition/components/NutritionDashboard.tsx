@@ -124,22 +124,22 @@ function MiniBar({
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
-  onGoToLog?: () => void;
-  onGoToDailyPlan?: () => void;
-  onAddMeal?: () => void;
-  onFetchDayHint?: () => void | Promise<void>;
-  dayHintText?: string;
-  dayHintBusy?: boolean;
+  onGoToLog?: (() => void) | undefined;
+  onGoToDailyPlan?: (() => void) | undefined;
+  onAddMeal?: (() => void) | undefined;
+  onFetchDayHint?: (() => void | Promise<void>) | undefined;
+  dayHintText?: string | undefined;
+  dayHintBusy?: boolean | undefined;
   /**
    * Pantry items for chip dedupe — meals whose normalized name matches a
    * stocked pantry item are tagged as `source: "pantry"` and surfaced first.
    */
-  pantryItems?: readonly PantryItem[];
+  pantryItems?: readonly PantryItem[] | undefined;
   /**
    * Phase 6.6 — one-tap add for a quick-chip. The parent owns the storage
    * write (reuse the same path `AddMealSheet` calls on submit).
    */
-  onQuickAddMeal?: (chip: QuickChip) => void;
+  onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
 }
 
 export function NutritionDashboard({
@@ -215,9 +215,9 @@ export function NutritionDashboard({
 
   // Cap at 2 simultaneous insights. Priority: streak > protein-low so the
   // positive signal surfaces first when both conditions fire together.
-  const activeInsights = [streakInsight, proteinLowInsight].filter(
-    Boolean,
-  ).slice(0, 2) as NonNullable<typeof proteinLowInsight>[];
+  const activeInsights = [streakInsight, proteinLowInsight]
+    .filter(Boolean)
+    .slice(0, 2) as NonNullable<typeof proteinLowInsight>[];
 
   return (
     <div className="grid gap-3">
@@ -295,10 +295,7 @@ export function NutritionDashboard({
                     max: fat.goal,
                     accent: "warning",
                     unit: "г",
-                    valueDisplay: formatMacroOutcome(
-                      fat.consumed,
-                      fat.goal,
-                    ),
+                    valueDisplay: formatMacroOutcome(fat.consumed, fat.goal),
                   },
                   {
                     label: "Вугл.",

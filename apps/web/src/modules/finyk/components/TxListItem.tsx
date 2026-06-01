@@ -13,18 +13,18 @@ interface TxListItemProps {
   selectMode: boolean;
   selected: boolean;
   hidden: boolean;
-  overrideCatId?: string | null;
+  overrideCatId?: string | null | undefined;
   txSplits: TxSplitsMap;
   accounts: readonly MonoAccount[];
   hideAmount: boolean;
-  customCategories?: readonly CustomCategoryInput[];
+  customCategories?: readonly CustomCategoryInput[] | undefined;
   onToggleSelect: (id: string) => void;
-  onSwipeHideTx?: (id: string) => void;
-  onSwipeDeleteManual?: (tx: TxRowTx) => void;
-  onEditManual?: (manualId?: string) => void;
-  onHideTx?: (id: string) => void;
-  onCatChange?: (id: string, categoryId: string | null) => void;
-  onSplitChange?: (id: string, splits: unknown) => void;
+  onSwipeHideTx?: ((id: string) => void) | undefined;
+  onSwipeDeleteManual?: ((tx: TxRowTx) => void) | undefined;
+  onEditManual?: ((manualId?: string) => void) | undefined;
+  onHideTx?: ((id: string) => void) | undefined;
+  onCatChange?: ((id: string, categoryId: string | null) => void) | undefined;
+  onSplitChange?: ((id: string, splits: unknown) => void) | undefined;
 }
 
 function TxListItemImpl({

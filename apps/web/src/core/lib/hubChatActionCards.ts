@@ -24,12 +24,12 @@ export interface ChatActionCard {
   summary: string;
   module: ChatActionCardModule;
   /** Іконка з shared Icon registry. Опційно — UI має fallback. */
-  icon?: string;
+  icon?: string | undefined;
   /**
    * Маркер ризикової дії (delete/forget/import). v1 лише підсвічує
    * картку, повний confirmation flow — у v2.
    */
-  risky?: boolean;
+  risky?: boolean | undefined;
 }
 
 /** Tools, які класифіковані як ризикові за специфікацією §4. */
@@ -266,7 +266,7 @@ function summaryFor(
       break;
     }
     case "set_habit_schedule": {
-      const days = (input.days as unknown) ?? null;
+      const days = (input["days"] as unknown) ?? null;
       if (Array.isArray(days) && days.length > 0) {
         return days
           .map((d) => (typeof d === "string" ? d.trim() : ""))
@@ -277,7 +277,7 @@ function summaryFor(
     }
     case "pause_habit": {
       const habit = stringField("habit_id");
-      const paused = input.paused;
+      const paused = input["paused"];
       const state = paused === false ? "знято з паузи" : "на паузі";
       if (habit) return `${habit} · ${state}`;
       return state;

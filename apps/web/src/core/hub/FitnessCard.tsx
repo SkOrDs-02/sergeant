@@ -186,6 +186,9 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   );
 
   const { cur, prev, dates } = useMemo(() => {
+    // Intentional LS-backed hub preview read; key centralized to STORAGE_KEYS
+    // via #3209. Full SQLite-overlay migration is separate storage-roadmap work.
+    // eslint-disable-next-line no-restricted-syntax
     const rawWorkouts = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);

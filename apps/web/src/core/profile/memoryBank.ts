@@ -25,22 +25,22 @@ export function normalizeMemoryCategory(category?: string): string {
 export function normalizeMemoryEntry(item: unknown): MemoryEntry | null {
   if (!item || typeof item !== "object") return null;
   const obj = item as Record<string, unknown>;
-  if (typeof obj.fact !== "string") return null;
-  const fact = obj.fact.trim();
+  if (typeof obj["fact"] !== "string") return null;
+  const fact = obj["fact"].trim();
   if (!fact) return null;
   return {
     id:
-      typeof obj.id === "string" && obj.id.trim()
-        ? obj.id.trim()
+      typeof obj["id"] === "string" && obj["id"].trim()
+        ? obj["id"].trim()
         : makeMemoryId(),
     fact,
     category:
-      typeof obj.category === "string"
-        ? normalizeMemoryCategory(obj.category)
+      typeof obj["category"] === "string"
+        ? normalizeMemoryCategory(obj["category"])
         : "other",
     createdAt:
-      typeof obj.createdAt === "string" && obj.createdAt.trim()
-        ? obj.createdAt
+      typeof obj["createdAt"] === "string" && obj["createdAt"].trim()
+        ? obj["createdAt"]
         : new Date().toISOString(),
   };
 }

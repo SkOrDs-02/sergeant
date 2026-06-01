@@ -81,7 +81,12 @@ export function Dashboard({
     month: "long",
   });
   const rec = useRecovery();
-  const { workouts, loaded: workoutsLoaded, createWorkout, addItem } = useWorkouts();
+  const {
+    workouts,
+    loaded: workoutsLoaded,
+    createWorkout,
+    addItem,
+  } = useWorkouts();
   const { exercises } = useExerciseCatalog();
   const { templates, recentlyUsed, markTemplateUsed } = useWorkoutTemplates();
   const monthlyPlan = useMonthlyPlan();
@@ -127,14 +132,14 @@ export function Dashboard({
       const isCardio = ex.primaryGroup === "cardio";
       addItem(w.id, {
         exerciseId: ex.id,
-        nameUk: ex?.name?.uk || ex?.name?.en,
-        primaryGroup: ex.primaryGroup,
+        nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
+        primaryGroup: ex.primaryGroup || "",
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
         type: isCardio ? "distance" : "strength",
-        sets: isCardio ? undefined : [{ weightKg: 0, reps: 0 }],
+        ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
         durationSec: 0,
-        distanceM: isCardio ? 0 : 0,
+        distanceM: 0,
       });
     }
     if (templateId) markTemplateUsed(templateId);

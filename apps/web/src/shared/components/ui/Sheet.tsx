@@ -43,15 +43,15 @@ export interface SheetProps {
   /** Dialog title — rendered in the header and used for aria-labelledby. */
   title: ReactNode;
   /** Optional subtitle rendered under the title. */
-  description?: ReactNode;
+  description?: ReactNode | undefined;
   /** Main sheet body. */
-  children?: ReactNode;
+  children?: ReactNode | undefined;
   /** Sticky footer (e.g. action buttons). Rendered inside the panel, outside the scroll area. */
-  footer?: ReactNode;
+  footer?: ReactNode | undefined;
   /** Slot rendered in the header row to the left of the close button (e.g. extra action). */
-  headerRight?: ReactNode;
+  headerRight?: ReactNode | undefined;
   /** Hide the drag-handle pill. */
-  hideHandle?: boolean;
+  hideHandle?: boolean | undefined;
   /**
    * Hide the built-in title + close-button row.
    *
@@ -63,17 +63,17 @@ export interface SheetProps {
    * wired to `aria-labelledby` for screen readers via a visually-hidden
    * node so the dialog remains labelled.
    */
-  hideHeader?: boolean;
+  hideHeader?: boolean | undefined;
   /** Keyboard (visual viewport) inset in px — shifts panel up when an on-screen keyboard is visible. */
-  kbInsetPx?: number;
+  kbInsetPx?: number | undefined;
   /** Sheet z-index. Defaults to 50 — raise for nested sheets. */
-  zIndex?: number;
+  zIndex?: number | undefined;
   /** Accessible label for the close button. */
-  closeLabel?: string;
+  closeLabel?: string | undefined;
   /** Optional className on the panel (for per-module accents). */
-  panelClassName?: string;
+  panelClassName?: string | undefined;
   /** Optional className on the scroll region. */
-  bodyClassName?: string;
+  bodyClassName?: string | undefined;
   /**
    * Sergeant v2 — surface prominence. `default` keeps the legacy
    * opaque `bg-panel` + `shadow-e4` shell; `glass` opts into the v2

@@ -66,29 +66,31 @@ function optionalPositiveNumber(v: unknown): number | null {
 function normalizePantryItem(x: unknown): NutritionBackupPantryItem | null {
   if (!x || typeof x !== "object") return null;
   const rec = x as Record<string, unknown>;
-  const name = safeString(rec.name, "").trim();
+  const name = safeString(rec["name"], "").trim();
   if (!name) return null;
   const qty =
-    rec.qty == null || rec.qty === "" ? null : safeNumber(rec.qty, null);
+    rec["qty"] == null || rec["qty"] === ""
+      ? null
+      : safeNumber(rec["qty"], null);
   const unit =
-    rec.unit == null || rec.unit === ""
+    rec["unit"] == null || rec["unit"] === ""
       ? null
-      : safeString(rec.unit, "").trim();
+      : safeString(rec["unit"], "").trim();
   const notes =
-    rec.notes == null || rec.notes === ""
+    rec["notes"] == null || rec["notes"] === ""
       ? null
-      : safeString(rec.notes, "").trim();
+      : safeString(rec["notes"], "").trim();
   return { name, qty, unit, notes };
 }
 
 function normalizePantry(x: unknown): NutritionBackupPantry | null {
   if (!x || typeof x !== "object") return null;
   const rec = x as Record<string, unknown>;
-  const id = safeString(rec.id, "").trim();
-  const name = safeString(rec.name, "").trim() || "Склад";
-  const text = safeString(rec.text, "");
-  const items = Array.isArray(rec.items)
-    ? rec.items
+  const id = safeString(rec["id"], "").trim();
+  const name = safeString(rec["name"], "").trim() || "Склад";
+  const text = safeString(rec["text"], "");
+  const items = Array.isArray(rec["items"])
+    ? rec["items"]
         .map(normalizePantryItem)
         .filter((v): v is NutritionBackupPantryItem => v != null)
     : [];
@@ -162,24 +164,24 @@ export function applyNutritionBackupPayload(payload: unknown): void {
     throw new Error("Некоректний бекап харчування.");
   }
   const p = payload as Record<string, unknown>;
-  if (p.kind !== NUTRITION_BACKUP_KIND) {
+  if (p["kind"] !== NUTRITION_BACKUP_KIND) {
     throw new Error("Некоректний тип бекапу харчування.");
   }
-  if (typeof p.schemaVersion !== "number") {
+  if (typeof p["schemaVersion"] !== "number") {
     throw new Error("Некоректна версія схеми бекапу харчування.");
   }
-  const data = p.data as Record<string, unknown> | undefined;
+  const data = p["data"] as Record<string, unknown> | undefined;
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("Некоректні дані бекапу харчування.");
   }
 
-  const pantries = Array.isArray(data.pantries)
-    ? data.pantries
+  const pantries = Array.isArray(data["pantries"])
+    ? data["pantries"]
         .map(normalizePantry)
         .filter((v): v is NutritionBackupPantry => v != null)
     : [];
-  const activePantryId = safeString(data.activePantryId, "home") || "home";
-  const prefs = normalizePrefs(data.prefs);
+  const activePantryId = safeString(data["activePantryId"], "home") || "home";
+  const prefs = normalizePrefs(data["prefs"]);
 
   // Stage 8 PR #057n-tombstone: writes go through the dual-write
   // pipeline so the SQLite tables become the source of truth and the
@@ -197,7 +199,11 @@ export function applyNutritionBackupPayload(payload: unknown): void {
     activePantryId,
   );
   persistNutritionPrefs(prefs, NUTRITION_PREFS_KEY);
-  if (data.log && typeof data.log === "object" && !Array.isArray(data.log)) {
-    persistNutritionLog(normalizeNutritionLog(data.log), NUTRITION_LOG_KEY);
+  if (
+    data["log"] &&
+    typeof data["log"] === "object" &&
+    !Array.isArray(data["log"])
+  ) {
+    persistNutritionLog(normalizeNutritionLog(data["log"]), NUTRITION_LOG_KEY);
   }
 }

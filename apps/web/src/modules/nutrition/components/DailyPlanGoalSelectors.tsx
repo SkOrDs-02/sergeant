@@ -62,8 +62,8 @@ export const PRESETS: readonly Preset[] = [
 interface DailyPlanGoalSelectorsProps {
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
-  busy?: boolean;
-  dayPlanBusy?: boolean;
+  busy?: boolean | undefined;
+  dayPlanBusy?: boolean | undefined;
 }
 
 /**

@@ -118,12 +118,12 @@ const iconSizes: Record<ButtonSize, string> = {
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  iconOnly?: boolean;
-  loading?: boolean;
+  variant?: ButtonVariant | undefined;
+  size?: ButtonSize | undefined;
+  iconOnly?: boolean | undefined;
+  loading?: boolean | undefined;
   /** Progress value 0-100 for determinate loading state */
-  progress?: number;
+  progress?: number | undefined;
   /**
    * When set, redirects the *neutral* `primary` / `secondary` variants to
    * the host module's branded equivalent (e.g. `module="finyk"` +
@@ -140,8 +140,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * HubChat, dashboard) should leave `module` unset — it's intentionally
    * brand-emerald so the four modules share a neutral parent.
    */
-  module?: ModuleAccent;
-  children?: ReactNode;
+  module?: ModuleAccent | undefined;
+  children?: ReactNode | undefined;
 }
 
 const MODULE_VARIANT_OVERRIDE: Record<

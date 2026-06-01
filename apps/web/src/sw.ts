@@ -102,7 +102,7 @@ self.addEventListener("activate", (event) => {
 // U+FEFF), які зловмисник може використати для візуального спуфінгу.
 const sanitize = (input: unknown, max: number): string =>
   String(input ?? "")
-    .replace(/[‪-‮⁦-⁩​-‍﻿]/g, "")
+    .replace(/[\u202A-\u202E\u2066-\u2069\u200B-\u200D\uFEFF]/g, "")
     .slice(0, max);
 
 self.addEventListener("push", (event) => {

@@ -53,8 +53,8 @@ describe("routeChangePerf", () => {
     beginRouteChange("/", "/finyk");
     endRouteChange("/finyk");
     const payload = mockTrack.mock.calls[0]?.[1] as Record<string, unknown>;
-    expect(payload.longTaskMs).toBe(225);
-    expect(payload.longTaskCount).toBe(2);
+    expect(payload["longTaskMs"]).toBe(225);
+    expect(payload["longTaskCount"]).toBe(2);
   });
 
   it("end without a matching begin is a silent no-op", () => {

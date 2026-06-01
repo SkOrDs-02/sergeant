@@ -50,9 +50,9 @@ export interface WorkoutItem {
   musclesPrimary: string[];
   musclesSecondary: string[];
   type: WorkoutItemType;
-  sets?: WorkoutSet[];
-  durationSec?: number;
-  distanceM?: number;
+  sets?: WorkoutSet[] | undefined;
+  durationSec?: number | undefined;
+  distanceM?: number | undefined;
   [key: string]: unknown;
 }
 
@@ -65,12 +65,12 @@ export interface WorkoutGroup {
    * because legacy persisted groups may omit it; the UI defaults to
    * "superset" rendering when absent.
    */
-  type?: "circuit" | "superset";
+  type?: "circuit" | "superset" | undefined;
   /**
    * Shared rest duration (seconds) between rounds of the group. Optional
    * because legacy persisted groups may omit it; the UI falls back to 60s.
    */
-  restSec?: number;
+  restSec?: number | undefined;
 }
 
 /** Optional self-reported wellbeing snapshot attached to a workout. */

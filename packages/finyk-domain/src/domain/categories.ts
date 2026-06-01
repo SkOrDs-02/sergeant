@@ -24,13 +24,13 @@ export {
 interface Category {
   id: string;
   label: string;
-  mccs?: number[];
-  keywords?: string[];
-  color?: string;
+  mccs?: number[] | undefined;
+  keywords?: string[] | undefined;
+  color?: string | undefined;
 }
 
 interface CustomCategory extends Category {
-  color?: string;
+  color?: string | undefined;
 }
 
 // Стабільні кольори для базових категорій витрат.

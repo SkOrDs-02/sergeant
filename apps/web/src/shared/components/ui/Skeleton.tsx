@@ -6,21 +6,21 @@ import { cn } from "../../lib/ui/cn";
 export type SkeletonVariant = "rect" | "text" | "avatar" | "card";
 
 export interface SkeletonProps {
-  className?: string;
+  className?: string | undefined;
   /** Use shimmer effect instead of pulse (more premium feel). Under
    *  `prefers-reduced-motion: reduce` both shimmer and pulse collapse
    *  to a static muted block (WCAG 2.3.3 + Apple HIG). */
-  shimmer?: boolean;
+  shimmer?: boolean | undefined;
   /** Shape preset. Defaults to `rect`. Other variants (`text`,
    *  `avatar`, `card`) are also exposed as their own components for
    *  ergonomic call-sites. */
-  variant?: SkeletonVariant;
+  variant?: SkeletonVariant | undefined;
   /**
    * Inline style — primarily used for staggered `animationDelay` on rows
    * of skeletons (see `ModulePageLoader.RoutineLoader`). Forwarded to the
    * outer `<div>` only.
    */
-  style?: CSSProperties;
+  style?: CSSProperties | undefined;
 }
 
 const SHIMMER_OVERLAY =
@@ -126,9 +126,9 @@ export interface SkeletonTextProps extends SkeletonProps {
    *  them; widths are randomised in the [55%, 100%] band so the
    *  paragraph reads as text rather than a single bar. The last line
    *  is always shorter to mirror real prose. */
-  lines?: number;
+  lines?: number | undefined;
   /** Tailwind gap class between lines when `lines > 1`. */
-  gap?: string;
+  gap?: string | undefined;
 }
 
 /**

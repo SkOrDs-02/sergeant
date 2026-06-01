@@ -72,7 +72,7 @@ describe("fetchAllMonoTransactions", () => {
     expect(result.map((t) => t.monoTxId)).toEqual(["t1", "t2"]);
     expect(mockedTransactions).toHaveBeenCalledTimes(1);
     expect(mockedTransactions).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 200, cursor: undefined }),
+      expect.objectContaining({ limit: 200 }),
       expect.anything(),
     );
   });

@@ -52,17 +52,17 @@ export function WelcomeOneScreen({
    * `copy.primaryCta` for "Закрити". Real wizard always renders
    * `copy.primaryCta` so the experiment arm controls the text.
    */
-  ctaLabelOverride?: string;
+  ctaLabelOverride?: string | undefined;
   /**
    * S6.1: disable the primary CTA when the user is in the `none` arm
    * of `onboarding_default_picks_v1` and has no module selected.
    */
-  ctaDisabled?: boolean;
+  ctaDisabled?: boolean | undefined;
   /**
    * S6.1: inline hint rendered below the CTA when {@link ctaDisabled}
    * is true. Tells the user why the button is inactive.
    */
-  emptyPicksHint?: string;
+  emptyPicksHint?: string | undefined;
   /**
    * PR-05 — demo mode as first-class CTA. Optional handler for the
    * secondary "Подивитись приклад" button rendered inside the splash
@@ -73,21 +73,21 @@ export function WelcomeOneScreen({
    * traffic ≥ 15% target without forcing the user to scan past the
    * card.
    */
-  onSecondaryAction?: () => void;
+  onSecondaryAction?: (() => void) | undefined;
   /**
    * Ref to the splash heading. Set by the wizard so the modal variant
    * can move focus there on mount (WCAG 2.4.3 — focus must land
    * inside the dialog so screen readers announce the new context
    * instead of stranding the user on `<body>`).
    */
-  headingRef?: RefObject<HTMLHeadingElement>;
+  headingRef?: RefObject<HTMLHeadingElement> | undefined;
   /**
    * Disable + mark the primary CTA busy while `finish()` is mid-flight.
    * Synchronous today, but the flag keeps a double-click during the
    * same React commit (route navigation, analytics flush) from
    * firing the side-effects twice.
    */
-  ctaBusy?: boolean;
+  ctaBusy?: boolean | undefined;
 }) {
   return (
     // 2026-05-19 — removed inner `<MeshBackground>` wrapper. The mesh

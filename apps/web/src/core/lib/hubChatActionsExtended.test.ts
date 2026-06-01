@@ -463,8 +463,8 @@ describe("log_measurement", () => {
       [],
     );
     expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(78.5);
-    expect(arr[0]!.waistCm).toBe(82);
+    expect(arr[0]!["weightKg"]).toBe(78.5);
+    expect(arr[0]!["waistCm"]).toBe(82);
   });
 
   it("ігнорує порожні/невалідні поля, відмовляє якщо нічого", () => {
@@ -913,10 +913,10 @@ describe("set_daily_plan", () => {
     });
     expect(msg).toContain("2200");
     const prefs = readLS<Record<string, number>>("nutrition_prefs_v1", {});
-    expect(prefs.dailyTargetKcal).toBe(2200);
-    expect(prefs.dailyTargetProtein_g).toBe(150);
-    expect(prefs.waterGoalMl).toBe(2500);
-    expect(prefs.dailyTargetFat_g).toBeUndefined();
+    expect(prefs["dailyTargetKcal"]).toBe(2200);
+    expect(prefs["dailyTargetProtein_g"]).toBe(150);
+    expect(prefs["waterGoalMl"]).toBe(2500);
+    expect(prefs["dailyTargetFat_g"]).toBeUndefined();
   });
 
   it("відмовляє якщо немає полів", () => {

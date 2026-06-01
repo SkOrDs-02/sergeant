@@ -31,8 +31,8 @@ export interface Slide {
   bg: string;
   agg?: SlideAggregate | null;
   ai?: AISlidePayload | null;
-  recommendations?: string[];
-  weekRange?: string;
+  recommendations?: string[] | undefined;
+  weekRange?: string | undefined;
 }
 
 export interface FinykSlideData extends Slide {

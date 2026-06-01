@@ -252,22 +252,17 @@ export function WorkoutItemCard({
                 updateItem(activeWorkout.id, it.id, {
                   type: t,
                   sets: it.sets?.length ? it.sets : [{ weightKg: 0, reps: 0 }],
-                  durationSec: undefined,
-                  distanceM: undefined,
                 });
               if (t === "time")
                 updateItem(activeWorkout.id, it.id, {
                   type: t,
                   durationSec: it.durationSec ?? 0,
-                  sets: undefined,
-                  distanceM: undefined,
                 });
               if (t === "distance")
                 updateItem(activeWorkout.id, it.id, {
                   type: t,
                   distanceM: it.distanceM ?? 0,
                   durationSec: it.durationSec ?? 0,
-                  sets: undefined,
                 });
             }}
           />

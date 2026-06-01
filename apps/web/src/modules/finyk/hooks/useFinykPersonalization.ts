@@ -13,14 +13,16 @@ import type {
 // найчастіших категорій і мерчантів для поточного користувача — використовується
 // у quick add, dashboard-картках та в компонентах, що сортують UI за частотою.
 interface PersonalizationOptions {
-  mono?: { realTx?: readonly Transaction[] };
-  storage?: {
-    manualExpenses?: readonly ManualExpense[];
-    customCategories?: Category[];
-    txCategories?: Readonly<Record<string, string | undefined>>;
-    excludedTxIds?: Set<string>;
-  };
-  now?: Date;
+  mono?: { realTx?: readonly Transaction[] | undefined } | undefined;
+  storage?:
+    | {
+        manualExpenses?: readonly ManualExpense[] | undefined;
+        customCategories?: Category[] | undefined;
+        txCategories?: Readonly<Record<string, string | undefined>> | undefined;
+        excludedTxIds?: Set<string> | undefined;
+      }
+    | undefined;
+  now?: Date | undefined;
 }
 
 export function useFinykPersonalization({

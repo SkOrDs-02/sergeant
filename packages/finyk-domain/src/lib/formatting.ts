@@ -32,8 +32,8 @@ export function fmtDate(ts: number): string {
 }
 
 interface Account {
-  type?: string;
-  creditLimit?: number;
+  type?: string | undefined;
+  creditLimit?: number | undefined;
 }
 
 export function getAccountLabel(acc: Account): string {

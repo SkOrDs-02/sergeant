@@ -434,16 +434,14 @@ describe("HubDashboard", () => {
     );
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
 
+    const finykLabel = finykQuickAction?.label ?? "";
+    const fizrukLabel = fizrukQuickAction?.label ?? "";
     expect(
-      screen.getByRole("button", { name: finykQuickAction?.label }),
+      screen.getByRole("button", { name: finykLabel }),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: fizrukQuickAction?.label }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: fizrukLabel })).toBeNull();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: finykQuickAction?.label }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: finykLabel }));
     expect(mocks.openHubModuleWithAction).toHaveBeenCalledWith(
       "finyk",
       finykQuickAction?.action,

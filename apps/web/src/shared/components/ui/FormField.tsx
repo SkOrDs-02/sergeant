@@ -104,7 +104,7 @@ export function FormField({
     const child = arr[0] as ReactElement<Record<string, unknown>>;
     const existing = child.props ?? {};
     return cloneElement(child, {
-      id: (existing.id as string | undefined) ?? controlId,
+      id: (existing["id"] as string | undefined) ?? controlId,
       "aria-describedby":
         (existing["aria-describedby"] as string | undefined) ?? describedById,
       "aria-invalid":

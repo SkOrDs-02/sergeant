@@ -55,17 +55,17 @@ export interface FrequentMerchant {
 
 export interface PersonalizationOptions {
   /** Скільки днів дивитись назад. 0/негативні = весь час. */
-  windowDays?: number;
+  windowDays?: number | undefined;
   /** Максимум елементів у результаті. */
-  limit?: number;
+  limit?: number | undefined;
   /** Користувацькі категорії (для резолву id → label). */
-  customCategories?: Category[];
+  customCategories?: Category[] | undefined;
   /** Довідкова «поточна» дата — корисно у тестах. */
-  now?: Date;
+  now?: Date | undefined;
   /** Id транзакцій, які треба ігнорувати (excludedTxIds / transfers). */
-  excludedTxIds?: Set<string> | Iterable<string>;
+  excludedTxIds?: Set<string> | Iterable<string> | undefined;
   /** Оверрайди категорій з finyk_tx_cats. */
-  txCategories?: Record<string, string | undefined>;
+  txCategories?: Record<string, string | undefined> | undefined;
 }
 
 // Мапа manual-підписів (як у ManualExpenseSheet) на canonical id з MCC_CATEGORIES.

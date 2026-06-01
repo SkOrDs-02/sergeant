@@ -31,7 +31,7 @@ import type {
 export interface ApplyDualWriteOptions {
   readonly userId: string;
   readonly clientTs: string;
-  readonly logger?: DualWriteLogger;
+  readonly logger?: DualWriteLogger | undefined;
 }
 
 export type DualWriteLogger = (

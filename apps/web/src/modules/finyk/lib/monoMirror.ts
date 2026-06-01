@@ -27,8 +27,8 @@ import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
 interface MonoAccountInput {
   id: string;
-  balance?: number | null;
-  creditLimit?: number | null;
+  balance?: number | null | undefined;
+  creditLimit?: number | null | undefined;
   [k: string]: unknown;
 }
 

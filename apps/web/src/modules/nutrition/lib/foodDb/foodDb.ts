@@ -74,10 +74,10 @@ function normalizeMacros(per100: unknown): Macros {
       ? (per100 as Record<string, unknown>)
       : {};
   return {
-    kcal: clamp0(m.kcal),
-    protein_g: clamp0(m.protein_g),
-    fat_g: clamp0(m.fat_g),
-    carbs_g: clamp0(m.carbs_g),
+    kcal: clamp0(m["kcal"]),
+    protein_g: clamp0(m["protein_g"]),
+    fat_g: clamp0(m["fat_g"]),
+    carbs_g: clamp0(m["carbs_g"]),
   };
 }
 

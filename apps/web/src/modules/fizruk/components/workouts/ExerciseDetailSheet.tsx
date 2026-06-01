@@ -46,24 +46,27 @@ export function ExerciseDetailSheet({
 
   const cf = recoveryConflictsForExercise(selected, rec?.by);
   const isCustom =
-    Boolean(selected._custom) ||
-    selected.source === "manual" ||
+    Boolean(selected["_custom"]) ||
+    selected["source"] === "manual" ||
     String(selected.id || "").startsWith("custom_");
 
   // Loosely-typed/legacy fields surfaced via the catalog's `[key: string]:
   // unknown` index signature. Narrow them once at the top so the JSX below
   // stays clean.
-  const level = typeof selected.level === "string" ? selected.level : null;
-  const images = Array.isArray(selected.images)
-    ? (selected.images as string[]).filter((s) => typeof s === "string")
+  const level =
+    typeof selected["level"] === "string" ? selected["level"] : null;
+  const images = Array.isArray(selected["images"])
+    ? (selected["images"] as string[]).filter((s) => typeof s === "string")
     : [];
-  const equipmentLabels: string[] = Array.isArray(selected.equipmentUk)
-    ? (selected.equipmentUk as string[]).filter((eq) => typeof eq === "string")
+  const equipmentLabels: string[] = Array.isArray(selected["equipmentUk"])
+    ? (selected["equipmentUk"] as string[]).filter(
+        (eq) => typeof eq === "string",
+      )
     : Array.isArray(selected.equipment)
       ? selected.equipment.filter((eq): eq is string => typeof eq === "string")
       : [];
-  const tips: string[] = Array.isArray(selected.tips)
-    ? (selected.tips as string[]).filter((t) => typeof t === "string")
+  const tips: string[] = Array.isArray(selected["tips"])
+    ? (selected["tips"] as string[]).filter((t) => typeof t === "string")
     : [];
 
   const description = (

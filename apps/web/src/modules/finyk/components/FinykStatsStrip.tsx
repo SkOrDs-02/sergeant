@@ -24,8 +24,8 @@ type StatTileProps = {
   iconTone: IconTone;
   label: string;
   value: string;
-  hint?: string;
-  onClick?: () => void;
+  hint?: string | undefined;
+  onClick?: (() => void) | undefined;
 };
 
 function toneClass(tone: IconTone) {

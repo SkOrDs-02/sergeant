@@ -224,19 +224,19 @@ function rowToCustomExercise(row: CustomExerciseRow): RawExerciseDef | null {
 
 function rowToMeasurement(row: MeasurementRow): MeasurementEntry {
   const entry: MeasurementEntry = { id: row.id, at: row.measured_at };
-  if (row.weight_kg != null) entry.weightKg = row.weight_kg;
-  if (row.waist_cm != null) entry.waistCm = row.waist_cm;
-  if (row.chest_cm != null) entry.chestCm = row.chest_cm;
-  if (row.hips_cm != null) entry.hipsCm = row.hips_cm;
+  if (row.weight_kg != null) entry["weightKg"] = row.weight_kg;
+  if (row.waist_cm != null) entry["waistCm"] = row.waist_cm;
+  if (row.chest_cm != null) entry["chestCm"] = row.chest_cm;
+  if (row.hips_cm != null) entry["hipsCm"] = row.hips_cm;
   if (row.bicep_cm != null) {
     // bicep_cm is the only side-agnostic column; surface to both
     // legacy fields used by the UI hook.
-    entry.bicepLCm = row.bicep_cm;
-    entry.bicepRCm = row.bicep_cm;
+    entry["bicepLCm"] = row.bicep_cm;
+    entry["bicepRCm"] = row.bicep_cm;
   }
-  if (row.sleep_hours != null) entry.sleepHours = row.sleep_hours;
-  if (row.energy_level != null) entry.energyLevel = row.energy_level;
-  if (row.mood != null) entry.mood = row.mood;
+  if (row.sleep_hours != null) entry["sleepHours"] = row.sleep_hours;
+  if (row.energy_level != null) entry["energyLevel"] = row.energy_level;
+  if (row.mood != null) entry["mood"] = row.mood;
   return entry;
 }
 

@@ -30,6 +30,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { logger } from "@shared/lib";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { Icon } from "./Icon";
 import {
@@ -313,7 +314,7 @@ function CommandPaletteUI() {
       try {
         command.run();
       } catch (err) {
-        console.warn("[CommandPalette] run() threw", err);
+        logger.warn("[CommandPalette] run() threw", err);
       }
     },
     [closePalette, markRecent],

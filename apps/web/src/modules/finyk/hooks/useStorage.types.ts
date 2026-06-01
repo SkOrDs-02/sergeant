@@ -7,11 +7,11 @@ import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 export type Subscription = {
   id: string;
   name: string;
-  emoji: string;
+  emoji?: string | undefined;
   keyword: string;
   billingDay: number;
   currency: string;
-  linkedTxId?: string;
+  linkedTxId?: string | undefined;
   [extra: string]: unknown;
 };
 
@@ -51,9 +51,9 @@ export type ManualExpense = {
 export type CustomCategory = {
   id: string;
   label: string;
-  color?: string;
-  icon?: string;
-  parentId?: string;
+  color?: string | undefined;
+  icon?: string | undefined;
+  parentId?: string | undefined;
 };
 
 export type TxCategoriesMap = Record<string, string | undefined>;

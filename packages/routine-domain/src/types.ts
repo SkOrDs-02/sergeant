@@ -11,36 +11,36 @@ export type Recurrence = "daily" | "weekdays" | "weekly" | "monthly" | "once";
 export interface Habit {
   id: string;
   name: string;
-  emoji?: string;
-  tagIds?: string[];
-  categoryId?: string | null;
-  createdAt?: string;
-  archived?: boolean;
-  paused?: boolean;
-  recurrence?: Recurrence | string;
-  startDate?: string | null;
-  endDate?: string | null;
-  timeOfDay?: string;
-  reminderTimes?: string[];
-  weekdays?: number[];
+  emoji?: string | undefined;
+  tagIds?: string[] | undefined;
+  categoryId?: string | null | undefined;
+  createdAt?: string | undefined;
+  archived?: boolean | undefined;
+  paused?: boolean | undefined;
+  recurrence?: Recurrence | string | undefined;
+  startDate?: string | null | undefined;
+  endDate?: string | null | undefined;
+  timeOfDay?: string | undefined;
+  reminderTimes?: string[] | undefined;
+  weekdays?: number[] | undefined;
 }
 
 export interface Tag {
   id: string;
   name: string;
-  scope?: string;
+  scope?: string | undefined;
 }
 
 export interface Category {
   id: string;
   name: string;
-  emoji?: string;
+  emoji?: string | undefined;
 }
 
 export interface RoutinePrefs {
-  showFizrukInCalendar?: boolean;
-  showFinykSubscriptionsInCalendar?: boolean;
-  routineRemindersEnabled?: boolean;
+  showFizrukInCalendar?: boolean | undefined;
+  showFinykSubscriptionsInCalendar?: boolean | undefined;
+  routineRemindersEnabled?: boolean | undefined;
   [k: string]: unknown;
 }
 
@@ -57,17 +57,17 @@ export interface RoutineState {
 }
 
 export interface HabitDraftPatch {
-  name?: string;
-  emoji?: string;
-  tagIds?: string[];
-  categoryId?: string | null;
-  recurrence?: Recurrence | string;
-  startDate?: string | null;
-  endDate?: string | null;
-  timeOfDay?: string;
-  reminderTimes?: string[];
-  weekdays?: number[];
-  paused?: boolean;
+  name?: string | undefined;
+  emoji?: string | undefined;
+  tagIds?: string[] | undefined;
+  categoryId?: string | null | undefined;
+  recurrence?: Recurrence | string | undefined;
+  startDate?: string | null | undefined;
+  endDate?: string | null | undefined;
+  timeOfDay?: string | undefined;
+  reminderTimes?: string[] | undefined;
+  weekdays?: number[] | undefined;
+  paused?: boolean | undefined;
 }
 
 /**

@@ -45,7 +45,7 @@ export function setGoal(action: SetGoalAction): string {
       goal.dailyKcal = dk;
       parts.push(`калорії: ${dk} ккал/день`);
       const prefs = ls<Record<string, unknown>>("nutrition_prefs_v1", {});
-      prefs.dailyTargetKcal = dk;
+      prefs["dailyTargetKcal"] = dk;
       lsSet("nutrition_prefs_v1", prefs);
     }
   }

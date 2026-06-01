@@ -44,15 +44,16 @@ export interface Transaction {
   _accountId: string | null;
   _manual: boolean;
   _manualId?: string | undefined;
+  [key: string]: unknown;
 }
 
 /** Базова категорія витрат / доходів. */
 export interface Category {
   id: string;
   label: string;
-  mccs?: number[];
-  keywords?: string[];
-  color?: string;
+  mccs?: number[] | undefined;
+  keywords?: string[] | undefined;
+  color?: string | undefined;
 }
 
 /** Тип бюджету. */
@@ -94,11 +95,11 @@ export type MonthFilter = string | { year: number; month: number } | null;
 
 /** Опції для аналітичних селекторів. */
 export interface SelectorOptions {
-  excludedTxIds?: Set<string> | Iterable<string>;
-  txSplits?: TxSplitsMap;
-  txCategories?: TxCategoriesMap;
-  customCategories?: Category[];
-  month?: MonthFilter;
+  excludedTxIds?: Set<string> | Iterable<string> | undefined;
+  txSplits?: TxSplitsMap | undefined;
+  txCategories?: TxCategoriesMap | undefined;
+  customCategories?: Category[] | undefined;
+  month?: MonthFilter | undefined;
 }
 
 /**

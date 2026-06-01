@@ -27,15 +27,15 @@ export interface UsePullToRefreshOptions {
   /** Callback when refresh is triggered */
   onRefresh: () => Promise<void>;
   /** Called when onRefresh throws. Use to show error UI (e.g. a toast). */
-  onError?: (err: unknown) => void;
+  onError?: ((err: unknown) => void) | undefined;
   /** Pull distance required to trigger refresh (default: 80px) */
-  pullThreshold?: number;
+  pullThreshold?: number | undefined;
   /** Maximum pull distance (default: 120px) */
-  maxPullDistance?: number;
+  maxPullDistance?: number | undefined;
   /** Resistance factor for pulling past threshold (default: 0.4) */
-  resistance?: number;
+  resistance?: number | undefined;
   /** Whether pull-to-refresh is enabled (default: true) */
-  enabled?: boolean;
+  enabled?: boolean | undefined;
   /** Ref to scrollable container (required) */
   scrollRef: React.RefObject<HTMLElement>;
 }

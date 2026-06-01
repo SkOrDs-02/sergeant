@@ -9,7 +9,7 @@ import {
 interface MacroKcalWarningProps {
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
-  busy?: boolean;
+  busy?: boolean | undefined;
 }
 
 export function MacroKcalWarning({
@@ -100,7 +100,7 @@ export function MacroKcalWarning({
 interface MissingMacrosHintProps {
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
-  busy?: boolean;
+  busy?: boolean | undefined;
 }
 
 /**

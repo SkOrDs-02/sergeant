@@ -81,37 +81,39 @@ function normalizeMacros(mac: unknown): NullableMacros {
 
 export function normalizeRecipeForSave(r: unknown): SavedRecipe {
   const raw = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
-  const title = String(raw.title || "").trim();
+  const title = String(raw["title"] || "").trim();
   const id =
-    raw.id && String(raw.id).trim()
-      ? String(raw.id).trim()
+    raw["id"] && String(raw["id"]).trim()
+      ? String(raw["id"]).trim()
       : `rcp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   return {
     id,
     title,
-    timeMinutes: raw.timeMinutes != null ? clamp0(raw.timeMinutes) : null,
-    servings: raw.servings != null ? clamp0(raw.servings) : null,
-    ingredients: Array.isArray(raw.ingredients)
-      ? (raw.ingredients as unknown[])
+    timeMinutes: raw["timeMinutes"] != null ? clamp0(raw["timeMinutes"]) : null,
+    servings: raw["servings"] != null ? clamp0(raw["servings"]) : null,
+    ingredients: Array.isArray(raw["ingredients"])
+      ? (raw["ingredients"] as unknown[])
           .map((x) => String(x))
           .filter(Boolean)
           .slice(0, 80)
       : [],
-    steps: Array.isArray(raw.steps)
-      ? (raw.steps as unknown[])
+    steps: Array.isArray(raw["steps"])
+      ? (raw["steps"] as unknown[])
           .map((x) => String(x))
           .filter(Boolean)
           .slice(0, 80)
       : [],
-    tips: Array.isArray(raw.tips)
-      ? (raw.tips as unknown[])
+    tips: Array.isArray(raw["tips"])
+      ? (raw["tips"] as unknown[])
           .map((x) => String(x))
           .filter(Boolean)
           .slice(0, 40)
       : [],
-    macros: normalizeMacros(raw.macros),
+    macros: normalizeMacros(raw["macros"]),
     createdAt:
-      raw.createdAt != null ? Number(raw.createdAt) || Date.now() : Date.now(),
+      raw["createdAt"] != null
+        ? Number(raw["createdAt"]) || Date.now()
+        : Date.now(),
     updatedAt: Date.now(),
   };
 }

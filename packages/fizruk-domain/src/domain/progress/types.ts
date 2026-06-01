@@ -26,14 +26,18 @@ export interface ProgressMeasurementInput {
 export interface ProgressWorkoutInput {
   startedAt?: string | null;
   endedAt?: string | null;
-  items?: readonly {
-    exerciseId?: string | null;
-    type?: string;
-    sets?: readonly {
-      weightKg?: number | string | null;
-      reps?: number | string | null;
-    }[];
-  }[];
+  items?:
+    | readonly {
+        exerciseId?: string | null;
+        type?: string;
+        sets?:
+          | readonly {
+              weightKg?: number | string | null;
+              reps?: number | string | null;
+            }[]
+          | undefined;
+      }[]
+    | undefined;
 }
 
 /**

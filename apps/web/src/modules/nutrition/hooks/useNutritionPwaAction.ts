@@ -7,12 +7,12 @@ type LogController = ReturnType<typeof useNutritionLog>;
 type PhotoController = ReturnType<typeof usePhotoAnalysis>;
 
 interface UseNutritionPwaActionArgs {
-  pwaAction?: string | null;
+  pwaAction?: string | null | undefined;
   log: LogController;
   photo: PhotoController;
   setActivePageAndHash: (page: NutritionPage) => void;
   setPhotoCardForceOpen: Dispatch<SetStateAction<boolean>>;
-  onPwaActionConsumed?: () => void;
+  onPwaActionConsumed?: (() => void) | undefined;
 }
 
 /**

@@ -51,7 +51,7 @@ export interface UseTransactionFiltersParams {
   fetchMonth: (year: number, month: number) => Promise<unknown>;
   /** External-driven category filter (e.g. tap on a category card). */
   categoryFilter: string | null | undefined;
-  onClearCategoryFilter?: () => void;
+  onClearCategoryFilter?: (() => void) | undefined;
 }
 
 /**

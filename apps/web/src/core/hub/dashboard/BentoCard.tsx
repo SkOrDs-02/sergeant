@@ -18,7 +18,7 @@ import {
 export interface BentoCardProps {
   config: ModuleConfig;
   onClick: () => void;
-  onQuickAdd?: { label: string; run: () => void } | null;
+  onQuickAdd?: { label: string; run: () => void } | null | undefined;
   /**
    * Ref/props applied to the inner primary `<button>` so dnd-kit can use it
    * as the drag activator. Keeping the activator on the primary button (not
@@ -26,16 +26,16 @@ export interface BentoCardProps {
    * a nested interactive control — see the `nested-interactive` axe rule
    * (#839).
    */
-  primaryRef?: (node: HTMLButtonElement | null) => void;
-  primaryProps?: Record<string, unknown>;
-  isDragging?: boolean;
+  primaryRef?: ((node: HTMLButtonElement | null) => void) | undefined;
+  primaryProps?: Record<string, unknown> | undefined;
+  isDragging?: boolean | undefined;
   /**
    * When `true`, the card is rendered in a muted/greyed-out state
    * because the user did not mark this module as important during
    * onboarding. Quick-add is suppressed and a hint pointing at Hub
    * Settings is shown in place of the preview numbers.
    */
-  inactive?: boolean;
+  inactive?: boolean | undefined;
   /**
    * When `true`, the card is in dashboard "edit mode": it wiggles to
    * signal it is draggable, exposes a visible top-right grip handle, and
@@ -44,16 +44,16 @@ export interface BentoCardProps {
    * activator so the whole card body can keep navigating to the module
    * on tap.
    */
-  editMode?: boolean;
-  handleRef?: (node: HTMLButtonElement | null) => void;
-  handleProps?: Record<string, unknown>;
+  editMode?: boolean | undefined;
+  handleRef?: ((node: HTMLButtonElement | null) => void) | undefined;
+  handleProps?: Record<string, unknown> | undefined;
   /**
    * Set on the single card the adaptive-bento engine has lifted to the top
    * for the current context (signal × time of day). Renders a small
    * "Зараз" pill with the reason so the reorder is explainable, not magic.
    * `null`/`undefined` = not lifted.
    */
-  adaptiveReason?: string | null;
+  adaptiveReason?: string | null | undefined;
 }
 
 /**

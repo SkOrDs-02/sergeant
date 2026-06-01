@@ -68,8 +68,8 @@ interface SessionItem {
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
-  ipAddress?: string | null;
-  userAgent?: string | null;
+  ipAddress?: string | null | undefined;
+  userAgent?: string | null | undefined;
 }
 
 // Named extension surface for the Better Auth React client Proxy. The

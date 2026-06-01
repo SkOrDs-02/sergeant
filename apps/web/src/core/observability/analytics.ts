@@ -123,6 +123,7 @@ export function trackEvent(
     // повинні містити аналітичних payload-ів). LS-запис через batched
     // ring-buffer, щоб серія кліків не била по main-thread (audit F14).
     if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console -- навмисна transport-фіча ring-buffer-у: DevTools/Sentry/PostHog тапи (docs §7)
       console.log("[analytics]", event);
     }
     appendEvent(event);

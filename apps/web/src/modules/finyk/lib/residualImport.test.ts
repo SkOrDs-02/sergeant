@@ -735,7 +735,7 @@ describe("importFinykResidualFromLs — apply падає", () => {
 describe("importFinykResidualFromLs — cyclic-payload throw-гілки", () => {
   function makeCyclic(extras: Record<string, unknown> = {}): unknown {
     const cyclic: Record<string, unknown> = { id: "cyc", ...extras };
-    cyclic.self = cyclic;
+    cyclic["self"] = cyclic;
     return cyclic;
   }
 
@@ -813,7 +813,7 @@ describe("importFinykResidualFromLs — cyclic-payload throw-гілки", () => 
           "./finykStorage",
         );
       const cyclicArr: unknown[] = [{ a: 1 }];
-      (cyclicArr[0] as Record<string, unknown>).self = cyclicArr;
+      (cyclicArr[0] as Record<string, unknown>)["self"] = cyclicArr;
       return {
         ...actual,
         readJSON: vi.fn((key: string) =>

@@ -10,9 +10,9 @@ export function addProgramDay(action: AddProgramDayAction): ChatActionResult {
   if (!dayName) return "Потрібна назва тренування.";
   const exList: Array<{
     name: string;
-    sets?: number;
-    reps?: number;
-    weight?: number;
+    sets?: number | undefined;
+    reps?: number | undefined;
+    weight?: number | undefined;
   }> = [];
   if (Array.isArray(exercises)) {
     for (const ex of exercises) {

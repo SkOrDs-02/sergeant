@@ -210,25 +210,25 @@ describe("dualWriteFizrukState integration", () => {
       "SELECT id, entry_at, weight_kg, mood FROM fizruk_daily_log",
     );
     expect(dailyLog).toHaveLength(1);
-    expect(dailyLog[0]!.id).toBe("d1");
-    expect(dailyLog[0]!.entry_at).toBe("2026-05-01T07:00:00Z");
-    expect(dailyLog[0]!.weight_kg).toBe(80);
-    expect(dailyLog[0]!.mood).toBe(4);
+    expect(dailyLog[0]!["id"]).toBe("d1");
+    expect(dailyLog[0]!["entry_at"]).toBe("2026-05-01T07:00:00Z");
+    expect(dailyLog[0]!["weight_kg"]).toBe(80);
+    expect(dailyLog[0]!["mood"]).toBe(4);
 
     const plan = await handle.client.all<Record<string, unknown>>(
       "SELECT user_id, data_json FROM fizruk_monthly_plan",
     );
     expect(plan).toHaveLength(1);
-    expect(plan[0]!.user_id).toBe(UID);
-    expect(plan[0]!.data_json).toBe('{"days":{"2026-05-01":[]}}');
+    expect(plan[0]!["user_id"]).toBe(UID);
+    expect(plan[0]!["data_json"]).toBe('{"days":{"2026-05-01":[]}}');
 
     const templates = await handle.client.all<Record<string, unknown>>(
       "SELECT id, name, exercise_ids_json FROM fizruk_workout_templates",
     );
     expect(templates).toHaveLength(1);
-    expect(templates[0]!.id).toBe("t1");
-    expect(templates[0]!.name).toBe("Push day");
-    expect(JSON.parse(templates[0]!.exercise_ids_json as string)).toEqual([
+    expect(templates[0]!["id"]).toBe("t1");
+    expect(templates[0]!["name"]).toBe("Push day");
+    expect(JSON.parse(templates[0]!["exercise_ids_json"] as string)).toEqual([
       "bench-press",
     ]);
 

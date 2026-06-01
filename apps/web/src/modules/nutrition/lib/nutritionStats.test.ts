@@ -255,8 +255,8 @@ describe("nutrition/mealTypeBreakdown", () => {
 
   it("groups meals by mealType with count and kcal", () => {
     const result = mealTypeBreakdown(log, "2026-01-10", 1);
-    expect(result.breakfast).toEqual({ count: 1, kcal: 400 });
-    expect(result.lunch).toEqual({ count: 2, kcal: 1150 });
+    expect(result["breakfast"]).toEqual({ count: 1, kcal: 400 });
+    expect(result["lunch"]).toEqual({ count: 2, kcal: 1150 });
   });
 
   it("returns empty object for null log", () => {

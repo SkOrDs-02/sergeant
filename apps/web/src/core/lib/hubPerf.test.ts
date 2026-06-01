@@ -63,8 +63,8 @@ describe("hubPerf", () => {
     beginHubTabSwitch("settings");
     endHubTabSwitch("settings");
     const payload = mockTrack.mock.calls[0]?.[1] as Record<string, unknown>;
-    expect(payload.longTaskMs).toBe(260);
-    expect(payload.longTaskCount).toBe(3);
+    expect(payload["longTaskMs"]).toBe(260);
+    expect(payload["longTaskCount"]).toBe(3);
   });
 
   it("includes cacheHit=true when the page chunk was prefetched", () => {
@@ -72,7 +72,7 @@ describe("hubPerf", () => {
     beginHubTabSwitch("settings");
     endHubTabSwitch("settings");
     const payload = mockTrack.mock.calls[0]?.[1] as Record<string, unknown>;
-    expect(payload.cacheHit).toBe(true);
+    expect(payload["cacheHit"]).toBe(true);
   });
 
   it("end without a matching begin is a silent no-op", () => {
@@ -95,7 +95,7 @@ describe("hubPerf", () => {
     endHubTabSwitch("reports");
     expect(mockTrack).toHaveBeenCalledTimes(2);
     const tabs = mockTrack.mock.calls.map(
-      (call) => (call[1] as Record<string, unknown>).tab,
+      (call) => (call[1] as Record<string, unknown>)["tab"],
     );
     expect(tabs).toEqual(["settings", "reports"]);
   });

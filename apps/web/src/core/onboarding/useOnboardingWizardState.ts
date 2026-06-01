@@ -54,7 +54,7 @@ export interface UseOnboardingWizardStateArgs {
    * tour replay leave the secondary CTA hidden so demo seeding never
    * happens by accident from in-app surfaces.
    */
-  onSecondaryAction?: () => void;
+  onSecondaryAction?: (() => void) | undefined;
 }
 
 export interface UseOnboardingWizardStateReturn {
@@ -64,7 +64,7 @@ export interface UseOnboardingWizardStateReturn {
   toggleExpanded: () => void;
   heroCopy: OnboardingHeroCopy;
   ctaDisabled: boolean;
-  ctaLabelOverride?: string;
+  ctaLabelOverride?: string | undefined;
   emptyPicksHint: string;
   finish: () => void;
   /**
@@ -74,7 +74,7 @@ export interface UseOnboardingWizardStateReturn {
    * idempotent — see {@link finish}).
    */
   submitting: boolean;
-  secondaryAction?: () => void;
+  secondaryAction?: (() => void) | undefined;
   /**
    * Resolved PR-13 goal-first A/B variant. `control` keeps the legacy
    * module-checklist welcome; `goal_first` swaps in `GoalFirstScreen`

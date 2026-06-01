@@ -31,9 +31,9 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | undefined {
 }
 
 export interface UseVoiceInputOptions {
-  lang?: string;
-  onResult?: (transcript: string) => void;
-  onError?: (message: string) => void;
+  lang?: string | undefined;
+  onResult?: ((transcript: string) => void) | undefined;
+  onError?: ((message: string) => void) | undefined;
 }
 
 export interface UseVoiceInputReturn {

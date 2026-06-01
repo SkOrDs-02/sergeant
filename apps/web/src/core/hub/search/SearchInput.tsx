@@ -10,7 +10,7 @@ export interface SearchInputProps {
   listId: string;
   expanded: boolean;
   /** id of the focused option (for `aria-activedescendant`). */
-  activeId?: string;
+  activeId?: string | undefined;
 }
 
 /**

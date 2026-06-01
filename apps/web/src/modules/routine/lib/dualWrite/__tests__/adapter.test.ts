@@ -416,7 +416,7 @@ describe("applyRoutineDualWriteOps", () => {
       ["h1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.deleted_at).toBe(T2);
+    expect(rows[0]!["deleted_at"]).toBe(T2);
   });
 
   // -----------------------------------------------------------------------
@@ -460,7 +460,7 @@ describe("applyRoutineDualWriteOps", () => {
       `SELECT deleted_at FROM routine_tags WHERE id = ?`,
       ["t1"],
     );
-    expect(rows[0]!.deleted_at).toBe(T2);
+    expect(rows[0]!["deleted_at"]).toBe(T2);
   });
 
   // -----------------------------------------------------------------------
@@ -515,7 +515,7 @@ describe("applyRoutineDualWriteOps", () => {
       [USER_ID],
     );
     expect(rows).toHaveLength(1);
-    expect(JSON.parse(rows[0]!.data_json as string)).toEqual({
+    expect(JSON.parse(rows[0]!["data_json"] as string)).toEqual({
       showFizrukInCalendar: true,
     });
   });
@@ -557,7 +557,7 @@ describe("applyRoutineDualWriteOps", () => {
       [USER_ID],
     );
     expect(rows).toHaveLength(1);
-    expect(JSON.parse(rows[0]!.order_json as string)).toEqual(["h2", "h1"]);
+    expect(JSON.parse(rows[0]!["order_json"] as string)).toEqual(["h2", "h1"]);
   });
 
   // -----------------------------------------------------------------------
@@ -614,6 +614,6 @@ describe("applyRoutineDualWriteOps", () => {
        WHERE user_id = ? AND note_key = ?`,
       [USER_ID, "h1__2026-05-01"],
     );
-    expect(rows[0]!.deleted_at).toBe(T2);
+    expect(rows[0]!["deleted_at"]).toBe(T2);
   });
 });

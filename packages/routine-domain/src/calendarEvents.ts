@@ -44,11 +44,11 @@ export interface FinykSubscriptionAmountLookup {
 
 export interface BuildHubCalendarEventsDeps {
   /** Опціонально: Fizruk-план на місяць (dateKey → { templateId }). */
-  fizrukPlanDays?: Record<string, FizrukPlanDay>;
+  fizrukPlanDays?: Record<string, FizrukPlanDay> | undefined;
   /** Опціонально: templateId → назва шаблону. */
-  fizrukTemplateNames?: Map<string, string>;
+  fizrukTemplateNames?: Map<string, string> | undefined;
   /** Опціонально: події підписок Фініка (побудовані заздалегідь). */
-  finykSubscriptionEvents?: HubCalendarEvent[];
+  finykSubscriptionEvents?: HubCalendarEvent[] | undefined;
 }
 
 export interface BuildHubCalendarEventsOptions {

@@ -1,9 +1,9 @@
 import { CURRENCY } from "../constants.js";
 
 interface Subscription {
-  linkedTxId?: string;
-  keyword?: string;
-  currency?: string;
+  linkedTxId?: string | undefined;
+  keyword?: string | undefined;
+  currency?: string | undefined;
 }
 
 interface Transaction {

@@ -198,7 +198,7 @@ export function TransactionList({
         {() => (
           <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
             <GroupedVirtuoso
-              customScrollParent={scrollParent ?? undefined}
+              {...(scrollParent ? { customScrollParent: scrollParent } : {})}
               groupCounts={groupCounts}
               increaseViewportBy={{ top: 400, bottom: 400 }}
               groupContent={(groupIndex) => {

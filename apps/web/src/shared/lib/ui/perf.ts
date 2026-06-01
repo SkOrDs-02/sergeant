@@ -31,6 +31,7 @@ export function perfEnd(
   // structured timings while production stays silent.
   if (import.meta.env?.DEV) {
     try {
+      // eslint-disable-next-line no-console -- DEV-only perf trace, додатково захована за hub_perf=1 LS-toggle (docs §7)
       console.debug(`[perf] ${mark.name}: ${dt.toFixed(1)}ms`, extra ?? "");
     } catch {
       /* ignore */

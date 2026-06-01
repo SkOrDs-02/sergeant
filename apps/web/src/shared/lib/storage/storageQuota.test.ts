@@ -133,7 +133,7 @@ describe("safeJsonSet", () => {
   it("returns exception when JSON.stringify throws", () => {
     // Circular reference causes JSON.stringify to throw
     const circular: Record<string, unknown> = {};
-    circular.self = circular;
+    circular["self"] = circular;
     const result = safeJsonSet("circ", circular);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("exception");

@@ -107,10 +107,11 @@ describe("initSentry", () => {
     const { initSentry } = await import("./sentry");
     await initSentry();
     expect(replayIntegration).toHaveBeenCalledTimes(1);
-    const opts = replayIntegration.mock.calls[0]?.[0] as {
-      maskAllText?: boolean;
-      maskAllInputs?: boolean;
-      blockAllMedia?: boolean;
+    const callArgs = (replayIntegration.mock.calls[0] ?? []) as unknown[];
+    const opts = (callArgs[0] ?? {}) as {
+      maskAllText?: boolean | undefined;
+      maskAllInputs?: boolean | undefined;
+      blockAllMedia?: boolean | undefined;
     };
     expect(opts.maskAllText).toBe(true);
     expect(opts.maskAllInputs).toBe(true);

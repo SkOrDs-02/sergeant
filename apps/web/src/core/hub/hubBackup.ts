@@ -36,7 +36,9 @@ interface HubBackupPayload {
   fizruk: unknown;
   routine: unknown;
   nutrition: unknown;
-  hub?: { lastModule?: string; chatHistory?: string };
+  hub?:
+    | { lastModule?: string | undefined; chatHistory?: string | undefined }
+    | undefined;
 }
 
 export function buildHubBackupPayload(
@@ -51,10 +53,10 @@ export function buildHubBackupPayload(
   }
   const hub: Record<string, string> = {};
   const m = safeReadStringLS(HUB_MODULE_KEY);
-  if (m) hub.lastModule = m;
+  if (m) hub["lastModule"] = m;
   if (includeChat) {
     const chat = safeReadStringLS(HUB_CHAT_KEY);
-    if (chat) hub.chatHistory = chat;
+    if (chat) hub["chatHistory"] = chat;
   }
   return {
     kind: HUB_BACKUP_KIND,
@@ -75,8 +77,8 @@ export function isHubBackupPayload(
     parsed != null &&
     typeof parsed === "object" &&
     !Array.isArray(parsed) &&
-    (parsed as Record<string, unknown>).kind === HUB_BACKUP_KIND &&
-    typeof (parsed as Record<string, unknown>).schemaVersion === "number"
+    (parsed as Record<string, unknown>)["kind"] === HUB_BACKUP_KIND &&
+    typeof (parsed as Record<string, unknown>)["schemaVersion"] === "number"
   );
 }
 

@@ -60,7 +60,7 @@ export interface WhatsNewRelease {
   /** Items — bullet-list у тілі modal. 3-6 точок оптимально. */
   items: readonly WhatsNewItem[];
   /** Optional CTA — якщо немає, показуємо тільки «Зрозуміло». */
-  cta?: WhatsNewCta;
+  cta?: WhatsNewCta | undefined;
 }
 
 export const RELEASES: readonly WhatsNewRelease[] = [

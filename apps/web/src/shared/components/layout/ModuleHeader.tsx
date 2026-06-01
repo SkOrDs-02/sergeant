@@ -35,23 +35,23 @@ import { messages } from "@shared/i18n/uk";
  */
 
 export interface ModuleHeaderProps {
-  title?: ReactNode;
-  subtitle?: ReactNode;
-  eyebrow?: ReactNode;
-  left?: ReactNode;
-  right?: ReactNode;
+  title?: ReactNode | undefined;
+  subtitle?: ReactNode | undefined;
+  eyebrow?: ReactNode | undefined;
+  left?: ReactNode | undefined;
+  right?: ReactNode | undefined;
   /** Override the default title/eyebrow/subtitle body entirely. */
-  titleSlot?: ReactNode;
+  titleSlot?: ReactNode | undefined;
   /** Optional: when provided the header gets a module-colored gradient tint and subtitle uses the module color. */
-  module?: ModuleAccent;
+  module?: ModuleAccent | undefined;
   /**
    * Render a row of module-switching chips below the title. Defaults to
    * `true` whenever {@link module} is set so top-level module shells get
    * cross-module navigation for free; sub-pages that should keep the
    * header compact can opt out with `showSwitcher={false}`.
    */
-  showSwitcher?: boolean;
-  className?: string;
+  showSwitcher?: boolean | undefined;
+  className?: string | undefined;
 }
 
 const MODULE_HEADER_TOKENS: Record<
@@ -179,9 +179,9 @@ export function ModuleHeader({
 export interface ModuleHeaderIconButtonProps {
   onClick: () => void;
   ariaLabel: string;
-  title?: string;
+  title?: string | undefined;
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }
 
 /**

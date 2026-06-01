@@ -22,28 +22,28 @@ interface NormalizeDefaults {
 // Довільний "сирий" інпут — використовуємо індексний тип, щоб не плодити any.
 // Поля опційні та неточно типізовані, бо приходять з різних джерел.
 type RawTxInput = {
-  id?: string | number;
-  amount?: number | string;
-  time?: number | string;
-  date?: string | number | Date;
-  createdAt?: string | number | Date;
-  description?: string;
-  mcc?: number | string;
-  categoryId?: string;
-  category?: string;
-  merchant?: string;
-  merchantName?: string;
-  note?: string;
-  comment?: string;
-  type?: string;
-  source?: string;
-  _source?: string;
-  manual?: boolean;
-  _manual?: boolean;
-  manualId?: string | number;
-  _manualId?: string | number;
-  accountId?: string | null;
-  _accountId?: string | null;
+  id?: string | number | undefined;
+  amount?: number | string | undefined;
+  time?: number | string | undefined;
+  date?: string | number | Date | undefined;
+  createdAt?: string | number | Date | undefined;
+  description?: string | undefined;
+  mcc?: number | string | undefined;
+  categoryId?: string | undefined;
+  category?: string | undefined;
+  merchant?: string | undefined;
+  merchantName?: string | undefined;
+  note?: string | undefined;
+  comment?: string | undefined;
+  type?: string | undefined;
+  source?: string | undefined;
+  _source?: string | undefined;
+  manual?: boolean | undefined;
+  _manual?: boolean | undefined;
+  manualId?: string | number | undefined;
+  _manualId?: string | number | undefined;
+  accountId?: string | null | undefined;
+  _accountId?: string | null | undefined;
   raw?: unknown;
 } & Record<string, unknown>;
 

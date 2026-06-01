@@ -174,14 +174,14 @@ describe("nutrition dualWrite orchestrator", () => {
       ["m1"],
     );
     expect(meals).toHaveLength(1);
-    expect(meals[0]!.kcal).toBe(450);
+    expect(meals[0]!["kcal"]).toBe(450);
 
     const pantries = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM nutrition_pantries WHERE id = ?",
       ["p1"],
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0]!.name).toBe("Дім");
+    expect(pantries[0]!["name"]).toBe("Дім");
 
     const items = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM nutrition_pantry_items WHERE pantry_id = ?",
@@ -194,7 +194,7 @@ describe("nutrition dualWrite orchestrator", () => {
       [UID],
     );
     expect(prefs).toHaveLength(1);
-    expect(prefs[0]!.active_pantry_id).toBe("p1");
+    expect(prefs[0]!["active_pantry_id"]).toBe("p1");
 
     const recipes = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM nutrition_recipes WHERE id = ?",
@@ -214,7 +214,7 @@ describe("nutrition dualWrite orchestrator", () => {
       [UID],
     );
     expect(shoppingRows).toHaveLength(1);
-    expect(shoppingRows[0]!.data_json).toBe('{"categories":[]}');
+    expect(shoppingRows[0]!["data_json"]).toBe('{"categories":[]}');
   });
 
   it("triggerNutritionDualWrite is fire-and-forget (resolves immediately)", async () => {

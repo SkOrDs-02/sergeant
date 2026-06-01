@@ -50,7 +50,7 @@ import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 // device. Runtime detection through `@sergeant/shared.getPlatform()`
 // reads the Capacitor bridge directly and is iOS-version stable.
 if (isCapacitor() && getPlatform() === "ios") {
-  document.documentElement.dataset.iosCapacitor = "true";
+  document.documentElement.dataset["iosCapacitor"] = "true";
 }
 
 const queryClient = createAppQueryClient();

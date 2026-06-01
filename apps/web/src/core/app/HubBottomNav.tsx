@@ -55,10 +55,10 @@ interface HubBottomNavTabProps {
   onClick: () => void;
   label: string;
   iconName: string;
-  className?: string;
+  className?: string | undefined;
   panelId: string;
   id: string;
-  prefetchPage?: PageKey;
+  prefetchPage?: PageKey | undefined;
   /**
    * Слот рендериться у DOM, але приховується від користувача й AT.
    * Використовується для збереження геометрії tab-strip-у в момент,
@@ -66,7 +66,7 @@ interface HubBottomNavTabProps {
    * перехід `showReports: false → true` спричиняє reflow усього `flex`-grid-а
    * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
    */
-  hiddenSlot?: boolean;
+  hiddenSlot?: boolean | undefined;
 }
 
 interface HubBottomNavItem extends HubBottomNavTabProps {
@@ -136,19 +136,19 @@ export interface HubBottomNavProps {
    * побачить «— ₴» і втратить довіру до модуля. Тому tab з'являється
    * лише коли `hasAnyRealEntry()` повертає `true` (див. `firstRealEntry.ts`).
    */
-  showReports?: boolean;
+  showReports?: boolean | undefined;
   /**
    * When `true`, renders a «Профіль» tab for the signed-in user.
    * When `false` and `onShowAuth` is provided, renders an «Увійти» tab
    * for guests so sign-in is reachable from the bottom nav (one-tap
    * instead of hunting for the header icon).
    */
-  showProfile?: boolean;
+  showProfile?: boolean | undefined;
   /**
    * Callback to open the auth sheet. When provided and `showProfile`
    * is `false`, the nav shows an «Увійти» tab for guests.
    */
-  onShowAuth?: () => void;
+  onShowAuth?: (() => void) | undefined;
 }
 
 export function HubBottomNav({

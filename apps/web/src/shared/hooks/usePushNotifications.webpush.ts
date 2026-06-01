@@ -53,8 +53,8 @@ export async function subscribeToWebPush(
   // (RFC 8030). Мапимо у `PushRegisterRequest`-форму без зайвих полів.
   const json = sub.toJSON();
   const endpoint = json.endpoint;
-  const p256dh = json.keys?.p256dh;
-  const auth = json.keys?.auth;
+  const p256dh = json.keys?.["p256dh"];
+  const auth = json.keys?.["auth"];
   if (!endpoint || !p256dh || !auth) {
     throw new Error("Push subscription is missing endpoint or keys");
   }

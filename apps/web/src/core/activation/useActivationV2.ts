@@ -93,7 +93,7 @@ export function useActivationV2(
       budgets_set: input.budgetsCreated,
     };
     const { variant } = optionsRef.current;
-    if (variant) payload.variant = variant;
+    if (variant) payload["variant"] = variant;
     trackEvent(ANALYTICS_EVENTS.ACTIVATION_V2_HIT, payload);
   }, [input, result]);
 

@@ -1,15 +1,16 @@
 import { CURRENCY } from "../constants";
 
 export interface MonoAccount {
-  id?: string;
+  id?: string | undefined;
   // The Mono webhook may surface accounts before balance has propagated
   // (and the privatbank merge in `useUnifiedFinanceData` reuses this
   // shape with optional balance), so this field is optional. Helpers
   // below treat a missing balance as `0`.
-  balance?: number;
-  creditLimit?: number;
-  currencyCode?: number;
-  type?: string;
+  balance?: number | undefined;
+  creditLimit?: number | undefined;
+  currencyCode?: number | undefined;
+  type?: string | undefined;
+  [k: string]: unknown;
 }
 
 export function getMonoDebt(acc: MonoAccount): number {

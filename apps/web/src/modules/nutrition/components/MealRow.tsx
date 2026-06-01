@@ -41,8 +41,8 @@ function MealThumb({ mealId }: { mealId: string }) {
 
 interface MealRowProps {
   meal: Meal;
-  onRemove?: () => void;
-  onEdit?: () => void;
+  onRemove?: (() => void) | undefined;
+  onEdit?: (() => void) | undefined;
 }
 
 export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {

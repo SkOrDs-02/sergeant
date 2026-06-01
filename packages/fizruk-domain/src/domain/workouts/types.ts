@@ -91,14 +91,14 @@ export interface WorkoutSetLike {
 }
 
 export interface WorkoutItemLike {
-  type?: string;
-  sets?: ReadonlyArray<WorkoutSetLike | null | undefined>;
+  type?: string | undefined;
+  sets?: ReadonlyArray<WorkoutSetLike | null | undefined> | undefined;
 }
 
 export interface WorkoutSummaryInput {
-  startedAt?: string;
+  startedAt?: string | undefined;
   endedAt?: string | null;
-  items?: ReadonlyArray<WorkoutItemLike | null | undefined>;
+  items?: ReadonlyArray<WorkoutItemLike | null | undefined> | undefined;
 }
 
 /**

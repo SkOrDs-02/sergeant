@@ -156,8 +156,12 @@ export function WorkoutFinishSheets({
                   if (wid && (finishFlash.energy || finishFlash.mood)) {
                     updateWorkout(wid, {
                       wellbeing: {
-                        energy: finishFlash.energy ?? undefined,
-                        mood: finishFlash.mood ?? undefined,
+                        ...(finishFlash.energy != null
+                          ? { energy: finishFlash.energy }
+                          : {}),
+                        ...(finishFlash.mood != null
+                          ? { mood: finishFlash.mood }
+                          : {}),
                       },
                     });
                   }

@@ -43,6 +43,8 @@ vi.mock("@shared/lib/ui/export", () => ({
   exportToPDF: vi.fn(),
 }));
 
+import { act } from "@testing-library/react";
+
 import { HubReports } from "./HubReports";
 
 describe("HubReports — render smoke (F23)", () => {
@@ -63,6 +65,64 @@ describe("HubReports — render smoke (F23)", () => {
 
     expect(
       screen.getByText("Збери більше даних для інсайтів"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders all four domain card stubs via Suspense", () => {
+    render(<HubReports />);
+
+    expect(screen.getByTestId("hub-reports-fitness-card")).toBeInTheDocument();
+    expect(screen.getByTestId("hub-reports-expenses-card")).toBeInTheDocument();
+    expect(screen.getByTestId("hub-reports-routine-card")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("hub-reports-nutrition-card"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the WeeklyDigestCard stub in week mode", () => {
+    render(<HubReports />);
+
+    // WeeklyDigestCard is shown in 'week' mode (initial period)
+    expect(screen.getByTestId("hub-reports-weekly-digest")).toBeInTheDocument();
+  });
+
+  it("hides WeeklyDigestCard when switching to month period", async () => {
+    render(<HubReports />);
+
+    // Switch to 'Місяць'
+    await act(async () => {
+      screen.getByRole("button", { name: "Місяць" }).click();
+    });
+
+    expect(
+      screen.queryByTestId("hub-reports-weekly-digest"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("period navigation buttons are present and navigable", async () => {
+    render(<HubReports />);
+
+    // 'Попередній' button should be enabled always
+    const prevBtn = screen.getByRole("button", { name: "Попередній" });
+    expect(prevBtn).toBeInTheDocument();
+
+    // 'Наступний' button is disabled for current period (offset=0)
+    const nextBtn = screen.getByRole("button", { name: "Наступний" });
+    expect(nextBtn).toBeDisabled();
+
+    // After going back one period, next button should be enabled
+    await act(async () => {
+      prevBtn.click();
+    });
+
+    expect(nextBtn).not.toBeDisabled();
+  });
+
+  it("export PDF button is present", () => {
+    render(<HubReports />);
+
+    expect(
+      screen.getByRole("button", { name: /Експортувати PDF/i }),
     ).toBeInTheDocument();
   });
 });

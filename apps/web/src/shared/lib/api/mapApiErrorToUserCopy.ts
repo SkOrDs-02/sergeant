@@ -32,10 +32,10 @@ import { friendlyApiError } from "./friendlyApiError";
  * щоб мапер можна було викликати з будь-якого `res.error`.
  */
 export interface ApiErrorLike {
-  code?: string | null;
-  message?: string | null;
-  status?: number;
-  statusText?: string;
+  code?: string | null | undefined;
+  message?: string | null | undefined;
+  status?: number | undefined;
+  statusText?: string | undefined;
 }
 
 const DEFAULT_FALLBACK = "Не вдалося виконати запит";

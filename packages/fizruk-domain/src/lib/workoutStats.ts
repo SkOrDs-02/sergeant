@@ -1,22 +1,22 @@
 /** Pure helpers for dashboard / analytics (kg, local week Mon–Sun). */
 
 interface StatsSet {
-  weightKg?: number | null;
-  reps?: number | null;
+  weightKg?: number | null | undefined;
+  reps?: number | null | undefined;
   [key: string]: unknown;
 }
 
 interface StatsItem {
-  exerciseId?: string | null;
-  type?: string | null;
-  sets?: StatsSet[] | null;
+  exerciseId?: string | null | undefined;
+  type?: string | null | undefined;
+  sets?: StatsSet[] | null | undefined;
   [key: string]: unknown;
 }
 
 interface StatsWorkout {
-  startedAt?: string | null;
-  endedAt?: string | null;
-  items?: StatsItem[] | null;
+  startedAt?: string | null | undefined;
+  endedAt?: string | null | undefined;
+  items?: StatsItem[] | null | undefined;
   [key: string]: unknown;
 }
 

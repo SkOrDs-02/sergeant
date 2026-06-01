@@ -57,7 +57,7 @@ function resolveCatLabel(
   catIdOrMcc: string | number | null | undefined,
   customCategories: Category[],
 ): string {
-  if (!catIdOrMcc || catIdOrMcc === "other") return BUILTIN_LABELS.other!;
+  if (!catIdOrMcc || catIdOrMcc === "other") return BUILTIN_LABELS["other"]!;
   const str = String(catIdOrMcc);
   const byId = [...ALL_CATS, ...(customCategories || [])].find(
     (c) => c.id === str,

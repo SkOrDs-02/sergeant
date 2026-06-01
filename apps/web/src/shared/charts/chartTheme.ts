@@ -38,24 +38,24 @@ export {
 /** Per-module accent tokens — prefer this over hardcoded hex in charts. */
 export const chartSeries = {
   finyk: {
-    primary: moduleColors.finyk.primary,
-    secondary: moduleColors.finyk.secondary,
-    surface: moduleColors.finyk.surface,
+    primary: moduleColors.finyk["primary"],
+    secondary: moduleColors.finyk["secondary"],
+    surface: moduleColors.finyk["surface"],
   },
   fizruk: {
-    primary: moduleColors.fizruk.primary,
-    secondary: moduleColors.fizruk.secondary,
-    surface: moduleColors.fizruk.surface,
+    primary: moduleColors.fizruk["primary"],
+    secondary: moduleColors.fizruk["secondary"],
+    surface: moduleColors.fizruk["surface"],
   },
   routine: {
-    primary: moduleColors.routine.primary,
-    secondary: moduleColors.routine.secondary,
-    surface: moduleColors.routine.surface,
+    primary: moduleColors.routine["primary"],
+    secondary: moduleColors.routine["secondary"],
+    surface: moduleColors.routine["surface"],
   },
   nutrition: {
-    primary: moduleColors.nutrition.primary,
-    secondary: moduleColors.nutrition.secondary,
-    surface: moduleColors.nutrition.surface,
+    primary: moduleColors.nutrition["primary"],
+    secondary: moduleColors.nutrition["secondary"],
+    surface: moduleColors.nutrition["surface"],
   },
 } as const;
 

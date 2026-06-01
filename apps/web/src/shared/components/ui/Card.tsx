@@ -265,13 +265,13 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
    * with existing call-sites; module-style variants are mapped to the
    * new API internally.
    */
-  variant?: CardVariant;
-  module?: CardModule;
-  prominence?: CardProminence;
-  padding?: CardPadding;
-  radius?: CardRadius;
-  as?: ElementType;
-  children?: ReactNode;
+  variant?: CardVariant | undefined;
+  module?: CardModule | undefined;
+  prominence?: CardProminence | undefined;
+  padding?: CardPadding | undefined;
+  radius?: CardRadius | undefined;
+  as?: ElementType | undefined;
+  children?: ReactNode | undefined;
 }
 
 /**

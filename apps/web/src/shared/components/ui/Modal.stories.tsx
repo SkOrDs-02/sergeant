@@ -56,11 +56,11 @@ function DefaultDemo({
   hideClose,
   dismissOnOverlayClick,
 }: {
-  size?: "sm" | "md" | "lg" | "xl";
-  title?: string;
-  description?: string;
-  hideClose?: boolean;
-  dismissOnOverlayClick?: boolean;
+  size?: "sm" | "md" | "lg" | "xl" | undefined;
+  title?: string | undefined;
+  description?: string | undefined;
+  hideClose?: boolean | undefined;
+  dismissOnOverlayClick?: boolean | undefined;
 }) {
   const [open, setOpen] = useState(false);
   return (

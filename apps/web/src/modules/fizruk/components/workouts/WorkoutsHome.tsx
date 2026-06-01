@@ -40,7 +40,7 @@ export interface WorkoutsHomeProps {
    * hidden when `onOpenSchedule` is not provided so we don't show a
    * dead control on hosts where deep-linking isn't available.
    */
-  onOpenSchedule?: () => void;
+  onOpenSchedule?: (() => void) | undefined;
   /**
    * Deep-link into the Fizruk «Програми» page (the catalogue of
    * built-in training programs — PPL, Upper/Lower, Full-body, etc.).
@@ -49,7 +49,7 @@ export interface WorkoutsHomeProps {
    * existed. Surfaced here as a third tile in «Довідники» beside
    * «Каталог вправ» / «Шаблони».
    */
-  onOpenPrograms?: () => void;
+  onOpenPrograms?: (() => void) | undefined;
 }
 
 export function WorkoutsHome({

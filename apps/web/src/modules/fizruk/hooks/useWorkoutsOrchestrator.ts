@@ -150,14 +150,14 @@ export function useWorkoutsOrchestrator() {
       const isCardio = ex.primaryGroup === "cardio";
       addItem(activeWorkoutId, {
         exerciseId: ex.id,
-        nameUk: ex?.name?.uk || ex?.name?.en,
+        nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
         primaryGroup: ex.primaryGroup,
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
         type: isCardio ? "distance" : "strength",
-        sets: isCardio ? undefined : [{ weightKg: 0, reps: 0 }],
-        durationSec: isCardio ? 0 : 0,
-        distanceM: isCardio ? 0 : 0,
+        ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
+        durationSec: 0,
+        distanceM: 0,
       });
     },
     [activeWorkoutId, addItem],
@@ -197,14 +197,14 @@ export function useWorkoutsOrchestrator() {
         const isCardio = ex.primaryGroup === "cardio";
         const itemId = addItem(w.id, {
           exerciseId: ex.id,
-          nameUk: ex?.name?.uk || ex?.name?.en,
+          nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
           primaryGroup: ex.primaryGroup,
           musclesPrimary: ex?.muscles?.primary || [],
           musclesSecondary: ex?.muscles?.secondary || [],
           type: isCardio ? "distance" : "strength",
-          sets: isCardio ? undefined : [{ weightKg: 0, reps: 0 }],
+          ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
           durationSec: 0,
-          distanceM: isCardio ? 0 : 0,
+          distanceM: 0,
         });
         exIdToItemId[ex.id] = itemId;
       }
@@ -311,14 +311,14 @@ export function useWorkoutsOrchestrator() {
         const isCardio = ex.primaryGroup === "cardio";
         addItem(w.id, {
           exerciseId: ex.id,
-          nameUk: ex?.name?.uk || ex?.name?.en,
+          nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
           primaryGroup: ex.primaryGroup,
           musclesPrimary: ex?.muscles?.primary || [],
           musclesSecondary: ex?.muscles?.secondary || [],
           type: isCardio ? "distance" : "strength",
-          sets: isCardio ? undefined : [{ weightKg: 0, reps: 0 }],
-          durationSec: isCardio ? 0 : 0,
-          distanceM: isCardio ? 0 : 0,
+          ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
+          durationSec: 0,
+          distanceM: 0,
         });
       }
       setActiveWorkoutId(w.id);

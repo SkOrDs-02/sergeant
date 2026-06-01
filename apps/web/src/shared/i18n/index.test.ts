@@ -32,10 +32,7 @@ describe("i18n resolver", () => {
     it("shallow-merges en over uk for lang='en' — translated group fully replaces", () => {
       const result = getMessages("en");
       // paywall is fully translated in en.ts → en wins
-      const paywall = result.paywall as Record<
-        string,
-        Record<string, string>
-      >;
+      const paywall = result.paywall as Record<string, Record<string, string>>;
       expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
         "AI photo analysis — Premium",
       );
@@ -100,10 +97,9 @@ describe("i18n resolver", () => {
     });
 
     it("paywall covers all 3 PremiumFeatureId values", () => {
-      const enPaywall = messagesEn.paywall as Record<
-        string,
-        Record<string, string>
-      > | undefined;
+      const enPaywall = messagesEn["paywall"] as
+        | Record<string, Record<string, string>>
+        | undefined;
       expect(enPaywall).toBeDefined();
       // These IDs are locked by useFeatureGate's PremiumFeatureId union.
       // If a new gate is added, en.ts MUST add the matching key — this test

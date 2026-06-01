@@ -197,7 +197,7 @@ export async function initWebVitals() {
   // модуль і мав збирати.
   if (initialized) return;
   if (typeof window === "undefined") return;
-  if (import.meta.env.VITE_WEB_VITALS_ENDPOINT === "0") return;
+  if (import.meta.env["VITE_WEB_VITALS_ENDPOINT"] === "0") return;
   // SSR / jsdom — немає сенсу.
   if (typeof document === "undefined") return;
 

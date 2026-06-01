@@ -16,8 +16,8 @@ import { cn } from "@shared/lib/ui/cn";
 import { ROUTINE_THEME as C } from "./lib/routineConstants";
 
 export interface RoutineHeaderProps {
-  onBackToHub?: () => void;
-  onOpenSettings?: () => void;
+  onBackToHub?: (() => void) | undefined;
+  onOpenSettings?: (() => void) | undefined;
 }
 
 export function RoutineHeader({

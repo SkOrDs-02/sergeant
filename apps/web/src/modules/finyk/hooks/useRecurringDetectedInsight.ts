@@ -24,16 +24,16 @@ export const RECURRING_MIN_OCCURRENCES = 2;
 
 type SubscriptionLike = {
   id: string;
-  keyword?: string;
-  linkedTxId?: string | null;
-  currency?: string;
+  keyword?: string | undefined;
+  linkedTxId?: string | null | undefined;
+  currency?: string | undefined;
 };
 
 interface UseRecurringDetectedInsightArgs {
   transactions: readonly Transaction[];
-  subscriptions?: readonly SubscriptionLike[];
-  dismissedRecurring?: readonly string[];
-  excludedTxIds?: ReadonlySet<string> | readonly string[];
+  subscriptions?: readonly SubscriptionLike[] | undefined;
+  dismissedRecurring?: readonly string[] | undefined;
+  excludedTxIds?: ReadonlySet<string> | readonly string[] | undefined;
 }
 
 export function useRecurringDetectedInsight({
@@ -52,11 +52,14 @@ export function useRecurringDetectedInsight({
           ? [...excludedTxIds]
           : [];
 
-    const candidates = detectRecurring(transactions as Parameters<typeof detectRecurring>[0], {
-      subscriptions: subscriptions as SubscriptionLike[],
-      dismissedKeys: dismissedRecurring as string[],
-      excludedTxIds: excluded,
-    });
+    const candidates = detectRecurring(
+      transactions as Parameters<typeof detectRecurring>[0],
+      {
+        subscriptions: subscriptions as SubscriptionLike[],
+        dismissedKeys: dismissedRecurring as string[],
+        excludedTxIds: excluded,
+      },
+    );
 
     // detectRecurring already sorts by confidence desc → amount desc.
     const top = candidates[0];

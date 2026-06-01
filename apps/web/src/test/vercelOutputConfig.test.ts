@@ -13,7 +13,7 @@ describe("Vercel output configuration", () => {
     // explicitly disallowed and `scripts/check-vercel-config.sh` enforces
     // that on every PR (see commit 61196120).
     const webRootConfig = readJson(resolve(process.cwd(), "vercel.json"));
-    expect(webRootConfig.outputDirectory).toBe("dist");
+    expect(webRootConfig["outputDirectory"]).toBe("dist");
 
     const repoRootConfigPath = resolve(process.cwd(), "../../vercel.json");
     expect(existsSync(repoRootConfigPath)).toBe(false);

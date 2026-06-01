@@ -149,13 +149,13 @@ export function extractMeasurementSnapshots(
     // `bicepRCm`. Coalesce here so the dual-write adapter (which
     // reads `m.bicepCm`) sees a value when the form set L/R only.
     const snap: Record<string, string | number | undefined> = { ...m };
-    if (snap.bicepCm === undefined) {
+    if (snap["bicepCm"] === undefined) {
       const left =
-        typeof snap.bicepLCm === "number" ? snap.bicepLCm : undefined;
+        typeof snap["bicepLCm"] === "number" ? snap["bicepLCm"] : undefined;
       const right =
-        typeof snap.bicepRCm === "number" ? snap.bicepRCm : undefined;
+        typeof snap["bicepRCm"] === "number" ? snap["bicepRCm"] : undefined;
       const fallback = left ?? right;
-      if (fallback !== undefined) snap.bicepCm = fallback;
+      if (fallback !== undefined) snap["bicepCm"] = fallback;
     }
     out.push({ ...snap, id: String(m.id), at: String(m.at) });
   }
@@ -318,7 +318,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
       (s): FizrukSetSnapshot => ({
         weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
         reps: typeof s.reps === "number" ? s.reps : 0,
-        ...(typeof s.rpe === "number" ? { rpe: s.rpe } : {}),
+        ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
       }),
     );
   }

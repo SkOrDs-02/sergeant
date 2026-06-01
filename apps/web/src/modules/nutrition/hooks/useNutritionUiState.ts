@@ -11,9 +11,9 @@ export type NutritionWeekPlan = {
   [key: string]: unknown;
 };
 export type NutritionDayPlan = {
-  meals?: unknown[];
-  totalKcal?: number;
-  note?: string;
+  meals?: unknown[] | undefined;
+  totalKcal?: number | undefined;
+  note?: string | undefined;
   [key: string]: unknown;
 };
 

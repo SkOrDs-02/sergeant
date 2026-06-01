@@ -242,7 +242,7 @@ export function appendAiSignalLines(lines: string[]): void {
     if (insights.length > 0) {
       lines.push("[Аналітичні інсайти]");
       insights.forEach((i) => {
-        lines.push(`  ${i.emoji} ${i.title} (${i.stat}) — ${i.detail}`);
+        lines.push(`  ${i.title} (${i.stat}) — ${i.detail}`);
       });
     }
   } catch {}

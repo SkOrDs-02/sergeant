@@ -156,7 +156,7 @@ export function Tabs<V extends string = string>({
       const next = enabled[nextIdx];
       if (!next) return;
       const nextBtn = buttons.find(
-        (b) => b.dataset.value === String(next.value),
+        (b) => b.dataset["value"] === String(next.value),
       );
       nextBtn?.focus();
       onChange(next.value);

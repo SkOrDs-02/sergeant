@@ -44,6 +44,7 @@ import {
   defaultRoutineState,
   ROUTINE_SCHEMA_VERSION,
   type CreateHabitOptions,
+  type HabitDraftPatch,
   type RoutineState,
   type Habit,
   type HabitSnapshot,
@@ -229,9 +230,9 @@ export function createCategory(
  */
 export function createHabit(
   state: RoutineState,
-  opts: Partial<CreateHabitOptions> = {},
+  opts: Partial<CreateHabitOptions> | HabitDraftPatch = {},
 ): RoutineState {
-  const next = applyCreateHabit(state, opts);
+  const next = applyCreateHabit(state, opts as Partial<CreateHabitOptions>);
   if (next === state) return state;
   return persist(next);
 }
@@ -240,9 +241,9 @@ export function createHabit(
 export function updateHabit(
   state: RoutineState,
   id: string,
-  patch: Partial<Habit>,
+  patch: Partial<Habit> | HabitDraftPatch,
 ): RoutineState {
-  return persist(applyUpdateHabit(state, id, patch));
+  return persist(applyUpdateHabit(state, id, patch as Partial<Habit>));
 }
 
 export function setPref<K extends string>(

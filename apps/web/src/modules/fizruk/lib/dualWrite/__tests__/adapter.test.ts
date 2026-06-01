@@ -71,9 +71,9 @@ describe("applyFizrukDualWriteOps", () => {
       ["w1"],
     );
     expect(workouts).toHaveLength(1);
-    expect(workouts[0]!.user_id).toBe(UID);
-    expect(workouts[0]!.note).toBe("morning session");
-    expect(workouts[0]!.deleted_at).toBeNull();
+    expect(workouts[0]!["user_id"]).toBe(UID);
+    expect(workouts[0]!["note"]).toBe("morning session");
+    expect(workouts[0]!["deleted_at"]).toBeNull();
 
     // Verify item row
     const items = await handle.client.all<Record<string, unknown>>(
@@ -81,8 +81,8 @@ describe("applyFizrukDualWriteOps", () => {
       ["w1"],
     );
     expect(items).toHaveLength(1);
-    expect(items[0]!.exercise_id).toBe("bench-press");
-    expect(items[0]!.name_uk).toBe("Жим лежачи");
+    expect(items[0]!["exercise_id"]).toBe("bench-press");
+    expect(items[0]!["name_uk"]).toBe("Жим лежачи");
 
     // Verify set rows
     const sets = await handle.client.all<Record<string, unknown>>(
@@ -90,10 +90,10 @@ describe("applyFizrukDualWriteOps", () => {
       ["i1"],
     );
     expect(sets).toHaveLength(2);
-    expect(sets[0]!.weight_kg).toBe(80);
-    expect(sets[0]!.reps).toBe(8);
-    expect(sets[1]!.weight_kg).toBe(85);
-    expect(sets[1]!.rpe).toBe(8);
+    expect(sets[0]!["weight_kg"]).toBe(80);
+    expect(sets[0]!["reps"]).toBe(8);
+    expect(sets[1]!["weight_kg"]).toBe(85);
+    expect(sets[1]!["rpe"]).toBe(8);
   });
 
   it("soft-deletes a workout and cascades to items/sets", async () => {
@@ -146,21 +146,21 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
-    expect(workouts[0]!.deleted_at).toBe(TS2);
+    expect(workouts[0]!["deleted_at"]).toBe(TS2);
 
     // Items should be soft-deleted too
     const items = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workout_items WHERE workout_id = ?",
       ["w1"],
     );
-    expect(items[0]!.deleted_at).toBe(TS2);
+    expect(items[0]!["deleted_at"]).toBe(TS2);
 
     // Sets should be soft-deleted too
     const sets = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workout_sets WHERE workout_item_id = ?",
       ["i1"],
     );
-    expect(sets[0]!.deleted_at).toBe(TS2);
+    expect(sets[0]!["deleted_at"]).toBe(TS2);
   });
 
   it("LWW guard: stale workout upsert is a no-op", async () => {
@@ -212,7 +212,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT note FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
-    expect(workouts[0]!.note).toBe("latest");
+    expect(workouts[0]!["note"]).toBe("latest");
   });
 
   // --- Custom exercise ops ---
@@ -236,7 +236,7 @@ describe("applyFizrukDualWriteOps", () => {
       ["cex1"],
     );
     expect(rows).toHaveLength(1);
-    expect(JSON.parse(rows[0]!.data_json as string)).toMatchObject({
+    expect(JSON.parse(rows[0]!["data_json"] as string)).toMatchObject({
       id: "cex1",
       nameUk: "Моя вправа",
     });
@@ -255,7 +255,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_custom_exercises WHERE id = ?",
       ["cex1"],
     );
-    expect(after[0]!.deleted_at).toBe(TS2);
+    expect(after[0]!["deleted_at"]).toBe(TS2);
   });
 
   // --- Measurement ops ---
@@ -284,8 +284,8 @@ describe("applyFizrukDualWriteOps", () => {
       ["m1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.weight_kg).toBe(80);
-    expect(rows[0]!.waist_cm).toBe(85);
+    expect(rows[0]!["weight_kg"]).toBe(80);
+    expect(rows[0]!["waist_cm"]).toBe(85);
 
     // Delete
     const delOps: FizrukDualWriteOp[] = [
@@ -301,7 +301,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_measurements WHERE id = ?",
       ["m1"],
     );
-    expect(after[0]!.deleted_at).toBe(TS2);
+    expect(after[0]!["deleted_at"]).toBe(TS2);
   });
 
   // --- Error handling ---
@@ -358,14 +358,14 @@ describe("applyFizrukDualWriteOps", () => {
       ["d1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.user_id).toBe(UID);
-    expect(rows[0]!.entry_at).toBe("2026-05-01T07:00:00Z");
-    expect(rows[0]!.weight_kg).toBe(80.5);
-    expect(rows[0]!.sleep_hours).toBe(7.5);
-    expect(rows[0]!.energy_level).toBe(7);
-    expect(rows[0]!.mood).toBe(4);
-    expect(rows[0]!.note).toBe("feeling great");
-    expect(rows[0]!.deleted_at).toBeNull();
+    expect(rows[0]!["user_id"]).toBe(UID);
+    expect(rows[0]!["entry_at"]).toBe("2026-05-01T07:00:00Z");
+    expect(rows[0]!["weight_kg"]).toBe(80.5);
+    expect(rows[0]!["sleep_hours"]).toBe(7.5);
+    expect(rows[0]!["energy_level"]).toBe(7);
+    expect(rows[0]!["mood"]).toBe(4);
+    expect(rows[0]!["note"]).toBe("feeling great");
+    expect(rows[0]!["deleted_at"]).toBeNull();
   });
 
   it("soft-deletes a daily-log entry", async () => {
@@ -403,7 +403,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_daily_log WHERE id = ?",
       ["d1"],
     );
-    expect(after[0]!.deleted_at).toBe(TS2);
+    expect(after[0]!["deleted_at"]).toBe(TS2);
   });
 
   it("LWW guard: stale daily-log upsert does not overwrite newer row", async () => {
@@ -451,8 +451,8 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT note, weight_kg FROM fizruk_daily_log WHERE id = ?",
       ["d1"],
     );
-    expect(rows[0]!.note).toBe("newer");
-    expect(rows[0]!.weight_kg).toBe(80);
+    expect(rows[0]!["note"]).toBe("newer");
+    expect(rows[0]!["weight_kg"]).toBe(80);
   });
 
   // --- Stage 12 / PR #070f-dualwrite — Monthly plan ops ---
@@ -476,8 +476,8 @@ describe("applyFizrukDualWriteOps", () => {
       [UID],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.data_json).toBe('{"days":{}}');
-    expect(rows[0]!.updated_at).toBe(TS1);
+    expect(rows[0]!["data_json"]).toBe('{"days":{}}');
+    expect(rows[0]!["updated_at"]).toBe(TS1);
   });
 
   it("updates monthly-plan blob on subsequent sets", async () => {
@@ -504,8 +504,8 @@ describe("applyFizrukDualWriteOps", () => {
       [UID],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.data_json).toBe('{"a":2}');
-    expect(rows[0]!.updated_at).toBe(TS2);
+    expect(rows[0]!["data_json"]).toBe('{"a":2}');
+    expect(rows[0]!["updated_at"]).toBe(TS2);
   });
 
   it("LWW guard: stale monthly-plan set does not overwrite newer blob", async () => {
@@ -531,7 +531,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT data_json FROM fizruk_monthly_plan WHERE user_id = ?",
       [UID],
     );
-    expect(rows[0]!.data_json).toBe('{"v":"new"}');
+    expect(rows[0]!["data_json"]).toBe('{"v":"new"}');
   });
 
   // --- Stage 12 / PR #070f-dualwrite — Workout template ops ---
@@ -562,16 +562,16 @@ describe("applyFizrukDualWriteOps", () => {
       ["t1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.name).toBe("Push day");
-    expect(JSON.parse(rows[0]!.exercise_ids_json as string)).toEqual([
+    expect(rows[0]!["name"]).toBe("Push day");
+    expect(JSON.parse(rows[0]!["exercise_ids_json"] as string)).toEqual([
       "bench-press",
       "shoulder-press",
     ]);
-    expect(JSON.parse(rows[0]!.groups_json as string)).toEqual([
+    expect(JSON.parse(rows[0]!["groups_json"] as string)).toEqual([
       { id: "g1", itemIds: ["bench-press"] },
     ]);
-    expect(rows[0]!.last_used_at).toBeNull();
-    expect(rows[0]!.deleted_at).toBeNull();
+    expect(rows[0]!["last_used_at"]).toBeNull();
+    expect(rows[0]!["deleted_at"]).toBeNull();
   });
 
   it("soft-deletes a workout-template", async () => {
@@ -607,7 +607,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_workout_templates WHERE id = ?",
       ["t1"],
     );
-    expect(after[0]!.deleted_at).toBe(TS2);
+    expect(after[0]!["deleted_at"]).toBe(TS2);
   });
 
   it("LWW guard: stale workout-template upsert is a no-op", async () => {
@@ -651,6 +651,6 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT name FROM fizruk_workout_templates WHERE id = ?",
       ["t1"],
     );
-    expect(rows[0]!.name).toBe("Newer");
+    expect(rows[0]!["name"]).toBe("Newer");
   });
 });

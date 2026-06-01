@@ -40,7 +40,7 @@ interface DailyPlanMealRowProps {
   meal: PlanMeal;
   onAddToLog: (meal: PlanMeal) => void | Promise<void>;
   onRegen: (mealType: string) => void | Promise<void>;
-  busy?: boolean;
+  busy?: boolean | undefined;
 }
 
 export function DailyPlanMealRow({

@@ -73,6 +73,50 @@ export default [
   // classNames into RN inline styles and does NOT consume those
   // CSS variables, so applying the rule there would force authors
   // toward tokens that resolve to `rgb(undefined)` on mobile.
+  // §7 no-console guardrail — Phase 6 follow-up (tech-debt/frontend.md §7).
+  // Catches accidental production console.* calls in `apps/web/src/**`.
+  // Test globs and story files are fully exempt — they legitimately use
+  // console.* for fixtures and debugging without Sentry overhead.
+  // The 3 documented DEV-only / transport call-sites carry inline
+  // `eslint-disable-next-line no-console` with justification comments:
+  //   • `shared/lib/ui/perf.ts`          — console.debug under hub_perf=1 + DEV
+  //   • `sw/debug.ts`                    — console.log under debugEnabled + DEV
+  //   • `core/observability/analytics.ts`— console.log intentional transport
+  //   • `shared/lib/log/logger.ts`       — canonical logger transport (power-user)
+  // New call-sites that bypass `logger` helper will fail CI.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx,js,jsx}"],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx,js,jsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx,js,jsx}",
+    ],
+    rules: {
+      "no-console": "error",
+    },
+  },
+  // §9 @typescript-eslint/no-explicit-any → error for modules/** and core/**.
+  // Production has 0 trackable any + 3 by-design loose patterns (each with
+  // inline eslint-disable-next-line + justification). Tightening from warn
+  // to error here surfaces any new drift immediately in CI.
+  //   • `shared/lib/ui/parseFizrukWorkouts.ts:8` — legacy LS shape parser
+  //   • `core/hub/search/searchCache.ts:54`      — shared LooseRecord alias
+  //   • `core/lib/lazyImport.ts:39`              — ComponentType<any> by design
+  // All three already carry eslint-disable-next-line comments with rationale.
+  {
+    files: [
+      "apps/web/src/modules/**/*.{ts,tsx}",
+      "apps/web/src/core/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx}",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
   {
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
     rules: {

@@ -143,8 +143,8 @@ export function StreakIndicator() {
       ) || readLegacy("fizruk_quick_stats");
 
     const streaks = [
-      { days: Number(routine?.streak) || 0 },
-      { days: Number(fizruk?.streak) || 0 },
+      { days: Number(routine?.["streak"]) || 0 },
+      { days: Number(fizruk?.["streak"]) || 0 },
     ]
       .filter((s) => s.days >= 2)
       .sort((a, b) => b.days - a.days);

@@ -45,7 +45,7 @@ export interface ApplyDualWriteOptions {
   readonly userId: string;
   /** ISO-8601 timestamp with offset, used for `created_at` / `updated_at`. */
   readonly clientTs: string;
-  readonly logger?: DualWriteLogger;
+  readonly logger?: DualWriteLogger | undefined;
 }
 
 export type DualWriteLogger = (

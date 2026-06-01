@@ -16,7 +16,7 @@ export interface ActiveWorkoutHeaderProps {
   onFinishClick: () => void;
   onDeleteWorkout: () => void;
   /** Only used when the workout is already ended. */
-  onCollapse?: () => void;
+  onCollapse?: (() => void) | undefined;
 }
 
 export function ActiveWorkoutHeader({

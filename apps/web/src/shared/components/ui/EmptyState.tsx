@@ -68,49 +68,49 @@ export type EmptyStateVariant =
   | "danger";
 
 export interface EmptyStateProps {
-  icon?: ReactNode;
-  illustration?: ReactNode;
+  icon?: ReactNode | undefined;
+  illustration?: ReactNode | undefined;
   /** Short caps tag above the title (e.g. "404", "ERROR"). */
-  eyebrow?: ReactNode;
-  title?: ReactNode;
-  description?: ReactNode;
+  eyebrow?: ReactNode | undefined;
+  title?: ReactNode | undefined;
+  description?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
    * supported; `primaryAction` is the explicit alias new code should
    * prefer. When both are passed, `primaryAction` wins.
    */
-  action?: ReactNode;
-  primaryAction?: ReactNode;
+  action?: ReactNode | undefined;
+  primaryAction?: ReactNode | undefined;
   /** Supportive action shown next to the primary CTA (same row). */
-  secondaryAction?: ReactNode;
+  secondaryAction?: ReactNode | undefined;
   /** Tertiary link slot — typically an `<a>` for "Learn more" / "Docs". */
-  tertiaryLink?: ReactNode;
-  className?: string;
+  tertiaryLink?: ReactNode | undefined;
+  className?: string | undefined;
   /**
    * Compact density. Deprecated alias for `size="sm"`. Retained for the
    * existing call-sites that pass `compact` — new code should pass
    * `size="sm"` instead.
    */
-  compact?: boolean;
+  compact?: boolean | undefined;
   /** Density token. Defaults to `md`. `sm` matches the legacy `compact` look. */
-  size?: EmptyStateSize;
+  size?: EmptyStateSize | undefined;
   /**
    * Semantic tone. Drives the icon container tint and eyebrow chip
    * colour. `module` overrides it when both are set.
    */
-  variant?: EmptyStateVariant;
+  variant?: EmptyStateVariant | undefined;
   /** Disable entry animation (useful inside already-animated containers). */
-  disableAnimation?: boolean;
-  hint?: string;
-  examplePreview?: ReactNode;
+  disableAnimation?: boolean | undefined;
+  hint?: string | undefined;
+  examplePreview?: ReactNode | undefined;
   /** Tint the icon container with a module accent (orthogonal to variant). */
-  module?: ModuleAccent;
+  module?: ModuleAccent | undefined;
   /**
    * Override live-region politeness. Default `"polite"`. Set to `"off"`
    * for empty states that mount on initial page load alongside other
    * landmark content (the heading already covers the announcement).
    */
-  ariaLive?: "polite" | "off";
+  ariaLive?: "polite" | "off" | undefined;
 }
 
 interface TonePalette {

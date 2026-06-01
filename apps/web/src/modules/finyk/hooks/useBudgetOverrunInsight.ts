@@ -12,22 +12,30 @@
 
 import { useMemo } from "react";
 import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
-import { getLimitBudgets, getCurrentMonthContext } from "@sergeant/finyk-domain/domain/budget";
+import {
+  getLimitBudgets,
+  getCurrentMonthContext,
+} from "@sergeant/finyk-domain/domain/budget";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/categories";
 import type { Insight } from "@shared/lib/insights/types";
-import type { Transaction, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Transaction,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
 
 // Tunable threshold — export so tests can override.
 /** Ratio above which the insight fires (1.10 = 110% of budget). */
-export const OVERRUN_THRESHOLD = 1.10;
+export const OVERRUN_THRESHOLD = 1.1;
 
 interface UseBudgetOverrunInsightArgs {
   budgets: readonly Budget[];
   transactions: readonly Transaction[];
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
-  customCategories?: readonly { id: string; label?: string }[];
+  customCategories?:
+    | readonly { id: string; label?: string | undefined }[]
+    | undefined;
 }
 
 export function useBudgetOverrunInsight({

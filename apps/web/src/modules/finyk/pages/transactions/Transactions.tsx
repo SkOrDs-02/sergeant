@@ -27,10 +27,11 @@ import type { Category } from "@sergeant/finyk-domain/domain/types";
  * least one matching property).
  */
 export interface TxAccount {
-  id?: string;
-  creditLimit?: number;
-  type?: string;
-  _source?: string;
+  id?: string | undefined;
+  creditLimit?: number | undefined;
+  type?: string | undefined;
+  _source?: string | undefined;
+  [k: string]: unknown;
 }
 
 type PillStatus = "idle" | "loading" | "success" | "partial" | "error";

@@ -46,7 +46,7 @@ export interface RecipeCachePrefs {
 export interface RecipeCacheEntry<TRecipe = unknown> {
   recipes: TRecipe[];
   recipesRaw: string;
-  savedAt?: number;
+  savedAt?: number | undefined;
 }
 
 export function buildRecipeCacheKey(

@@ -5,7 +5,7 @@ import type { MealFormState } from "./mealFormUtils";
 interface SaveAsTemplateProps {
   form: MealFormState;
   setForm: Dispatch<SetStateAction<MealFormState>>;
-  setPrefs?: Dispatch<SetStateAction<NutritionPrefs>>;
+  setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
 }
 
 export function SaveAsTemplate({

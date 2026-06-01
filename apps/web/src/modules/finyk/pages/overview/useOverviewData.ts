@@ -64,7 +64,7 @@ const getNextBillingDate = (billingDay: number, now: Date): Date => {
 export interface UseOverviewDataParams {
   mono: MergedMonoLike;
   storage: StorageLike;
-  onNavigate?: (page: string) => void;
+  onNavigate?: ((page: string) => void) | undefined;
 }
 
 export function useOverviewData({

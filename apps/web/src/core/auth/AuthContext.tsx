@@ -50,11 +50,11 @@ export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
  * приходили б у фронт як `undefined` і ловилися зовнішнім fallback-ом.
  */
 export type AuthErrorLike = {
-  code?: string | null;
-  message?: string | null;
-  error?: string | null;
-  status?: number | null;
-  statusText?: string | null;
+  code?: string | null | undefined;
+  message?: string | null | undefined;
+  error?: string | null | undefined;
+  status?: number | null | undefined;
+  statusText?: string | null | undefined;
 };
 
 // AI-CONTEXT: error-code switch — every branch must round-trip the Better Auth
@@ -148,11 +148,11 @@ function asAuthErrorLike(err: unknown): AuthErrorLike | null {
   if (typeof err !== "object") return null;
   const e = err as Record<string, unknown>;
   return {
-    message: typeof e.message === "string" ? e.message : null,
-    error: typeof e.error === "string" ? e.error : null,
-    code: typeof e.code === "string" ? e.code : null,
-    status: typeof e.status === "number" ? e.status : null,
-    statusText: typeof e.statusText === "string" ? e.statusText : null,
+    message: typeof e["message"] === "string" ? e["message"] : null,
+    error: typeof e["error"] === "string" ? e["error"] : null,
+    code: typeof e["code"] === "string" ? e["code"] : null,
+    status: typeof e["status"] === "number" ? e["status"] : null,
+    statusText: typeof e["statusText"] === "string" ? e["statusText"] : null,
   };
 }
 

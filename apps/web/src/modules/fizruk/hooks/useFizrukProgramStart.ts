@@ -17,7 +17,12 @@ interface Session {
 
 interface WorkoutsApi {
   workouts: Array<{
-    items?: Array<{ exerciseId?: string; sets?: Array<{ weightKg?: number }> }>;
+    items?:
+      | Array<{
+          exerciseId?: string | undefined;
+          sets?: Array<{ weightKg?: number | undefined }> | undefined;
+        }>
+      | undefined;
   }>;
   createWorkout: () => { id: string };
   addItem: (workoutId: string, item: Partial<WorkoutItem>) => string;
@@ -71,12 +76,14 @@ export function useFizrukProgramStart({
         }
         addItem(w.id, {
           exerciseId: ex.id,
-          nameUk: ex?.name?.uk || ex?.name?.en,
-          primaryGroup: ex.primaryGroup,
+          nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
+          primaryGroup: ex.primaryGroup || "",
           musclesPrimary: ex?.muscles?.primary || [],
           musclesSecondary: ex?.muscles?.secondary || [],
           type: isCardio ? "distance" : "strength",
-          sets: isCardio ? undefined : [{ weightKg: suggestedWeight, reps: 0 }],
+          ...(isCardio
+            ? {}
+            : { sets: [{ weightKg: suggestedWeight, reps: 0 }] }),
           durationSec: 0,
           ...(isCardio ? { distanceM: 0 } : {}),
         });

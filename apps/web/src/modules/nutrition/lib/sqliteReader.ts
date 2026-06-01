@@ -202,34 +202,41 @@ function rowToRecipe(row: RecipeRow): SavedRecipe | null {
   if (!data || typeof data !== "object") return null;
   return {
     id: row.id,
-    title: typeof data.title === "string" ? data.title : (row.name ?? ""),
-    timeMinutes: typeof data.timeMinutes === "number" ? data.timeMinutes : null,
-    servings: typeof data.servings === "number" ? data.servings : null,
-    ingredients: Array.isArray(data.ingredients)
-      ? (data.ingredients as string[])
+    title: typeof data["title"] === "string" ? data["title"] : (row.name ?? ""),
+    timeMinutes:
+      typeof data["timeMinutes"] === "number" ? data["timeMinutes"] : null,
+    servings: typeof data["servings"] === "number" ? data["servings"] : null,
+    ingredients: Array.isArray(data["ingredients"])
+      ? (data["ingredients"] as string[])
       : [],
-    steps: Array.isArray(data.steps) ? (data.steps as string[]) : [],
-    tips: Array.isArray(data.tips) ? (data.tips as string[]) : [],
+    steps: Array.isArray(data["steps"]) ? (data["steps"] as string[]) : [],
+    tips: Array.isArray(data["tips"]) ? (data["tips"] as string[]) : [],
     macros: {
       kcal:
-        typeof (data.macros as Record<string, unknown>)?.kcal === "number"
-          ? ((data.macros as Record<string, unknown>).kcal as number)
+        typeof (data["macros"] as Record<string, unknown>)?.["kcal"] ===
+        "number"
+          ? ((data["macros"] as Record<string, unknown>)["kcal"] as number)
           : null,
       protein_g:
-        typeof (data.macros as Record<string, unknown>)?.protein_g === "number"
-          ? ((data.macros as Record<string, unknown>).protein_g as number)
+        typeof (data["macros"] as Record<string, unknown>)?.["protein_g"] ===
+        "number"
+          ? ((data["macros"] as Record<string, unknown>)["protein_g"] as number)
           : null,
       fat_g:
-        typeof (data.macros as Record<string, unknown>)?.fat_g === "number"
-          ? ((data.macros as Record<string, unknown>).fat_g as number)
+        typeof (data["macros"] as Record<string, unknown>)?.["fat_g"] ===
+        "number"
+          ? ((data["macros"] as Record<string, unknown>)["fat_g"] as number)
           : null,
       carbs_g:
-        typeof (data.macros as Record<string, unknown>)?.carbs_g === "number"
-          ? ((data.macros as Record<string, unknown>).carbs_g as number)
+        typeof (data["macros"] as Record<string, unknown>)?.["carbs_g"] ===
+        "number"
+          ? ((data["macros"] as Record<string, unknown>)["carbs_g"] as number)
           : null,
     },
-    createdAt: typeof data.createdAt === "number" ? data.createdAt : Date.now(),
-    updatedAt: typeof data.updatedAt === "number" ? data.updatedAt : Date.now(),
+    createdAt:
+      typeof data["createdAt"] === "number" ? data["createdAt"] : Date.now(),
+    updatedAt:
+      typeof data["updatedAt"] === "number" ? data["updatedAt"] : Date.now(),
   };
 }
 

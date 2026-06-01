@@ -38,7 +38,7 @@ const DEFAULT_MODULE = MODULES[0] as (typeof MODULES)[number];
 
 interface OutcomeCardProps {
   activeModules: readonly string[];
-  primaryModule?: DashboardModuleId;
+  primaryModule?: DashboardModuleId | undefined;
   onOpenModule: (module: string) => void;
 }
 
@@ -104,6 +104,7 @@ export function OutcomeCard({
                   <Icon name={module.icon} size="md" />
                 </span>
                 <span className="space-y-1">
+                  {/* eslint-disable-next-line sergeant-design/prefer-text-style -- pre-existing semibold module title; semantic swap deferred to design-token pass */}
                   <span className="block text-sm font-semibold text-text">
                     {module.title}
                   </span>

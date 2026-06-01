@@ -139,13 +139,15 @@ function searchFizruk(tokens: string[]): Hit[] {
   );
   for (const w of workouts) {
     if (!w || typeof w !== "object") continue;
-    const itemsRaw = Array.isArray(w.items) ? w.items : [];
+    const itemsRaw = Array.isArray(w["items"]) ? w["items"] : [];
     const exNames = itemsRaw
       .slice(0, 2)
       .map((i) => (i && (i.exerciseName || i.name)) || "")
       .filter(Boolean);
-    const dateLabel = w.startedAt ? localDateKey(new Date(w.startedAt)) : "";
-    const combinedTitle = w.note || exNames.join(", ") || "Тренування";
+    const dateLabel = w["startedAt"]
+      ? localDateKey(new Date(w["startedAt"]))
+      : "";
+    const combinedTitle = w["note"] || exNames.join(", ") || "Тренування";
     // subtitle додатково "розширює" текст усіма вправами, щоб токен
     // типу "присідання" знайшовся навіть коли він не в `note`.
     const fullTokensText = itemsRaw
@@ -155,7 +157,7 @@ function searchFizruk(tokens: string[]): Hit[] {
     const stop = pushScored(
       results,
       {
-        id: `fizruk_w_${w.id}`,
+        id: `fizruk_w_${w["id"]}`,
         module: "fizruk",
         moduleLabel: "Фізрук",
         title: combinedTitle,
@@ -181,12 +183,12 @@ function searchFizruk(tokens: string[]): Hit[] {
     const stop = pushScored(
       results,
       {
-        id: `fizruk_ex_${e.id}`,
+        id: `fizruk_ex_${e["id"]}`,
         module: "fizruk",
         moduleLabel: "Фізрук",
-        title: e.name || "Вправа",
+        title: e["name"] || "Вправа",
         subtitle:
-          (Array.isArray(e.muscles) ? e.muscles : []).join(", ") ||
+          (Array.isArray(e["muscles"]) ? e["muscles"] : []).join(", ") ||
           "Власна вправа",
         icon: "💪",
         target: { kind: "module", moduleId: "fizruk" },

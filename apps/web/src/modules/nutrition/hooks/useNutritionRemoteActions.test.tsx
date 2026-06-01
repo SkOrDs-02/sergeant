@@ -397,10 +397,10 @@ describe("useNutritionRemoteActions", () => {
       );
 
       // Breakfast + dinner preserved from prev.
-      expect(byType.breakfast.name).toBe("Омлет");
-      expect(byType.dinner.name).toBe("Риба");
+      expect(byType["breakfast"].name).toBe("Омлет");
+      expect(byType["dinner"].name).toBe("Риба");
       // Lunch replaced by regenerated meal.
-      expect(byType.lunch.name).toBe("Новий суп");
+      expect(byType["lunch"].name).toBe("Новий суп");
       // Totals recomputed off merged meals, not prev's stale totalKcal.
       expect(merged.totalKcal).toBe(300 + 400 + 500);
       expect(merged.totalProtein_g).toBe(20 + 30 + 40);

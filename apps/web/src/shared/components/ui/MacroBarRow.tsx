@@ -34,14 +34,14 @@ export interface MacroItem {
   max: number;
   accent: MacroAccent;
   /** Optional unit suffix on the value (e.g. "г", "kcal"). */
-  unit?: string;
+  unit?: string | undefined;
   /**
    * Optional outcome-framed text shown in place of the default
    * "value / max unit" string on the right-hand side (e.g. "48 г до цілі",
    * "ціль виконано"). Consumers compute this so the primitive stays
    * presentation-only. ARIA-label also reflects this when provided.
    */
-  valueDisplay?: string;
+  valueDisplay?: string | undefined;
 }
 
 export interface MacroBarRowProps {
@@ -76,10 +76,7 @@ export function MacroBarRow({ macros, className }: MacroBarRowProps) {
         const valueLabel = macro.valueDisplay ?? defaultValueLabel;
 
         return (
-          <li
-            key={`${macro.label}-${idx}`}
-            className="flex flex-col gap-1"
-          >
+          <li key={`${macro.label}-${idx}`} className="flex flex-col gap-1">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-style-caption text-subtle">
                 {macro.label}

@@ -52,7 +52,7 @@ describe("getFinykTxSplitsFromStorage", () => {
       JSON.stringify({ t1: [{ amount: 10, categoryId: "food" }] }),
     );
     const v = getFinykTxSplitsFromStorage() as Record<string, unknown[]>;
-    expect(v.t1).toHaveLength(1);
+    expect(v["t1"]).toHaveLength(1);
   });
   it("повертає {} коли значення — не об'єкт", () => {
     localStorage.setItem("finyk_tx_splits", JSON.stringify("string"));

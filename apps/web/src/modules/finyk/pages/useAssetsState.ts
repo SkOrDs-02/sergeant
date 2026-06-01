@@ -41,9 +41,9 @@ type StorageSlice = Pick<
 >;
 
 type AccountLike = Partial<MonoAccount> & {
-  id?: string;
-  balance?: number;
-  currencyCode?: number;
+  id?: string | undefined;
+  balance?: number | undefined;
+  currencyCode?: number | undefined;
   [extra: string]: unknown;
 };
 

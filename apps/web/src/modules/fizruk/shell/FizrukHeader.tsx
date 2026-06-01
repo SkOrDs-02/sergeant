@@ -13,8 +13,8 @@ interface ActiveProgramHeaderView {
 
 export interface FizrukHeaderProps {
   page: FizrukPage;
-  activeProgram?: ActiveProgramHeaderView | null;
-  onBackToHub?: () => void;
+  activeProgram?: ActiveProgramHeaderView | null | undefined;
+  onBackToHub?: (() => void) | undefined;
   /**
    * Called when the user taps the contextual back arrow on a sub-page
    * (atlas / exercise / measurements). The parent decides where each
@@ -22,7 +22,7 @@ export interface FizrukHeaderProps {
    * in sync — see `FizrukApp.contextualBackTarget`.
    */
   onContextualBack: () => void;
-  onOpenSettings?: () => void;
+  onOpenSettings?: (() => void) | undefined;
 }
 
 function titleFor(page: FizrukPage): string {

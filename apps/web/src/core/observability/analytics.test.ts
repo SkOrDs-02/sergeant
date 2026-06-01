@@ -96,9 +96,9 @@ describe("trackEvent", () => {
       expect(tag).toBe("[analytics]");
       expect(loggedEvent.eventName).toBe("pii_leak_guard");
       // PII значення вирізані shared scrubPII (`[redacted]` sentinel).
-      expect(loggedEvent.payload.email).toBe("[redacted]");
-      expect(loggedEvent.payload.password).toBe("[redacted]");
-      expect(loggedEvent.payload.userId).toBe("abc");
+      expect(loggedEvent.payload["email"]).toBe("[redacted]");
+      expect(loggedEvent.payload["password"]).toBe("[redacted]");
+      expect(loggedEvent.payload["userId"]).toBe("abc");
       expect(capturePostHogEvent).toHaveBeenCalledWith("pii_leak_guard", {
         userId: "abc",
         email: "[redacted]",
@@ -110,7 +110,7 @@ describe("trackEvent", () => {
       ) as Array<{ payload: Record<string, unknown> }>;
       expect(stored).toHaveLength(1);
       const [firstStored] = stored;
-      expect(firstStored?.payload.email).toBe("[redacted]");
+      expect(firstStored?.payload["email"]).toBe("[redacted]");
     } finally {
       logSpy.mockRestore();
     }

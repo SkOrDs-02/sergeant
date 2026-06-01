@@ -18,19 +18,19 @@ interface PhotoAnalyzeResult {
 }
 
 interface PhotoAnalyzeCardProps {
-  busy?: boolean;
+  busy?: boolean | undefined;
   analyzePhoto: () => void | Promise<void>;
   fileRef: Ref<HTMLInputElement>;
-  onPickPhoto: (file?: File) => void | Promise<void>;
-  photoPreviewUrl?: string | null;
-  photoResult?: PhotoAnalyzeResult | null;
+  onPickPhoto: (file?: File | null) => void | Promise<void>;
+  photoPreviewUrl?: string | null | undefined;
+  photoResult?: PhotoAnalyzeResult | null | undefined;
   fmtMacro: (v: unknown) => string | number;
   portionGrams: string;
   setPortionGrams: Dispatch<SetStateAction<string>>;
   refinePhoto: () => void | Promise<void>;
   answers: Record<string, string>;
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>;
-  onSaveToLog?: () => void | Promise<void>;
+  onSaveToLog?: (() => void | Promise<void>) | undefined;
 }
 
 export function PhotoAnalyzeCard({

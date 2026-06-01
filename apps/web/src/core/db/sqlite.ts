@@ -185,19 +185,22 @@ function makeMigrationClient(db: Sqlite3Database): SqliteMigrationClient {
       db.exec({ sql });
     },
     run(sql, params) {
-      db.exec({ sql, bind: params as BindArg });
+      const bindVal = params as BindArg;
+      db.exec(bindVal !== undefined ? { sql, bind: bindVal } : { sql });
     },
     all<R extends Record<string, unknown> = Record<string, unknown>>(
       sql: string,
       params?: readonly unknown[],
     ): R[] {
-      const rows = db.exec({
-        sql,
-        bind: (params ?? []) as BindArg,
-        rowMode: "object",
-        returnValue: "resultRows",
-      });
-      return Array.isArray(rows) ? (rows as R[]) : [];
+      const bindVal = (params ?? []) as BindArg;
+      const rows = db.exec(
+        bindVal !== undefined
+          ? { sql, bind: bindVal, rowMode: "object", returnValue: "resultRows" }
+          : { sql, rowMode: "object", returnValue: "resultRows" },
+      );
+      return Array.isArray(rows)
+        ? (Array.from(rows as Record<string, unknown>[]) as R[])
+        : [];
     },
   };
 }
@@ -315,16 +318,17 @@ type ProxyCallback = (
 function makeProxyDriver(db: Sqlite3Database): ProxyCallback {
   return async (sql, params, method) => {
     const bind = toBind(params);
+    const bindOpts = bind !== undefined ? { bind } : {};
     switch (method) {
       case "run": {
-        db.exec({ sql, bind });
+        db.exec({ sql, ...bindOpts });
         return { rows: [] };
       }
       case "all":
       case "values": {
         const rows = db.exec({
           sql,
-          bind,
+          ...bindOpts,
           rowMode: "array",
           returnValue: "resultRows",
         });
@@ -333,7 +337,7 @@ function makeProxyDriver(db: Sqlite3Database): ProxyCallback {
       case "get": {
         const rows = db.exec({
           sql,
-          bind,
+          ...bindOpts,
           rowMode: "array",
           returnValue: "resultRows",
         });

@@ -26,6 +26,7 @@ export function setDebugEnabled(next: boolean): void {
     // canonical inspection path in production is `buildSwSnapshot()`
     // (postMessage → PWASection); see `apps/web/AGENTS.md` and
     // `docs/tech-debt/frontend.md §7`.
+    // eslint-disable-next-line no-console -- SW debug-flag confirmation; DEV-only, production path is buildSwSnapshot() (docs §7)
     console.log("[sw] debug enabled", { version: SW_VERSION });
   }
 }

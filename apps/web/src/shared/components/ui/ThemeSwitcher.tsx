@@ -38,9 +38,9 @@ type ThemeSwitcherVariant = "segmented" | "dropdown";
 
 export interface ThemeSwitcherProps {
   /** Compact segmented control (default) or verbose dropdown. */
-  variant?: ThemeSwitcherVariant;
+  variant?: ThemeSwitcherVariant | undefined;
   /** Override container className (extra layout slot — gap, margin). */
-  className?: string;
+  className?: string | undefined;
 }
 
 interface SwitchButtonProps {
@@ -95,7 +95,7 @@ function SegmentedSwitcher({
 }: {
   choice: ThemeChoice;
   setChoice: (next: ThemeChoice) => void;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <div
@@ -192,7 +192,7 @@ function DropdownSwitcher({
   choice: ThemeChoice;
   setChoice: (next: ThemeChoice) => void;
   isHighContrast: boolean;
-  className?: string;
+  className?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);

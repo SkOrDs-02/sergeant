@@ -193,8 +193,8 @@ export function WorkoutCatalogSection({
                                 </div>
                               </div>
                               <div className="shrink-0 text-xs text-muted tabular-nums">
-                                {typeof ex.rating === "number"
-                                  ? ex.rating.toFixed(1)
+                                {typeof ex["rating"] === "number"
+                                  ? ex["rating"].toFixed(1)
                                   : ""}
                               </div>
                             </div>

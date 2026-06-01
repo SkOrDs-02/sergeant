@@ -101,12 +101,12 @@ export type DropdownMenuEntry =
   | DropdownMenuLabel;
 
 interface TriggerInjectedProps {
-  ref?: Ref<HTMLElement>;
-  onClick?: (e: ReactMouseEvent<HTMLElement>) => void;
-  onKeyDown?: (e: ReactKeyboardEvent<HTMLElement>) => void;
-  "aria-haspopup"?: "menu" | true;
-  "aria-expanded"?: boolean;
-  "aria-controls"?: string;
+  ref?: Ref<HTMLElement> | undefined;
+  onClick?: ((e: ReactMouseEvent<HTMLElement>) => void) | undefined;
+  onKeyDown?: ((e: ReactKeyboardEvent<HTMLElement>) => void) | undefined;
+  "aria-haspopup"?: "menu" | true | undefined;
+  "aria-expanded"?: boolean | undefined;
+  "aria-controls"?: string | undefined;
 }
 
 export interface DropdownMenuProps {
@@ -282,12 +282,12 @@ function composeRefs<T>(
 interface PanelProps {
   anchorRef: React.RefObject<HTMLElement | null>;
   id: string;
-  ariaLabel?: string;
+  ariaLabel?: string | undefined;
   items: ReadonlyArray<DropdownMenuEntry>;
   placement: DropdownMenuPlacement;
   width: "auto" | "trigger" | number;
   zIndex: number;
-  menuClassName?: string;
+  menuClassName?: string | undefined;
   onClose: (returnFocusToTrigger?: boolean) => void;
 }
 

@@ -24,7 +24,7 @@ interface MacrosEditorProps {
   pickedFood: PickedFood | null;
   setPickedFood: Dispatch<SetStateAction<PickedFood | null>>;
   pickedGrams: string;
-  photoResult?: MealFormPhotoResult | null;
+  photoResult?: MealFormPhotoResult | null | undefined;
   hasPhotoMacros: boolean;
 }
 

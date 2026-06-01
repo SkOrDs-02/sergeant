@@ -18,11 +18,11 @@ import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 interface SubscriptionInput {
   id: string;
   name: string;
-  emoji?: string;
-  keyword?: string;
-  billingDay?: number | string;
-  currency?: string;
-  linkedTxId?: string;
+  emoji?: string | undefined;
+  keyword?: string | undefined;
+  billingDay?: number | string | undefined;
+  currency?: string | undefined;
+  linkedTxId?: string | undefined;
   [extra: string]: unknown;
 }
 
@@ -32,7 +32,7 @@ interface SubCardProps {
   onDelete: () => void;
   onEdit?: (patch: {
     name: string;
-    emoji?: string;
+    emoji?: string | undefined;
     keyword: string;
     billingDay: number;
     currency: string;

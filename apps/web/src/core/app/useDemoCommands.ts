@@ -9,6 +9,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@shared/lib";
 import { useToast } from "@shared/hooks/useToast";
 import { useTheme } from "@shared/hooks/useTheme";
 import {
@@ -74,7 +75,7 @@ export function useDemoCommands(): void {
         // Settings UI lives behind the user menu — wiring is module-side;
         // surface as WIP until that lands.
         run: () => {
-          console.log("[command-palette] settings.open (WIP)");
+          logger.debug("[command-palette] settings.open (WIP)");
           toast.info("Налаштування — у розробці (WIP)");
         },
       },
@@ -87,7 +88,7 @@ export function useDemoCommands(): void {
         // Real sign-out goes through AuthContext + Better Auth — wiring
         // happens in the auth track. Stub for now.
         run: () => {
-          console.log("[command-palette] session.sign-out (WIP)");
+          logger.debug("[command-palette] session.sign-out (WIP)");
           toast.info("Вихід — у розробці (WIP)");
         },
       },

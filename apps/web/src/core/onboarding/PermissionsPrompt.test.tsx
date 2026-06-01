@@ -10,7 +10,7 @@ afterEach(() => {
 
 const ANALYTICS_CALLS: Array<{
   name: string;
-  props?: Record<string, unknown>;
+  props?: Record<string, unknown> | undefined;
 }> = [];
 
 vi.mock("../observability/analytics", () => ({

@@ -54,13 +54,13 @@ interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
   onSave: (meal: Meal) => void;
-  photoResult?: MealFormPhotoResult | null;
-  initialMeal?: Partial<Meal> | null;
-  mealTemplates?: MealTemplate[];
-  setPrefs?: Dispatch<SetStateAction<NutritionPrefs>>;
-  pantryItems?: PantryItem[];
-  onConsumePantryItem?: (itemName: string, grams: number) => void;
-  onRequestPhoto?: () => void;
+  photoResult?: MealFormPhotoResult | null | undefined;
+  initialMeal?: Partial<Meal> | null | undefined;
+  mealTemplates?: MealTemplate[] | undefined;
+  setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
+  pantryItems?: PantryItem[] | undefined;
+  onConsumePantryItem?: ((itemName: string, grams: number) => void) | undefined;
+  onRequestPhoto?: (() => void) | undefined;
 }
 
 export function AddMealSheet({
