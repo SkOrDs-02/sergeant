@@ -18,22 +18,21 @@
  *   * `weekStart` = понеділок ISO-тижня у Kyiv local (`YYYY-MM-DD`).
  *   * `founderUserId` — Better Auth opaque string ID (читаємо з AuthContext-у).
  *
- * Fetch path: зараз `fetchGoals` / `createGoalApi` ходять raw `fetch`-ом на
- * `/api/internal/strategic/*` **без `Authorization`-хедера** — `internalFetch`
- * wrapper в `apps/web/src/shared/lib/api/` ще не існує. Сторінка свідомо
- * **не змонтована** в `apps/web/src/core/app/router.tsx`, тому з браузера ці
- * виклики ще ніхто не робить.
+ * Fetch path: `fetchGoals` / `createGoalApi` тепер ходять через
+ * `internalFetch` wrapper (`apps/web/src/shared/lib/api/internalFetch.ts`),
+ * який інжектить `Authorization: Bearer ${VITE_INTERNAL_API_KEY}` лише з
+ * dev env (`import.meta.env.VITE_INTERNAL_API_KEY`). У prod бандлі ця
+ * env-змінна не виставлена — helper повертає synthetic 403, тому Hard
+ * Rule #20 (PAT не їде в production) тримається.
  *
- * TODO(PR-35): перед wire-up у роутер — переключити fetch на
- * `/api/strategic/*` session-auth proxy (а internal-route залишити тільки для
- * n8n). Якщо bearer все ж знадобиться з браузера — спершу додати справжній
- * `internalFetch` helper і інжектити `INTERNAL_API_KEY` лише через
- * `import.meta.env.VITE_*` для dev (Hard Rule #20: PAT не їде в production).
+ * Сторінка свідомо **не змонтована** в `apps/web/src/core/app/router.tsx` —
+ * conversation flow для PR-35+ ще не готовий.
  */
 
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { strategicKeys } from "@shared/lib/api/queryKeys";
+import { internalFetch } from "@shared/lib/api/internalFetch";
 
 /** Канонічний catalog персон (mirror з `apps/server/src/lib/strategicGoals.ts`). */
 const STRATEGIC_GOAL_PERSONAS = [
@@ -120,9 +119,8 @@ function strategyErrorMessage(status: number): string {
 }
 
 async function fetchGoals(weekStart: string): Promise<StrategicGoal[]> {
-  const res = await fetch("/api/internal/strategic/goals/list", {
+  const res = await internalFetch("/api/internal/strategic/goals/list", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ weekStart }),
   });
   if (!res.ok)
@@ -139,9 +137,8 @@ async function createGoalApi(input: {
   weekStart: string;
   goalText: string;
 }): Promise<StrategicGoal> {
-  const res = await fetch("/api/internal/strategic/goals", {
+  const res = await internalFetch("/api/internal/strategic/goals", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
   if (!res.ok)
