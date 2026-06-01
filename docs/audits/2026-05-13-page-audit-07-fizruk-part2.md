@@ -636,6 +636,8 @@ Less urgent ніж Progress, але тренд негативний.
 
 ### F22 — `MiniLineChart` має той самий `aria-label="Графік тренду"` для всіх інстансів [severity: medium] [perspective: a11y]
 
+> ✅ **Closed 2026-06-01** — `aria-label` тепер `` `Графік тренду — ${metricLabel}` `` (через наявний `metricLabel` prop). Кожен інстанс (вага / % жиру / …) має унікальний accessible-name — SR-юзер їх розрізняє.
+
 **Page:** consumed by `Progress`, `Body`
 **File:** `apps/web/src/modules/fizruk/components/MiniLineChart.tsx`
 **Lines:** L142
@@ -657,6 +659,8 @@ WCAG 1.1.1 — alternative text має бути descriptive.
 ---
 
 ### F23 — `MiniLineChart` axis-text `fontSize="9"` нижче 10px floor [severity: medium] [perspective: rule]
+
+> ✅ **Closed 2026-06-01** — axis-text у `MiniLineChart.tsx` (y-ticks + x-labels) і `ExerciseProgressChart.tsx` піднято `fontSize="9"` → `"10"` (≥10px floor).
 
 **Page:** consumed by `Progress`, `Body`
 **File:** `apps/web/src/modules/fizruk/components/MiniLineChart.tsx`
@@ -704,6 +708,8 @@ deleteEntry(id);
 ---
 
 ### F25 — `Body/trendUtils.ts` використовує non-null `!` всупереч Hard Rule #19 [severity: medium] [perspective: ts]
+
+> ✅ **Closed 2026-06-01** — `lastValidValue`/`firstValidValue` тепер беруть `const row = data[i]; if (!row) continue;` замість `data[i]!.value`. Non-null bang прибрано в обох циклах; Hard Rule #19 дотримано, typecheck зелений.
 
 **Page:** `Body` (sub: `Body/trendUtils.ts`)
 **File:** `apps/web/src/modules/fizruk/pages/Body/trendUtils.ts`

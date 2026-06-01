@@ -293,6 +293,8 @@ Add `safeWriteSS` / `safeReadStringSS` companions to `@shared/lib/storage/storag
 
 ### F11 — `todayLocalDateString()` ignores the Europe/Kyiv domain invariant [severity: medium] [perspective: bug] [perspective: rule]
 
+> ✅ **Closed 2026-06-01** — `Workouts.helpers.todayLocalDateString()` тепер повертає `getKyivDayKey()` (з `@shared/lib/time/kyivTime`) замість host-local `getFullYear/getMonth/getDate`. Default retro-workout date anchored до Europe/Kyiv; на UTC-деплої більше не зрізає не той день увечері. Назву лишено для стабільності call-site-ів.
+
 **Page:** Workouts (retro)
 **File:** `apps/web/src/modules/fizruk/pages/Workouts.helpers.ts`
 **Lines:** L121–L127

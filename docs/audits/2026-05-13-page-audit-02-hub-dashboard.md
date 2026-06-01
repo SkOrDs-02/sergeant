@@ -285,6 +285,8 @@ function generateInsights(d: ReportData, period: Period): string[] {
 
 ### F8 — `setInterval(60_000)` у `useHubDashboardState` не вимикається при `adaptivePref=false` [severity: medium] [perspective: perf]
 
+> ✅ **Closed 2026-06-01** — `useHubDashboardState.ts` adaptive-ticker `useEffect` тепер робить early-return `if (!adaptivePref || editMode) return;` з deps `[adaptivePref, editMode]`. Коли adaptive вимкнено або editMode активний (де `pickAdaptiveLift` усе одно повертає `{liftedId:null}`), таймер не ставиться — щохвилинний re-render усього дашборду усунено.
+
 **Page:** Hub Dashboard
 **File:** `apps/web/src/core/hub/useHubDashboardState.ts`
 **Lines:** L330–L334
