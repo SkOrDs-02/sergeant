@@ -141,6 +141,8 @@ A crafted deep link from a malicious actor (e.g. a habit-sharing flow) can crash
 **Recommendation.**
 Replace the regex with `parseDateKey(q)` round-trip validation: if `dateKeyFromDate(parseDateKey(q)) !== q`, drop the parameter and `replaceState` without applying. Already a one-liner.
 
+> **Closure note (2026-06-01, PR-B4 of 15-pack):** Verified-already-done. `apps/web/src/modules/routine/useRoutineAppState.ts:254-263` now does `if (q && parseKyivDate(q))` before `time.deepLinkDay(q)`. `parseKyivDate` returns `null` for invalid calendar dates (`2026-02-31`, `9999-99-99`, `0000-13-01` all rejected), and the param is `URLSearchParams.delete()`-d after a successful apply so back-navigation can't re-trigger the jump. No regex-shape-only path remains.
+
 ---
 
 ### F7 — `useRoutineReminders` swallows every error via empty `catch {}` [severity: high] [perspective: bug]
