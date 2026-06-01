@@ -451,6 +451,8 @@ The `length > 0` guard does justify the `!`, but the `!` non-null bang is the ki
 
 **Recommendation.** Replace with a `const [head, ...rest] = remaining; if (head) { ... }` pattern, or use `remaining.at(0)` with explicit `if`.
 
+> **Closure note (2026-06-01, PR-A7 of 15-pack):** Resolved. `apps/web/src/core/hub/chat/useChatSessions.ts:215-217` now does `const head = remaining[0]; if (head) { nextActiveId = head.id; nextMessages = head.messages; }` — no `!` assertion, narrowed via `if`-guard, Hard Rule #19 friendly.
+
 ---
 
 ## Per-perspective spot-check (no findings)
