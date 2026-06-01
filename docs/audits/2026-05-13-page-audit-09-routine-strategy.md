@@ -108,6 +108,8 @@ Extract two cohesive subcomponents in a follow-up:
 
 ### F5 — Foreign module accents (`sky-*`, `emerald-*`) inside the routine subtree [severity: high] [perspective: rule]
 
+> **Closure note (2026-06-01, PR-B9 of 15-pack):** Verified-already-done. `grep -rn "sky-[0-9]\|emerald-[0-9]" apps/web/src/modules/routine` returns **zero matches**. Whatever foreign-accent leakage the audit flagged has since been cleaned up (Hard Rule #12 holds — only the `routine` semantic accents remain in-subtree). Doc-only closure.
+
 **Page:** Routine module
 **Files:**
 

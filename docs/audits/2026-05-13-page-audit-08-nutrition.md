@@ -259,6 +259,8 @@ Reuse скрізь. Long-term — switch на `crypto.randomUUID()` (підтр�
 
 ### F10 — Module-accent containment risk: `bg-info-soft` у нативно-Nutrition WaterTracker (Hard Rule #12 grey-zone) [severity: medium] [perspective: tailwind]
 
+> **Closure note (2026-06-01, PR-B9 of 15-pack):** Closed as wontfix-with-rationale. `WaterTrackerCard` keeps `bg-info-soft text-info-strong` because water tracking is conceptually a separate sub-domain from macros (the audit's own "or" branch). The semantic `info` token is the registered hydration accent across the app (matches `<Banner variant="info">` and `useToast({type:"info"})`). Hard Rule #12 is about foreign **module** accents — `finyk` inside `nutrition` etc — not about semantic-status tokens, which are explicitly allowed cross-module. Visual two-tone is intentional UX (water vs food).
+
 **Page:** Start
 **File:** `apps/web/src/modules/nutrition/components/WaterTrackerCard.tsx`
 **Lines:** 133–134, 164–165
