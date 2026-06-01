@@ -291,7 +291,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `MonthPulseCard`, etc.). Загалом count для `apps/web/src` 24 → 22.
 >
 > `core/ProfilePage.tsx` (раніше 1060 рядків) декомпозовано на
-> `core/profile/ProfilePage.tsx` (96), `PersonalInfoSection.tsx` (383),
+> `core/profile/ProfilePage.tsx` (96 при декомпозиції, нині 145), `PersonalInfoSection.tsx` (383),
 > `MemoryBankSection.tsx` (242), `SessionsSection.tsx` (134),
 > `ChangePasswordSection.tsx` (122), `DeleteAccountDialog.tsx` (104),
 > `DangerZoneSection.tsx` (97) + barrel re-export `index.ts`.
