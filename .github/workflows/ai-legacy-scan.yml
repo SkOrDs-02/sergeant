@@ -88,9 +88,9 @@ jobs:
         run: node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html
 
       - name: Upload AI-LEGACY dashboard
-        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ai-legacy-dashboard
           path: dist/ai-legacy-dashboard.html
