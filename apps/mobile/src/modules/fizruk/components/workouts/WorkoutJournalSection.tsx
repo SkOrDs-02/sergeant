@@ -11,6 +11,7 @@ import {
   buildWorkoutJournalSections,
   computeWorkoutSummary,
   formatWorkoutDateLabel,
+  type WorkoutItemLike,
 } from "@sergeant/fizruk-domain/domain";
 import { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -26,7 +27,7 @@ export interface WorkoutLike {
   id: string;
   startedAt: string;
   endedAt: string | null;
-  items?: ReadonlyArray<unknown>;
+  items?: ReadonlyArray<WorkoutItemLike | null | undefined>;
 }
 
 export interface WorkoutJournalSectionProps<W extends WorkoutLike> {

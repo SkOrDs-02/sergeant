@@ -38,9 +38,16 @@ export interface CustomExercise {
   [extra: string]: unknown;
 }
 
-export type CustomExerciseDraft = Omit<CustomExercise, "id"> & {
+export interface CustomExerciseDraft {
   id?: string;
-};
+  nameUk: string;
+  primaryGroup?: string;
+  musclesPrimary?: string[];
+  musclesSecondary?: string[];
+  type?: "strength" | "distance" | "time";
+  notes?: string;
+  [extra: string]: unknown;
+}
 
 function uid(): string {
   return `cex_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;

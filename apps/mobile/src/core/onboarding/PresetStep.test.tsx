@@ -2,16 +2,16 @@ import { fireEvent, render } from "@testing-library/react-native";
 
 import { PresetStep } from "./PresetStep";
 
-const applyPreset = jest.fn();
-const writePresetPrefill = jest.fn();
-const trackEvent = jest.fn();
+const mockApplyPreset = jest.fn();
+const mockWritePresetPrefill = jest.fn();
+const mockTrackEvent = jest.fn();
 
 jest.mock("./presetApply", () => ({
-  applyPreset: (...args: unknown[]) => applyPreset(...args),
+  applyPreset: (...args: unknown[]) => mockApplyPreset(...args),
 }));
 
 jest.mock("./presetPrefill", () => ({
-  writePresetPrefill: (...args: unknown[]) => writePresetPrefill(...args),
+  writePresetPrefill: (...args: unknown[]) => mockWritePresetPrefill(...args),
 }));
 
 jest.mock("@/lib/analytics", () => ({
@@ -20,14 +20,14 @@ jest.mock("@/lib/analytics", () => ({
     FTUX_PRESET_PICKED: "ftux_preset_picked",
     FTUX_PRESET_CUSTOM: "ftux_preset_custom",
   },
-  trackEvent: (...args: unknown[]) => trackEvent(...args),
+  trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
 describe("PresetStep", () => {
   beforeEach(() => {
-    applyPreset.mockClear();
-    writePresetPrefill.mockClear();
-    trackEvent.mockClear();
+    mockApplyPreset.mockClear();
+    mockWritePresetPrefill.mockClear();
+    mockTrackEvent.mockClear();
   });
 
   it("fires the shown event with preset count on open", () => {
@@ -39,7 +39,7 @@ describe("PresetStep", () => {
         onNavigate={jest.fn()}
       />,
     );
-    expect(trackEvent).toHaveBeenCalledWith("ftux_preset_sheet_shown", {
+    expect(mockTrackEvent).toHaveBeenCalledWith("ftux_preset_sheet_shown", {
       module: "routine",
       presetCount: 3,
     });
@@ -61,12 +61,12 @@ describe("PresetStep", () => {
 
     fireEvent.press(getByTestId("preset-item-water"));
 
-    expect(applyPreset).toHaveBeenCalledWith("routine", {
+    expect(mockApplyPreset).toHaveBeenCalledWith("routine", {
       name: "Випити воду",
       emoji: "💧",
     });
     expect(onNavigate).not.toHaveBeenCalled();
-    expect(writePresetPrefill).not.toHaveBeenCalled();
+    expect(mockWritePresetPrefill).not.toHaveBeenCalled();
     expect(onPick).toHaveBeenCalledWith({
       moduleId: "routine",
       presetId: "water",
@@ -90,12 +90,12 @@ describe("PresetStep", () => {
 
     fireEvent.press(getByTestId("preset-item-coffee"));
 
-    expect(writePresetPrefill).toHaveBeenCalledWith("finyk", {
+    expect(mockWritePresetPrefill).toHaveBeenCalledWith("finyk", {
       description: "Кава",
       category: "їжа",
     });
     expect(onNavigate).toHaveBeenCalledWith("finyk", "add_expense");
-    expect(applyPreset).not.toHaveBeenCalled();
+    expect(mockApplyPreset).not.toHaveBeenCalled();
     expect(onPick).toHaveBeenCalledWith({
       moduleId: "finyk",
       presetId: "coffee",
@@ -118,9 +118,9 @@ describe("PresetStep", () => {
     fireEvent.press(getByTestId("preset-fallback"));
 
     // Fallback clears any stale prefill, then routes into the add-flow.
-    expect(writePresetPrefill).toHaveBeenCalledWith("fizruk", null);
+    expect(mockWritePresetPrefill).toHaveBeenCalledWith("fizruk", null);
     expect(onNavigate).toHaveBeenCalledWith("fizruk", "start_workout");
-    expect(trackEvent).toHaveBeenCalledWith("ftux_preset_custom", {
+    expect(mockTrackEvent).toHaveBeenCalledWith("ftux_preset_custom", {
       module: "fizruk",
       via: "fallback",
     });

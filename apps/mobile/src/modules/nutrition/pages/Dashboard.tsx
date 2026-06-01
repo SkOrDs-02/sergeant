@@ -131,7 +131,12 @@ function sumMealTotals(meals: readonly PlanMeal[]): {
   totalFat_g: number;
   totalCarbs_g: number;
 } {
-  return meals.reduce(
+  return meals.reduce<{
+    totalKcal: number;
+    totalProtein_g: number;
+    totalFat_g: number;
+    totalCarbs_g: number;
+  }>(
     (acc, m) => ({
       totalKcal: acc.totalKcal + (m.kcal ?? 0),
       totalProtein_g: acc.totalProtein_g + (m.protein_g ?? 0),
