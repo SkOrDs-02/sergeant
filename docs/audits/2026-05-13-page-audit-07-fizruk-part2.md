@@ -660,7 +660,7 @@ WCAG 1.1.1 — alternative text має бути descriptive.
 
 ### F23 — `MiniLineChart` axis-text `fontSize="9"` нижче 10px floor [severity: medium] [perspective: rule]
 
-> ✅ **Closed 2026-06-01** — axis-text у `MiniLineChart.tsx` (y-ticks + x-labels) і `ExerciseProgressChart.tsx` піднято `fontSize="9"` → `"10"` (≥10px floor).
+> ✅ **Closed 2026-06-01** — axis-text у `MiniLineChart.tsx` (y-ticks + x-labels) і `ExerciseProgressChart.tsx` (y-ticks + x-labels) піднято `fontSize` 9/8 → 10 (≥10px floor).
 
 **Page:** consumed by `Progress`, `Body`
 **File:** `apps/web/src/modules/fizruk/components/MiniLineChart.tsx`

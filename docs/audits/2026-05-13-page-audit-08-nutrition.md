@@ -458,7 +458,7 @@ return active ?? fallback;
 
 ### F18 — Inline non-null assertions у consumePantryItem (Hard Rule #19 cousin) [severity: low] [perspective: ts]
 
-> ✅ **Closed 2026-06-01** — `consumePantryItem` тепер guard-ить `const item = items[idx]; if (!item) return p;` і читає `item.qty`/`item.unit` (Number/String уже обробляють undefined) замість `item!.qty!`/`item!.unit!`. Усі три non-null bang прибрано.
+> ✅ **Closed 2026-06-01** — `consumePantryItem` тепер guard-ить `const item = items[idx]; if (!item) return p;` і читає `item.qty`/`item.unit` (Number/String уже обробляють undefined) замість `item!.qty!`/`item!.unit!`. Усі non-null assertions (включно з `{ ...item }` у branch `remaining > 0`) прибрано.
 
 **Page:** Pantry, Log
 **File:** `apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts`

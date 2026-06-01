@@ -135,7 +135,7 @@ export function ExerciseProgressChart({
               x={p.x}
               y={h - 4}
               textAnchor="middle"
-              fontSize="8"
+              fontSize="10"
               className="fill-muted"
             >
               {p.dateLabel}

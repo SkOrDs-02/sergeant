@@ -338,6 +338,9 @@ export function useHubDashboardState(props: {
     // щохвилинний re-render усього HubDashboard був би марним battery/CPU-cost-ом
     // (page-audit-02 F8).
     if (!adaptivePref || editMode) return;
+    // Refresh immediately on (re-)enable so the lift calc isn't stale for up
+    // to a minute until the first tick (cubic review on this PR).
+    setAdaptiveNow(new Date());
     const id = setInterval(() => setAdaptiveNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, [adaptivePref, editMode]);

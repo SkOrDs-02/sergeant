@@ -291,7 +291,7 @@ export function useNutritionPantries({
         if (remaining <= 0) {
           items.splice(idx, 1);
         } else {
-          items[idx] = { ...item!, qty: Math.round(remaining * 10) / 10 };
+          items[idx] = { ...item, qty: Math.round(remaining * 10) / 10 };
         }
         return { ...p, items };
       }),
