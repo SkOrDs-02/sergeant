@@ -220,6 +220,26 @@ export const messages = {
     historyEmpty: "Історія порожня",
   },
 
+  // Audit 09 F11 — Ukrainian copy for the strategy page (PR-34 skeleton).
+  // Persona id strings stay English (server API contract).
+  strategy: {
+    title: "Стратегічні цілі",
+    weekPrefix: "Тиждень з",
+    placeholderTag: "placeholder UI (PR-34 skeleton)",
+    addGoal: "Додати ціль",
+    personaLabel: "Персона",
+    goalTextLabel: "Текст цілі",
+    goalTextPlaceholder:
+      "напр.: Скоротити витрати в категорії «Кава» на 60% до неділі",
+    saving: "Зберігаю…",
+    thisWeeksGoals: "Цілі цього тижня",
+    loading: "Завантаження…",
+    emptyStatePrefix: "Цілей на тиждень з",
+    emptyStateSuffix:
+      "немає. WF-26 cron стартує понеділок 09:00 Kyiv, або додай ціль вручну через форму вище.",
+    goalTextRequired: "Текст цілі не може бути порожнім",
+  },
+
   errors: {
     generic: {
       // Phase 2 — generic-помилки, що рендеряться у банері/toast-і коли
@@ -662,8 +682,7 @@ export const messages = {
       freeTagline: "Базові ліміти у всіх 4 модулях. Local-first, без cloud.",
       premiumName: "Premium",
       premiumCadence: "/міс",
-      premiumTagline:
-        "Усе розблоковано. Один план — без рівнів і доплат.",
+      premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
     },
     features: {
       expensesFinyk: "Витрати у Фініку",
@@ -712,8 +731,7 @@ export const messages = {
     },
     waitlist: {
       headline: "Email для waitlist",
-      subtitle:
-        "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
+      subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
     },
     footer:
       "Ціни у EUR; для UA-ринку Stripe виставляє ₴-еквівалент. Фінальна цифра — у pricing-strategy PR після market-research.",
