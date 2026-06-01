@@ -157,7 +157,7 @@
     "prettier": "^3.8.2",
     "tsc-files": "^1.1.4",
     "tsx": "^4.21.0",
-    "turbo": "^2.9.8",
+    "turbo": "^2.9.14",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.1"
   },

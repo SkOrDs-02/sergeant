@@ -60,9 +60,9 @@ jobs:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # github/codeql-action/init v4.35.2 (SHA-pinned)
+      # github/codeql-action/init v4.36.0 (SHA-pinned)
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7
+        uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa
         with:
           languages: ${{ matrix.language }}
           # security-extended розширює default suite на додаткові
@@ -72,8 +72,8 @@ jobs:
           # рекомендовані аудитом I1.
           queries: security-extended,security-and-quality
 
-      # github/codeql-action/analyze v4.35.2 (SHA-pinned)
+      # github/codeql-action/analyze v4.36.0 (SHA-pinned)
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7
+        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa
         with:
           category: "/language:${{ matrix.language }}"
