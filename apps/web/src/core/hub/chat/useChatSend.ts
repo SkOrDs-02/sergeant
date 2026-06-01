@@ -23,6 +23,8 @@ import {
 } from "../../lib/hubChatUtils";
 import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
+import { logger } from "@shared/lib";
+import { parseToolCalls } from "./toolCallSchema";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
 import { buildActionCard } from "../../lib/hubChatActionCards";
 import type { ChatActionCard } from "../../lib/hubChatActionCards";
@@ -321,14 +323,24 @@ export function useChatSend({
         }
 
         if (data.tool_calls && data.tool_calls.length > 0) {
-          // Cast tool_calls to ChatAction[] — the API guarantees the
-          // name+id+input shape.
-          type ToolCall = {
-            id: string;
-            name: string;
-            input: Record<string, unknown>;
-          };
-          const toolCalls = data.tool_calls as ToolCall[];
+          // Audit 03 F3 (critical/security): every entry must clear the
+          // structural firewall — `{id: string, name: string, input: object}`
+          // — before any handler runs. On failure we drop the whole batch,
+          // toast the user, and fall back to plain-text rendering. Spending
+          // tokens > silently writing to LocalStorage with a corrupted
+          // payload.
+          const parsed = parseToolCalls(data.tool_calls);
+          if (!parsed.ok) {
+            logger.warn("[hub-chat] tool_calls schema mismatch", {
+              issues: parsed.issues,
+            });
+            toast.error("Не вдалося виконати дію");
+            const fallback = data.text || "Немає відповіді.";
+            setMessages((m) => [...m, makeAssistantMsg(fallback)]);
+            if (shouldSpeak) maybeSpeak(fallback);
+            return;
+          }
+          const toolCalls = parsed.value;
           const handlerResults = await executeActions(
             toolCalls as Parameters<typeof executeActions>[0],
           );
