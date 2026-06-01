@@ -48,9 +48,27 @@ export type FinykSchedule = {
   urgentLiability: UrgentLiability | null;
 };
 
+/**
+ * Audit 05 F9: parse `YYYY-MM-DD` to a local-midnight `Date`. On bad input
+ * (`null`, `""`, `"not-a-date"`, `"2026-13-99"`) we now bail to "today" at
+ * local midnight instead of silently constructing an `Invalid Date` that
+ * propagates as `NaN` into "через NaN дн" labels. The `Number.isFinite`
+ * triple-guard also blocks the prior `y!` non-null assertion path.
+ */
 export function parseLocalDate(isoDate: string | undefined | null): Date {
-  const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y!, (m || 1) - 1, d || 1);
+  const parts = (isoDate || "").split("-").map(Number);
+  const [y, m, d] = parts;
+  if (
+    !Number.isFinite(y) ||
+    !Number.isFinite(m) ||
+    !Number.isFinite(d) ||
+    (y as number) < 1970
+  ) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  return new Date(y as number, (m as number) - 1, d as number);
 }
 
 export function getNextBillingDate(billingDay: number, now: Date): Date {

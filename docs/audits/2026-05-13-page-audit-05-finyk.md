@@ -513,6 +513,8 @@ The downstream chart already handles `[…, 0, …]` data points.
 
 ### F9 — `parseLocalDate` returns `Invalid Date` silently [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B8 of 15-pack):** Resolved. `apps/web/src/modules/finyk/lib/upcomingSchedule.ts` `parseLocalDate` now `Number.isFinite`-checks `y, m, d` (plus `y >= 1970` sanity) and falls back to today-at-local-midnight on any malformed input. No more silent `Invalid Date` propagating `NaN` into "через NaN дн" UI; the prior `y!` non-null assertion also dropped. Existing test (`upcomingSchedule.test.ts`) for null/undefined/"" still passes — those land on the new "today" path.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts`
 **Lines:** L32–L35
