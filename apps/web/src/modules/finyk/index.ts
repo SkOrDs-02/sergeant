@@ -1,19 +1,16 @@
 /**
- * @scaffolded
- * @owner @Skords-01
- * @nextStep Have the App router (`apps/web/src/core/app/appRouter.tsx`) and
- *           hub registry import `FinykApp` from `@finyk` (this barrel) instead
- *           of `@modules/finyk/FinykApp`. Once consumers exist, drop this tag.
+ * Public entry point for the Finyk module — declared API surface for
+ * cross-module consumers. See AGENTS.md → Hard Rule #10. Status: Active.
  *
- * Public entry point for the Finyk module — declared API surface kept for
- * cross-module consumers. See AGENTS.md → Hard Rule #10.
+ * Cross-module consumers (hub-reports aggregation, ExpensesCard, insights,
+ * coach, weekly digest) already import via `@finyk/utils`,
+ * `@finyk/constants`, `@finyk/lib/*`. The App router (`ActiveModuleView`)
+ * keeps the deep `./FinykApp` import as a `React.lazy()` chunk-boundary
+ * anchor — routing via `@finyk` would pull the whole barrel into the
+ * lazy chunk and broaden the per-route code-split. Intentional asymmetry,
+ * not pending work.
  *
- * Prefer importing from `@finyk` or `@modules/finyk` instead of deep paths
- * for cross-module consumers (e.g. App router, hub registry):
- *
- *   import { FinykApp } from "@finyk";
- *
- * Deep imports (`@finyk/utils`, `@finyk/constants`) are still recommended
+ * Deep imports (`@finyk/utils`, `@finyk/constants`) remain recommended
  * for intra-module use and tree-shaking-sensitive call sites.
  */
 

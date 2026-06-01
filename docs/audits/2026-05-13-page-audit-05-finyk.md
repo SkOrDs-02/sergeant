@@ -1315,6 +1315,8 @@ Either:
 - Or update the `@nextStep` with a fresher integration plan if the
   consumer migration is deferred.
 
+> **Closure note (2026-06-01, PR-A11 of 15-pack):** Resolved by option (b'). The `@scaffolded` marker on `apps/web/src/modules/finyk/index.ts` is dropped; the JSDoc now documents the **intentional asymmetry**: cross-module consumers (hub-reports aggregation, ExpensesCard, insights, coach, weekly digest) already route through `@finyk/utils`/`@finyk/constants`/`@finyk/lib/*`, but `ActiveModuleView.tsx` keeps the deep `./FinykApp` import as the `React.lazy()` chunk-boundary anchor — routing the router via the barrel would broaden the per-route lazy chunk. Status: Active, not pending. `knip` no longer suppresses zero-importer warnings on this surface.
+
 ---
 
 ## Per-page coverage matrix
