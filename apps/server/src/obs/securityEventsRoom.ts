@@ -16,9 +16,13 @@
  * callers.
  */
 
+import { env } from "../env/env.js";
 import { logger } from "./logger.js";
 import { securityRoomUnreachableTotal } from "./metrics.js";
-import { onSecurityEvent, type ResolvedSecurityEvent } from "./securityEvents.js";
+import {
+  onSecurityEvent,
+  type ResolvedSecurityEvent,
+} from "./securityEvents.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Formatter (mirrors securityRoom.ts in the openclaw tool package)
@@ -49,20 +53,19 @@ function formatMessage(event: ResolvedSecurityEvent): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function sendToTelegram(event: ResolvedSecurityEvent): Promise<void> {
-  if (process.env["SECURITY_EVENTS_MUTED"] === "1") return;
+  if (env.SECURITY_EVENTS_MUTED) return;
 
-  const botToken = process.env["SERGEANT_ALERT_BOT_TOKEN"];
-  const chatId = process.env["SERGEANT_OPS_CHAT_ID"];
+  const botToken = env.SERGEANT_ALERT_BOT_TOKEN;
+  const chatId = env.SERGEANT_OPS_CHAT_ID;
   if (!botToken || !chatId) return; // not configured — skip silently
 
   const text = formatMessage(event);
-  const threadId = process.env["TELEGRAM_TOPIC_ENGINEERING"];
+  const threadId = env.TELEGRAM_TOPIC_ENGINEERING;
 
   const body: Record<string, unknown> = {
     chat_id: chatId,
     text,
-    disable_notification:
-      event.severity === "low" || event.severity === "info",
+    disable_notification: event.severity === "low" || event.severity === "info",
   };
   if (threadId) {
     const n = Number(threadId);
@@ -129,11 +132,11 @@ export async function pingSecurityRoom(): Promise<{
   ok: boolean;
   reason?: string;
 }> {
-  if (process.env["SECURITY_EVENTS_MUTED"] === "1") {
+  if (env.SECURITY_EVENTS_MUTED) {
     return { ok: true, reason: "muted" };
   }
-  const botToken = process.env["SERGEANT_ALERT_BOT_TOKEN"];
-  const chatId = process.env["SERGEANT_OPS_CHAT_ID"];
+  const botToken = env.SERGEANT_ALERT_BOT_TOKEN;
+  const chatId = env.SERGEANT_OPS_CHAT_ID;
   if (!botToken) {
     securityRoomUnreachableTotal.inc({ reason: "bot_token_missing" });
     return { ok: false, reason: "bot_token_missing" };

@@ -1,6 +1,7 @@
 import pino, { type Logger, type LoggerOptions } from "pino";
 import pinoHttp, { type HttpLogger } from "pino-http";
 import { REDACT_KEY_NAMES } from "@sergeant/shared";
+import { env } from "../env/env.js";
 import { hashUserId } from "../lib/userIdHash.js";
 import { als } from "./requestContext.js";
 
@@ -15,8 +16,10 @@ import { als } from "./requestContext.js";
  *  - В dev можна увімкнути pino-pretty через `LOG_PRETTY=1`.
  */
 
-const isDev = process.env["NODE_ENV"] !== "production";
-const baseLevel = process.env["LOG_LEVEL"] || (isDev ? "debug" : "info");
+const isDev = env.NODE_ENV !== "production";
+// env.LOG_LEVEL is optional (no schema default) to preserve dev-vs-prod logic:
+// "debug" in development when unset, "info" in production when unset.
+const baseLevel = env.LOG_LEVEL ?? (isDev ? "debug" : "info");
 
 // Runtime debug-window state. A /debug-window CLI command can temporarily
 // lower the log level to "debug" for a bounded duration without a restart.
@@ -197,18 +200,16 @@ export const redactPaths = [
   "phone",
 ];
 
-const usePretty = process.env["LOG_PRETTY"] === "1";
+const usePretty = env.LOG_PRETTY === "1";
 
 const pinoOptions: LoggerOptions = {
   level: baseLevel,
   base: {
     service: "sergeant-api",
-    env: process.env["NODE_ENV"] || "development",
-    ...(process.env["SENTRY_RELEASE"] || process.env["RAILWAY_GIT_COMMIT_SHA"]
+    env: env.NODE_ENV,
+    ...(env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA
       ? {
-          release:
-            process.env["SENTRY_RELEASE"] ||
-            process.env["RAILWAY_GIT_COMMIT_SHA"]!,
+          release: env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA,
         }
       : {}),
   },

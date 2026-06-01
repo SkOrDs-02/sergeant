@@ -28,6 +28,7 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
+import { env } from "../../env/env.js";
 import { asyncHandler } from "../../http/index.js";
 import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
@@ -514,7 +515,7 @@ export function createAlertsInternalRouter({
  * сервер deploy-ється у середовище без alert-бота (місцевий dev).
  */
 function defaultAlertBotTelegramClient(): TelegramApiClient | null {
-  const token = process.env["SERGEANT_ALERT_BOT_TOKEN"];
+  const token = env.SERGEANT_ALERT_BOT_TOKEN;
   if (!token) return null;
   return createTelegramApiClient(token);
 }

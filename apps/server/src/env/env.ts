@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { logger } from "../obs/logger.js";
 import { parseKeyRing } from "../lib/keyRing.js";
 
 /**
@@ -551,10 +550,14 @@ const envSchema = z.object({
    * via numeric `SENTRY_TRACES_SAMPLE_RATE` if needed.
    */
   SENTRY_SAMPLE_PROFILE: z.enum(["minimal", "prod", "aggressive"]).optional(),
-  /** Pino log level. Use /debug-window CLI to temporarily lower without restart. */
+  /**
+   * Pino log level. Use /debug-window CLI to temporarily lower without restart.
+   * Optional (no schema default) — logger.ts applies its own dev-vs-prod
+   * default logic: `debug` in development when unset, `info` in production.
+   */
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
-    .default("info"),
+    .optional(),
   /** `"1"` — human-readable pino-pretty output. */
   LOG_PRETTY: z.string().optional(),
   /** Bearer token для захисту `GET /metrics`. */
@@ -619,6 +622,12 @@ const envSchema = z.object({
   // PR (revert apiHelmetMiddleware).
   /** `"1"` — CSP у report-only mode. */
   CSP_REPORT_ONLY: z.string().optional(),
+  /**
+   * `"1"` — mute Telegram push for security events without removing call
+   * sites. Useful during load-test windows to suppress alert spam.
+   * Читається у `obs/securityEventsRoom.ts` (I7 bridge). Default off.
+   */
+  SECURITY_EVENTS_MUTED: boolFromEnv(false),
   // ── Monobank webhook ─────────────────────────────────────────────────
   /** Feature flag: увімкнути webhook-based Monobank інтеграцію. */
   MONO_WEBHOOK_ENABLED: z
@@ -1435,6 +1444,10 @@ export function assertStartupEnv(): void {
   }
 
   if (warnings.length > 0) {
-    for (const w of warnings) logger.warn({ msg: "env_warning", detail: w });
+    // Use console.warn here — env.ts must not import logger (circular dep:
+    // logger.ts → env/env.ts; logger would not yet be initialised at this point).
+    // assertStartupEnv() is called from index.ts after all modules are loaded,
+    // so these warnings reach stdout reliably.
+    for (const w of warnings) console.warn(`[env_warning] ${w}`);
   }
 }

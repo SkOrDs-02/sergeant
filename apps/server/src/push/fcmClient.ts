@@ -1,4 +1,5 @@
 import { JWT } from "google-auth-library";
+import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 
 /**
@@ -41,7 +42,7 @@ const REFRESH_MARGIN_MS = 60_000;
  * sender gracefully degrades instead of crashing boot.
  */
 function loadConfigFromEnv(): FcmConfig | null {
-  const raw = process.env["FCM_SERVICE_ACCOUNT_JSON"];
+  const raw = env.FCM_SERVICE_ACCOUNT_JSON;
   if (!raw || !raw.trim()) {
     if (!warnedDisabled) {
       logger.warn({

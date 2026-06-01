@@ -1,5 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { pingSecurityRoom } from "./securityEventsRoom.js";
+
+/**
+ * Module-load testing strategy (env-single-source companion sweep 2026-06-01):
+ *
+ * `securityEventsRoom.ts` reads SECURITY_EVENTS_MUTED, SERGEANT_ALERT_BOT_TOKEN,
+ * SERGEANT_OPS_CHAT_ID once at call-time via the zod-validated `env` singleton.
+ * Since `env` is a module-level singleton parsed at first import, to test different
+ * env-var combinations we must re-import both `securityEventsRoom.ts` and
+ * `env/env.ts` on fresh env-values.
+ *
+ * Canonical pattern (mirrors push.test.ts / auth.test.ts):
+ *   1. `vi.resetModules()` — flush ESM cache.
+ *   2. `vi.stubEnv(name, value)` — set env vars (Vitest managed; rolled back by
+ *      `vi.unstubAllEnvs()`).
+ *   3. `await import("./securityEventsRoom.js")` — dynamic import post-stub.
+ *   4. In afterEach: `vi.unstubAllEnvs()` + `vi.resetModules()`.
+ */
 
 // Mock pino logger so test runs don't try to init real pino.
 vi.mock("./logger.js", () => ({
@@ -15,58 +31,56 @@ vi.mock("./logger.js", () => ({
 // (which would conflict with parallel test suites that also import metrics).
 const incMock = vi.fn();
 vi.mock("./metrics.js", () => ({
-  securityRoomUnreachableTotal: { inc: (...args: unknown[]) => incMock(...args) },
+  securityRoomUnreachableTotal: {
+    inc: (...args: unknown[]) => incMock(...args),
+  },
 }));
 
 describe("pingSecurityRoom — I7 boot reachability heartbeat", () => {
-  const ORIG_ENV = {
-    SECURITY_EVENTS_MUTED: process.env["SECURITY_EVENTS_MUTED"],
-    SERGEANT_ALERT_BOT_TOKEN: process.env["SERGEANT_ALERT_BOT_TOKEN"],
-    SERGEANT_OPS_CHAT_ID: process.env["SERGEANT_OPS_CHAT_ID"],
-  };
-
   beforeEach(() => {
     incMock.mockClear();
-    delete process.env["SECURITY_EVENTS_MUTED"];
-    delete process.env["SERGEANT_ALERT_BOT_TOKEN"];
-    delete process.env["SERGEANT_OPS_CHAT_ID"];
+    vi.resetModules();
+    vi.unstubAllEnvs();
   });
 
   afterEach(() => {
-    for (const [k, v] of Object.entries(ORIG_ENV)) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   it("returns ok=true with reason 'muted' when SECURITY_EVENTS_MUTED=1", async () => {
-    process.env["SECURITY_EVENTS_MUTED"] = "1";
+    vi.stubEnv("SECURITY_EVENTS_MUTED", "1");
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
     expect(result).toEqual({ ok: true, reason: "muted" });
     expect(incMock).not.toHaveBeenCalled();
   });
 
   it("returns ok=false 'bot_token_missing' and bumps counter when token unset", async () => {
-    process.env["SERGEANT_OPS_CHAT_ID"] = "12345";
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "12345");
+    // SERGEANT_ALERT_BOT_TOKEN not set → empty string default from schema
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
     expect(result).toEqual({ ok: false, reason: "bot_token_missing" });
     expect(incMock).toHaveBeenCalledWith({ reason: "bot_token_missing" });
   });
 
   it("returns ok=false 'chat_id_missing' and bumps counter when chat unset", async () => {
-    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "test-token";
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "test-token");
+    // SERGEANT_OPS_CHAT_ID not set → empty string default from schema
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
     expect(result).toEqual({ ok: false, reason: "chat_id_missing" });
     expect(incMock).toHaveBeenCalledWith({ reason: "chat_id_missing" });
   });
 
   it("returns ok=true when Telegram getMe returns 200", async () => {
-    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "test-token";
-    process.env["SERGEANT_OPS_CHAT_ID"] = "12345";
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "test-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "12345");
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
     vi.stubGlobal("fetch", fetchMock);
 
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
 
     expect(result).toEqual({ ok: true });
@@ -77,13 +91,14 @@ describe("pingSecurityRoom — I7 boot reachability heartbeat", () => {
   });
 
   it("returns ok=false 'http_4xx' and bumps counter on 401 (rotated token)", async () => {
-    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "expired-token";
-    process.env["SERGEANT_OPS_CHAT_ID"] = "12345";
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "expired-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "12345");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 401 }),
     );
 
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
 
     expect(result.ok).toBe(false);
@@ -92,13 +107,14 @@ describe("pingSecurityRoom — I7 boot reachability heartbeat", () => {
   });
 
   it("returns ok=false 'http_5xx' and bumps counter on 503 (Telegram outage)", async () => {
-    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "test-token";
-    process.env["SERGEANT_OPS_CHAT_ID"] = "12345";
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "test-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "12345");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 503 }),
     );
 
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
 
     expect(result.ok).toBe(false);
@@ -107,13 +123,14 @@ describe("pingSecurityRoom — I7 boot reachability heartbeat", () => {
   });
 
   it("returns ok=false and bumps 'fetch_error' counter on network exception", async () => {
-    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "test-token";
-    process.env["SERGEANT_OPS_CHAT_ID"] = "12345";
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "test-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "12345");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new Error("ENOTFOUND api.telegram.org")),
     );
 
+    const { pingSecurityRoom } = await import("./securityEventsRoom.js");
     const result = await pingSecurityRoom();
 
     expect(result.ok).toBe(false);
