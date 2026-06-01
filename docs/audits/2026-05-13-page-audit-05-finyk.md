@@ -616,6 +616,8 @@ function pluralizeDays(n: number): string {
 
 ### F11 — Filter-pill emoji split is fragile and bypasses `noUncheckedIndexedAccess` [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B11 of 15-pack):** Resolved. `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx` now uses `indexOf(" ")` + `slice` instead of `split(" ")[0]`. When a category label has no leading emoji (legacy plain-text names) the label renders cleanly without a leading space; when it does have an emoji the pill spacing is preserved. No more `string | undefined` coercion through the Hard Rule #19 surface.
+
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx`
 **Lines:** L28–L36
