@@ -618,7 +618,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - [x] Strict TypeScript Phase 5c (2026-05-03, PR [#1454](https://github.com/Skords-01/Sergeant/pull/1454)) — `allowJs` workspace-wide flip: base `true → false` + explicit на всіх 4 апах + 8 пакетах; колонка `allowJs` у `pnpm strict:coverage` тепер `—` для всіх 13 пакетів.
 - [ ] Strict TypeScript Phase 6 («ідеальний стрікт» — opt-in flags) — backlog: 6a `noUncheckedIndexedAccess` бейслайн-експеримент (~100–300 помилок) → 6b `exactOptionalPropertyTypes` → 6c discrete (`noImplicitReturns` + `noFallthroughCasesInSwitch` + `noPropertyAccessFromIndexSignature`) → 6d `noUnusedLocals`/`noUnusedParameters` flip. Деталі у [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) §11.1.
 - [ ] Snapshot tests на server serializers (з #711)
-- [ ] Custom ESLint rule `no-bigint-string`
+- [x] Custom ESLint rule `no-bigint-string`
 - [ ] zod-to-openapi proof-of-concept
 
 ### Тиждень 3 — testing

@@ -1,13 +1,13 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-05-29",
+  "generated_at": "2026-06-01",
   "package": "eslint-plugin-sergeant-design",
   "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
   "stats": {
-    "exportCount": 33,
+    "exportCount": 34,
     "totalImporters": 0,
-    "deadExports": 32
+    "deadExports": 33
   },
   "exports": [
     {
@@ -198,6 +198,12 @@
     },
     {
       "name": "NO_BARE_FIXED_INSET_MODAL_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "PREFER_KYIV_TIME_MESSAGE",
       "kind": "re-export",
       "usedBy": [],
       "usageCount": 0

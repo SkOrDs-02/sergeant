@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -99,3 +99,17 @@
 4. If the change requires Railway env vars or health verification → also load `sergeant-deploy-and-observability`.
 5. `pnpm --filter @sergeant/openclaw-plugin build` locally before pushing.
 6. After deploy: verify `sergeant-openclaw-gateway` Railway service health + test `@OpenClaw_sergeant_v2_bot` responds.
+
+## 11. Docs-Sync Sweep (parallel reconcile across `docs/`)
+
+Use when the trigger is «check that docs aren't lagging behind code» / «reconcile drift and execute open doc tasks across the whole `docs/` tree», and the surface is broad (initiatives + planning + audits + launch + security). Canonical recipe: [`docs/playbooks/reconcile-doc-drift.md`](../playbooks/reconcile-doc-drift.md). This workflow adds the **parallel fan-out** layer on top of that single-document playbook.
+
+1. Start with `sergeant-start-here`; load `sergeant-tech-debt` (governing skill for docs hygiene).
+2. **Inventory (serial, once).** Regenerate every dashboard so drift is computed against live state, not cache:
+   - `pnpm docs:gen-daily` (open-work + today + trust-badge), `pnpm docs:gen-initiative-followups`.
+   - Run the code-derived catalog `--check`s to surface "docs lagging code": `docs:check-symbols`, `docs:check-repo-map`, `docs:check-service-catalog`, `docs:check-graph`, `docs:check-architecture-diagrams`. Any failure = regenerate with the matching `gen` script (mechanical, safe).
+   - Run the docs-derived `--check`s: `docs:check-open-work`, `docs:check-initiative-followups`, `docs:check-freshness-cadence`, `docs:check-links`.
+3. **Split the inventory into disjoint surfaces** so parallel agents never touch the same file. One owner per tracker directory: `docs/initiatives`, `docs/planning`, `docs/audits` + `docs/security/hardening`, `docs/launch`. **Never** hand an agent an `AUTO-GENERATED` file (`open-work.md`, `follow-ups.md`, `today.md`, `*.auto.json`, `symbol-index.*`) — those are regenerated in step 5, not edited.
+4. **Fan out (parallel).** Spawn one read-only analysis agent per surface. Each agent: for every `Active`/`In progress`/`Draft` doc in its directory, (a) check whether all `#NNNN` PR-mentions are merged (`docs/pr-ledger/index.json`); (b) grep `main` for evidence that `- [ ]` items are actually shipped; (c) return **precise, evidence-backed edits only** — which checkboxes to flip to `- [x]`, which `> **Status:**` headers to close, which `Next review` dates are stale. Conservative bias: when evidence is ambiguous, leave the doc unchanged and report it as "needs human". Do **not** archive in this sweep (archival is a separate, ≥90-day-gated pass — see playbook §5).
+5. **Apply + regenerate (serial).** Apply the high-confidence edits, then regenerate the dashboards (`pnpm docs:gen-daily`, `pnpm docs:gen-initiative-followups`) so closed docs drop out of `open-work.md`.
+6. **Verify (serial).** Run the playbook's Verification gates: `docs:check-open-work`, `docs:check-initiative-followups`, `lint:initiative-status-sync`, `docs:check-links`, `docs:check-freshness-cadence`, plus every regenerated catalog's `--check`. Land the whole sweep as **one PR** (all surfaces are docs-sync; no feature work mixed in).
