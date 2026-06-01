@@ -112,9 +112,7 @@ export function Measurements() {
           <Card radius="lg" padding="sm">
             <Stat
               label="Останній"
-              value={
-                <span className="text-style-label">{stats.latestAt}</span>
-              }
+              value={<span className="text-style-label">{stats.latestAt}</span>}
               size="sm"
               align="center"
             />
@@ -160,23 +158,38 @@ export function Measurements() {
             ))}
           </div>
           <div className="mt-3">
-            <button
-              type="button"
-              className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98]"
-              onClick={() => {
-                const payload: Record<string, number> = {};
-                for (const f of MEASURE_FIELDS) {
-                  const v = (form[f.id] || "").trim();
-                  if (v) payload[f.id] = Number(v.replace(",", "."));
-                }
-                addEntry(payload);
-                setForm(
-                  Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
-                );
-              }}
-            >
-              Зберегти замір
-            </button>
+            {(() => {
+              // Audit 09 F4: forbid saving a fully-empty form. The button stays
+              // visible (no surprise disappearance) but is disabled until at
+              // least one field has a parseable numeric value. We also strip
+              // entries that parse to NaN so a stray "abc" doesn't pollute the
+              // stored snapshot.
+              const parsedPayload: Record<string, number> = {};
+              for (const f of MEASURE_FIELDS) {
+                const v = (form[f.id] || "").trim();
+                if (!v) continue;
+                const n = Number(v.replace(",", "."));
+                if (Number.isFinite(n)) parsedPayload[f.id] = n;
+              }
+              const hasAnyValue = Object.keys(parsedPayload).length > 0;
+              return (
+                <button
+                  type="button"
+                  disabled={!hasAnyValue}
+                  aria-disabled={!hasAnyValue}
+                  className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  onClick={() => {
+                    if (!hasAnyValue) return;
+                    addEntry(parsedPayload);
+                    setForm(
+                      Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
+                    );
+                  }}
+                >
+                  Зберегти замір
+                </button>
+              );
+            })()}
           </div>
         </Card>
 
