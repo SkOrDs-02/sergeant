@@ -164,6 +164,8 @@ Each catch should at minimum call `logError("routine.reminders.notify-failed", e
 
 ### F8 — `useRoutineReminders` scheduler is bound only to `enabled` flag; runtime permission flips are ignored [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-01, PR-B15 of 15-pack):** Verified-already-done. `apps/web/src/modules/routine/hooks/useRoutineReminders.ts:93-149` introduced `useNotificationPermission` — listens to the Permissions API `change` event with `visibilitychange` / `focus` fallback. Scheduler effect tuple now includes `[enabled, permission]`, so revoke stops the loop and re-grant restarts it without a tab refresh. Audit-flagged "ignored runtime permission flip" closed.
+
 > ✅ **Closed 2026-05-31** — додано `useNotificationPermission` хук: підписка на `navigator.permissions.query({ name: "notifications" })` change-event + fallback `visibilitychange`/`focus`. Стан permission тепер у deps scheduler-ефекту — revoke зупиняє цикл, re-grant автоматично рестартує без перезавантаження SPA.
 
 **Page:** Routine module / Reminders hook
