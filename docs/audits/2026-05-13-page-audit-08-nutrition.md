@@ -279,6 +279,8 @@ Hard Rule #12 (`module-accent containment`) — буква правила про
 
 ### F11 — `staleTime: Infinity` на nutritionLog без явного invalidate-strategy [severity: medium] [perspective: perf]
 
+> **Closure note (2026-06-01, PR-B7 of 15-pack):** Resolved. `apps/web/src/modules/nutrition/hooks/useNutritionLog.ts` invalidations are scoped: `coachKeys.all` → `coachKeys.insight(selectedDate)` (per-day, only the dayKey the user edited), `digestKeys.all` → `digestKeys.history` (rolling list user might be scrolling). Other coach / digest variants keep their `staleTime: Infinity` cache and re-derive lazily. Mobile bandwidth-tax on `handleAddMeal` reduced from "all coach + all digest" to "one insight + history list". Inline comment rewritten to reflect the new contract; deps tuple updated to include `selectedDate`.
+
 **Page:** Log
 **File:** `apps/web/src/modules/nutrition/hooks/useNutritionLog.ts`
 **Lines:** 105–115
