@@ -61,6 +61,8 @@ error: statusColors.danger,
 
 Prefer (a) — fewer aliases, single source of truth. Add an ESLint custom rule (`sergeant-design/known-color-tokens`) so the next typo (e.g. `text-err`) is caught at PR time.
 
+> **Closure note (2026-06-01, tail PR of "9 decisions", Decision #8 — Option A):** Verified-already-done in main. `grep -rn 'text-error|bg-error|border-error' apps/web/src` returns **zero matches**. All 14 occurrences flagged here were rewritten to `text-danger` / `bg-danger` / `border-danger` (option (a) — single source of truth, no alias). The password-strength bar, AuthPage server-error banner, ResetPasswordPage "no-token" alert, and FieldError text now paint correctly via the registered `danger` token. The `sergeant-design/known-color-tokens` rule remains a follow-up — it would catch future typos before they ship, but the current diff is clean.
+
 ---
 
 ### F2 — `AuthPage.tsx` exceeds Hard Rule #18 max-lines budget [severity: high] [perspective: rule]
