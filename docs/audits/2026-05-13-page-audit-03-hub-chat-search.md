@@ -136,6 +136,8 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 
 **Recommendation.** Switch the icon buttons to `<Button variant="iconOnly" size="sm">` (auto-applies `min-h-[44px] min-w-[44px]`) or add the `touch-target` utility. For the delete button keep visual density via a transparent 44 px hit area centred on a 28 px glyph.
 
+> **Closure note (2026-06-01, PR-A12 of 15-pack):** Resolved. `apps/web/src/core/hub/HubChatHistoryDrawer.tsx` close button (L105) and per-row delete button (L172) bumped from `size="xs"` to `size="sm"`. `Button` `needsCoarseMinTarget` already applied `pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]` on both sizes, so mobile already met WCAG; the size bump lifts the fine-pointer (desktop) target from 32 → 36 px and aligns visually with the audit recommendation.
+
 ---
 
 ### F7 — Inline cancel pill in `HubChatBody` is `h-7` (28 px) — below WCAG touch-target [severity: medium] [perspective: a11y]

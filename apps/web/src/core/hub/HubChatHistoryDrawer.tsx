@@ -104,7 +104,7 @@ export function HubChatHistoryDrawer({
           </div>
           <Button
             variant="ghost"
-            size="xs"
+            size="sm"
             iconOnly
             onClick={onClose}
             aria-label="Закрити список бесід"
@@ -171,7 +171,7 @@ export function HubChatHistoryDrawer({
                   </button>
                   <Button
                     variant="ghost"
-                    size="xs"
+                    size="sm"
                     iconOnly
                     onClick={(e) => handleDelete(e, s.id)}
                     aria-label={`Видалити бесіду ${s.title}`}
