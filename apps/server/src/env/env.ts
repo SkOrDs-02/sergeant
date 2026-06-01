@@ -774,6 +774,21 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_MAX: intFromEnv(5),
   /** Auth rate limit: window size in seconds (default 60). */
   AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
+  /**
+   * Secondary per-IP rate limit for authenticated routes (M9 fix).
+   * Caps the total request rate from a single IP across all authenticated
+   * accounts, preventing linear abuse scaling via N free accounts.
+   *
+   * Conservative default (200 r/min) accommodates legitimate users behind
+   * NAT/CGNAT: an office or household may share one IP across several
+   * accounts; 200 r/min (~3.3 r/s) is comfortable for interactive use but
+   * clamps scripted multi-account abuse.
+   *
+   * Set per-route via `rateLimitExpress({ ipLimit: env.RATE_LIMIT_IP_MAX })`.
+   * Set `RATE_LIMIT_IP_MAX=0` to disable the secondary bucket globally
+   * (not recommended for production).
+   */
+  RATE_LIMIT_IP_MAX: intFromEnv(200),
 
   // ── Sync audit (PR #005 / Stage 0) ─────────────────────────────────
   /** Comma-separated allow-list of `user.id` для cross-user `/api/sync/audit` запитів. */

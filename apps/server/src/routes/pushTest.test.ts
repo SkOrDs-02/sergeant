@@ -171,7 +171,8 @@ describe("POST /api/v1/push/test", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ title: "t", body: "b" });
     expect(second.status).toBe(429);
-    expect(second.body).toMatchObject({ code: "RATE_LIMIT" });
+    // Per-user primary bucket exhausted (no ipLimit on this route) → RATE_LIMIT_USER
+    expect(second.body).toMatchObject({ code: "RATE_LIMIT_USER" });
     expect(second.headers["retry-after"]).toBeDefined();
     // sendToUser викликаний рівно один раз — другий запит ріжеться middleware-ом
     expect(sendToUserMock).toHaveBeenCalledTimes(1);

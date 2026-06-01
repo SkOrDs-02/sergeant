@@ -638,11 +638,14 @@ describe("rateLimitExpress — Redis path", () => {
     expect(next).not.toHaveBeenCalled();
     expect(blockedJson).toHaveBeenCalledTimes(1);
     const body = blockedJson.mock.calls[0]?.[0] as Record<string, unknown>;
+    // Anonymous request → primary per-user bucket → code is RATE_LIMIT_USER.
+    // Better Auth client reads `message`; `error` is the legacy field for direct
+    // fetch callers. Both fields must be present and equal (M3 contract).
     expect(body).toEqual(
       expect.objectContaining({
         error: "Забагато запитів. Спробуй пізніше.",
         message: "Забагато запитів. Спробуй пізніше.",
-        code: "RATE_LIMIT",
+        code: "RATE_LIMIT_USER",
       }),
     );
   });
@@ -1085,7 +1088,9 @@ describe("secondary IP bucket (M9)", () => {
     expect(next).not.toHaveBeenCalled();
     expect(status).toHaveBeenCalledWith(429);
     const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(body).toMatchObject({ code: "RATE_LIMIT" });
+    // M9: IP bucket exhausted first → code must be RATE_LIMIT_IP so load-test
+    // and alerting can distinguish per-IP abuse from normal per-user saturation.
+    expect(body).toMatchObject({ code: "RATE_LIMIT_IP" });
   });
 
   it("does not apply secondary bucket to anonymous requests", async () => {
@@ -1132,5 +1137,86 @@ describe("secondary IP bucket (M9)", () => {
       await middleware(req, res, next);
       expect(next).toHaveBeenCalledOnce();
     }
+  });
+
+  it("M9 regression: 5 authed users from same IP exhaust IP bucket (100 r/min) before any individual user bucket (50 r/min each)", async () => {
+    // Verification scenario from the M9 finding card:
+    //   - 5 users × 50 r/min individual = 250 r/min theoretical max
+    //   - IP bucket caps at 100 r/min → exhausts first
+    //   - No individual user should hit their own 50-req cap
+    //
+    // We use a compact simulation: ipLimit=10, userLimit=50 (>ipLimit), 5 users.
+    // Each user sends 2 requests → 10 total → IP bucket full.
+    // The 11th request must be blocked with code=RATE_LIMIT_IP, not RATE_LIMIT_USER.
+    const key = `m9_regression_${Math.random().toString(36).slice(2)}`;
+    const ipLimit = 10;
+    const userLimit = 50; // each user individually well under limit
+    const ip = "77.88.99.10";
+    const userCount = 5;
+    const requestsPerUser = 2; // 5 × 2 = 10 = ipLimit
+
+    const middleware = rateLimitExpress({
+      key,
+      limit: userLimit,
+      windowMs: 60_000,
+      ipLimit,
+    });
+
+    // All requests pass — IP bucket fills to exactly ipLimit
+    for (let u = 0; u < userCount; u++) {
+      for (let r = 0; r < requestsPerUser; r++) {
+        const req = makeAuthReq(`user-reg-${u}`, ip);
+        const { res } = makeRes();
+        const next = vi.fn();
+        await middleware(req, res, next);
+        // Each individual user is at 2/50 — well below their own cap
+        expect(next).toHaveBeenCalledOnce();
+      }
+    }
+
+    // Next request from any user must be blocked by IP bucket, not user bucket
+    const lastReq = makeAuthReq("user-reg-0", ip);
+    const { res, status, json } = makeRes();
+    const next = vi.fn();
+    await middleware(lastReq, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(429);
+    const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
+    // RATE_LIMIT_IP proves the IP bucket exhausted before any per-user bucket
+    expect(body).toMatchObject({ code: "RATE_LIMIT_IP" });
+  });
+
+  it("reports RATE_LIMIT_USER when per-user bucket exhausts before IP bucket", async () => {
+    // Contrast test: single user hits their own bucket limit while IP has headroom.
+    const key = `m9_user_block_${Math.random().toString(36).slice(2)}`;
+    const userLimit = 3;
+    const ipLimit = 100; // IP has plenty of headroom
+    const ip = "22.33.44.55";
+
+    const middleware = rateLimitExpress({
+      key,
+      limit: userLimit,
+      windowMs: 60_000,
+      ipLimit,
+    });
+
+    const req = makeAuthReq("user-solo", ip);
+    // Fill up user bucket
+    for (let i = 0; i < userLimit; i++) {
+      const { res } = makeRes();
+      await middleware(req, res, vi.fn());
+    }
+
+    // Next request must be blocked by per-user bucket
+    const { res, status, json } = makeRes();
+    const next = vi.fn();
+    await middleware(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(429);
+    const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
+    // RATE_LIMIT_USER: per-user bucket exhausted, not IP bucket
+    expect(body).toMatchObject({ code: "RATE_LIMIT_USER" });
   });
 });

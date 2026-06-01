@@ -187,6 +187,14 @@ export interface RateLimitResult {
   remaining: number;
   resetMs: number;
   retryAfterSec: number;
+  /**
+   * Indicates which bucket caused a block. Undefined means allowed (ok=true)
+   * or no secondary check was performed. Set to `"ip"` when the secondary
+   * per-IP bucket (M9) exhausted first, `"user"` when the primary per-user
+   * bucket did. Used to emit distinguishable 429 `code` values so load-test
+   * and alerting can differentiate per-user saturation from IP-level abuse.
+   */
+  blockedBy?: "user" | "ip";
 }
 
 // In-memory fixed-window rate limit.
@@ -631,6 +639,7 @@ export function rateLimitExpress({
     // M9: secondary per-IP bucket for authenticated requests.
     // Primary per-user bucket passed; now enforce the shared IP cap so an
     // attacker with N accounts cannot multiply effective throughput by N.
+    // TODO(M9): (IP,ASN) keying for CGNAT fairness — needs ASN datasource, deferred.
     if (rl.ok && ipLimit !== undefined) {
       const subject = rateLimitSubject(req);
       if (subject.startsWith("u:")) {
@@ -638,10 +647,20 @@ export function rateLimitExpress({
         const ipOpts = { key: `${key}:ip`, limit: ipLimit, windowMs };
         const ipRl = await checkSecondaryIpBucket(ipSubject, ipOpts);
         if (ipRl && !ipRl.ok) {
-          // Secondary IP bucket exhausted — treat as primary block.
-          rl = ipRl;
+          // Secondary IP bucket exhausted — record which bucket blocked so the
+          // 429 response can carry a distinguishable `code` value. Load tests
+          // and alerting rely on `RATE_LIMIT_IP` vs `RATE_LIMIT_USER` to
+          // differentiate per-user saturation from IP-level abuse (M9 card).
+          rl = { ...ipRl, blockedBy: "ip" };
         }
+        // Otherwise rl.ok is still true (both buckets had headroom) — no block.
       }
+      // Anonymous requests key by IP on the primary bucket already; the secondary
+      // only activates for authenticated (u:) subjects. Nothing to do here.
+    } else if (!rl.ok) {
+      // Primary bucket blocked (no ipLimit or request did not reach secondary check).
+      // Tag with blockedBy="user" so the 429 code is RATE_LIMIT_USER.
+      rl = { ...rl, blockedBy: "user" };
     }
 
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table
@@ -676,10 +695,18 @@ export function rateLimitExpress({
       // потрапляв у фронт як `result.error.message === undefined` і юзер
       // бачив generic «Помилка входу» замість осмисленого rate-limit
       // повідомлення.
+      //
+      // `code` distinguishes the blocking bucket (M9):
+      //   RATE_LIMIT_IP   — secondary per-IP bucket exhausted first (multi-account abuse)
+      //   RATE_LIMIT_USER — primary per-user bucket exhausted (normal per-account cap)
+      //   RATE_LIMIT      — defensive fallback; should not appear in normal operation
+      const code = rl.blockedBy === "ip" ? "RATE_LIMIT_IP"
+        : rl.blockedBy === "user" ? "RATE_LIMIT_USER"
+        : "RATE_LIMIT";
       res.status(429).json({
         error: message,
         message,
-        code: "RATE_LIMIT",
+        code,
         ...(requestId ? { requestId } : {}),
       });
       return;
