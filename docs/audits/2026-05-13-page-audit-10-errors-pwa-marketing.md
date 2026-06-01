@@ -253,6 +253,8 @@ const HOP_BY_HOP = [
 for (const h of HOP_BY_HOP) headers.delete(h);
 ```
 
+> **Closure note (2026-06-01, PR-A5 of 15-pack):** Resolved. `apps/web/middleware.ts:62-77` now iterates the canonical RFC 7230 §6.1 hop-by-hop header list and calls `headers.delete()` before setting `x-forwarded-host` / `x-forwarded-proto`. Removes the foot-gun the audit flagged: edge `connection` / `keep-alive` rewrites no longer reach Railway, and the next contributor who tags a fetch with a debug header gets the same hygiene by default.
+
 ---
 
 ### F8 — SW `notificationclick` opens `/?module=${module}` with no allow-list on `module` [severity: medium] [perspective: security]
