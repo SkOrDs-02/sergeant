@@ -319,6 +319,8 @@ target.title.startsWith("Бесіда ") || target.title === "Нова бесі�
 
 ### F18 — `chat/HubChatHeader.tsx` builds a `Popover` trigger out of a `<span role="button"-less>` styled with `cursor-pointer select-none` — non-button activation [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-01):** Closed as won't-fix (audit-misclassification). The `<span>` is only trigger **content** — the shared `Popover` wraps it in a host `<div role="button" tabIndex={0} aria-expanded aria-haspopup aria-controls>` with both `onClick` **and** `onKeyDown` (Enter/Space → toggle) (`shared/components/ui/Popover.tsx:297-310`). So the trigger is already keyboard-activatable and ARIA-correct; turning the inner `<span>` into a `<button>` would nest interactive elements inside the `role="button"` host — strictly worse. No change.
+
 **Page:** `HubChatHeader`
 **File:** `apps/web/src/core/hub/chat/HubChatHeader.tsx`
 **Lines:** L48–L93

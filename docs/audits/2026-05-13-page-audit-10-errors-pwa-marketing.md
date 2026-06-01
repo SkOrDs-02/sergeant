@@ -715,6 +715,8 @@ useEffect(() => {
 
 ### F26 — `StatusPage` polls every 30 s regardless of `document.visibilityState` [severity: medium] [perspective: perf]
 
+> ✅ **Closed 2026-06-01** — the 30s poll now early-returns when `document.visibilityState === "hidden"`, and a `visibilitychange` listener triggers an immediate `load()` on return to foreground (so the user doesn't see stale status). No background-tab polling.
+
 **Page:** Status
 **File:** `apps/web/src/core/status/StatusPage.tsx`
 **Lines:** L66–L76

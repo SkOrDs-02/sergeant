@@ -875,6 +875,8 @@ This is a multi-file refactor — track as a separate code PR.
 
 ### F16 — Per-render `new Date()` + `todayStart` cause unnecessary cascading recomputes [severity: medium] [perspective: perf]
 
+> ✅ **Closed 2026-06-01** — resolved by the F6 refactor. `useTransactionFilters` no longer holds a module-load/per-render `new Date()`; `kyivNowMonth()` is a cheap `getKyivDateParts()` call and `todayDayKey` is `useMemo([])`. All heavy aggregates (`catSpends`/`filtered`/`groupedByDate`/`daySummaries`) are properly `useMemo`-gated — no cascading recompute from a per-render date.
+
 **Page:** `overview`
 **File:** `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts`
 **Lines:** L99, L214–L267
@@ -965,6 +967,8 @@ onto the `AssetsForm` and the Active card itself.
 ---
 
 ### F18 — `useTransactionFilters` storage-event listener doesn't diff state [severity: medium] [perspective: bug]
+
+> ✅ **Closed 2026-06-01** — the `DAY_COLLAPSE_KEY` storage listener now diffs before committing: `setDayOverrides((prev) => JSON.stringify(prev) === JSON.stringify(next) ? prev : next)`. A cross-tab event that doesn't actually change our overrides returns the same reference, so React bails out of the re-render.
 
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/useTransactionFilters.ts`
