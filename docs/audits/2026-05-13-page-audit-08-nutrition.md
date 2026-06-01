@@ -119,6 +119,8 @@ WCAG 2.5.5 Target Size (Level AAA, але в репо це Level AA-policy дл�
 
 ### F5 — Фокус-індикатор лише через opacity (WCAG 2.4.7 Focus Visible) [severity: high] [perspective: a11y]
 
+> **Closure note (2026-06-01, PR-B13 of 15-pack):** Verified-already-done. Both delete buttons now combine the opacity reveal with a real focus ring: `PantryCard.tsx` delete uses `sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100`; `MealRow.tsx` uses `focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:opacity-100`. The audit-flagged "opacity-only" pattern is gone — keyboard focus now ships a visible 2-px ring on top of the visibility reveal, satisfying WCAG 2.4.7.
+
 **Page:** Pantry, Log
 **File:** `apps/web/src/modules/nutrition/components/PantryCard.tsx`, `MealRow.tsx`
 **Lines:** PantryCard L77, MealRow L116
