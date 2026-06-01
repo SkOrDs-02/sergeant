@@ -3,8 +3,8 @@
   "generated_at": "2026-06-01",
   "summary": {
     "packages": 17,
-    "totalExports": 280,
-    "totalDeadExports": 181
+    "totalExports": 282,
+    "totalDeadExports": 183
   },
   "packages": [
     {
@@ -1459,7 +1459,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/src/index.ts",
+      "entryFile": "packages/db-schema/dist/index.d.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -2013,9 +2013,9 @@
       "path": "packages/eslint-plugin-sergeant-design",
       "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
       "stats": {
-        "exportCount": 34,
+        "exportCount": 36,
         "totalImporters": 0,
-        "deadExports": 33
+        "deadExports": 35
       },
       "exports": [
         {
@@ -2212,6 +2212,18 @@
         },
         {
           "name": "PREFER_KYIV_TIME_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PREFER_PARSE_BODY_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "PREFER_PARSE_QUERY_MESSAGE",
           "kind": "re-export",
           "usedBy": [],
           "usageCount": 0

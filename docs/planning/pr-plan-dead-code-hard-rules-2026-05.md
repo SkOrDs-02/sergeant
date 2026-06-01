@@ -1,6 +1,6 @@
 # PR-план — Dead Code + Hard Rules (з прожарки 2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (для @andrijvigrav). **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-01 by server-agent. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Скоуп:** виконати outstanding items з [`2026-05-13-dead-code-hard-rules-roast.md`](../audits/2026-05-13-dead-code-hard-rules-roast.md) (§ P1 — `pnpm knip` deps sweep, 77 unused exports + 51 duplicate exports, mobile-shell unused exports, env-single-source Phase 2 burn-down, AuthPage re-decomposition) і tightening hard-rule контуру (новий lint-gate проти archive-move depth-drift, який зараз тільки watchlist у § P2). Усе закрите у самій прожарці (P0.1/P0.2/P0.3, P1.2, P1.6 markers, P1.4 partial budget restore) — поза скоупом цього плану.
@@ -155,6 +155,8 @@ Order: DC-1 (XS) → HR-1 (locks canonical test-pattern) → паралельн�
 - **Owner:** _TBD (backend-engineer)_.
 
 ### HR-3 — `refactor(server): env-single-source burn-down PR-C (posthogCapture × 2 reads)`
+
+> **Статус 2026-06-01:** ✅ Закрито (вже на `main`). `apps/server/src/lib/posthogCapture.ts` читає `env.POSTHOG_PROJECT_API_KEY` та `env.POSTHOG_HOST` (Zod-validated). Жодних `process.env` прямих звернень у файлі немає. Бюджет `.tech-debt/env-single-source-budget.json` вже відображає мігровані reads (поточне значення `94`). Загальне значення бюджету на даний момент перевищує через незалежний drift в `auth.ts` та `alerts.ts` — це окреме завдання.
 
 - **Title:** `refactor(server): migrate posthogCapture × 2 reads to env.X + posthogCapture.test.ts refactor`
 - **Scope-файли:**

@@ -1,6 +1,6 @@
 # PR-план — Documentation Hygiene Follow-Up (2026-05)
 
-> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-06-13.
+> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../audits/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
@@ -39,7 +39,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## Прогнозовані quick-wins (PR #0)
 
-**Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (QW-1/QW-2 status updates, QW-3/QW-4 freshness bumps).
+**Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (QW-1/QW-2 status updates, QW-3/QW-4 freshness bumps). ✅ Re-verified 2026-06-01 by @claude: QW-3 (`pnpm-overrides-policy.md`) і QW-4 (`doc-freshness.md`) обидва вже на `Last validated: 2026-05-14 by @codex / Next review: 2026-08-12` на `main` — no-op (вже не stale `2026-05-11`); freshness-gates (`docs:check-freshness-single-marker`, `docs:check-freshness-cadence`) зелені.
 
 Зведений XS PR (≤30 хв скоп), що закриває 4 точкових drift-и за один прохід — наслідок аудиту + дрібного research-у при складанні цього плану. Створюється **окремо від решти** карток, щоб не сповільнювати дискусію по `M/L`-картках.
 
@@ -205,7 +205,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## PR-09 — Freshness-marker dashboard surfacing in `docs/governance/README.md` ✦ Discoverability
 
-- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs/governance/freshness-dashboard.html`, `docs:check-freshness-dashboard`, CI step, discoverability route).
+- **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs/governance/freshness-dashboard.html`, `docs:check-freshness-dashboard`, CI step, discoverability route). ✅ Re-verified 2026-06-01 by @claude: `docs/governance/README.md` уже лінкує `freshness-dashboard.html` у § Sources of truth (line 18) + `docs:check-freshness-dashboard` у § CI gates (line 29); файл існує (`docs/governance/freshness-dashboard.html`). No-op.
 - **Group:** 2) discoverability gaps + 3) governance sync (cross-cutting).
 - **Trigger:** `scripts/docs/generate-freshness-dashboard.mjs` існує (`docs:freshness-dashboard` script), але output не лінкується з `docs/governance/README.md`, `docs/README.md` або `AGENTS.md`. Дашборд невидимий для нового contributor / agent → drift не помічається до наступного аудиту.
 - **Action:**

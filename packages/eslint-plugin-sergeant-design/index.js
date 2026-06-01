@@ -4511,6 +4511,82 @@ const preferKyivTime = {
   },
 };
 
+// ─── prefer-parse-body-over-validate-body ────────────────────────────────
+//
+// Backend-perf PR-11 (prefer-parseBody governance rule). Застарілий
+// `validateBody` / `validateQuery` хелпер повертає sentinel `{ ok: false }`
+// і вимагає ручного `if (!parsed.ok) return`, забутий `return` якого
+// породжував double-response 500-ки на проді. Throw-based `parseBody` /
+// `parseQuery` у парі з `asyncHandler` + централізованим `errorHandler`
+// робить той самий 400 з `code: "VALIDATION"` автоматично.
+//
+// Rule scope:
+//   - Тільки `apps/server/**` — де живуть Express-handler-и.
+//   - Виключаємо `apps/server/src/http/validate.ts` (і його тест) — там ці
+//     функції визначені, включати їх у заборону означало б flag-ити власне
+//     оголошення.
+//   - Виключаємо `*.test.[jt]s(x)?` — тести можуть перевіряти legacy-поведінку
+//     через мок чи вже закритий шлях.
+//
+// Rollout: `warn` зараз → `error` через 1 sprint після підтвердження, що
+// усі callsite-и у PR-09 + PR-10 мігровані. Дивись AGENTS.md §Hard rules
+// та docs/governance/rules/27-prefer-parse-body.md.
+
+const PREFER_PARSE_BODY_MESSAGE =
+  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/governance/rules/27-prefer-parse-body.md.";
+const PREFER_PARSE_QUERY_MESSAGE =
+  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/governance/rules/27-prefer-parse-body.md.";
+
+// Paths that are allowed to import/call validateBody — the definition file
+// and its test.
+const VALIDATE_BODY_ALLOWLIST_RE =
+  /\/apps\/server\/src\/http\/validate(?:\.test)?\.[jt]sx?$/;
+
+const preferParseBodyOverValidateBody = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Prefer throw-based parseBody/parseQuery over sentinel validateBody/validateQuery in Express handlers",
+      recommended: false,
+      url: "docs/governance/rules/27-prefer-parse-body.md",
+    },
+    schema: [],
+    messages: {
+      preferParseBody: PREFER_PARSE_BODY_MESSAGE,
+      preferParseQuery: PREFER_PARSE_QUERY_MESSAGE,
+    },
+  },
+  create(context) {
+    const filename =
+      typeof context.filename === "string"
+        ? context.filename
+        : typeof context.getFilename === "function"
+          ? context.getFilename()
+          : "";
+    const normalized = filename.replace(/\\/g, "/");
+
+    // Only lint server handler files.
+    if (!/\/apps\/server\//.test(normalized)) return {};
+    // Skip the definition file and its test.
+    if (VALIDATE_BODY_ALLOWLIST_RE.test(normalized)) return {};
+    // Skip test files — legacy paths may appear in mocks/setup.
+    if (/\.test\.[jt]sx?$/.test(normalized)) return {};
+
+    return {
+      CallExpression(node) {
+        const callee = node.callee;
+        if (callee.type !== "Identifier") return;
+        if (callee.name === "validateBody") {
+          context.report({ node, messageId: "preferParseBody" });
+        } else if (callee.name === "validateQuery") {
+          context.report({ node, messageId: "preferParseQuery" });
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -4547,6 +4623,7 @@ const plugin = {
     "no-inline-body-size-limit": noInlineBodySizeLimit,
     "require-toast-error-action": requireToastErrorAction,
     "no-bare-fixed-inset-modal": noBareFixedInsetModal,
+    "prefer-parse-body-over-validate-body": preferParseBodyOverValidateBody,
   },
 };
 
@@ -4584,6 +4661,8 @@ export {
   NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE,
   NO_BARE_FIXED_INSET_MODAL_MESSAGE,
   PREFER_KYIV_TIME_MESSAGE,
+  PREFER_PARSE_BODY_MESSAGE,
+  PREFER_PARSE_QUERY_MESSAGE,
 };
 
 export default plugin;

@@ -5,9 +5,9 @@
   "package": "eslint-plugin-sergeant-design",
   "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
   "stats": {
-    "exportCount": 34,
+    "exportCount": 36,
     "totalImporters": 0,
-    "deadExports": 33
+    "deadExports": 35
   },
   "exports": [
     {
@@ -204,6 +204,18 @@
     },
     {
       "name": "PREFER_KYIV_TIME_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "PREFER_PARSE_BODY_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "PREFER_PARSE_QUERY_MESSAGE",
       "kind": "re-export",
       "usedBy": [],
       "usageCount": 0

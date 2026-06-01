@@ -275,6 +275,28 @@ export default [
       "sergeant-design/no-raw-req-in-pino-log": "error",
     },
   },
+  // Backend-perf PR-11 — prefer-parseBody governance rule.
+  // `validateBody` / `validateQuery` — застарілий sentinel-pattern
+  // (`{ ok: false }` + ручний `if (!parsed.ok) return`), де забутий
+  // `return` породжував double-response 500-ки на проді. Throw-based
+  // `parseBody` / `parseQuery` у парі з `asyncHandler` + centralised
+  // `errorHandler` дає той самий 400 з `code: "VALIDATION"` автоматично.
+  // PR-09 + PR-10 мігрували усі наявні callsite-и; це правило
+  // запобігає регресії в нових handler-ах.
+  // Rollout: `warn` зараз → `error` через 1 sprint (governance-sync).
+  // Виключаємо `apps/server/src/http/validate.ts` (де функції визначені)
+  // і `*.test.*` (legacy-перевірки у тестах) — виключення живуть
+  // всередині самого rule (дивись index.js § prefer-parse-body-over-validate-body).
+  {
+    files: ["apps/server/src/**/*.{ts,js,mjs}"],
+    ignores: [
+      "apps/server/src/http/validate.ts",
+      "apps/server/src/http/validate.test.ts",
+    ],
+    rules: {
+      "sergeant-design/prefer-parse-body-over-validate-body": "warn",
+    },
+  },
   // Mobile-shell sunset guardrail — initiative 0002 (mobile platform
   // decision). `apps/mobile-shell/` is on the locked-in deprecation
   // schedule defined in ADR-0010 § Sunset schedule (T₀ 2026-09-01,
