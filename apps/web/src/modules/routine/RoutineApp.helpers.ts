@@ -94,10 +94,10 @@ export function groupEventsForList(
     if (existing) existing.push(e);
     else map.set(head, [e]);
   }
-  return [...map.entries()].sort((a, b) => {
-    const ai = GROUP_ORDER.indexOf(a[0]);
-    const bi = GROUP_ORDER.indexOf(b[0]);
-    if (ai === -1 && bi === -1) return a[0].localeCompare(b[0], "uk");
+  return [...map.entries()].sort(([aKey], [bKey]) => {
+    const ai = GROUP_ORDER.indexOf(aKey);
+    const bi = GROUP_ORDER.indexOf(bKey);
+    if (ai === -1 && bi === -1) return aKey.localeCompare(bKey, "uk");
     if (ai === -1) return 1;
     if (bi === -1) return -1;
     return ai - bi;
