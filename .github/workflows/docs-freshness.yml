@@ -60,8 +60,8 @@ jobs:
         run: node scripts/docs/generate-freshness-dashboard.mjs
 
       - name: Upload freshness dashboard
-        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: docs-freshness-dashboard
           path: dist/freshness-dashboard.html

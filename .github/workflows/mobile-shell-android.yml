@@ -59,9 +59,9 @@ jobs:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      # pnpm/action-setup v4.1.0 (SHA-pinned)
+      # pnpm/action-setup v6.0.3 (SHA-pinned)
       # Version is read from `packageManager` in root package.json.
-      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
 
       # actions/setup-node v4.4.0 (SHA-pinned)
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -125,8 +125,8 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug
 
       - name: Upload debug APK
-        # actions/upload-artifact v4.4.3 (SHA-pinned)
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        # actions/upload-artifact v7.0.0 (SHA-pinned)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: sergeant-shell-debug-apk
           path: apps/mobile-shell/android/app/build/outputs/apk/debug/*.apk
