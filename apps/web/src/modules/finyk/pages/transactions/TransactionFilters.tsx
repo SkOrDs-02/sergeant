@@ -51,7 +51,14 @@ export function TransactionFilters({
             onClick={() => onChangeFilter(f.id)}
             aria-pressed={filter === f.id}
             className={cn(
+              // Audit 05 F12: keep the compact `h-7` visual on fine
+              // pointers (mouse) but extend the touch-target floor on
+              // coarse pointers (mobile finger-tap) to the WCAG 2.5.5 ≥44
+              // px contract via `pointer-coarse:min-h-[44px]`. The pill
+              // outline stays 28px on desktop; the hit area only grows
+              // where it actually matters.
               "shrink-0 inline-flex items-center h-7 px-3 text-style-caption font-medium rounded-full border transition-colors",
+              "pointer-coarse:min-h-[44px]",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
               filter === f.id
                 ? "bg-primary border-primary text-bg shadow-sm"
