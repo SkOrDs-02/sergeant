@@ -1,6 +1,6 @@
 # Огляд фронтенду (Sergeant-2)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps` у web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md).
@@ -24,7 +24,7 @@
 | Auth    | better-auth (клієнт поруч із сервером)                                   |
 | PWA     | vite-plugin-pwa + Workbox                                                |
 | Sync    | SQLite-WASM (OPFS/kvvfs) + `syncEngine/` — v2 op-log outbox sync         |
-| Інше    | Sentry, dnd-kit, react-virtuoso, react-markdown, ZXing, body-highlighter |
+| Інше    | Sentry, dnd-kit, react-virtuoso, ZXing, body-highlighter |
 
 **Структура за змістом** (entry: `apps/web/src/core/App.tsx`):
 

@@ -1,6 +1,6 @@
 # C1 — System Context
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Sergeant у контексті користувача та зовнішніх систем.
@@ -43,7 +43,8 @@ flowchart TB
     Server -->|jobs| Redis
     Server -->|streaming| Anthropic
     Server -->|spans + errors| Sentry
-    Server -->|webhooks| Mono
+    Server -->|REST API| Mono
+    Mono -->|webhooks| Server
     Server -->|barcode| OFF
     Server -->|auth mail| SMTP
     Server -->|notifications| Push

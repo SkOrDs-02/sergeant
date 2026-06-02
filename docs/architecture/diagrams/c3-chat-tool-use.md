@@ -1,6 +1,6 @@
 # C3 — HubChat tool-use loop
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Як працює tool-use цикл всередині однієї chat-сесії. HubChat — це AI-помічник, що бачить локальні дані користувача через tool-handlers на клієнті.
@@ -10,10 +10,10 @@ flowchart TB
     User(["👤 User"])
 
     subgraph Web["apps/web (browser)"]
-        ChatUI["HubChat UI<br/><i>core/chat/*</i>"]
+        ChatUI["HubChat UI<br/><i>core/hub/chat/*</i>"]
         Stream["fetch /api/chat<br/><i>SSE streaming</i>"]
-        ToolDisp["tool dispatcher<br/><i>core/lib/chatActions/index.ts</i>"]
-        Handlers["handlers/<br/><i>finyk, fizruk, routine, nutrition,<br/>memory, utility, navigation</i>"]
+        ToolDisp["tool dispatcher<br/><i>core/lib/hubChatActions.ts</i>"]
+        Handlers["{finyk,fizruk,routine,nutrition,<br/>cross,server}Actions.ts<br/><i>core/lib/chatActions/</i>"]
         LS["localStorage<br/><i>(via ls / lsSet helpers)</i>"]
     end
 
@@ -56,7 +56,7 @@ flowchart TB
 ## Контракт `tool_use` ↔ `tool_result`
 
 1. Сервер віддає `tool_use` блоки в SSE stream. Кожен блок має `id`, `name`, `input`.
-2. Клієнт у `core/lib/chatActions/index.ts` дивиться `name` → знаходить handler у `handlers/{finyk,fizruk,routine,nutrition,memory,utility,navigation}.ts`.
+2. Клієнт у `core/lib/hubChatActions.ts` дивиться `name` → знаходить handler у `core/lib/chatActions/{finyk,fizruk,routine,nutrition,cross,server}Actions.ts`.
 3. Handler виконується синхронно над `localStorage` (через `ls`/`lsSet` helpers — НЕ raw `localStorage.setItem`). Повертає `string`.
 4. Клієнт відправляє новий `POST /api/chat` із `tool_result` блоком (referencing `tool_use.id`). Сервер продовжує stream (наступний прохід Anthropic тепер бачить результат).
 5. Цикл повторюється до моменту, коли Anthropic повертає `stop_reason: end_turn` (тільки text).
@@ -81,10 +81,10 @@ flowchart TB
 ## Тестування
 
 - `apps/server/src/modules/chat/chat.test.ts` + `chat.stream.test.ts` — server-side stream parsing, tool_use detection.
-- `apps/web/src/core/lib/chatActions/handlers/*.test.ts` — happy path + error path кожного handler-а.
+- `apps/web/src/core/lib/chatActions/{finyk,fizruk,routine,nutrition,cross}Actions.test.ts` — happy path + error path кожного handler-а.
 - Property-based: handler не повинен writes у localStorage поза `ls`/`lsSet` helpers (eslint-rule `no-raw-local-storage`).
 
 ## Дані-залежності
 
 - Server: tools-defs у `modules/chat/toolDefs/` (per-domain). Будь-яка зміна Zod-схеми тут — це **public API change** з точки зору AI.
-- Client: handler-и у `core/lib/chatActions/handlers/`. Назви функцій матчаться по `tool.name` із def-ів — змінюй обидві сторони в одному PR.
+- Client: handler-и у `core/lib/chatActions/` (`{finyk,fizruk,routine,nutrition,cross,server}Actions.ts`). Назви функцій матчаться по `tool.name` із def-ів — змінюй обидві сторони в одному PR.

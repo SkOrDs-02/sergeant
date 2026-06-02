@@ -1,6 +1,6 @@
 # RAG eval harness — golden-set, metrics, baseline comparison
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Canonical reference for the RAG quality-eval pipeline shipped as **PR-20**
@@ -149,7 +149,7 @@ pnpm eval:rag -- --baseline=prev-summary.json
 
 | Mode       | Поведінка                                                                                |
 | ---------- | ---------------------------------------------------------------------------------------- |
-| `mock`     | Detrministic: `retrieved = [...expected, ...noise]` → recall@4 = 1.0. Sanity CI.         |
+| `mock`     | Deterministic: `retrieved = [...expected, ...noise]` → recall@4 = 1.0. Sanity CI.        |
 | `simulate` | Global-budget algorithm — mean recall ≈ `--simulate-recall` (default=1).                 |
 | `live`     | Real AI-memory service (Voyage + pgvector). **NOT IMPLEMENTED** — placeholder для PR-21. |
 
@@ -265,7 +265,7 @@ Eval-harness — pure-function: bere golden-set + retrieval-call →
                                                 ▼
                        ┌──────────────────────────────────┐
                        │  GH Action rag-quality-gate.yml  │
-                       │  Sun 08:00 UTC + n8n trigger     │
+                       │  Mon 08:00 UTC + n8n trigger     │
                        │  → pnpm eval:rag (mock/live)     │
                        │  → POST summary to API ▼          │
                        └──────────────────────────────────┘

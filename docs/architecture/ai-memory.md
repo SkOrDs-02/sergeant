@@ -1,6 +1,6 @@
 # AI memory architecture
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Single source of truth для серверного episodic-memory store (`ai_memories` table з migration 025) — ingestion, recall, backfill. Не плутати з local-first Memory Bank (ADR-0021) — той зберігає user-fact strings.
@@ -13,7 +13,7 @@
 | Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../apps/server/src/modules/ai-memory/voyageBudget.ts).                                             |
 | Service      | [`apps/server/src/modules/ai-memory/service.ts`](../../apps/server/src/modules/ai-memory/service.ts)                       | `remember()` + `recall()` орchestrator. Викликається BullMQ-worker-ом + recall-route.                                                                                                                               |
 | Ingest queue | [`apps/server/src/modules/ai-memory/ingestQueue.ts`](../../apps/server/src/modules/ai-memory/ingestQueue.ts)               | BullMQ `ai-memory-ingest`. `enqueueMemoryIngest()` — public producer. Per-source gating через `AI_MEMORY_ENABLED` (master) + `MONO_AI_MEMORY_INGEST_ENABLED` (finyk).                                               |
-| Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`packages/openclaw-plugin/src/legacy/tools/recall-memory.ts`](../../packages/openclaw-plugin/src/legacy/tools/recall-memory.ts).                 |
+| Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`apps/web/src/core/lib/chatActions/serverActions.ts`](../../apps/web/src/core/lib/chatActions/serverActions.ts). OpenClaw (legacy) tool: [`packages/openclaw-plugin/src/legacy/tools/recall-memory.ts`](../../packages/openclaw-plugin/src/legacy/tools/recall-memory.ts).                 |
 | Backfill     | [`apps/server/src/modules/ai-memory/backfill.ts`](../../apps/server/src/modules/ai-memory/backfill.ts)                     | Resumable backfill з `tg_topic_archive` → cofounder memory. Detailed нижче.                                                                                                                                         |
 
 ## Ingest flow (current state)

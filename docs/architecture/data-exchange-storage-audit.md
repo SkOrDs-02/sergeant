@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -94,7 +94,7 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 
 ## 3. Як зараз зберігаються дані
 
-### 3.1. PostgreSQL (migrations 001–049)
+### 3.1. PostgreSQL (migrations 001–074)
 
 Основні таблиці:
 
