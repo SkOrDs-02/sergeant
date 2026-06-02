@@ -259,6 +259,141 @@ export class StubProvider implements LLMProvider {
   }
 }
 
+// ─── OpenRouterProvider ─────────────────────────────────────────────────
+// OpenAI-compatible endpoint at openrouter.ai/api/v1/chat/completions.
+// 300+ models including free tier (Gemma 4, Kimi K2, NVIDIA Nemotron).
+// Does NOT support Anthropic-specific prompt-cache breakpoints — only use
+// for non-streaming, non-tool-call paths (classify, digest, weekly-review).
+//
+// `modelOverride` (from env.OPENROUTER_MODEL) replaces the call-site model
+// so ops can route all OpenRouter calls to a free model without touching
+// call-site code.
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+export class OpenRouterProvider implements LLMProvider {
+  readonly name = "openrouter" as const;
+
+  constructor(
+    private readonly apiKey: string,
+    private readonly modelOverride: string = "",
+  ) {}
+
+  async generate(opts: LLMGenerateOpts): Promise<LLMGenerateResult> {
+    if (!this.apiKey) {
+      return {
+        ok: false,
+        error: "OPENROUTER_API_KEY is not set",
+        code: "missing_api_key",
+      };
+    }
+
+    const model = this.modelOverride || opts.model;
+
+    const messages: Array<{ role: string; content: string }> = [];
+    if (opts.system) messages.push({ role: "system", content: opts.system });
+    for (const m of opts.messages)
+      messages.push({ role: m.role, content: m.content });
+
+    const body: Record<string, unknown> = {
+      model,
+      messages,
+      max_tokens: opts.maxTokens,
+    };
+    if (opts.temperature !== undefined) body["temperature"] = opts.temperature;
+
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    if (opts.timeoutMs) {
+      timeoutId = setTimeout(() => controller.abort(), opts.timeoutMs);
+      if (typeof (timeoutId as { unref?: () => void }).unref === "function") {
+        (timeoutId as { unref: () => void }).unref();
+      }
+    }
+
+    let signal: AbortSignal = controller.signal;
+    if (opts.signal) {
+      try {
+        if ("any" in AbortSignal) {
+          const anyFn = AbortSignal.any as (ss: AbortSignal[]) => AbortSignal;
+          if (typeof anyFn === "function") {
+            signal = anyFn([controller.signal, opts.signal]);
+          }
+        }
+      } catch {
+        if (opts.signal.aborted) controller.abort();
+        else
+          opts.signal.addEventListener("abort", () => controller.abort(), {
+            once: true,
+          });
+      }
+    }
+
+    type OpenRouterData = {
+      choices?: Array<{ message?: { content?: string | null } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+      error?: { message?: string };
+    };
+
+    try {
+      const response = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+          "HTTP-Referer": "https://sergeant.app",
+          "X-Title": "Sergeant",
+        },
+        body: JSON.stringify(body),
+        signal,
+      });
+      if (timeoutId) clearTimeout(timeoutId);
+
+      const data = (await response.json()) as OpenRouterData;
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: data?.error?.message ?? `OpenRouter HTTP ${response.status}`,
+          status: response.status,
+          code: response.status === 429 ? "rate_limited" : "openrouter_error",
+          raw: data as Record<string, unknown>,
+        };
+      }
+
+      const text = data?.choices?.[0]?.message?.content ?? "";
+      const usage = data?.usage;
+      const result: LLMGenerateResult = {
+        ok: true,
+        text,
+        raw: data as Record<string, unknown>,
+      };
+      if (usage) {
+        const usageOut: NonNullable<
+          Extract<LLMGenerateResult, { ok: true }>["usage"]
+        > = {};
+        if (typeof usage.prompt_tokens === "number")
+          usageOut.inputTokens = usage.prompt_tokens;
+        if (typeof usage.completion_tokens === "number")
+          usageOut.outputTokens = usage.completion_tokens;
+        result.usage = usageOut;
+      }
+      return result;
+    } catch (e: unknown) {
+      if (timeoutId) clearTimeout(timeoutId);
+      const isAbort =
+        e instanceof Error &&
+        (e.name === "AbortError" ||
+          (e as { code?: string }).code === "ABORT_ERR");
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : String(e),
+        code: isAbort ? "timeout" : "openrouter_throw",
+      };
+    }
+  }
+}
+
 // ─── Factory ────────────────────────────────────────────────────────
 
 /**
@@ -286,9 +421,9 @@ export function getLLMProvider(
     return new StubProvider(override.stubResponse);
   }
   if (provider === "openrouter") {
-    // Reserved — імплементація у майбутньому PR (OpenRouter fallback).
-    // Поки що деградуємо у stub, щоб неочікуваний env не валив app.
-    return new StubProvider(override.stubResponse);
+    const apiKey = env.OPENROUTER_API_KEY;
+    if (!apiKey) return new StubProvider(override.stubResponse);
+    return new OpenRouterProvider(apiKey, env.OPENROUTER_MODEL);
   }
   // provider === "anthropic"
   const apiKey = override.anthropicApiKey ?? env.ANTHROPIC_API_KEY;
