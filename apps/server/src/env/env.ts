@@ -1320,6 +1320,21 @@ export function assertStartupEnv(): void {
     );
   }
 
+  // backend-perf PR-01 — VAPID keypair enforcement. Without both keys
+  // `/api/push/*` silently degrades to 503 at request time (a misconfigured
+  // prod deploy looks healthy until a push is attempted). Hard-fail at boot
+  // in production so the misconfiguration surfaces before traffic; warn-only
+  // outside production so local dev without push keys still boots.
+  if (isProduction && (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY)) {
+    throw new Error(
+      "VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are required in production. Without them /api/push/* silently returns 503. Generate a keypair with `npx web-push generate-vapid-keys`.",
+    );
+  } else if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
+    warnings.push(
+      "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not set — web push is unavailable (/api/push/* → 503).",
+    );
+  }
+
   // T2 audit finding #1 — Stripe webhook secret enforcement. If billing is
   // wired (STRIPE_SECRET_KEY is set) then STRIPE_WEBHOOK_SECRET MUST also
   // be set in production; otherwise `verifyStripeSignature` had no secret

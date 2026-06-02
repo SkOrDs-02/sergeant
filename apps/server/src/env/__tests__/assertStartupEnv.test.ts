@@ -36,6 +36,10 @@ const PROD_BASELINE = {
   // exercise the negative path for this gate live in a dedicated
   // `describe` block below and DELETE this key from the baseline.
   METRICS_TOKEN: "c".repeat(64),
+  // backend-perf PR-01 — VAPID keypair is required in production. Negative
+  // path lives in its own `describe` block below (with a VAPID-less baseline).
+  VAPID_PUBLIC_KEY: "d".repeat(80),
+  VAPID_PRIVATE_KEY: "e".repeat(40),
 };
 
 describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
@@ -368,6 +372,10 @@ describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+    // backend-perf PR-01 — keep VAPID present so the not-throw case reaches
+    // the METRICS gate instead of tripping the (later) VAPID check.
+    VAPID_PUBLIC_KEY: "d".repeat(80),
+    VAPID_PRIVATE_KEY: "e".repeat(40),
     OPENCLAW_GITHUB_PAT: "",
     Git_PAT: "",
   };
@@ -518,6 +526,57 @@ describe("assertStartupEnv — AI_MEMORY_ENABLED requires VOYAGE_API_KEY (D3)", 
       NODE_ENV: "test",
       AI_MEMORY_ENABLED: "true",
       VOYAGE_API_KEY: "",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in production", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // Prod baseline WITHOUT the VAPID keypair so we exercise the negative path.
+  // All other production-required gates are satisfied, so only the VAPID
+  // check fires. Legacy PATs cleared (same Git_PAT gate as PROD_BASELINE).
+  const VAPID_MISSING_BASELINE = {
+    NODE_ENV: "production" as const,
+    DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
+    NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+    METRICS_TOKEN: "c".repeat(64),
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when both VAPID keys are missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(VAPID_MISSING_BASELINE);
+    expect(() => assertStartupEnv()).toThrow(
+      /VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY/,
+    );
+  });
+
+  it("throws in production when only the public key is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...VAPID_MISSING_BASELINE,
+      VAPID_PUBLIC_KEY: "d".repeat(80),
+    });
+    expect(() => assertStartupEnv()).toThrow(/VAPID/);
+  });
+
+  it("does NOT throw in production when both VAPID keys are present", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...VAPID_MISSING_BASELINE,
+      VAPID_PUBLIC_KEY: "d".repeat(80),
+      VAPID_PRIVATE_KEY: "e".repeat(40),
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when VAPID keys are missing (warn-only)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
     });
     expect(() => assertStartupEnv()).not.toThrow();
   });
