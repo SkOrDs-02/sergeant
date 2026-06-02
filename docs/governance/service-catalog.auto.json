@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-01",
+  "generated_at": "2026-06-02",
   "surfaces": [
     {
       "id": "web-pwa",

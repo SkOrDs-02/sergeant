@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-06-01",
+  "generated_at": "2026-06-02",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -291,10 +291,6 @@
       "version": "0.1.0",
       "type": "module",
       "frameworkDeps": [
-        {
-          "name": "drizzle-kit",
-          "version": "^0.31.10"
-        },
         {
           "name": "drizzle-orm",
           "version": "^0.45.2"

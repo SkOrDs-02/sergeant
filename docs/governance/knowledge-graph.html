@@ -102,16 +102,16 @@
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>58</b></span>
-      <span class="chip chip-audit">audit: <b>31</b></span>
+      <span class="chip chip-audit">audit: <b>29</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
       <span class="chip chip-playbook">playbook: <b>57</b></span>
-      <span class="chip chip-pr">pr: <b>200</b></span>
+      <span class="chip chip-pr">pr: <b>195</b></span>
       <span class="chip chip-skill">skill: <b>22</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (234 core)</summary>
+      <summary>Nodes (232 core)</summary>
       <table>
         <thead>
           <tr>
@@ -240,7 +240,7 @@
                 >ADR-0010: Mobile dual-track — Capacitor shell + Expo native</a
               >
             </td>
-            <td>accepted</td>
+            <td>Superseded by ADR-0052</td>
             <td>number=10</td>
           </tr>
           <tr>
@@ -722,7 +722,7 @@
               >
             </td>
             <td>Accepted</td>
-            <td>number=53 · last_validated=2026-05-13</td>
+            <td>number=53 · last_validated=2026-06-02</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -890,34 +890,11 @@
           </tr>
           <tr>
             <td>audit</td>
-            <td><code>audit:2026-05-07-app-audit</code></td>
-            <td>
-              <a href="../../docs/audits/2026-05-07-app-audit.md"
-                >Sergeant — повний аудит застосунку (2026-05-07)</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>audit</td>
             <td><code>audit:2026-05-07-full-app-regression-ux-audit</code></td>
             <td>
               <a
                 href="../../docs/audits/2026-05-07-full-app-regression-ux-audit.md"
                 >Sergeant — full regression + UX audit (2026-05-07/08)</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>audit</td>
-            <td><code>audit:2026-05-13-backend-performance-roast</code></td>
-            <td>
-              <a
-                href="../../docs/audits/2026-05-13-backend-performance-roast.md"
-                >Прожарка #4/10: Backend &amp; Performance (2026-05-13)</a
               >
             </td>
             <td>Active</td>
@@ -3468,7 +3445,7 @@
     </details>
 
     <details>
-      <summary>Edges (437 total, first 500 core-to-core)</summary>
+      <summary>Edges (425 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3537,6 +3514,11 @@
             <td><code>adr:0047</code></td>
             <td>references</td>
             <td><code>initiative:0003</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0052</code></td>
+            <td>supersedes</td>
+            <td><code>adr:0010</code></td>
           </tr>
           <tr>
             <td><code>adr:0054</code></td>
@@ -3614,21 +3596,6 @@
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
             <td>references</td>
             <td><code>initiative:0006</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-backend-performance-roast</code></td>
-            <td>references</td>
-            <td><code>hard-rule:3</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-backend-performance-roast</code></td>
-            <td>references</td>
-            <td><code>hard-rule:6</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-backend-performance-roast</code></td>
-            <td>references</td>
-            <td><code>hard-rule:7</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
@@ -4316,7 +4283,8 @@
   adr_0027[&quot;ADR-0027: політика OpenClaw, Console та MCP&quot;]
   adr_0028[&quot;ADR-0028: pgvector + Voyage embeddings for AI semantic memor&quot;]
   adr_0030[&quot;ADR-0030: Структура Telegram-каналів для n8n reporting&quot;]
-  adr_0031[&quot;ADR-0031: OpenClaw v0 — Telegram-only co-founder bot&quot;]</code></pre>
+  adr_0031[&quot;ADR-0031: OpenClaw v0 — Telegram-only co-founder bot&quot;]
+  adr_0052 --|supersedes|--&gt; adr_0010</code></pre>
       <p>
         <em
           >Tip: paste the block above into

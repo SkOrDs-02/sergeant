@@ -4,11 +4,11 @@
   "generated_at": "2026-06-02",
   "counts": {
     "adr": 58,
-    "audit": 31,
+    "audit": 29,
     "hard-rule": 26,
     "initiative": 47,
     "playbook": 57,
-    "pr": 200,
+    "pr": 195,
     "skill": 22
   },
   "nodes": [
@@ -116,7 +116,7 @@
       "type": "adr",
       "title": "ADR-0010: Mobile dual-track — Capacitor shell + Expo native",
       "path": "docs/adr/0010-mobile-dual-track-capacitor-expo.md",
-      "status": "accepted",
+      "status": "Superseded by ADR-0052",
       "tier": "core",
       "meta": {
         "number": 10
@@ -573,7 +573,7 @@
       "tier": "core",
       "meta": {
         "number": 53,
-        "last_validated": "2026-05-13"
+        "last_validated": "2026-06-02"
       }
     },
     {
@@ -713,28 +713,10 @@
       "meta": {}
     },
     {
-      "id": "audit:2026-05-07-app-audit",
-      "type": "audit",
-      "title": "Sergeant — повний аудит застосунку (2026-05-07)",
-      "path": "docs/audits/2026-05-07-app-audit.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
       "id": "audit:2026-05-07-full-app-regression-ux-audit",
       "type": "audit",
       "title": "Sergeant — full regression + UX audit (2026-05-07/08)",
       "path": "docs/audits/2026-05-07-full-app-regression-ux-audit.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
-      "id": "audit:2026-05-13-backend-performance-roast",
-      "type": "audit",
-      "title": "Прожарка #4/10: Backend & Performance (2026-05-13)",
-      "path": "docs/audits/2026-05-13-backend-performance-roast.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2334,16 +2316,6 @@
       }
     },
     {
-      "id": "pr:1378",
-      "type": "pr",
-      "title": "PR #1378",
-      "tier": "extended",
-      "meta": {
-        "number": 1378,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1378"
-      }
-    },
-    {
       "id": "pr:1414",
       "type": "pr",
       "title": "PR #1414",
@@ -2994,16 +2966,6 @@
       }
     },
     {
-      "id": "pr:2159",
-      "type": "pr",
-      "title": "PR #2159",
-      "tier": "extended",
-      "meta": {
-        "number": 2159,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2159"
-      }
-    },
-    {
       "id": "pr:2160",
       "type": "pr",
       "title": "PR #2160",
@@ -3454,16 +3416,6 @@
       }
     },
     {
-      "id": "pr:2752",
-      "type": "pr",
-      "title": "PR #2752",
-      "tier": "extended",
-      "meta": {
-        "number": 2752,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2752"
-      }
-    },
-    {
       "id": "pr:2754",
       "type": "pr",
       "title": "PR #2754",
@@ -3591,16 +3543,6 @@
       "meta": {
         "number": 2799,
         "url": "https://github.com/Skords-01/Sergeant/pull/2799"
-      }
-    },
-    {
-      "id": "pr:28",
-      "type": "pr",
-      "title": "PR #28",
-      "tier": "extended",
-      "meta": {
-        "number": 28,
-        "url": "https://github.com/Skords-01/Sergeant/pull/28"
       }
     },
     {
@@ -3951,16 +3893,6 @@
       "meta": {
         "number": 6,
         "url": "https://github.com/Skords-01/Sergeant/pull/6"
-      }
-    },
-    {
-      "id": "pr:62",
-      "type": "pr",
-      "title": "PR #62",
-      "tier": "extended",
-      "meta": {
-        "number": 62,
-        "url": "https://github.com/Skords-01/Sergeant/pull/62"
       }
     },
     {
@@ -4792,6 +4724,11 @@
     },
     {
       "from": "adr:0052",
+      "to": "adr:0010",
+      "type": "supersedes"
+    },
+    {
+      "from": "adr:0052",
       "to": "pr:1633",
       "type": "touched-by"
     },
@@ -5071,46 +5008,6 @@
       "type": "touched-by"
     },
     {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:1378",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:2159",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:2191",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:28",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:40",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:62",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:63",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-07-app-audit",
-      "to": "pr:64",
-      "type": "touched-by"
-    },
-    {
       "from": "audit:2026-05-07-full-app-regression-ux-audit",
       "to": "pr:2192",
       "type": "touched-by"
@@ -5143,31 +5040,6 @@
     {
       "from": "audit:2026-05-07-full-app-regression-ux-audit",
       "to": "pr:2218",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-backend-performance-roast",
-      "to": "hard-rule:3",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-backend-performance-roast",
-      "to": "hard-rule:6",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-backend-performance-roast",
-      "to": "hard-rule:7",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-backend-performance-roast",
-      "to": "pr:2752",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-backend-performance-roast",
-      "to": "pr:2933",
       "type": "touched-by"
     },
     {

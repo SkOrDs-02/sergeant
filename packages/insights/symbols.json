@@ -1,7 +1,7 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-01",
+  "generated_at": "2026-06-02",
   "package": "@sergeant/insights",
   "entryFile": "packages/insights/src/index.ts",
   "stats": {

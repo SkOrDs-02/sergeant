@@ -1,13 +1,13 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-01",
+  "generated_at": "2026-06-02",
   "package": "eslint-plugin-sergeant-design",
   "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
   "stats": {
-    "exportCount": 36,
+    "exportCount": 42,
     "totalImporters": 0,
-    "deadExports": 35
+    "deadExports": 41
   },
   "exports": [
     {
@@ -216,6 +216,42 @@
     },
     {
       "name": "PREFER_PARSE_QUERY_MESSAGE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "SRI_MESSAGES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "SRI_HASH_RE",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "SRI_PREFERRED_ALGO",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "isCrossOriginScriptSrc",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "validateSriScriptAttrs",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "lintHtmlForSri",
       "kind": "re-export",
       "usedBy": [],
       "usageCount": 0

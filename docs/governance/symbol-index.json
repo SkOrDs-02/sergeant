@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-06-01",
+  "generated_at": "2026-06-02",
   "summary": {
     "packages": 17,
-    "totalExports": 282,
-    "totalDeadExports": 183
+    "totalExports": 288,
+    "totalDeadExports": 189
   },
   "packages": [
     {
@@ -1459,7 +1459,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/dist/index.d.ts",
+      "entryFile": "packages/db-schema/src/index.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -1663,7 +1663,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 58,
+        "totalImporters": 59,
         "deadExports": 0
       },
       "exports": [
@@ -1772,7 +1772,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 76,
+        "totalImporters": 77,
         "deadExports": 0
       },
       "exports": [
@@ -2013,9 +2013,9 @@
       "path": "packages/eslint-plugin-sergeant-design",
       "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
       "stats": {
-        "exportCount": 36,
+        "exportCount": 42,
         "totalImporters": 0,
-        "deadExports": 35
+        "deadExports": 41
       },
       "exports": [
         {
@@ -2224,6 +2224,42 @@
         },
         {
           "name": "PREFER_PARSE_QUERY_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SRI_MESSAGES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SRI_HASH_RE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SRI_PREFERRED_ALGO",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "isCrossOriginScriptSrc",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "validateSriScriptAttrs",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "lintHtmlForSri",
           "kind": "re-export",
           "usedBy": [],
           "usageCount": 0
