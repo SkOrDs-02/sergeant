@@ -1,8 +1,10 @@
-// Centralised list of URL-addressable surfaces handled by the App
-// shell. Anything outside `KNOWN_PATHS` falls through to a 404 instead
-// of silently rendering the dashboard. Kept as a tiny standalone
-// module so route guards in `App.tsx` and `StandaloneRoutes.tsx` reuse
-// the exact same set without circular imports.
+// URL path constants for the App shell.
+//
+// This module owns only the string constants (SIGN_IN_PATH, CHAT_PATH, etc.)
+// and path-based-module helpers. `KNOWN_PATHS` — the 404-guard allowlist —
+// is derived automatically in `routes.ts` from `STANDALONE_ROUTE_PATHS` so
+// that adding a new route to `StandaloneRoutes.tsx` automatically updates the
+// allowlist without a parallel edit here.
 
 // Auth lives at `/sign-in` rather than as an in-page overlay. This keeps
 // the FTUX splash (`/`) as the true cold-start surface — the old
@@ -41,22 +43,6 @@ export const PRICING_PATH = "/pricing";
 // view from `/api/status`. No auth — same intent as `/pricing` (public
 // trust surface, must be reachable without a session).
 export const STATUS_PATH = "/status";
-
-// All URL paths the app handles. Anything outside this set **and** not
-// owned by a path-based module (`isPathBasedModulePath`) gets a 404
-// instead of silently falling through to the dashboard.
-export const KNOWN_PATHS: ReadonlySet<string> = new Set([
-  "/",
-  SIGN_IN_PATH,
-  RESET_PASSWORD_PATH,
-  PROFILE_PATH,
-  DESIGN_PATH,
-  PRICING_PATH,
-  STATUS_PATH,
-  ASSISTANT_PATH,
-  CHAT_PATH,
-  WELCOME_PATH,
-]);
 
 /**
  * Modules that have graduated from `/?module=<id>` to a top-level

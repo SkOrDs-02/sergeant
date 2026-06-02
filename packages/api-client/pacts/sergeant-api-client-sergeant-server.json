@@ -4,6 +4,110 @@
   },
   "interactions": [
     {
+      "description": "a GET /api/food-search?q=broccoli request (upstream timeout)",
+      "providerStates": [
+        {
+          "name": "Open Food Facts and USDA both timeout for query 'broccoli'"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/food-search",
+        "query": {
+          "q": [
+            "broccoli"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "error": "Сервіс недоступний (таймаут). Спробуй пізніше."
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 504
+      }
+    },
+    {
+      "description": "a GET /api/food-search?q=xyzunknownfood123 request (empty result)",
+      "providerStates": [
+        {
+          "name": "Open Food Facts and USDA return no results for query 'xyzunknownfood123'"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/food-search",
+        "query": {
+          "q": [
+            "xyzunknownfood123"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "products": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/food-search?q=молоко request",
+      "providerStates": [
+        {
+          "name": "Open Food Facts returns 1 hit for query 'молоко' (source=off, full macros)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/food-search",
+        "query": {
+          "q": [
+            "молоко"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "products": [
+            {
+              "brand": "Яготинське",
+              "defaultGrams": 200,
+              "id": "off_pact_milk",
+              "name": "Молоко 2.5%",
+              "per100": {
+                "carbs_g": 4.7,
+                "fat_g": 2.5,
+                "kcal": 52,
+                "protein_g": 2.8
+              },
+              "source": "off"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/barcode?barcode=4820010840443 request",
       "providerStates": [
         {
@@ -285,6 +389,270 @@
       }
     },
     {
+      "description": "a GET /api/v2/sync/pull?since=0&limit=2 request (first page, more data)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with 3 ops in sync_op_log since id=0; page size is 2"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/v2/sync/pull",
+        "query": {
+          "limit": [
+            "2"
+          ],
+          "since": [
+            "0"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "next_cursor": 1002,
+          "ops": [
+            {
+              "client_ts": "2026-05-13T08:00:00.000Z",
+              "id": 1001,
+              "op": "insert",
+              "origin_device_id": "device-pact-001",
+              "row": {
+                "completed_at": "2026-05-13T08:00:00.000Z",
+                "deleted_at": null,
+                "id": "entry_pact_001",
+                "routine_id": "routine_001",
+                "user_id": "user-pact-001"
+              },
+              "server_ts": "2026-05-13T08:00:01.234Z",
+              "table": "routine_entries"
+            },
+            {
+              "client_ts": "2026-05-12T09:30:00.000Z",
+              "id": 1002,
+              "op": "update",
+              "origin_device_id": null,
+              "row": {
+                "completed_at": "2026-05-12T09:30:00.000Z",
+                "deleted_at": null,
+                "id": "entry_pact_002",
+                "routine_id": "routine_002",
+                "user_id": "user-pact-001"
+              },
+              "server_ts": "2026-05-12T09:30:02.100Z",
+              "table": "routine_entries"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v2/sync/pull?since=1002 request (last page, no more data)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with exactly one op since id=1002 (the last page)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/v2/sync/pull",
+        "query": {
+          "since": [
+            "1002"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "next_cursor": null,
+          "ops": [
+            {
+              "client_ts": "2026-05-13T08:01:00.000Z",
+              "id": 1003,
+              "op": "update",
+              "origin_device_id": "device-pact-001",
+              "row": {
+                "current_streak": 5,
+                "id": "streak_pact_001",
+                "updated_at": "2026-05-13T08:01:00.000Z",
+                "user_id": "user-pact-001"
+              },
+              "server_ts": "2026-05-13T08:01:00.500Z",
+              "table": "routine_streaks"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v2/sync/pull?since=9999 request (since ahead of log)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with no ops in sync_op_log since id=9999"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/v2/sync/pull",
+        "query": {
+          "since": [
+            "9999"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "next_cursor": null,
+          "ops": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/nutrition/parse-pantry request with quantity-free items",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 within AI quota; Anthropic stub returns items with null qty"
+        }
+      ],
+      "request": {
+        "body": {
+          "locale": "uk-UA",
+          "text": "сіль, перець"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/nutrition/parse-pantry"
+      },
+      "response": {
+        "body": {
+          "items": [
+            {
+              "name": "сіль",
+              "notes": null,
+              "qty": null,
+              "unit": null
+            },
+            {
+              "name": "перець",
+              "notes": null,
+              "qty": null,
+              "unit": null
+            }
+          ],
+          "rawText": "{\"items\":[{\"name\":\"сіль\",\"qty\":null,\"unit\":null,\"notes\":null},{\"name\":\"перець\",\"qty\":null,\"unit\":null,\"notes\":null}]}"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/nutrition/parse-pantry request with two-item free text",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 within AI quota; Anthropic stub returns a deterministic 2-item pantry parse"
+        }
+      ],
+      "request": {
+        "body": {
+          "locale": "uk-UA",
+          "text": "молоко 1л, яйця 6шт"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/nutrition/parse-pantry"
+      },
+      "response": {
+        "body": {
+          "items": [
+            {
+              "name": "молоко",
+              "notes": null,
+              "qty": 1,
+              "unit": "л"
+            },
+            {
+              "name": "яйця",
+              "notes": null,
+              "qty": 6,
+              "unit": "шт"
+            }
+          ],
+          "rawText": "{\"items\":[{\"name\":\"молоко\",\"qty\":1,\"unit\":\"л\",\"notes\":null},{\"name\":\"яйця\",\"qty\":6,\"unit\":\"шт\",\"notes\":null}]}"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/nutrition/parse-pantry request with unparseable input",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 within AI quota; Anthropic stub returns empty items for gibberish input"
+        }
+      ],
+      "request": {
+        "body": {
+          "locale": "uk-UA",
+          "text": "…"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/nutrition/parse-pantry"
+      },
+      "response": {
+        "body": {
+          "items": [],
+          "rawText": "{\"items\":[]}"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/chat request without tool-calls (non-streaming)",
       "providerStates": [
         {
@@ -505,6 +873,187 @@
         "body": {
           "ok": true,
           "platform": "web"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v2/sync/push replaying an already-applied idempotency_key",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; idempotency_key 01HZ000000000000000000000A is already in sync_op_log as applied"
+        }
+      ],
+      "request": {
+        "body": {
+          "ops": [
+            {
+              "client_ts": "2026-05-13T08:00:00.000Z",
+              "idempotency_key": "01HZ000000000000000000000A",
+              "op": "insert",
+              "row": {
+                "completed_at": "2026-05-13T08:00:00.000Z",
+                "id": "entry_pact_001",
+                "routine_id": "routine_001",
+                "user_id": "user-pact-001"
+              },
+              "table": "routine_entries"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/v2/sync/push"
+      },
+      "response": {
+        "body": {
+          "accepted": 0,
+          "last_op_id": 1040,
+          "results": [
+            {
+              "idempotency_key": "01HZ000000000000000000000A",
+              "status": "duplicate"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v2/sync/push where one op is table_not_allowed",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; first op targets routine_entries (allowed), second targets non_whitelisted_table (not allowed)"
+        }
+      ],
+      "request": {
+        "body": {
+          "ops": [
+            {
+              "client_ts": "2026-05-14T08:00:00.000Z",
+              "idempotency_key": "01HZ000000000000000000000C",
+              "op": "insert",
+              "row": {
+                "completed_at": "2026-05-14T08:00:00.000Z",
+                "id": "entry_pact_003",
+                "routine_id": "routine_003",
+                "user_id": "user-pact-001"
+              },
+              "table": "routine_entries"
+            },
+            {
+              "client_ts": "2026-05-14T08:00:01.000Z",
+              "idempotency_key": "01HZ000000000000000000000D",
+              "op": "insert",
+              "row": {
+                "id": "row_pact_001",
+                "user_id": "user-pact-001"
+              },
+              "table": "non_whitelisted_table"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/v2/sync/push"
+      },
+      "response": {
+        "body": {
+          "accepted": 1,
+          "last_op_id": 1043,
+          "results": [
+            {
+              "idempotency_key": "01HZ000000000000000000000C",
+              "status": "applied"
+            },
+            {
+              "idempotency_key": "01HZ000000000000000000000D",
+              "reason": "table_not_allowed",
+              "status": "rejected"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v2/sync/push with two new routine_entries insert ops",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with an empty op-log; two routine_entries insert ops are valid"
+        }
+      ],
+      "request": {
+        "body": {
+          "ops": [
+            {
+              "client_ts": "2026-05-13T08:00:00.000Z",
+              "idempotency_key": "01HZ000000000000000000000A",
+              "op": "insert",
+              "row": {
+                "completed_at": "2026-05-13T08:00:00.000Z",
+                "id": "entry_pact_001",
+                "routine_id": "routine_001",
+                "user_id": "user-pact-001"
+              },
+              "table": "routine_entries"
+            },
+            {
+              "client_ts": "2026-05-12T09:30:00.000Z",
+              "idempotency_key": "01HZ000000000000000000000B",
+              "op": "insert",
+              "row": {
+                "completed_at": "2026-05-12T09:30:00.000Z",
+                "id": "entry_pact_002",
+                "routine_id": "routine_002",
+                "user_id": "user-pact-001"
+              },
+              "table": "routine_entries"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/v2/sync/push"
+      },
+      "response": {
+        "body": {
+          "accepted": 2,
+          "last_op_id": 1042,
+          "results": [
+            {
+              "idempotency_key": "01HZ000000000000000000000A",
+              "status": "applied"
+            },
+            {
+              "idempotency_key": "01HZ000000000000000000000B",
+              "status": "applied"
+            }
+          ]
         },
         "headers": {
           "Content-Type": "application/json",

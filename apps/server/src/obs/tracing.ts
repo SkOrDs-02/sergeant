@@ -45,6 +45,8 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   BatchSpanProcessor,
   type SpanExporter,
+  type SpanProcessor,
+  type ReadableSpan,
 } from "@opentelemetry/sdk-trace-base";
 import {
   ATTR_SERVICE_NAME,
@@ -115,6 +117,53 @@ export const OTEL_ATTRIBUTE_DENYLIST: ReadonlySet<string> = new Set([
   ...REDACT_KEY_NAMES.map((key) => key.toLowerCase()),
   ...Array.from(HEADER_DENYLIST),
 ]);
+
+/** Sentinel written into span attributes that match the denylist. */
+export const OTEL_REDACTED_SENTINEL = "[redacted]";
+
+/**
+ * SpanProcessor decorator that scrubs any attribute whose lower-cased key
+ * appears in `OTEL_ATTRIBUTE_DENYLIST` before the span is exported.
+ *
+ * Placed between the SDK's instrumentation layer and the downstream
+ * exporter/processor so that sensitive values are redacted at export time
+ * regardless of which auto-instrumentation or manual code wrote them.
+ *
+ * Must be exported for tests that wire up a `BasicTracerProvider` directly
+ * (bypassing `NodeSDK`) to verify the redaction contract with an
+ * `InMemorySpanExporter`.
+ */
+export class DenylistAttributeSpanProcessor implements SpanProcessor {
+  constructor(private readonly downstream: SpanProcessor) {}
+
+  onStart(
+    span: Parameters<SpanProcessor["onStart"]>[0],
+    parentContext: Parameters<SpanProcessor["onStart"]>[1],
+  ): void {
+    this.downstream.onStart(span, parentContext);
+  }
+
+  onEnd(span: ReadableSpan): void {
+    // `span.attributes` is `readonly Attributes` in the type but the
+    // underlying object is a plain mutable record owned by this span —
+    // we are allowed to mutate it here before forwarding to the exporter.
+    const attrs = span.attributes as Record<string, unknown>;
+    for (const key of Object.keys(attrs)) {
+      if (OTEL_ATTRIBUTE_DENYLIST.has(key.toLowerCase())) {
+        attrs[key] = OTEL_REDACTED_SENTINEL;
+      }
+    }
+    this.downstream.onEnd(span);
+  }
+
+  forceFlush(): Promise<void> {
+    return this.downstream.forceFlush();
+  }
+
+  shutdown(): Promise<void> {
+    return this.downstream.shutdown();
+  }
+}
 
 function parseRate(val: string | undefined, fallback: number): number {
   if (val == null || val === "") return fallback;
@@ -207,7 +256,9 @@ export function createTracingSdk(
   return new NodeSDK({
     resource,
     sampler,
-    spanProcessors: [new BatchSpanProcessor(exporter)],
+    spanProcessors: [
+      new DenylistAttributeSpanProcessor(new BatchSpanProcessor(exporter)),
+    ],
     textMapPropagator: new CompositePropagator({
       propagators: [
         new W3CTraceContextPropagator(),

@@ -44,6 +44,25 @@ const toastErrorActionAllowlist = JSON.parse(
   ),
 );
 
+// Bare-fixed-inset-modal burndown gate (audit 2026-05-13 § F2 P1).
+// File-path inventory of `fixed inset-0` overlays that are intentional
+// dialog surfaces — the 6 canonical primitives (Modal, Sheet,
+// ConfirmDialog, InputDialog, KeyboardShortcutsModal, OnboardingWizard)
+// plus the other ad-hoc dialogs that already declare `role`/`aria-modal`.
+// True offenders (e.g. HubChat, BarcodeScanner) are intentionally left
+// OUT so the rule keeps warning on them until partII (file fixes + axe
+// prop-tests). Remove entries as they migrate to a canonical primitive.
+// See `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2.
+const bareFixedInsetModalAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
 export default [
   ...baseline,
   // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
@@ -228,16 +247,7 @@ export default [
       // docs/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.
       "sergeant-design/no-bare-fixed-inset-modal": [
         "warn",
-        {
-          allow: [
-            "apps/web/src/shared/components/ui/Modal.tsx",
-            "apps/web/src/shared/components/ui/Sheet.tsx",
-            "apps/web/src/shared/components/ui/ConfirmDialog.tsx",
-            "apps/web/src/shared/components/ui/InputDialog.tsx",
-            "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
-            "apps/web/src/core/onboarding/OnboardingWizard.tsx",
-          ],
-        },
+        { allow: bareFixedInsetModalAllowlist },
       ],
     },
   },

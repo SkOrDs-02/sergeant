@@ -7,7 +7,6 @@ import {
   ASSISTANT_PATH,
   CHAT_PATH,
   DESIGN_PATH,
-  KNOWN_PATHS,
   PRICING_PATH,
   STATUS_PATH,
   PROFILE_PATH,
@@ -89,6 +88,27 @@ interface StandaloneRoute {
   readonly render: (args: StandaloneRouteArgs) => ReactNode;
 }
 
+/**
+ * Typed factory for standalone-route entries. Acts as a discriminated-union
+ * constructor: callers get full inference on `render`'s return type while
+ * `paths` is pinned to a `ReadonlyArray<string>` literal. Using the factory
+ * (rather than bare object literals) makes the registry self-documenting and
+ * enables future tooling — e.g. a codegen step that reads `paths` at build
+ * time to emit a sitemap or validate deep-link contracts.
+ *
+ * `STANDALONE_ROUTES` is built exclusively via this factory so that every
+ * entry participates in the same discriminated-union shape checked by
+ * `StandaloneRoutes.test.tsx`.
+ */
+export function defineStandaloneRoute<
+  TPaths extends ReadonlyArray<string>,
+>(entry: {
+  readonly paths: TPaths;
+  readonly render: (args: StandaloneRouteArgs) => ReactNode;
+}): StandaloneRoute {
+  return entry;
+}
+
 const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // `/` — public landing page for non-auth visitors (initiative 0010
   // Phase 6.1, audit `2026-05-13-revenue-monetization-roast.md` §P1-3).
@@ -98,7 +118,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // keeps the funnel-targeted landing for genuine fresh visitors.
   // Authed users + warm local-first installs fall through to the
   // existing Hub composition by returning `null`.
-  {
+  defineStandaloneRoute({
     paths: ["/"],
     render: ({ user, authLoading, onLeaveWelcome }) => {
       if (authLoading || user) return null;
@@ -111,7 +131,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </Suspense>
       );
     },
-  },
+  }),
 
   // `/sign-in` is a URL-addressable auth entry. Already-authenticated
   // users landing here (e.g. from a stale link or from tapping "Вже маю
@@ -120,7 +140,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // have. We defer the redirect until `authLoading` settles, otherwise
   // a freshly-mounted session would briefly bounce the user away from
   // the form before `user` hydrates.
-  {
+  defineStandaloneRoute({
     paths: [SIGN_IN_PATH],
     render: ({ user, authLoading, onLeaveAuth }) => {
       if (!authLoading && user) {
@@ -134,12 +154,12 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </Suspense>
       );
     },
-  },
+  }),
 
   // `/reset-password` is the Better Auth magic-link landing page. We
   // render it unconditionally — even for logged-in users — because the
   // token may belong to a different account they want to recover.
-  {
+  defineStandaloneRoute({
     paths: [RESET_PASSWORD_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
@@ -148,14 +168,14 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </div>
       </Suspense>
     ),
-  },
+  }),
 
   // `/profile` is a legacy deep-link target — profile actions now live
   // behind the bottom-nav `Профіль` tab inside the hub. Redirect to
   // the hub with the `profile` tab pre-activated so old links keep
   // working (and so the back button still pops the entry off history
   // instead of bouncing the user back here).
-  {
+  defineStandaloneRoute({
     paths: [PROFILE_PATH],
     render: ({ user, authLoading }) => {
       if (authLoading) {
@@ -166,21 +186,21 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       }
       return <RedirectTo to="/?tab=profile" />;
     },
-  },
+  }),
 
-  {
+  defineStandaloneRoute({
     paths: [DESIGN_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
         <DesignShowcase />
       </Suspense>
     ),
-  },
+  }),
 
   // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами
   // і waitlist-формою. Анонімна (auth не вимагається), бо основний
   // траффік — неавторизовані відвідувачі, які ще не зробили sign-up.
-  {
+  defineStandaloneRoute({
     paths: [PRICING_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
@@ -189,14 +209,14 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </div>
       </Suspense>
     ),
-  },
+  }),
 
   // `/status` — public health page (PR-41). Anonymous: fetches
   // `/api/status` and renders per-component status badges. Founder-
   // Pulse + public-trust surface; must remain reachable without a
   // session so external monitors (and worried users) can sanity-check
   // the service.
-  {
+  defineStandaloneRoute({
     paths: [STATUS_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
@@ -205,9 +225,9 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </div>
       </Suspense>
     ),
-  },
+  }),
 
-  {
+  defineStandaloneRoute({
     paths: [ASSISTANT_PATH],
     render: ({ onAssistantClose }) => (
       <Suspense fallback={<PageLoader />}>
@@ -216,21 +236,21 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </div>
       </Suspense>
     ),
-  },
+  }),
 
-  {
+  defineStandaloneRoute({
     paths: [CHAT_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
         <HubChatPage />
       </Suspense>
     ),
-  },
+  }),
 
   // `/welcome` is the cold-start surface. A returning user who somehow
   // lands here (stale link, auto-complete, shared URL) bounces back to
   // the dashboard instead of being asked to re-onboard.
-  {
+  defineStandaloneRoute({
     paths: [WELCOME_PATH],
     render: ({ onLeaveWelcome, onOpenAuth }) => {
       if (!shouldShowOnboarding()) {
@@ -238,7 +258,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       }
       return <WelcomeScreen onDone={onLeaveWelcome} onOpenAuth={onOpenAuth} />;
     },
-  },
+  }),
 ];
 
 /**
@@ -281,10 +301,21 @@ export function renderStandaloneRoute(args: StandaloneRouteArgs): ReactNode {
   // `<ActiveModuleView />` further down the App shell, **not** by
   // `renderStandaloneRoute`. Without this exemption, every entry into
   // a migrated module short-circuits into `<NotFoundPage />` (regression
-  // introduced together with `KNOWN_PATHS`-as-allowlist + 0006 Phase 2
+  // introduced together with the KNOWN_PATHS allowlist + 0006 Phase 2
   // when path-based modules were not added to the standalone-route
   // surface map).
-  if (!KNOWN_PATHS.has(pathname) && !isPathBasedModulePath(pathname)) {
+  //
+  // Note: `STANDALONE_ROUTE_PATHS` is the source of truth here — we
+  // check it directly instead of importing the derived `KNOWN_PATHS`
+  // from `routes.ts`, which would create a circular dependency
+  // (`routes.ts` imports `STANDALONE_ROUTE_PATHS` from this module).
+  // Both sets are equivalent for this guard: every entry in
+  // `STANDALONE_ROUTES` is in `STANDALONE_ROUTE_PATHS`, and `KNOWN_PATHS`
+  // is `new Set(STANDALONE_ROUTE_PATHS)`.
+  if (
+    !STANDALONE_ROUTE_PATHS.has(pathname) &&
+    !isPathBasedModulePath(pathname)
+  ) {
     return (
       <Suspense fallback={<PageLoader />}>
         <NotFoundPage />

@@ -232,6 +232,31 @@ console.error("ANTHROPIC_API_KEY is not set");
 console.log(requestId);
 ```
 
+### `sergeant-design/no-console-pii`
+
+Забороняє передавати PII / secret-shaped значення у `console.{log,error,warn,info}` (S2, audit `docs/audits/2026-05-13-security-observability-roast.md`). `@sentry/react` за замовчуванням вмикає `console`-інтеграцію, тож усе, що йде через `console.*`, осідає Sentry-breadcrumb-ом; DevTools-консоль видно під час screen-share, а PostHog/Logpipe-екстеншни теж тапляться у `console.*`. Severity: **error**. Див. також [`docs/security/logging-redaction-policy.md`](../../docs/security/logging-redaction-policy.md).
+
+#### Детекція
+
+- **Методи в скоупі:** `log`, `error`, `warn`, `info`. `console.debug` / `console.table` — поза скоупом (dev-only / без PII-форми на практиці).
+- **Фаятиметься:** string- або template-літерал, чий текст матчить `/email|phone|password|token|secret|auth/i`; template-substitution із identifier-/property-ім'ям, що матчить той самий regex (`${user.email}`, `${tokenValue}`); object-літерал, чий ключ (рекурсивно, включно з вкладеними) матчить regex.
+- **Не фаятиметься:** aliased `const log = console.log; log({ email })` (AST-match свідомо консервативний), computed-ключі, spread (`...obj`).
+
+#### Приклади
+
+```ts
+// ❌ BAD
+console.log({ email: user.email });
+console.log(`token=${value}`);
+console.error("password is wrong");
+console.info("user", { user: { phone: "+380" } });
+
+// ✅ GOOD
+console.log("Hello world");
+console.info("event", { eventName: "x", timestamp: 1 });
+console.debug("user email: bob@example.com"); // debug поза скоупом
+```
+
 ### `sergeant-design/no-strict-bypass`
 
 Забороняє type-safety-bypass-и в продакшн-коді (PR-6.E). Ловить чотири патерни:
@@ -298,6 +323,22 @@ const el = document.getElementById("foo") as HTMLDivElement;
 <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" />
 <div className="fixed inset-0" role="presentation" />
 <Modal isOpen={open} onClose={close}>…</Modal>
+```
+
+### `sergeant-design/sri-on-third-party-script`
+
+Вимагає `integrity="sha(256|384|512)-…"` **і** `crossorigin="anonymous"` на кожному cross-origin `<script src="https://…">` (а також schema-relative `//cdn…`) у HTML-shell-ах застосунків (`apps/**/index.html`). Парсить сирий HTML через `parse5`, тож працює як справжнє ESLint-правило на `.html`-файлах (через HTML-processor) і юніт-тестується подачею HTML напряму у експортовані хелпери. Локальні / відносні джерела (`src="/src/main.tsx"`, `src="./x.js"`) та inline-`<script>` (без `src`) навмисно НЕ флагуються — вони контролюються нашим Vite-build + CSP `'self'`. Закриває STRIDE-row _Tampering → CDN supply-chain_: CSP-allowlist у `apps/web/vercel.json` пропускає `*.posthog.com` / `*.sentry-cdn.com`, тож без SRI компроміс будь-якого CDN = одношаговий XSS повз CSP. Companion path-based gate — `pnpm lint:html-sri`. Audit § S3, докладніше у [`docs/security/hardening/sri-on-third-party-scripts.md`](../../docs/security/hardening/sri-on-third-party-scripts.md). Severity: **error** (чистий на main — PostHog/Sentry йдуть через npm-bundle).
+
+```html
+<!-- ❌ BAD — сторонній CDN-скрипт без SRI -->
+<script src="https://cdn.example.com/x.js"></script>
+
+<!-- ✅ GOOD — SHA-384-відбиток + crossorigin для CORS-перевірки -->
+<script
+  src="https://cdn.example.com/x.js"
+  integrity="sha384-<base64>"
+  crossorigin="anonymous"
+></script>
 ```
 
 ## Запуск тестів

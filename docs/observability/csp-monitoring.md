@@ -1,6 +1,6 @@
 # CSP monitoring
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-09-02.
 > **Status:** Active
 
 Операційний playbook для моніторингу Content-Security-Policy
@@ -166,6 +166,8 @@ Vendor hosts allowed in the policy live in
 The same test guards parity between the Vercel response header and the
 `<meta>` fallback in `apps/web/index.html` (modulo HTML-spec
 exclusions: `report-uri`, `report-to`, `frame-ancestors`, `sandbox`).
+The full directive-set parity check (S11) is part of the CI gate —
+`turbo run test` includes it on every PR via `pnpm --filter @sergeant/web test`.
 
 To add a new vendor host:
 

@@ -202,6 +202,7 @@ export const messages = {
     moduleSwitcher: "Перемикач модулів",
     closeSettings: "Закрити налаштування",
     closeMenu: "Закрити меню",
+    quickActions: "Швидкі дії",
     voiceInput: "Голосовий ввід",
   },
 

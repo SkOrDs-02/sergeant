@@ -71,14 +71,24 @@ describe("pickTracesSampleRate", () => {
     ).toBe(1.0);
   });
 
-  it("does not sample all /api/internal/* routes at admin-level rates", () => {
-    expect(pickTracesSampleRate("/api/internal/alerts/post", 0.05)).toBe(0.05);
+  it("samples all /api/internal/* routes at 100% (PR-07 — admin=1.0)", () => {
+    // The broad /api/internal/ rule captures the entire internal namespace.
+    // Specific /api/internal/openclaw/write/ still wins first due to ordering.
+    expect(pickTracesSampleRate("/api/internal/alerts/post", 0.05)).toBe(1.0);
     expect(
       pickTracesSampleRate("/api/internal/mono/webhook/rotate", 0.05),
-    ).toBe(0.05);
+    ).toBe(1.0);
     expect(
       pickTracesSampleRate("/api/internal/openclaw/metrics/sentry", 0.05),
-    ).toBe(0.05);
+    ).toBe(1.0);
+  });
+
+  it("samples /api/internal/foo at 100% — generic internal namespace", () => {
+    expect(pickTracesSampleRate("/api/internal/foo", 0.05)).toBe(1.0);
+    expect(pickTracesSampleRate("/api/internal/eval-rag/run", 0.05)).toBe(1.0);
+    expect(pickTracesSampleRate("/api/internal/ai-memory/sync", 0.05)).toBe(
+      1.0,
+    );
   });
 
   it("falls back to default for unmatched routes", () => {
@@ -136,15 +146,21 @@ describe("SENTRY_SAMPLING_RULES — table integrity", () => {
     }
   });
 
-  it("keeps 100% internal sampling scoped to OpenClaw write mutations", () => {
+  it("has 100% internal sampling for both OpenClaw write mutations and the broad /api/internal/ namespace (PR-07)", () => {
+    // PR-07 (backend-perf-2026-05) added /api/internal/ at 1.0 so every
+    // internal-namespace route is fully sampled. The specific openclaw/write
+    // rule must appear first (shadowing test above enforces ordering).
     const fullRateInternalRules = SENTRY_SAMPLING_RULES.filter(
       (rule) => rule.match.startsWith("/api/internal/") && rule.rate === 1.0,
     ).map((rule) => rule.match);
 
-    expect(fullRateInternalRules).toEqual(["/api/internal/openclaw/write/"]);
+    expect(fullRateInternalRules).toEqual([
+      "/api/internal/openclaw/write/",
+      "/api/internal/",
+    ]);
     expect(
       SENTRY_SAMPLING_RULES.some((rule) => rule.match === "/api/internal/"),
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 

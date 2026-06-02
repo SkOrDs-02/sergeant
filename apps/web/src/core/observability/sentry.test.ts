@@ -93,6 +93,45 @@ describe("initSentry", () => {
     expect(setTag).not.toHaveBeenCalled();
   });
 
+  it("S9: тегує cspMode=enforce за замовчуванням (VITE_CSP_REPORT_ONLY не задано)", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+
+    expect(setTag).toHaveBeenCalledWith("cspMode", "enforce");
+  });
+
+  it("S9: тегує cspMode=report-only коли VITE_CSP_REPORT_ONLY=1", async () => {
+    vi.stubEnv("VITE_CSP_REPORT_ONLY", "1");
+
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+
+    expect(setTag).toHaveBeenCalledWith("cspMode", "report-only");
+  });
+
+  it("S9: тегує outboxBootOutcome=pending при init (sentinel перед boot-ом)", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+
+    expect(setTag).toHaveBeenCalledWith("outboxBootOutcome", "pending");
+  });
+
+  it("S9: тегує webVitalsEnabled=true коли VITE_WEB_VITALS_ENDPOINT не '0'", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+
+    expect(setTag).toHaveBeenCalledWith("webVitalsEnabled", "true");
+  });
+
+  it("S9: тегує webVitalsEnabled=false коли VITE_WEB_VITALS_ENDPOINT='0'", async () => {
+    vi.stubEnv("VITE_WEB_VITALS_ENDPOINT", "0");
+
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+
+    expect(setTag).toHaveBeenCalledWith("webVitalsEnabled", "false");
+  });
+
   it("реєструє динамічний tracesSampler (а не статичний rate)", async () => {
     const { initSentry } = await import("./sentry");
     await initSentry();

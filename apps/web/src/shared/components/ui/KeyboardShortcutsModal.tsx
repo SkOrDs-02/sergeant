@@ -120,7 +120,7 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
   // Navigation
   { keys: ["G", "H"], description: "Перейти на Hub", category: "Навігація" },
   { keys: ["G", "F"], description: "Перейти до Finyk", category: "Навігація" },
-  { keys: ["G", "T"], description: "Перейти до Fizruk", category: "Навігація" },
+  { keys: ["G", "Z"], description: "Перейти до Fizruk", category: "Навігація" },
   {
     keys: ["G", "R"],
     description: "Перейти до Routine",

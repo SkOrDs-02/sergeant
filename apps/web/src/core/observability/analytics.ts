@@ -18,6 +18,7 @@
 
 import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
+import { containsPII } from "./containsPII";
 import { syncEventToMemory } from "./productMemorySync";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
@@ -122,7 +123,19 @@ export function trackEvent(
     // У prod console.log приглушений (Rule #21 — Sentry breadcrumb-и не
     // повинні містити аналітичних payload-ів). LS-запис через batched
     // ring-buffer, щоб серія кліків не била по main-thread (audit F14).
-    if (import.meta.env.DEV) {
+    // S8 guard: gate console.log behind DEBUG_ANALYTICS runtime flag AND a
+    // containsPII check.  `scrubPII` has already replaced known key names
+    // with `[redacted]`, but this value-level check catches structural
+    // regressions where PII lands under an unrecognised key or inside a
+    // nested blob.  If PII is detected the line is silently skipped — no
+    // error, no fallback — keeping the fire-and-forget contract intact.
+    // `DEBUG_ANALYTICS` is a runtime window global (set in DevTools console:
+    // `window.DEBUG_ANALYTICS = true`) so it is never compiled into prod
+    // bundles and never appears in Sentry breadcrumbs.
+    const debugFlag =
+      typeof window !== "undefined" &&
+      !!(window as Window & { DEBUG_ANALYTICS?: boolean }).DEBUG_ANALYTICS;
+    if (import.meta.env.DEV && debugFlag && !containsPII(event)) {
       // eslint-disable-next-line no-console -- навмисна transport-фіча ring-buffer-у: DevTools/Sentry/PostHog тапи (docs §7)
       console.log("[analytics]", event);
     }

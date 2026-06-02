@@ -27,6 +27,7 @@ import { logger } from "@shared/lib";
 import { parseToolCalls } from "./toolCallSchema";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
 import { buildActionCard } from "../../lib/hubChatActionCards";
+import { setHubStreaming } from "../streamingStore";
 import type { ChatActionCard } from "../../lib/hubChatActionCards";
 import { useFinykHubPreview } from "../useFinykHubPreview";
 import type { HubChatSession } from "../hubChatSessions";
@@ -261,6 +262,7 @@ export function useChatSend({
       setMessages(next);
       setInput("");
       setLoading(true);
+      setHubStreaming(true);
 
       const history = next
         .filter((m) => m.role === "user" || m.role === "assistant")
@@ -334,7 +336,10 @@ export function useChatSend({
             logger.warn("[hub-chat] tool_calls schema mismatch", {
               issues: parsed.issues,
             });
-            toast.error("Не вдалося виконати дію");
+            toast.error("Не вдалося виконати дію", undefined, {
+              label: "Спробувати знову",
+              onClick: () => void sendRef.current?.(msg),
+            });
             const fallback = data.text || "Немає відповіді.";
             setMessages((m) => [...m, makeAssistantMsg(fallback)]);
             if (shouldSpeak) maybeSpeak(fallback);
@@ -490,6 +495,7 @@ export function useChatSend({
         clearTimeout(timeoutId);
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
+        setHubStreaming(false);
       }
     },
     [

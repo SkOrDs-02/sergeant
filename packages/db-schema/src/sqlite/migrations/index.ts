@@ -5,7 +5,7 @@
  * read `*.sql` files from disk at runtime — they receive the SQL as
  * string constants embedded in the JS bundle. Server-side and CLI
  * consumers have `loadMigrationFiles()` from
- * `@sergeant/db-schema/migrate` for filesystem-driven loading; this
+ * `@sergeant/db-schema/migrate/files` for filesystem-driven loading; this
  * module is the parallel surface for client bundles.
  *
  * The bundled migration creates the four client-side tables that back
@@ -471,7 +471,7 @@ CREATE INDEX IF NOT EXISTS routine_completion_notes_user_active_idx_lite
 /**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
- * `@sergeant/db-schema/migrate`.
+ * `@sergeant/db-schema/migrate/runner`.
  *
  * The migration name `001_routine_spike.sql` is preserved verbatim so
  * client DBs that ran the migration under the SPIKE name don't see a
@@ -577,7 +577,7 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
  * Stable ledger table name used by the routine SQLite module. Matches
  * the runner default but spelled out so consumers can write
  * self-documenting `runMigrations` calls without reaching into
- * `@sergeant/db-schema/migrate` for the default constant.
+ * `@sergeant/db-schema/migrate/runner` for the default constant.
  */
 export const ROUTINE_MIGRATIONS_TABLE = "__migrations";
 
@@ -794,7 +794,7 @@ CREATE INDEX IF NOT EXISTS fizruk_workout_templates_user_idx_lite
 /**
  * Ordered list of bundled client migrations for the Fizruk module on
  * SQLite. Pass this directly to `runMigrations` from
- * `@sergeant/db-schema/migrate`.
+ * `@sergeant/db-schema/migrate/runner`.
  *
  * The Fizruk module uses a separate ledger table (`__fizruk_migrations`)
  * so that routine and fizruk migrations are independent — each module
@@ -942,7 +942,7 @@ CREATE TABLE IF NOT EXISTS nutrition_shopping_list (
 /**
  * Ordered list of bundled client migrations for the Nutrition module on
  * SQLite. Pass this directly to `runMigrations` from
- * `@sergeant/db-schema/migrate`.
+ * `@sergeant/db-schema/migrate/runner`.
  *
  * The Nutrition module uses a separate ledger table
  * (`__nutrition_migrations`) so that routine, fizruk, and nutrition
@@ -1239,7 +1239,7 @@ ALTER TABLE finyk_prefs
 /**
  * Ordered list of bundled client migrations for the Finyk module on
  * SQLite. Pass this directly to `runMigrations` from
- * `@sergeant/db-schema/migrate`.
+ * `@sergeant/db-schema/migrate/runner`.
  *
  * The Finyk module uses a separate ledger table
  * (`__finyk_migrations`) so that routine, fizruk, nutrition, and
@@ -1293,7 +1293,7 @@ CREATE TABLE IF NOT EXISTS kv_store (
 /**
  * Ordered list of bundled client migrations for the per-device
  * `kv_store` table. Pass this directly to `runMigrations` from
- * `@sergeant/db-schema/migrate`.
+ * `@sergeant/db-schema/migrate/runner`.
  *
  * The `kv_store` module uses its own ledger table
  * (`__kv_store_migrations`) so the warm-cache bootstrap (PR #061+)

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import {
-  KNOWN_PATHS,
-  PATH_BASED_MODULE_IDS,
-  isPathBasedModulePath,
-} from "./appPaths";
+import { PATH_BASED_MODULE_IDS, isPathBasedModulePath } from "./appPaths";
+
+// Note: tests that cross-check `KNOWN_PATHS` ↔ `isPathBasedModulePath`
+// live in `StandaloneRoutes.test.tsx` (which already imports the full
+// routing graph). `appPaths.test.ts` stays lightweight — it only imports
+// from `appPaths.ts` so it can run without the StandaloneRoutes dependency
+// chain (which requires `@sergeant/db-schema/sqlite` to be built).
 
 describe("PATH_BASED_MODULE_IDS", () => {
   it("includes the modules migrated to path-based URLs (initiative 0006 Phase 2)", () => {
@@ -63,13 +65,5 @@ describe("isPathBasedModulePath()", () => {
     // is always a string, but the function is defensive about it.
     expect(isPathBasedModulePath(null as unknown as string)).toBe(false);
     expect(isPathBasedModulePath(undefined as unknown as string)).toBe(false);
-  });
-
-  it("does not consider path-based-module paths members of KNOWN_PATHS", () => {
-    // Sanity check on the StandaloneRoutes contract: KNOWN_PATHS owns
-    // standalone surfaces only, and the path-based-module exemption
-    // is what keeps `/finyk` etc. from short-circuiting into the 404.
-    expect(KNOWN_PATHS.has("/finyk")).toBe(false);
-    expect(KNOWN_PATHS.has("/nutrition")).toBe(false);
   });
 });

@@ -72,4 +72,29 @@ describe("PullToRefresh", () => {
     // that mount does not synchronously call onRefresh.
     expect(onRefresh).not.toHaveBeenCalled();
   });
+
+  it("does not attach touch listeners when enabled={false} (disabled blocks trigger)", () => {
+    // When enabled=false the underlying usePullToRefresh hook skips the
+    // useEffect that registers touch listeners. Assert that none of the
+    // three gesture event types are added to the inner scroll element —
+    // which is the contract that prevents onRefresh from being called
+    // during a cloud-pull pending state.
+    const addSpy = vi.spyOn(HTMLDivElement.prototype, "addEventListener");
+
+    const onRefresh = vi.fn();
+    render(
+      <PullToRefresh onRefresh={onRefresh} enabled={false}>
+        <p>x</p>
+      </PullToRefresh>,
+    );
+
+    const touchTypes = ["touchstart", "touchmove", "touchend"];
+    const attached = touchTypes.filter((t) =>
+      addSpy.mock.calls.some(([type]) => type === t),
+    );
+    expect(attached).toHaveLength(0);
+    expect(onRefresh).not.toHaveBeenCalled();
+
+    addSpy.mockRestore();
+  });
 });

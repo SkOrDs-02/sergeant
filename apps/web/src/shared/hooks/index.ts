@@ -75,6 +75,8 @@ export type {
   UseSwipeToDismissReturn,
 } from "./useSwipeToDismiss";
 
+export { useBodyScrollLock } from "./useBodyScrollLock";
+
 export { useFocusTrap } from "./useFocusTrap";
 
 export { useCountUp, useFormattedCountUp } from "./useCountUp";

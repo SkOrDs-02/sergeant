@@ -19,6 +19,62 @@
 > [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/2026-05-13-security-observability-roast.md) §P0-S1..S5
 > captures the rationale.
 
+> **Machine-readable mirror.** The list below is the documentation copy of
+> `REDACT_KEY_NAMES` from
+> [`packages/shared/src/lib/pii.ts`](../../packages/shared/src/lib/pii.ts).
+> It is enforced by `scripts/lint-pii-handling-drift.mjs` (`pnpm
+lint:pii-handling-drift`): if a key is added/removed in shared but not
+> mirrored here (case-insensitive set comparison), CI fails. When you change
+> the shared list, update the markers below in the same PR. Comparison ignores
+> case and order; one `` `key` `` per line.
+
+<!-- pii-keys-start -->
+
+- `password`
+- `newPassword`
+- `currentPassword`
+- `token`
+- `accessToken`
+- `refreshToken`
+- `idToken`
+- `sessionToken`
+- `apiKey`
+- `secret`
+- `clientSecret`
+- `privateKey`
+- `signature`
+- `dsn`
+- `connectionString`
+- `authorization`
+- `cookie`
+- `set-cookie`
+- `x-api-key`
+- `x-token`
+- `x-csrf-token`
+- `x-mono-webhook-secret`
+- `x-openclaw-webhook-secret`
+- `x-api-secret`
+- `x-internal-token`
+- `x-signature`
+- `x-webhook-signature`
+- `x-hmac-signature`
+- `otp`
+- `otpCode`
+- `verificationCode`
+- `verifyCode`
+- `magicLink`
+- `magicLinkToken`
+- `resetToken`
+- `passwordResetToken`
+- `pin`
+- `groqKey`
+- `anthropicKey`
+- `voyageKey`
+- `email`
+- `phone`
+
+<!-- pii-keys-end -->
+
 ## Чому цей документ існує
 
 GDPR / DSAR — це **legal liability**, не «nice-to-have». PII у логах =

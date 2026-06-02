@@ -48,8 +48,14 @@ const DEFAULT_FALLBACK = "Не вдалося виконати запит";
  *
  * Джерело кодів: `node_modules/@better-auth/core/dist/error/codes.mjs`
  * (`BASE_ERROR_CODES`).
+ *
+ * Також покриваємо 8 канонічних `@sergeant/api-client` lowercase кодів,
+ * що можуть прийти з не-Better-Auth ендпоінтів сервера:
+ * `validation_error`, `unauthenticated`, `forbidden`, `rate_limited`,
+ * `network_error`, `conflict`, `not_found`, `server_error`.
  */
 const CODE_TO_UA_COPY: Readonly<Record<string, string>> = {
+  // ── Better Auth BASE_ERROR_CODES (UPPER_SNAKE_CASE) ──────────────────
   INVALID_PASSWORD: "Невірний поточний пароль.",
   INVALID_EMAIL: "Невірний формат email.",
   INVALID_EMAIL_OR_PASSWORD: "Невірний email або пароль.",
@@ -72,6 +78,17 @@ const CODE_TO_UA_COPY: Readonly<Record<string, string>> = {
   MISSING_FIELD: "Заповни всі обовʼязкові поля.",
   FAILED_TO_UPDATE_USER: "Не вдалося оновити дані. Спробуй ще раз.",
   FAILED_TO_CREATE_USER: "Не вдалося створити акаунт. Спробуй ще раз.",
+
+  // ── @sergeant/api-client canonical codes (lowercase_snake_case) ───────
+  // Ці коди надходять із сервера через не-Better-Auth ендпоінти.
+  validation_error: "Деякі поля заповнені некоректно. Перевір введені дані.",
+  unauthenticated: "Доступ заборонено. Увійди ще раз.",
+  forbidden: "Недостатньо прав для цієї дії.",
+  rate_limited: "Забагато запитів. Спробуй через хвилину.",
+  network_error: "Немає зʼєднання з сервером. Перевір мережу.",
+  conflict: "Дані змінено іншим пристроєм. Онови сторінку і спробуй ще раз.",
+  not_found: "Ресурс не знайдено.",
+  server_error: "Помилка сервера. Спробуй ще раз пізніше.",
 };
 
 /**

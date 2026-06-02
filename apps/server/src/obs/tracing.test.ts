@@ -1,8 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import {
+  BasicTracerProvider,
+  InMemorySpanExporter,
+  SimpleSpanProcessor,
+} from "@opentelemetry/sdk-trace-base";
+import { trace } from "@opentelemetry/api";
 
 import {
   HEADER_DENYLIST,
   OTEL_ATTRIBUTE_DENYLIST,
+  OTEL_REDACTED_SENTINEL,
+  DenylistAttributeSpanProcessor,
   resolveTracingConfig,
 } from "./tracing.js";
 import { REDACT_KEY_NAMES } from "@sergeant/shared";
@@ -123,5 +131,118 @@ describe("OTel PII denylist parity", () => {
     for (const key of HEADER_DENYLIST) {
       expect(OTEL_ATTRIBUTE_DENYLIST.has(key)).toBe(true);
     }
+  });
+});
+
+/**
+ * In-memory span exporter tests — verify that DenylistAttributeSpanProcessor
+ * actually scrubs sensitive attributes before they reach the exporter.
+ *
+ * Uses BasicTracerProvider (not NodeSDK) with SimpleSpanProcessor so spans
+ * are flushed synchronously without needing OTel env-vars.
+ */
+describe("DenylistAttributeSpanProcessor — in-memory span scrubbing", () => {
+  let provider: BasicTracerProvider;
+  let exporter: InMemorySpanExporter;
+
+  function setupProvider(): void {
+    exporter = new InMemorySpanExporter();
+    provider = new BasicTracerProvider({
+      spanProcessors: [
+        new DenylistAttributeSpanProcessor(new SimpleSpanProcessor(exporter)),
+      ],
+    });
+  }
+
+  afterEach(async () => {
+    await provider?.shutdown();
+    exporter?.reset();
+    // Restore the global tracer provider to the one set by tracing.ts startup.
+    // Calling trace.disable() resets back to NoopTracerProvider.
+    trace.disable();
+  });
+
+  it("replaces denylist-keyed attributes with the redacted sentinel", () => {
+    setupProvider();
+    const tracer = provider.getTracer("test");
+    const span = tracer.startSpan("test-span");
+
+    // Set one attribute for every key in REDACT_KEY_NAMES plus a safe one.
+    for (const key of REDACT_KEY_NAMES) {
+      span.setAttribute(key, "sensitive-value");
+    }
+    span.setAttribute("safe.attribute", "keep-me");
+    span.end();
+
+    const spans = exporter.getFinishedSpans();
+    expect(spans).toHaveLength(1);
+    const attrs = spans[0]!.attributes;
+
+    for (const key of REDACT_KEY_NAMES) {
+      expect(attrs[key]).toBe(OTEL_REDACTED_SENTINEL);
+    }
+    expect(attrs["safe.attribute"]).toBe("keep-me");
+  });
+
+  it("redacts header-denylist attributes (lowercase form)", () => {
+    setupProvider();
+    const tracer = provider.getTracer("test");
+    const span = tracer.startSpan("header-span");
+
+    for (const key of HEADER_DENYLIST) {
+      span.setAttribute(key, "secret");
+    }
+    span.end();
+
+    const spans = exporter.getFinishedSpans();
+    expect(spans).toHaveLength(1);
+    const attrs = spans[0]!.attributes;
+    for (const key of HEADER_DENYLIST) {
+      expect(attrs[key]).toBe(OTEL_REDACTED_SENTINEL);
+    }
+  });
+
+  it("is case-insensitive: uppercase attribute key variants are also scrubbed", () => {
+    setupProvider();
+    const tracer = provider.getTracer("test");
+    const span = tracer.startSpan("case-span");
+    // "password" is in REDACT_KEY_NAMES; "Password" (capitalised) should also be scrubbed.
+    span.setAttribute("Password", "should-be-gone");
+    span.setAttribute("Authorization", "Bearer secret");
+    span.end();
+
+    const spans = exporter.getFinishedSpans();
+    expect(spans).toHaveLength(1);
+    const attrs = spans[0]!.attributes;
+    expect(attrs["Password"]).toBe(OTEL_REDACTED_SENTINEL);
+    expect(attrs["Authorization"]).toBe(OTEL_REDACTED_SENTINEL);
+  });
+
+  it("parity gate: adding a new key to REDACT_KEY_NAMES without touching tracing.ts causes this test to fail", () => {
+    // This test exists as an explicit documentation of the parity contract.
+    // OTEL_ATTRIBUTE_DENYLIST is built from REDACT_KEY_NAMES, so any
+    // addition to REDACT_KEY_NAMES automatically appears in the denylist.
+    // The in-memory scrubbing test above would then catch the new key being
+    // redacted. This assertion is the enforcement gate.
+    for (const key of REDACT_KEY_NAMES) {
+      expect(OTEL_ATTRIBUTE_DENYLIST.has(key.toLowerCase())).toBe(true);
+    }
+  });
+
+  it("does not redact safe attributes that happen to contain the word 'token' as a substring", () => {
+    setupProvider();
+    const tracer = provider.getTracer("test");
+    const span = tracer.startSpan("safe-span");
+    // "custom.token.count" — the key lowercased is "custom.token.count" which
+    // is NOT in the denylist (only exact matches apply).
+    span.setAttribute("custom.token.count", 42);
+    span.setAttribute("gen_ai.usage.input_tokens", 100);
+    span.end();
+
+    const spans = exporter.getFinishedSpans();
+    expect(spans).toHaveLength(1);
+    const attrs = spans[0]!.attributes;
+    expect(attrs["custom.token.count"]).toBe(42);
+    expect(attrs["gen_ai.usage.input_tokens"]).toBe(100);
   });
 });

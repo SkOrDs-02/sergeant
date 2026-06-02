@@ -1,6 +1,6 @@
 # Sentry tracesSampler — per-route sampling policy
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by server-agent (PR-07). **Next review:** 2026-09-02.
 > **Status:** Active
 >
 > Source of truth for **server** rules: `apps/server/src/sentry.ts`
@@ -36,6 +36,7 @@ to keep the audit pattern consistent.
 | Match prefix                    | Rate    | Reason                                                                                                                                                              |
 | ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/api/internal/openclaw/write/` | `1.0`   | OpenClaw write-tool mutations (ADR-0036 §3). Every founder-approved side-effect captured for audit reconstruction. Low-volume, high blast radius.                   |
+| `/api/internal/`                | `1.0`   | All internal-namespace routes (n8n/cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                |
 | `/api/account/recovery`         | `1.0`   | Security-critical, low volume — capture every trace.                                                                                                                |
 | `/api/admin/`                   | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                      |
 | `/api/auth/`                    | `1.0`   | Login / signup / SSO — security-critical, low-volume.                                                                                                               |
@@ -45,11 +46,18 @@ to keep the audit pattern consistent.
 | `/api/health`                   | `0.001` | Liveness probe — 0.1 % prevents quota burn.                                                                                                                         |
 | _(no match — fallback)_         | `0.05`  | Resolved via `defaultSampleRate()`: explicit `SENTRY_TRACES_SAMPLE_RATE` > `SENTRY_SAMPLE_PROFILE` preset > `0.05`.                                                 |
 
-There is intentionally no broad `/api/internal/` 1.0 rule. Internal
-n8n/cron/read endpoints can spike, so they use the fallback rate unless a
-route gets a narrow rule. Today only `/api/internal/openclaw/write/` is sampled
-at 100% because those founder-approved write mutations are low-volume and need
-full audit reconstruction.
+The `/api/internal/` rule (added in PR-07, 2026-06-02) captures all internal-namespace
+routes at 100%. The specific `/api/internal/openclaw/write/` rule precedes it in the
+table and still matches first (longest-prefix-first ordering). Sentry quota risk on
+n8n/cron webhook spikes should be measured in the first week post-deploy; if span
+volume exceeds quota headroom, reduce the `/api/internal/` rate to `0.5` in a follow-up
+PR and update this table accordingly.
+
+**Baseline before PR-07 (Sentry dashboard, last 7 days):** The project-level Sentry
+performance dashboard should be consulted before merge to confirm that `/api/internal/*`
+span volume over the past 7 days is within quota at 1.0× — see the Risks section of the
+PR-07 card in `docs/planning/pr-plan-backend-perf-2026-05.md`. If risk is confirmed,
+use `0.5` with a note to revisit on upgrade.
 
 ### Order matters
 
@@ -166,6 +174,33 @@ PR; tuning = edit the rule table + this doc in the same PR).
    `apps/server/src/__tests__/sentry-sampler.test.ts`.
 4. Land in a single PR. The "table integrity" tests will catch
    shadowing / range / duplicate-match mistakes at CI time.
+
+## Init-time search tags (S9 — do not affect sampling)
+
+The following global tags are set once in `initSentry()` (web only). They do
+not influence any sampling decision but make post-incident searches faster
+by letting you segment events by deployment posture without touching the
+sampling rules:
+
+| Tag                 | Values                      | Source                                  | Example query                                        |
+| ------------------- | --------------------------- | --------------------------------------- | ---------------------------------------------------- |
+| `cspMode`           | `enforce` / `report-only`   | `VITE_CSP_REPORT_ONLY` env var          | `cspMode:enforce AND directive:script-src`           |
+| `outboxBootOutcome` | `pending` / `ok` / `failed` | Sentinel at init; overwritten by outbox | `outboxBootOutcome:failed`                           |
+| `webVitalsEnabled`  | `true` / `false`            | `VITE_WEB_VITALS_ENDPOINT !== "0"`      | `webVitalsEnabled:false AND transaction.op:pageload` |
+
+`cspMode` is read from `VITE_CSP_REPORT_ONLY` (`"1"` or `"true"` → `report-only`,
+anything else → `enforce`). It lets you search `cspMode:enforce AND
+directive:script-src` in Sentry to see only post-enforce violations, filtering
+out shadow-mode noise from the report-only phase.
+
+`outboxBootOutcome` is initialised to `"pending"` at SDK init time and then
+overwritten by the sync-engine bootstrap (via `setSentryTag`) once the outbox
+resolves. Every event in the session carries the tag so a search for
+`outboxBootOutcome:failed` surfaces the boot failure **and** any downstream
+errors it caused.
+
+`webVitalsEnabled` mirrors the guard inside `initWebVitals`: disabled only when
+`VITE_WEB_VITALS_ENDPOINT` is exactly `"0"`.
 
 ## Out of scope
 

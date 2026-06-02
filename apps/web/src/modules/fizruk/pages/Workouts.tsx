@@ -13,6 +13,7 @@ import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
 
 interface WorkoutsProps {
@@ -40,6 +41,7 @@ export function Workouts({
   onOpenPrograms,
 }: WorkoutsProps = {}) {
   const o = useWorkoutsOrchestrator();
+  const cloudPullPending = useCloudPullPending();
 
   const workoutsLoadingSkeleton = (
     <div
@@ -55,7 +57,11 @@ export function Workouts({
   );
 
   return (
-    <PullToRefresh onRefresh={o.handlePullRefresh} variant="fizruk">
+    <PullToRefresh
+      onRefresh={o.handlePullRefresh}
+      variant="fizruk"
+      enabled={!cloudPullPending}
+    >
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
         <WorkoutsHeader
           view={o.view}

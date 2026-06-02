@@ -1,9 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { hapticTap } from "../../lib/adapters/haptic";
 import { messages } from "@shared/i18n/uk";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 
 export interface QuickAction {
   id: string;
@@ -44,8 +46,13 @@ export function QuickActionsMenu({
   const [isOpen, setIsOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressing = useRef(false);
+  const menuLabelId = useId();
+
+  useDialogFocusTrap(isOpen, dialogRef, { onEscape: () => close() });
+  useBodyScrollLock(isOpen);
 
   const startLongPress = useCallback(
     (e: React.TouchEvent | React.MouseEvent) => {
@@ -152,12 +159,18 @@ export function QuickActionsMenu({
 
             {/* Menu container positioned at trigger */}
             <div
+              ref={dialogRef}
+              role="menu"
+              aria-labelledby={menuLabelId}
               className="absolute"
               style={{
                 left: anchorRect.left + anchorRect.width / 2,
                 top: position === "top" ? anchorRect.top : anchorRect.bottom,
               }}
             >
+              <span id={menuLabelId} className="sr-only">
+                {messages.nav.quickActions}
+              </span>
               {/* Actions */}
               {actions.map((action, index) => {
                 const pos = getActionPosition(index, actions.length);

@@ -1,0 +1,23 @@
+[
+  "apps/web/src/core/app/WelcomeScreen.tsx",
+  "apps/web/src/core/hub/HubChatHistoryDrawer.tsx",
+  "apps/web/src/core/hub/search/HubSearch.tsx",
+  "apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx",
+  "apps/web/src/core/onboarding/OnboardingWizard.tsx",
+  "apps/web/src/core/profile/DeleteAccountDialog.tsx",
+  "apps/web/src/core/security/AppLock.tsx",
+  "apps/web/src/core/settings/SettingsPrimitives.tsx",
+  "apps/web/src/core/stories/WeeklyDigestStories.tsx",
+  "apps/web/src/modules/finyk/FinykApp.tsx",
+  "apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx",
+  "apps/web/src/shared/components/layout/ModuleSettingsDrawer.tsx",
+  "apps/web/src/shared/components/ui/CelebrationModal.tsx",
+  "apps/web/src/shared/components/ui/CommandPalette.tsx",
+  "apps/web/src/shared/components/ui/ConfirmDialog.tsx",
+  "apps/web/src/shared/components/ui/FloatingActionButton.tsx",
+  "apps/web/src/shared/components/ui/InputDialog.tsx",
+  "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
+  "apps/web/src/shared/components/ui/Modal.tsx",
+  "apps/web/src/shared/components/ui/QuickActionsMenu.tsx",
+  "apps/web/src/shared/components/ui/Sheet.tsx"
+]

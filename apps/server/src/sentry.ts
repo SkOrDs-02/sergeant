@@ -36,13 +36,19 @@ export type SentrySamplingRule = {
 export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
   // Order is intentional: longest path first so /api/auth/sign-up does not
   // accidentally fall through to /api/health (longest-prefix-first).
-  // Do not add a broad `/api/internal/` 1.0 rule: n8n/cron/internal read
-  // endpoints can spike. Keep 100% sampling to low-volume write mutations.
+  // Specific /api/internal/openclaw/write/ must precede the broader
+  // /api/internal/ rule so its rate is not overridden.
   {
     match: "/api/internal/openclaw/write/",
     rate: 1.0,
     reason:
       "OpenClaw write-tool mutations (ADR-0036 §3) — every founder-approved side-effect captured for audit reconstruction. Low-volume, high blast radius.",
+  },
+  {
+    match: "/api/internal/",
+    rate: 1.0,
+    reason:
+      "All internal namespace routes (n8n/cron/admin tooling) — low external volume, high blast radius. PR-07 (backend-perf-2026-05): baseline before enabling; reduce to 0.5 if Sentry quota is impacted.",
   },
   {
     match: "/api/account/recovery",

@@ -3,7 +3,7 @@ import {
   STANDALONE_ROUTE_PATHS,
   renderStandaloneRoute,
 } from "./StandaloneRoutes";
-import { KNOWN_PATHS } from "./appPaths";
+import { KNOWN_PATHS } from "./routes";
 import type { useAuth } from "../auth/AuthContext";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
@@ -124,11 +124,31 @@ describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive �
     // returns `null` for warm local-first / authed sessions and a
     // marketing surface for fresh non-auth visitors. The exhaustiveness
     // check no longer needs to skip the Hub root.
+    //
+    // This is also a tautology test now that `KNOWN_PATHS` is derived
+    // from `STANDALONE_ROUTE_PATHS` in `routes.ts` — the two sets are
+    // identical by construction. The test is kept so any future refactor
+    // that breaks that derivation fails here explicitly.
     for (const path of KNOWN_PATHS) {
       expect(
         STANDALONE_ROUTE_PATHS.has(path),
-        `KNOWN_PATHS contains "${path}" but no entry in STANDALONE_ROUTES renders it — add a route in StandaloneRoutes.tsx or remove the path from KNOWN_PATHS.`,
+        `KNOWN_PATHS contains "${path}" but no entry in STANDALONE_ROUTES renders it — add a route in StandaloneRoutes.tsx.`,
       ).toBe(true);
     }
+  });
+
+  it("path-based module roots are NOT in KNOWN_PATHS (404 guard exemption)", () => {
+    // `/finyk`, `/nutrition` etc. are handled by `useHubNavigation` →
+    // `<ActiveModuleView />`, not by standalone routes. They must be
+    // absent from `KNOWN_PATHS` so the 404 guard doesn't short-circuit
+    // them — the `isPathBasedModulePath()` exemption in
+    // `renderStandaloneRoute()` handles the fallthrough instead.
+    // (This test was previously in `appPaths.test.ts` but moved here
+    // since `KNOWN_PATHS` now lives in `routes.ts` and importing it there
+    // already pulls in the StandaloneRoutes dependency graph.)
+    expect(KNOWN_PATHS.has("/finyk")).toBe(false);
+    expect(KNOWN_PATHS.has("/nutrition")).toBe(false);
+    expect(KNOWN_PATHS.has("/fizruk")).toBe(false);
+    expect(KNOWN_PATHS.has("/routine")).toBe(false);
   });
 });

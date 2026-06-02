@@ -550,6 +550,49 @@ describe("logger", () => {
       expect(parsed.ctx.token).toBeNull();
     });
 
+    // S4 acceptance — 5-рівневий nesting: `password` на глибині 5 повинен
+    // бути замаскований; substring 'secret-xyz' НЕ повинен з'являтись у
+    // stringify-output (тест-контракт із docs/planning/pr-plan-security-obs-2026-05.md § S4).
+    it("маскує password на 5 рівнів вглиб — substring 'secret-xyz' відсутній", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        a: { b: { c: { d: { e: { password: "secret-xyz" } } } } },
+      });
+
+      expect(chunks).toHaveLength(1);
+      const raw = chunks[0]!;
+      // Primary acceptance: the literal secret value must not appear anywhere.
+      expect(raw).not.toContain("secret-xyz");
+      // Secondary: the field itself must be redacted (not dropped).
+      const parsed = JSON.parse(raw) as {
+        a: { b: { c: { d: { e: Record<string, unknown> } } } };
+      };
+      expect(parsed.a.b.c.d.e["password"]).toBe("[redacted]");
+    });
+
+    it("маскує email на 5 рівнів вглиб (PII class B)", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        l1: {
+          l2: {
+            l3: {
+              l4: { l5: { email: "deep-secret@example.com", safe: "ok" } },
+            },
+          },
+        },
+      });
+
+      expect(chunks).toHaveLength(1);
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("deep-secret@example.com");
+      const parsed = JSON.parse(raw) as {
+        l1: { l2: { l3: { l4: { l5: Record<string, unknown> } } } };
+      };
+      expect(parsed.l1.l2.l3.l4.l5["email"]).toBe("[redacted]");
+      // Safe non-sensitive sibling must survive.
+      expect(parsed.l1.l2.l3.l4.l5["safe"]).toBe("ok");
+    });
+
     it("cycle-safe — self-referencing object не зациклює walker", () => {
       // Прямий unit-тест рекурсивної функції — pino-stream робить власну
       // цикл-детекцію через safe-stable-stringify, тож тут викликаємо

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
+import { useHubChatOverlay } from "./hub/useHubChatOverlay";
 
 import { useAuth } from "./auth/AuthContext";
 import { useActivationV2Boot } from "./activation";
@@ -151,6 +152,7 @@ function AppInner() {
   // is enough — `<ThemeSwitcher />` reuses the same context-free hook.
   useTheme();
   const keyboardShortcuts = useKeyboardShortcutsModal();
+  const { openChat: openAssistantChat } = useHubChatOverlay();
   const { canInstall, install, dismiss } = usePwaInstall();
   const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
@@ -197,9 +199,22 @@ function AppInner() {
     ui.setSearchOpen(true);
   }, [activeModule, goToHub, ui]);
 
+  const handleNavigateChord = useCallback(
+    (target: import("./hooks/useHubKeyboardShortcuts").NavChordTarget) => {
+      if (target === "hub") {
+        goToHub();
+      } else {
+        openModule(target);
+      }
+    },
+    [goToHub, openModule],
+  );
+
   useHubKeyboardShortcuts({
     onOpenSearch: openSearchFromShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
+    onOpenAssistant: openAssistantChat,
+    onNavigate: handleNavigateChord,
   });
 
   // Track 5 — global ⌘K / Ctrl+K command palette. Gated by the

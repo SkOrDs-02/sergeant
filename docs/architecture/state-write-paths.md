@@ -1,6 +1,6 @@
 # State write-paths — `apps/web`
 
-> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-11.
 > **Status:** Active
 
 > Як, де і чому web-додаток мутить state. Дві writer-доріжки (`useMutation` vs HubChat tool-call), коли яку обирати, і де живуть инваріанти. Закриває §2.1 з [`docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](../audits/2026-05-03-web-deep-dive/02-architecture-and-state.md) (parallel-write paths require explicit doc).

@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { parseCsp as parseCspToMap } from "./helpers/parseCsp.js";
 
 /**
  * L11 — `docs/security/hardening/L11-csp-monitoring-allowlist.md`.
@@ -194,5 +195,72 @@ describe("L11: CSP monitoring allowlist", () => {
         }
       }
     });
+  });
+
+  /**
+   * S11 — full directive-set parity.
+   *
+   * The narrower parity block above only spot-checks `connect-src` and
+   * `script-src`. This block verifies that every comparable directive
+   * is set-equal between the Vercel response header and the `<meta>`
+   * fallback — catching silent drift when a new directive (e.g.
+   * `style-src`, `img-src`, `font-src`) receives a new source in one
+   * location but not the other.
+   *
+   * Uses `parseCsp` from `./helpers/parseCsp.ts` which returns a proper
+   * `Map<directive, Set<source>>` for clean set-equality assertions.
+   */
+  describe("S11: full directive-set parity (vercel.json ↔ index.html meta)", () => {
+    // Parse both CSP strings with the shared helper so assertions use
+    // Set semantics (source order does not matter).
+    const vercelMap = parseCspToMap(readVercelCsp());
+    const metaMap = parseCspToMap(readMetaCsp());
+
+    // Directives forbidden inside <meta http-equiv="Content-Security-Policy">
+    // by the HTML Living Standard §7.10. The meta tag is allowed to omit
+    // these; every other directive must be set-equal.
+    const META_FORBIDDEN = new Set([
+      "report-uri",
+      "report-to",
+      "frame-ancestors",
+      "sandbox",
+    ]);
+
+    // Collect the comparable directives: everything in vercel that the meta
+    // tag is allowed to carry.
+    const comparableDirectives = [...vercelMap.keys()].filter(
+      (d) => !META_FORBIDDEN.has(d),
+    );
+
+    it("meta CSP contains every comparable directive present in vercel CSP", () => {
+      for (const directive of comparableDirectives) {
+        expect(
+          metaMap.has(directive),
+          `meta CSP is missing directive "${directive}" that vercel.json carries`,
+        ).toBe(true);
+      }
+    });
+
+    it("meta CSP has no extra directives absent from vercel CSP (excluding HTML-spec exclusions)", () => {
+      for (const directive of metaMap.keys()) {
+        if (META_FORBIDDEN.has(directive)) continue;
+        expect(
+          vercelMap.has(directive),
+          `meta CSP carries directive "${directive}" that vercel.json does not`,
+        ).toBe(true);
+      }
+    });
+
+    it.each(comparableDirectives)(
+      'directive "%s" — source list is set-equal in both policies',
+      (directive) => {
+        const vercelSources = vercelMap.get(directive) ?? new Set<string>();
+        const metaSources = metaMap.get(directive) ?? new Set<string>();
+        expect(
+          metaSources,
+          `"${directive}" source sets differ between meta and vercel.json`,
+        ).toEqual(vercelSources);
+      },
+    );
   });
 });

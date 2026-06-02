@@ -388,6 +388,28 @@ export async function initSentry() {
     ),
   );
 
+  // S9 — forensic tags for CSP rollout, outbox boot, and web-vitals.
+  // `cspMode` distinguishes report-only shadow-testing from enforce mode
+  // so a Sentry search like `cspMode:enforce AND directive:script-src`
+  // immediately segments post-enforce events from shadow ones.
+  const cspReportOnly =
+    import.meta.env["VITE_CSP_REPORT_ONLY"] === "1" ||
+    import.meta.env["VITE_CSP_REPORT_ONLY"] === "true";
+  mod.setTag("cspMode", cspReportOnly ? "report-only" : "enforce");
+
+  // Sentinel set at init time; overwritten by `singleton.ts`
+  // (`setSentryTag("outbox.boot.outcome", ...)`) once the sync-engine
+  // boot resolves. Ensures every event in the session carries the tag
+  // even if a crash occurs before the outbox boot completes.
+  mod.setTag("outboxBootOutcome", "pending");
+
+  // Surface the web-vitals collection enabled/disabled state so RUM
+  // incidents can be correlated with whether metrics were being gathered.
+  // Mirrors the guard in `initWebVitals`: disabled when the env var is
+  // exactly `"0"`, enabled (default) otherwise.
+  const webVitalsEnabled = import.meta.env["VITE_WEB_VITALS_ENDPOINT"] !== "0";
+  mod.setTag("webVitalsEnabled", String(webVitalsEnabled));
+
   // Audit 2026-05-13 §F21: дренаж тегів, які виставили ранні споживачі
   // (наприклад `dualWriteTelemetry` під час boot) до завершення lazy-load.
   for (const [key, value] of pendingTags) {

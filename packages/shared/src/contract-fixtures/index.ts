@@ -7,3 +7,6 @@ export * from "./barcode";
 export * from "./auth";
 export * from "./cspReport";
 export * from "./accountRecovery";
+export * from "./food-search";
+export * from "./parse-pantry";
+export * from "./sync-v2";

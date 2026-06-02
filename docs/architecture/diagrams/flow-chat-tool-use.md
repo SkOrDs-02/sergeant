@@ -1,6 +1,6 @@
 # Flow — HubChat tool-use cycle
 
-> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Один цикл tool-use всередині chat-сесії. Користувач задає питання, що вимагає читання локальних даних (наприклад «скільки я витратив на кафе цього тижня?»), Claude емітує `tool_use`, клієнт виконує handler і повертає результат.
