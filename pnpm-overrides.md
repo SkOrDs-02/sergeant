@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -136,3 +136,19 @@ by ADR-0050.
 `ajv >=8.18.0`, або ajv 6.x вийде з tree (потребує заміни ESLint).
 
 **Last reviewed:** 2026-05-13
+
+---
+
+## `tmp@<0.2.6` → `>=0.2.6`
+
+**Why:** GHSA-ph9p-34f9-6g65 — `tmp <0.2.6` має path traversal через несанітизований
+`prefix`/`postfix`, що дозволяє directory escape за межі тимчасового каталогу. У нашому
+tree вразливий `tmp@0.2.5` потрапляв транзитивно через кілька dev-залежників: `detox`
+(apps/mobile E2E), `testcontainers` (apps/server integration tests) та `@argos-ci/core`
+(apps/web visual regression). Selector form бампає лише вразливу sub-range (`<0.2.6`),
+не чіпаючи модерні версії в tree. Патч `tmp@0.2.7` — drop-in, без breaking changes.
+
+**Drop when:** `detox`, `testcontainers` і `@argos-ci/core` оновлять власний transitive
+pin на `tmp >=0.2.6`, або advisory буде відкликано.
+
+**Last reviewed:** 2026-06-02
