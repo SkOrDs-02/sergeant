@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -113,3 +113,16 @@ Use when the trigger is «check that docs aren't lagging behind code» / «recon
 4. **Fan out (parallel).** Spawn one read-only analysis agent per surface. Each agent: for every `Active`/`In progress`/`Draft` doc in its directory, (a) check whether all `#NNNN` PR-mentions are merged (`docs/pr-ledger/index.json`); (b) grep `main` for evidence that `- [ ]` items are actually shipped; (c) return **precise, evidence-backed edits only** — which checkboxes to flip to `- [x]`, which `> **Status:**` headers to close, which `Next review` dates are stale. Conservative bias: when evidence is ambiguous, leave the doc unchanged and report it as "needs human". Do **not** archive in this sweep (archival is a separate, ≥90-day-gated pass — see playbook §5).
 5. **Apply + regenerate (serial).** Apply the high-confidence edits, then regenerate the dashboards (`pnpm docs:gen-daily`, `pnpm docs:gen-initiative-followups`) so closed docs drop out of `open-work.md`.
 6. **Verify (serial).** Run the playbook's Verification gates: `docs:check-open-work`, `docs:check-initiative-followups`, `lint:initiative-status-sync`, `docs:check-links`, `docs:check-freshness-cadence`, plus every regenerated catalog's `--check`. Land the whole sweep as **one PR** (all surfaces are docs-sync; no feature work mixed in).
+
+## 12. Planning-Batch Execution (parallel fan-out + code + archival)
+
+Use when the trigger is «виконай N тасків з планінгу» / «прожени батч PR-карток з `docs/planning/*`», and the batch spans multiple PR-cards that may need real code, not just status reconciliation. Canonical recipe: [`docs/playbooks/execute-planning-batch.md`](../playbooks/execute-planning-batch.md). Governing skill: `sergeant-planning-batch`. This is the planning sibling of §11 — but unlike §11 it **carries code work** and **fast-forward archives** fully-complete docs (no 90-day wait).
+
+1. Start with `sergeant-start-here`; load `sergeant-planning-batch`.
+2. **Inventory + dynamic batch selection (serial, once).** `pnpm docs:gen-daily`, `pnpm docs:gen-initiative-followups`. Read `docs/open-work.md` + `docs/pr-ledger/index.json` as ground truth. Skip `✅ Виконано`/`Closed` cards; honor each card's `Dependencies` and `Freeze-compatible`; front-load lowest `P-рівень` / smallest `Size`. N is dynamic — take what the request asks, capped by what dependencies unblock.
+3. **Split into disjoint planning surfaces** (one owner per `pr-plan-*` group / roadmap / research doc). **Never** hand an agent an `AUTO-GENERATED` file (`open-work.md`, `today.md`, `follow-ups.md`, `*.auto.json`).
+4. **Fan out (parallel, read-only first).** One analysis agent per surface verifies which cards are genuinely shipped (`main` + pr-ledger) and which docs are fully complete; returns precise, evidence-backed recommendations only (ambiguous → "needs human").
+5. **Execute code cards.** Independent cards run as parallel Agent Team teammates; a single cross-surface card stays a sequential `sergeant-deliver-squad` chain (migration → server → api-client → web/mobile). `pnpm typecheck` after each surface.
+6. **Apply + regenerate (serial).** Flip completed cards' `Status` to `✅ Виконано` with PR/commit evidence; regenerate `pnpm docs:gen-daily`.
+7. **Fast-forward archive (conditional).** Only when work drove a doc to fully complete (follow-ups closed, no open `- [ ]`): move it to `docs/planning/archive/` immediately, skipping the 90-day gate per standing founder approval (`docs/initiatives/README.md`). Apply archive frontmatter, fix inbound links. If nothing qualifies, archival is a deliberate no-op.
+8. **Verify (serial).** `docs:check-open-work`, `docs:check-today`, `docs:check-freshness-single-marker`, `docs:check-freshness-cadence`, `docs:check-links`, `lint:archive-move-depth` (if archived). Land the whole batch as **one PR** on the batch branch.

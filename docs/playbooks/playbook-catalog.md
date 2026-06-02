@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -32,6 +32,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Cross-surface feature delivery (DB→server→web) | [`run-squad-deliver.md`](./run-squad-deliver.md)                         | `sergeant-deliver-squad`                                | Human + agent |
 | Full QA across all surfaces in parallel        | [`run-squad-qa.md`](./run-squad-qa.md)                                   | `sergeant-qa-squad`                                     | Human + agent |
 | Validate idea / decision from multiple angles  | [`run-council.md`](./run-council.md)                                     | `sergeant-council`                                      | Human + agent |
+| Execute a batch of planning tasks (parallel)   | [`execute-planning-batch.md`](./execute-planning-batch.md)               | `sergeant-planning-batch`                               | Human + agent |
 
 ## Повний inventory
 

@@ -1,15 +1,15 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-01",
+  "generated_at": "2026-06-02",
   "counts": {
     "adr": 58,
     "audit": 31,
     "hard-rule": 26,
     "initiative": 47,
-    "playbook": 56,
+    "playbook": 57,
     "pr": 200,
-    "skill": 21
+    "skill": 22
   },
   "nodes": [
     {
@@ -1917,6 +1917,15 @@
       "type": "playbook",
       "title": "Enable Anthropic Prompt Caching",
       "path": "docs/playbooks/enable-prompt-caching.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:execute-planning-batch",
+      "type": "playbook",
+      "title": "Виконання батчу planning-тасків (parallel fan-out)",
+      "path": "docs/playbooks/execute-planning-batch.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -4372,6 +4381,16 @@
       "tier": "core",
       "meta": {
         "description": "Use when working on the OpenClaw Gateway service, console agent, @sergeant/openclaw-plugin package, ops/openclaw config, or Telegram bot identity; UA: OpenClaw / gateway / console-agent / openclaw-plugin / Telegram-бот."
+      }
+    },
+    {
+      "id": "skill:sergeant-planning-batch",
+      "type": "skill",
+      "title": "sergeant-planning-batch",
+      "path": ".agents/skills/sergeant-planning-batch/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use when executing a batch of N open tasks from docs/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків."
       }
     },
     {

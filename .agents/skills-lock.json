@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "ec24e8dbd12f074026a02ab93e236a814702560aa3ff759e698598e9bb3b52d3"
+      "computedHash": "410f796ffb85ca1b21a24dcb433d1991ef06c0c9d1e01d4d4765e0c7503b9eec"
     },
     "sergeant-web-ui": {
       "source": "local",
@@ -105,6 +105,11 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "ba9adce90654657f772e6219b241e7d2a9a6bdc34169d9abc5339f1248a8a522"
+    },
+    "sergeant-planning-batch": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "6c3512e55d0b5559adb63d2fe605969640bbf6584830e7713e7911b2949e02da"
     }
   }
 }

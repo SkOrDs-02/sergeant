@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-05-31 by @devin-ai. **Next review:** 2026-08-29.
+> **Last validated:** 2026-06-02 by @devin-ai. **Next review:** 2026-08-31.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->
@@ -32,6 +32,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`declare-incident.md`](./declare-incident.md)                                     | Оголошення інциденту                                       | продакшн-проблема вийшла за межі alert triage і вимагає явної severity, owner-а, шляху мітигації або координації rollback-у.                                                                                                          |
 | [`deploy-config-change.md`](./deploy-config-change.md)                             | Зміна deploy-конфігу (vercel / fly / railway / Dockerfile) | PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.                 |
 | [`enable-prompt-caching.md`](./enable-prompt-caching.md)                           | Enable Anthropic Prompt Caching                            | «Зменшити cost Anthropic» / «Anthropic API занадто дорогий» / `aiTokensTotal{kind="prompt"}` росте лінійно з трафіком, бо стабільні `SYSTEM_PREFIX` і `TOOLS` повторюються на кожному запиті.                                         |
+| [`execute-planning-batch.md`](./execute-planning-batch.md)                         | Виконання батчу planning-тасків (parallel fan-out)         | «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.                        |
 | [`fix-exhaustive-deps.md`](./fix-exhaustive-deps.md)                               | Fix Exhaustive Deps Warnings                               | "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.                                                                                              |
 | [`fix-failing-ci.md`](./fix-failing-ci.md)                                         | Fix Failing CI on a PR                                     | один або кілька CI checks червоні на PR: `commitlint`, `lint`, `typecheck`, `test`, `build`, docs/governance gates, bundle або mobile jobs.                                                                                           |
 | [`hotfix-prod-regression.md`](./hotfix-prod-regression.md)                         | Hotfix Production Regression                               | "Прод впав" / користувачі скаржаться / `/health` деградував / Sentry або ops канал показує активну регресію після релізу.                                                                                                             |

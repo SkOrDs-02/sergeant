@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-01)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-02)</title>
     <style>
       body {
         font-family:
@@ -97,7 +97,7 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-01 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-02 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
@@ -105,13 +105,13 @@
       <span class="chip chip-audit">audit: <b>31</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
-      <span class="chip chip-playbook">playbook: <b>56</b></span>
+      <span class="chip chip-playbook">playbook: <b>57</b></span>
       <span class="chip chip-pr">pr: <b>200</b></span>
-      <span class="chip chip-skill">skill: <b>21</b></span>
+      <span class="chip chip-skill">skill: <b>22</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (232 core)</summary>
+      <summary>Nodes (234 core)</summary>
       <table>
         <thead>
           <tr>
@@ -2772,6 +2772,17 @@
           </tr>
           <tr>
             <td>playbook</td>
+            <td><code>playbook:execute-planning-batch</code></td>
+            <td>
+              <a href="../../docs/playbooks/execute-planning-batch.md"
+                >Виконання батчу planning-тасків (parallel fan-out)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
             <td><code>playbook:fix-exhaustive-deps</code></td>
             <td>
               <a href="../../docs/playbooks/fix-exhaustive-deps.md"
@@ -3291,6 +3302,22 @@
               console agent, @sergeant/openclaw-plugin package, ops/openclaw
               config, or Telegram bot identity; UA: OpenClaw / gateway /
               console-agent / openclaw-plugin / Telegram-бот.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-planning-batch</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-planning-batch/SKILL.md"
+                >sergeant-planning-batch</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when executing a batch of N open tasks from
+              docs/planning/* PR-plans — dynamic selection, parallel agent
+              fan-out, tracker updates, fast-forward archival of complete docs;
+              UA: виконати батч planning-тасків.
             </td>
           </tr>
           <tr>

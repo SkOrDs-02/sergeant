@@ -1,19 +1,22 @@
 # PR-план — Documentation Hygiene Follow-Up (2026-05)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
-> **Status:** Active
+> **Last validated:** 2026-06-02 by @claude. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only).
+> **Created:** 2026-05-13.
+> **Source:** [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../../audits/2026-05-13-documentation-hygiene-roast.md) — прожарка, з якої цей execution-план виник. Жив як `docs/planning/pr-plan-docs-hygiene-2026-05.md` до fast-forward архівації.
+> **Purpose:** Closed execution-план doc-hygiene прожарки 2026-05-13. Усі картки (QW + PR-01…PR-09) ✅ Виконано; кожен запроваджений ними gate (`docs:check-freshness-single-marker`, `docs:check-freshness-cadence`, `docs:check-playbook-3way-sync`, `lint:agents-family-sync`, `lint:kvstore-deep-imports`, `lint:archive-move-depth`, expanded discoverability ROUTES, freshness-dashboard) живий і зелений на `main`. Fast-forward архівація (90-day gate skipped за рішенням founder-а) через `sergeant-planning-batch` workflow 2026-06-02.
 > **Cross-refs:**
-> [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../audits/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
-> [`docs/audits/2026-05-02-doc-hygiene-audit.md`](../audits/2026-05-02-doc-hygiene-audit.md) — попередній прохід doc-hygiene ·
-> [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](../audits/2026-05-05-dead-code-and-stale-links-audit.md) — dead-links / dead-code roast ·
-> [`docs/governance/README.md`](../governance/README.md) — sources of truth + CI gates ·
-> [`docs/governance/doc-freshness.md`](../governance/doc-freshness.md) — freshness-marker grammar ·
-> [`docs/governance/audit-freeze-2026-05-05.md`](../governance/audit-freeze-2026-05-05.md) — активна 4-тижнева заморозка (до 2026-06-02) ·
-> [`docs/governance/policy-review.md`](../governance/policy-review.md) — cadence + review-process для governance docs ·
-> [`scripts/check-discoverability.mjs`](../../scripts/check-discoverability.mjs) — ≤2-hop discoverability gate (ROUTES matrix) ·
-> [`scripts/check-hard-rules-registry.mjs`](../../scripts/check-hard-rules-registry.mjs) — 3-way sync gate AGENTS.md ↔ `hard-rules.json` ↔ `docs/governance/rules/` ·
-> [`scripts/check-governance-sync.mjs`](../../scripts/check-governance-sync.mjs) — AGENTS.md ↔ CONTRIBUTING.md + status-badge + dangling source refs ·
-> [`scripts/docs/check-markdown-links.mjs`](../../scripts/docs/check-markdown-links.mjs), [`scripts/check-tech-debt-freshness.mjs`](../../scripts/check-tech-debt-freshness.mjs).
+> [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../../audits/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
+> [`docs/audits/2026-05-02-doc-hygiene-audit.md`](../../audits/2026-05-02-doc-hygiene-audit.md) — попередній прохід doc-hygiene ·
+> [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](../../audits/2026-05-05-dead-code-and-stale-links-audit.md) — dead-links / dead-code roast ·
+> [`docs/governance/README.md`](../../governance/README.md) — sources of truth + CI gates ·
+> [`docs/governance/doc-freshness.md`](../../governance/doc-freshness.md) — freshness-marker grammar ·
+> [`docs/governance/audit-freeze-2026-05-05.md`](../../governance/audit-freeze-2026-05-05.md) — активна 4-тижнева заморозка (до 2026-06-02) ·
+> [`docs/governance/policy-review.md`](../../governance/policy-review.md) — cadence + review-process для governance docs ·
+> [`scripts/check-discoverability.mjs`](../../../scripts/check-discoverability.mjs) — ≤2-hop discoverability gate (ROUTES matrix) ·
+> [`scripts/check-hard-rules-registry.mjs`](../../../scripts/check-hard-rules-registry.mjs) — 3-way sync gate AGENTS.md ↔ `hard-rules.json` ↔ `docs/governance/rules/` ·
+> [`scripts/check-governance-sync.mjs`](../../../scripts/check-governance-sync.mjs) — AGENTS.md ↔ CONTRIBUTING.md + status-badge + dangling source refs ·
+> [`scripts/docs/check-markdown-links.mjs`](../../../scripts/docs/check-markdown-links.mjs), [`scripts/check-tech-debt-freshness.mjs`](../../../scripts/check-tech-debt-freshness.mjs).
 
 ## Чому цей план
 
@@ -28,7 +31,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 ## Audit-freeze contract (важливо)
 
-Активний [`audit-freeze-2026-05-05.md`](../governance/audit-freeze-2026-05-05.md) (до 2026-06-02) **забороняє** новi audit-доки в `docs/audits/` top-level, новi initiatives в `docs/initiatives/00NN-…`, новi playbook-и без двох завершених PR-ів і новi ADR-и без активного code-PR-а. Дозволені:
+Активний [`audit-freeze-2026-05-05.md`](../../governance/audit-freeze-2026-05-05.md) (до 2026-06-02) **забороняє** новi audit-доки в `docs/audits/` top-level, новi initiatives в `docs/initiatives/00NN-…`, новi playbook-и без двох завершених PR-ів і новi ADR-и без активного code-PR-а. Дозволені:
 
 - **Edit** existing audit / initiative / governance / playbook доків (status bump, P-items, errata).
 - Нові скрипти / lint-and-doc-checks / per-rule файли у `docs/governance/rules/` — це не audit-content, дозволено.
@@ -43,12 +46,12 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 Зведений XS PR (≤30 хв скоп), що закриває 4 точкових drift-и за один прохід — наслідок аудиту + дрібного research-у при складанні цього плану. Створюється **окремо від решти** карток, щоб не сповільнювати дискусію по `M/L`-картках.
 
-| ID   | Зміна                                                                                                                                                                                                                                         | Файл:рядок                                                      |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| QW-1 | Закрити P1-3 в roast: `.github/workflows/lighthouse-ci.yml` зашиплений у `cb459c08` (#2726, 2026-05-13). Bump статусу: `⏸ P1-3` → `✅ Closed in #2726`; видалити «Action: Add (recommended P2)» з § P0-2.                                     | `docs/audits/2026-05-13-documentation-hygiene-roast.md:100-103` |
-| QW-2 | Закрити P2-2 в roast: `MARKER_RE` у [`scripts/knip-respects-scaffolded.mjs:26`](../../scripts/knip-respects-scaffolded.mjs) вже містить `@experimental` — переписати § P2-2 на `✅ Closed (already covered)`.                                 | `docs/audits/2026-05-13-documentation-hygiene-roast.md:110-112` |
-| QW-3 | Bump `Last validated` у [`docs/governance/pnpm-overrides-policy.md`](../governance/pnpm-overrides-policy.md) — зараз `2026-05-11 by @claude`, drift > 48h щодо решти governance-доків (`2026-05-13 by @andrijvigrav`).                        | `docs/governance/pnpm-overrides-policy.md:3`                    |
-| QW-4 | Bump `Last validated` у [`docs/governance/doc-freshness.md`](../governance/doc-freshness.md) — `2026-05-11 by @Skords-01`, аналогічний 2-денний drift; doc описує саму систему freshness-маркерів і має бути першим у списку, не пропусканим. | `docs/governance/doc-freshness.md:3`                            |
+| ID   | Зміна                                                                                                                                                                                                                                            | Файл:рядок                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| QW-1 | Закрити P1-3 в roast: `.github/workflows/lighthouse-ci.yml` зашиплений у `cb459c08` (#2726, 2026-05-13). Bump статусу: `⏸ P1-3` → `✅ Closed in #2726`; видалити «Action: Add (recommended P2)» з § P0-2.                                        | `docs/audits/2026-05-13-documentation-hygiene-roast.md:100-103` |
+| QW-2 | Закрити P2-2 в roast: `MARKER_RE` у [`scripts/knip-respects-scaffolded.mjs:26`](../../../scripts/knip-respects-scaffolded.mjs) вже містить `@experimental` — переписати § P2-2 на `✅ Closed (already covered)`.                                 | `docs/audits/2026-05-13-documentation-hygiene-roast.md:110-112` |
+| QW-3 | Bump `Last validated` у [`docs/governance/pnpm-overrides-policy.md`](../../governance/pnpm-overrides-policy.md) — зараз `2026-05-11 by @claude`, drift > 48h щодо решти governance-доків (`2026-05-13 by @andrijvigrav`).                        | `docs/governance/pnpm-overrides-policy.md:3`                    |
+| QW-4 | Bump `Last validated` у [`docs/governance/doc-freshness.md`](../../governance/doc-freshness.md) — `2026-05-11 by @Skords-01`, аналогічний 2-денний drift; doc описує саму систему freshness-маркерів і має бути першим у списку, не пропусканим. | `docs/governance/doc-freshness.md:3`                            |
 
 **Freeze-compatible: yes** (status update + bump = «Edit existing»).
 
@@ -94,8 +97,8 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 - **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`lint:kvstore-deep-imports`, unit tests, root `pnpm lint` wiring, codemod catalog enforcement note).
 - **Group:** 1) stale-link / drift cleanup + governance-adjacent enforcement (closes P2-1 у roast).
-- **Trigger:** [`scripts/codemods/README.md`](../../scripts/codemods/README.md) каталогізує `@deprecated` codemods, але долгостроковий enforcement для `kvStore` deep-imports (per `2026-05-02-doc-hygiene-audit.md` PR #013) досі planned. Без guard-а codemod закінчиться regression-ом.
-- **Action:** додати правило у `eslint-plugin-sergeant-design` (або `no-restricted-imports` у root `eslint.config.js`) — заборона `import … from "@sergeant/<pkg>/.../kvStore"` / `"…/kv-store/..."` deep-paths у web/server/mobile, з allowlist для adapter-файлів. Long-term-enforcement entry додається у [`scripts/codemods/README.md`](../../scripts/codemods/README.md) каталог.
+- **Trigger:** [`scripts/codemods/README.md`](../../../scripts/codemods/README.md) каталогізує `@deprecated` codemods, але долгостроковий enforcement для `kvStore` deep-imports (per `2026-05-02-doc-hygiene-audit.md` PR #013) досі planned. Без guard-а codemod закінчиться regression-ом.
+- **Action:** додати правило у `eslint-plugin-sergeant-design` (або `no-restricted-imports` у root `eslint.config.js`) — заборона `import … from "@sergeant/<pkg>/.../kvStore"` / `"…/kv-store/..."` deep-paths у web/server/mobile, з allowlist для adapter-файлів. Long-term-enforcement entry додається у [`scripts/codemods/README.md`](../../../scripts/codemods/README.md) каталог.
 - **Acceptance:**
   - `pnpm lint` на main green.
   - Демо-fixture: `apps/web/src/__tests__/fixtures/bad-kvstore-deep-import.ts` — fails з clear message.
@@ -111,7 +114,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 - **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (11 маршрутів до specialist-skill, індекс initiatives і маршрут до policy-review).
 - **Group:** 2) discoverability gaps.
-- **Trigger:** [`scripts/check-discoverability.mjs ROUTES`](../../scripts/check-discoverability.mjs) сьогодні enforce-ить ≤2 hops до `start-here` + `review-and-merge` + on-call playbooks. Решта 8 Sergeant specialist-skill-ів (writing-skills, mobile-expo, hubchat, web-ui, server-api, data-and-migrations, bugfix-and-regression, monorepo-boundaries) + better-auth-best-practices, + new agent skills evolution (`docs/agents/skills-evolution-roadmap.md`) — НЕ покриті, тому drift у роутингу не ловиться. Аналогічно немає row-а для `docs/initiatives/README.md` (новий contributor не знаходить активних ініціатив).
+- **Trigger:** [`scripts/check-discoverability.mjs ROUTES`](../../../scripts/check-discoverability.mjs) сьогодні enforce-ить ≤2 hops до `start-here` + `review-and-merge` + on-call playbooks. Решта 8 Sergeant specialist-skill-ів (writing-skills, mobile-expo, hubchat, web-ui, server-api, data-and-migrations, bugfix-and-regression, monorepo-boundaries) + better-auth-best-practices, + new agent skills evolution (`docs/agents/skills-evolution-roadmap.md`) — НЕ покриті, тому drift у роутингу не ловиться. Аналогічно немає row-а для `docs/initiatives/README.md` (новий contributor не знаходить активних ініціатив).
 - **Action:** ~10 нових rows у `ROUTES` array (`role: new-agent` / `role: reviewer` / `role: on-call`):
   - `new-agent → .agents/skills/sergeant-writing-skills/SKILL.md` (entrypoints: AGENTS.md).
   - `new-agent → .agents/skills/sergeant-{web-ui,server-api,mobile-expo,hubchat,data-and-migrations,bugfix-and-regression,monorepo-boundaries,deploy-and-observability,feature-delivery}/SKILL.md` (entrypoints: `docs/agents/agent-skills-catalog.md`).
@@ -291,4 +294,4 @@ pnpm docs:freshness-dashboard --check   # (PR-09, NEW) — committed dashboard f
 1. **PR-05 ADR README** під freeze — чи дозволено створити index-doc у `docs/adr/`? Якщо ні, виносимо `docs/adr/README.md` у post-freeze (S subtask), `docs/initiatives/README.md` лишається у скоупі (index, не нова initiative).
 2. **PR-09 freshness-dashboard** — committed чи `.gitignore`-ed artifact? Якщо committed — окремий freeze concern (новий top-level governance file). Якщо gitignored — `--check` режим не має сенсу (дашборд завжди regenerated locally). Recommendation: committed, з виправданням «це index не policy».
 3. **PR-03 kvStore guard scope** — заборона deep-import для всіх `apps/*` чи лише `apps/web`? Аналогія з PR #1411 (strip-js-extensions) — спочатку web, потім server/mobile через окремий ADR. Default: web-only у цьому PR-і.
-4. **PR-06 max-lines budget for CLAUDE.md/DEVIN.md** — 40 рядків аргументований («slim contract»), але [Rule #18](../governance/rules/18-module-size-discipline-600.md) для web TS/TSX = 600. Чи додавати 40-line budget як новий hard rule (з freeze це impossible), чи лишити soft-warning у lint?
+4. **PR-06 max-lines budget for CLAUDE.md/DEVIN.md** — 40 рядків аргументований («slim contract»), але [Rule #18](../../governance/rules/18-module-size-discipline-600.md) для web TS/TSX = 600. Чи додавати 40-line budget як новий hard rule (з freeze це impossible), чи лишити soft-warning у lint?

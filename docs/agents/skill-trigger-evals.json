@@ -721,6 +721,39 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-writing-skills"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-planning-batch-trigger-batch-n",
+      "skill": "sergeant-planning-batch",
+      "kind": "trigger",
+      "prompt": "Execute a batch of the next N open PR-cards pulled from docs/planning/* and update the trackers for the work done.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-planning-batch-trigger-parallel-fanout",
+      "skill": "sergeant-planning-batch",
+      "kind": "trigger",
+      "prompt": "Run a dynamic parallel-agent batch over the planning folder, then archive any planning doc that work drove to fully complete.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-planning-batch-anti-single-card",
+      "skill": "sergeant-planning-batch",
+      "kind": "anti-trigger",
+      "prompt": "Implement one isolated web component from a single planning card that maps cleanly to one web specialist skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-planning-batch"]
+    },
+    {
+      "id": "sergeant-planning-batch-workflow-fanout-archive",
+      "skill": "sergeant-planning-batch",
+      "kind": "workflow",
+      "prompt": "Start with Sergeant rules, load only the planning-batch coordinator, fan out read-only analysis agents, then apply tracker edits and fast-forward archive.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }
