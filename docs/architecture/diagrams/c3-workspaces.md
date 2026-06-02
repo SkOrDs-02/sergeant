@@ -80,8 +80,8 @@ The packages most other workspaces depend on. `Importers` = unique file count ac
 
 | Rank | Workspace                    | Importers | Exports |
 | ---- | ---------------------------- | --------- | ------- |
-| 1    | `@sergeant/shared`           | 318       | 1       |
-| 2    | `@sergeant/nutrition-domain` | 77        | 1       |
+| 1    | `@sergeant/shared`           | 319       | 1       |
+| 2    | `@sergeant/nutrition-domain` | 80        | 1       |
 | 3    | `@sergeant/fizruk-domain`    | 59        | 1       |
 | 4    | `@sergeant/routine-domain`   | 51        | 1       |
 | 5    | `@sergeant/api-client`       | 38        | 190     |
