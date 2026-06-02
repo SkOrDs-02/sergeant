@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -35,6 +36,14 @@ import {
   todayLocalDateString,
 } from "../pages/Workouts.helpers";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
+
+interface TemplateGroup {
+  id: string;
+  exerciseIds?: string[];
+  itemIds?: string[];
+  type?: "circuit" | "superset";
+  restSec?: number;
+}
 
 export function useWorkoutsOrchestrator() {
   const toast = useToast();
@@ -209,13 +218,6 @@ export function useWorkoutsOrchestrator() {
         exIdToItemId[ex.id] = itemId;
       }
       if ((tpl?.groups || []).length > 0) {
-        interface TemplateGroup {
-          id: string;
-          exerciseIds?: string[];
-          itemIds?: string[];
-          type?: "circuit" | "superset";
-          restSec?: number;
-        }
         const workoutGroups: WorkoutGroup[] = (
           (tpl.groups || []) as TemplateGroup[]
         )
@@ -263,9 +265,15 @@ export function useWorkoutsOrchestrator() {
   );
 
   const submitRetroWorkout = useCallback(() => {
-    const [y, mo, d] = retroDate.split("-").map(Number);
-    const [hh, mm] = (retroTime || "12:00").split(":").map(Number);
-    const startedAt = new Date(y!, mo! - 1, d, hh, mm, 0, 0).toISOString();
+    const parts = retroDate.split("-").map(Number);
+    const kyivNow = getKyivDateParts();
+    const y = parts[0] ?? kyivNow.year;
+    const mo = parts[1] ?? kyivNow.month;
+    const d = parts[2] ?? kyivNow.day;
+    const timeParts = (retroTime || "12:00").split(":").map(Number);
+    const hh = timeParts[0] ?? 12;
+    const mm = timeParts[1] ?? 0;
+    const startedAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
     const w = createWorkoutWithTimes({ startedAt });
     setActiveWorkoutId(w.id);
     setRetroOpen(false);

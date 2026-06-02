@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
-import { MEAL_TYPES } from "@sergeant/nutrition-domain";
+import { MEAL_TYPES, mealTypeByHour } from "@sergeant/nutrition-domain";
 import type { QuickChip } from "./hooks/useNutritionQuickChips";
-import { currentTime } from "./components/meal-sheet/mealFormUtils";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   SkeletonMealCard,
   SkeletonText,
@@ -153,6 +153,7 @@ export default function NutritionApp({
   // page they were on. Skipped when a `pwaAction` is already routing
   // the user (e.g. `add_meal`, `add_meal_photo`) so the action target
   // wins (audit F19).
+  // AI-CONTEXT: one-shot first-run gate — routes new users to DailyPlanCard; ref prevents re-routing mid-session if pwaAction already controls navigation
   const firstRunJumpDoneRef = useRef(false);
   useEffect(() => {
     if (firstRunJumpDoneRef.current) return;
@@ -371,22 +372,18 @@ export default function NutritionApp({
   // delete uses, keeping behaviour symmetric with the rest of Nutrition.
   const handleQuickAddMealFromChip = useCallback(
     (chip: QuickChip) => {
-      const hour = new Date().getHours();
-      const mealTypeId =
-        hour >= 5 && hour < 11
-          ? "breakfast"
-          : hour >= 11 && hour < 16
-            ? "lunch"
-            : hour >= 16 && hour < 22
-              ? "dinner"
-              : "snack";
+      // Both mealType and time are Kyiv-anchored from the same parts so the
+      // saved meal metadata stays internally consistent for non-Kyiv devices
+      // (domain-invariant: day/meal boundaries live in Europe/Kyiv). cubic.
+      const { hour, minute } = getKyivDateParts();
+      const mealTypeId = mealTypeByHour(hour);
       const mealLabel =
         MEAL_TYPES.find((m) => m.id === mealTypeId)?.label || "Прийом їжі";
       const id = newMealId();
       const meal: Meal = {
         id,
         name: chip.label,
-        time: currentTime(),
+        time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
         mealType: mealTypeId,
         label: mealLabel,
         macros: {

@@ -11,7 +11,7 @@
  * `packages/shared/src/lib/analyticsEvents.ts`.
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ANALYTICS_EVENTS,
   type DashboardModuleId,
@@ -38,18 +38,19 @@ export function CrossModulePreview({
 }: CrossModulePreviewProps) {
   const copy = getCrossModulePreviewCopy(sourceModule);
 
+  const hasFiredSeenEvent = useRef(false);
   useEffect(() => {
-    if (!copy) return;
+    if (!copy || hasFiredSeenEvent.current) return;
+    hasFiredSeenEvent.current = true;
     trackEvent(ANALYTICS_EVENTS.CROSS_MODULE_PREVIEW_SEEN, {
       source_module: copy.sourceModule,
       partner_module: copy.partnerModule,
     });
-    // Mount-only — `copy` is keyed by `sourceModule` and stable for this
-    // render. The seen-event must fire exactly once per render-cycle of the
-    // card; the persisted `markCrossModulePreviewSeen` flag (set on
-    // close/click below) guards against repeat surfaces across reloads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // `hasFiredSeenEvent` guards against misfires when `copy` identity
+    // changes across re-renders. The persisted `markCrossModulePreviewSeen`
+    // flag (set on close/click below) guards against repeat surfaces across
+    // page reloads.
+  }, [copy]);
 
   const handleClick = useCallback(() => {
     if (!copy) return;

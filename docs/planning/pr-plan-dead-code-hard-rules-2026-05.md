@@ -253,7 +253,7 @@ pnpm docs:check-links               # markdown internal links (HR-4 overlap)
 
 - [`docs/audits/2026-05-13-dead-code-hard-rules-roast.md`](../audits/2026-05-13-dead-code-hard-rules-roast.md) — джерело open items.
 - [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](../audits/2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка (origin §3.2 і §3.4).
-- [`docs/audits/2026-05-07-app-audit.md`](../audits/2026-05-07-app-audit.md) — app-audit (web-blocker `db-schema/migrate` umbrella, mobile-shell §1.3).
+- [`docs/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md) — app-audit (web-blocker `db-schema/migrate` umbrella, mobile-shell §1.3).
 - [`docs/governance/hard-rules.json`](../governance/hard-rules.json) — 22-rule registry; HR-4 додає 23-й rule.
 - [`docs/governance/rules/10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md) — canonical body для `@scaffolded` маркерів (use-case у DC-2).
 - [`docs/governance/rules/18-module-size-discipline-600.md`](../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (DC-5 AuthPage decision).

@@ -139,11 +139,15 @@ export function WorkoutCatalogSection({
         ) : (
           grouped.map((g) => {
             const isOpen = open[g.id] ?? false;
+            const panelId = `catalog-panel-${g.id}`;
             return (
               <div key={g.id} className="border-b border-line last:border-0">
                 <button
+                  type="button"
                   onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))}
                   className="w-full flex items-center justify-between px-4 py-3 bg-panelHi/60 hover:bg-panelHi transition-colors"
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
                 >
                   <div className="text-style-label text-text">{g.label}</div>
                   <div className="text-xs text-muted flex items-center gap-2">
@@ -155,7 +159,7 @@ export function WorkoutCatalogSection({
                 </button>
 
                 {isOpen && (
-                  <div>
+                  <div id={panelId}>
                     {g.items.map((ex) => {
                       const catCf = recoveryConflictsForExercise(ex, rec.by);
                       return (

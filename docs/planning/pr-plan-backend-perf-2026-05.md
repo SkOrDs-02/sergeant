@@ -6,7 +6,7 @@
 > **Оновлено 2026-06-01 (drift reconcile).** Кілька PR-ів цього плану вже **shipped** у коді (звірено sweep-ом): **PR-03** — umbrella `./migrate` export прибрано (`grep '@sergeant/db-schema/migrate"'` → 0); **PR-05** — bounded `pool.end()` drain з AbortController є (`lib/poolShutdown.ts:endPoolWithAbortTimeout`, wired `index.ts`); **PR-09 + PR-10** — `validateBody`/`validateQuery` → `parseBody` міграція завершена (`grep validateBody apps/server/src` excl. `http/`/tests → 0). Перевір цей блок перед тим, як брати їх у роботу.
 
 PR-розкладка по решті open / Partial / Follow-up / Backlog items із прожарки
-[`docs/audits/2026-05-13-backend-performance-roast.md`](../audits/2026-05-13-backend-performance-roast.md).
+[`docs/audits/archive/2026-05-13-backend-performance-roast.md`](../audits/archive/2026-05-13-backend-performance-roast.md).
 Скоуп: `apps/server/`, `packages/db-schema/`, `packages/shared/`,
 `docs/observability/`. P0/P1 із самої прожарки вже закриті у її landing-PR-і
 — тут лишається передбачуваний P2-tail + дві витягнуті ініціативи з TL;DR
@@ -19,9 +19,9 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## Cross-refs
 
-- [`docs/audits/2026-05-13-backend-performance-roast.md`](../audits/2026-05-13-backend-performance-roast.md) — джерельна прожарка (P1-1…P1-6 закриті, P2-1…P2-8 + два TL;DR-винесення — open).
+- [`docs/audits/archive/2026-05-13-backend-performance-roast.md`](../audits/archive/2026-05-13-backend-performance-roast.md) — джерельна прожарка (P1-1…P1-6 закриті, P2-1…P2-8 + два TL;DR-винесення — open).
 - [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — running tech-debt log (606 рядків). Особливо `Summary — per-category`, `Observability & logging review`, `Tests coverage map`.
-- [`docs/audits/2026-05-07-app-audit.md`](../audits/2026-05-07-app-audit.md) — повний product audit; §10 P0/P1/P2 матриця.
+- [`docs/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md) — повний product audit; §10 P0/P1/P2 матриця.
 - [`docs/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) — попередній backend deep-dive (370 рядків).
 - [`docs/initiatives/stack-pulse-2026-05/`](../initiatives/stack-pulse-2026-05/README.md) — паралельна 16-PR серія; PR-01 (env-уніфікація), PR-12 (Sentry tracesSampler), PR-13 (pg-pool sizing), PR-16 (Pino redaction) — найближчі за поверхнею.
 
@@ -150,7 +150,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 - Codemod: replace `from "@sergeant/db-schema/migrate"` → відповідний subpath на основі імен, що імпортуються (`SqliteMigrationClient` → `/sqlite`; `runMigrations` → `/runner`; `createPgAdapter` → `/pg`).
 - Прибрати umbrella entry з `package.json`. Якщо лишається 1+ невідловлений імпорт — CI типчек впаде на ESM resolution.
-- Оновити `docs/audits/2026-05-07-app-audit.md` (рядок про umbrella → DONE) + цей PR-план.
+- Оновити `docs/audits/archive/2026-05-07-app-audit.md` (рядок про umbrella → DONE) + цей PR-план.
 
 **Out of scope**
 
@@ -590,7 +590,7 @@ PR-12 (audit stubs) — паралельно з будь-яким.
 
 ## Out-of-scope для всієї цієї планувальної серії
 
-- SQLite Stage 8/9 migration (`sync_op_outbox` no-such-table fix із [`docs/audits/2026-05-07-app-audit.md`](../audits/2026-05-07-app-audit.md#A1)) — окрема ініціатива.
+- SQLite Stage 8/9 migration (`sync_op_outbox` no-such-table fix із [`docs/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md#A1)) — окрема ініціатива.
 - Decomposition `syncV2.ts` / `routes/internal/openclaw.ts` — після deep-roast-у з PR-12.
 - Будь-який frontend / mobile scope, що не задіяний у PR-03.
 - Будь-яка governance-зміна, не пов'язана з parseBody-rule (PR-11).

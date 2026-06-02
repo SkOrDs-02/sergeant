@@ -284,8 +284,10 @@ export function WorkoutItemCard({
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => {
                   const next = [...(it.sets || [])];
+                  const current = next[idx];
+                  if (!current) return;
                   next[idx] = {
-                    ...next[idx]!,
+                    ...current,
                     weightKg:
                       e.target.value === "" ? 0 : Number(e.target.value),
                   };
@@ -313,8 +315,10 @@ export function WorkoutItemCard({
                 }}
                 onChange={(e) => {
                   const next = [...(it.sets || [])];
+                  const current = next[idx];
+                  if (!current) return;
                   next[idx] = {
-                    ...next[idx]!,
+                    ...current,
                     reps: e.target.value === "" ? 0 : Number(e.target.value),
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });

@@ -1,7 +1,8 @@
 # Прожарка #4/10: Backend & Performance (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-06-02 by Claude (audits-runner drift+archive pass). **Next review:** 2026-08-11.
+> **Status:** Archived
+> **Закрито 2026-06-02:** 14/14 actionable items відвантажено (P1-1…P1-6 + P2-1…P2-7); єдиний залишок — SQLite `sync_op_outbox` Stage 8/9 — явно поза скоупом цієї прожарки (окрема ініціатива). Completed-and-frozen → archive. Tracker: [`../planning/pr-plan-backend-perf-2026-05.md`](../../planning/pr-plan-backend-perf-2026-05.md).
 
 ## Контекст
 
@@ -14,15 +15,15 @@ Parent session: див. URL у PR-description-і.
 
 ## Cross-refs (попередні аудити цієї теми)
 
-- [`2026-05-03-web-deep-dive/03-backend-and-performance.md`](./2026-05-03-web-deep-dive/03-backend-and-performance.md) — найбільший backend-deep-dive, 370 рядків, §4.1–§5.4.
-- [`archive/2026-04-26-sergeant-audit-devin.md`](./archive/2026-04-26-sergeant-audit-devin.md) — генеральний аудит, 30/31 пунктів закрито.
+- [`2026-05-03-web-deep-dive/03-backend-and-performance.md`](../2026-05-03-web-deep-dive/03-backend-and-performance.md) — найбільший backend-deep-dive, 370 рядків, §4.1–§5.4.
+- [`archive/2026-04-26-sergeant-audit-devin.md`](./2026-04-26-sergeant-audit-devin.md) — генеральний аудит, 30/31 пунктів закрито.
 - [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний аудит застосунку, P0/P1/P2 матриця у §10.
-- [`../tech-debt/backend.md`](../tech-debt/backend.md) — running tech-debt log (606 рядків), більшість P0 уже DONE.
+- [`../tech-debt/backend.md`](../../tech-debt/backend.md) — running tech-debt log (606 рядків), більшість P0 уже DONE.
 
 ## TL;DR (топ-8 болей)
 
 1. **`validateBody`-sentinel-паттерн досі домінує** у handler-ах
-   ([`apps/server/src/modules/chat/chat.ts:`](../../apps/server/src/modules/chat/chat.ts)
+   ([`apps/server/src/modules/chat/chat.ts:`](../../../apps/server/src/modules/chat/chat.ts)
    - 30+ інших файлів). Забутий `return` після `!parsed.ok` — латентне
      джерело 500-ок. Throw-based варіант кращий, але його не існувало.
      **Закрито в цьому PR (P1, additive `parseBody`/`parseQuery` + tests)**.
@@ -30,7 +31,7 @@ Parent session: див. URL у PR-description-і.
    нові handler-и, що могли б кидати `ValidationError`, не давали
    клієнту такий же contract як старий `validateBody`-flow. **Закрито в цьому PR.**
 3. **`app_build_info` Gauge існує у коді
-   ([`obs/metrics.ts:713-736`](../../apps/server/src/obs/metrics.ts#L713)),
+   ([`obs/metrics.ts:713-736`](../../../apps/server/src/obs/metrics.ts#L713)),
    але НЕ задокументовано** у `docs/observability/metrics.md`. Grafana-promql
    шаблони (`* on (instance) group_left(release) <metric>`) тримаються
    на цій серії, але ніхто крім авторів не знає, як її використовувати.
@@ -41,21 +42,21 @@ Parent session: див. URL у PR-description-і.
    ([`docs/audits/2026-05-07-app-audit.md:396`](./2026-05-07-app-audit.md#L396),
    P2). У `metrics.ts` пять reads. **Частково закрито (metrics.ts) в цьому PR.**
 5. **`GET /metrics` token-check через `!==`** —
-   ([`obs/metrics.ts:1010-1018`](../../apps/server/src/obs/metrics.ts#L1010))
+   ([`obs/metrics.ts:1010-1018`](../../../apps/server/src/obs/metrics.ts#L1010))
    timing-side-channel: short-circuit на першій байт-розбіжності → байт-за-байтом
    recovery під час scrape-ів. Низький risk (METRICS_TOKEN не публічний),
    але `safeStringEqual` уже існує у репо. **Закрито в цьому PR.**
 6. **Регресія "зник API-роут" або "новий public роут без security рев'ю"**
    до сьогодні ловилася лише `registerRoutes.test.ts` snapshot-у
-   ([`routes/registerRoutes.test.ts`](../../apps/server/src/routes/registerRoutes.test.ts)),
+   ([`routes/registerRoutes.test.ts`](../../../apps/server/src/routes/registerRoutes.test.ts)),
    який showcase-ить інвентар, але НЕ перевіряє інваріанти на кшталт
    "усі `/api/*` під `/api`-префіксом" чи "`/api/internal/*` не дублюється
    у public namespace-і". **Закрито в цьому PR (3 нові інваріантні тести).**
-7. **`@sergeant/db-schema/migrate` umbrella export досі експортується**
+7. **`@sergeant/db-schema/migrate` umbrella export видалено**
    ([`docs/audits/2026-05-07-app-audit.md:389`](./2026-05-07-app-audit.md#L389),
-   P0+). Mobile-сурфейси (5 imports) і 1 web-impport ще на ньому;
-   web-fix частково зроблено, mobile залишилось. **Не в цьому PR** — потребує
-   крос-app координації, виноситься у наступну прожарку.
+   P0+). **Закрито (verified 2026-06-02):** `packages/db-schema/package.json`
+   `exports` тепер експонує лише `./migrate/{runner,pg,sqlite,files}` — umbrella
+   `./migrate` entry прибрано; усі mobile + web каллери на deep-paths.
 8. **`docs/observability/metrics.md` не покриває `cost monitoring` секцію
    повністю** — лише `infra_monthly_cost_usd` + `voyage_daily_budget_usd`,
    але per-model `anthropic_tokens_total` join-pattern із
@@ -65,7 +66,7 @@ Parent session: див. URL у PR-description-і.
 
 P0 у скоупі бекенду на момент аудиту вже закриті у попередніх прожарках
 (валідація, error handling, banks, web-push, AI quota, TS migration —
-див. [`docs/tech-debt/backend.md`](../tech-debt/backend.md) summary table).
+див. [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) summary table).
 Останній відкритий P0 — A1 з [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md#A1)
 (SQLite `no such table: sync_op_outbox`) — заявка stage 8/9 (SQLite
 migration), поза скоупом цієї прожарки.
@@ -74,7 +75,7 @@ migration), поза скоупом цієї прожарки.
 
 ### P1-1. `validateBody`-sentinel — забутий `return` як латентне 500 ✅ Зроблено в цьому PR
 
-- **File:** [`apps/server/src/http/validate.ts:1-70`](../../apps/server/src/http/validate.ts)
+- **File:** [`apps/server/src/http/validate.ts:1-70`](../../../apps/server/src/http/validate.ts)
 - **Дія:** **Add** `parseBody<S>(schema, req): z.infer<S>` і
   `parseQuery<S>(schema, req)` — throw-based variants. Кидають
   `ValidationError(msg, { cause: { details: [{ path, message }] } })`,
@@ -85,11 +86,11 @@ migration), поза скоупом цієї прожарки.
   одним із джерел 500-ок із sync-related handler-ів у Sentry (бачив у
   history). Throw-based варіант усуває цей клас помилок —
   `asyncHandler` + `errorHandler` гарантують відповідь.
-- **Tests added:** 5 нових кейсів у [`http/validate.test.ts`](../../apps/server/src/http/validate.test.ts).
+- **Tests added:** 5 нових кейсів у [`http/validate.test.ts`](../../../apps/server/src/http/validate.test.ts).
 
 ### P1-2. `errorHandler` surfaces `cause.details` для operational помилок ✅ Зроблено в цьому PR
 
-- **File:** [`apps/server/src/http/errorHandler.ts:78-93`](../../apps/server/src/http/errorHandler.ts)
+- **File:** [`apps/server/src/http/errorHandler.ts:78-93`](../../../apps/server/src/http/errorHandler.ts)
 - **Дія:** **Change** — додано `extractClientDetails(cause)` хелпер, який
   витягує `cause.details: Array` лише для 4xx (operational). Для 5xx
   (programmer) — `details` не surface-имо, щоб не лікити стек/PII.
@@ -99,24 +100,24 @@ migration), поза скоупом цієї прожарки.
   би per-field message-і, які UI використовує для form-error-highlighting
   (Hard Rule #3 API contract: server ↔ api-client ↔ test).
 - **Tests added:** 2 нових кейси (4xx surfaces, 5xx redacts) у
-  [`http/errorHandler.test.ts`](../../apps/server/src/http/errorHandler.test.ts).
+  [`http/errorHandler.test.ts`](../../../apps/server/src/http/errorHandler.test.ts).
 
 ### P1-3. `GET /metrics` token-check через `!==` (timing-leak) ✅ Зроблено в цьому PR
 
-- **File:** [`apps/server/src/obs/metrics.ts:1009-1022`](../../apps/server/src/obs/metrics.ts#L1009)
+- **File:** [`apps/server/src/obs/metrics.ts:1009-1022`](../../../apps/server/src/obs/metrics.ts#L1009)
 - **Дія:** **Change** `got !== expected` → `safeStringEqual(got, expected)`
   (constant-time, через `crypto.timingSafeEqual`). Хелпер уже існує у
-  [`http/safeCompare.ts`](../../apps/server/src/http/safeCompare.ts) для
+  [`http/safeCompare.ts`](../../../apps/server/src/http/safeCompare.ts) для
   Stripe-webhook signature comparison.
 - **Why P1:** ризик низький (METRICS_TOKEN не публічний, не передається
   у user-flow), але `!==` — це класична побайтова уразливість, яка є
   тривіальною для виправлення коли хелпер уже у репо.
-- **Tests added:** 4 нових кейси у [`obs/metrics.test.ts`](../../apps/server/src/obs/metrics.test.ts)
+- **Tests added:** 4 нових кейси у [`obs/metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts)
   (no-token, wrong-token, same-length-different-content, valid-token).
 
 ### P1-4. Route registry — інваріантні тести (а не лише snapshot) ✅ Зроблено в цьому PR
 
-- **File:** [`apps/server/src/routes/registerRoutes.test.ts`](../../apps/server/src/routes/registerRoutes.test.ts)
+- **File:** [`apps/server/src/routes/registerRoutes.test.ts`](../../../apps/server/src/routes/registerRoutes.test.ts)
 - **Дія:** **Add** 3 нових інваріантних it-блоки:
   - "реєструє щонайменше 60 ендпоінтів" — sanity-проти-empty-router.
   - "кожен роут живе або під `/api/`, або під коротким health/metrics-альясом".
@@ -128,7 +129,7 @@ migration), поза скоупом цієї прожарки.
 
 ### P1-5. `app_build_info` documented у metrics.md §15a ✅ Зроблено в цьому PR
 
-- **File:** [`docs/observability/metrics.md:325-360`](../observability/metrics.md#15a-buildrelease-identity-app_build_info)
+- **File:** [`docs/observability/metrics.md:325-360`](../../observability/metrics.md#15a-buildrelease-identity-app_build_info)
 - **Дія:** **Add** нова секція `## 15a. Build/release identity
 (app_build_info)` з PromQL-шаблонами для join-on-labels у Grafana
   (per-release latency, error-rate, rolling-deploy detection).
@@ -139,8 +140,8 @@ migration), поза скоупом цієї прожарки.
 ### P1-6. `metrics.ts` reads з `process.env` мігровано до `env.ts` ✅ Зроблено в цьому PR
 
 - **Files:**
-  - [`apps/server/src/env/env.ts:340-346`](../../apps/server/src/env/env.ts#L340) — додано `GIT_COMMIT`, `VERCEL_GIT_COMMIT_SHA`, `npm_package_version`.
-  - [`apps/server/src/obs/metrics.ts:722-735, 1009`](../../apps/server/src/obs/metrics.ts#L722) — `process.env[...]` → `env.xxx`.
+  - [`apps/server/src/env/env.ts:340-346`](../../../apps/server/src/env/env.ts#L340) — додано `GIT_COMMIT`, `VERCEL_GIT_COMMIT_SHA`, `npm_package_version`.
+  - [`apps/server/src/obs/metrics.ts:722-735, 1009`](../../../apps/server/src/obs/metrics.ts#L722) — `process.env[...]` → `env.xxx`.
 - **Why P1:** одне з джерел P2 з
   [`2026-05-07-app-audit.md:396`](./2026-05-07-app-audit.md#L396) —
   centralize `process.env`-reads, щоб zod-валідація ловила typo на
@@ -153,16 +154,16 @@ migration), поза скоупом цієї прожарки.
 ### P2-1. `push.ts` / `routes/push.ts` `process.env` reads (P2 з 2026-05-07-app-audit) ✅ Closed in #2752
 
 - **Files:**
-  - [`apps/server/src/env/env.ts:470-515`](../../apps/server/src/env/env.ts#L470) — додано `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`, `PUSH_INTERNAL_ALLOWED_IPS` (зод-валідовані; VAPID-поля вже були).
-  - [`apps/server/src/modules/push/push.ts:37-75,260-270`](../../apps/server/src/modules/push/push.ts) — 6 `process.env[...]`-reads (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `NODE_ENV`, `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`) → `env.*`.
-  - [`apps/server/src/routes/push.ts:87`](../../apps/server/src/routes/push.ts#L87) — `PUSH_INTERNAL_ALLOWED_IPS` → `env.PUSH_INTERNAL_ALLOWED_IPS`.
-  - [`apps/server/src/modules/push/push.test.ts`](../../apps/server/src/modules/push/push.test.ts) — 16+ env-патч-сайтів мігровано на canonical pattern `vi.resetModules() + vi.stubEnv() + dynamic import` (як у `auth.test.ts`). Додано 5 нових unit-тестів на zod-defaults і CIDR-round-trip для нових env-полів.
-  - [`.tech-debt/env-single-source-budget.json`](../../.tech-debt/env-single-source-budget.json) — бюджет 105 → 98 (net −7 reads).
+  - [`apps/server/src/env/env.ts:470-515`](../../../apps/server/src/env/env.ts#L470) — додано `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`, `PUSH_INTERNAL_ALLOWED_IPS` (зод-валідовані; VAPID-поля вже були).
+  - [`apps/server/src/modules/push/push.ts:37-75,260-270`](../../../apps/server/src/modules/push/push.ts) — 6 `process.env[...]`-reads (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `NODE_ENV`, `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`) → `env.*`.
+  - [`apps/server/src/routes/push.ts:87`](../../../apps/server/src/routes/push.ts#L87) — `PUSH_INTERNAL_ALLOWED_IPS` → `env.PUSH_INTERNAL_ALLOWED_IPS`.
+  - [`apps/server/src/modules/push/push.test.ts`](../../../apps/server/src/modules/push/push.test.ts) — 16+ env-патч-сайтів мігровано на canonical pattern `vi.resetModules() + vi.stubEnv() + dynamic import` (як у `auth.test.ts`). Додано 5 нових unit-тестів на zod-defaults і CIDR-round-trip для нових env-полів.
+  - [`.tech-debt/env-single-source-budget.json`](../../../.tech-debt/env-single-source-budget.json) — бюджет 105 → 98 (net −7 reads).
 - **Why P2:** [`2026-05-07-app-audit.md:396`](./2026-05-07-app-audit.md#L396) (P2) і §4 TL;DR цього аудиту. Module-load-time `process.env[...]` обходив startup-assert + zod-валідацію — typo в Railway env (`VAPID_PUBL=...`) тихо вимикав push-сурфейс без alerts. Перенесли на `env.ts` singleton, тести мігрували на vitest-канонічний pattern, щоб майбутні зміни env-shape ловилися type-системою, а не runtime-патчем `process.env`.
 
 ### P2-2. `obs/tracing.ts` `process.env` reads (через дефолтний argument) ✅ Closed 2026-06-01
 
-- **File:** [`apps/server/src/obs/tracing.ts:55,386`](../../apps/server/src/obs/tracing.ts#L55).
+- **File:** [`apps/server/src/obs/tracing.ts:55,386`](../../../apps/server/src/obs/tracing.ts#L55).
 - **Why виносимо (initial):** `env: NodeJS.ProcessEnv = process.env` — це
   injection-pattern для тестів, рефактор у `env.ts` зламає DI. Окрема
   розмова чи переписувати чи лишити.
@@ -176,13 +177,13 @@ migration), поза скоупом цієї прожарки.
   обрана; DI-pattern лишається, але defaultEnv тепер валідований Zod-env
   замість сирого `process.env`.
 
-### P2-3. `@sergeant/db-schema` umbrella `./migrate` export — drop ❌ Не в цьому PR
+### P2-3. `@sergeant/db-schema` umbrella `./migrate` export — drop ✅ Closed
 
-- **Files:** [`packages/db-schema/package.json`](../../packages/db-schema/package.json), 5 mobile imports, 1 web.
-- **Why виносимо:** mobile-сурфейси поза скоупом цієї прожарки.
-  Запропоновано як `chore(db-schema): drop umbrella ./migrate export`
-  у наступній мобільно-фокусній прожарці (#5/10 — Mobile App, або
-  #6/10 — Data Layer).
+- **Files:** [`packages/db-schema/package.json`](../../../packages/db-schema/package.json), 5 mobile imports, 1 web.
+- **Status:** Closed (verified 2026-06-02). Umbrella `./migrate` export вже
+  видалено — `packages/db-schema/package.json` `exports` експонує лише
+  `./migrate/{runner,pg,sqlite,files}`; усі mobile + web каллери переведено
+  на explicit deep-paths. Дублює TL;DR #7 (вище).
 
 ### P2-4. Documentation gap: per-model AI-token join-pattern ✅ Closed
 
@@ -190,16 +191,16 @@ migration), поза скоупом цієї прожарки.
 
 ### P2-5. `pool.end()` failure handling під час shutdown ✅ Closed in this PR
 
-- **File:** [`apps/server/src/index.ts`](../../apps/server/src/index.ts)
+- **File:** [`apps/server/src/index.ts`](../../../apps/server/src/index.ts)
 - **Дія:** `await pool.end()` тепер обгорнутий у новий helper
-  [`apps/server/src/lib/poolShutdown.ts`](../../apps/server/src/lib/poolShutdown.ts)
+  [`apps/server/src/lib/poolShutdown.ts`](../../../apps/server/src/lib/poolShutdown.ts)
   з `AbortController` і timeout `SHUTDOWN_GRACE_MS / 2`. При abort —
   `logger.warn({ msg: "pg_pool_end_timeout", timeoutMs, abortedAfterMs })`,
   shutdown продовжує `disconnectRedis` → `Sentry.flush`; `hardTimer` у
   `shutdown()` залишається last-resort safety net. Тести: happy-path,
   hanging `pool.end()` (verifies total shutdown stays ≤ `SHUTDOWN_GRACE_MS`),
   rejection (helper never throws), already-aborted external signal —
-  у [`apps/server/src/lib/poolShutdown.test.ts`](../../apps/server/src/lib/poolShutdown.test.ts).
+  у [`apps/server/src/lib/poolShutdown.test.ts`](../../../apps/server/src/lib/poolShutdown.test.ts).
 
 ### P2-6. Health-endpoint p95 не алертимо в Grafana ✅ Closed (`local diff`)
 
@@ -215,7 +216,7 @@ migration), поза скоупом цієї прожарки.
 
 ### P2-7. Sentry SENTRY_SAMPLING_RULES — admin=1.0 для `/api/internal/*` ✅ Closed by local diff
 
-- **File:** [`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts)
+- **File:** [`apps/server/src/sentry.ts`](../../../apps/server/src/sentry.ts)
 - **Explorer:** поточні `SENTRY_SAMPLING_RULES` не мають широкого
   `/api/internal/` правила. 100% sampling застосований тільки до вузького
   `/api/internal/openclaw/write/`; інші internal/n8n/cron/read routes падають

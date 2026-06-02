@@ -4,7 +4,7 @@
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — попередня deep-dive прожарка (web, секції §7 Testing pyramid + §8 DevX) ·
-> [`docs/audits/2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — генеральний аудит, що зафіксував blocker з web-build-smoke та heap-OOM у mobile-jest ·
+> [`docs/audits/archive/2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — генеральний аудит, що зафіксував blocker з web-build-smoke та heap-OOM у mobile-jest ·
 > [`docs/audits/2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — регресійний прохід після chain #2191–#2218 ·
 > [`docs/testing/2026-05-05-tests-pr-plan.md`](../testing/2026-05-05-tests-pr-plan.md) — multi-wave PR-план (Wave A–G, ~50 PR-ів) ·
 > [`docs/testing/2026-05-05-tests-review.md`](../testing/2026-05-05-tests-review.md) — інвентар testing-стека (Vitest / Jest / Playwright / Detox / Stryker / Argos / MSW / Testcontainers) ·

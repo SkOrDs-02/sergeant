@@ -1,12 +1,12 @@
 # Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Closed (source audit; outstanding status moved to mobile tech-debt registry)
 > **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../initiatives/archive/_0002-mobile-platform-decision.md). Canonical mobile debt owner — [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md).
 
 ## Cross-refs (попередні прожарки/аудити цієї теми)
 
-- [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний audit `2026-05-07`; mobile-частина закрита PR #2215 (Jest reliability), #2192/#2199 (sync_op_outbox), umbrella imports.
+- [`2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний audit `2026-05-07`; mobile-частина закрита PR #2215 (Jest reliability), #2192/#2199 (sync_op_outbox), umbrella imports.
 - [`2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — fix-pass log, mobile TransactionsPage providers fix, mobile Jest OOM closure.
 - [`2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — UX тех-план, mobile-частина 12/14 Done, дві Partial: E2E and device validation, Accessibility audit.
 - [`docs/tech-debt/mobile.md`](../tech-debt/mobile.md) — living burndown, recount-нуто разом з цією прожаркою.
