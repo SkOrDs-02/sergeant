@@ -240,6 +240,7 @@
 
 ### E6 — `refactor(web): useApiForm rollout — PersonalInfo + MemoryBank + FinykLogin + Waitlist`
 
+- **Status:** 🟡 Частково / de-risked — WaitlistForm уже на `useApiForm`. Додано tests-first safety-net для досі-непокритих `PersonalInfoSection` (8 тестів: name save happy/error/disabled, email-change, send-verification) і `MemoryBankSection` (4 тести: empty/openChat, render, delete+undo). **Сама міграція цих форм відкладена:** `PersonalInfoSection` інтегрує better-auth `authClient`, який повертає `{ error }` і **не кидає** `ApiError`, а `useApiForm` будує field-error-mapping на `throw ApiError` — моделі не збігаються, тож обгортання потребує адаптації better-auth-шару (не механічний rollout, як припускала картка). `FinykLoginScreen` — presentational (стан у батьку), теж потребує parent-refactor.
 - **Surface:**
   - `apps/web/src/core/profile/PersonalInfoSection.tsx` (4 inputs у manual state).
   - `apps/web/src/core/profile/MemoryBankSection.tsx` (textarea + JSON parsing).
