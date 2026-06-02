@@ -14,10 +14,26 @@ name: Visual Regression (Argos)
 # Without the token the job still runs and saves screenshots locally as
 # artifacts, but no diff is computed.
 
+# Temporarily disabled (2026-06-02 — founder decision):
+#
+# The job has been flaky on every PR and main push for several days,
+# producing CI noise that obscures real regressions. Re-enabling the
+# automatic triggers (`push: branches: [main]` + `pull_request:`)
+# requires one of the following acceptance criteria to be true first:
+#
+#   1. The current Argos snapshot baseline is bulk-approved (Argos UI →
+#      "Approve all" on the latest main) and a re-run produces 0 diffs.
+#   2. The snapshot strategy is decomposed — e.g. split per-route, drop
+#      animation frames, or move to a stable component-only set.
+#   3. A real visual regression is confirmed by manual inspection and
+#      fixed in source; the job goes green naturally.
+#
+# Until then the workflow runs only on `workflow_dispatch` so the
+# definition stays maintained and a manual run is one click away.
+# See `.github/workflows/visual-regression.yml` history + the
+# "Argos snapshot strategy" follow-up in the open-work tracker.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
